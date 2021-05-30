@@ -1,0 +1,19 @@
+<dec f='ffmpeg/libavcodec/cbs_h265.h' l='667' type='H265RawSPS *[16]'/>
+<use f='ffmpeg/libavcodec/cbs_h265_syntax_template.c' l='1046' u='r' c='cbs_h265_read_pps'/>
+<use f='ffmpeg/libavcodec/cbs_h265_syntax_template.c' l='1329' u='r' c='cbs_h265_read_slice_segment_header'/>
+<use f='ffmpeg/libavcodec/cbs_h265_syntax_template.c' l='1636' u='r' c='cbs_h265_read_sei_buffering_period'/>
+<use f='ffmpeg/libavcodec/cbs_h265_syntax_template.c' l='1897' u='r' c='cbs_h265_read_sei_active_parameter_sets'/>
+<use f='ffmpeg/libavcodec/cbs_h265_syntax_template.c' l='1046' u='r' c='cbs_h265_write_pps'/>
+<use f='ffmpeg/libavcodec/cbs_h265_syntax_template.c' l='1329' u='r' c='cbs_h265_write_slice_segment_header'/>
+<use f='ffmpeg/libavcodec/cbs_h265_syntax_template.c' l='1636' u='r' c='cbs_h265_write_sei_buffering_period'/>
+<use f='ffmpeg/libavcodec/cbs_h265_syntax_template.c' l='1897' u='r' c='cbs_h265_write_sei_active_parameter_sets'/>
+<use f='ffmpeg/libavcodec/cbs_h2645.c' l='694' u='r' c='cbs_h265_replace_sps'/>
+<use f='ffmpeg/libavcodec/cbs_h2645.c' l='694' u='r' c='cbs_h265_replace_sps'/>
+<use f='ffmpeg/libavcodec/cbs_h2645.c' l='694' u='r' c='cbs_h265_replace_sps'/>
+<use f='ffmpeg/libavcodec/cbs_h2645.c' l='694' u='w' c='cbs_h265_replace_sps'/>
+<use f='ffmpeg/libavcodec/cbs_h2645.c' l='1359' u='r' c='cbs_h265_flush'/>
+<use f='ffmpeg/libavcodec/cbs_h2645.c' l='1359' u='r' c='cbs_h265_flush'/>
+<use f='ffmpeg/libavcodec/cbs_h2645.c' l='1361' u='w' c='cbs_h265_flush'/>
+<use f='ffmpeg/libavcodec/cbs_h2645.c' l='1382' u='r' c='cbs_h265_close'/>
+<use f='ffmpeg/libavcodec/cbs_h2645.c' l='1382' u='r' c='cbs_h265_close'/>
+<offset>7616</offset>

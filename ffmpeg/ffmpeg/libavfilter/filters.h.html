@@ -1,0 +1,277 @@
+<!doctype html>
+<html>
+<head>
+<meta name="viewport" content="width=device-width, initial-scale=1.0"><title>filters.h source code [ffmpeg/libavfilter/filters.h] - Woboq Code Browser</title>
+<link rel="stylesheet" href="../.././data/qtcreator.css" title="QtCreator"/>
+<link rel="alternate stylesheet" href="../.././data/kdevelop.css" title="KDevelop"/>
+<script type="text/javascript" src="../.././data/jquery/jquery.min.js"></script>
+<script type="text/javascript" src="../.././data/jquery/jquery-ui.min.js"></script>
+<script>var file = 'ffmpeg/libavfilter/filters.h'; var root_path = '../..'; var data_path = '../.././data'; var ecma_script_api_version = 2;</script>
+<script src='../.././data/codebrowser.js'></script>
+</head>
+<body><div id='header'><h1 id='breadcrumb'><span>Browse the source code of </span><a href='..'>ffmpeg</a>/<a href='./'>libavfilter</a>/<a href='filters.h.html'>filters.h</a></h1></div>
+<hr/><div id='content'><table class="code">
+<tr><th id="1">1</th><td><i>/*</i></td></tr>
+<tr><th id="2">2</th><td><i> * Filters implementation helper functions</i></td></tr>
+<tr><th id="3">3</th><td><i> *</i></td></tr>
+<tr><th id="4">4</th><td><i> * This file is part of FFmpeg.</i></td></tr>
+<tr><th id="5">5</th><td><i> *</i></td></tr>
+<tr><th id="6">6</th><td><i> * FFmpeg is free software; you can redistribute it and/or</i></td></tr>
+<tr><th id="7">7</th><td><i> * modify it under the terms of the GNU Lesser General Public License</i></td></tr>
+<tr><th id="8">8</th><td><i> * as published by the Free Software Foundation; either</i></td></tr>
+<tr><th id="9">9</th><td><i> * version 2.1 of the License, or (at your option) any later version.</i></td></tr>
+<tr><th id="10">10</th><td><i> *</i></td></tr>
+<tr><th id="11">11</th><td><i> * FFmpeg is distributed in the hope that it will be useful,</i></td></tr>
+<tr><th id="12">12</th><td><i> * but WITHOUT ANY WARRANTY; without even the implied warranty of</i></td></tr>
+<tr><th id="13">13</th><td><i> * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the</i></td></tr>
+<tr><th id="14">14</th><td><i> * GNU Lesser General Public License for more details.</i></td></tr>
+<tr><th id="15">15</th><td><i> *</i></td></tr>
+<tr><th id="16">16</th><td><i> * You should have received a copy of the GNU Lesser General Public License</i></td></tr>
+<tr><th id="17">17</th><td><i> * along with FFmpeg; if not, write to the Free Software Foundation, Inc.,</i></td></tr>
+<tr><th id="18">18</th><td><i> * 51 Franklin Street, Fifth Floor, Boston, MA 02110-1301 USA</i></td></tr>
+<tr><th id="19">19</th><td><i> */</i></td></tr>
+<tr><th id="20">20</th><td></td></tr>
+<tr><th id="21">21</th><td><u>#<span data-ppcond="21">ifndef</span> <span class="macro" data-ref="_M/AVFILTER_FILTERS_H">AVFILTER_FILTERS_H</span></u></td></tr>
+<tr><th id="22">22</th><td><u>#define <dfn class="macro" id="_M/AVFILTER_FILTERS_H" data-ref="_M/AVFILTER_FILTERS_H">AVFILTER_FILTERS_H</dfn></u></td></tr>
+<tr><th id="23">23</th><td></td></tr>
+<tr><th id="24">24</th><td><i class="doc">/**</i></td></tr>
+<tr><th id="25">25</th><td><i class="doc"> * Filters implementation helper functions</i></td></tr>
+<tr><th id="26">26</th><td><i class="doc"> */</i></td></tr>
+<tr><th id="27">27</th><td></td></tr>
+<tr><th id="28">28</th><td><u>#include <a href="avfilter.h.html">"avfilter.h"</a></u></td></tr>
+<tr><th id="29">29</th><td><u>#include <a href="internal.h.html">"internal.h"</a></u></td></tr>
+<tr><th id="30">30</th><td></td></tr>
+<tr><th id="31">31</th><td><i class="doc">/**</i></td></tr>
+<tr><th id="32">32</th><td><i class="doc"> * Special return code when activate() did not do anything.</i></td></tr>
+<tr><th id="33">33</th><td><i class="doc"> */</i></td></tr>
+<tr><th id="34">34</th><td><u>#define <dfn class="macro" id="_M/FFERROR_NOT_READY" data-ref="_M/FFERROR_NOT_READY">FFERROR_NOT_READY</dfn> FFERRTAG('N','R','D','Y')</u></td></tr>
+<tr><th id="35">35</th><td></td></tr>
+<tr><th id="36">36</th><td><i class="doc">/**</i></td></tr>
+<tr><th id="37">37</th><td><i class="doc"> * Mark a filter ready and schedule it for activation.</i></td></tr>
+<tr><th id="38">38</th><td><i class="doc"> *</i></td></tr>
+<tr><th id="39">39</th><td><i class="doc"> * This is automatically done when something happens to the filter (queued</i></td></tr>
+<tr><th id="40">40</th><td><i class="doc"> * frame, status change, request on output).</i></td></tr>
+<tr><th id="41">41</th><td><i class="doc"> * Filters implementing the activate callback can call it directly to</i></td></tr>
+<tr><th id="42">42</th><td><i class="doc"> * perform one more round of processing later.</i></td></tr>
+<tr><th id="43">43</th><td><i class="doc"> * It is also useful for filters reacting to external or asynchronous</i></td></tr>
+<tr><th id="44">44</th><td><i class="doc"> * events.</i></td></tr>
+<tr><th id="45">45</th><td><i class="doc"> */</i></td></tr>
+<tr><th id="46">46</th><td><em>void</em> <dfn class="decl fn" id="ff_filter_set_ready" title='ff_filter_set_ready' data-ref="ff_filter_set_ready" data-ref-filename="ff_filter_set_ready">ff_filter_set_ready</dfn>(<a class="typedef" href="avfilter.h.html#AVFilterContext" title='AVFilterContext' data-type='struct AVFilterContext' data-ref="AVFilterContext" data-ref-filename="AVFilterContext">AVFilterContext</a> *<dfn class="local col1 decl" id="1filter" title='filter' data-type='AVFilterContext *' data-ref="1filter" data-ref-filename="1filter">filter</dfn>, <em>unsigned</em> <dfn class="local col2 decl" id="2priority" title='priority' data-type='unsigned int' data-ref="2priority" data-ref-filename="2priority">priority</dfn>);</td></tr>
+<tr><th id="47">47</th><td></td></tr>
+<tr><th id="48">48</th><td><i class="doc">/**</i></td></tr>
+<tr><th id="49">49</th><td><i class="doc"> * Process the commands queued in the link up to the time of the frame.</i></td></tr>
+<tr><th id="50">50</th><td><i class="doc"> * Commands will trigger the process_command() callback.</i></td></tr>
+<tr><th id="51">51</th><td><i class="doc"> * <span class="command">@return</span>  &gt;= 0 or AVERROR code.</i></td></tr>
+<tr><th id="52">52</th><td><i class="doc"> */</i></td></tr>
+<tr><th id="53">53</th><td><em>int</em> <dfn class="decl fn" id="ff_inlink_process_commands" title='ff_inlink_process_commands' data-ref="ff_inlink_process_commands" data-ref-filename="ff_inlink_process_commands">ff_inlink_process_commands</dfn>(<a class="typedef" href="avfilter.h.html#AVFilterLink" title='AVFilterLink' data-type='struct AVFilterLink' data-ref="AVFilterLink" data-ref-filename="AVFilterLink">AVFilterLink</a> *<dfn class="local col3 decl" id="3link" title='link' data-type='AVFilterLink *' data-ref="3link" data-ref-filename="3link">link</dfn>, <em>const</em> <a class="typedef" href="../libavutil/frame.h.html#AVFrame" title='AVFrame' data-type='struct AVFrame' data-ref="AVFrame" data-ref-filename="AVFrame">AVFrame</a> *<dfn class="local col4 decl" id="4frame" title='frame' data-type='const AVFrame *' data-ref="4frame" data-ref-filename="4frame">frame</dfn>);</td></tr>
+<tr><th id="54">54</th><td></td></tr>
+<tr><th id="55">55</th><td><i class="doc">/**</i></td></tr>
+<tr><th id="56">56</th><td><i class="doc"> * Evaluate the timeline expression of the link for the time and properties</i></td></tr>
+<tr><th id="57">57</th><td><i class="doc"> * of the frame.</i></td></tr>
+<tr><th id="58">58</th><td><i class="doc"> * <span class="command">@return</span>  &gt;0 if enabled, 0 if disabled</i></td></tr>
+<tr><th id="59">59</th><td><i class="doc"> * <span class="command">@note</span>  It does not update link-&gt;dst-&gt;is_disabled.</i></td></tr>
+<tr><th id="60">60</th><td><i class="doc"> */</i></td></tr>
+<tr><th id="61">61</th><td><em>int</em> <dfn class="decl fn" id="ff_inlink_evaluate_timeline_at_frame" title='ff_inlink_evaluate_timeline_at_frame' data-ref="ff_inlink_evaluate_timeline_at_frame" data-ref-filename="ff_inlink_evaluate_timeline_at_frame">ff_inlink_evaluate_timeline_at_frame</dfn>(<a class="typedef" href="avfilter.h.html#AVFilterLink" title='AVFilterLink' data-type='struct AVFilterLink' data-ref="AVFilterLink" data-ref-filename="AVFilterLink">AVFilterLink</a> *<dfn class="local col5 decl" id="5link" title='link' data-type='AVFilterLink *' data-ref="5link" data-ref-filename="5link">link</dfn>, <em>const</em> <a class="typedef" href="../libavutil/frame.h.html#AVFrame" title='AVFrame' data-type='struct AVFrame' data-ref="AVFrame" data-ref-filename="AVFrame">AVFrame</a> *<dfn class="local col6 decl" id="6frame" title='frame' data-type='const AVFrame *' data-ref="6frame" data-ref-filename="6frame">frame</dfn>);</td></tr>
+<tr><th id="62">62</th><td></td></tr>
+<tr><th id="63">63</th><td><i class="doc">/**</i></td></tr>
+<tr><th id="64">64</th><td><i class="doc"> * Get the number of frames available on the link.</i></td></tr>
+<tr><th id="65">65</th><td><i class="doc"> * <span class="command">@return</span> the number of frames available in the link fifo.</i></td></tr>
+<tr><th id="66">66</th><td><i class="doc"> */</i></td></tr>
+<tr><th id="67">67</th><td><span class='typedef' title='size_t' data-type='unsigned long' data-ref="size_t" data-ref-filename="size_t">size_t</span> <dfn class="decl fn" id="ff_inlink_queued_frames" title='ff_inlink_queued_frames' data-ref="ff_inlink_queued_frames" data-ref-filename="ff_inlink_queued_frames">ff_inlink_queued_frames</dfn>(<a class="typedef" href="avfilter.h.html#AVFilterLink" title='AVFilterLink' data-type='struct AVFilterLink' data-ref="AVFilterLink" data-ref-filename="AVFilterLink">AVFilterLink</a> *<dfn class="local col7 decl" id="7link" title='link' data-type='AVFilterLink *' data-ref="7link" data-ref-filename="7link">link</dfn>);</td></tr>
+<tr><th id="68">68</th><td></td></tr>
+<tr><th id="69">69</th><td><i class="doc">/**</i></td></tr>
+<tr><th id="70">70</th><td><i class="doc"> * Test if a frame is available on the link.</i></td></tr>
+<tr><th id="71">71</th><td><i class="doc"> * <span class="command">@return</span>  &gt;0 if a frame is available</i></td></tr>
+<tr><th id="72">72</th><td><i class="doc"> */</i></td></tr>
+<tr><th id="73">73</th><td><em>int</em> <dfn class="decl fn" id="ff_inlink_check_available_frame" title='ff_inlink_check_available_frame' data-ref="ff_inlink_check_available_frame" data-ref-filename="ff_inlink_check_available_frame">ff_inlink_check_available_frame</dfn>(<a class="typedef" href="avfilter.h.html#AVFilterLink" title='AVFilterLink' data-type='struct AVFilterLink' data-ref="AVFilterLink" data-ref-filename="AVFilterLink">AVFilterLink</a> *<dfn class="local col8 decl" id="8link" title='link' data-type='AVFilterLink *' data-ref="8link" data-ref-filename="8link">link</dfn>);</td></tr>
+<tr><th id="74">74</th><td></td></tr>
+<tr><th id="75">75</th><td></td></tr>
+<tr><th id="76">76</th><td><i>/***</i></td></tr>
+<tr><th id="77">77</th><td><i>  * Get the number of samples available on the link.</i></td></tr>
+<tr><th id="78">78</th><td><i>  * @return the numer of samples available on the link.</i></td></tr>
+<tr><th id="79">79</th><td><i>  */</i></td></tr>
+<tr><th id="80">80</th><td><em>int</em> <dfn class="decl fn" id="ff_inlink_queued_samples" title='ff_inlink_queued_samples' data-ref="ff_inlink_queued_samples" data-ref-filename="ff_inlink_queued_samples">ff_inlink_queued_samples</dfn>(<a class="typedef" href="avfilter.h.html#AVFilterLink" title='AVFilterLink' data-type='struct AVFilterLink' data-ref="AVFilterLink" data-ref-filename="AVFilterLink">AVFilterLink</a> *<dfn class="local col9 decl" id="9link" title='link' data-type='AVFilterLink *' data-ref="9link" data-ref-filename="9link">link</dfn>);</td></tr>
+<tr><th id="81">81</th><td></td></tr>
+<tr><th id="82">82</th><td><i class="doc">/**</i></td></tr>
+<tr><th id="83">83</th><td><i class="doc"> * Test if enough samples are available on the link.</i></td></tr>
+<tr><th id="84">84</th><td><i class="doc"> * <span class="command">@return</span>  &gt;0 if enough samples are available</i></td></tr>
+<tr><th id="85">85</th><td><i class="doc"> * <span class="command">@note</span>  on EOF and error, min becomes 1</i></td></tr>
+<tr><th id="86">86</th><td><i class="doc"> */</i></td></tr>
+<tr><th id="87">87</th><td><em>int</em> <dfn class="decl fn" id="ff_inlink_check_available_samples" title='ff_inlink_check_available_samples' data-ref="ff_inlink_check_available_samples" data-ref-filename="ff_inlink_check_available_samples">ff_inlink_check_available_samples</dfn>(<a class="typedef" href="avfilter.h.html#AVFilterLink" title='AVFilterLink' data-type='struct AVFilterLink' data-ref="AVFilterLink" data-ref-filename="AVFilterLink">AVFilterLink</a> *<dfn class="local col0 decl" id="10link" title='link' data-type='AVFilterLink *' data-ref="10link" data-ref-filename="10link">link</dfn>, <em>unsigned</em> <dfn class="local col1 decl" id="11min" title='min' data-type='unsigned int' data-ref="11min" data-ref-filename="11min">min</dfn>);</td></tr>
+<tr><th id="88">88</th><td></td></tr>
+<tr><th id="89">89</th><td><i class="doc">/**</i></td></tr>
+<tr><th id="90">90</th><td><i class="doc"> * Take a frame from the link's FIFO and update the link's stats.</i></td></tr>
+<tr><th id="91">91</th><td><i class="doc"> *</i></td></tr>
+<tr><th id="92">92</th><td><i class="doc"> * If ff_inlink_check_available_frame() was previously called, the</i></td></tr>
+<tr><th id="93">93</th><td><i class="doc"> * preferred way of expressing it is "av_assert1(ret);" immediately after</i></td></tr>
+<tr><th id="94">94</th><td><i class="doc"> * ff_inlink_consume_frame(). Negative error codes must still be checked.</i></td></tr>
+<tr><th id="95">95</th><td><i class="doc"> *</i></td></tr>
+<tr><th id="96">96</th><td><i class="doc"> * <span class="command">@note</span>  May trigger process_command() and/or update is_disabled.</i></td></tr>
+<tr><th id="97">97</th><td><i class="doc"> * <span class="command">@return</span>  &gt;0 if a frame is available,</i></td></tr>
+<tr><th id="98">98</th><td><i class="doc"> *          0 and set rframe to NULL if no frame available,</i></td></tr>
+<tr><th id="99">99</th><td><i class="doc"> *          or AVERROR code</i></td></tr>
+<tr><th id="100">100</th><td><i class="doc"> */</i></td></tr>
+<tr><th id="101">101</th><td><em>int</em> <dfn class="decl fn" id="ff_inlink_consume_frame" title='ff_inlink_consume_frame' data-ref="ff_inlink_consume_frame" data-ref-filename="ff_inlink_consume_frame">ff_inlink_consume_frame</dfn>(<a class="typedef" href="avfilter.h.html#AVFilterLink" title='AVFilterLink' data-type='struct AVFilterLink' data-ref="AVFilterLink" data-ref-filename="AVFilterLink">AVFilterLink</a> *<dfn class="local col2 decl" id="12link" title='link' data-type='AVFilterLink *' data-ref="12link" data-ref-filename="12link">link</dfn>, <a class="typedef" href="../libavutil/frame.h.html#AVFrame" title='AVFrame' data-type='struct AVFrame' data-ref="AVFrame" data-ref-filename="AVFrame">AVFrame</a> **<dfn class="local col3 decl" id="13rframe" title='rframe' data-type='AVFrame **' data-ref="13rframe" data-ref-filename="13rframe">rframe</dfn>);</td></tr>
+<tr><th id="102">102</th><td></td></tr>
+<tr><th id="103">103</th><td><i class="doc">/**</i></td></tr>
+<tr><th id="104">104</th><td><i class="doc"> * Take samples from the link's FIFO and update the link's stats.</i></td></tr>
+<tr><th id="105">105</th><td><i class="doc"> *</i></td></tr>
+<tr><th id="106">106</th><td><i class="doc"> * If ff_inlink_check_available_samples() was previously called, the</i></td></tr>
+<tr><th id="107">107</th><td><i class="doc"> * preferred way of expressing it is "av_assert1(ret);" immediately after</i></td></tr>
+<tr><th id="108">108</th><td><i class="doc"> * ff_inlink_consume_samples(). Negative error codes must still be checked.</i></td></tr>
+<tr><th id="109">109</th><td><i class="doc"> *</i></td></tr>
+<tr><th id="110">110</th><td><i class="doc"> * <span class="command">@note</span>  May trigger process_command() and/or update is_disabled.</i></td></tr>
+<tr><th id="111">111</th><td><i class="doc"> * <span class="command">@return</span>  &gt;0 if a frame is available,</i></td></tr>
+<tr><th id="112">112</th><td><i class="doc"> *          0 and set rframe to NULL if no frame available,</i></td></tr>
+<tr><th id="113">113</th><td><i class="doc"> *          or AVERROR code</i></td></tr>
+<tr><th id="114">114</th><td><i class="doc"> */</i></td></tr>
+<tr><th id="115">115</th><td><em>int</em> <dfn class="decl fn" id="ff_inlink_consume_samples" title='ff_inlink_consume_samples' data-ref="ff_inlink_consume_samples" data-ref-filename="ff_inlink_consume_samples">ff_inlink_consume_samples</dfn>(<a class="typedef" href="avfilter.h.html#AVFilterLink" title='AVFilterLink' data-type='struct AVFilterLink' data-ref="AVFilterLink" data-ref-filename="AVFilterLink">AVFilterLink</a> *<dfn class="local col4 decl" id="14link" title='link' data-type='AVFilterLink *' data-ref="14link" data-ref-filename="14link">link</dfn>, <em>unsigned</em> <dfn class="local col5 decl" id="15min" title='min' data-type='unsigned int' data-ref="15min" data-ref-filename="15min">min</dfn>, <em>unsigned</em> <dfn class="local col6 decl" id="16max" title='max' data-type='unsigned int' data-ref="16max" data-ref-filename="16max">max</dfn>,</td></tr>
+<tr><th id="116">116</th><td>                            <a class="typedef" href="../libavutil/frame.h.html#AVFrame" title='AVFrame' data-type='struct AVFrame' data-ref="AVFrame" data-ref-filename="AVFrame">AVFrame</a> **<dfn class="local col7 decl" id="17rframe" title='rframe' data-type='AVFrame **' data-ref="17rframe" data-ref-filename="17rframe">rframe</dfn>);</td></tr>
+<tr><th id="117">117</th><td></td></tr>
+<tr><th id="118">118</th><td><i class="doc">/**</i></td></tr>
+<tr><th id="119">119</th><td><i class="doc"> * Access a frame in the link fifo without consuming it.</i></td></tr>
+<tr><th id="120">120</th><td><i class="doc"> * The first frame is numbered 0; the designated frame must exist.</i></td></tr>
+<tr><th id="121">121</th><td><i class="doc"> * <span class="command">@return</span> the frame at idx position in the link fifo.</i></td></tr>
+<tr><th id="122">122</th><td><i class="doc"> */</i></td></tr>
+<tr><th id="123">123</th><td><a class="typedef" href="../libavutil/frame.h.html#AVFrame" title='AVFrame' data-type='struct AVFrame' data-ref="AVFrame" data-ref-filename="AVFrame">AVFrame</a> *<dfn class="decl fn" id="ff_inlink_peek_frame" title='ff_inlink_peek_frame' data-ref="ff_inlink_peek_frame" data-ref-filename="ff_inlink_peek_frame">ff_inlink_peek_frame</dfn>(<a class="typedef" href="avfilter.h.html#AVFilterLink" title='AVFilterLink' data-type='struct AVFilterLink' data-ref="AVFilterLink" data-ref-filename="AVFilterLink">AVFilterLink</a> *<dfn class="local col8 decl" id="18link" title='link' data-type='AVFilterLink *' data-ref="18link" data-ref-filename="18link">link</dfn>, <span class='typedef' title='size_t' data-type='unsigned long' data-ref="size_t" data-ref-filename="size_t">size_t</span> <dfn class="local col9 decl" id="19idx" title='idx' data-type='size_t' data-ref="19idx" data-ref-filename="19idx">idx</dfn>);</td></tr>
+<tr><th id="124">124</th><td></td></tr>
+<tr><th id="125">125</th><td><i class="doc">/**</i></td></tr>
+<tr><th id="126">126</th><td><i class="doc"> * Make sure a frame is writable.</i></td></tr>
+<tr><th id="127">127</th><td><i class="doc"> * This is similar to av_frame_make_writable() except it uses the link's</i></td></tr>
+<tr><th id="128">128</th><td><i class="doc"> * buffer allocation callback, and therefore allows direct rendering.</i></td></tr>
+<tr><th id="129">129</th><td><i class="doc"> */</i></td></tr>
+<tr><th id="130">130</th><td><em>int</em> <dfn class="decl fn" id="ff_inlink_make_frame_writable" title='ff_inlink_make_frame_writable' data-ref="ff_inlink_make_frame_writable" data-ref-filename="ff_inlink_make_frame_writable">ff_inlink_make_frame_writable</dfn>(<a class="typedef" href="avfilter.h.html#AVFilterLink" title='AVFilterLink' data-type='struct AVFilterLink' data-ref="AVFilterLink" data-ref-filename="AVFilterLink">AVFilterLink</a> *<dfn class="local col0 decl" id="20link" title='link' data-type='AVFilterLink *' data-ref="20link" data-ref-filename="20link">link</dfn>, <a class="typedef" href="../libavutil/frame.h.html#AVFrame" title='AVFrame' data-type='struct AVFrame' data-ref="AVFrame" data-ref-filename="AVFrame">AVFrame</a> **<dfn class="local col1 decl" id="21rframe" title='rframe' data-type='AVFrame **' data-ref="21rframe" data-ref-filename="21rframe">rframe</dfn>);</td></tr>
+<tr><th id="131">131</th><td></td></tr>
+<tr><th id="132">132</th><td><i class="doc">/**</i></td></tr>
+<tr><th id="133">133</th><td><i class="doc"> * Test and acknowledge the change of status on the link.</i></td></tr>
+<tr><th id="134">134</th><td><i class="doc"> *</i></td></tr>
+<tr><th id="135">135</th><td><i class="doc"> * Status means EOF or an error condition; a change from the normal (0)</i></td></tr>
+<tr><th id="136">136</th><td><i class="doc"> * status to a non-zero status can be queued in a filter's input link, it</i></td></tr>
+<tr><th id="137">137</th><td><i class="doc"> * becomes relevant after the frames queued in the link's FIFO are</i></td></tr>
+<tr><th id="138">138</th><td><i class="doc"> * processed. This function tests if frames are still queued and if a queued</i></td></tr>
+<tr><th id="139">139</th><td><i class="doc"> * status change has not yet been processed. In that case it performs basic</i></td></tr>
+<tr><th id="140">140</th><td><i class="doc"> * treatment (updating the link's timestamp) and returns a positive value to</i></td></tr>
+<tr><th id="141">141</th><td><i class="doc"> * let the filter do its own treatments (flushing...).</i></td></tr>
+<tr><th id="142">142</th><td><i class="doc"> *</i></td></tr>
+<tr><th id="143">143</th><td><i class="doc"> * Filters implementing the activate callback should call this function when</i></td></tr>
+<tr><th id="144">144</th><td><i class="doc"> * they think it might succeed (usually after checking unsuccessfully for a</i></td></tr>
+<tr><th id="145">145</th><td><i class="doc"> * queued frame).</i></td></tr>
+<tr><th id="146">146</th><td><i class="doc"> * Filters implementing the filter_frame and request_frame callbacks do not</i></td></tr>
+<tr><th id="147">147</th><td><i class="doc"> * need to call that since the same treatment happens in ff_filter_frame().</i></td></tr>
+<tr><th id="148">148</th><td><i class="doc"> *</i></td></tr>
+<tr><th id="149">149</th><td><i class="doc"> * <span class="command">@param</span>[out] <span class="arg">rstatus</span>  new or current status</i></td></tr>
+<tr><th id="150">150</th><td><i class="doc"> * <span class="command">@param</span>[out] <span class="arg">rpts</span>     current timestamp of the link in link time base</i></td></tr>
+<tr><th id="151">151</th><td><i class="doc"> * <span class="command">@return</span>  &gt;0 if status changed, &lt;0 if status already acked, 0 otherwise</i></td></tr>
+<tr><th id="152">152</th><td><i class="doc"> */</i></td></tr>
+<tr><th id="153">153</th><td><em>int</em> <dfn class="decl fn" id="ff_inlink_acknowledge_status" title='ff_inlink_acknowledge_status' data-ref="ff_inlink_acknowledge_status" data-ref-filename="ff_inlink_acknowledge_status">ff_inlink_acknowledge_status</dfn>(<a class="typedef" href="avfilter.h.html#AVFilterLink" title='AVFilterLink' data-type='struct AVFilterLink' data-ref="AVFilterLink" data-ref-filename="AVFilterLink">AVFilterLink</a> *<dfn class="local col2 decl" id="22link" title='link' data-type='AVFilterLink *' data-ref="22link" data-ref-filename="22link">link</dfn>, <em>int</em> *<dfn class="local col3 decl" id="23rstatus" title='rstatus' data-type='int *' data-ref="23rstatus" data-ref-filename="23rstatus">rstatus</dfn>, <a class="typedef" href="../../include/stdint.h.html#int64_t" title='int64_t' data-type='long' data-ref="int64_t" data-ref-filename="int64_t">int64_t</a> *<dfn class="local col4 decl" id="24rpts" title='rpts' data-type='int64_t *' data-ref="24rpts" data-ref-filename="24rpts">rpts</dfn>);</td></tr>
+<tr><th id="154">154</th><td></td></tr>
+<tr><th id="155">155</th><td><i class="doc">/**</i></td></tr>
+<tr><th id="156">156</th><td><i class="doc"> * Mark that a frame is wanted on the link.</i></td></tr>
+<tr><th id="157">157</th><td><i class="doc"> * Unlike ff_filter_frame(), it must not be called when the link has a</i></td></tr>
+<tr><th id="158">158</th><td><i class="doc"> * non-zero status, and thus does not acknowledge it.</i></td></tr>
+<tr><th id="159">159</th><td><i class="doc"> * Also it cannot fail.</i></td></tr>
+<tr><th id="160">160</th><td><i class="doc"> */</i></td></tr>
+<tr><th id="161">161</th><td><em>void</em> <dfn class="decl fn" id="ff_inlink_request_frame" title='ff_inlink_request_frame' data-ref="ff_inlink_request_frame" data-ref-filename="ff_inlink_request_frame">ff_inlink_request_frame</dfn>(<a class="typedef" href="avfilter.h.html#AVFilterLink" title='AVFilterLink' data-type='struct AVFilterLink' data-ref="AVFilterLink" data-ref-filename="AVFilterLink">AVFilterLink</a> *<dfn class="local col5 decl" id="25link" title='link' data-type='AVFilterLink *' data-ref="25link" data-ref-filename="25link">link</dfn>);</td></tr>
+<tr><th id="162">162</th><td></td></tr>
+<tr><th id="163">163</th><td><i class="doc">/**</i></td></tr>
+<tr><th id="164">164</th><td><i class="doc"> * Set the status on an input link.</i></td></tr>
+<tr><th id="165">165</th><td><i class="doc"> * Also discard all frames in the link's FIFO.</i></td></tr>
+<tr><th id="166">166</th><td><i class="doc"> */</i></td></tr>
+<tr><th id="167">167</th><td><em>void</em> <dfn class="decl fn" id="ff_inlink_set_status" title='ff_inlink_set_status' data-ref="ff_inlink_set_status" data-ref-filename="ff_inlink_set_status">ff_inlink_set_status</dfn>(<a class="typedef" href="avfilter.h.html#AVFilterLink" title='AVFilterLink' data-type='struct AVFilterLink' data-ref="AVFilterLink" data-ref-filename="AVFilterLink">AVFilterLink</a> *<dfn class="local col6 decl" id="26link" title='link' data-type='AVFilterLink *' data-ref="26link" data-ref-filename="26link">link</dfn>, <em>int</em> <dfn class="local col7 decl" id="27status" title='status' data-type='int' data-ref="27status" data-ref-filename="27status">status</dfn>);</td></tr>
+<tr><th id="168">168</th><td></td></tr>
+<tr><th id="169">169</th><td><i class="doc">/**</i></td></tr>
+<tr><th id="170">170</th><td><i class="doc"> * Test if a frame is wanted on an output link.</i></td></tr>
+<tr><th id="171">171</th><td><i class="doc"> */</i></td></tr>
+<tr><th id="172">172</th><td><em>static</em> <b>inline</b> <em>int</em> <dfn class="decl def fn" id="ff_outlink_frame_wanted" title='ff_outlink_frame_wanted' data-ref="ff_outlink_frame_wanted" data-ref-filename="ff_outlink_frame_wanted">ff_outlink_frame_wanted</dfn>(<a class="typedef" href="avfilter.h.html#AVFilterLink" title='AVFilterLink' data-type='struct AVFilterLink' data-ref="AVFilterLink" data-ref-filename="AVFilterLink">AVFilterLink</a> *<dfn class="local col8 decl" id="28link" title='link' data-type='AVFilterLink *' data-ref="28link" data-ref-filename="28link">link</dfn>)</td></tr>
+<tr><th id="173">173</th><td>{</td></tr>
+<tr><th id="174">174</th><td>    <b>return</b> <a class="local col8 ref" href="#28link" title='link' data-ref="28link" data-ref-filename="28link">link</a>-&gt;<a class="ref field" href="avfilter.h.html#AVFilterLink::frame_wanted_out" title='AVFilterLink::frame_wanted_out' data-ref="AVFilterLink::frame_wanted_out" data-ref-filename="AVFilterLink..frame_wanted_out">frame_wanted_out</a>;</td></tr>
+<tr><th id="175">175</th><td>}</td></tr>
+<tr><th id="176">176</th><td></td></tr>
+<tr><th id="177">177</th><td><i class="doc">/**</i></td></tr>
+<tr><th id="178">178</th><td><i class="doc"> * Get the status on an output link.</i></td></tr>
+<tr><th id="179">179</th><td><i class="doc"> */</i></td></tr>
+<tr><th id="180">180</th><td><em>int</em> <dfn class="decl fn" id="ff_outlink_get_status" title='ff_outlink_get_status' data-ref="ff_outlink_get_status" data-ref-filename="ff_outlink_get_status">ff_outlink_get_status</dfn>(<a class="typedef" href="avfilter.h.html#AVFilterLink" title='AVFilterLink' data-type='struct AVFilterLink' data-ref="AVFilterLink" data-ref-filename="AVFilterLink">AVFilterLink</a> *<dfn class="local col9 decl" id="29link" title='link' data-type='AVFilterLink *' data-ref="29link" data-ref-filename="29link">link</dfn>);</td></tr>
+<tr><th id="181">181</th><td></td></tr>
+<tr><th id="182">182</th><td><i class="doc">/**</i></td></tr>
+<tr><th id="183">183</th><td><i class="doc"> * Set the status field of a link from the source filter.</i></td></tr>
+<tr><th id="184">184</th><td><i class="doc"> * The pts should reflect the timestamp of the status change,</i></td></tr>
+<tr><th id="185">185</th><td><i class="doc"> * in link time base and relative to the frames timeline.</i></td></tr>
+<tr><th id="186">186</th><td><i class="doc"> * In particular, for AVERROR_EOF, it should reflect the</i></td></tr>
+<tr><th id="187">187</th><td><i class="doc"> * end time of the last frame.</i></td></tr>
+<tr><th id="188">188</th><td><i class="doc"> */</i></td></tr>
+<tr><th id="189">189</th><td><em>static</em> <b>inline</b> <em>void</em> <dfn class="decl def fn" id="ff_outlink_set_status" title='ff_outlink_set_status' data-ref="ff_outlink_set_status" data-ref-filename="ff_outlink_set_status">ff_outlink_set_status</dfn>(<a class="typedef" href="avfilter.h.html#AVFilterLink" title='AVFilterLink' data-type='struct AVFilterLink' data-ref="AVFilterLink" data-ref-filename="AVFilterLink">AVFilterLink</a> *<dfn class="local col0 decl" id="30link" title='link' data-type='AVFilterLink *' data-ref="30link" data-ref-filename="30link">link</dfn>, <em>int</em> <dfn class="local col1 decl" id="31status" title='status' data-type='int' data-ref="31status" data-ref-filename="31status">status</dfn>, <a class="typedef" href="../../include/stdint.h.html#int64_t" title='int64_t' data-type='long' data-ref="int64_t" data-ref-filename="int64_t">int64_t</a> <dfn class="local col2 decl" id="32pts" title='pts' data-type='int64_t' data-ref="32pts" data-ref-filename="32pts">pts</dfn>)</td></tr>
+<tr><th id="190">190</th><td>{</td></tr>
+<tr><th id="191">191</th><td>    <a class="ref fn" href="internal.h.html#ff_avfilter_link_set_in_status" title='ff_avfilter_link_set_in_status' data-ref="ff_avfilter_link_set_in_status" data-ref-filename="ff_avfilter_link_set_in_status">ff_avfilter_link_set_in_status</a>(<a class="local col0 ref" href="#30link" title='link' data-ref="30link" data-ref-filename="30link">link</a>, <a class="local col1 ref" href="#31status" title='status' data-ref="31status" data-ref-filename="31status">status</a>, <a class="local col2 ref" href="#32pts" title='pts' data-ref="32pts" data-ref-filename="32pts">pts</a>);</td></tr>
+<tr><th id="192">192</th><td>}</td></tr>
+<tr><th id="193">193</th><td></td></tr>
+<tr><th id="194">194</th><td><i class="doc">/**</i></td></tr>
+<tr><th id="195">195</th><td><i class="doc"> * Forward the status on an output link to an input link.</i></td></tr>
+<tr><th id="196">196</th><td><i class="doc"> * If the status is set, it will discard all queued frames and this macro</i></td></tr>
+<tr><th id="197">197</th><td><i class="doc"> * will return immediately.</i></td></tr>
+<tr><th id="198">198</th><td><i class="doc"> */</i></td></tr>
+<tr><th id="199">199</th><td><u>#define <dfn class="macro" id="_M/FF_FILTER_FORWARD_STATUS_BACK" data-ref="_M/FF_FILTER_FORWARD_STATUS_BACK">FF_FILTER_FORWARD_STATUS_BACK</dfn>(outlink, inlink) do { \</u></td></tr>
+<tr><th id="200">200</th><td><u>    int ret = ff_outlink_get_status(outlink); \</u></td></tr>
+<tr><th id="201">201</th><td><u>    if (ret) { \</u></td></tr>
+<tr><th id="202">202</th><td><u>        ff_inlink_set_status(inlink, ret); \</u></td></tr>
+<tr><th id="203">203</th><td><u>        return 0; \</u></td></tr>
+<tr><th id="204">204</th><td><u>    } \</u></td></tr>
+<tr><th id="205">205</th><td><u>} while (0)</u></td></tr>
+<tr><th id="206">206</th><td></td></tr>
+<tr><th id="207">207</th><td><i class="doc">/**</i></td></tr>
+<tr><th id="208">208</th><td><i class="doc"> * Forward the status on an output link to all input links.</i></td></tr>
+<tr><th id="209">209</th><td><i class="doc"> * If the status is set, it will discard all queued frames and this macro</i></td></tr>
+<tr><th id="210">210</th><td><i class="doc"> * will return immediately.</i></td></tr>
+<tr><th id="211">211</th><td><i class="doc"> */</i></td></tr>
+<tr><th id="212">212</th><td><u>#define <dfn class="macro" id="_M/FF_FILTER_FORWARD_STATUS_BACK_ALL" data-ref="_M/FF_FILTER_FORWARD_STATUS_BACK_ALL">FF_FILTER_FORWARD_STATUS_BACK_ALL</dfn>(outlink, filter) do { \</u></td></tr>
+<tr><th id="213">213</th><td><u>    int ret = ff_outlink_get_status(outlink); \</u></td></tr>
+<tr><th id="214">214</th><td><u>    if (ret) { \</u></td></tr>
+<tr><th id="215">215</th><td><u>        unsigned i; \</u></td></tr>
+<tr><th id="216">216</th><td><u>        for (i = 0; i &lt; filter-&gt;nb_inputs; i++) \</u></td></tr>
+<tr><th id="217">217</th><td><u>            ff_inlink_set_status(filter-&gt;inputs[i], ret); \</u></td></tr>
+<tr><th id="218">218</th><td><u>        return 0; \</u></td></tr>
+<tr><th id="219">219</th><td><u>    } \</u></td></tr>
+<tr><th id="220">220</th><td><u>} while (0)</u></td></tr>
+<tr><th id="221">221</th><td></td></tr>
+<tr><th id="222">222</th><td><i class="doc">/**</i></td></tr>
+<tr><th id="223">223</th><td><i class="doc"> * Acknowledge the status on an input link and forward it to an output link.</i></td></tr>
+<tr><th id="224">224</th><td><i class="doc"> * If the status is set, this macro will return immediately.</i></td></tr>
+<tr><th id="225">225</th><td><i class="doc"> */</i></td></tr>
+<tr><th id="226">226</th><td><u>#define <dfn class="macro" id="_M/FF_FILTER_FORWARD_STATUS" data-ref="_M/FF_FILTER_FORWARD_STATUS">FF_FILTER_FORWARD_STATUS</dfn>(inlink, outlink) do { \</u></td></tr>
+<tr><th id="227">227</th><td><u>    int status; \</u></td></tr>
+<tr><th id="228">228</th><td><u>    int64_t pts; \</u></td></tr>
+<tr><th id="229">229</th><td><u>    if (ff_inlink_acknowledge_status(inlink, &amp;status, &amp;pts)) { \</u></td></tr>
+<tr><th id="230">230</th><td><u>        ff_outlink_set_status(outlink, status, pts); \</u></td></tr>
+<tr><th id="231">231</th><td><u>        return 0; \</u></td></tr>
+<tr><th id="232">232</th><td><u>    } \</u></td></tr>
+<tr><th id="233">233</th><td><u>} while (0)</u></td></tr>
+<tr><th id="234">234</th><td></td></tr>
+<tr><th id="235">235</th><td><i class="doc">/**</i></td></tr>
+<tr><th id="236">236</th><td><i class="doc"> * Acknowledge the status on an input link and forward it to an output link.</i></td></tr>
+<tr><th id="237">237</th><td><i class="doc"> * If the status is set, this macro will return immediately.</i></td></tr>
+<tr><th id="238">238</th><td><i class="doc"> */</i></td></tr>
+<tr><th id="239">239</th><td><u>#define <dfn class="macro" id="_M/FF_FILTER_FORWARD_STATUS_ALL" data-ref="_M/FF_FILTER_FORWARD_STATUS_ALL">FF_FILTER_FORWARD_STATUS_ALL</dfn>(inlink, filter) do { \</u></td></tr>
+<tr><th id="240">240</th><td><u>    int status; \</u></td></tr>
+<tr><th id="241">241</th><td><u>    int64_t pts; \</u></td></tr>
+<tr><th id="242">242</th><td><u>    if (ff_inlink_acknowledge_status(inlink, &amp;status, &amp;pts)) { \</u></td></tr>
+<tr><th id="243">243</th><td><u>        unsigned i; \</u></td></tr>
+<tr><th id="244">244</th><td><u>        for (i = 0; i &lt; filter-&gt;nb_outputs; i++) \</u></td></tr>
+<tr><th id="245">245</th><td><u>            ff_outlink_set_status(filter-&gt;outputs[i], status, pts); \</u></td></tr>
+<tr><th id="246">246</th><td><u>        return 0; \</u></td></tr>
+<tr><th id="247">247</th><td><u>    } \</u></td></tr>
+<tr><th id="248">248</th><td><u>} while (0)</u></td></tr>
+<tr><th id="249">249</th><td></td></tr>
+<tr><th id="250">250</th><td><i class="doc">/**</i></td></tr>
+<tr><th id="251">251</th><td><i class="doc"> * Forward the frame_wanted_out flag from an output link to an input link.</i></td></tr>
+<tr><th id="252">252</th><td><i class="doc"> * If the flag is set, this macro will return immediately.</i></td></tr>
+<tr><th id="253">253</th><td><i class="doc"> */</i></td></tr>
+<tr><th id="254">254</th><td><u>#define <dfn class="macro" id="_M/FF_FILTER_FORWARD_WANTED" data-ref="_M/FF_FILTER_FORWARD_WANTED">FF_FILTER_FORWARD_WANTED</dfn>(outlink, inlink) do { \</u></td></tr>
+<tr><th id="255">255</th><td><u>    if (ff_outlink_frame_wanted(outlink)) { \</u></td></tr>
+<tr><th id="256">256</th><td><u>        ff_inlink_request_frame(inlink); \</u></td></tr>
+<tr><th id="257">257</th><td><u>        return 0; \</u></td></tr>
+<tr><th id="258">258</th><td><u>    } \</u></td></tr>
+<tr><th id="259">259</th><td><u>} while (0)</u></td></tr>
+<tr><th id="260">260</th><td></td></tr>
+<tr><th id="261">261</th><td><u>#<span data-ppcond="21">endif</span> /* AVFILTER_FILTERS_H */</u></td></tr>
+<tr><th id="262">262</th><td></td></tr>
+</table><hr/><p id='footer'>
+Generated while processing <a href='af_adeclick.c.html'>ffmpeg/libavfilter/af_adeclick.c</a><br/>Generated on <em>2021-May-30</em> from project ffmpeg revision <em>4.4</em>

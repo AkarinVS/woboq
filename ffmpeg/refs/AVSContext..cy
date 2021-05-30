@@ -1,0 +1,23 @@
+<dec f='ffmpeg/libavcodec/cavs.h' l='191' type='uint8_t *'/>
+<use f='ffmpeg/libavcodec/cavs.c' l='121' u='r' c='ff_cavs_filter'/>
+<use f='ffmpeg/libavcodec/cavs.c' l='125' u='r' c='ff_cavs_filter'/>
+<use f='ffmpeg/libavcodec/cavs.c' l='126' u='r' c='ff_cavs_filter'/>
+<use f='ffmpeg/libavcodec/cavs.c' l='153' u='r' c='ff_cavs_filter'/>
+<use f='ffmpeg/libavcodec/cavs.c' l='161' u='r' c='ff_cavs_filter'/>
+<use f='ffmpeg/libavcodec/cavs.c' l='162' u='r' c='ff_cavs_filter'/>
+<use f='ffmpeg/libavcodec/cavs.c' l='167' u='r' c='ff_cavs_filter'/>
+<use f='ffmpeg/libavcodec/cavs.c' l='206' u='r' c='ff_cavs_load_intra_pred_luma'/>
+<use f='ffmpeg/libavcodec/cavs.c' l='221' u='r' c='ff_cavs_load_intra_pred_luma'/>
+<use f='ffmpeg/libavcodec/cavs.c' l='230' u='r' c='ff_cavs_load_intra_pred_luma'/>
+<use f='ffmpeg/libavcodec/cavs.c' l='232' u='r' c='ff_cavs_load_intra_pred_luma'/>
+<use f='ffmpeg/libavcodec/cavs.c' l='499' u='r' c='ff_cavs_inter'/>
+<use f='ffmpeg/libavcodec/cavs.c' l='506' u='r' c='ff_cavs_inter'/>
+<use f='ffmpeg/libavcodec/cavs.c' l='512' u='r' c='ff_cavs_inter'/>
+<use f='ffmpeg/libavcodec/cavs.c' l='518' u='r' c='ff_cavs_inter'/>
+<use f='ffmpeg/libavcodec/cavs.c' l='524' u='r' c='ff_cavs_inter'/>
+<use f='ffmpeg/libavcodec/cavs.c' l='685' u='w' c='ff_cavs_next_mb'/>
+<use f='ffmpeg/libavcodec/cavs.c' l='709' u='w' c='ff_cavs_next_mb'/>
+<use f='ffmpeg/libavcodec/cavs.c' l='737' u='w' c='ff_cavs_init_pic'/>
+<offset>7808</offset>
+<use f='ffmpeg/libavcodec/cavsdec.c' l='629' u='r' c='decode_residual_inter'/>
+<use f='ffmpeg/libavcodec/cavsdec.c' l='699' u='r' c='decode_mb_i'/>

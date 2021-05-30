@@ -1,0 +1,32 @@
+<dec f='ffmpeg/libavcodec/vorbis.h' l='32' type='uint16_t'/>
+<offset>0</offset>
+<use f='ffmpeg/libavcodec/vorbis.c' l='118' u='r' c='ff_vorbis_ready_floor1_list'/>
+<use f='ffmpeg/libavcodec/vorbis.c' l='119' u='r' c='ff_vorbis_ready_floor1_list'/>
+<use f='ffmpeg/libavcodec/vorbis.c' l='120' u='r' c='ff_vorbis_ready_floor1_list'/>
+<use f='ffmpeg/libavcodec/vorbis.c' l='123' u='r' c='ff_vorbis_ready_floor1_list'/>
+<use f='ffmpeg/libavcodec/vorbis.c' l='131' u='r' c='ff_vorbis_ready_floor1_list'/>
+<use f='ffmpeg/libavcodec/vorbis.c' l='131' u='r' c='ff_vorbis_ready_floor1_list'/>
+<use f='ffmpeg/libavcodec/vorbis.c' l='136' u='r' c='ff_vorbis_ready_floor1_list'/>
+<use f='ffmpeg/libavcodec/vorbis.c' l='136' u='r' c='ff_vorbis_ready_floor1_list'/>
+<use f='ffmpeg/libavcodec/vorbis.c' l='206' u='r' c='ff_vorbis_floor1_render_list'/>
+<use f='ffmpeg/libavcodec/vorbisdec.c' l='588' u='w' c='vorbis_parse_setup_hdr_floors'/>
+<use f='ffmpeg/libavcodec/vorbisdec.c' l='589' u='w' c='vorbis_parse_setup_hdr_floors'/>
+<use f='ffmpeg/libavcodec/vorbisdec.c' l='593' u='w' c='vorbis_parse_setup_hdr_floors'/>
+<use f='ffmpeg/libavcodec/vorbisdec.c' l='596' u='r' c='vorbis_parse_setup_hdr_floors'/>
+<use f='ffmpeg/libavcodec/vorbisdec.c' l='1265' u='r' c='vorbis_floor1_decode'/>
+<use f='ffmpeg/libavcodec/vorbisdec.c' l='1283' u='r' c='vorbis_floor1_decode'/>
+<use f='ffmpeg/libavcodec/vorbisdec.c' l='1283' u='r' c='vorbis_floor1_decode'/>
+<use f='ffmpeg/libavcodec/vorbisdec.c' l='1285' u='r' c='vorbis_floor1_decode'/>
+<use f='ffmpeg/libavcodec/vorbisdec.c' l='1285' u='r' c='vorbis_floor1_decode'/>
+<use f='ffmpeg/libavcodec/vorbisdec.c' l='1324' u='r' c='vorbis_floor1_decode'/>
+<use f='ffmpeg/libavcodec/vorbisdec.c' l='1329' u='r' c='vorbis_floor1_decode'/>
+<use f='ffmpeg/libavcodec/vorbisenc.c' l='364' u='w' c='create_vorbis_context'/>
+<use f='ffmpeg/libavcodec/vorbisenc.c' l='365' u='w' c='create_vorbis_context'/>
+<use f='ffmpeg/libavcodec/vorbisenc.c' l='372' u='w' c='create_vorbis_context'/>
+<use f='ffmpeg/libavcodec/vorbisenc.c' l='579' u='r' c='put_floor_header'/>
+<use f='ffmpeg/libavcodec/vorbisenc.c' l='751' u='r' c='get_floor_average'/>
+<use f='ffmpeg/libavcodec/vorbisenc.c' l='752' u='r' c='get_floor_average'/>
+<use f='ffmpeg/libavcodec/vorbisenc.c' l='776' u='r' c='floor_fit'/>
+<use f='ffmpeg/libavcodec/vorbisenc.c' l='809' u='r' c='floor_encode'/>
+<use f='ffmpeg/libavcodec/vorbisenc.c' l='811' u='r' c='floor_encode'/>
+<use f='ffmpeg/libavcodec/vorbisenc.c' l='813' u='r' c='floor_encode'/>

@@ -1,0 +1,218 @@
+<!doctype html>
+<html>
+<head>
+<meta name="viewport" content="width=device-width, initial-scale=1.0"><title>opus.h source code [ffmpeg/libavcodec/opus.h] - Woboq Code Browser</title>
+<meta name="woboq:interestingDefinitions" content="ChannelMap,OpusBandwidth,OpusContext,OpusMode,OpusPacket,OpusStreamContext "/>
+<link rel="stylesheet" href="../.././data/qtcreator.css" title="QtCreator"/>
+<link rel="alternate stylesheet" href="../.././data/kdevelop.css" title="KDevelop"/>
+<script type="text/javascript" src="../.././data/jquery/jquery.min.js"></script>
+<script type="text/javascript" src="../.././data/jquery/jquery-ui.min.js"></script>
+<script>var file = 'ffmpeg/libavcodec/opus.h'; var root_path = '../..'; var data_path = '../.././data'; var ecma_script_api_version = 2;</script>
+<script src='../.././data/codebrowser.js'></script>
+</head>
+<body><div id='header'><h1 id='breadcrumb'><span>Browse the source code of </span><a href='..'>ffmpeg</a>/<a href='./'>libavcodec</a>/<a href='opus.h.html'>opus.h</a></h1></div>
+<hr/><div id='content'><table class="code">
+<tr><th id="1">1</th><td><i>/*</i></td></tr>
+<tr><th id="2">2</th><td><i> * Opus decoder/demuxer common functions</i></td></tr>
+<tr><th id="3">3</th><td><i> * Copyright (c) 2012 Andrew D'Addesio</i></td></tr>
+<tr><th id="4">4</th><td><i> * Copyright (c) 2013-2014 Mozilla Corporation</i></td></tr>
+<tr><th id="5">5</th><td><i> *</i></td></tr>
+<tr><th id="6">6</th><td><i> * This file is part of FFmpeg.</i></td></tr>
+<tr><th id="7">7</th><td><i> *</i></td></tr>
+<tr><th id="8">8</th><td><i> * FFmpeg is free software; you can redistribute it and/or</i></td></tr>
+<tr><th id="9">9</th><td><i> * modify it under the terms of the GNU Lesser General Public</i></td></tr>
+<tr><th id="10">10</th><td><i> * License as published by the Free Software Foundation; either</i></td></tr>
+<tr><th id="11">11</th><td><i> * version 2.1 of the License, or (at your option) any later version.</i></td></tr>
+<tr><th id="12">12</th><td><i> *</i></td></tr>
+<tr><th id="13">13</th><td><i> * FFmpeg is distributed in the hope that it will be useful,</i></td></tr>
+<tr><th id="14">14</th><td><i> * but WITHOUT ANY WARRANTY; without even the implied warranty of</i></td></tr>
+<tr><th id="15">15</th><td><i> * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the GNU</i></td></tr>
+<tr><th id="16">16</th><td><i> * Lesser General Public License for more details.</i></td></tr>
+<tr><th id="17">17</th><td><i> *</i></td></tr>
+<tr><th id="18">18</th><td><i> * You should have received a copy of the GNU Lesser General Public</i></td></tr>
+<tr><th id="19">19</th><td><i> * License along with FFmpeg; if not, write to the Free Software</i></td></tr>
+<tr><th id="20">20</th><td><i> * Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston, MA 02110-1301 USA</i></td></tr>
+<tr><th id="21">21</th><td><i> */</i></td></tr>
+<tr><th id="22">22</th><td></td></tr>
+<tr><th id="23">23</th><td><u>#<span data-ppcond="23">ifndef</span> <span class="macro" data-ref="_M/AVCODEC_OPUS_H">AVCODEC_OPUS_H</span></u></td></tr>
+<tr><th id="24">24</th><td><u>#define <dfn class="macro" id="_M/AVCODEC_OPUS_H" data-ref="_M/AVCODEC_OPUS_H">AVCODEC_OPUS_H</dfn></u></td></tr>
+<tr><th id="25">25</th><td></td></tr>
+<tr><th id="26">26</th><td><u>#include &lt;stdint.h&gt;</u></td></tr>
+<tr><th id="27">27</th><td></td></tr>
+<tr><th id="28">28</th><td><u>#include <a href="../libavutil/audio_fifo.h.html">"libavutil/audio_fifo.h"</a></u></td></tr>
+<tr><th id="29">29</th><td><u>#include <a href="../libavutil/float_dsp.h.html">"libavutil/float_dsp.h"</a></u></td></tr>
+<tr><th id="30">30</th><td><u>#include <a href="../libavutil/frame.h.html">"libavutil/frame.h"</a></u></td></tr>
+<tr><th id="31">31</th><td><u>#include <a href="../libavutil/mem_internal.h.html">"libavutil/mem_internal.h"</a></u></td></tr>
+<tr><th id="32">32</th><td></td></tr>
+<tr><th id="33">33</th><td><u>#include <a href="../libswresample/swresample.h.html">"libswresample/swresample.h"</a></u></td></tr>
+<tr><th id="34">34</th><td></td></tr>
+<tr><th id="35">35</th><td><u>#include <a href="avcodec.h.html">"avcodec.h"</a></u></td></tr>
+<tr><th id="36">36</th><td><u>#include <a href="opus_rc.h.html">"opus_rc.h"</a></u></td></tr>
+<tr><th id="37">37</th><td></td></tr>
+<tr><th id="38">38</th><td><u>#define <dfn class="macro" id="_M/MAX_FRAME_SIZE" data-ref="_M/MAX_FRAME_SIZE">MAX_FRAME_SIZE</dfn>               1275</u></td></tr>
+<tr><th id="39">39</th><td><u>#define <dfn class="macro" id="_M/MAX_FRAMES" data-ref="_M/MAX_FRAMES">MAX_FRAMES</dfn>                   48</u></td></tr>
+<tr><th id="40">40</th><td><u>#define <dfn class="macro" id="_M/MAX_PACKET_DUR" data-ref="_M/MAX_PACKET_DUR">MAX_PACKET_DUR</dfn>               5760</u></td></tr>
+<tr><th id="41">41</th><td></td></tr>
+<tr><th id="42">42</th><td><u>#define <dfn class="macro" id="_M/CELT_SHORT_BLOCKSIZE" data-ref="_M/CELT_SHORT_BLOCKSIZE">CELT_SHORT_BLOCKSIZE</dfn>         120</u></td></tr>
+<tr><th id="43">43</th><td><u>#define <dfn class="macro" id="_M/CELT_OVERLAP" data-ref="_M/CELT_OVERLAP">CELT_OVERLAP</dfn>                 CELT_SHORT_BLOCKSIZE</u></td></tr>
+<tr><th id="44">44</th><td><u>#define <dfn class="macro" id="_M/CELT_MAX_LOG_BLOCKS" data-ref="_M/CELT_MAX_LOG_BLOCKS">CELT_MAX_LOG_BLOCKS</dfn>          3</u></td></tr>
+<tr><th id="45">45</th><td><u>#define <dfn class="macro" id="_M/CELT_MAX_FRAME_SIZE" data-ref="_M/CELT_MAX_FRAME_SIZE">CELT_MAX_FRAME_SIZE</dfn>          (CELT_SHORT_BLOCKSIZE * (1 &lt;&lt; CELT_MAX_LOG_BLOCKS))</u></td></tr>
+<tr><th id="46">46</th><td><u>#define <dfn class="macro" id="_M/CELT_MAX_BANDS" data-ref="_M/CELT_MAX_BANDS">CELT_MAX_BANDS</dfn>               21</u></td></tr>
+<tr><th id="47">47</th><td></td></tr>
+<tr><th id="48">48</th><td><u>#define <dfn class="macro" id="_M/SILK_HISTORY" data-ref="_M/SILK_HISTORY">SILK_HISTORY</dfn>                 322</u></td></tr>
+<tr><th id="49">49</th><td><u>#define <dfn class="macro" id="_M/SILK_MAX_LPC" data-ref="_M/SILK_MAX_LPC">SILK_MAX_LPC</dfn>                 16</u></td></tr>
+<tr><th id="50">50</th><td></td></tr>
+<tr><th id="51">51</th><td><u>#define <dfn class="macro" id="_M/ROUND_MULL" data-ref="_M/ROUND_MULL">ROUND_MULL</dfn>(a,b,s) (((MUL64(a, b) &gt;&gt; ((s) - 1)) + 1) &gt;&gt; 1)</u></td></tr>
+<tr><th id="52">52</th><td><u>#define <dfn class="macro" id="_M/ROUND_MUL16" data-ref="_M/ROUND_MUL16">ROUND_MUL16</dfn>(a,b)  ((MUL16(a, b) + 16384) &gt;&gt; 15)</u></td></tr>
+<tr><th id="53">53</th><td></td></tr>
+<tr><th id="54">54</th><td><u>#define <dfn class="macro" id="_M/OPUS_TS_HEADER" data-ref="_M/OPUS_TS_HEADER">OPUS_TS_HEADER</dfn>     0x7FE0        // 0x3ff (11 bits)</u></td></tr>
+<tr><th id="55">55</th><td><u>#define <dfn class="macro" id="_M/OPUS_TS_MASK" data-ref="_M/OPUS_TS_MASK">OPUS_TS_MASK</dfn>       0xFFE0        // top 11 bits</u></td></tr>
+<tr><th id="56">56</th><td></td></tr>
+<tr><th id="57">57</th><td><em>static</em> <em>const</em> <a class="typedef" href="../../include/stdint.h.html#uint8_t" title='uint8_t' data-type='unsigned char' data-ref="uint8_t" data-ref-filename="uint8_t">uint8_t</a> <dfn class="decl def" id="opus_default_extradata" title='opus_default_extradata' data-ref="opus_default_extradata" data-ref-filename="opus_default_extradata">opus_default_extradata</dfn>[<var>30</var>] = {</td></tr>
+<tr><th id="58">58</th><td>    <kbd>'O'</kbd>, <kbd>'p'</kbd>, <kbd>'u'</kbd>, <kbd>'s'</kbd>, <kbd>'H'</kbd>, <kbd>'e'</kbd>, <kbd>'a'</kbd>, <kbd>'d'</kbd>,</td></tr>
+<tr><th id="59">59</th><td>    <var>1</var>, <var>0</var>, <var>0</var>, <var>0</var>, <var>0</var>, <var>0</var>, <var>0</var>, <var>0</var>, <var>0</var>, <var>0</var>, <var>0</var>, <var>0</var>,</td></tr>
+<tr><th id="60">60</th><td>    <var>0</var>, <var>0</var>, <var>0</var>, <var>0</var>, <var>0</var>, <var>0</var>, <var>0</var>, <var>0</var>, <var>0</var>, <var>0</var>,</td></tr>
+<tr><th id="61">61</th><td>};</td></tr>
+<tr><th id="62">62</th><td></td></tr>
+<tr><th id="63">63</th><td><b>enum</b> <dfn class="type def" id="OpusMode" title='OpusMode' data-ref="OpusMode" data-ref-filename="OpusMode">OpusMode</dfn> {</td></tr>
+<tr><th id="64">64</th><td>    <dfn class="enum" id="OpusMode::OPUS_MODE_SILK" title='OpusMode::OPUS_MODE_SILK' data-ref="OpusMode::OPUS_MODE_SILK" data-ref-filename="OpusMode..OPUS_MODE_SILK">OPUS_MODE_SILK</dfn>,</td></tr>
+<tr><th id="65">65</th><td>    <dfn class="enum" id="OpusMode::OPUS_MODE_HYBRID" title='OpusMode::OPUS_MODE_HYBRID' data-ref="OpusMode::OPUS_MODE_HYBRID" data-ref-filename="OpusMode..OPUS_MODE_HYBRID">OPUS_MODE_HYBRID</dfn>,</td></tr>
+<tr><th id="66">66</th><td>    <dfn class="enum" id="OpusMode::OPUS_MODE_CELT" title='OpusMode::OPUS_MODE_CELT' data-ref="OpusMode::OPUS_MODE_CELT" data-ref-filename="OpusMode..OPUS_MODE_CELT">OPUS_MODE_CELT</dfn>,</td></tr>
+<tr><th id="67">67</th><td></td></tr>
+<tr><th id="68">68</th><td>    <dfn class="enum" id="OpusMode::OPUS_MODE_NB" title='OpusMode::OPUS_MODE_NB' data-ref="OpusMode::OPUS_MODE_NB" data-ref-filename="OpusMode..OPUS_MODE_NB">OPUS_MODE_NB</dfn></td></tr>
+<tr><th id="69">69</th><td>};</td></tr>
+<tr><th id="70">70</th><td></td></tr>
+<tr><th id="71">71</th><td><b>enum</b> <dfn class="type def" id="OpusBandwidth" title='OpusBandwidth' data-ref="OpusBandwidth" data-ref-filename="OpusBandwidth">OpusBandwidth</dfn> {</td></tr>
+<tr><th id="72">72</th><td>    <dfn class="enum" id="OpusBandwidth::OPUS_BANDWIDTH_NARROWBAND" title='OpusBandwidth::OPUS_BANDWIDTH_NARROWBAND' data-ref="OpusBandwidth::OPUS_BANDWIDTH_NARROWBAND" data-ref-filename="OpusBandwidth..OPUS_BANDWIDTH_NARROWBAND">OPUS_BANDWIDTH_NARROWBAND</dfn>,</td></tr>
+<tr><th id="73">73</th><td>    <dfn class="enum" id="OpusBandwidth::OPUS_BANDWIDTH_MEDIUMBAND" title='OpusBandwidth::OPUS_BANDWIDTH_MEDIUMBAND' data-ref="OpusBandwidth::OPUS_BANDWIDTH_MEDIUMBAND" data-ref-filename="OpusBandwidth..OPUS_BANDWIDTH_MEDIUMBAND">OPUS_BANDWIDTH_MEDIUMBAND</dfn>,</td></tr>
+<tr><th id="74">74</th><td>    <dfn class="enum" id="OpusBandwidth::OPUS_BANDWIDTH_WIDEBAND" title='OpusBandwidth::OPUS_BANDWIDTH_WIDEBAND' data-ref="OpusBandwidth::OPUS_BANDWIDTH_WIDEBAND" data-ref-filename="OpusBandwidth..OPUS_BANDWIDTH_WIDEBAND">OPUS_BANDWIDTH_WIDEBAND</dfn>,</td></tr>
+<tr><th id="75">75</th><td>    <dfn class="enum" id="OpusBandwidth::OPUS_BANDWIDTH_SUPERWIDEBAND" title='OpusBandwidth::OPUS_BANDWIDTH_SUPERWIDEBAND' data-ref="OpusBandwidth::OPUS_BANDWIDTH_SUPERWIDEBAND" data-ref-filename="OpusBandwidth..OPUS_BANDWIDTH_SUPERWIDEBAND">OPUS_BANDWIDTH_SUPERWIDEBAND</dfn>,</td></tr>
+<tr><th id="76">76</th><td>    <dfn class="enum" id="OpusBandwidth::OPUS_BANDWIDTH_FULLBAND" title='OpusBandwidth::OPUS_BANDWIDTH_FULLBAND' data-ref="OpusBandwidth::OPUS_BANDWIDTH_FULLBAND" data-ref-filename="OpusBandwidth..OPUS_BANDWIDTH_FULLBAND">OPUS_BANDWIDTH_FULLBAND</dfn>,</td></tr>
+<tr><th id="77">77</th><td></td></tr>
+<tr><th id="78">78</th><td>    <dfn class="enum" id="OpusBandwidth::OPUS_BANDWITH_NB" title='OpusBandwidth::OPUS_BANDWITH_NB' data-ref="OpusBandwidth::OPUS_BANDWITH_NB" data-ref-filename="OpusBandwidth..OPUS_BANDWITH_NB">OPUS_BANDWITH_NB</dfn></td></tr>
+<tr><th id="79">79</th><td>};</td></tr>
+<tr><th id="80">80</th><td></td></tr>
+<tr><th id="81">81</th><td><b>typedef</b> <b>struct</b> <dfn class="type" id="SilkContext" title='SilkContext' data-ref="SilkContext" data-ref-filename="SilkContext"><a class="type" href="#SilkContext" title='SilkContext' data-ref="SilkContext" data-ref-filename="SilkContext">SilkContext</a></dfn> <dfn class="typedef" id="SilkContext" title='SilkContext' data-type='struct SilkContext' data-ref="SilkContext" data-ref-filename="SilkContext">SilkContext</dfn>;</td></tr>
+<tr><th id="82">82</th><td></td></tr>
+<tr><th id="83">83</th><td><b>typedef</b> <b>struct</b> <a class="type" href="opus_celt.h.html#CeltFrame" title='CeltFrame' data-ref="CeltFrame" data-ref-filename="CeltFrame" id="CeltFrame"><a class="type" href="opus_celt.h.html#CeltFrame" title='CeltFrame' data-ref="CeltFrame" data-ref-filename="CeltFrame">CeltFrame</a></a> <dfn class="typedef" id="CeltFrame" title='CeltFrame' data-type='struct CeltFrame' data-ref="CeltFrame" data-ref-filename="CeltFrame">CeltFrame</dfn>;</td></tr>
+<tr><th id="84">84</th><td></td></tr>
+<tr><th id="85">85</th><td><b>typedef</b> <b>struct</b> <dfn class="type def" id="OpusPacket" title='OpusPacket' data-ref="OpusPacket" data-ref-filename="OpusPacket"><a class="type" href="#OpusPacket" title='OpusPacket' data-ref="OpusPacket" data-ref-filename="OpusPacket">OpusPacket</a></dfn> {</td></tr>
+<tr><th id="86">86</th><td>    <em>int</em> <dfn class="decl field" id="OpusPacket::packet_size" title='OpusPacket::packet_size' data-ref="OpusPacket::packet_size" data-ref-filename="OpusPacket..packet_size">packet_size</dfn>;                <i class="doc">/**&lt; packet size */</i></td></tr>
+<tr><th id="87">87</th><td>    <em>int</em> <dfn class="decl field" id="OpusPacket::data_size" title='OpusPacket::data_size' data-ref="OpusPacket::data_size" data-ref-filename="OpusPacket..data_size">data_size</dfn>;                  <i class="doc">/**&lt; size of the useful data -- packet size - padding */</i></td></tr>
+<tr><th id="88">88</th><td>    <em>int</em> <dfn class="decl field" id="OpusPacket::code" title='OpusPacket::code' data-ref="OpusPacket::code" data-ref-filename="OpusPacket..code">code</dfn>;                       <i class="doc">/**&lt; packet code: specifies the frame layout */</i></td></tr>
+<tr><th id="89">89</th><td>    <em>int</em> <dfn class="decl field" id="OpusPacket::stereo" title='OpusPacket::stereo' data-ref="OpusPacket::stereo" data-ref-filename="OpusPacket..stereo">stereo</dfn>;                     <i class="doc">/**&lt; whether this packet is mono or stereo */</i></td></tr>
+<tr><th id="90">90</th><td>    <em>int</em> <dfn class="decl field" id="OpusPacket::vbr" title='OpusPacket::vbr' data-ref="OpusPacket::vbr" data-ref-filename="OpusPacket..vbr">vbr</dfn>;                        <i class="doc">/**&lt; vbr flag */</i></td></tr>
+<tr><th id="91">91</th><td>    <em>int</em> <dfn class="decl field" id="OpusPacket::config" title='OpusPacket::config' data-ref="OpusPacket::config" data-ref-filename="OpusPacket..config">config</dfn>;                     <i class="doc">/**&lt; configuration: tells the audio mode,</i></td></tr>
+<tr><th id="92">92</th><td><i class="doc">                                     **                bandwidth, and frame duration */</i></td></tr>
+<tr><th id="93">93</th><td>    <em>int</em> <dfn class="decl field" id="OpusPacket::frame_count" title='OpusPacket::frame_count' data-ref="OpusPacket::frame_count" data-ref-filename="OpusPacket..frame_count">frame_count</dfn>;                <i class="doc">/**&lt; frame count */</i></td></tr>
+<tr><th id="94">94</th><td>    <em>int</em> <dfn class="decl field" id="OpusPacket::frame_offset" title='OpusPacket::frame_offset' data-ref="OpusPacket::frame_offset" data-ref-filename="OpusPacket..frame_offset">frame_offset</dfn>[<a class="macro" href="#39" title="48" data-ref="_M/MAX_FRAMES">MAX_FRAMES</a>];   <i class="doc">/**&lt; frame offsets */</i></td></tr>
+<tr><th id="95">95</th><td>    <em>int</em> <dfn class="decl field" id="OpusPacket::frame_size" title='OpusPacket::frame_size' data-ref="OpusPacket::frame_size" data-ref-filename="OpusPacket..frame_size">frame_size</dfn>[<a class="macro" href="#39" title="48" data-ref="_M/MAX_FRAMES">MAX_FRAMES</a>];     <i class="doc">/**&lt; frame sizes */</i></td></tr>
+<tr><th id="96">96</th><td>    <em>int</em> <dfn class="decl field" id="OpusPacket::frame_duration" title='OpusPacket::frame_duration' data-ref="OpusPacket::frame_duration" data-ref-filename="OpusPacket..frame_duration">frame_duration</dfn>;             <i class="doc">/**&lt; frame duration, in samples @ 48kHz */</i></td></tr>
+<tr><th id="97">97</th><td>    <b>enum</b> <a class="type" href="#OpusMode" title='OpusMode' data-ref="OpusMode" data-ref-filename="OpusMode">OpusMode</a> <dfn class="decl field" id="OpusPacket::mode" title='OpusPacket::mode' data-ref="OpusPacket::mode" data-ref-filename="OpusPacket..mode">mode</dfn>;             <i class="doc">/**&lt; mode */</i></td></tr>
+<tr><th id="98">98</th><td>    <b>enum</b> <a class="type" href="#OpusBandwidth" title='OpusBandwidth' data-ref="OpusBandwidth" data-ref-filename="OpusBandwidth">OpusBandwidth</a> <dfn class="decl field" id="OpusPacket::bandwidth" title='OpusPacket::bandwidth' data-ref="OpusPacket::bandwidth" data-ref-filename="OpusPacket..bandwidth">bandwidth</dfn>;   <i class="doc">/**&lt; bandwidth */</i></td></tr>
+<tr><th id="99">99</th><td>} <dfn class="typedef" id="OpusPacket" title='OpusPacket' data-type='struct OpusPacket' data-ref="OpusPacket" data-ref-filename="OpusPacket">OpusPacket</dfn>;</td></tr>
+<tr><th id="100">100</th><td></td></tr>
+<tr><th id="101">101</th><td><b>typedef</b> <b>struct</b> <dfn class="type def" id="OpusStreamContext" title='OpusStreamContext' data-ref="OpusStreamContext" data-ref-filename="OpusStreamContext"><a class="type" href="#OpusStreamContext" title='OpusStreamContext' data-ref="OpusStreamContext" data-ref-filename="OpusStreamContext">OpusStreamContext</a></dfn> {</td></tr>
+<tr><th id="102">102</th><td>    <a class="typedef" href="avcodec.h.html#AVCodecContext" title='AVCodecContext' data-type='struct AVCodecContext' data-ref="AVCodecContext" data-ref-filename="AVCodecContext">AVCodecContext</a> *<dfn class="decl field" id="OpusStreamContext::avctx" title='OpusStreamContext::avctx' data-ref="OpusStreamContext::avctx" data-ref-filename="OpusStreamContext..avctx">avctx</dfn>;</td></tr>
+<tr><th id="103">103</th><td>    <em>int</em> <dfn class="decl field" id="OpusStreamContext::output_channels" title='OpusStreamContext::output_channels' data-ref="OpusStreamContext::output_channels" data-ref-filename="OpusStreamContext..output_channels">output_channels</dfn>;</td></tr>
+<tr><th id="104">104</th><td></td></tr>
+<tr><th id="105">105</th><td>    <i>/* number of decoded samples for this stream */</i></td></tr>
+<tr><th id="106">106</th><td>    <em>int</em> <dfn class="decl field" id="OpusStreamContext::decoded_samples" title='OpusStreamContext::decoded_samples' data-ref="OpusStreamContext::decoded_samples" data-ref-filename="OpusStreamContext..decoded_samples">decoded_samples</dfn>;</td></tr>
+<tr><th id="107">107</th><td>    <i>/* current output buffers for this stream */</i></td></tr>
+<tr><th id="108">108</th><td>    <em>float</em> *<dfn class="decl field" id="OpusStreamContext::out" title='OpusStreamContext::out' data-ref="OpusStreamContext::out" data-ref-filename="OpusStreamContext..out">out</dfn>[<var>2</var>];</td></tr>
+<tr><th id="109">109</th><td>    <em>int</em> <dfn class="decl field" id="OpusStreamContext::out_size" title='OpusStreamContext::out_size' data-ref="OpusStreamContext::out_size" data-ref-filename="OpusStreamContext..out_size">out_size</dfn>;</td></tr>
+<tr><th id="110">110</th><td>    <i>/* Buffer with samples from this stream for synchronizing</i></td></tr>
+<tr><th id="111">111</th><td><i>     * the streams when they have different resampling delays */</i></td></tr>
+<tr><th id="112">112</th><td>    <a class="typedef" href="../libavutil/audio_fifo.h.html#AVAudioFifo" title='AVAudioFifo' data-type='struct AVAudioFifo' data-ref="AVAudioFifo" data-ref-filename="AVAudioFifo">AVAudioFifo</a> *<dfn class="decl field" id="OpusStreamContext::sync_buffer" title='OpusStreamContext::sync_buffer' data-ref="OpusStreamContext::sync_buffer" data-ref-filename="OpusStreamContext..sync_buffer">sync_buffer</dfn>;</td></tr>
+<tr><th id="113">113</th><td></td></tr>
+<tr><th id="114">114</th><td>    <a class="typedef" href="opus_rc.h.html#OpusRangeCoder" title='OpusRangeCoder' data-type='struct OpusRangeCoder' data-ref="OpusRangeCoder" data-ref-filename="OpusRangeCoder">OpusRangeCoder</a> <dfn class="decl field" id="OpusStreamContext::rc" title='OpusStreamContext::rc' data-ref="OpusStreamContext::rc" data-ref-filename="OpusStreamContext..rc">rc</dfn>;</td></tr>
+<tr><th id="115">115</th><td>    <a class="typedef" href="opus_rc.h.html#OpusRangeCoder" title='OpusRangeCoder' data-type='struct OpusRangeCoder' data-ref="OpusRangeCoder" data-ref-filename="OpusRangeCoder">OpusRangeCoder</a> <dfn class="decl field" id="OpusStreamContext::redundancy_rc" title='OpusStreamContext::redundancy_rc' data-ref="OpusStreamContext::redundancy_rc" data-ref-filename="OpusStreamContext..redundancy_rc">redundancy_rc</dfn>;</td></tr>
+<tr><th id="116">116</th><td>    <a class="typedef" href="#SilkContext" title='SilkContext' data-type='struct SilkContext' data-ref="SilkContext" data-ref-filename="SilkContext">SilkContext</a> *<dfn class="decl field" id="OpusStreamContext::silk" title='OpusStreamContext::silk' data-ref="OpusStreamContext::silk" data-ref-filename="OpusStreamContext..silk">silk</dfn>;</td></tr>
+<tr><th id="117">117</th><td>    <a class="typedef" href="#CeltFrame" title='CeltFrame' data-type='struct CeltFrame' data-ref="CeltFrame" data-ref-filename="CeltFrame">CeltFrame</a> *<dfn class="decl field" id="OpusStreamContext::celt" title='OpusStreamContext::celt' data-ref="OpusStreamContext::celt" data-ref-filename="OpusStreamContext..celt">celt</dfn>;</td></tr>
+<tr><th id="118">118</th><td>    <a class="typedef" href="../libavutil/float_dsp.h.html#AVFloatDSPContext" title='AVFloatDSPContext' data-type='struct AVFloatDSPContext' data-ref="AVFloatDSPContext" data-ref-filename="AVFloatDSPContext">AVFloatDSPContext</a> *<dfn class="decl field" id="OpusStreamContext::fdsp" title='OpusStreamContext::fdsp' data-ref="OpusStreamContext::fdsp" data-ref-filename="OpusStreamContext..fdsp">fdsp</dfn>;</td></tr>
+<tr><th id="119">119</th><td></td></tr>
+<tr><th id="120">120</th><td>    <em>float</em> <dfn class="decl field" id="OpusStreamContext::silk_buf" title='OpusStreamContext::silk_buf' data-ref="OpusStreamContext::silk_buf" data-ref-filename="OpusStreamContext..silk_buf">silk_buf</dfn>[<var>2</var>][<var>960</var>];</td></tr>
+<tr><th id="121">121</th><td>    <em>float</em> *<dfn class="decl field" id="OpusStreamContext::silk_output" title='OpusStreamContext::silk_output' data-ref="OpusStreamContext::silk_output" data-ref-filename="OpusStreamContext..silk_output">silk_output</dfn>[<var>2</var>];</td></tr>
+<tr><th id="122">122</th><td>    <a class="macro" href="../libavutil/mem.h.html#117" title="float __attribute__ ((aligned (32))) celt_buf" data-ref="_M/DECLARE_ALIGNED">DECLARE_ALIGNED</a>(<var>32</var>, <em>float</em>, <dfn class="decl field" id="OpusStreamContext::celt_buf" title='OpusStreamContext::celt_buf' data-ref="OpusStreamContext::celt_buf" data-ref-filename="OpusStreamContext..celt_buf">celt_buf</dfn>)[<var>2</var>][<var>960</var>];</td></tr>
+<tr><th id="123">123</th><td>    <em>float</em> *<dfn class="decl field" id="OpusStreamContext::celt_output" title='OpusStreamContext::celt_output' data-ref="OpusStreamContext::celt_output" data-ref-filename="OpusStreamContext..celt_output">celt_output</dfn>[<var>2</var>];</td></tr>
+<tr><th id="124">124</th><td></td></tr>
+<tr><th id="125">125</th><td>    <a class="macro" href="../libavutil/mem.h.html#117" title="float __attribute__ ((aligned (32))) redundancy_buf" data-ref="_M/DECLARE_ALIGNED">DECLARE_ALIGNED</a>(<var>32</var>, <em>float</em>, <dfn class="decl field" id="OpusStreamContext::redundancy_buf" title='OpusStreamContext::redundancy_buf' data-ref="OpusStreamContext::redundancy_buf" data-ref-filename="OpusStreamContext..redundancy_buf">redundancy_buf</dfn>)[<var>2</var>][<var>960</var>];</td></tr>
+<tr><th id="126">126</th><td>    <em>float</em> *<dfn class="decl field" id="OpusStreamContext::redundancy_output" title='OpusStreamContext::redundancy_output' data-ref="OpusStreamContext::redundancy_output" data-ref-filename="OpusStreamContext..redundancy_output">redundancy_output</dfn>[<var>2</var>];</td></tr>
+<tr><th id="127">127</th><td></td></tr>
+<tr><th id="128">128</th><td>    <i>/* buffers for the next samples to be decoded */</i></td></tr>
+<tr><th id="129">129</th><td>    <em>float</em> *<dfn class="decl field" id="OpusStreamContext::cur_out" title='OpusStreamContext::cur_out' data-ref="OpusStreamContext::cur_out" data-ref-filename="OpusStreamContext..cur_out">cur_out</dfn>[<var>2</var>];</td></tr>
+<tr><th id="130">130</th><td>    <em>int</em> <dfn class="decl field" id="OpusStreamContext::remaining_out_size" title='OpusStreamContext::remaining_out_size' data-ref="OpusStreamContext::remaining_out_size" data-ref-filename="OpusStreamContext..remaining_out_size">remaining_out_size</dfn>;</td></tr>
+<tr><th id="131">131</th><td></td></tr>
+<tr><th id="132">132</th><td>    <em>float</em> *<dfn class="decl field" id="OpusStreamContext::out_dummy" title='OpusStreamContext::out_dummy' data-ref="OpusStreamContext::out_dummy" data-ref-filename="OpusStreamContext..out_dummy">out_dummy</dfn>;</td></tr>
+<tr><th id="133">133</th><td>    <em>int</em>    <dfn class="decl field" id="OpusStreamContext::out_dummy_allocated_size" title='OpusStreamContext::out_dummy_allocated_size' data-ref="OpusStreamContext::out_dummy_allocated_size" data-ref-filename="OpusStreamContext..out_dummy_allocated_size">out_dummy_allocated_size</dfn>;</td></tr>
+<tr><th id="134">134</th><td></td></tr>
+<tr><th id="135">135</th><td>    <a class="typedef" href="../libswresample/swresample.h.html#SwrContext" title='SwrContext' data-type='struct SwrContext' data-ref="SwrContext" data-ref-filename="SwrContext">SwrContext</a> *<dfn class="decl field" id="OpusStreamContext::swr" title='OpusStreamContext::swr' data-ref="OpusStreamContext::swr" data-ref-filename="OpusStreamContext..swr">swr</dfn>;</td></tr>
+<tr><th id="136">136</th><td>    <a class="typedef" href="../libavutil/audio_fifo.h.html#AVAudioFifo" title='AVAudioFifo' data-type='struct AVAudioFifo' data-ref="AVAudioFifo" data-ref-filename="AVAudioFifo">AVAudioFifo</a> *<dfn class="decl field" id="OpusStreamContext::celt_delay" title='OpusStreamContext::celt_delay' data-ref="OpusStreamContext::celt_delay" data-ref-filename="OpusStreamContext..celt_delay">celt_delay</dfn>;</td></tr>
+<tr><th id="137">137</th><td>    <em>int</em> <dfn class="decl field" id="OpusStreamContext::silk_samplerate" title='OpusStreamContext::silk_samplerate' data-ref="OpusStreamContext::silk_samplerate" data-ref-filename="OpusStreamContext..silk_samplerate">silk_samplerate</dfn>;</td></tr>
+<tr><th id="138">138</th><td>    <i>/* number of samples we still want to get from the resampler */</i></td></tr>
+<tr><th id="139">139</th><td>    <em>int</em> <dfn class="decl field" id="OpusStreamContext::delayed_samples" title='OpusStreamContext::delayed_samples' data-ref="OpusStreamContext::delayed_samples" data-ref-filename="OpusStreamContext..delayed_samples">delayed_samples</dfn>;</td></tr>
+<tr><th id="140">140</th><td></td></tr>
+<tr><th id="141">141</th><td>    <a class="typedef" href="#OpusPacket" title='OpusPacket' data-type='struct OpusPacket' data-ref="OpusPacket" data-ref-filename="OpusPacket">OpusPacket</a> <dfn class="decl field" id="OpusStreamContext::packet" title='OpusStreamContext::packet' data-ref="OpusStreamContext::packet" data-ref-filename="OpusStreamContext..packet">packet</dfn>;</td></tr>
+<tr><th id="142">142</th><td></td></tr>
+<tr><th id="143">143</th><td>    <em>int</em> <dfn class="decl field" id="OpusStreamContext::redundancy_idx" title='OpusStreamContext::redundancy_idx' data-ref="OpusStreamContext::redundancy_idx" data-ref-filename="OpusStreamContext..redundancy_idx">redundancy_idx</dfn>;</td></tr>
+<tr><th id="144">144</th><td>} <dfn class="typedef" id="OpusStreamContext" title='OpusStreamContext' data-type='struct OpusStreamContext' data-ref="OpusStreamContext" data-ref-filename="OpusStreamContext">OpusStreamContext</dfn>;</td></tr>
+<tr><th id="145">145</th><td></td></tr>
+<tr><th id="146">146</th><td><i>// a mapping between an opus stream and an output channel</i></td></tr>
+<tr><th id="147">147</th><td><b>typedef</b> <b>struct</b> <dfn class="type def" id="ChannelMap" title='ChannelMap' data-ref="ChannelMap" data-ref-filename="ChannelMap"><a class="type" href="#ChannelMap" title='ChannelMap' data-ref="ChannelMap" data-ref-filename="ChannelMap">ChannelMap</a></dfn> {</td></tr>
+<tr><th id="148">148</th><td>    <em>int</em> <dfn class="decl field" id="ChannelMap::stream_idx" title='ChannelMap::stream_idx' data-ref="ChannelMap::stream_idx" data-ref-filename="ChannelMap..stream_idx">stream_idx</dfn>;</td></tr>
+<tr><th id="149">149</th><td>    <em>int</em> <dfn class="decl field" id="ChannelMap::channel_idx" title='ChannelMap::channel_idx' data-ref="ChannelMap::channel_idx" data-ref-filename="ChannelMap..channel_idx">channel_idx</dfn>;</td></tr>
+<tr><th id="150">150</th><td></td></tr>
+<tr><th id="151">151</th><td>    <i>// when a single decoded channel is mapped to multiple output channels, we</i></td></tr>
+<tr><th id="152">152</th><td><i>    // write to the first output directly and copy from it to the others</i></td></tr>
+<tr><th id="153">153</th><td><i>    // this field is set to 1 for those copied output channels</i></td></tr>
+<tr><th id="154">154</th><td>    <em>int</em> <dfn class="decl field" id="ChannelMap::copy" title='ChannelMap::copy' data-ref="ChannelMap::copy" data-ref-filename="ChannelMap..copy">copy</dfn>;</td></tr>
+<tr><th id="155">155</th><td>    <i>// this is the index of the output channel to copy from</i></td></tr>
+<tr><th id="156">156</th><td>    <em>int</em> <dfn class="decl field" id="ChannelMap::copy_idx" title='ChannelMap::copy_idx' data-ref="ChannelMap::copy_idx" data-ref-filename="ChannelMap..copy_idx">copy_idx</dfn>;</td></tr>
+<tr><th id="157">157</th><td></td></tr>
+<tr><th id="158">158</th><td>    <i>// this channel is silent</i></td></tr>
+<tr><th id="159">159</th><td>    <em>int</em> <dfn class="decl field" id="ChannelMap::silence" title='ChannelMap::silence' data-ref="ChannelMap::silence" data-ref-filename="ChannelMap..silence">silence</dfn>;</td></tr>
+<tr><th id="160">160</th><td>} <dfn class="typedef" id="ChannelMap" title='ChannelMap' data-type='struct ChannelMap' data-ref="ChannelMap" data-ref-filename="ChannelMap">ChannelMap</dfn>;</td></tr>
+<tr><th id="161">161</th><td></td></tr>
+<tr><th id="162">162</th><td><b>typedef</b> <b>struct</b> <dfn class="type def" id="OpusContext" title='OpusContext' data-ref="OpusContext" data-ref-filename="OpusContext"><a class="type" href="#OpusContext" title='OpusContext' data-ref="OpusContext" data-ref-filename="OpusContext">OpusContext</a></dfn> {</td></tr>
+<tr><th id="163">163</th><td>    <a class="typedef" href="../libavutil/log.h.html#AVClass" title='AVClass' data-type='struct AVClass' data-ref="AVClass" data-ref-filename="AVClass">AVClass</a> *<dfn class="decl field" id="OpusContext::av_class" title='OpusContext::av_class' data-ref="OpusContext::av_class" data-ref-filename="OpusContext..av_class">av_class</dfn>;</td></tr>
+<tr><th id="164">164</th><td>    <a class="typedef" href="#OpusStreamContext" title='OpusStreamContext' data-type='struct OpusStreamContext' data-ref="OpusStreamContext" data-ref-filename="OpusStreamContext">OpusStreamContext</a> *<dfn class="decl field" id="OpusContext::streams" title='OpusContext::streams' data-ref="OpusContext::streams" data-ref-filename="OpusContext..streams">streams</dfn>;</td></tr>
+<tr><th id="165">165</th><td>    <em>int</em> <dfn class="decl field" id="OpusContext::apply_phase_inv" title='OpusContext::apply_phase_inv' data-ref="OpusContext::apply_phase_inv" data-ref-filename="OpusContext..apply_phase_inv">apply_phase_inv</dfn>;</td></tr>
+<tr><th id="166">166</th><td></td></tr>
+<tr><th id="167">167</th><td>    <em>int</em>             <dfn class="decl field" id="OpusContext::nb_streams" title='OpusContext::nb_streams' data-ref="OpusContext::nb_streams" data-ref-filename="OpusContext..nb_streams">nb_streams</dfn>;</td></tr>
+<tr><th id="168">168</th><td>    <em>int</em>      <dfn class="decl field" id="OpusContext::nb_stereo_streams" title='OpusContext::nb_stereo_streams' data-ref="OpusContext::nb_stereo_streams" data-ref-filename="OpusContext..nb_stereo_streams">nb_stereo_streams</dfn>;</td></tr>
+<tr><th id="169">169</th><td></td></tr>
+<tr><th id="170">170</th><td>    <a class="typedef" href="../libavutil/float_dsp.h.html#AVFloatDSPContext" title='AVFloatDSPContext' data-type='struct AVFloatDSPContext' data-ref="AVFloatDSPContext" data-ref-filename="AVFloatDSPContext">AVFloatDSPContext</a> *<dfn class="decl field" id="OpusContext::fdsp" title='OpusContext::fdsp' data-ref="OpusContext::fdsp" data-ref-filename="OpusContext..fdsp">fdsp</dfn>;</td></tr>
+<tr><th id="171">171</th><td>    <a class="typedef" href="../../include/stdint.h.html#int16_t" title='int16_t' data-type='short' data-ref="int16_t" data-ref-filename="int16_t">int16_t</a> <dfn class="decl field" id="OpusContext::gain_i" title='OpusContext::gain_i' data-ref="OpusContext::gain_i" data-ref-filename="OpusContext..gain_i">gain_i</dfn>;</td></tr>
+<tr><th id="172">172</th><td>    <em>float</em>   <dfn class="decl field" id="OpusContext::gain" title='OpusContext::gain' data-ref="OpusContext::gain" data-ref-filename="OpusContext..gain">gain</dfn>;</td></tr>
+<tr><th id="173">173</th><td></td></tr>
+<tr><th id="174">174</th><td>    <a class="typedef" href="#ChannelMap" title='ChannelMap' data-type='struct ChannelMap' data-ref="ChannelMap" data-ref-filename="ChannelMap">ChannelMap</a> *<dfn class="decl field" id="OpusContext::channel_maps" title='OpusContext::channel_maps' data-ref="OpusContext::channel_maps" data-ref-filename="OpusContext..channel_maps">channel_maps</dfn>;</td></tr>
+<tr><th id="175">175</th><td>} <dfn class="typedef" id="OpusContext" title='OpusContext' data-type='struct OpusContext' data-ref="OpusContext" data-ref-filename="OpusContext">OpusContext</dfn>;</td></tr>
+<tr><th id="176">176</th><td></td></tr>
+<tr><th id="177">177</th><td><em>int</em> <a class="decl fn" href="opus.c.html#ff_opus_parse_packet" title='ff_opus_parse_packet' data-ref="ff_opus_parse_packet" data-ref-filename="ff_opus_parse_packet" id="ff_opus_parse_packet">ff_opus_parse_packet</a>(<a class="typedef" href="#OpusPacket" title='OpusPacket' data-type='struct OpusPacket' data-ref="OpusPacket" data-ref-filename="OpusPacket">OpusPacket</a> *<dfn class="local col9 decl" id="79pkt" title='pkt' data-type='OpusPacket *' data-ref="79pkt" data-ref-filename="79pkt">pkt</dfn>, <em>const</em> <a class="typedef" href="../../include/stdint.h.html#uint8_t" title='uint8_t' data-type='unsigned char' data-ref="uint8_t" data-ref-filename="uint8_t">uint8_t</a> *<dfn class="local col0 decl" id="80buf" title='buf' data-type='const uint8_t *' data-ref="80buf" data-ref-filename="80buf">buf</dfn>, <em>int</em> <dfn class="local col1 decl" id="81buf_size" title='buf_size' data-type='int' data-ref="81buf_size" data-ref-filename="81buf_size">buf_size</dfn>,</td></tr>
+<tr><th id="178">178</th><td>                         <em>int</em> <dfn class="local col2 decl" id="82self_delimited" title='self_delimited' data-type='int' data-ref="82self_delimited" data-ref-filename="82self_delimited">self_delimited</dfn>);</td></tr>
+<tr><th id="179">179</th><td></td></tr>
+<tr><th id="180">180</th><td><em>int</em> <a class="decl fn" href="opus.c.html#ff_opus_parse_extradata" title='ff_opus_parse_extradata' data-ref="ff_opus_parse_extradata" data-ref-filename="ff_opus_parse_extradata" id="ff_opus_parse_extradata">ff_opus_parse_extradata</a>(<a class="typedef" href="avcodec.h.html#AVCodecContext" title='AVCodecContext' data-type='struct AVCodecContext' data-ref="AVCodecContext" data-ref-filename="AVCodecContext">AVCodecContext</a> *<dfn class="local col3 decl" id="83avctx" title='avctx' data-type='AVCodecContext *' data-ref="83avctx" data-ref-filename="83avctx">avctx</dfn>, <a class="typedef" href="#OpusContext" title='OpusContext' data-type='struct OpusContext' data-ref="OpusContext" data-ref-filename="OpusContext">OpusContext</a> *<dfn class="local col4 decl" id="84s" title='s' data-type='OpusContext *' data-ref="84s" data-ref-filename="84s">s</dfn>);</td></tr>
+<tr><th id="181">181</th><td></td></tr>
+<tr><th id="182">182</th><td><em>int</em> <dfn class="decl fn" id="ff_silk_init" title='ff_silk_init' data-ref="ff_silk_init" data-ref-filename="ff_silk_init">ff_silk_init</dfn>(<a class="typedef" href="avcodec.h.html#AVCodecContext" title='AVCodecContext' data-type='struct AVCodecContext' data-ref="AVCodecContext" data-ref-filename="AVCodecContext">AVCodecContext</a> *<dfn class="local col5 decl" id="85avctx" title='avctx' data-type='AVCodecContext *' data-ref="85avctx" data-ref-filename="85avctx">avctx</dfn>, <a class="typedef" href="#SilkContext" title='SilkContext' data-type='struct SilkContext' data-ref="SilkContext" data-ref-filename="SilkContext">SilkContext</a> **<dfn class="local col6 decl" id="86ps" title='ps' data-type='SilkContext **' data-ref="86ps" data-ref-filename="86ps">ps</dfn>, <em>int</em> <dfn class="local col7 decl" id="87output_channels" title='output_channels' data-type='int' data-ref="87output_channels" data-ref-filename="87output_channels">output_channels</dfn>);</td></tr>
+<tr><th id="183">183</th><td><em>void</em> <dfn class="decl fn" id="ff_silk_free" title='ff_silk_free' data-ref="ff_silk_free" data-ref-filename="ff_silk_free">ff_silk_free</dfn>(<a class="typedef" href="#SilkContext" title='SilkContext' data-type='struct SilkContext' data-ref="SilkContext" data-ref-filename="SilkContext">SilkContext</a> **<dfn class="local col8 decl" id="88ps" title='ps' data-type='SilkContext **' data-ref="88ps" data-ref-filename="88ps">ps</dfn>);</td></tr>
+<tr><th id="184">184</th><td><em>void</em> <dfn class="decl fn" id="ff_silk_flush" title='ff_silk_flush' data-ref="ff_silk_flush" data-ref-filename="ff_silk_flush">ff_silk_flush</dfn>(<a class="typedef" href="#SilkContext" title='SilkContext' data-type='struct SilkContext' data-ref="SilkContext" data-ref-filename="SilkContext">SilkContext</a> *<dfn class="local col9 decl" id="89s" title='s' data-type='SilkContext *' data-ref="89s" data-ref-filename="89s">s</dfn>);</td></tr>
+<tr><th id="185">185</th><td></td></tr>
+<tr><th id="186">186</th><td><i class="doc">/**</i></td></tr>
+<tr><th id="187">187</th><td><i class="doc"> * Decode the LP layer of one Opus frame (which may correspond to several SILK</i></td></tr>
+<tr><th id="188">188</th><td><i class="doc"> * frames).</i></td></tr>
+<tr><th id="189">189</th><td><i class="doc"> */</i></td></tr>
+<tr><th id="190">190</th><td><em>int</em> <dfn class="decl fn" id="ff_silk_decode_superframe" title='ff_silk_decode_superframe' data-ref="ff_silk_decode_superframe" data-ref-filename="ff_silk_decode_superframe">ff_silk_decode_superframe</dfn>(<a class="typedef" href="#SilkContext" title='SilkContext' data-type='struct SilkContext' data-ref="SilkContext" data-ref-filename="SilkContext">SilkContext</a> *<dfn class="local col0 decl" id="90s" title='s' data-type='SilkContext *' data-ref="90s" data-ref-filename="90s">s</dfn>, <a class="typedef" href="opus_rc.h.html#OpusRangeCoder" title='OpusRangeCoder' data-type='struct OpusRangeCoder' data-ref="OpusRangeCoder" data-ref-filename="OpusRangeCoder">OpusRangeCoder</a> *<dfn class="local col1 decl" id="91rc" title='rc' data-type='OpusRangeCoder *' data-ref="91rc" data-ref-filename="91rc">rc</dfn>,</td></tr>
+<tr><th id="191">191</th><td>                              <em>float</em> *<dfn class="local col2 decl" id="92output" title='output' data-type='float **' data-ref="92output" data-ref-filename="92output">output</dfn>[<var>2</var>],</td></tr>
+<tr><th id="192">192</th><td>                              <b>enum</b> <a class="type" href="#OpusBandwidth" title='OpusBandwidth' data-ref="OpusBandwidth" data-ref-filename="OpusBandwidth">OpusBandwidth</a> <dfn class="local col3 decl" id="93bandwidth" title='bandwidth' data-type='enum OpusBandwidth' data-ref="93bandwidth" data-ref-filename="93bandwidth">bandwidth</dfn>, <em>int</em> <dfn class="local col4 decl" id="94coded_channels" title='coded_channels' data-type='int' data-ref="94coded_channels" data-ref-filename="94coded_channels">coded_channels</dfn>,</td></tr>
+<tr><th id="193">193</th><td>                              <em>int</em> <dfn class="local col5 decl" id="95duration_ms" title='duration_ms' data-type='int' data-ref="95duration_ms" data-ref-filename="95duration_ms">duration_ms</dfn>);</td></tr>
+<tr><th id="194">194</th><td></td></tr>
+<tr><th id="195">195</th><td><i>/* Encode or decode CELT bands */</i></td></tr>
+<tr><th id="196">196</th><td><em>void</em> <a class="decl fn" href="opus.c.html#ff_celt_quant_bands" title='ff_celt_quant_bands' data-ref="ff_celt_quant_bands" data-ref-filename="ff_celt_quant_bands" id="ff_celt_quant_bands">ff_celt_quant_bands</a>(<a class="typedef" href="#CeltFrame" title='CeltFrame' data-type='struct CeltFrame' data-ref="CeltFrame" data-ref-filename="CeltFrame">CeltFrame</a> *<dfn class="local col6 decl" id="96f" title='f' data-type='CeltFrame *' data-ref="96f" data-ref-filename="96f">f</dfn>, <a class="typedef" href="opus_rc.h.html#OpusRangeCoder" title='OpusRangeCoder' data-type='struct OpusRangeCoder' data-ref="OpusRangeCoder" data-ref-filename="OpusRangeCoder">OpusRangeCoder</a> *<dfn class="local col7 decl" id="97rc" title='rc' data-type='OpusRangeCoder *' data-ref="97rc" data-ref-filename="97rc">rc</dfn>);</td></tr>
+<tr><th id="197">197</th><td></td></tr>
+<tr><th id="198">198</th><td><i>/* Encode or decode CELT bitallocation */</i></td></tr>
+<tr><th id="199">199</th><td><em>void</em> <a class="decl fn" href="opus.c.html#ff_celt_bitalloc" title='ff_celt_bitalloc' data-ref="ff_celt_bitalloc" data-ref-filename="ff_celt_bitalloc" id="ff_celt_bitalloc">ff_celt_bitalloc</a>(<a class="typedef" href="#CeltFrame" title='CeltFrame' data-type='struct CeltFrame' data-ref="CeltFrame" data-ref-filename="CeltFrame">CeltFrame</a> *<dfn class="local col8 decl" id="98f" title='f' data-type='CeltFrame *' data-ref="98f" data-ref-filename="98f">f</dfn>, <a class="typedef" href="opus_rc.h.html#OpusRangeCoder" title='OpusRangeCoder' data-type='struct OpusRangeCoder' data-ref="OpusRangeCoder" data-ref-filename="OpusRangeCoder">OpusRangeCoder</a> *<dfn class="local col9 decl" id="99rc" title='rc' data-type='OpusRangeCoder *' data-ref="99rc" data-ref-filename="99rc">rc</dfn>, <em>int</em> <dfn class="local col0 decl" id="100encode" title='encode' data-type='int' data-ref="100encode" data-ref-filename="100encode">encode</dfn>);</td></tr>
+<tr><th id="200">200</th><td></td></tr>
+<tr><th id="201">201</th><td><u>#<span data-ppcond="23">endif</span> /* AVCODEC_OPUS_H */</u></td></tr>
+<tr><th id="202">202</th><td></td></tr>
+</table><hr/><p id='footer'>
+Generated while processing <a href='opus.c.html'>ffmpeg/libavcodec/opus.c</a><br/>Generated on <em>2021-May-30</em> from project ffmpeg revision <em>4.4</em>

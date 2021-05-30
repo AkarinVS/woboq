@@ -1,0 +1,25 @@
+<dec f='ffmpeg/libavcodec/mpc.h' l='62' type='int [2][1152]'/>
+<use f='ffmpeg/libavcodec/mpc.c' l='73' u='r' c='ff_mpc_dequantize_and_synth'/>
+<use f='ffmpeg/libavcodec/mpc.c' l='76' u='r' c='ff_mpc_dequantize_and_synth'/>
+<use f='ffmpeg/libavcodec/mpc.c' l='79' u='r' c='ff_mpc_dequantize_and_synth'/>
+<offset>16096</offset>
+<use f='ffmpeg/libavcodec/mpc7.c' l='268' u='r' c='mpc7_decode_frame'/>
+<use f='ffmpeg/libavcodec/mpc7.c' l='268' u='r' c='mpc7_decode_frame'/>
+<use f='ffmpeg/libavcodec/mpc7.c' l='272' u='r' c='mpc7_decode_frame'/>
+<use f='ffmpeg/libavcodec/mpc8.c' l='197' u='r' c='mpc8_decode_frame'/>
+<use f='ffmpeg/libavcodec/mpc8.c' l='197' u='r' c='mpc8_decode_frame'/>
+<use f='ffmpeg/libavcodec/mpc8.c' l='300' u='w' c='mpc8_decode_frame'/>
+<use f='ffmpeg/libavcodec/mpc8.c' l='309' u='w' c='mpc8_decode_frame'/>
+<use f='ffmpeg/libavcodec/mpc8.c' l='317' u='w' c='mpc8_decode_frame'/>
+<use f='ffmpeg/libavcodec/mpc8.c' l='318' u='w' c='mpc8_decode_frame'/>
+<use f='ffmpeg/libavcodec/mpc8.c' l='319' u='w' c='mpc8_decode_frame'/>
+<use f='ffmpeg/libavcodec/mpc8.c' l='327' u='w' c='mpc8_decode_frame'/>
+<use f='ffmpeg/libavcodec/mpc8.c' l='328' u='w' c='mpc8_decode_frame'/>
+<use f='ffmpeg/libavcodec/mpc8.c' l='338' u='w' c='mpc8_decode_frame'/>
+<use f='ffmpeg/libavcodec/mpc8.c' l='339' u='r' c='mpc8_decode_frame'/>
+<use f='ffmpeg/libavcodec/mpc8.c' l='339' u='r' c='mpc8_decode_frame'/>
+<use f='ffmpeg/libavcodec/mpc8.c' l='339' u='r' c='mpc8_decode_frame'/>
+<use f='ffmpeg/libavcodec/mpc8.c' l='344' u='w' c='mpc8_decode_frame'/>
+<use f='ffmpeg/libavcodec/mpc8.c' l='346' u='w' c='mpc8_decode_frame'/>
+<use f='ffmpeg/libavcodec/mpc8.c' l='347' u='w' c='mpc8_decode_frame'/>
+<use f='ffmpeg/libavcodec/mpc8.c' l='349' u='w' c='mpc8_decode_frame'/>

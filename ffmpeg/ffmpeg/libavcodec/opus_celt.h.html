@@ -1,0 +1,189 @@
+<!doctype html>
+<html>
+<head>
+<meta name="viewport" content="width=device-width, initial-scale=1.0"><title>opus_celt.h source code [ffmpeg/libavcodec/opus_celt.h] - Woboq Code Browser</title>
+<meta name="woboq:interestingDefinitions" content="CeltBlock,CeltBlockSize,CeltFrame,CeltSpread "/>
+<link rel="stylesheet" href="../.././data/qtcreator.css" title="QtCreator"/>
+<link rel="alternate stylesheet" href="../.././data/kdevelop.css" title="KDevelop"/>
+<script type="text/javascript" src="../.././data/jquery/jquery.min.js"></script>
+<script type="text/javascript" src="../.././data/jquery/jquery-ui.min.js"></script>
+<script>var file = 'ffmpeg/libavcodec/opus_celt.h'; var root_path = '../..'; var data_path = '../.././data'; var ecma_script_api_version = 2;</script>
+<script src='../.././data/codebrowser.js'></script>
+</head>
+<body><div id='header'><h1 id='breadcrumb'><span>Browse the source code of </span><a href='..'>ffmpeg</a>/<a href='./'>libavcodec</a>/<a href='opus_celt.h.html'>opus_celt.h</a></h1></div>
+<hr/><div id='content'><table class="code">
+<tr><th id="1">1</th><td><i>/*</i></td></tr>
+<tr><th id="2">2</th><td><i> * Opus decoder/demuxer common functions</i></td></tr>
+<tr><th id="3">3</th><td><i> * Copyright (c) 2012 Andrew D'Addesio</i></td></tr>
+<tr><th id="4">4</th><td><i> * Copyright (c) 2013-2014 Mozilla Corporation</i></td></tr>
+<tr><th id="5">5</th><td><i> * Copyright (c) 2016 Rostislav Pehlivanov &lt;atomnuker@gmail.com&gt;</i></td></tr>
+<tr><th id="6">6</th><td><i> *</i></td></tr>
+<tr><th id="7">7</th><td><i> * This file is part of FFmpeg.</i></td></tr>
+<tr><th id="8">8</th><td><i> *</i></td></tr>
+<tr><th id="9">9</th><td><i> * FFmpeg is free software; you can redistribute it and/or</i></td></tr>
+<tr><th id="10">10</th><td><i> * modify it under the terms of the GNU Lesser General Public</i></td></tr>
+<tr><th id="11">11</th><td><i> * License as published by the Free Software Foundation; either</i></td></tr>
+<tr><th id="12">12</th><td><i> * version 2.1 of the License, or (at your option) any later version.</i></td></tr>
+<tr><th id="13">13</th><td><i> *</i></td></tr>
+<tr><th id="14">14</th><td><i> * FFmpeg is distributed in the hope that it will be useful,</i></td></tr>
+<tr><th id="15">15</th><td><i> * but WITHOUT ANY WARRANTY; without even the implied warranty of</i></td></tr>
+<tr><th id="16">16</th><td><i> * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the GNU</i></td></tr>
+<tr><th id="17">17</th><td><i> * Lesser General Public License for more details.</i></td></tr>
+<tr><th id="18">18</th><td><i> *</i></td></tr>
+<tr><th id="19">19</th><td><i> * You should have received a copy of the GNU Lesser General Public</i></td></tr>
+<tr><th id="20">20</th><td><i> * License along with FFmpeg; if not, write to the Free Software</i></td></tr>
+<tr><th id="21">21</th><td><i> * Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston, MA 02110-1301 USA</i></td></tr>
+<tr><th id="22">22</th><td><i> */</i></td></tr>
+<tr><th id="23">23</th><td></td></tr>
+<tr><th id="24">24</th><td><u>#<span data-ppcond="24">ifndef</span> <span class="macro" data-ref="_M/AVCODEC_OPUS_CELT_H">AVCODEC_OPUS_CELT_H</span></u></td></tr>
+<tr><th id="25">25</th><td><u>#define <dfn class="macro" id="_M/AVCODEC_OPUS_CELT_H" data-ref="_M/AVCODEC_OPUS_CELT_H">AVCODEC_OPUS_CELT_H</dfn></u></td></tr>
+<tr><th id="26">26</th><td></td></tr>
+<tr><th id="27">27</th><td><u>#include &lt;float.h&gt;</u></td></tr>
+<tr><th id="28">28</th><td></td></tr>
+<tr><th id="29">29</th><td><u>#include <a href="opus.h.html">"opus.h"</a></u></td></tr>
+<tr><th id="30">30</th><td><u>#include <a href="opus_pvq.h.html">"opus_pvq.h"</a></u></td></tr>
+<tr><th id="31">31</th><td><u>#include <a href="opusdsp.h.html">"opusdsp.h"</a></u></td></tr>
+<tr><th id="32">32</th><td></td></tr>
+<tr><th id="33">33</th><td><u>#include <a href="mdct15.h.html">"mdct15.h"</a></u></td></tr>
+<tr><th id="34">34</th><td><u>#include <a href="../libavutil/float_dsp.h.html">"libavutil/float_dsp.h"</a></u></td></tr>
+<tr><th id="35">35</th><td><u>#include <a href="../libavutil/libm.h.html">"libavutil/libm.h"</a></u></td></tr>
+<tr><th id="36">36</th><td><u>#include <a href="../libavutil/mem_internal.h.html">"libavutil/mem_internal.h"</a></u></td></tr>
+<tr><th id="37">37</th><td></td></tr>
+<tr><th id="38">38</th><td><u>#define <dfn class="macro" id="_M/CELT_VECTORS" data-ref="_M/CELT_VECTORS">CELT_VECTORS</dfn>                 11</u></td></tr>
+<tr><th id="39">39</th><td><u>#define <dfn class="macro" id="_M/CELT_ALLOC_STEPS" data-ref="_M/CELT_ALLOC_STEPS">CELT_ALLOC_STEPS</dfn>             6</u></td></tr>
+<tr><th id="40">40</th><td><u>#define <dfn class="macro" id="_M/CELT_FINE_OFFSET" data-ref="_M/CELT_FINE_OFFSET">CELT_FINE_OFFSET</dfn>             21</u></td></tr>
+<tr><th id="41">41</th><td><u>#define <dfn class="macro" id="_M/CELT_MAX_FINE_BITS" data-ref="_M/CELT_MAX_FINE_BITS">CELT_MAX_FINE_BITS</dfn>           8</u></td></tr>
+<tr><th id="42">42</th><td><u>#define <dfn class="macro" id="_M/CELT_NORM_SCALE" data-ref="_M/CELT_NORM_SCALE">CELT_NORM_SCALE</dfn>              16384</u></td></tr>
+<tr><th id="43">43</th><td><u>#define <dfn class="macro" id="_M/CELT_QTHETA_OFFSET" data-ref="_M/CELT_QTHETA_OFFSET">CELT_QTHETA_OFFSET</dfn>           4</u></td></tr>
+<tr><th id="44">44</th><td><u>#define <dfn class="macro" id="_M/CELT_QTHETA_OFFSET_TWOPHASE" data-ref="_M/CELT_QTHETA_OFFSET_TWOPHASE">CELT_QTHETA_OFFSET_TWOPHASE</dfn>  16</u></td></tr>
+<tr><th id="45">45</th><td><u>#define <dfn class="macro" id="_M/CELT_POSTFILTER_MINPERIOD" data-ref="_M/CELT_POSTFILTER_MINPERIOD">CELT_POSTFILTER_MINPERIOD</dfn>    15</u></td></tr>
+<tr><th id="46">46</th><td><u>#define <dfn class="macro" id="_M/CELT_ENERGY_SILENCE" data-ref="_M/CELT_ENERGY_SILENCE">CELT_ENERGY_SILENCE</dfn>          (-28.0f)</u></td></tr>
+<tr><th id="47">47</th><td></td></tr>
+<tr><th id="48">48</th><td><b>typedef</b> <b>struct</b> <a class="type" href="opus_pvq.h.html#CeltPVQ" title='CeltPVQ' data-ref="CeltPVQ" data-ref-filename="CeltPVQ">CeltPVQ</a> <dfn class="typedef" id="CeltPVQ" title='CeltPVQ' data-type='struct CeltPVQ' data-ref="CeltPVQ" data-ref-filename="CeltPVQ">CeltPVQ</dfn>;</td></tr>
+<tr><th id="49">49</th><td></td></tr>
+<tr><th id="50">50</th><td><b>enum</b> <dfn class="type def" id="CeltSpread" title='CeltSpread' data-ref="CeltSpread" data-ref-filename="CeltSpread">CeltSpread</dfn> {</td></tr>
+<tr><th id="51">51</th><td>    <dfn class="enum" id="CeltSpread::CELT_SPREAD_NONE" title='CeltSpread::CELT_SPREAD_NONE' data-ref="CeltSpread::CELT_SPREAD_NONE" data-ref-filename="CeltSpread..CELT_SPREAD_NONE">CELT_SPREAD_NONE</dfn>,</td></tr>
+<tr><th id="52">52</th><td>    <dfn class="enum" id="CeltSpread::CELT_SPREAD_LIGHT" title='CeltSpread::CELT_SPREAD_LIGHT' data-ref="CeltSpread::CELT_SPREAD_LIGHT" data-ref-filename="CeltSpread..CELT_SPREAD_LIGHT">CELT_SPREAD_LIGHT</dfn>,</td></tr>
+<tr><th id="53">53</th><td>    <dfn class="enum" id="CeltSpread::CELT_SPREAD_NORMAL" title='CeltSpread::CELT_SPREAD_NORMAL' data-ref="CeltSpread::CELT_SPREAD_NORMAL" data-ref-filename="CeltSpread..CELT_SPREAD_NORMAL">CELT_SPREAD_NORMAL</dfn>,</td></tr>
+<tr><th id="54">54</th><td>    <dfn class="enum" id="CeltSpread::CELT_SPREAD_AGGRESSIVE" title='CeltSpread::CELT_SPREAD_AGGRESSIVE' data-ref="CeltSpread::CELT_SPREAD_AGGRESSIVE" data-ref-filename="CeltSpread..CELT_SPREAD_AGGRESSIVE">CELT_SPREAD_AGGRESSIVE</dfn></td></tr>
+<tr><th id="55">55</th><td>};</td></tr>
+<tr><th id="56">56</th><td></td></tr>
+<tr><th id="57">57</th><td><b>enum</b> <dfn class="type def" id="CeltBlockSize" title='CeltBlockSize' data-ref="CeltBlockSize" data-ref-filename="CeltBlockSize">CeltBlockSize</dfn> {</td></tr>
+<tr><th id="58">58</th><td>    <dfn class="enum" id="CeltBlockSize::CELT_BLOCK_120" title='CeltBlockSize::CELT_BLOCK_120' data-ref="CeltBlockSize::CELT_BLOCK_120" data-ref-filename="CeltBlockSize..CELT_BLOCK_120">CELT_BLOCK_120</dfn>,</td></tr>
+<tr><th id="59">59</th><td>    <dfn class="enum" id="CeltBlockSize::CELT_BLOCK_240" title='CeltBlockSize::CELT_BLOCK_240' data-ref="CeltBlockSize::CELT_BLOCK_240" data-ref-filename="CeltBlockSize..CELT_BLOCK_240">CELT_BLOCK_240</dfn>,</td></tr>
+<tr><th id="60">60</th><td>    <dfn class="enum" id="CeltBlockSize::CELT_BLOCK_480" title='CeltBlockSize::CELT_BLOCK_480' data-ref="CeltBlockSize::CELT_BLOCK_480" data-ref-filename="CeltBlockSize..CELT_BLOCK_480">CELT_BLOCK_480</dfn>,</td></tr>
+<tr><th id="61">61</th><td>    <dfn class="enum" id="CeltBlockSize::CELT_BLOCK_960" title='CeltBlockSize::CELT_BLOCK_960' data-ref="CeltBlockSize::CELT_BLOCK_960" data-ref-filename="CeltBlockSize..CELT_BLOCK_960">CELT_BLOCK_960</dfn>,</td></tr>
+<tr><th id="62">62</th><td></td></tr>
+<tr><th id="63">63</th><td>    <dfn class="enum" id="CeltBlockSize::CELT_BLOCK_NB" title='CeltBlockSize::CELT_BLOCK_NB' data-ref="CeltBlockSize::CELT_BLOCK_NB" data-ref-filename="CeltBlockSize..CELT_BLOCK_NB">CELT_BLOCK_NB</dfn></td></tr>
+<tr><th id="64">64</th><td>};</td></tr>
+<tr><th id="65">65</th><td></td></tr>
+<tr><th id="66">66</th><td><b>typedef</b> <b>struct</b> <dfn class="type def" id="CeltBlock" title='CeltBlock' data-ref="CeltBlock" data-ref-filename="CeltBlock"><a class="type" href="#CeltBlock" title='CeltBlock' data-ref="CeltBlock" data-ref-filename="CeltBlock">CeltBlock</a></dfn> {</td></tr>
+<tr><th id="67">67</th><td>    <em>float</em> <dfn class="decl field" id="CeltBlock::energy" title='CeltBlock::energy' data-ref="CeltBlock::energy" data-ref-filename="CeltBlock..energy">energy</dfn>[<a class="macro" href="opus.h.html#46" title="21" data-ref="_M/CELT_MAX_BANDS">CELT_MAX_BANDS</a>];</td></tr>
+<tr><th id="68">68</th><td>    <em>float</em> <dfn class="decl field" id="CeltBlock::lin_energy" title='CeltBlock::lin_energy' data-ref="CeltBlock::lin_energy" data-ref-filename="CeltBlock..lin_energy">lin_energy</dfn>[<a class="macro" href="opus.h.html#46" title="21" data-ref="_M/CELT_MAX_BANDS">CELT_MAX_BANDS</a>];</td></tr>
+<tr><th id="69">69</th><td>    <em>float</em> <dfn class="decl field" id="CeltBlock::error_energy" title='CeltBlock::error_energy' data-ref="CeltBlock::error_energy" data-ref-filename="CeltBlock..error_energy">error_energy</dfn>[<a class="macro" href="opus.h.html#46" title="21" data-ref="_M/CELT_MAX_BANDS">CELT_MAX_BANDS</a>];</td></tr>
+<tr><th id="70">70</th><td>    <em>float</em> <dfn class="decl field" id="CeltBlock::prev_energy" title='CeltBlock::prev_energy' data-ref="CeltBlock::prev_energy" data-ref-filename="CeltBlock..prev_energy">prev_energy</dfn>[<var>2</var>][<a class="macro" href="opus.h.html#46" title="21" data-ref="_M/CELT_MAX_BANDS">CELT_MAX_BANDS</a>];</td></tr>
+<tr><th id="71">71</th><td></td></tr>
+<tr><th id="72">72</th><td>    <a class="typedef" href="../../include/stdint.h.html#uint8_t" title='uint8_t' data-type='unsigned char' data-ref="uint8_t" data-ref-filename="uint8_t">uint8_t</a> <dfn class="decl field" id="CeltBlock::collapse_masks" title='CeltBlock::collapse_masks' data-ref="CeltBlock::collapse_masks" data-ref-filename="CeltBlock..collapse_masks">collapse_masks</dfn>[<a class="macro" href="opus.h.html#46" title="21" data-ref="_M/CELT_MAX_BANDS">CELT_MAX_BANDS</a>];</td></tr>
+<tr><th id="73">73</th><td></td></tr>
+<tr><th id="74">74</th><td>    <i>/* buffer for mdct output + postfilter */</i></td></tr>
+<tr><th id="75">75</th><td>    <a class="macro" href="../libavutil/mem.h.html#117" title="float __attribute__ ((aligned (32))) buf" data-ref="_M/DECLARE_ALIGNED">DECLARE_ALIGNED</a>(<var>32</var>, <em>float</em>, <dfn class="decl field" id="CeltBlock::buf" title='CeltBlock::buf' data-ref="CeltBlock::buf" data-ref-filename="CeltBlock..buf">buf</dfn>)[<var>2048</var>];</td></tr>
+<tr><th id="76">76</th><td>    <a class="macro" href="../libavutil/mem.h.html#117" title="float __attribute__ ((aligned (32))) coeffs" data-ref="_M/DECLARE_ALIGNED">DECLARE_ALIGNED</a>(<var>32</var>, <em>float</em>, <dfn class="decl field" id="CeltBlock::coeffs" title='CeltBlock::coeffs' data-ref="CeltBlock::coeffs" data-ref-filename="CeltBlock..coeffs">coeffs</dfn>)[<a class="macro" href="opus.h.html#45" title="(120 * (1 &lt;&lt; 3))" data-ref="_M/CELT_MAX_FRAME_SIZE">CELT_MAX_FRAME_SIZE</a>];</td></tr>
+<tr><th id="77">77</th><td></td></tr>
+<tr><th id="78">78</th><td>    <i>/* Used by the encoder */</i></td></tr>
+<tr><th id="79">79</th><td>    <a class="macro" href="../libavutil/mem.h.html#117" title="float __attribute__ ((aligned (32))) overlap" data-ref="_M/DECLARE_ALIGNED">DECLARE_ALIGNED</a>(<var>32</var>, <em>float</em>, <dfn class="decl field" id="CeltBlock::overlap" title='CeltBlock::overlap' data-ref="CeltBlock::overlap" data-ref-filename="CeltBlock..overlap">overlap</dfn>)[<a class="macro" href="../libavutil/macros.h.html#48" title="(((120)+(16)-1)&amp;~((16)-1))" data-ref="_M/FFALIGN">FFALIGN</a>(<a class="macro" href="opus.h.html#43" title="120" data-ref="_M/CELT_OVERLAP">CELT_OVERLAP</a>, <var>16</var>)];</td></tr>
+<tr><th id="80">80</th><td>    <a class="macro" href="../libavutil/mem.h.html#117" title="float __attribute__ ((aligned (32))) samples" data-ref="_M/DECLARE_ALIGNED">DECLARE_ALIGNED</a>(<var>32</var>, <em>float</em>, <dfn class="decl field" id="CeltBlock::samples" title='CeltBlock::samples' data-ref="CeltBlock::samples" data-ref-filename="CeltBlock..samples">samples</dfn>)[<a class="macro" href="../libavutil/macros.h.html#48" title="((((120 * (1 &lt;&lt; 3)))+(16)-1)&amp;~((16)-1))" data-ref="_M/FFALIGN">FFALIGN</a>(<a class="macro" href="opus.h.html#45" title="(120 * (1 &lt;&lt; 3))" data-ref="_M/CELT_MAX_FRAME_SIZE">CELT_MAX_FRAME_SIZE</a>, <var>16</var>)];</td></tr>
+<tr><th id="81">81</th><td></td></tr>
+<tr><th id="82">82</th><td>    <i>/* postfilter parameters */</i></td></tr>
+<tr><th id="83">83</th><td>    <em>int</em>   <dfn class="decl field" id="CeltBlock::pf_period_new" title='CeltBlock::pf_period_new' data-ref="CeltBlock::pf_period_new" data-ref-filename="CeltBlock..pf_period_new">pf_period_new</dfn>;</td></tr>
+<tr><th id="84">84</th><td>    <em>float</em> <dfn class="decl field" id="CeltBlock::pf_gains_new" title='CeltBlock::pf_gains_new' data-ref="CeltBlock::pf_gains_new" data-ref-filename="CeltBlock..pf_gains_new">pf_gains_new</dfn>[<var>3</var>];</td></tr>
+<tr><th id="85">85</th><td>    <em>int</em>   <dfn class="decl field" id="CeltBlock::pf_period" title='CeltBlock::pf_period' data-ref="CeltBlock::pf_period" data-ref-filename="CeltBlock..pf_period">pf_period</dfn>;</td></tr>
+<tr><th id="86">86</th><td>    <em>float</em> <dfn class="decl field" id="CeltBlock::pf_gains" title='CeltBlock::pf_gains' data-ref="CeltBlock::pf_gains" data-ref-filename="CeltBlock..pf_gains">pf_gains</dfn>[<var>3</var>];</td></tr>
+<tr><th id="87">87</th><td>    <em>int</em>   <dfn class="decl field" id="CeltBlock::pf_period_old" title='CeltBlock::pf_period_old' data-ref="CeltBlock::pf_period_old" data-ref-filename="CeltBlock..pf_period_old">pf_period_old</dfn>;</td></tr>
+<tr><th id="88">88</th><td>    <em>float</em> <dfn class="decl field" id="CeltBlock::pf_gains_old" title='CeltBlock::pf_gains_old' data-ref="CeltBlock::pf_gains_old" data-ref-filename="CeltBlock..pf_gains_old">pf_gains_old</dfn>[<var>3</var>];</td></tr>
+<tr><th id="89">89</th><td></td></tr>
+<tr><th id="90">90</th><td>    <em>float</em> <dfn class="decl field" id="CeltBlock::emph_coeff" title='CeltBlock::emph_coeff' data-ref="CeltBlock::emph_coeff" data-ref-filename="CeltBlock..emph_coeff">emph_coeff</dfn>;</td></tr>
+<tr><th id="91">91</th><td>} <dfn class="typedef" id="CeltBlock" title='CeltBlock' data-type='struct CeltBlock' data-ref="CeltBlock" data-ref-filename="CeltBlock">CeltBlock</dfn>;</td></tr>
+<tr><th id="92">92</th><td></td></tr>
+<tr><th id="93">93</th><td><b>struct</b> <dfn class="type def" id="CeltFrame" title='CeltFrame' data-ref="CeltFrame" data-ref-filename="CeltFrame">CeltFrame</dfn> {</td></tr>
+<tr><th id="94">94</th><td>    <i>// constant values that do not change during context lifetime</i></td></tr>
+<tr><th id="95">95</th><td>    <a class="typedef" href="avcodec.h.html#AVCodecContext" title='AVCodecContext' data-type='struct AVCodecContext' data-ref="AVCodecContext" data-ref-filename="AVCodecContext">AVCodecContext</a>      *<dfn class="decl field" id="CeltFrame::avctx" title='CeltFrame::avctx' data-ref="CeltFrame::avctx" data-ref-filename="CeltFrame..avctx">avctx</dfn>;</td></tr>
+<tr><th id="96">96</th><td>    <a class="typedef" href="mdct15.h.html#MDCT15Context" title='MDCT15Context' data-type='struct MDCT15Context' data-ref="MDCT15Context" data-ref-filename="MDCT15Context">MDCT15Context</a>       *<dfn class="decl field" id="CeltFrame::imdct" title='CeltFrame::imdct' data-ref="CeltFrame::imdct" data-ref-filename="CeltFrame..imdct">imdct</dfn>[<var>4</var>];</td></tr>
+<tr><th id="97">97</th><td>    <a class="typedef" href="../libavutil/float_dsp.h.html#AVFloatDSPContext" title='AVFloatDSPContext' data-type='struct AVFloatDSPContext' data-ref="AVFloatDSPContext" data-ref-filename="AVFloatDSPContext">AVFloatDSPContext</a>   *<dfn class="decl field" id="CeltFrame::dsp" title='CeltFrame::dsp' data-ref="CeltFrame::dsp" data-ref-filename="CeltFrame..dsp">dsp</dfn>;</td></tr>
+<tr><th id="98">98</th><td>    <a class="typedef" href="#CeltBlock" title='CeltBlock' data-type='struct CeltBlock' data-ref="CeltBlock" data-ref-filename="CeltBlock">CeltBlock</a>           <dfn class="decl field" id="CeltFrame::block" title='CeltFrame::block' data-ref="CeltFrame::block" data-ref-filename="CeltFrame..block">block</dfn>[<var>2</var>];</td></tr>
+<tr><th id="99">99</th><td>    <a class="typedef" href="#CeltPVQ" title='CeltPVQ' data-type='struct CeltPVQ' data-ref="CeltPVQ" data-ref-filename="CeltPVQ">CeltPVQ</a>             *<dfn class="decl field" id="CeltFrame::pvq" title='CeltFrame::pvq' data-ref="CeltFrame::pvq" data-ref-filename="CeltFrame..pvq">pvq</dfn>;</td></tr>
+<tr><th id="100">100</th><td>    <a class="typedef" href="opusdsp.h.html#OpusDSP" title='OpusDSP' data-type='struct OpusDSP' data-ref="OpusDSP" data-ref-filename="OpusDSP">OpusDSP</a>             <dfn class="decl field" id="CeltFrame::opusdsp" title='CeltFrame::opusdsp' data-ref="CeltFrame::opusdsp" data-ref-filename="CeltFrame..opusdsp">opusdsp</dfn>;</td></tr>
+<tr><th id="101">101</th><td>    <em>int</em> <dfn class="decl field" id="CeltFrame::channels" title='CeltFrame::channels' data-ref="CeltFrame::channels" data-ref-filename="CeltFrame..channels">channels</dfn>;</td></tr>
+<tr><th id="102">102</th><td>    <em>int</em> <dfn class="decl field" id="CeltFrame::output_channels" title='CeltFrame::output_channels' data-ref="CeltFrame::output_channels" data-ref-filename="CeltFrame..output_channels">output_channels</dfn>;</td></tr>
+<tr><th id="103">103</th><td>    <em>int</em> <dfn class="decl field" id="CeltFrame::apply_phase_inv" title='CeltFrame::apply_phase_inv' data-ref="CeltFrame::apply_phase_inv" data-ref-filename="CeltFrame..apply_phase_inv">apply_phase_inv</dfn>;</td></tr>
+<tr><th id="104">104</th><td></td></tr>
+<tr><th id="105">105</th><td>    <b>enum</b> <a class="type" href="#CeltBlockSize" title='CeltBlockSize' data-ref="CeltBlockSize" data-ref-filename="CeltBlockSize">CeltBlockSize</a> <dfn class="decl field" id="CeltFrame::size" title='CeltFrame::size' data-ref="CeltFrame::size" data-ref-filename="CeltFrame..size">size</dfn>;</td></tr>
+<tr><th id="106">106</th><td>    <em>int</em> <dfn class="decl field" id="CeltFrame::start_band" title='CeltFrame::start_band' data-ref="CeltFrame::start_band" data-ref-filename="CeltFrame..start_band">start_band</dfn>;</td></tr>
+<tr><th id="107">107</th><td>    <em>int</em> <dfn class="decl field" id="CeltFrame::end_band" title='CeltFrame::end_band' data-ref="CeltFrame::end_band" data-ref-filename="CeltFrame..end_band">end_band</dfn>;</td></tr>
+<tr><th id="108">108</th><td>    <em>int</em> <dfn class="decl field" id="CeltFrame::coded_bands" title='CeltFrame::coded_bands' data-ref="CeltFrame::coded_bands" data-ref-filename="CeltFrame..coded_bands">coded_bands</dfn>;</td></tr>
+<tr><th id="109">109</th><td>    <em>int</em> <dfn class="decl field" id="CeltFrame::transient" title='CeltFrame::transient' data-ref="CeltFrame::transient" data-ref-filename="CeltFrame..transient">transient</dfn>;</td></tr>
+<tr><th id="110">110</th><td>    <em>int</em> <dfn class="decl field" id="CeltFrame::pfilter" title='CeltFrame::pfilter' data-ref="CeltFrame::pfilter" data-ref-filename="CeltFrame..pfilter">pfilter</dfn>;</td></tr>
+<tr><th id="111">111</th><td>    <em>int</em> <dfn class="decl field" id="CeltFrame::skip_band_floor" title='CeltFrame::skip_band_floor' data-ref="CeltFrame::skip_band_floor" data-ref-filename="CeltFrame..skip_band_floor">skip_band_floor</dfn>;</td></tr>
+<tr><th id="112">112</th><td>    <em>int</em> <dfn class="decl field" id="CeltFrame::tf_select" title='CeltFrame::tf_select' data-ref="CeltFrame::tf_select" data-ref-filename="CeltFrame..tf_select">tf_select</dfn>;</td></tr>
+<tr><th id="113">113</th><td>    <em>int</em> <dfn class="decl field" id="CeltFrame::alloc_trim" title='CeltFrame::alloc_trim' data-ref="CeltFrame::alloc_trim" data-ref-filename="CeltFrame..alloc_trim">alloc_trim</dfn>;</td></tr>
+<tr><th id="114">114</th><td>    <em>int</em> <dfn class="decl field" id="CeltFrame::alloc_boost" title='CeltFrame::alloc_boost' data-ref="CeltFrame::alloc_boost" data-ref-filename="CeltFrame..alloc_boost">alloc_boost</dfn>[<a class="macro" href="opus.h.html#46" title="21" data-ref="_M/CELT_MAX_BANDS">CELT_MAX_BANDS</a>];</td></tr>
+<tr><th id="115">115</th><td>    <em>int</em> <dfn class="decl field" id="CeltFrame::blocks" title='CeltFrame::blocks' data-ref="CeltFrame::blocks" data-ref-filename="CeltFrame..blocks">blocks</dfn>;        <i>/* number of iMDCT blocks in the frame, depends on transient */</i></td></tr>
+<tr><th id="116">116</th><td>    <em>int</em> <dfn class="decl field" id="CeltFrame::blocksize" title='CeltFrame::blocksize' data-ref="CeltFrame::blocksize" data-ref-filename="CeltFrame..blocksize">blocksize</dfn>;     <i>/* size of each block */</i></td></tr>
+<tr><th id="117">117</th><td>    <em>int</em> <dfn class="decl field" id="CeltFrame::silence" title='CeltFrame::silence' data-ref="CeltFrame::silence" data-ref-filename="CeltFrame..silence">silence</dfn>;       <i>/* Frame is filled with silence */</i></td></tr>
+<tr><th id="118">118</th><td>    <em>int</em> <dfn class="decl field" id="CeltFrame::anticollapse_needed" title='CeltFrame::anticollapse_needed' data-ref="CeltFrame::anticollapse_needed" data-ref-filename="CeltFrame..anticollapse_needed">anticollapse_needed</dfn>; <i>/* Whether to expect an anticollapse bit */</i></td></tr>
+<tr><th id="119">119</th><td>    <em>int</em> <dfn class="decl field" id="CeltFrame::anticollapse" title='CeltFrame::anticollapse' data-ref="CeltFrame::anticollapse" data-ref-filename="CeltFrame..anticollapse">anticollapse</dfn>;  <i>/* Encoded anticollapse bit */</i></td></tr>
+<tr><th id="120">120</th><td>    <em>int</em> <dfn class="decl field" id="CeltFrame::intensity_stereo" title='CeltFrame::intensity_stereo' data-ref="CeltFrame::intensity_stereo" data-ref-filename="CeltFrame..intensity_stereo">intensity_stereo</dfn>;</td></tr>
+<tr><th id="121">121</th><td>    <em>int</em> <dfn class="decl field" id="CeltFrame::dual_stereo" title='CeltFrame::dual_stereo' data-ref="CeltFrame::dual_stereo" data-ref-filename="CeltFrame..dual_stereo">dual_stereo</dfn>;</td></tr>
+<tr><th id="122">122</th><td>    <em>int</em> <dfn class="decl field" id="CeltFrame::flushed" title='CeltFrame::flushed' data-ref="CeltFrame::flushed" data-ref-filename="CeltFrame..flushed">flushed</dfn>;</td></tr>
+<tr><th id="123">123</th><td>    <a class="typedef" href="../../include/stdint.h.html#uint32_t" title='uint32_t' data-type='unsigned int' data-ref="uint32_t" data-ref-filename="uint32_t">uint32_t</a> <dfn class="decl field" id="CeltFrame::seed" title='CeltFrame::seed' data-ref="CeltFrame::seed" data-ref-filename="CeltFrame..seed">seed</dfn>;</td></tr>
+<tr><th id="124">124</th><td>    <b>enum</b> <a class="type" href="#CeltSpread" title='CeltSpread' data-ref="CeltSpread" data-ref-filename="CeltSpread">CeltSpread</a> <dfn class="decl field" id="CeltFrame::spread" title='CeltFrame::spread' data-ref="CeltFrame::spread" data-ref-filename="CeltFrame..spread">spread</dfn>;</td></tr>
+<tr><th id="125">125</th><td></td></tr>
+<tr><th id="126">126</th><td>    <i>/* Encoder PF coeffs */</i></td></tr>
+<tr><th id="127">127</th><td>    <em>int</em> <dfn class="decl field" id="CeltFrame::pf_octave" title='CeltFrame::pf_octave' data-ref="CeltFrame::pf_octave" data-ref-filename="CeltFrame..pf_octave">pf_octave</dfn>;</td></tr>
+<tr><th id="128">128</th><td>    <em>int</em> <dfn class="decl field" id="CeltFrame::pf_period" title='CeltFrame::pf_period' data-ref="CeltFrame::pf_period" data-ref-filename="CeltFrame..pf_period">pf_period</dfn>;</td></tr>
+<tr><th id="129">129</th><td>    <em>int</em> <dfn class="decl field" id="CeltFrame::pf_tapset" title='CeltFrame::pf_tapset' data-ref="CeltFrame::pf_tapset" data-ref-filename="CeltFrame..pf_tapset">pf_tapset</dfn>;</td></tr>
+<tr><th id="130">130</th><td>    <em>float</em> <dfn class="decl field" id="CeltFrame::pf_gain" title='CeltFrame::pf_gain' data-ref="CeltFrame::pf_gain" data-ref-filename="CeltFrame..pf_gain">pf_gain</dfn>;</td></tr>
+<tr><th id="131">131</th><td></td></tr>
+<tr><th id="132">132</th><td>    <i>/* Bit allocation */</i></td></tr>
+<tr><th id="133">133</th><td>    <em>int</em> <dfn class="decl field" id="CeltFrame::framebits" title='CeltFrame::framebits' data-ref="CeltFrame::framebits" data-ref-filename="CeltFrame..framebits">framebits</dfn>;</td></tr>
+<tr><th id="134">134</th><td>    <em>int</em> <dfn class="decl field" id="CeltFrame::remaining" title='CeltFrame::remaining' data-ref="CeltFrame::remaining" data-ref-filename="CeltFrame..remaining">remaining</dfn>;</td></tr>
+<tr><th id="135">135</th><td>    <em>int</em> <dfn class="decl field" id="CeltFrame::remaining2" title='CeltFrame::remaining2' data-ref="CeltFrame::remaining2" data-ref-filename="CeltFrame..remaining2">remaining2</dfn>;</td></tr>
+<tr><th id="136">136</th><td>    <em>int</em> <dfn class="decl field" id="CeltFrame::caps" title='CeltFrame::caps' data-ref="CeltFrame::caps" data-ref-filename="CeltFrame..caps">caps</dfn>         [<a class="macro" href="opus.h.html#46" title="21" data-ref="_M/CELT_MAX_BANDS">CELT_MAX_BANDS</a>];</td></tr>
+<tr><th id="137">137</th><td>    <em>int</em> <dfn class="decl field" id="CeltFrame::fine_bits" title='CeltFrame::fine_bits' data-ref="CeltFrame::fine_bits" data-ref-filename="CeltFrame..fine_bits">fine_bits</dfn>    [<a class="macro" href="opus.h.html#46" title="21" data-ref="_M/CELT_MAX_BANDS">CELT_MAX_BANDS</a>];</td></tr>
+<tr><th id="138">138</th><td>    <em>int</em> <dfn class="decl field" id="CeltFrame::fine_priority" title='CeltFrame::fine_priority' data-ref="CeltFrame::fine_priority" data-ref-filename="CeltFrame..fine_priority">fine_priority</dfn>[<a class="macro" href="opus.h.html#46" title="21" data-ref="_M/CELT_MAX_BANDS">CELT_MAX_BANDS</a>];</td></tr>
+<tr><th id="139">139</th><td>    <em>int</em> <dfn class="decl field" id="CeltFrame::pulses" title='CeltFrame::pulses' data-ref="CeltFrame::pulses" data-ref-filename="CeltFrame..pulses">pulses</dfn>       [<a class="macro" href="opus.h.html#46" title="21" data-ref="_M/CELT_MAX_BANDS">CELT_MAX_BANDS</a>];</td></tr>
+<tr><th id="140">140</th><td>    <em>int</em> <dfn class="decl field" id="CeltFrame::tf_change" title='CeltFrame::tf_change' data-ref="CeltFrame::tf_change" data-ref-filename="CeltFrame..tf_change">tf_change</dfn>    [<a class="macro" href="opus.h.html#46" title="21" data-ref="_M/CELT_MAX_BANDS">CELT_MAX_BANDS</a>];</td></tr>
+<tr><th id="141">141</th><td>};</td></tr>
+<tr><th id="142">142</th><td></td></tr>
+<tr><th id="143">143</th><td><i>/* LCG for noise generation */</i></td></tr>
+<tr><th id="144">144</th><td><em>static</em> <a class="macro" href="../libavutil/attributes.h.html#45" title="__attribute__((always_inline)) inline" data-ref="_M/av_always_inline">av_always_inline</a> <a class="typedef" href="../../include/stdint.h.html#uint32_t" title='uint32_t' data-type='unsigned int' data-ref="uint32_t" data-ref-filename="uint32_t">uint32_t</a> <dfn class="decl def fn" id="celt_rng" title='celt_rng' data-ref="celt_rng" data-ref-filename="celt_rng">celt_rng</dfn>(<a class="typedef" href="opus.h.html#CeltFrame" title='CeltFrame' data-type='struct CeltFrame' data-ref="CeltFrame" data-ref-filename="CeltFrame">CeltFrame</a> *<dfn class="local col6 decl" id="136f" title='f' data-type='CeltFrame *' data-ref="136f" data-ref-filename="136f">f</dfn>)</td></tr>
+<tr><th id="145">145</th><td>{</td></tr>
+<tr><th id="146">146</th><td>    <a class="local col6 ref" href="#136f" title='f' data-ref="136f" data-ref-filename="136f">f</a>-&gt;<a class="ref field" href="#CeltFrame::seed" title='CeltFrame::seed' data-ref="CeltFrame::seed" data-ref-filename="CeltFrame..seed">seed</a> = <var>1664525</var> * <a class="local col6 ref" href="#136f" title='f' data-ref="136f" data-ref-filename="136f">f</a>-&gt;<a class="ref field" href="#CeltFrame::seed" title='CeltFrame::seed' data-ref="CeltFrame::seed" data-ref-filename="CeltFrame..seed">seed</a> + <var>1013904223</var>;</td></tr>
+<tr><th id="147">147</th><td>    <b>return</b> <a class="local col6 ref" href="#136f" title='f' data-ref="136f" data-ref-filename="136f">f</a>-&gt;<a class="ref field" href="#CeltFrame::seed" title='CeltFrame::seed' data-ref="CeltFrame::seed" data-ref-filename="CeltFrame..seed">seed</a>;</td></tr>
+<tr><th id="148">148</th><td>}</td></tr>
+<tr><th id="149">149</th><td></td></tr>
+<tr><th id="150">150</th><td><em>static</em> <a class="macro" href="../libavutil/attributes.h.html#45" title="__attribute__((always_inline)) inline" data-ref="_M/av_always_inline">av_always_inline</a> <em>void</em> <dfn class="decl def fn" id="celt_renormalize_vector" title='celt_renormalize_vector' data-ref="celt_renormalize_vector" data-ref-filename="celt_renormalize_vector">celt_renormalize_vector</dfn>(<em>float</em> *<dfn class="local col7 decl" id="137X" title='X' data-type='float *' data-ref="137X" data-ref-filename="137X">X</dfn>, <em>int</em> <dfn class="local col8 decl" id="138N" title='N' data-type='int' data-ref="138N" data-ref-filename="138N">N</dfn>, <em>float</em> <dfn class="local col9 decl" id="139gain" title='gain' data-type='float' data-ref="139gain" data-ref-filename="139gain">gain</dfn>)</td></tr>
+<tr><th id="151">151</th><td>{</td></tr>
+<tr><th id="152">152</th><td>    <em>int</em> <dfn class="local col0 decl" id="140i" title='i' data-type='int' data-ref="140i" data-ref-filename="140i">i</dfn>;</td></tr>
+<tr><th id="153">153</th><td>    <em>float</em> <dfn class="local col1 decl" id="141g" title='g' data-type='float' data-ref="141g" data-ref-filename="141g">g</dfn> = <var>1e-15f</var>;</td></tr>
+<tr><th id="154">154</th><td>    <b>for</b> (<a class="local col0 ref" href="#140i" title='i' data-ref="140i" data-ref-filename="140i">i</a> = <var>0</var>; <a class="local col0 ref" href="#140i" title='i' data-ref="140i" data-ref-filename="140i">i</a> &lt; <a class="local col8 ref" href="#138N" title='N' data-ref="138N" data-ref-filename="138N">N</a>; <a class="local col0 ref" href="#140i" title='i' data-ref="140i" data-ref-filename="140i">i</a>++)</td></tr>
+<tr><th id="155">155</th><td>        <a class="local col1 ref" href="#141g" title='g' data-ref="141g" data-ref-filename="141g">g</a> += <a class="local col7 ref" href="#137X" title='X' data-ref="137X" data-ref-filename="137X">X</a>[<a class="local col0 ref" href="#140i" title='i' data-ref="140i" data-ref-filename="140i">i</a>] * <a class="local col7 ref" href="#137X" title='X' data-ref="137X" data-ref-filename="137X">X</a>[<a class="local col0 ref" href="#140i" title='i' data-ref="140i" data-ref-filename="140i">i</a>];</td></tr>
+<tr><th id="156">156</th><td>    <a class="local col1 ref" href="#141g" title='g' data-ref="141g" data-ref-filename="141g">g</a> = <a class="local col9 ref" href="#139gain" title='gain' data-ref="139gain" data-ref-filename="139gain">gain</a> / <a class="ref fn" href="../../include/bits/mathcalls.h.html#156" title='sqrtf' data-ref="sqrtf" data-ref-filename="sqrtf">sqrtf</a>(<a class="local col1 ref" href="#141g" title='g' data-ref="141g" data-ref-filename="141g">g</a>);</td></tr>
+<tr><th id="157">157</th><td></td></tr>
+<tr><th id="158">158</th><td>    <b>for</b> (<a class="local col0 ref" href="#140i" title='i' data-ref="140i" data-ref-filename="140i">i</a> = <var>0</var>; <a class="local col0 ref" href="#140i" title='i' data-ref="140i" data-ref-filename="140i">i</a> &lt; <a class="local col8 ref" href="#138N" title='N' data-ref="138N" data-ref-filename="138N">N</a>; <a class="local col0 ref" href="#140i" title='i' data-ref="140i" data-ref-filename="140i">i</a>++)</td></tr>
+<tr><th id="159">159</th><td>        <a class="local col7 ref" href="#137X" title='X' data-ref="137X" data-ref-filename="137X">X</a>[<a class="local col0 ref" href="#140i" title='i' data-ref="140i" data-ref-filename="140i">i</a>] *= <a class="local col1 ref" href="#141g" title='g' data-ref="141g" data-ref-filename="141g">g</a>;</td></tr>
+<tr><th id="160">160</th><td>}</td></tr>
+<tr><th id="161">161</th><td></td></tr>
+<tr><th id="162">162</th><td><em>int</em> <dfn class="decl fn" id="ff_celt_init" title='ff_celt_init' data-ref="ff_celt_init" data-ref-filename="ff_celt_init">ff_celt_init</dfn>(<a class="typedef" href="avcodec.h.html#AVCodecContext" title='AVCodecContext' data-type='struct AVCodecContext' data-ref="AVCodecContext" data-ref-filename="AVCodecContext">AVCodecContext</a> *<dfn class="local col2 decl" id="142avctx" title='avctx' data-type='AVCodecContext *' data-ref="142avctx" data-ref-filename="142avctx">avctx</dfn>, <a class="typedef" href="opus.h.html#CeltFrame" title='CeltFrame' data-type='struct CeltFrame' data-ref="CeltFrame" data-ref-filename="CeltFrame">CeltFrame</a> **<dfn class="local col3 decl" id="143f" title='f' data-type='CeltFrame **' data-ref="143f" data-ref-filename="143f">f</dfn>, <em>int</em> <dfn class="local col4 decl" id="144output_channels" title='output_channels' data-type='int' data-ref="144output_channels" data-ref-filename="144output_channels">output_channels</dfn>,</td></tr>
+<tr><th id="163">163</th><td>                 <em>int</em> <dfn class="local col5 decl" id="145apply_phase_inv" title='apply_phase_inv' data-type='int' data-ref="145apply_phase_inv" data-ref-filename="145apply_phase_inv">apply_phase_inv</dfn>);</td></tr>
+<tr><th id="164">164</th><td></td></tr>
+<tr><th id="165">165</th><td><em>void</em> <dfn class="decl fn" id="ff_celt_free" title='ff_celt_free' data-ref="ff_celt_free" data-ref-filename="ff_celt_free">ff_celt_free</dfn>(<a class="typedef" href="opus.h.html#CeltFrame" title='CeltFrame' data-type='struct CeltFrame' data-ref="CeltFrame" data-ref-filename="CeltFrame">CeltFrame</a> **<dfn class="local col6 decl" id="146f" title='f' data-type='CeltFrame **' data-ref="146f" data-ref-filename="146f">f</dfn>);</td></tr>
+<tr><th id="166">166</th><td></td></tr>
+<tr><th id="167">167</th><td><em>void</em> <dfn class="decl fn" id="ff_celt_flush" title='ff_celt_flush' data-ref="ff_celt_flush" data-ref-filename="ff_celt_flush">ff_celt_flush</dfn>(<a class="typedef" href="opus.h.html#CeltFrame" title='CeltFrame' data-type='struct CeltFrame' data-ref="CeltFrame" data-ref-filename="CeltFrame">CeltFrame</a> *<dfn class="local col7 decl" id="147f" title='f' data-type='CeltFrame *' data-ref="147f" data-ref-filename="147f">f</dfn>);</td></tr>
+<tr><th id="168">168</th><td></td></tr>
+<tr><th id="169">169</th><td><em>int</em> <dfn class="decl fn" id="ff_celt_decode_frame" title='ff_celt_decode_frame' data-ref="ff_celt_decode_frame" data-ref-filename="ff_celt_decode_frame">ff_celt_decode_frame</dfn>(<a class="typedef" href="opus.h.html#CeltFrame" title='CeltFrame' data-type='struct CeltFrame' data-ref="CeltFrame" data-ref-filename="CeltFrame">CeltFrame</a> *<dfn class="local col8 decl" id="148f" title='f' data-type='CeltFrame *' data-ref="148f" data-ref-filename="148f">f</dfn>, <a class="typedef" href="opus_rc.h.html#OpusRangeCoder" title='OpusRangeCoder' data-type='struct OpusRangeCoder' data-ref="OpusRangeCoder" data-ref-filename="OpusRangeCoder">OpusRangeCoder</a> *<dfn class="local col9 decl" id="149rc" title='rc' data-type='OpusRangeCoder *' data-ref="149rc" data-ref-filename="149rc">rc</dfn>, <em>float</em> **<dfn class="local col0 decl" id="150output" title='output' data-type='float **' data-ref="150output" data-ref-filename="150output">output</dfn>,</td></tr>
+<tr><th id="170">170</th><td>                         <em>int</em> <dfn class="local col1 decl" id="151coded_channels" title='coded_channels' data-type='int' data-ref="151coded_channels" data-ref-filename="151coded_channels">coded_channels</dfn>, <em>int</em> <dfn class="local col2 decl" id="152frame_size" title='frame_size' data-type='int' data-ref="152frame_size" data-ref-filename="152frame_size">frame_size</dfn>, <em>int</em> <dfn class="local col3 decl" id="153startband" title='startband' data-type='int' data-ref="153startband" data-ref-filename="153startband">startband</dfn>, <em>int</em> <dfn class="local col4 decl" id="154endband" title='endband' data-type='int' data-ref="154endband" data-ref-filename="154endband">endband</dfn>);</td></tr>
+<tr><th id="171">171</th><td></td></tr>
+<tr><th id="172">172</th><td><u>#<span data-ppcond="24">endif</span> /* AVCODEC_OPUS_CELT_H */</u></td></tr>
+<tr><th id="173">173</th><td></td></tr>
+</table><hr/><p id='footer'>
+Generated while processing <a href='opus.c.html'>ffmpeg/libavcodec/opus.c</a><br/>Generated on <em>2021-May-30</em> from project ffmpeg revision <em>4.4</em>

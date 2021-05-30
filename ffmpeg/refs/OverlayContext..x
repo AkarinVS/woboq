@@ -1,0 +1,32 @@
+<dec f='ffmpeg/libavfilter/vf_overlay.h' l='56' type='int'/>
+<use f='ffmpeg/libavfilter/vf_overlay.c' l='105' u='w' c='eval_expr'/>
+<use f='ffmpeg/libavfilter/vf_overlay.c' l='149' u='r' c='process_command'/>
+<use f='ffmpeg/libavfilter/vf_overlay.c' l='306' u='r' c='config_input_overlay'/>
+<use f='ffmpeg/libavfilter/vf_overlay.c' l='680' u='r' c='blend_slice_yuv420'/>
+<use f='ffmpeg/libavfilter/vf_overlay.c' l='688' u='r' c='blend_slice_yuva420'/>
+<use f='ffmpeg/libavfilter/vf_overlay.c' l='696' u='r' c='blend_slice_yuv420p10'/>
+<use f='ffmpeg/libavfilter/vf_overlay.c' l='704' u='r' c='blend_slice_yuva420p10'/>
+<use f='ffmpeg/libavfilter/vf_overlay.c' l='712' u='r' c='blend_slice_yuv422p10'/>
+<use f='ffmpeg/libavfilter/vf_overlay.c' l='720' u='r' c='blend_slice_yuva422p10'/>
+<use f='ffmpeg/libavfilter/vf_overlay.c' l='728' u='r' c='blend_slice_yuv422'/>
+<use f='ffmpeg/libavfilter/vf_overlay.c' l='736' u='r' c='blend_slice_yuva422'/>
+<use f='ffmpeg/libavfilter/vf_overlay.c' l='744' u='r' c='blend_slice_yuv444'/>
+<use f='ffmpeg/libavfilter/vf_overlay.c' l='752' u='r' c='blend_slice_yuva444'/>
+<use f='ffmpeg/libavfilter/vf_overlay.c' l='760' u='r' c='blend_slice_gbrp'/>
+<use f='ffmpeg/libavfilter/vf_overlay.c' l='768' u='r' c='blend_slice_gbrap'/>
+<use f='ffmpeg/libavfilter/vf_overlay.c' l='776' u='r' c='blend_slice_yuv420_pm'/>
+<use f='ffmpeg/libavfilter/vf_overlay.c' l='784' u='r' c='blend_slice_yuva420_pm'/>
+<use f='ffmpeg/libavfilter/vf_overlay.c' l='792' u='r' c='blend_slice_yuv422_pm'/>
+<use f='ffmpeg/libavfilter/vf_overlay.c' l='800' u='r' c='blend_slice_yuva422_pm'/>
+<use f='ffmpeg/libavfilter/vf_overlay.c' l='808' u='r' c='blend_slice_yuv444_pm'/>
+<use f='ffmpeg/libavfilter/vf_overlay.c' l='816' u='r' c='blend_slice_yuva444_pm'/>
+<use f='ffmpeg/libavfilter/vf_overlay.c' l='824' u='r' c='blend_slice_gbrp_pm'/>
+<use f='ffmpeg/libavfilter/vf_overlay.c' l='832' u='r' c='blend_slice_gbrap_pm'/>
+<use f='ffmpeg/libavfilter/vf_overlay.c' l='840' u='r' c='blend_slice_rgb'/>
+<use f='ffmpeg/libavfilter/vf_overlay.c' l='848' u='r' c='blend_slice_rgba'/>
+<use f='ffmpeg/libavfilter/vf_overlay.c' l='856' u='r' c='blend_slice_rgb_pm'/>
+<use f='ffmpeg/libavfilter/vf_overlay.c' l='864' u='r' c='blend_slice_rgba_pm'/>
+<use f='ffmpeg/libavfilter/vf_overlay.c' l='1022' u='r' c='do_blend'/>
+<use f='ffmpeg/libavfilter/vf_overlay.c' l='1026' u='r' c='do_blend'/>
+<use f='ffmpeg/libavfilter/vf_overlay.c' l='1026' u='r' c='do_blend'/>
+<offset>64</offset>

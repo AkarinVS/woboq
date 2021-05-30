@@ -1,0 +1,149 @@
+<!doctype html>
+<html>
+<head>
+<meta name="viewport" content="width=device-width, initial-scale=1.0"><title>v4l2_m2m.h source code [ffmpeg/libavcodec/v4l2_m2m.h] - Woboq Code Browser</title>
+<meta name="woboq:interestingDefinitions" content="V4L2m2mContext,V4L2m2mPriv "/>
+<link rel="stylesheet" href="../.././data/qtcreator.css" title="QtCreator"/>
+<link rel="alternate stylesheet" href="../.././data/kdevelop.css" title="KDevelop"/>
+<script type="text/javascript" src="../.././data/jquery/jquery.min.js"></script>
+<script type="text/javascript" src="../.././data/jquery/jquery-ui.min.js"></script>
+<script>var file = 'ffmpeg/libavcodec/v4l2_m2m.h'; var root_path = '../..'; var data_path = '../.././data'; var ecma_script_api_version = 2;</script>
+<script src='../.././data/codebrowser.js'></script>
+</head>
+<body><div id='header'><h1 id='breadcrumb'><span>Browse the source code of </span><a href='..'>ffmpeg</a>/<a href='./'>libavcodec</a>/<a href='v4l2_m2m.h.html'>v4l2_m2m.h</a></h1></div>
+<hr/><div id='content'><table class="code">
+<tr><th id="1">1</th><td><i>/*</i></td></tr>
+<tr><th id="2">2</th><td><i> * V4L2 mem2mem helper functions</i></td></tr>
+<tr><th id="3">3</th><td><i> *</i></td></tr>
+<tr><th id="4">4</th><td><i> * Copyright (C) 2017 Alexis Ballier &lt;aballier@gentoo.org&gt;</i></td></tr>
+<tr><th id="5">5</th><td><i> * Copyright (C) 2017 Jorge Ramirez &lt;jorge.ramirez-ortiz@linaro.org&gt;</i></td></tr>
+<tr><th id="6">6</th><td><i> *</i></td></tr>
+<tr><th id="7">7</th><td><i> * This file is part of FFmpeg.</i></td></tr>
+<tr><th id="8">8</th><td><i> *</i></td></tr>
+<tr><th id="9">9</th><td><i> * FFmpeg is free software; you can redistribute it and/or</i></td></tr>
+<tr><th id="10">10</th><td><i> * modify it under the terms of the GNU Lesser General Public</i></td></tr>
+<tr><th id="11">11</th><td><i> * License as published by the Free Software Foundation; either</i></td></tr>
+<tr><th id="12">12</th><td><i> * version 2.1 of the License, or (at your option) any later version.</i></td></tr>
+<tr><th id="13">13</th><td><i> *</i></td></tr>
+<tr><th id="14">14</th><td><i> * FFmpeg is distributed in the hope that it will be useful,</i></td></tr>
+<tr><th id="15">15</th><td><i> * but WITHOUT ANY WARRANTY; without even the implied warranty of</i></td></tr>
+<tr><th id="16">16</th><td><i> * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the GNU</i></td></tr>
+<tr><th id="17">17</th><td><i> * Lesser General Public License for more details.</i></td></tr>
+<tr><th id="18">18</th><td><i> *</i></td></tr>
+<tr><th id="19">19</th><td><i> * You should have received a copy of the GNU Lesser General Public</i></td></tr>
+<tr><th id="20">20</th><td><i> * License along with FFmpeg; if not, write to the Free Software</i></td></tr>
+<tr><th id="21">21</th><td><i> * Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston, MA 02110-1301 USA</i></td></tr>
+<tr><th id="22">22</th><td><i> */</i></td></tr>
+<tr><th id="23">23</th><td></td></tr>
+<tr><th id="24">24</th><td><u>#<span data-ppcond="24">ifndef</span> <span class="macro" data-ref="_M/AVCODEC_V4L2_M2M_H">AVCODEC_V4L2_M2M_H</span></u></td></tr>
+<tr><th id="25">25</th><td><u>#define <dfn class="macro" id="_M/AVCODEC_V4L2_M2M_H" data-ref="_M/AVCODEC_V4L2_M2M_H">AVCODEC_V4L2_M2M_H</dfn></u></td></tr>
+<tr><th id="26">26</th><td></td></tr>
+<tr><th id="27">27</th><td><u>#include <a href="../../include/semaphore.h.html">&lt;semaphore.h&gt;</a></u></td></tr>
+<tr><th id="28">28</th><td><u>#include <a href="../../include/unistd.h.html">&lt;unistd.h&gt;</a></u></td></tr>
+<tr><th id="29">29</th><td><u>#include <a href="../../include/dirent.h.html">&lt;dirent.h&gt;</a></u></td></tr>
+<tr><th id="30">30</th><td><u>#include <a href="../../include/linux/videodev2.h.html">&lt;linux/videodev2.h&gt;</a></u></td></tr>
+<tr><th id="31">31</th><td></td></tr>
+<tr><th id="32">32</th><td><u>#include <a href="avcodec.h.html">"libavcodec/avcodec.h"</a></u></td></tr>
+<tr><th id="33">33</th><td><u>#include <a href="v4l2_context.h.html">"v4l2_context.h"</a></u></td></tr>
+<tr><th id="34">34</th><td></td></tr>
+<tr><th id="35">35</th><td><u>#define <dfn class="macro" id="_M/container_of" data-ref="_M/container_of">container_of</dfn>(ptr, type, member) ({ \</u></td></tr>
+<tr><th id="36">36</th><td><u>        const __typeof__(((type *)0)-&gt;member ) *__mptr = (ptr); \</u></td></tr>
+<tr><th id="37">37</th><td><u>        (type *)((char *)__mptr - offsetof(type,member) );})</u></td></tr>
+<tr><th id="38">38</th><td></td></tr>
+<tr><th id="39">39</th><td><u>#define <dfn class="macro" id="_M/V4L_M2M_DEFAULT_OPTS" data-ref="_M/V4L_M2M_DEFAULT_OPTS">V4L_M2M_DEFAULT_OPTS</dfn> \</u></td></tr>
+<tr><th id="40">40</th><td><u>    { "num_output_buffers", "Number of buffers in the output context",\</u></td></tr>
+<tr><th id="41">41</th><td><u>        OFFSET(num_output_buffers), AV_OPT_TYPE_INT, { .i64 = 16 }, 6, INT_MAX, FLAGS }</u></td></tr>
+<tr><th id="42">42</th><td></td></tr>
+<tr><th id="43">43</th><td><b>typedef</b> <b>struct</b> <dfn class="type def" id="V4L2m2mContext" title='V4L2m2mContext' data-ref="V4L2m2mContext" data-ref-filename="V4L2m2mContext"><a class="type" href="#V4L2m2mContext" title='V4L2m2mContext' data-ref="V4L2m2mContext" data-ref-filename="V4L2m2mContext">V4L2m2mContext</a></dfn> {</td></tr>
+<tr><th id="44">44</th><td>    <em>char</em> <dfn class="decl field" id="V4L2m2mContext::devname" title='V4L2m2mContext::devname' data-ref="V4L2m2mContext::devname" data-ref-filename="V4L2m2mContext..devname">devname</dfn>[<a class="macro" href="../../include/linux/limits.h.html#12" title="4096" data-ref="_M/PATH_MAX">PATH_MAX</a>];</td></tr>
+<tr><th id="45">45</th><td>    <em>int</em> <dfn class="decl field" id="V4L2m2mContext::fd" title='V4L2m2mContext::fd' data-ref="V4L2m2mContext::fd" data-ref-filename="V4L2m2mContext..fd">fd</dfn>;</td></tr>
+<tr><th id="46">46</th><td></td></tr>
+<tr><th id="47">47</th><td>    <i>/* the codec context queues */</i></td></tr>
+<tr><th id="48">48</th><td>    <a class="typedef" href="v4l2_context.h.html#V4L2Context" title='V4L2Context' data-type='struct V4L2Context' data-ref="V4L2Context" data-ref-filename="V4L2Context">V4L2Context</a> <dfn class="decl field" id="V4L2m2mContext::capture" title='V4L2m2mContext::capture' data-ref="V4L2m2mContext::capture" data-ref-filename="V4L2m2mContext..capture">capture</dfn>;</td></tr>
+<tr><th id="49">49</th><td>    <a class="typedef" href="v4l2_context.h.html#V4L2Context" title='V4L2Context' data-type='struct V4L2Context' data-ref="V4L2Context" data-ref-filename="V4L2Context">V4L2Context</a> <dfn class="decl field" id="V4L2m2mContext::output" title='V4L2m2mContext::output' data-ref="V4L2m2mContext::output" data-ref-filename="V4L2m2mContext..output">output</dfn>;</td></tr>
+<tr><th id="50">50</th><td></td></tr>
+<tr><th id="51">51</th><td>    <i>/* dynamic stream reconfig */</i></td></tr>
+<tr><th id="52">52</th><td>    <a class="typedef" href="avcodec.h.html#AVCodecContext" title='AVCodecContext' data-type='struct AVCodecContext' data-ref="AVCodecContext" data-ref-filename="AVCodecContext">AVCodecContext</a> *<dfn class="decl field" id="V4L2m2mContext::avctx" title='V4L2m2mContext::avctx' data-ref="V4L2m2mContext::avctx" data-ref-filename="V4L2m2mContext..avctx">avctx</dfn>;</td></tr>
+<tr><th id="53">53</th><td>    <a class="typedef" href="../../include/bits/semaphore.h.html#sem_t" title='sem_t' data-type='union sem_t' data-ref="sem_t" data-ref-filename="sem_t">sem_t</a> <dfn class="decl field" id="V4L2m2mContext::refsync" title='V4L2m2mContext::refsync' data-ref="V4L2m2mContext::refsync" data-ref-filename="V4L2m2mContext..refsync">refsync</dfn>;</td></tr>
+<tr><th id="54">54</th><td>    <span class='typedef' title='atomic_uint' data-type='_Atomic(unsigned int)' data-ref="atomic_uint" data-ref-filename="atomic_uint">atomic_uint</span> <dfn class="decl field" id="V4L2m2mContext::refcount" title='V4L2m2mContext::refcount' data-ref="V4L2m2mContext::refcount" data-ref-filename="V4L2m2mContext..refcount">refcount</dfn>;</td></tr>
+<tr><th id="55">55</th><td>    <em>int</em> <dfn class="decl field" id="V4L2m2mContext::reinit" title='V4L2m2mContext::reinit' data-ref="V4L2m2mContext::reinit" data-ref-filename="V4L2m2mContext..reinit">reinit</dfn>;</td></tr>
+<tr><th id="56">56</th><td></td></tr>
+<tr><th id="57">57</th><td>    <i>/* null frame/packet received */</i></td></tr>
+<tr><th id="58">58</th><td>    <em>int</em> <dfn class="decl field" id="V4L2m2mContext::draining" title='V4L2m2mContext::draining' data-ref="V4L2m2mContext::draining" data-ref-filename="V4L2m2mContext..draining">draining</dfn>;</td></tr>
+<tr><th id="59">59</th><td>    <a class="typedef" href="packet.h.html#AVPacket" title='AVPacket' data-type='struct AVPacket' data-ref="AVPacket" data-ref-filename="AVPacket">AVPacket</a> <dfn class="decl field" id="V4L2m2mContext::buf_pkt" title='V4L2m2mContext::buf_pkt' data-ref="V4L2m2mContext::buf_pkt" data-ref-filename="V4L2m2mContext..buf_pkt">buf_pkt</dfn>;</td></tr>
+<tr><th id="60">60</th><td></td></tr>
+<tr><th id="61">61</th><td>    <i>/* Reference to a frame. Only used during encoding */</i></td></tr>
+<tr><th id="62">62</th><td>    <a class="typedef" href="../libavutil/frame.h.html#AVFrame" title='AVFrame' data-type='struct AVFrame' data-ref="AVFrame" data-ref-filename="AVFrame">AVFrame</a> *<dfn class="decl field" id="V4L2m2mContext::frame" title='V4L2m2mContext::frame' data-ref="V4L2m2mContext::frame" data-ref-filename="V4L2m2mContext..frame">frame</dfn>;</td></tr>
+<tr><th id="63">63</th><td></td></tr>
+<tr><th id="64">64</th><td>    <i>/* Reference to self; only valid while codec is active. */</i></td></tr>
+<tr><th id="65">65</th><td>    <a class="typedef" href="../libavutil/buffer.h.html#AVBufferRef" title='AVBufferRef' data-type='struct AVBufferRef' data-ref="AVBufferRef" data-ref-filename="AVBufferRef">AVBufferRef</a> *<dfn class="decl field" id="V4L2m2mContext::self_ref" title='V4L2m2mContext::self_ref' data-ref="V4L2m2mContext::self_ref" data-ref-filename="V4L2m2mContext..self_ref">self_ref</dfn>;</td></tr>
+<tr><th id="66">66</th><td></td></tr>
+<tr><th id="67">67</th><td>    <i>/* reference back to V4L2m2mPriv */</i></td></tr>
+<tr><th id="68">68</th><td>    <em>void</em> *<dfn class="decl field" id="V4L2m2mContext::priv" title='V4L2m2mContext::priv' data-ref="V4L2m2mContext::priv" data-ref-filename="V4L2m2mContext..priv">priv</dfn>;</td></tr>
+<tr><th id="69">69</th><td>} <dfn class="typedef" id="V4L2m2mContext" title='V4L2m2mContext' data-type='struct V4L2m2mContext' data-ref="V4L2m2mContext" data-ref-filename="V4L2m2mContext">V4L2m2mContext</dfn>;</td></tr>
+<tr><th id="70">70</th><td></td></tr>
+<tr><th id="71">71</th><td><b>typedef</b> <b>struct</b> <dfn class="type def" id="V4L2m2mPriv" title='V4L2m2mPriv' data-ref="V4L2m2mPriv" data-ref-filename="V4L2m2mPriv"><a class="type" href="#V4L2m2mPriv" title='V4L2m2mPriv' data-ref="V4L2m2mPriv" data-ref-filename="V4L2m2mPriv">V4L2m2mPriv</a></dfn> {</td></tr>
+<tr><th id="72">72</th><td>    <a class="typedef" href="../libavutil/log.h.html#AVClass" title='AVClass' data-type='struct AVClass' data-ref="AVClass" data-ref-filename="AVClass">AVClass</a> *<dfn class="decl field" id="V4L2m2mPriv::class" title='V4L2m2mPriv::class' data-ref="V4L2m2mPriv::class" data-ref-filename="V4L2m2mPriv..class">class</dfn>;</td></tr>
+<tr><th id="73">73</th><td></td></tr>
+<tr><th id="74">74</th><td>    <a class="typedef" href="#V4L2m2mContext" title='V4L2m2mContext' data-type='struct V4L2m2mContext' data-ref="V4L2m2mContext" data-ref-filename="V4L2m2mContext">V4L2m2mContext</a> *<dfn class="decl field" id="V4L2m2mPriv::context" title='V4L2m2mPriv::context' data-ref="V4L2m2mPriv::context" data-ref-filename="V4L2m2mPriv..context">context</dfn>;</td></tr>
+<tr><th id="75">75</th><td>    <a class="typedef" href="../libavutil/buffer.h.html#AVBufferRef" title='AVBufferRef' data-type='struct AVBufferRef' data-ref="AVBufferRef" data-ref-filename="AVBufferRef">AVBufferRef</a>    *<dfn class="decl field" id="V4L2m2mPriv::context_ref" title='V4L2m2mPriv::context_ref' data-ref="V4L2m2mPriv::context_ref" data-ref-filename="V4L2m2mPriv..context_ref">context_ref</dfn>;</td></tr>
+<tr><th id="76">76</th><td></td></tr>
+<tr><th id="77">77</th><td>    <em>int</em> <dfn class="decl field" id="V4L2m2mPriv::num_output_buffers" title='V4L2m2mPriv::num_output_buffers' data-ref="V4L2m2mPriv::num_output_buffers" data-ref-filename="V4L2m2mPriv..num_output_buffers">num_output_buffers</dfn>;</td></tr>
+<tr><th id="78">78</th><td>    <em>int</em> <dfn class="decl field" id="V4L2m2mPriv::num_capture_buffers" title='V4L2m2mPriv::num_capture_buffers' data-ref="V4L2m2mPriv::num_capture_buffers" data-ref-filename="V4L2m2mPriv..num_capture_buffers">num_capture_buffers</dfn>;</td></tr>
+<tr><th id="79">79</th><td>} <dfn class="typedef" id="V4L2m2mPriv" title='V4L2m2mPriv' data-type='struct V4L2m2mPriv' data-ref="V4L2m2mPriv" data-ref-filename="V4L2m2mPriv">V4L2m2mPriv</dfn>;</td></tr>
+<tr><th id="80">80</th><td></td></tr>
+<tr><th id="81">81</th><td><i class="doc">/**</i></td></tr>
+<tr><th id="82">82</th><td><i class="doc"> * Allocate a new context and references for a V4L2 M2M instance.</i></td></tr>
+<tr><th id="83">83</th><td><i class="doc"> *</i></td></tr>
+<tr><th id="84">84</th><td><i class="doc"> * <span class="command">@param</span>[in] <span class="arg">ctx</span> The V4L2m2mPriv instantiated by the encoder/decoder.</i></td></tr>
+<tr><th id="85">85</th><td><i class="doc"> * <span class="command">@param</span>[out] <span class="arg">ctx</span> The V4L2m2mContext.</i></td></tr>
+<tr><th id="86">86</th><td><i class="doc"> *</i></td></tr>
+<tr><th id="87">87</th><td><i class="doc"> * <span class="command">@returns</span> 0 in success, a negative error code otherwise.</i></td></tr>
+<tr><th id="88">88</th><td><i class="doc"> */</i></td></tr>
+<tr><th id="89">89</th><td><em>int</em> <dfn class="decl fn" id="ff_v4l2_m2m_create_context" title='ff_v4l2_m2m_create_context' data-ref="ff_v4l2_m2m_create_context" data-ref-filename="ff_v4l2_m2m_create_context">ff_v4l2_m2m_create_context</dfn>(<a class="typedef" href="#V4L2m2mPriv" title='V4L2m2mPriv' data-type='struct V4L2m2mPriv' data-ref="V4L2m2mPriv" data-ref-filename="V4L2m2mPriv">V4L2m2mPriv</a> *<dfn class="local col2 decl" id="82priv" title='priv' data-type='V4L2m2mPriv *' data-ref="82priv" data-ref-filename="82priv">priv</dfn>, <a class="typedef" href="#V4L2m2mContext" title='V4L2m2mContext' data-type='struct V4L2m2mContext' data-ref="V4L2m2mContext" data-ref-filename="V4L2m2mContext">V4L2m2mContext</a> **<dfn class="local col3 decl" id="83s" title='s' data-type='V4L2m2mContext **' data-ref="83s" data-ref-filename="83s">s</dfn>);</td></tr>
+<tr><th id="90">90</th><td></td></tr>
+<tr><th id="91">91</th><td></td></tr>
+<tr><th id="92">92</th><td><i class="doc">/**</i></td></tr>
+<tr><th id="93">93</th><td><i class="doc"> * Probes the video nodes looking for the required codec capabilities.</i></td></tr>
+<tr><th id="94">94</th><td><i class="doc"> *</i></td></tr>
+<tr><th id="95">95</th><td><i class="doc"> * <span class="command">@param</span>[in] <span class="arg">ctx</span> The V4L2m2mPriv instantiated by the encoder/decoder.</i></td></tr>
+<tr><th id="96">96</th><td><i class="doc"> *</i></td></tr>
+<tr><th id="97">97</th><td><i class="doc"> * <span class="command">@returns</span> 0 if a driver is found, a negative number otherwise.</i></td></tr>
+<tr><th id="98">98</th><td><i class="doc"> */</i></td></tr>
+<tr><th id="99">99</th><td><em>int</em> <dfn class="decl fn" id="ff_v4l2_m2m_codec_init" title='ff_v4l2_m2m_codec_init' data-ref="ff_v4l2_m2m_codec_init" data-ref-filename="ff_v4l2_m2m_codec_init">ff_v4l2_m2m_codec_init</dfn>(<a class="typedef" href="#V4L2m2mPriv" title='V4L2m2mPriv' data-type='struct V4L2m2mPriv' data-ref="V4L2m2mPriv" data-ref-filename="V4L2m2mPriv">V4L2m2mPriv</a> *<dfn class="local col4 decl" id="84priv" title='priv' data-type='V4L2m2mPriv *' data-ref="84priv" data-ref-filename="84priv">priv</dfn>);</td></tr>
+<tr><th id="100">100</th><td></td></tr>
+<tr><th id="101">101</th><td><i class="doc">/**</i></td></tr>
+<tr><th id="102">102</th><td><i class="doc"> * Releases all the codec resources if all AVBufferRefs have been returned to the</i></td></tr>
+<tr><th id="103">103</th><td><i class="doc"> * ctx. Otherwise keep the driver open.</i></td></tr>
+<tr><th id="104">104</th><td><i class="doc"> *</i></td></tr>
+<tr><th id="105">105</th><td><i class="doc"> * <span class="command">@param</span>[in] <span class="arg">The</span> V4L2m2mPriv instantiated by the encoder/decoder.</i></td></tr>
+<tr><th id="106">106</th><td><i class="doc"> *</i></td></tr>
+<tr><th id="107">107</th><td><i class="doc"> * <span class="command">@returns</span> 0</i></td></tr>
+<tr><th id="108">108</th><td><i class="doc"> *</i></td></tr>
+<tr><th id="109">109</th><td><i class="doc"> */</i></td></tr>
+<tr><th id="110">110</th><td><em>int</em> <dfn class="decl fn" id="ff_v4l2_m2m_codec_end" title='ff_v4l2_m2m_codec_end' data-ref="ff_v4l2_m2m_codec_end" data-ref-filename="ff_v4l2_m2m_codec_end">ff_v4l2_m2m_codec_end</dfn>(<a class="typedef" href="#V4L2m2mPriv" title='V4L2m2mPriv' data-type='struct V4L2m2mPriv' data-ref="V4L2m2mPriv" data-ref-filename="V4L2m2mPriv">V4L2m2mPriv</a> *<dfn class="local col5 decl" id="85priv" title='priv' data-type='V4L2m2mPriv *' data-ref="85priv" data-ref-filename="85priv">priv</dfn>);</td></tr>
+<tr><th id="111">111</th><td></td></tr>
+<tr><th id="112">112</th><td><i class="doc">/**</i></td></tr>
+<tr><th id="113">113</th><td><i class="doc"> * Reinitializes the V4L2m2mContext when the driver cannot continue processing</i></td></tr>
+<tr><th id="114">114</th><td><i class="doc"> * with the capture parameters.</i></td></tr>
+<tr><th id="115">115</th><td><i class="doc"> *</i></td></tr>
+<tr><th id="116">116</th><td><i class="doc"> * <span class="command">@param</span>[in] <span class="arg">ctx</span> The V4L2m2mContext instantiated by the encoder/decoder.</i></td></tr>
+<tr><th id="117">117</th><td><i class="doc"> *</i></td></tr>
+<tr><th id="118">118</th><td><i class="doc"> * <span class="command">@returns</span> 0 in case of success, negative number otherwise</i></td></tr>
+<tr><th id="119">119</th><td><i class="doc"> */</i></td></tr>
+<tr><th id="120">120</th><td><em>int</em> <dfn class="decl fn" id="ff_v4l2_m2m_codec_reinit" title='ff_v4l2_m2m_codec_reinit' data-ref="ff_v4l2_m2m_codec_reinit" data-ref-filename="ff_v4l2_m2m_codec_reinit">ff_v4l2_m2m_codec_reinit</dfn>(<a class="typedef" href="#V4L2m2mContext" title='V4L2m2mContext' data-type='struct V4L2m2mContext' data-ref="V4L2m2mContext" data-ref-filename="V4L2m2mContext">V4L2m2mContext</a> *<dfn class="local col6 decl" id="86ctx" title='ctx' data-type='V4L2m2mContext *' data-ref="86ctx" data-ref-filename="86ctx">ctx</dfn>);</td></tr>
+<tr><th id="121">121</th><td></td></tr>
+<tr><th id="122">122</th><td><i class="doc">/**</i></td></tr>
+<tr><th id="123">123</th><td><i class="doc"> * Reinitializes the V4L2m2mContext when the driver cannot continue processing</i></td></tr>
+<tr><th id="124">124</th><td><i class="doc"> * with the  any of the current V4L2Contexts (ie, changes in output and capture).</i></td></tr>
+<tr><th id="125">125</th><td><i class="doc"> *</i></td></tr>
+<tr><th id="126">126</th><td><i class="doc"> * <span class="command">@param</span>[in] <span class="arg">ctx</span> The V4L2m2mContext instantiated by the encoder/decoder.</i></td></tr>
+<tr><th id="127">127</th><td><i class="doc"> *</i></td></tr>
+<tr><th id="128">128</th><td><i class="doc"> * <span class="command">@returns</span> 0 in case of success, negative number otherwise</i></td></tr>
+<tr><th id="129">129</th><td><i class="doc"> */</i></td></tr>
+<tr><th id="130">130</th><td><em>int</em> <dfn class="decl fn" id="ff_v4l2_m2m_codec_full_reinit" title='ff_v4l2_m2m_codec_full_reinit' data-ref="ff_v4l2_m2m_codec_full_reinit" data-ref-filename="ff_v4l2_m2m_codec_full_reinit">ff_v4l2_m2m_codec_full_reinit</dfn>(<a class="typedef" href="#V4L2m2mContext" title='V4L2m2mContext' data-type='struct V4L2m2mContext' data-ref="V4L2m2mContext" data-ref-filename="V4L2m2mContext">V4L2m2mContext</a> *<dfn class="local col7 decl" id="87ctx" title='ctx' data-type='V4L2m2mContext *' data-ref="87ctx" data-ref-filename="87ctx">ctx</dfn>);</td></tr>
+<tr><th id="131">131</th><td></td></tr>
+<tr><th id="132">132</th><td><u>#<span data-ppcond="24">endif</span> /* AVCODEC_V4L2_M2M_H */</u></td></tr>
+<tr><th id="133">133</th><td></td></tr>
+</table><hr/><p id='footer'>
+Generated while processing <a href='v4l2_buffers.c.html'>ffmpeg/libavcodec/v4l2_buffers.c</a><br/>Generated on <em>2021-May-30</em> from project ffmpeg revision <em>4.4</em>

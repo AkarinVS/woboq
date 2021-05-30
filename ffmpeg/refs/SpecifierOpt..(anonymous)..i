@@ -1,0 +1,36 @@
+<dec f='ffmpeg/fftools/cmdutils.h' l='150' type='int'/>
+<offset>0</offset>
+<use f='ffmpeg/fftools/ffmpeg_opt.c' l='819' u='r' c='add_input_streams'/>
+<use f='ffmpeg/fftools/ffmpeg_opt.c' l='819' u='r' c='add_input_streams'/>
+<use f='ffmpeg/fftools/ffmpeg_opt.c' l='833' u='r' c='add_input_streams'/>
+<use f='ffmpeg/fftools/ffmpeg_opt.c' l='833' u='r' c='add_input_streams'/>
+<use f='ffmpeg/fftools/ffmpeg_opt.c' l='884' u='r' c='add_input_streams'/>
+<use f='ffmpeg/fftools/ffmpeg_opt.c' l='884' u='r' c='add_input_streams'/>
+<use f='ffmpeg/fftools/ffmpeg_opt.c' l='960' u='r' c='add_input_streams'/>
+<use f='ffmpeg/fftools/ffmpeg_opt.c' l='960' u='r' c='add_input_streams'/>
+<use f='ffmpeg/fftools/ffmpeg_opt.c' l='968' u='r' c='add_input_streams'/>
+<use f='ffmpeg/fftools/ffmpeg_opt.c' l='968' u='r' c='add_input_streams'/>
+<use f='ffmpeg/fftools/ffmpeg_opt.c' l='1117' u='r' c='open_input_file'/>
+<use f='ffmpeg/fftools/ffmpeg_opt.c' l='1126' u='r' c='open_input_file'/>
+<use f='ffmpeg/fftools/ffmpeg_opt.c' l='1481' u='r' c='new_output_stream'/>
+<use f='ffmpeg/fftools/ffmpeg_opt.c' l='1481' u='r' c='new_output_stream'/>
+<use f='ffmpeg/fftools/ffmpeg_opt.c' l='1546' u='r' c='new_output_stream'/>
+<use f='ffmpeg/fftools/ffmpeg_opt.c' l='1546' u='r' c='new_output_stream'/>
+<use f='ffmpeg/fftools/ffmpeg_opt.c' l='1576' u='r' c='new_output_stream'/>
+<use f='ffmpeg/fftools/ffmpeg_opt.c' l='1576' u='r' c='new_output_stream'/>
+<use f='ffmpeg/fftools/ffmpeg_opt.c' l='1582' u='r' c='new_output_stream'/>
+<use f='ffmpeg/fftools/ffmpeg_opt.c' l='1582' u='r' c='new_output_stream'/>
+<use f='ffmpeg/fftools/ffmpeg_opt.c' l='1827' u='r' c='new_video_stream'/>
+<use f='ffmpeg/fftools/ffmpeg_opt.c' l='1827' u='r' c='new_video_stream'/>
+<use f='ffmpeg/fftools/ffmpeg_opt.c' l='1882' u='r' c='new_video_stream'/>
+<use f='ffmpeg/fftools/ffmpeg_opt.c' l='1882' u='r' c='new_video_stream'/>
+<use f='ffmpeg/fftools/ffmpeg_opt.c' l='1885' u='r' c='new_video_stream'/>
+<use f='ffmpeg/fftools/ffmpeg_opt.c' l='1885' u='r' c='new_video_stream'/>
+<use f='ffmpeg/fftools/ffmpeg_opt.c' l='1892' u='r' c='new_video_stream'/>
+<use f='ffmpeg/fftools/ffmpeg_opt.c' l='1892' u='r' c='new_video_stream'/>
+<use f='ffmpeg/fftools/ffmpeg_opt.c' l='1920' u='r' c='new_audio_stream'/>
+<use f='ffmpeg/fftools/ffmpeg_opt.c' l='1920' u='r' c='new_audio_stream'/>
+<use f='ffmpeg/fftools/ffmpeg_opt.c' l='1929' u='r' c='new_audio_stream'/>
+<use f='ffmpeg/fftools/ffmpeg_opt.c' l='1929' u='r' c='new_audio_stream'/>
+<use f='ffmpeg/fftools/ffmpeg_opt.c' l='2020' u='r' c='new_subtitle_stream'/>
+<use f='ffmpeg/fftools/ffmpeg_opt.c' l='2020' u='r' c='new_subtitle_stream'/>

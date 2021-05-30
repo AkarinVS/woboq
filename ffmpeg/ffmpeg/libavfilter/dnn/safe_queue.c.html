@@ -1,0 +1,133 @@
+<!doctype html>
+<html>
+<head>
+<meta name="viewport" content="width=device-width, initial-scale=1.0"><title>safe_queue.c source code [ffmpeg/libavfilter/dnn/safe_queue.c] - Woboq Code Browser</title>
+<meta name="woboq:interestingDefinitions" content="SafeQueue "/>
+<link rel="stylesheet" href="../../.././data/qtcreator.css" title="QtCreator"/>
+<link rel="alternate stylesheet" href="../../.././data/kdevelop.css" title="KDevelop"/>
+<script type="text/javascript" src="../../.././data/jquery/jquery.min.js"></script>
+<script type="text/javascript" src="../../.././data/jquery/jquery-ui.min.js"></script>
+<script>var file = 'ffmpeg/libavfilter/dnn/safe_queue.c'; var root_path = '../../..'; var data_path = '../../.././data'; var ecma_script_api_version = 2;</script>
+<script src='../../.././data/codebrowser.js'></script>
+</head>
+<body><div id='header'><h1 id='breadcrumb'><span>Browse the source code of </span><a href='../..'>ffmpeg</a>/<a href='..'>libavfilter</a>/<a href='./'>dnn</a>/<a href='safe_queue.c.html'>safe_queue.c</a></h1></div>
+<hr/><div id='content'><table class="code">
+<tr><th id="1">1</th><td><i>/*</i></td></tr>
+<tr><th id="2">2</th><td><i> * Copyright (c) 2020</i></td></tr>
+<tr><th id="3">3</th><td><i> *</i></td></tr>
+<tr><th id="4">4</th><td><i> * This file is part of FFmpeg.</i></td></tr>
+<tr><th id="5">5</th><td><i> *</i></td></tr>
+<tr><th id="6">6</th><td><i> * FFmpeg is free software; you can redistribute it and/or</i></td></tr>
+<tr><th id="7">7</th><td><i> * modify it under the terms of the GNU Lesser General Public</i></td></tr>
+<tr><th id="8">8</th><td><i> * License as published by the Free Software Foundation; either</i></td></tr>
+<tr><th id="9">9</th><td><i> * version 2.1 of the License, or (at your option) any later version.</i></td></tr>
+<tr><th id="10">10</th><td><i> *</i></td></tr>
+<tr><th id="11">11</th><td><i> * FFmpeg is distributed in the hope that it will be useful,</i></td></tr>
+<tr><th id="12">12</th><td><i> * but WITHOUT ANY WARRANTY; without even the implied warranty of</i></td></tr>
+<tr><th id="13">13</th><td><i> * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the GNU</i></td></tr>
+<tr><th id="14">14</th><td><i> * Lesser General Public License for more details.</i></td></tr>
+<tr><th id="15">15</th><td><i> *</i></td></tr>
+<tr><th id="16">16</th><td><i> * You should have received a copy of the GNU Lesser General Public</i></td></tr>
+<tr><th id="17">17</th><td><i> * License along with FFmpeg; if not, write to the Free Software</i></td></tr>
+<tr><th id="18">18</th><td><i> * Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston, MA 02110-1301 USA</i></td></tr>
+<tr><th id="19">19</th><td><i> */</i></td></tr>
+<tr><th id="20">20</th><td></td></tr>
+<tr><th id="21">21</th><td><u>#include <a href="../../../include/stdio.h.html">&lt;stdio.h&gt;</a></u></td></tr>
+<tr><th id="22">22</th><td><u>#include <a href="queue.h.html">"queue.h"</a></u></td></tr>
+<tr><th id="23">23</th><td><u>#include <a href="safe_queue.h.html">"safe_queue.h"</a></u></td></tr>
+<tr><th id="24">24</th><td><u>#include <a href="../../libavutil/mem.h.html">"libavutil/mem.h"</a></u></td></tr>
+<tr><th id="25">25</th><td><u>#include <a href="../../libavutil/avassert.h.html">"libavutil/avassert.h"</a></u></td></tr>
+<tr><th id="26">26</th><td><u>#include <a href="../../libavutil/thread.h.html">"libavutil/thread.h"</a></u></td></tr>
+<tr><th id="27">27</th><td></td></tr>
+<tr><th id="28">28</th><td><u>#<span data-ppcond="28">if</span> <a class="macro" href="../../config.h.html#314" title="1" data-ref="_M/HAVE_PTHREAD_CANCEL">HAVE_PTHREAD_CANCEL</a></u></td></tr>
+<tr><th id="29">29</th><td><u>#define <dfn class="macro" id="_M/DNNCond" data-ref="_M/DNNCond">DNNCond</dfn> <a class="typedef" href="../../../include/bits/pthreadtypes.h.html#pthread_cond_t" title='pthread_cond_t' data-type='union pthread_cond_t' data-ref="pthread_cond_t" data-ref-filename="pthread_cond_t">pthread_cond_t</a></u></td></tr>
+<tr><th id="30">30</th><td><u>#define <dfn class="macro" id="_M/dnn_cond_init" data-ref="_M/dnn_cond_init">dnn_cond_init</dfn> <a class="ref fn" href="../../../include/pthread.h.html#pthread_cond_init" title='pthread_cond_init' data-ref="pthread_cond_init" data-ref-filename="pthread_cond_init">pthread_cond_init</a></u></td></tr>
+<tr><th id="31">31</th><td><u>#define <dfn class="macro" id="_M/dnn_cond_destroy" data-ref="_M/dnn_cond_destroy">dnn_cond_destroy</dfn> <a class="ref fn" href="../../../include/pthread.h.html#pthread_cond_destroy" title='pthread_cond_destroy' data-ref="pthread_cond_destroy" data-ref-filename="pthread_cond_destroy">pthread_cond_destroy</a></u></td></tr>
+<tr><th id="32">32</th><td><u>#define <dfn class="macro" id="_M/dnn_cond_signal" data-ref="_M/dnn_cond_signal">dnn_cond_signal</dfn> <a class="ref fn" href="../../../include/pthread.h.html#pthread_cond_signal" title='pthread_cond_signal' data-ref="pthread_cond_signal" data-ref-filename="pthread_cond_signal">pthread_cond_signal</a></u></td></tr>
+<tr><th id="33">33</th><td><u>#define <dfn class="macro" id="_M/dnn_cond_wait" data-ref="_M/dnn_cond_wait">dnn_cond_wait</dfn> <a class="ref fn" href="../../../include/pthread.h.html#pthread_cond_wait" title='pthread_cond_wait' data-ref="pthread_cond_wait" data-ref-filename="pthread_cond_wait">pthread_cond_wait</a></u></td></tr>
+<tr><th id="34">34</th><td><u>#<span data-ppcond="28">else</span></u></td></tr>
+<tr><th id="35">35</th><td><u>#define DNNCond char</u></td></tr>
+<tr><th id="36">36</th><td><em>static</em> <b>inline</b> <em>int</em> dnn_cond_init(DNNCond *cond, <em>const</em> <em>void</em> *attr) { <b>return</b> <var>0</var>; }</td></tr>
+<tr><th id="37">37</th><td><em>static</em> <b>inline</b> <em>int</em> dnn_cond_destroy(DNNCond *cond) { <b>return</b> <var>0</var>; }</td></tr>
+<tr><th id="38">38</th><td><em>static</em> <b>inline</b> <em>int</em> dnn_cond_signal(DNNCond *cond) { <b>return</b> <var>0</var>; }</td></tr>
+<tr><th id="39">39</th><td><em>static</em> <b>inline</b> <em>int</em> dnn_cond_wait(DNNCond *cond, AVMutex *mutex)</td></tr>
+<tr><th id="40">40</th><td>{</td></tr>
+<tr><th id="41">41</th><td>    av_assert0(!<q>"should not reach here"</q>);</td></tr>
+<tr><th id="42">42</th><td>    <b>return</b> <var>0</var>;</td></tr>
+<tr><th id="43">43</th><td>}</td></tr>
+<tr><th id="44">44</th><td><u>#<span data-ppcond="28">endif</span></u></td></tr>
+<tr><th id="45">45</th><td></td></tr>
+<tr><th id="46">46</th><td><b>struct</b> <dfn class="type def" id="SafeQueue" title='SafeQueue' data-ref="SafeQueue" data-ref-filename="SafeQueue">SafeQueue</dfn> {</td></tr>
+<tr><th id="47">47</th><td>    <a class="typedef" href="queue.h.html#Queue" title='Queue' data-type='struct Queue' data-ref="Queue" data-ref-filename="Queue">Queue</a> *<dfn class="decl field" id="SafeQueue::q" title='SafeQueue::q' data-ref="SafeQueue::q" data-ref-filename="SafeQueue..q">q</dfn>;</td></tr>
+<tr><th id="48">48</th><td>    <a class="macro" href="../../libavutil/thread.h.html#149" title="pthread_mutex_t" data-ref="_M/AVMutex">AVMutex</a> <dfn class="decl field" id="SafeQueue::mutex" title='SafeQueue::mutex' data-ref="SafeQueue::mutex" data-ref-filename="SafeQueue..mutex">mutex</dfn>;</td></tr>
+<tr><th id="49">49</th><td>    <a class="macro" href="#29" title="pthread_cond_t" data-ref="_M/DNNCond">DNNCond</a> <dfn class="decl field" id="SafeQueue::cond" title='SafeQueue::cond' data-ref="SafeQueue::cond" data-ref-filename="SafeQueue..cond">cond</dfn>;</td></tr>
+<tr><th id="50">50</th><td>};</td></tr>
+<tr><th id="51">51</th><td></td></tr>
+<tr><th id="52">52</th><td><a class="typedef" href="safe_queue.h.html#SafeQueue" title='SafeQueue' data-type='struct SafeQueue' data-ref="SafeQueue" data-ref-filename="SafeQueue">SafeQueue</a> *<dfn class="decl def fn" id="ff_safe_queue_create" title='ff_safe_queue_create' data-ref="ff_safe_queue_create" data-ref-filename="ff_safe_queue_create">ff_safe_queue_create</dfn>(<em>void</em>)</td></tr>
+<tr><th id="53">53</th><td>{</td></tr>
+<tr><th id="54">54</th><td>    <a class="typedef" href="safe_queue.h.html#SafeQueue" title='SafeQueue' data-type='struct SafeQueue' data-ref="SafeQueue" data-ref-filename="SafeQueue">SafeQueue</a> *<dfn class="local col8 decl" id="8sq" title='sq' data-type='SafeQueue *' data-ref="8sq" data-ref-filename="8sq">sq</dfn> = <a class="ref fn" href="../../libavutil/mem.h.html#av_malloc" title='av_malloc' data-ref="av_malloc" data-ref-filename="av_malloc">av_malloc</a>(<b>sizeof</b>(*<a class="local col8 ref" href="#8sq" title='sq' data-ref="8sq" data-ref-filename="8sq">sq</a>));</td></tr>
+<tr><th id="55">55</th><td>    <b>if</b> (!<a class="local col8 ref" href="#8sq" title='sq' data-ref="8sq" data-ref-filename="8sq">sq</a>)</td></tr>
+<tr><th id="56">56</th><td>        <b>return</b> <span class="macro" title="((void*)0)" data-ref="_M/NULL">NULL</span>;</td></tr>
+<tr><th id="57">57</th><td></td></tr>
+<tr><th id="58">58</th><td>    <a class="local col8 ref" href="#8sq" title='sq' data-ref="8sq" data-ref-filename="8sq">sq</a>-&gt;<a class="ref field" href="#SafeQueue::q" title='SafeQueue::q' data-ref="SafeQueue::q" data-ref-filename="SafeQueue..q">q</a> = <a class="ref fn" href="queue.h.html#ff_queue_create" title='ff_queue_create' data-ref="ff_queue_create" data-ref-filename="ff_queue_create">ff_queue_create</a>();</td></tr>
+<tr><th id="59">59</th><td>    <b>if</b> (!<a class="local col8 ref" href="#8sq" title='sq' data-ref="8sq" data-ref-filename="8sq">sq</a>-&gt;<a class="ref field" href="#SafeQueue::q" title='SafeQueue::q' data-ref="SafeQueue::q" data-ref-filename="SafeQueue..q">q</a>) {</td></tr>
+<tr><th id="60">60</th><td>        <a class="ref fn" href="../../libavutil/mem.h.html#av_freep" title='av_freep' data-ref="av_freep" data-ref-filename="av_freep">av_freep</a>(&amp;<a class="local col8 ref" href="#8sq" title='sq' data-ref="8sq" data-ref-filename="8sq">sq</a>);</td></tr>
+<tr><th id="61">61</th><td>        <b>return</b> <span class="macro" title="((void*)0)" data-ref="_M/NULL">NULL</span>;</td></tr>
+<tr><th id="62">62</th><td>    }</td></tr>
+<tr><th id="63">63</th><td></td></tr>
+<tr><th id="64">64</th><td>    <a class="macro" href="../../libavutil/thread.h.html#152" title="pthread_mutex_init" data-ref="_M/ff_mutex_init">ff_mutex_init</a>(&amp;<a class="local col8 ref" href="#8sq" title='sq' data-ref="8sq" data-ref-filename="8sq">sq</a>-&gt;<a class="ref field" href="#SafeQueue::mutex" title='SafeQueue::mutex' data-ref="SafeQueue::mutex" data-ref-filename="SafeQueue..mutex">mutex</a>, <span class="macro" title="((void*)0)" data-ref="_M/NULL">NULL</span>);</td></tr>
+<tr><th id="65">65</th><td>    <a class="macro" href="#30" title="pthread_cond_init" data-ref="_M/dnn_cond_init">dnn_cond_init</a>(&amp;<a class="local col8 ref" href="#8sq" title='sq' data-ref="8sq" data-ref-filename="8sq">sq</a>-&gt;<a class="ref field" href="#SafeQueue::cond" title='SafeQueue::cond' data-ref="SafeQueue::cond" data-ref-filename="SafeQueue..cond">cond</a>, <span class="macro" title="((void*)0)" data-ref="_M/NULL">NULL</span>);</td></tr>
+<tr><th id="66">66</th><td>    <b>return</b> <a class="local col8 ref" href="#8sq" title='sq' data-ref="8sq" data-ref-filename="8sq">sq</a>;</td></tr>
+<tr><th id="67">67</th><td>}</td></tr>
+<tr><th id="68">68</th><td></td></tr>
+<tr><th id="69">69</th><td><em>void</em> <dfn class="decl def fn" id="ff_safe_queue_destroy" title='ff_safe_queue_destroy' data-ref="ff_safe_queue_destroy" data-ref-filename="ff_safe_queue_destroy">ff_safe_queue_destroy</dfn>(<a class="typedef" href="safe_queue.h.html#SafeQueue" title='SafeQueue' data-type='struct SafeQueue' data-ref="SafeQueue" data-ref-filename="SafeQueue">SafeQueue</a> *<dfn class="local col9 decl" id="9sq" title='sq' data-type='SafeQueue *' data-ref="9sq" data-ref-filename="9sq">sq</dfn>)</td></tr>
+<tr><th id="70">70</th><td>{</td></tr>
+<tr><th id="71">71</th><td>    <b>if</b> (!<a class="local col9 ref" href="#9sq" title='sq' data-ref="9sq" data-ref-filename="9sq">sq</a>)</td></tr>
+<tr><th id="72">72</th><td>        <b>return</b>;</td></tr>
+<tr><th id="73">73</th><td></td></tr>
+<tr><th id="74">74</th><td>    <a class="ref fn" href="queue.h.html#ff_queue_destroy" title='ff_queue_destroy' data-ref="ff_queue_destroy" data-ref-filename="ff_queue_destroy">ff_queue_destroy</a>(<a class="local col9 ref" href="#9sq" title='sq' data-ref="9sq" data-ref-filename="9sq">sq</a>-&gt;<a class="ref field" href="#SafeQueue::q" title='SafeQueue::q' data-ref="SafeQueue::q" data-ref-filename="SafeQueue..q">q</a>);</td></tr>
+<tr><th id="75">75</th><td>    <a class="macro" href="../../libavutil/thread.h.html#155" title="pthread_mutex_destroy" data-ref="_M/ff_mutex_destroy">ff_mutex_destroy</a>(&amp;<a class="local col9 ref" href="#9sq" title='sq' data-ref="9sq" data-ref-filename="9sq">sq</a>-&gt;<a class="ref field" href="#SafeQueue::mutex" title='SafeQueue::mutex' data-ref="SafeQueue::mutex" data-ref-filename="SafeQueue..mutex">mutex</a>);</td></tr>
+<tr><th id="76">76</th><td>    <a class="macro" href="#31" title="pthread_cond_destroy" data-ref="_M/dnn_cond_destroy">dnn_cond_destroy</a>(&amp;<a class="local col9 ref" href="#9sq" title='sq' data-ref="9sq" data-ref-filename="9sq">sq</a>-&gt;<a class="ref field" href="#SafeQueue::cond" title='SafeQueue::cond' data-ref="SafeQueue::cond" data-ref-filename="SafeQueue..cond">cond</a>);</td></tr>
+<tr><th id="77">77</th><td>    <a class="ref fn" href="../../libavutil/mem.h.html#av_freep" title='av_freep' data-ref="av_freep" data-ref-filename="av_freep">av_freep</a>(&amp;<a class="local col9 ref" href="#9sq" title='sq' data-ref="9sq" data-ref-filename="9sq">sq</a>);</td></tr>
+<tr><th id="78">78</th><td>}</td></tr>
+<tr><th id="79">79</th><td></td></tr>
+<tr><th id="80">80</th><td><span class='typedef' title='size_t' data-type='unsigned long' data-ref="size_t" data-ref-filename="size_t">size_t</span> <dfn class="decl def fn" id="ff_safe_queue_size" title='ff_safe_queue_size' data-ref="ff_safe_queue_size" data-ref-filename="ff_safe_queue_size">ff_safe_queue_size</dfn>(<a class="typedef" href="safe_queue.h.html#SafeQueue" title='SafeQueue' data-type='struct SafeQueue' data-ref="SafeQueue" data-ref-filename="SafeQueue">SafeQueue</a> *<dfn class="local col0 decl" id="10sq" title='sq' data-type='SafeQueue *' data-ref="10sq" data-ref-filename="10sq">sq</dfn>)</td></tr>
+<tr><th id="81">81</th><td>{</td></tr>
+<tr><th id="82">82</th><td>    <b>return</b> <a class="local col0 ref" href="#10sq" title='sq' data-ref="10sq" data-ref-filename="10sq">sq</a> ? <a class="ref fn" href="queue.h.html#ff_queue_size" title='ff_queue_size' data-ref="ff_queue_size" data-ref-filename="ff_queue_size">ff_queue_size</a>(<a class="local col0 ref" href="#10sq" title='sq' data-ref="10sq" data-ref-filename="10sq">sq</a>-&gt;<a class="ref field" href="#SafeQueue::q" title='SafeQueue::q' data-ref="SafeQueue::q" data-ref-filename="SafeQueue..q">q</a>) : <var>0</var>;</td></tr>
+<tr><th id="83">83</th><td>}</td></tr>
+<tr><th id="84">84</th><td></td></tr>
+<tr><th id="85">85</th><td><em>int</em> <dfn class="decl def fn" id="ff_safe_queue_push_front" title='ff_safe_queue_push_front' data-ref="ff_safe_queue_push_front" data-ref-filename="ff_safe_queue_push_front">ff_safe_queue_push_front</dfn>(<a class="typedef" href="safe_queue.h.html#SafeQueue" title='SafeQueue' data-type='struct SafeQueue' data-ref="SafeQueue" data-ref-filename="SafeQueue">SafeQueue</a> *<dfn class="local col1 decl" id="11sq" title='sq' data-type='SafeQueue *' data-ref="11sq" data-ref-filename="11sq">sq</dfn>, <em>void</em> *<dfn class="local col2 decl" id="12v" title='v' data-type='void *' data-ref="12v" data-ref-filename="12v">v</dfn>)</td></tr>
+<tr><th id="86">86</th><td>{</td></tr>
+<tr><th id="87">87</th><td>    <em>int</em> <dfn class="local col3 decl" id="13ret" title='ret' data-type='int' data-ref="13ret" data-ref-filename="13ret">ret</dfn>;</td></tr>
+<tr><th id="88">88</th><td>    <a class="macro" href="../../libavutil/thread.h.html#153" title="pthread_mutex_lock" data-ref="_M/ff_mutex_lock">ff_mutex_lock</a>(&amp;<a class="local col1 ref" href="#11sq" title='sq' data-ref="11sq" data-ref-filename="11sq">sq</a>-&gt;<a class="ref field" href="#SafeQueue::mutex" title='SafeQueue::mutex' data-ref="SafeQueue::mutex" data-ref-filename="SafeQueue..mutex">mutex</a>);</td></tr>
+<tr><th id="89">89</th><td>    <a class="local col3 ref" href="#13ret" title='ret' data-ref="13ret" data-ref-filename="13ret">ret</a> = <a class="ref fn" href="queue.h.html#ff_queue_push_front" title='ff_queue_push_front' data-ref="ff_queue_push_front" data-ref-filename="ff_queue_push_front">ff_queue_push_front</a>(<a class="local col1 ref" href="#11sq" title='sq' data-ref="11sq" data-ref-filename="11sq">sq</a>-&gt;<a class="ref field" href="#SafeQueue::q" title='SafeQueue::q' data-ref="SafeQueue::q" data-ref-filename="SafeQueue..q">q</a>, <a class="local col2 ref" href="#12v" title='v' data-ref="12v" data-ref-filename="12v">v</a>);</td></tr>
+<tr><th id="90">90</th><td>    <a class="macro" href="#32" title="pthread_cond_signal" data-ref="_M/dnn_cond_signal">dnn_cond_signal</a>(&amp;<a class="local col1 ref" href="#11sq" title='sq' data-ref="11sq" data-ref-filename="11sq">sq</a>-&gt;<a class="ref field" href="#SafeQueue::cond" title='SafeQueue::cond' data-ref="SafeQueue::cond" data-ref-filename="SafeQueue..cond">cond</a>);</td></tr>
+<tr><th id="91">91</th><td>    <a class="macro" href="../../libavutil/thread.h.html#154" title="pthread_mutex_unlock" data-ref="_M/ff_mutex_unlock">ff_mutex_unlock</a>(&amp;<a class="local col1 ref" href="#11sq" title='sq' data-ref="11sq" data-ref-filename="11sq">sq</a>-&gt;<a class="ref field" href="#SafeQueue::mutex" title='SafeQueue::mutex' data-ref="SafeQueue::mutex" data-ref-filename="SafeQueue..mutex">mutex</a>);</td></tr>
+<tr><th id="92">92</th><td>    <b>return</b> <a class="local col3 ref" href="#13ret" title='ret' data-ref="13ret" data-ref-filename="13ret">ret</a>;</td></tr>
+<tr><th id="93">93</th><td>}</td></tr>
+<tr><th id="94">94</th><td></td></tr>
+<tr><th id="95">95</th><td><em>int</em> <dfn class="decl def fn" id="ff_safe_queue_push_back" title='ff_safe_queue_push_back' data-ref="ff_safe_queue_push_back" data-ref-filename="ff_safe_queue_push_back">ff_safe_queue_push_back</dfn>(<a class="typedef" href="safe_queue.h.html#SafeQueue" title='SafeQueue' data-type='struct SafeQueue' data-ref="SafeQueue" data-ref-filename="SafeQueue">SafeQueue</a> *<dfn class="local col4 decl" id="14sq" title='sq' data-type='SafeQueue *' data-ref="14sq" data-ref-filename="14sq">sq</dfn>, <em>void</em> *<dfn class="local col5 decl" id="15v" title='v' data-type='void *' data-ref="15v" data-ref-filename="15v">v</dfn>)</td></tr>
+<tr><th id="96">96</th><td>{</td></tr>
+<tr><th id="97">97</th><td>    <em>int</em> <dfn class="local col6 decl" id="16ret" title='ret' data-type='int' data-ref="16ret" data-ref-filename="16ret">ret</dfn>;</td></tr>
+<tr><th id="98">98</th><td>    <a class="macro" href="../../libavutil/thread.h.html#153" title="pthread_mutex_lock" data-ref="_M/ff_mutex_lock">ff_mutex_lock</a>(&amp;<a class="local col4 ref" href="#14sq" title='sq' data-ref="14sq" data-ref-filename="14sq">sq</a>-&gt;<a class="ref field" href="#SafeQueue::mutex" title='SafeQueue::mutex' data-ref="SafeQueue::mutex" data-ref-filename="SafeQueue..mutex">mutex</a>);</td></tr>
+<tr><th id="99">99</th><td>    <a class="local col6 ref" href="#16ret" title='ret' data-ref="16ret" data-ref-filename="16ret">ret</a> = <a class="ref fn" href="queue.h.html#ff_queue_push_back" title='ff_queue_push_back' data-ref="ff_queue_push_back" data-ref-filename="ff_queue_push_back">ff_queue_push_back</a>(<a class="local col4 ref" href="#14sq" title='sq' data-ref="14sq" data-ref-filename="14sq">sq</a>-&gt;<a class="ref field" href="#SafeQueue::q" title='SafeQueue::q' data-ref="SafeQueue::q" data-ref-filename="SafeQueue..q">q</a>, <a class="local col5 ref" href="#15v" title='v' data-ref="15v" data-ref-filename="15v">v</a>);</td></tr>
+<tr><th id="100">100</th><td>    <a class="macro" href="#32" title="pthread_cond_signal" data-ref="_M/dnn_cond_signal">dnn_cond_signal</a>(&amp;<a class="local col4 ref" href="#14sq" title='sq' data-ref="14sq" data-ref-filename="14sq">sq</a>-&gt;<a class="ref field" href="#SafeQueue::cond" title='SafeQueue::cond' data-ref="SafeQueue::cond" data-ref-filename="SafeQueue..cond">cond</a>);</td></tr>
+<tr><th id="101">101</th><td>    <a class="macro" href="../../libavutil/thread.h.html#154" title="pthread_mutex_unlock" data-ref="_M/ff_mutex_unlock">ff_mutex_unlock</a>(&amp;<a class="local col4 ref" href="#14sq" title='sq' data-ref="14sq" data-ref-filename="14sq">sq</a>-&gt;<a class="ref field" href="#SafeQueue::mutex" title='SafeQueue::mutex' data-ref="SafeQueue::mutex" data-ref-filename="SafeQueue..mutex">mutex</a>);</td></tr>
+<tr><th id="102">102</th><td>    <b>return</b> <a class="local col6 ref" href="#16ret" title='ret' data-ref="16ret" data-ref-filename="16ret">ret</a>;</td></tr>
+<tr><th id="103">103</th><td>}</td></tr>
+<tr><th id="104">104</th><td></td></tr>
+<tr><th id="105">105</th><td><em>void</em> *<dfn class="decl def fn" id="ff_safe_queue_pop_front" title='ff_safe_queue_pop_front' data-ref="ff_safe_queue_pop_front" data-ref-filename="ff_safe_queue_pop_front">ff_safe_queue_pop_front</dfn>(<a class="typedef" href="safe_queue.h.html#SafeQueue" title='SafeQueue' data-type='struct SafeQueue' data-ref="SafeQueue" data-ref-filename="SafeQueue">SafeQueue</a> *<dfn class="local col7 decl" id="17sq" title='sq' data-type='SafeQueue *' data-ref="17sq" data-ref-filename="17sq">sq</dfn>)</td></tr>
+<tr><th id="106">106</th><td>{</td></tr>
+<tr><th id="107">107</th><td>    <em>void</em> *<dfn class="local col8 decl" id="18value" title='value' data-type='void *' data-ref="18value" data-ref-filename="18value">value</dfn>;</td></tr>
+<tr><th id="108">108</th><td>    <a class="macro" href="../../libavutil/thread.h.html#153" title="pthread_mutex_lock" data-ref="_M/ff_mutex_lock">ff_mutex_lock</a>(&amp;<a class="local col7 ref" href="#17sq" title='sq' data-ref="17sq" data-ref-filename="17sq">sq</a>-&gt;<a class="ref field" href="#SafeQueue::mutex" title='SafeQueue::mutex' data-ref="SafeQueue::mutex" data-ref-filename="SafeQueue..mutex">mutex</a>);</td></tr>
+<tr><th id="109">109</th><td>    <b>while</b> (<a class="ref fn" href="queue.h.html#ff_queue_size" title='ff_queue_size' data-ref="ff_queue_size" data-ref-filename="ff_queue_size">ff_queue_size</a>(<a class="local col7 ref" href="#17sq" title='sq' data-ref="17sq" data-ref-filename="17sq">sq</a>-&gt;<a class="ref field" href="#SafeQueue::q" title='SafeQueue::q' data-ref="SafeQueue::q" data-ref-filename="SafeQueue..q">q</a>) == <var>0</var>) {</td></tr>
+<tr><th id="110">110</th><td>        <a class="macro" href="#33" title="pthread_cond_wait" data-ref="_M/dnn_cond_wait">dnn_cond_wait</a>(&amp;<a class="local col7 ref" href="#17sq" title='sq' data-ref="17sq" data-ref-filename="17sq">sq</a>-&gt;<a class="ref field" href="#SafeQueue::cond" title='SafeQueue::cond' data-ref="SafeQueue::cond" data-ref-filename="SafeQueue..cond">cond</a>, &amp;<a class="local col7 ref" href="#17sq" title='sq' data-ref="17sq" data-ref-filename="17sq">sq</a>-&gt;<a class="ref field" href="#SafeQueue::mutex" title='SafeQueue::mutex' data-ref="SafeQueue::mutex" data-ref-filename="SafeQueue..mutex">mutex</a>);</td></tr>
+<tr><th id="111">111</th><td>    }</td></tr>
+<tr><th id="112">112</th><td>    <a class="local col8 ref" href="#18value" title='value' data-ref="18value" data-ref-filename="18value">value</a> = <a class="ref fn" href="queue.h.html#ff_queue_pop_front" title='ff_queue_pop_front' data-ref="ff_queue_pop_front" data-ref-filename="ff_queue_pop_front">ff_queue_pop_front</a>(<a class="local col7 ref" href="#17sq" title='sq' data-ref="17sq" data-ref-filename="17sq">sq</a>-&gt;<a class="ref field" href="#SafeQueue::q" title='SafeQueue::q' data-ref="SafeQueue::q" data-ref-filename="SafeQueue..q">q</a>);</td></tr>
+<tr><th id="113">113</th><td>    <a class="macro" href="#32" title="pthread_cond_signal" data-ref="_M/dnn_cond_signal">dnn_cond_signal</a>(&amp;<a class="local col7 ref" href="#17sq" title='sq' data-ref="17sq" data-ref-filename="17sq">sq</a>-&gt;<a class="ref field" href="#SafeQueue::cond" title='SafeQueue::cond' data-ref="SafeQueue::cond" data-ref-filename="SafeQueue..cond">cond</a>);</td></tr>
+<tr><th id="114">114</th><td>    <a class="macro" href="../../libavutil/thread.h.html#154" title="pthread_mutex_unlock" data-ref="_M/ff_mutex_unlock">ff_mutex_unlock</a>(&amp;<a class="local col7 ref" href="#17sq" title='sq' data-ref="17sq" data-ref-filename="17sq">sq</a>-&gt;<a class="ref field" href="#SafeQueue::mutex" title='SafeQueue::mutex' data-ref="SafeQueue::mutex" data-ref-filename="SafeQueue..mutex">mutex</a>);</td></tr>
+<tr><th id="115">115</th><td>    <b>return</b> <a class="local col8 ref" href="#18value" title='value' data-ref="18value" data-ref-filename="18value">value</a>;</td></tr>
+<tr><th id="116">116</th><td>}</td></tr>
+<tr><th id="117">117</th><td></td></tr>
+</table><hr/><p id='footer'>
+Generated on <em>2021-May-30</em> from project ffmpeg revision <em>4.4</em>

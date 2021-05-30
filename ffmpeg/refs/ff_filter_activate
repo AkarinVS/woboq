@@ -1,0 +1,134 @@
+<dec f='ffmpeg/libavfilter/internal.h' l='328' type='int ff_filter_activate(AVFilterContext * filter)'/>
+<def f='ffmpeg/libavfilter/avfilter.c' l='1432' ll='1445' type='int ff_filter_activate(AVFilterContext * filter)'/>
+<doc f='ffmpeg/libavfilter/avfilter.c' l='1300'>/*
+   Filter scheduling and activation
+
+   When a filter is activated, it must:
+   - if possible, output a frame;
+   - else, if relevant, forward the input status change;
+   - else, check outputs for wanted frames and forward the requests.
+
+   The following AVFilterLink fields are used for activation:
+
+   - frame_wanted_out:
+
+     This field indicates if a frame is needed on this input of the
+     destination filter. A positive value indicates that a frame is needed
+     to process queued frames or internal data or to satisfy the
+     application; a zero value indicates that a frame is not especially
+     needed but could be processed anyway; a negative value indicates that a
+     frame would just be queued.
+
+     It is set by filters using ff_request_frame() or ff_request_no_frame(),
+     when requested by the application through a specific API or when it is
+     set on one of the outputs.
+
+     It is cleared when a frame is sent from the source using
+     ff_filter_frame().
+
+     It is also cleared when a status change is sent from the source using
+     ff_avfilter_link_set_in_status().
+
+   - frame_blocked_in:
+
+     This field means that the source filter can not generate a frame as is.
+     Its goal is to avoid repeatedly calling the request_frame() method on
+     the same link.
+
+     It is set by the framework on all outputs of a filter before activating it.
+
+     It is automatically cleared by ff_filter_frame().
+
+     It is also automatically cleared by ff_avfilter_link_set_in_status().
+
+     It is also cleared on all outputs (using filter_unblock()) when
+     something happens on an input: processing a frame or changing the
+     status.
+
+   - fifo:
+
+     Contains the frames queued on a filter input. If it contains frames and
+     frame_wanted_out is not set, then the filter can be activated. If that
+     result in the filter not able to use these frames, the filter must set
+     frame_wanted_out to ask for more frames.
+
+   - status_in and status_in_pts:
+
+     Status (EOF or error code) of the link and timestamp of the status
+     change (in link time base, same as frames) as seen from the input of
+     the link. The status change is considered happening after the frames
+     queued in fifo.
+
+     It is set by the source filter using ff_avfilter_link_set_in_status().
+
+   - status_out:
+
+     Status of the link as seen from the output of the link. The status
+     change is considered having already happened.
+
+     It is set by the destination filter using
+     ff_avfilter_link_set_out_status().
+
+   Filters are activated according to the ready field, set using the
+   ff_filter_set_ready(). Eventually, a priority queue will be used.
+   ff_filter_set_ready() is called whenever anything could cause progress to
+   be possible. Marking a filter ready when it is not is not a problem,
+   except for the small overhead it causes.
+
+   Conditions that cause a filter to be marked ready are:
+
+   - frames added on an input link;
+
+   - changes in the input or output status of an input link;
+
+   - requests for a frame on an output link;
+
+   - after any actual processing using the legacy methods (filter_frame(),
+     and request_frame() to acknowledge status changes), to run once more
+     and check if enough input was present for several frames.
+
+   Examples of scenarios to consider:
+
+   - buffersrc: activate if frame_wanted_out to notify the application;
+     activate when the application adds a frame to push it immediately.
+
+   - testsrc: activate only if frame_wanted_out to produce and push a frame.
+
+   - concat (not at stitch points): can process a frame on any output.
+     Activate if frame_wanted_out on output to forward on the corresponding
+     input. Activate when a frame is present on input to process it
+     immediately.
+
+   - framesync: needs at least one frame on each input; extra frames on the
+     wrong input will accumulate. When a frame is first added on one input,
+     set frame_wanted_out&lt;0 on it to avoid getting more (would trigger
+     testsrc) and frame_wanted_out&gt;0 on the other to allow processing it.
+
+   Activation of old filters:
+
+   In order to activate a filter implementing the legacy filter_frame() and
+   request_frame() methods, perform the first possible of the following
+   actions:
+
+   - If an input has frames in fifo and frame_wanted_out == 0, dequeue a
+     frame and call filter_frame().
+
+     Rationale: filter frames as soon as possible instead of leaving them
+     queued; frame_wanted_out &lt; 0 is not possible since the old API does not
+     set it nor provides any similar feedback; frame_wanted_out &gt; 0 happens
+     when min_samples &gt; 0 and there are not enough samples queued.
+
+   - If an input has status_in set but not status_out, try to call
+     request_frame() on one of the outputs in the hope that it will trigger
+     request_frame() on the input with status_in and acknowledge it. This is
+     awkward and fragile, filters with several inputs or outputs should be
+     updated to direct activation as soon as possible.
+
+   - If an output has frame_wanted_out &gt; 0 and not frame_blocked_in, call
+     request_frame().
+
+     Rationale: checking frame_blocked_in is necessary to avoid requesting
+     repeatedly on a blocked input if another is not blocked (example:
+     [buffersrc1][testsrc1][buffersrc2][testsrc2]concat=v=2).
+ */</doc>
+<use f='ffmpeg/libavfilter/avfiltergraph.c' l='1403' u='c' c='ff_filter_graph_run_once'/>

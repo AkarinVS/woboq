@@ -1,0 +1,20 @@
+<dec f='ffmpeg/libavcodec/roqvideo.h' l='37' type='int [2]'/>
+<offset>0</offset>
+<use f='ffmpeg/libavcodec/roqvideoenc.c' l='230' u='r' c='eval_motion_dist'/>
+<use f='ffmpeg/libavcodec/roqvideoenc.c' l='231' u='r' c='eval_motion_dist'/>
+<use f='ffmpeg/libavcodec/roqvideoenc.c' l='372' u='w' c='motion_search'/>
+<use f='ffmpeg/libavcodec/roqvideoenc.c' l='373' u='w' c='motion_search'/>
+<use f='ffmpeg/libavcodec/roqvideoenc.c' l='397' u='w' c='motion_search'/>
+<use f='ffmpeg/libavcodec/roqvideoenc.c' l='397' u='r' c='motion_search'/>
+<use f='ffmpeg/libavcodec/roqvideoenc.c' l='398' u='r' c='motion_search'/>
+<use f='ffmpeg/libavcodec/roqvideoenc.c' l='399' u='r' c='motion_search'/>
+<use f='ffmpeg/libavcodec/roqvideoenc.c' l='414' u='w' c='motion_search'/>
+<use f='ffmpeg/libavcodec/roqvideoenc.c' l='414' u='r' c='motion_search'/>
+<use f='ffmpeg/libavcodec/roqvideoenc.c' l='415' u='w' c='motion_search'/>
+<use f='ffmpeg/libavcodec/roqvideoenc.c' l='415' u='r' c='motion_search'/>
+<use f='ffmpeg/libavcodec/roqvideoenc.c' l='631' u='r' c='motion_arg'/>
+<use f='ffmpeg/libavcodec/roqvideoenc.c' l='632' u='r' c='motion_arg'/>
+<use f='ffmpeg/libavcodec/roqvideoenc.c' l='705' u='r' c='reconstruct_and_encode_image'/>
+<use f='ffmpeg/libavcodec/roqvideoenc.c' l='705' u='r' c='reconstruct_and_encode_image'/>
+<use f='ffmpeg/libavcodec/roqvideoenc.c' l='735' u='r' c='reconstruct_and_encode_image'/>
+<use f='ffmpeg/libavcodec/roqvideoenc.c' l='736' u='r' c='reconstruct_and_encode_image'/>

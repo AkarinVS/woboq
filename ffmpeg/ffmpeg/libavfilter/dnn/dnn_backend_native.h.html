@@ -1,0 +1,159 @@
+<!doctype html>
+<html>
+<head>
+<meta name="viewport" content="width=device-width, initial-scale=1.0"><title>dnn_backend_native.h source code [ffmpeg/libavfilter/dnn/dnn_backend_native.h] - Woboq Code Browser</title>
+<meta name="woboq:interestingDefinitions" content="DnnOperand,InputParams,Layer,NativeContext,NativeModel,NativeOptions "/>
+<link rel="stylesheet" href="../../.././data/qtcreator.css" title="QtCreator"/>
+<link rel="alternate stylesheet" href="../../.././data/kdevelop.css" title="KDevelop"/>
+<script type="text/javascript" src="../../.././data/jquery/jquery.min.js"></script>
+<script type="text/javascript" src="../../.././data/jquery/jquery-ui.min.js"></script>
+<script>var file = 'ffmpeg/libavfilter/dnn/dnn_backend_native.h'; var root_path = '../../..'; var data_path = '../../.././data'; var ecma_script_api_version = 2;</script>
+<script src='../../.././data/codebrowser.js'></script>
+</head>
+<body><div id='header'><h1 id='breadcrumb'><span>Browse the source code of </span><a href='../..'>ffmpeg</a>/<a href='..'>libavfilter</a>/<a href='./'>dnn</a>/<a href='dnn_backend_native.h.html'>dnn_backend_native.h</a></h1></div>
+<hr/><div id='content'><table class="code">
+<tr><th id="1">1</th><td><i>/*</i></td></tr>
+<tr><th id="2">2</th><td><i> * Copyright (c) 2018 Sergey Lavrushkin</i></td></tr>
+<tr><th id="3">3</th><td><i> *</i></td></tr>
+<tr><th id="4">4</th><td><i> * This file is part of FFmpeg.</i></td></tr>
+<tr><th id="5">5</th><td><i> *</i></td></tr>
+<tr><th id="6">6</th><td><i> * FFmpeg is free software; you can redistribute it and/or</i></td></tr>
+<tr><th id="7">7</th><td><i> * modify it under the terms of the GNU Lesser General Public</i></td></tr>
+<tr><th id="8">8</th><td><i> * License as published by the Free Software Foundation; either</i></td></tr>
+<tr><th id="9">9</th><td><i> * version 2.1 of the License, or (at your option) any later version.</i></td></tr>
+<tr><th id="10">10</th><td><i> *</i></td></tr>
+<tr><th id="11">11</th><td><i> * FFmpeg is distributed in the hope that it will be useful,</i></td></tr>
+<tr><th id="12">12</th><td><i> * but WITHOUT ANY WARRANTY; without even the implied warranty of</i></td></tr>
+<tr><th id="13">13</th><td><i> * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the GNU</i></td></tr>
+<tr><th id="14">14</th><td><i> * Lesser General Public License for more details.</i></td></tr>
+<tr><th id="15">15</th><td><i> *</i></td></tr>
+<tr><th id="16">16</th><td><i> * You should have received a copy of the GNU Lesser General Public</i></td></tr>
+<tr><th id="17">17</th><td><i> * License along with FFmpeg; if not, write to the Free Software</i></td></tr>
+<tr><th id="18">18</th><td><i> * Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston, MA 02110-1301 USA</i></td></tr>
+<tr><th id="19">19</th><td><i> */</i></td></tr>
+<tr><th id="20">20</th><td></td></tr>
+<tr><th id="21">21</th><td><i class="doc">/**</i></td></tr>
+<tr><th id="22">22</th><td><i class="doc"> *<span class="command"> @file</span></i></td></tr>
+<tr><th id="23">23</th><td><i class="doc"> * DNN inference functions interface for native backend.</i></td></tr>
+<tr><th id="24">24</th><td><i class="doc"> */</i></td></tr>
+<tr><th id="25">25</th><td></td></tr>
+<tr><th id="26">26</th><td></td></tr>
+<tr><th id="27">27</th><td><u>#<span data-ppcond="27">ifndef</span> <span class="macro" data-ref="_M/AVFILTER_DNN_DNN_BACKEND_NATIVE_H">AVFILTER_DNN_DNN_BACKEND_NATIVE_H</span></u></td></tr>
+<tr><th id="28">28</th><td><u>#define <dfn class="macro" id="_M/AVFILTER_DNN_DNN_BACKEND_NATIVE_H" data-ref="_M/AVFILTER_DNN_DNN_BACKEND_NATIVE_H">AVFILTER_DNN_DNN_BACKEND_NATIVE_H</dfn></u></td></tr>
+<tr><th id="29">29</th><td></td></tr>
+<tr><th id="30">30</th><td><u>#include <a href="../dnn_interface.h.html">"../dnn_interface.h"</a></u></td></tr>
+<tr><th id="31">31</th><td><u>#include <a href="../../libavformat/avio.h.html">"libavformat/avio.h"</a></u></td></tr>
+<tr><th id="32">32</th><td><u>#include <a href="../../libavutil/opt.h.html">"libavutil/opt.h"</a></u></td></tr>
+<tr><th id="33">33</th><td></td></tr>
+<tr><th id="34">34</th><td><i class="doc">/**</i></td></tr>
+<tr><th id="35">35</th><td><i class="doc"> * the enum value of DNNLayerType should not be changed,</i></td></tr>
+<tr><th id="36">36</th><td><i class="doc"> * the same values are used in convert_from_tensorflow.py</i></td></tr>
+<tr><th id="37">37</th><td><i class="doc"> * and, it is used to index the layer execution/load function pointer.</i></td></tr>
+<tr><th id="38">38</th><td><i class="doc"> */</i></td></tr>
+<tr><th id="39">39</th><td><b>typedef</b> <b>enum</b> {</td></tr>
+<tr><th id="40">40</th><td>    <dfn class="enum" id="DLT_INPUT" title='DLT_INPUT' data-ref="DLT_INPUT" data-ref-filename="DLT_INPUT">DLT_INPUT</dfn> = <var>0</var>,</td></tr>
+<tr><th id="41">41</th><td>    <dfn class="enum" id="DLT_CONV2D" title='DLT_CONV2D' data-ref="DLT_CONV2D" data-ref-filename="DLT_CONV2D">DLT_CONV2D</dfn> = <var>1</var>,</td></tr>
+<tr><th id="42">42</th><td>    <dfn class="enum" id="DLT_DEPTH_TO_SPACE" title='DLT_DEPTH_TO_SPACE' data-ref="DLT_DEPTH_TO_SPACE" data-ref-filename="DLT_DEPTH_TO_SPACE">DLT_DEPTH_TO_SPACE</dfn> = <var>2</var>,</td></tr>
+<tr><th id="43">43</th><td>    <dfn class="enum" id="DLT_MIRROR_PAD" title='DLT_MIRROR_PAD' data-ref="DLT_MIRROR_PAD" data-ref-filename="DLT_MIRROR_PAD">DLT_MIRROR_PAD</dfn> = <var>3</var>,</td></tr>
+<tr><th id="44">44</th><td>    <dfn class="enum" id="DLT_MAXIMUM" title='DLT_MAXIMUM' data-ref="DLT_MAXIMUM" data-ref-filename="DLT_MAXIMUM">DLT_MAXIMUM</dfn> = <var>4</var>,</td></tr>
+<tr><th id="45">45</th><td>    <dfn class="enum" id="DLT_MATH_BINARY" title='DLT_MATH_BINARY' data-ref="DLT_MATH_BINARY" data-ref-filename="DLT_MATH_BINARY">DLT_MATH_BINARY</dfn> = <var>5</var>,</td></tr>
+<tr><th id="46">46</th><td>    <dfn class="enum" id="DLT_MATH_UNARY" title='DLT_MATH_UNARY' data-ref="DLT_MATH_UNARY" data-ref-filename="DLT_MATH_UNARY">DLT_MATH_UNARY</dfn> = <var>6</var>,</td></tr>
+<tr><th id="47">47</th><td>    <dfn class="enum" id="DLT_AVG_POOL" title='DLT_AVG_POOL' data-ref="DLT_AVG_POOL" data-ref-filename="DLT_AVG_POOL">DLT_AVG_POOL</dfn> = <var>7</var>,</td></tr>
+<tr><th id="48">48</th><td>    <dfn class="enum" id="DLT_DENSE" title='DLT_DENSE' data-ref="DLT_DENSE" data-ref-filename="DLT_DENSE">DLT_DENSE</dfn> = <var>8</var>,</td></tr>
+<tr><th id="49">49</th><td>    <dfn class="enum" id="DLT_COUNT" title='DLT_COUNT' data-ref="DLT_COUNT" data-ref-filename="DLT_COUNT">DLT_COUNT</dfn></td></tr>
+<tr><th id="50">50</th><td>} <dfn class="typedef" id="DNNLayerType" title='DNNLayerType' data-type='enum DNNLayerType' data-ref="DNNLayerType" data-ref-filename="DNNLayerType">DNNLayerType</dfn>;</td></tr>
+<tr><th id="51">51</th><td></td></tr>
+<tr><th id="52">52</th><td><b>typedef</b> <b>enum</b> {<dfn class="enum" id="DOT_INPUT" title='DOT_INPUT' data-ref="DOT_INPUT" data-ref-filename="DOT_INPUT">DOT_INPUT</dfn> = <var>1</var>, <dfn class="enum" id="DOT_OUTPUT" title='DOT_OUTPUT' data-ref="DOT_OUTPUT" data-ref-filename="DOT_OUTPUT">DOT_OUTPUT</dfn> = <var>2</var>, <dfn class="enum" id="DOT_INTERMEDIATE" title='DOT_INTERMEDIATE' data-ref="DOT_INTERMEDIATE" data-ref-filename="DOT_INTERMEDIATE">DOT_INTERMEDIATE</dfn> = <a class="enum" href="#DOT_INPUT" title='DOT_INPUT' data-ref="DOT_INPUT" data-ref-filename="DOT_INPUT">DOT_INPUT</a> | <a class="enum" href="#DOT_OUTPUT" title='DOT_OUTPUT' data-ref="DOT_OUTPUT" data-ref-filename="DOT_OUTPUT">DOT_OUTPUT</a>} <dfn class="typedef" id="DNNOperandType" title='DNNOperandType' data-type='enum DNNOperandType' data-ref="DNNOperandType" data-ref-filename="DNNOperandType">DNNOperandType</dfn>;</td></tr>
+<tr><th id="53">53</th><td><b>typedef</b> <b>enum</b> {<dfn class="enum" id="VALID" title='VALID' data-ref="VALID" data-ref-filename="VALID">VALID</dfn>, <dfn class="enum" id="SAME" title='SAME' data-ref="SAME" data-ref-filename="SAME">SAME</dfn>, <dfn class="enum" id="SAME_CLAMP_TO_EDGE" title='SAME_CLAMP_TO_EDGE' data-ref="SAME_CLAMP_TO_EDGE" data-ref-filename="SAME_CLAMP_TO_EDGE">SAME_CLAMP_TO_EDGE</dfn>} <dfn class="typedef" id="DNNPaddingParam" title='DNNPaddingParam' data-type='enum DNNPaddingParam' data-ref="DNNPaddingParam" data-ref-filename="DNNPaddingParam">DNNPaddingParam</dfn>;</td></tr>
+<tr><th id="54">54</th><td><b>typedef</b> <b>enum</b> {<dfn class="enum" id="RELU" title='RELU' data-ref="RELU" data-ref-filename="RELU">RELU</dfn>, <dfn class="enum" id="TANH" title='TANH' data-ref="TANH" data-ref-filename="TANH">TANH</dfn>, <dfn class="enum" id="SIGMOID" title='SIGMOID' data-ref="SIGMOID" data-ref-filename="SIGMOID">SIGMOID</dfn>, <dfn class="enum" id="NONE" title='NONE' data-ref="NONE" data-ref-filename="NONE">NONE</dfn>, <dfn class="enum" id="LEAKY_RELU" title='LEAKY_RELU' data-ref="LEAKY_RELU" data-ref-filename="LEAKY_RELU">LEAKY_RELU</dfn>} <dfn class="typedef" id="DNNActivationFunc" title='DNNActivationFunc' data-type='enum DNNActivationFunc' data-ref="DNNActivationFunc" data-ref-filename="DNNActivationFunc">DNNActivationFunc</dfn>;</td></tr>
+<tr><th id="55">55</th><td></td></tr>
+<tr><th id="56">56</th><td><b>typedef</b> <b>struct</b> <dfn class="type def" id="Layer" title='Layer' data-ref="Layer" data-ref-filename="Layer"><a class="type" href="#Layer" title='Layer' data-ref="Layer" data-ref-filename="Layer">Layer</a></dfn>{</td></tr>
+<tr><th id="57">57</th><td>    <a class="typedef" href="#DNNLayerType" title='DNNLayerType' data-type='enum DNNLayerType' data-ref="DNNLayerType" data-ref-filename="DNNLayerType">DNNLayerType</a> <dfn class="decl field" id="Layer::type" title='Layer::type' data-ref="Layer::type" data-ref-filename="Layer..type">type</dfn>;</td></tr>
+<tr><th id="58">58</th><td>    <i class="doc">/**</i></td></tr>
+<tr><th id="59">59</th><td><i class="doc">     * a layer can have multiple inputs and one output.</i></td></tr>
+<tr><th id="60">60</th><td><i class="doc">     * 4 is just a big enough number for input operands (increase it if necessary),</i></td></tr>
+<tr><th id="61">61</th><td><i class="doc">     * do not use 'int32_t *input_operand_indexes', so we don't worry about mem leaks.</i></td></tr>
+<tr><th id="62">62</th><td><i class="doc">     */</i></td></tr>
+<tr><th id="63">63</th><td>    <a class="typedef" href="../../../include/stdint.h.html#int32_t" title='int32_t' data-type='int' data-ref="int32_t" data-ref-filename="int32_t">int32_t</a> <dfn class="decl field" id="Layer::input_operand_indexes" title='Layer::input_operand_indexes' data-ref="Layer::input_operand_indexes" data-ref-filename="Layer..input_operand_indexes">input_operand_indexes</dfn>[<var>4</var>];</td></tr>
+<tr><th id="64">64</th><td>    <a class="typedef" href="../../../include/stdint.h.html#int32_t" title='int32_t' data-type='int' data-ref="int32_t" data-ref-filename="int32_t">int32_t</a> <dfn class="decl field" id="Layer::output_operand_index" title='Layer::output_operand_index' data-ref="Layer::output_operand_index" data-ref-filename="Layer..output_operand_index">output_operand_index</dfn>;</td></tr>
+<tr><th id="65">65</th><td>    <em>void</em> *<dfn class="decl field" id="Layer::params" title='Layer::params' data-ref="Layer::params" data-ref-filename="Layer..params">params</dfn>;</td></tr>
+<tr><th id="66">66</th><td>} <dfn class="typedef" id="Layer" title='Layer' data-type='struct Layer' data-ref="Layer" data-ref-filename="Layer">Layer</dfn>;</td></tr>
+<tr><th id="67">67</th><td></td></tr>
+<tr><th id="68">68</th><td><b>typedef</b> <b>struct</b> <dfn class="type def" id="DnnOperand" title='DnnOperand' data-ref="DnnOperand" data-ref-filename="DnnOperand"><a class="type" href="#DnnOperand" title='DnnOperand' data-ref="DnnOperand" data-ref-filename="DnnOperand">DnnOperand</a></dfn>{</td></tr>
+<tr><th id="69">69</th><td>    <i class="doc">/**</i></td></tr>
+<tr><th id="70">70</th><td><i class="doc">     * there are two memory layouts, NHWC or NCHW, so we use dims,</i></td></tr>
+<tr><th id="71">71</th><td><i class="doc">     * dims[0] is Number.</i></td></tr>
+<tr><th id="72">72</th><td><i class="doc">     */</i></td></tr>
+<tr><th id="73">73</th><td>    <a class="typedef" href="../../../include/stdint.h.html#int32_t" title='int32_t' data-type='int' data-ref="int32_t" data-ref-filename="int32_t">int32_t</a> <dfn class="decl field" id="DnnOperand::dims" title='DnnOperand::dims' data-ref="DnnOperand::dims" data-ref-filename="DnnOperand..dims">dims</dfn>[<var>4</var>];</td></tr>
+<tr><th id="74">74</th><td></td></tr>
+<tr><th id="75">75</th><td>    <i class="doc">/**</i></td></tr>
+<tr><th id="76">76</th><td><i class="doc">     * input/output/intermediate operand of the network</i></td></tr>
+<tr><th id="77">77</th><td><i class="doc">     */</i></td></tr>
+<tr><th id="78">78</th><td>    <a class="typedef" href="#DNNOperandType" title='DNNOperandType' data-type='enum DNNOperandType' data-ref="DNNOperandType" data-ref-filename="DNNOperandType">DNNOperandType</a> <dfn class="decl field" id="DnnOperand::type" title='DnnOperand::type' data-ref="DnnOperand::type" data-ref-filename="DnnOperand..type">type</dfn>;</td></tr>
+<tr><th id="79">79</th><td></td></tr>
+<tr><th id="80">80</th><td>    <i class="doc">/**</i></td></tr>
+<tr><th id="81">81</th><td><i class="doc">     * support different kinds of data type such as float, half float, int8 etc,</i></td></tr>
+<tr><th id="82">82</th><td><i class="doc">     * first support float now.</i></td></tr>
+<tr><th id="83">83</th><td><i class="doc">     */</i></td></tr>
+<tr><th id="84">84</th><td>    <a class="typedef" href="../dnn_interface.h.html#DNNDataType" title='DNNDataType' data-type='enum DNNDataType' data-ref="DNNDataType" data-ref-filename="DNNDataType">DNNDataType</a> <dfn class="decl field" id="DnnOperand::data_type" title='DnnOperand::data_type' data-ref="DnnOperand::data_type" data-ref-filename="DnnOperand..data_type">data_type</dfn>;</td></tr>
+<tr><th id="85">85</th><td></td></tr>
+<tr><th id="86">86</th><td>    <i class="doc">/**</i></td></tr>
+<tr><th id="87">87</th><td><i class="doc">     * NHWC if 1, otherwise NCHW.</i></td></tr>
+<tr><th id="88">88</th><td><i class="doc">     * let's first support NHWC only, this flag is for extensive usage.</i></td></tr>
+<tr><th id="89">89</th><td><i class="doc">     */</i></td></tr>
+<tr><th id="90">90</th><td>    <a class="typedef" href="../../../include/stdint.h.html#int8_t" title='int8_t' data-type='signed char' data-ref="int8_t" data-ref-filename="int8_t">int8_t</a> <dfn class="decl field" id="DnnOperand::isNHWC" title='DnnOperand::isNHWC' data-ref="DnnOperand::isNHWC" data-ref-filename="DnnOperand..isNHWC">isNHWC</dfn>;</td></tr>
+<tr><th id="91">91</th><td></td></tr>
+<tr><th id="92">92</th><td>    <i class="doc">/**</i></td></tr>
+<tr><th id="93">93</th><td><i class="doc">     * to avoid possible memory leak, do not use char *name</i></td></tr>
+<tr><th id="94">94</th><td><i class="doc">     */</i></td></tr>
+<tr><th id="95">95</th><td>    <em>char</em> <dfn class="decl field" id="DnnOperand::name" title='DnnOperand::name' data-ref="DnnOperand::name" data-ref-filename="DnnOperand..name">name</dfn>[<var>128</var>];</td></tr>
+<tr><th id="96">96</th><td></td></tr>
+<tr><th id="97">97</th><td>    <i class="doc">/**</i></td></tr>
+<tr><th id="98">98</th><td><i class="doc">     * data pointer with data length in bytes.</i></td></tr>
+<tr><th id="99">99</th><td><i class="doc">     * usedNumbersLeft is only valid for intermediate operand,</i></td></tr>
+<tr><th id="100">100</th><td><i class="doc">     * it means how many layers still depend on this operand,</i></td></tr>
+<tr><th id="101">101</th><td><i class="doc">     * todo: the memory can be reused when usedNumbersLeft is zero.</i></td></tr>
+<tr><th id="102">102</th><td><i class="doc">     */</i></td></tr>
+<tr><th id="103">103</th><td>    <em>void</em> *<dfn class="decl field" id="DnnOperand::data" title='DnnOperand::data' data-ref="DnnOperand::data" data-ref-filename="DnnOperand..data">data</dfn>;</td></tr>
+<tr><th id="104">104</th><td>    <a class="typedef" href="../../../include/stdint.h.html#int32_t" title='int32_t' data-type='int' data-ref="int32_t" data-ref-filename="int32_t">int32_t</a> <dfn class="decl field" id="DnnOperand::length" title='DnnOperand::length' data-ref="DnnOperand::length" data-ref-filename="DnnOperand..length">length</dfn>;</td></tr>
+<tr><th id="105">105</th><td>    <a class="typedef" href="../../../include/stdint.h.html#int32_t" title='int32_t' data-type='int' data-ref="int32_t" data-ref-filename="int32_t">int32_t</a> <dfn class="decl field" id="DnnOperand::usedNumbersLeft" title='DnnOperand::usedNumbersLeft' data-ref="DnnOperand::usedNumbersLeft" data-ref-filename="DnnOperand..usedNumbersLeft">usedNumbersLeft</dfn>;</td></tr>
+<tr><th id="106">106</th><td>}<dfn class="typedef" id="DnnOperand" title='DnnOperand' data-type='struct DnnOperand' data-ref="DnnOperand" data-ref-filename="DnnOperand">DnnOperand</dfn>;</td></tr>
+<tr><th id="107">107</th><td></td></tr>
+<tr><th id="108">108</th><td><b>typedef</b> <b>struct</b> <dfn class="type def" id="InputParams" title='InputParams' data-ref="InputParams" data-ref-filename="InputParams"><a class="type" href="#InputParams" title='InputParams' data-ref="InputParams" data-ref-filename="InputParams">InputParams</a></dfn>{</td></tr>
+<tr><th id="109">109</th><td>    <em>int</em> <dfn class="decl field" id="InputParams::height" title='InputParams::height' data-ref="InputParams::height" data-ref-filename="InputParams..height">height</dfn>, <dfn class="decl field" id="InputParams::width" title='InputParams::width' data-ref="InputParams::width" data-ref-filename="InputParams..width">width</dfn>, <dfn class="decl field" id="InputParams::channels" title='InputParams::channels' data-ref="InputParams::channels" data-ref-filename="InputParams..channels">channels</dfn>;</td></tr>
+<tr><th id="110">110</th><td>} <dfn class="typedef" id="InputParams" title='InputParams' data-type='struct InputParams' data-ref="InputParams" data-ref-filename="InputParams">InputParams</dfn>;</td></tr>
+<tr><th id="111">111</th><td></td></tr>
+<tr><th id="112">112</th><td><b>typedef</b> <b>struct</b> <dfn class="type def" id="NativeOptions" title='NativeOptions' data-ref="NativeOptions" data-ref-filename="NativeOptions"><a class="type" href="#NativeOptions" title='NativeOptions' data-ref="NativeOptions" data-ref-filename="NativeOptions">NativeOptions</a></dfn>{</td></tr>
+<tr><th id="113">113</th><td>    <a class="typedef" href="../../../include/stdint.h.html#uint32_t" title='uint32_t' data-type='unsigned int' data-ref="uint32_t" data-ref-filename="uint32_t">uint32_t</a> <dfn class="decl field" id="NativeOptions::conv2d_threads" title='NativeOptions::conv2d_threads' data-ref="NativeOptions::conv2d_threads" data-ref-filename="NativeOptions..conv2d_threads">conv2d_threads</dfn>;</td></tr>
+<tr><th id="114">114</th><td>} <dfn class="typedef" id="NativeOptions" title='NativeOptions' data-type='struct NativeOptions' data-ref="NativeOptions" data-ref-filename="NativeOptions">NativeOptions</dfn>;</td></tr>
+<tr><th id="115">115</th><td></td></tr>
+<tr><th id="116">116</th><td><b>typedef</b> <b>struct</b> <dfn class="type def" id="NativeContext" title='NativeContext' data-ref="NativeContext" data-ref-filename="NativeContext"><a class="type" href="#NativeContext" title='NativeContext' data-ref="NativeContext" data-ref-filename="NativeContext">NativeContext</a></dfn> {</td></tr>
+<tr><th id="117">117</th><td>    <em>const</em> <a class="typedef" href="../../libavutil/log.h.html#AVClass" title='AVClass' data-type='struct AVClass' data-ref="AVClass" data-ref-filename="AVClass">AVClass</a> *<dfn class="decl field" id="NativeContext::class" title='NativeContext::class' data-ref="NativeContext::class" data-ref-filename="NativeContext..class">class</dfn>;</td></tr>
+<tr><th id="118">118</th><td>    <a class="typedef" href="#NativeOptions" title='NativeOptions' data-type='struct NativeOptions' data-ref="NativeOptions" data-ref-filename="NativeOptions">NativeOptions</a> <dfn class="decl field" id="NativeContext::options" title='NativeContext::options' data-ref="NativeContext::options" data-ref-filename="NativeContext..options">options</dfn>;</td></tr>
+<tr><th id="119">119</th><td>} <dfn class="typedef" id="NativeContext" title='NativeContext' data-type='struct NativeContext' data-ref="NativeContext" data-ref-filename="NativeContext">NativeContext</dfn>;</td></tr>
+<tr><th id="120">120</th><td></td></tr>
+<tr><th id="121">121</th><td><i>// Represents simple feed-forward convolutional network.</i></td></tr>
+<tr><th id="122">122</th><td><b>typedef</b> <b>struct</b> <dfn class="type def" id="NativeModel" title='NativeModel' data-ref="NativeModel" data-ref-filename="NativeModel"><a class="type" href="#NativeModel" title='NativeModel' data-ref="NativeModel" data-ref-filename="NativeModel">NativeModel</a></dfn>{</td></tr>
+<tr><th id="123">123</th><td>    <a class="typedef" href="#NativeContext" title='NativeContext' data-type='struct NativeContext' data-ref="NativeContext" data-ref-filename="NativeContext">NativeContext</a> <dfn class="decl field" id="NativeModel::ctx" title='NativeModel::ctx' data-ref="NativeModel::ctx" data-ref-filename="NativeModel..ctx">ctx</dfn>;</td></tr>
+<tr><th id="124">124</th><td>    <a class="typedef" href="../dnn_interface.h.html#DNNModel" title='DNNModel' data-type='struct DNNModel' data-ref="DNNModel" data-ref-filename="DNNModel">DNNModel</a> *<dfn class="decl field" id="NativeModel::model" title='NativeModel::model' data-ref="NativeModel::model" data-ref-filename="NativeModel..model">model</dfn>;</td></tr>
+<tr><th id="125">125</th><td>    <a class="typedef" href="#Layer" title='Layer' data-type='struct Layer' data-ref="Layer" data-ref-filename="Layer">Layer</a> *<dfn class="decl field" id="NativeModel::layers" title='NativeModel::layers' data-ref="NativeModel::layers" data-ref-filename="NativeModel..layers">layers</dfn>;</td></tr>
+<tr><th id="126">126</th><td>    <a class="typedef" href="../../../include/stdint.h.html#int32_t" title='int32_t' data-type='int' data-ref="int32_t" data-ref-filename="int32_t">int32_t</a> <dfn class="decl field" id="NativeModel::layers_num" title='NativeModel::layers_num' data-ref="NativeModel::layers_num" data-ref-filename="NativeModel..layers_num">layers_num</dfn>;</td></tr>
+<tr><th id="127">127</th><td>    <a class="typedef" href="#DnnOperand" title='DnnOperand' data-type='struct DnnOperand' data-ref="DnnOperand" data-ref-filename="DnnOperand">DnnOperand</a> *<dfn class="decl field" id="NativeModel::operands" title='NativeModel::operands' data-ref="NativeModel::operands" data-ref-filename="NativeModel..operands">operands</dfn>;</td></tr>
+<tr><th id="128">128</th><td>    <a class="typedef" href="../../../include/stdint.h.html#int32_t" title='int32_t' data-type='int' data-ref="int32_t" data-ref-filename="int32_t">int32_t</a> <dfn class="decl field" id="NativeModel::operands_num" title='NativeModel::operands_num' data-ref="NativeModel::operands_num" data-ref-filename="NativeModel..operands_num">operands_num</dfn>;</td></tr>
+<tr><th id="129">129</th><td>} <dfn class="typedef" id="NativeModel" title='NativeModel' data-type='struct NativeModel' data-ref="NativeModel" data-ref-filename="NativeModel">NativeModel</dfn>;</td></tr>
+<tr><th id="130">130</th><td></td></tr>
+<tr><th id="131">131</th><td><a class="typedef" href="../dnn_interface.h.html#DNNModel" title='DNNModel' data-type='struct DNNModel' data-ref="DNNModel" data-ref-filename="DNNModel">DNNModel</a> *<a class="decl fn" href="dnn_backend_native.c.html#ff_dnn_load_model_native" title='ff_dnn_load_model_native' data-ref="ff_dnn_load_model_native" data-ref-filename="ff_dnn_load_model_native" id="ff_dnn_load_model_native">ff_dnn_load_model_native</a>(<em>const</em> <em>char</em> *<dfn class="local col9 decl" id="39model_filename" title='model_filename' data-type='const char *' data-ref="39model_filename" data-ref-filename="39model_filename">model_filename</dfn>, <a class="typedef" href="../dnn_interface.h.html#DNNFunctionType" title='DNNFunctionType' data-type='enum DNNFunctionType' data-ref="DNNFunctionType" data-ref-filename="DNNFunctionType">DNNFunctionType</a> <dfn class="local col0 decl" id="40func_type" title='func_type' data-type='DNNFunctionType' data-ref="40func_type" data-ref-filename="40func_type">func_type</dfn>, <em>const</em> <em>char</em> *<dfn class="local col1 decl" id="41options" title='options' data-type='const char *' data-ref="41options" data-ref-filename="41options">options</dfn>, <a class="typedef" href="../avfilter.h.html#AVFilterContext" title='AVFilterContext' data-type='struct AVFilterContext' data-ref="AVFilterContext" data-ref-filename="AVFilterContext">AVFilterContext</a> *<dfn class="local col2 decl" id="42filter_ctx" title='filter_ctx' data-type='AVFilterContext *' data-ref="42filter_ctx" data-ref-filename="42filter_ctx">filter_ctx</dfn>);</td></tr>
+<tr><th id="132">132</th><td></td></tr>
+<tr><th id="133">133</th><td><a class="typedef" href="../dnn_interface.h.html#DNNReturnType" title='DNNReturnType' data-type='enum DNNReturnType' data-ref="DNNReturnType" data-ref-filename="DNNReturnType">DNNReturnType</a> <a class="decl fn" href="dnn_backend_native.c.html#ff_dnn_execute_model_native" title='ff_dnn_execute_model_native' data-ref="ff_dnn_execute_model_native" data-ref-filename="ff_dnn_execute_model_native" id="ff_dnn_execute_model_native">ff_dnn_execute_model_native</a>(<em>const</em> <a class="typedef" href="../dnn_interface.h.html#DNNModel" title='DNNModel' data-type='struct DNNModel' data-ref="DNNModel" data-ref-filename="DNNModel">DNNModel</a> *<dfn class="local col3 decl" id="43model" title='model' data-type='const DNNModel *' data-ref="43model" data-ref-filename="43model">model</dfn>, <em>const</em> <em>char</em> *<dfn class="local col4 decl" id="44input_name" title='input_name' data-type='const char *' data-ref="44input_name" data-ref-filename="44input_name">input_name</dfn>, <a class="typedef" href="../../libavutil/frame.h.html#AVFrame" title='AVFrame' data-type='struct AVFrame' data-ref="AVFrame" data-ref-filename="AVFrame">AVFrame</a> *<dfn class="local col5 decl" id="45in_frame" title='in_frame' data-type='AVFrame *' data-ref="45in_frame" data-ref-filename="45in_frame">in_frame</dfn>,</td></tr>
+<tr><th id="134">134</th><td>                                          <em>const</em> <em>char</em> **<dfn class="local col6 decl" id="46output_names" title='output_names' data-type='const char **' data-ref="46output_names" data-ref-filename="46output_names">output_names</dfn>, <a class="typedef" href="../../../include/stdint.h.html#uint32_t" title='uint32_t' data-type='unsigned int' data-ref="uint32_t" data-ref-filename="uint32_t">uint32_t</a> <dfn class="local col7 decl" id="47nb_output" title='nb_output' data-type='uint32_t' data-ref="47nb_output" data-ref-filename="47nb_output">nb_output</dfn>, <a class="typedef" href="../../libavutil/frame.h.html#AVFrame" title='AVFrame' data-type='struct AVFrame' data-ref="AVFrame" data-ref-filename="AVFrame">AVFrame</a> *<dfn class="local col8 decl" id="48out_frame" title='out_frame' data-type='AVFrame *' data-ref="48out_frame" data-ref-filename="48out_frame">out_frame</dfn>);</td></tr>
+<tr><th id="135">135</th><td></td></tr>
+<tr><th id="136">136</th><td><em>void</em> <a class="decl fn" href="dnn_backend_native.c.html#ff_dnn_free_model_native" title='ff_dnn_free_model_native' data-ref="ff_dnn_free_model_native" data-ref-filename="ff_dnn_free_model_native" id="ff_dnn_free_model_native">ff_dnn_free_model_native</a>(<a class="typedef" href="../dnn_interface.h.html#DNNModel" title='DNNModel' data-type='struct DNNModel' data-ref="DNNModel" data-ref-filename="DNNModel">DNNModel</a> **<dfn class="local col9 decl" id="49model" title='model' data-type='DNNModel **' data-ref="49model" data-ref-filename="49model">model</dfn>);</td></tr>
+<tr><th id="137">137</th><td></td></tr>
+<tr><th id="138">138</th><td><i>// NOTE: User must check for error (return value &lt;= 0) to handle</i></td></tr>
+<tr><th id="139">139</th><td><i>// case like integer overflow.</i></td></tr>
+<tr><th id="140">140</th><td><a class="typedef" href="../../../include/stdint.h.html#int32_t" title='int32_t' data-type='int' data-ref="int32_t" data-ref-filename="int32_t">int32_t</a> <a class="decl fn" href="dnn_backend_native.c.html#ff_calculate_operand_data_length" title='ff_calculate_operand_data_length' data-ref="ff_calculate_operand_data_length" data-ref-filename="ff_calculate_operand_data_length" id="ff_calculate_operand_data_length">ff_calculate_operand_data_length</a>(<em>const</em> <a class="typedef" href="#DnnOperand" title='DnnOperand' data-type='struct DnnOperand' data-ref="DnnOperand" data-ref-filename="DnnOperand">DnnOperand</a> *<dfn class="local col0 decl" id="50oprd" title='oprd' data-type='const DnnOperand *' data-ref="50oprd" data-ref-filename="50oprd">oprd</dfn>);</td></tr>
+<tr><th id="141">141</th><td><a class="typedef" href="../../../include/stdint.h.html#int32_t" title='int32_t' data-type='int' data-ref="int32_t" data-ref-filename="int32_t">int32_t</a> <a class="decl fn" href="dnn_backend_native.c.html#ff_calculate_operand_dims_count" title='ff_calculate_operand_dims_count' data-ref="ff_calculate_operand_dims_count" data-ref-filename="ff_calculate_operand_dims_count" id="ff_calculate_operand_dims_count">ff_calculate_operand_dims_count</a>(<em>const</em> <a class="typedef" href="#DnnOperand" title='DnnOperand' data-type='struct DnnOperand' data-ref="DnnOperand" data-ref-filename="DnnOperand">DnnOperand</a> *<dfn class="local col1 decl" id="51oprd" title='oprd' data-type='const DnnOperand *' data-ref="51oprd" data-ref-filename="51oprd">oprd</dfn>);</td></tr>
+<tr><th id="142">142</th><td><u>#<span data-ppcond="27">endif</span></u></td></tr>
+<tr><th id="143">143</th><td></td></tr>
+</table><hr/><p id='footer'>
+Generated while processing <a href='dnn_backend_native.c.html'>ffmpeg/libavfilter/dnn/dnn_backend_native.c</a><br/>Generated on <em>2021-May-30</em> from project ffmpeg revision <em>4.4</em>

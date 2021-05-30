@@ -1,0 +1,34 @@
+<dec f='ffmpeg/libavfilter/ebur128.c' l='87' type='double [5][5]'/>
+<use f='ffmpeg/libavfilter/ebur128.c' l='150' u='w' c='ebur128_init_filter'/>
+<use f='ffmpeg/libavfilter/ebur128.c' l='343' u='w' c='ebur128_filter_double'/>
+<use f='ffmpeg/libavfilter/ebur128.c' l='344' u='r' c='ebur128_filter_double'/>
+<use f='ffmpeg/libavfilter/ebur128.c' l='345' u='r' c='ebur128_filter_double'/>
+<use f='ffmpeg/libavfilter/ebur128.c' l='346' u='r' c='ebur128_filter_double'/>
+<use f='ffmpeg/libavfilter/ebur128.c' l='347' u='r' c='ebur128_filter_double'/>
+<use f='ffmpeg/libavfilter/ebur128.c' l='349' u='r' c='ebur128_filter_double'/>
+<use f='ffmpeg/libavfilter/ebur128.c' l='350' u='r' c='ebur128_filter_double'/>
+<use f='ffmpeg/libavfilter/ebur128.c' l='351' u='r' c='ebur128_filter_double'/>
+<use f='ffmpeg/libavfilter/ebur128.c' l='352' u='r' c='ebur128_filter_double'/>
+<use f='ffmpeg/libavfilter/ebur128.c' l='353' u='r' c='ebur128_filter_double'/>
+<use f='ffmpeg/libavfilter/ebur128.c' l='354' u='w' c='ebur128_filter_double'/>
+<use f='ffmpeg/libavfilter/ebur128.c' l='354' u='r' c='ebur128_filter_double'/>
+<use f='ffmpeg/libavfilter/ebur128.c' l='355' u='w' c='ebur128_filter_double'/>
+<use f='ffmpeg/libavfilter/ebur128.c' l='355' u='r' c='ebur128_filter_double'/>
+<use f='ffmpeg/libavfilter/ebur128.c' l='356' u='w' c='ebur128_filter_double'/>
+<use f='ffmpeg/libavfilter/ebur128.c' l='356' u='r' c='ebur128_filter_double'/>
+<use f='ffmpeg/libavfilter/ebur128.c' l='357' u='w' c='ebur128_filter_double'/>
+<use f='ffmpeg/libavfilter/ebur128.c' l='357' u='r' c='ebur128_filter_double'/>
+<use f='ffmpeg/libavfilter/ebur128.c' l='359' u='w' c='ebur128_filter_double'/>
+<use f='ffmpeg/libavfilter/ebur128.c' l='359' u='r' c='ebur128_filter_double'/>
+<use f='ffmpeg/libavfilter/ebur128.c' l='359' u='r' c='ebur128_filter_double'/>
+<use f='ffmpeg/libavfilter/ebur128.c' l='360' u='w' c='ebur128_filter_double'/>
+<use f='ffmpeg/libavfilter/ebur128.c' l='360' u='r' c='ebur128_filter_double'/>
+<use f='ffmpeg/libavfilter/ebur128.c' l='360' u='r' c='ebur128_filter_double'/>
+<use f='ffmpeg/libavfilter/ebur128.c' l='361' u='w' c='ebur128_filter_double'/>
+<use f='ffmpeg/libavfilter/ebur128.c' l='361' u='r' c='ebur128_filter_double'/>
+<use f='ffmpeg/libavfilter/ebur128.c' l='361' u='r' c='ebur128_filter_double'/>
+<use f='ffmpeg/libavfilter/ebur128.c' l='362' u='w' c='ebur128_filter_double'/>
+<use f='ffmpeg/libavfilter/ebur128.c' l='362' u='r' c='ebur128_filter_double'/>
+<use f='ffmpeg/libavfilter/ebur128.c' l='362' u='r' c='ebur128_filter_double'/>
+<offset>1024</offset>
+<doc f='ffmpeg/libavfilter/ebur128.c' l='86'>/** BS.1770 filter state. */</doc>

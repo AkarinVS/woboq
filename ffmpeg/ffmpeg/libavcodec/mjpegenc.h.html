@@ -1,0 +1,129 @@
+<!doctype html>
+<html>
+<head>
+<meta name="viewport" content="width=device-width, initial-scale=1.0"><title>mjpegenc.h source code [ffmpeg/libavcodec/mjpegenc.h] - Woboq Code Browser</title>
+<meta name="woboq:interestingDefinitions" content="HuffmanTableOption,MJpegContext,MJpegHuffmanCode "/>
+<link rel="stylesheet" href="../.././data/qtcreator.css" title="QtCreator"/>
+<link rel="alternate stylesheet" href="../.././data/kdevelop.css" title="KDevelop"/>
+<script type="text/javascript" src="../.././data/jquery/jquery.min.js"></script>
+<script type="text/javascript" src="../.././data/jquery/jquery-ui.min.js"></script>
+<script>var file = 'ffmpeg/libavcodec/mjpegenc.h'; var root_path = '../..'; var data_path = '../.././data'; var ecma_script_api_version = 2;</script>
+<script src='../.././data/codebrowser.js'></script>
+</head>
+<body><div id='header'><h1 id='breadcrumb'><span>Browse the source code of </span><a href='..'>ffmpeg</a>/<a href='./'>libavcodec</a>/<a href='mjpegenc.h.html'>mjpegenc.h</a></h1></div>
+<hr/><div id='content'><table class="code">
+<tr><th id="1">1</th><td><i>/*</i></td></tr>
+<tr><th id="2">2</th><td><i> * MJPEG encoder</i></td></tr>
+<tr><th id="3">3</th><td><i> * Copyright (c) 2000, 2001 Fabrice Bellard</i></td></tr>
+<tr><th id="4">4</th><td><i> * Copyright (c) 2003 Alex Beregszaszi</i></td></tr>
+<tr><th id="5">5</th><td><i> * Copyright (c) 2003-2004 Michael Niedermayer</i></td></tr>
+<tr><th id="6">6</th><td><i> *</i></td></tr>
+<tr><th id="7">7</th><td><i> * Support for external huffman table, various fixes (AVID workaround),</i></td></tr>
+<tr><th id="8">8</th><td><i> * aspecting, new decode_frame mechanism and apple mjpeg-b support</i></td></tr>
+<tr><th id="9">9</th><td><i> *                                  by Alex Beregszaszi</i></td></tr>
+<tr><th id="10">10</th><td><i> *</i></td></tr>
+<tr><th id="11">11</th><td><i> * This file is part of FFmpeg.</i></td></tr>
+<tr><th id="12">12</th><td><i> *</i></td></tr>
+<tr><th id="13">13</th><td><i> * FFmpeg is free software; you can redistribute it and/or</i></td></tr>
+<tr><th id="14">14</th><td><i> * modify it under the terms of the GNU Lesser General Public</i></td></tr>
+<tr><th id="15">15</th><td><i> * License as published by the Free Software Foundation; either</i></td></tr>
+<tr><th id="16">16</th><td><i> * version 2.1 of the License, or (at your option) any later version.</i></td></tr>
+<tr><th id="17">17</th><td><i> *</i></td></tr>
+<tr><th id="18">18</th><td><i> * FFmpeg is distributed in the hope that it will be useful,</i></td></tr>
+<tr><th id="19">19</th><td><i> * but WITHOUT ANY WARRANTY; without even the implied warranty of</i></td></tr>
+<tr><th id="20">20</th><td><i> * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the GNU</i></td></tr>
+<tr><th id="21">21</th><td><i> * Lesser General Public License for more details.</i></td></tr>
+<tr><th id="22">22</th><td><i> *</i></td></tr>
+<tr><th id="23">23</th><td><i> * You should have received a copy of the GNU Lesser General Public</i></td></tr>
+<tr><th id="24">24</th><td><i> * License along with FFmpeg; if not, write to the Free Software</i></td></tr>
+<tr><th id="25">25</th><td><i> * Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston, MA 02110-1301 USA</i></td></tr>
+<tr><th id="26">26</th><td><i> */</i></td></tr>
+<tr><th id="27">27</th><td></td></tr>
+<tr><th id="28">28</th><td><i class="doc">/**</i></td></tr>
+<tr><th id="29">29</th><td><i class="doc"> *<span class="command"> @file</span></i></td></tr>
+<tr><th id="30">30</th><td><i class="doc"> * MJPEG encoder.</i></td></tr>
+<tr><th id="31">31</th><td><i class="doc"> */</i></td></tr>
+<tr><th id="32">32</th><td></td></tr>
+<tr><th id="33">33</th><td><u>#<span data-ppcond="33">ifndef</span> <span class="macro" data-ref="_M/AVCODEC_MJPEGENC_H">AVCODEC_MJPEGENC_H</span></u></td></tr>
+<tr><th id="34">34</th><td><u>#define <dfn class="macro" id="_M/AVCODEC_MJPEGENC_H" data-ref="_M/AVCODEC_MJPEGENC_H">AVCODEC_MJPEGENC_H</dfn></u></td></tr>
+<tr><th id="35">35</th><td></td></tr>
+<tr><th id="36">36</th><td><u>#include &lt;stdint.h&gt;</u></td></tr>
+<tr><th id="37">37</th><td></td></tr>
+<tr><th id="38">38</th><td><u>#include <a href="mjpeg.h.html">"mjpeg.h"</a></u></td></tr>
+<tr><th id="39">39</th><td><u>#include <a href="mpegvideo.h.html">"mpegvideo.h"</a></u></td></tr>
+<tr><th id="40">40</th><td><u>#include <a href="put_bits.h.html">"put_bits.h"</a></u></td></tr>
+<tr><th id="41">41</th><td></td></tr>
+<tr><th id="42">42</th><td><i class="doc">/**</i></td></tr>
+<tr><th id="43">43</th><td><i class="doc"> * Buffer of JPEG frame data.</i></td></tr>
+<tr><th id="44">44</th><td><i class="doc"> *</i></td></tr>
+<tr><th id="45">45</th><td><i class="doc"> * Optimal Huffman table generation requires the frame data to be loaded into</i></td></tr>
+<tr><th id="46">46</th><td><i class="doc"> * a buffer so that the tables can be computed.</i></td></tr>
+<tr><th id="47">47</th><td><i class="doc"> * There are at most mb_width*mb_height*12*64 of these per frame.</i></td></tr>
+<tr><th id="48">48</th><td><i class="doc"> */</i></td></tr>
+<tr><th id="49">49</th><td><b>typedef</b> <b>struct</b> <dfn class="type def" id="MJpegHuffmanCode" title='MJpegHuffmanCode' data-ref="MJpegHuffmanCode" data-ref-filename="MJpegHuffmanCode"><a class="type" href="#MJpegHuffmanCode" title='MJpegHuffmanCode' data-ref="MJpegHuffmanCode" data-ref-filename="MJpegHuffmanCode">MJpegHuffmanCode</a></dfn> {</td></tr>
+<tr><th id="50">50</th><td>    <i>// 0=DC lum, 1=DC chrom, 2=AC lum, 3=AC chrom</i></td></tr>
+<tr><th id="51">51</th><td>    <a class="typedef" href="../../include/stdint.h.html#uint8_t" title='uint8_t' data-type='unsigned char' data-ref="uint8_t" data-ref-filename="uint8_t">uint8_t</a> <dfn class="decl field" id="MJpegHuffmanCode::table_id" title='MJpegHuffmanCode::table_id' data-ref="MJpegHuffmanCode::table_id" data-ref-filename="MJpegHuffmanCode..table_id">table_id</dfn>; <i class="doc">///&lt; The Huffman table id associated with the data.</i></td></tr>
+<tr><th id="52">52</th><td>    <a class="typedef" href="../../include/stdint.h.html#uint8_t" title='uint8_t' data-type='unsigned char' data-ref="uint8_t" data-ref-filename="uint8_t">uint8_t</a> <dfn class="decl field" id="MJpegHuffmanCode::code" title='MJpegHuffmanCode::code' data-ref="MJpegHuffmanCode::code" data-ref-filename="MJpegHuffmanCode..code">code</dfn>;     <i class="doc">///&lt; The exponent.</i></td></tr>
+<tr><th id="53">53</th><td>    <a class="typedef" href="../../include/stdint.h.html#uint16_t" title='uint16_t' data-type='unsigned short' data-ref="uint16_t" data-ref-filename="uint16_t">uint16_t</a> <dfn class="decl field" id="MJpegHuffmanCode::mant" title='MJpegHuffmanCode::mant' data-ref="MJpegHuffmanCode::mant" data-ref-filename="MJpegHuffmanCode..mant">mant</dfn>;    <i class="doc">///&lt; The mantissa.</i></td></tr>
+<tr><th id="54">54</th><td>} <dfn class="typedef" id="MJpegHuffmanCode" title='MJpegHuffmanCode' data-type='struct MJpegHuffmanCode' data-ref="MJpegHuffmanCode" data-ref-filename="MJpegHuffmanCode">MJpegHuffmanCode</dfn>;</td></tr>
+<tr><th id="55">55</th><td></td></tr>
+<tr><th id="56">56</th><td><i class="doc">/**</i></td></tr>
+<tr><th id="57">57</th><td><i class="doc"> * Holds JPEG frame data and Huffman table data.</i></td></tr>
+<tr><th id="58">58</th><td><i class="doc"> */</i></td></tr>
+<tr><th id="59">59</th><td><b>typedef</b> <b>struct</b> <dfn class="type def" id="MJpegContext" title='MJpegContext' data-ref="MJpegContext" data-ref-filename="MJpegContext"><a class="type" href="#MJpegContext" title='MJpegContext' data-ref="MJpegContext" data-ref-filename="MJpegContext">MJpegContext</a></dfn> {</td></tr>
+<tr><th id="60">60</th><td>    <i>//FIXME use array [3] instead of lumi / chroma, for easier addressing</i></td></tr>
+<tr><th id="61">61</th><td>    <a class="typedef" href="../../include/stdint.h.html#uint8_t" title='uint8_t' data-type='unsigned char' data-ref="uint8_t" data-ref-filename="uint8_t">uint8_t</a> <dfn class="decl field" id="MJpegContext::huff_size_dc_luminance" title='MJpegContext::huff_size_dc_luminance' data-ref="MJpegContext::huff_size_dc_luminance" data-ref-filename="MJpegContext..huff_size_dc_luminance">huff_size_dc_luminance</dfn>[<var>12</var>];     <i class="doc">///&lt; DC luminance Huffman table size.</i></td></tr>
+<tr><th id="62">62</th><td>    <a class="typedef" href="../../include/stdint.h.html#uint16_t" title='uint16_t' data-type='unsigned short' data-ref="uint16_t" data-ref-filename="uint16_t">uint16_t</a> <dfn class="decl field" id="MJpegContext::huff_code_dc_luminance" title='MJpegContext::huff_code_dc_luminance' data-ref="MJpegContext::huff_code_dc_luminance" data-ref-filename="MJpegContext..huff_code_dc_luminance">huff_code_dc_luminance</dfn>[<var>12</var>];    <i class="doc">///&lt; DC luminance Huffman table codes.</i></td></tr>
+<tr><th id="63">63</th><td>    <a class="typedef" href="../../include/stdint.h.html#uint8_t" title='uint8_t' data-type='unsigned char' data-ref="uint8_t" data-ref-filename="uint8_t">uint8_t</a> <dfn class="decl field" id="MJpegContext::huff_size_dc_chrominance" title='MJpegContext::huff_size_dc_chrominance' data-ref="MJpegContext::huff_size_dc_chrominance" data-ref-filename="MJpegContext..huff_size_dc_chrominance">huff_size_dc_chrominance</dfn>[<var>12</var>];   <i class="doc">///&lt; DC chrominance Huffman table size.</i></td></tr>
+<tr><th id="64">64</th><td>    <a class="typedef" href="../../include/stdint.h.html#uint16_t" title='uint16_t' data-type='unsigned short' data-ref="uint16_t" data-ref-filename="uint16_t">uint16_t</a> <dfn class="decl field" id="MJpegContext::huff_code_dc_chrominance" title='MJpegContext::huff_code_dc_chrominance' data-ref="MJpegContext::huff_code_dc_chrominance" data-ref-filename="MJpegContext..huff_code_dc_chrominance">huff_code_dc_chrominance</dfn>[<var>12</var>];  <i class="doc">///&lt; DC chrominance Huffman table codes.</i></td></tr>
+<tr><th id="65">65</th><td></td></tr>
+<tr><th id="66">66</th><td>    <a class="typedef" href="../../include/stdint.h.html#uint8_t" title='uint8_t' data-type='unsigned char' data-ref="uint8_t" data-ref-filename="uint8_t">uint8_t</a> <dfn class="decl field" id="MJpegContext::huff_size_ac_luminance" title='MJpegContext::huff_size_ac_luminance' data-ref="MJpegContext::huff_size_ac_luminance" data-ref-filename="MJpegContext..huff_size_ac_luminance">huff_size_ac_luminance</dfn>[<var>256</var>];    <i class="doc">///&lt; AC luminance Huffman table size.</i></td></tr>
+<tr><th id="67">67</th><td>    <a class="typedef" href="../../include/stdint.h.html#uint16_t" title='uint16_t' data-type='unsigned short' data-ref="uint16_t" data-ref-filename="uint16_t">uint16_t</a> <dfn class="decl field" id="MJpegContext::huff_code_ac_luminance" title='MJpegContext::huff_code_ac_luminance' data-ref="MJpegContext::huff_code_ac_luminance" data-ref-filename="MJpegContext..huff_code_ac_luminance">huff_code_ac_luminance</dfn>[<var>256</var>];   <i class="doc">///&lt; AC luminance Huffman table codes.</i></td></tr>
+<tr><th id="68">68</th><td>    <a class="typedef" href="../../include/stdint.h.html#uint8_t" title='uint8_t' data-type='unsigned char' data-ref="uint8_t" data-ref-filename="uint8_t">uint8_t</a> <dfn class="decl field" id="MJpegContext::huff_size_ac_chrominance" title='MJpegContext::huff_size_ac_chrominance' data-ref="MJpegContext::huff_size_ac_chrominance" data-ref-filename="MJpegContext..huff_size_ac_chrominance">huff_size_ac_chrominance</dfn>[<var>256</var>];  <i class="doc">///&lt; AC chrominance Huffman table size.</i></td></tr>
+<tr><th id="69">69</th><td>    <a class="typedef" href="../../include/stdint.h.html#uint16_t" title='uint16_t' data-type='unsigned short' data-ref="uint16_t" data-ref-filename="uint16_t">uint16_t</a> <dfn class="decl field" id="MJpegContext::huff_code_ac_chrominance" title='MJpegContext::huff_code_ac_chrominance' data-ref="MJpegContext::huff_code_ac_chrominance" data-ref-filename="MJpegContext..huff_code_ac_chrominance">huff_code_ac_chrominance</dfn>[<var>256</var>]; <i class="doc">///&lt; AC chrominance Huffman table codes.</i></td></tr>
+<tr><th id="70">70</th><td></td></tr>
+<tr><th id="71">71</th><td>    <i class="doc">/** Storage for AC luminance VLC (in MpegEncContext) */</i></td></tr>
+<tr><th id="72">72</th><td>    <a class="typedef" href="../../include/stdint.h.html#uint8_t" title='uint8_t' data-type='unsigned char' data-ref="uint8_t" data-ref-filename="uint8_t">uint8_t</a> <dfn class="decl field" id="MJpegContext::uni_ac_vlc_len" title='MJpegContext::uni_ac_vlc_len' data-ref="MJpegContext::uni_ac_vlc_len" data-ref-filename="MJpegContext..uni_ac_vlc_len">uni_ac_vlc_len</dfn>[<var>64</var> * <var>64</var> * <var>2</var>];</td></tr>
+<tr><th id="73">73</th><td>    <i class="doc">/** Storage for AC chrominance VLC (in MpegEncContext) */</i></td></tr>
+<tr><th id="74">74</th><td>    <a class="typedef" href="../../include/stdint.h.html#uint8_t" title='uint8_t' data-type='unsigned char' data-ref="uint8_t" data-ref-filename="uint8_t">uint8_t</a> <dfn class="decl field" id="MJpegContext::uni_chroma_ac_vlc_len" title='MJpegContext::uni_chroma_ac_vlc_len' data-ref="MJpegContext::uni_chroma_ac_vlc_len" data-ref-filename="MJpegContext..uni_chroma_ac_vlc_len">uni_chroma_ac_vlc_len</dfn>[<var>64</var> * <var>64</var> * <var>2</var>];</td></tr>
+<tr><th id="75">75</th><td></td></tr>
+<tr><th id="76">76</th><td>    <i>// Default DC tables have exactly 12 values</i></td></tr>
+<tr><th id="77">77</th><td>    <a class="typedef" href="../../include/stdint.h.html#uint8_t" title='uint8_t' data-type='unsigned char' data-ref="uint8_t" data-ref-filename="uint8_t">uint8_t</a> <dfn class="decl field" id="MJpegContext::bits_dc_luminance" title='MJpegContext::bits_dc_luminance' data-ref="MJpegContext::bits_dc_luminance" data-ref-filename="MJpegContext..bits_dc_luminance">bits_dc_luminance</dfn>[<var>17</var>];   <i class="doc">///&lt; DC luminance Huffman bits.</i></td></tr>
+<tr><th id="78">78</th><td>    <a class="typedef" href="../../include/stdint.h.html#uint8_t" title='uint8_t' data-type='unsigned char' data-ref="uint8_t" data-ref-filename="uint8_t">uint8_t</a> <dfn class="decl field" id="MJpegContext::val_dc_luminance" title='MJpegContext::val_dc_luminance' data-ref="MJpegContext::val_dc_luminance" data-ref-filename="MJpegContext..val_dc_luminance">val_dc_luminance</dfn>[<var>12</var>];    <i class="doc">///&lt; DC luminance Huffman values.</i></td></tr>
+<tr><th id="79">79</th><td>    <a class="typedef" href="../../include/stdint.h.html#uint8_t" title='uint8_t' data-type='unsigned char' data-ref="uint8_t" data-ref-filename="uint8_t">uint8_t</a> <dfn class="decl field" id="MJpegContext::bits_dc_chrominance" title='MJpegContext::bits_dc_chrominance' data-ref="MJpegContext::bits_dc_chrominance" data-ref-filename="MJpegContext..bits_dc_chrominance">bits_dc_chrominance</dfn>[<var>17</var>]; <i class="doc">///&lt; DC chrominance Huffman bits.</i></td></tr>
+<tr><th id="80">80</th><td>    <a class="typedef" href="../../include/stdint.h.html#uint8_t" title='uint8_t' data-type='unsigned char' data-ref="uint8_t" data-ref-filename="uint8_t">uint8_t</a> <dfn class="decl field" id="MJpegContext::val_dc_chrominance" title='MJpegContext::val_dc_chrominance' data-ref="MJpegContext::val_dc_chrominance" data-ref-filename="MJpegContext..val_dc_chrominance">val_dc_chrominance</dfn>[<var>12</var>];  <i class="doc">///&lt; DC chrominance Huffman values.</i></td></tr>
+<tr><th id="81">81</th><td></td></tr>
+<tr><th id="82">82</th><td>    <i>// 8-bit JPEG has max 256 values</i></td></tr>
+<tr><th id="83">83</th><td>    <a class="typedef" href="../../include/stdint.h.html#uint8_t" title='uint8_t' data-type='unsigned char' data-ref="uint8_t" data-ref-filename="uint8_t">uint8_t</a> <dfn class="decl field" id="MJpegContext::bits_ac_luminance" title='MJpegContext::bits_ac_luminance' data-ref="MJpegContext::bits_ac_luminance" data-ref-filename="MJpegContext..bits_ac_luminance">bits_ac_luminance</dfn>[<var>17</var>];   <i class="doc">///&lt; AC luminance Huffman bits.</i></td></tr>
+<tr><th id="84">84</th><td>    <a class="typedef" href="../../include/stdint.h.html#uint8_t" title='uint8_t' data-type='unsigned char' data-ref="uint8_t" data-ref-filename="uint8_t">uint8_t</a> <dfn class="decl field" id="MJpegContext::val_ac_luminance" title='MJpegContext::val_ac_luminance' data-ref="MJpegContext::val_ac_luminance" data-ref-filename="MJpegContext..val_ac_luminance">val_ac_luminance</dfn>[<var>256</var>];   <i class="doc">///&lt; AC luminance Huffman values.</i></td></tr>
+<tr><th id="85">85</th><td>    <a class="typedef" href="../../include/stdint.h.html#uint8_t" title='uint8_t' data-type='unsigned char' data-ref="uint8_t" data-ref-filename="uint8_t">uint8_t</a> <dfn class="decl field" id="MJpegContext::bits_ac_chrominance" title='MJpegContext::bits_ac_chrominance' data-ref="MJpegContext::bits_ac_chrominance" data-ref-filename="MJpegContext..bits_ac_chrominance">bits_ac_chrominance</dfn>[<var>17</var>]; <i class="doc">///&lt; AC chrominance Huffman bits.</i></td></tr>
+<tr><th id="86">86</th><td>    <a class="typedef" href="../../include/stdint.h.html#uint8_t" title='uint8_t' data-type='unsigned char' data-ref="uint8_t" data-ref-filename="uint8_t">uint8_t</a> <dfn class="decl field" id="MJpegContext::val_ac_chrominance" title='MJpegContext::val_ac_chrominance' data-ref="MJpegContext::val_ac_chrominance" data-ref-filename="MJpegContext..val_ac_chrominance">val_ac_chrominance</dfn>[<var>256</var>]; <i class="doc">///&lt; AC chrominance Huffman values.</i></td></tr>
+<tr><th id="87">87</th><td></td></tr>
+<tr><th id="88">88</th><td>    <span class='typedef' title='size_t' data-type='unsigned long' data-ref="size_t" data-ref-filename="size_t">size_t</span> <dfn class="decl field" id="MJpegContext::huff_ncode" title='MJpegContext::huff_ncode' data-ref="MJpegContext::huff_ncode" data-ref-filename="MJpegContext..huff_ncode">huff_ncode</dfn>;               <i class="doc">///&lt; Number of current entries in the buffer.</i></td></tr>
+<tr><th id="89">89</th><td>    <a class="typedef" href="#MJpegHuffmanCode" title='MJpegHuffmanCode' data-type='struct MJpegHuffmanCode' data-ref="MJpegHuffmanCode" data-ref-filename="MJpegHuffmanCode">MJpegHuffmanCode</a> *<dfn class="decl field" id="MJpegContext::huff_buffer" title='MJpegContext::huff_buffer' data-ref="MJpegContext::huff_buffer" data-ref-filename="MJpegContext..huff_buffer">huff_buffer</dfn>;   <i class="doc">///&lt; Buffer for Huffman code values.</i></td></tr>
+<tr><th id="90">90</th><td>} <dfn class="typedef" id="MJpegContext" title='MJpegContext' data-type='struct MJpegContext' data-ref="MJpegContext" data-ref-filename="MJpegContext">MJpegContext</dfn>;</td></tr>
+<tr><th id="91">91</th><td></td></tr>
+<tr><th id="92">92</th><td><i class="doc">/**</i></td></tr>
+<tr><th id="93">93</th><td><i class="doc"> * Enum for the Huffman encoding strategy.</i></td></tr>
+<tr><th id="94">94</th><td><i class="doc"> */</i></td></tr>
+<tr><th id="95">95</th><td><b>enum</b> <dfn class="type def" id="HuffmanTableOption" title='HuffmanTableOption' data-ref="HuffmanTableOption" data-ref-filename="HuffmanTableOption">HuffmanTableOption</dfn> {</td></tr>
+<tr><th id="96">96</th><td>    <dfn class="enum" id="HuffmanTableOption::HUFFMAN_TABLE_DEFAULT" title='HuffmanTableOption::HUFFMAN_TABLE_DEFAULT' data-ref="HuffmanTableOption::HUFFMAN_TABLE_DEFAULT" data-ref-filename="HuffmanTableOption..HUFFMAN_TABLE_DEFAULT">HUFFMAN_TABLE_DEFAULT</dfn> = <var>0</var>, <i class="doc">///&lt; Use the default Huffman tables.</i></td></tr>
+<tr><th id="97">97</th><td>    <dfn class="enum" id="HuffmanTableOption::HUFFMAN_TABLE_OPTIMAL" title='HuffmanTableOption::HUFFMAN_TABLE_OPTIMAL' data-ref="HuffmanTableOption::HUFFMAN_TABLE_OPTIMAL" data-ref-filename="HuffmanTableOption..HUFFMAN_TABLE_OPTIMAL">HUFFMAN_TABLE_OPTIMAL</dfn> = <var>1</var>, <i class="doc">///&lt; Compute and use optimal Huffman tables.</i></td></tr>
+<tr><th id="98">98</th><td>    <dfn class="enum" id="HuffmanTableOption::NB_HUFFMAN_TABLE_OPTION" title='HuffmanTableOption::NB_HUFFMAN_TABLE_OPTION' data-ref="HuffmanTableOption::NB_HUFFMAN_TABLE_OPTION" data-ref-filename="HuffmanTableOption..NB_HUFFMAN_TABLE_OPTION">NB_HUFFMAN_TABLE_OPTION</dfn> = <var>2</var></td></tr>
+<tr><th id="99">99</th><td>};</td></tr>
+<tr><th id="100">100</th><td></td></tr>
+<tr><th id="101">101</th><td><em>static</em> <b>inline</b> <em>void</em> <dfn class="decl def fn" id="put_marker" title='put_marker' data-ref="put_marker" data-ref-filename="put_marker">put_marker</dfn>(<a class="typedef" href="put_bits.h.html#PutBitContext" title='PutBitContext' data-type='struct PutBitContext' data-ref="PutBitContext" data-ref-filename="PutBitContext">PutBitContext</a> *<dfn class="local col1 decl" id="1p" title='p' data-type='PutBitContext *' data-ref="1p" data-ref-filename="1p">p</dfn>, <b>enum</b> <a class="type" href="mjpeg.h.html#JpegMarker" title='JpegMarker' data-ref="JpegMarker" data-ref-filename="JpegMarker">JpegMarker</a> <dfn class="local col2 decl" id="2code" title='code' data-type='enum JpegMarker' data-ref="2code" data-ref-filename="2code">code</dfn>)</td></tr>
+<tr><th id="102">102</th><td>{</td></tr>
+<tr><th id="103">103</th><td>    <a class="ref fn" href="put_bits.h.html#put_bits" title='put_bits' data-ref="put_bits" data-ref-filename="put_bits">put_bits</a>(<a class="local col1 ref" href="#1p" title='p' data-ref="1p" data-ref-filename="1p">p</a>, <var>8</var>, <var>0xff</var>);</td></tr>
+<tr><th id="104">104</th><td>    <a class="ref fn" href="put_bits.h.html#put_bits" title='put_bits' data-ref="put_bits" data-ref-filename="put_bits">put_bits</a>(<a class="local col1 ref" href="#1p" title='p' data-ref="1p" data-ref-filename="1p">p</a>, <var>8</var>, <a class="local col2 ref" href="#2code" title='code' data-ref="2code" data-ref-filename="2code">code</a>);</td></tr>
+<tr><th id="105">105</th><td>}</td></tr>
+<tr><th id="106">106</th><td></td></tr>
+<tr><th id="107">107</th><td><em>int</em>  <dfn class="decl fn" id="ff_mjpeg_encode_init" title='ff_mjpeg_encode_init' data-ref="ff_mjpeg_encode_init" data-ref-filename="ff_mjpeg_encode_init">ff_mjpeg_encode_init</dfn>(<a class="typedef" href="mpegvideo.h.html#MpegEncContext" title='MpegEncContext' data-type='struct MpegEncContext' data-ref="MpegEncContext" data-ref-filename="MpegEncContext">MpegEncContext</a> *<dfn class="local col3 decl" id="3s" title='s' data-type='MpegEncContext *' data-ref="3s" data-ref-filename="3s">s</dfn>);</td></tr>
+<tr><th id="108">108</th><td><em>void</em> <dfn class="decl fn" id="ff_mjpeg_encode_close" title='ff_mjpeg_encode_close' data-ref="ff_mjpeg_encode_close" data-ref-filename="ff_mjpeg_encode_close">ff_mjpeg_encode_close</dfn>(<a class="typedef" href="mpegvideo.h.html#MpegEncContext" title='MpegEncContext' data-type='struct MpegEncContext' data-ref="MpegEncContext" data-ref-filename="MpegEncContext">MpegEncContext</a> *<dfn class="local col4 decl" id="4s" title='s' data-type='MpegEncContext *' data-ref="4s" data-ref-filename="4s">s</dfn>);</td></tr>
+<tr><th id="109">109</th><td><em>void</em> <dfn class="decl fn" id="ff_mjpeg_encode_mb" title='ff_mjpeg_encode_mb' data-ref="ff_mjpeg_encode_mb" data-ref-filename="ff_mjpeg_encode_mb">ff_mjpeg_encode_mb</dfn>(<a class="typedef" href="mpegvideo.h.html#MpegEncContext" title='MpegEncContext' data-type='struct MpegEncContext' data-ref="MpegEncContext" data-ref-filename="MpegEncContext">MpegEncContext</a> *<dfn class="local col5 decl" id="5s" title='s' data-type='MpegEncContext *' data-ref="5s" data-ref-filename="5s">s</dfn>, <a class="typedef" href="../../include/stdint.h.html#int16_t" title='int16_t' data-type='short' data-ref="int16_t" data-ref-filename="int16_t">int16_t</a> <dfn class="local col6 decl" id="6block" title='block' data-type='int16_t (*)[64]' data-ref="6block" data-ref-filename="6block">block</dfn>[<var>12</var>][<var>64</var>]);</td></tr>
+<tr><th id="110">110</th><td><em>int</em>  <dfn class="decl fn" id="ff_mjpeg_encode_stuffing" title='ff_mjpeg_encode_stuffing' data-ref="ff_mjpeg_encode_stuffing" data-ref-filename="ff_mjpeg_encode_stuffing">ff_mjpeg_encode_stuffing</dfn>(<a class="typedef" href="mpegvideo.h.html#MpegEncContext" title='MpegEncContext' data-type='struct MpegEncContext' data-ref="MpegEncContext" data-ref-filename="MpegEncContext">MpegEncContext</a> *<dfn class="local col7 decl" id="7s" title='s' data-type='MpegEncContext *' data-ref="7s" data-ref-filename="7s">s</dfn>);</td></tr>
+<tr><th id="111">111</th><td></td></tr>
+<tr><th id="112">112</th><td><u>#<span data-ppcond="33">endif</span> /* AVCODEC_MJPEGENC_H */</u></td></tr>
+<tr><th id="113">113</th><td></td></tr>
+</table><hr/><p id='footer'>
+Generated while processing <a href='jpeglsenc.c.html'>ffmpeg/libavcodec/jpeglsenc.c</a><br/>Generated on <em>2021-May-30</em> from project ffmpeg revision <em>4.4</em>

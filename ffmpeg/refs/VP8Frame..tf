@@ -1,0 +1,33 @@
+<dec f='ffmpeg/libavcodec/vp8.h' l='140' type='ThreadFrame'/>
+<use f='ffmpeg/libavcodec/vp8.c' l='74' u='a' c='vp8_alloc_frame'/>
+<use f='ffmpeg/libavcodec/vp8.c' l='92' u='a' c='vp8_alloc_frame'/>
+<use f='ffmpeg/libavcodec/vp8.c' l='101' u='a' c='vp8_release_frame'/>
+<use f='ffmpeg/libavcodec/vp8.c' l='111' u='a' c='vp8_ref_frame'/>
+<use f='ffmpeg/libavcodec/vp8.c' l='111' u='a' c='vp8_ref_frame'/>
+<use f='ffmpeg/libavcodec/vp8.c' l='165' u='m' c='vp8_find_free_buffer'/>
+<use f='ffmpeg/libavcodec/vp8.c' l='524' u='m' c='vp7_fade_frame'/>
+<use f='ffmpeg/libavcodec/vp8.c' l='532' u='m' c='vp7_fade_frame'/>
+<use f='ffmpeg/libavcodec/vp8.c' l='1963' u='m' c='prefetch_motion'/>
+<use f='ffmpeg/libavcodec/vp8.c' l='1983' u='a' c='inter_predict'/>
+<use f='ffmpeg/libavcodec/vp8.c' l='2377' u='m' c='decode_mb_row_no_filter'/>
+<use f='ffmpeg/libavcodec/vp8.c' l='2378' u='m' c='decode_mb_row_no_filter'/>
+<use f='ffmpeg/libavcodec/vp8.c' l='2379' u='m' c='decode_mb_row_no_filter'/>
+<use f='ffmpeg/libavcodec/vp8.c' l='2377' u='m' c='decode_mb_row_no_filter'/>
+<use f='ffmpeg/libavcodec/vp8.c' l='2378' u='m' c='decode_mb_row_no_filter'/>
+<use f='ffmpeg/libavcodec/vp8.c' l='2379' u='m' c='decode_mb_row_no_filter'/>
+<use f='ffmpeg/libavcodec/vp8.c' l='2400' u='a' c='decode_mb_row_no_filter'/>
+<use f='ffmpeg/libavcodec/vp8.c' l='2511' u='m' c='filter_mb_row'/>
+<use f='ffmpeg/libavcodec/vp8.c' l='2605' u='a' c='vp78_decode_mb_row_sliced'/>
+<use f='ffmpeg/libavcodec/vp8.c' l='2669' u='m' c='vp78_decode_frame'/>
+<use f='ffmpeg/libavcodec/vp8.c' l='2698' u='m' c='vp78_decode_frame'/>
+<use f='ffmpeg/libavcodec/vp8.c' l='2699' u='m' c='vp78_decode_frame'/>
+<use f='ffmpeg/libavcodec/vp8.c' l='2739' u='m' c='vp78_decode_frame'/>
+<use f='ffmpeg/libavcodec/vp8.c' l='2740' u='m' c='vp78_decode_frame'/>
+<use f='ffmpeg/libavcodec/vp8.c' l='2758' u='a' c='vp78_decode_frame'/>
+<use f='ffmpeg/libavcodec/vp8.c' l='2789' u='a' c='vp78_decode_frame'/>
+<use f='ffmpeg/libavcodec/vp8.c' l='2799' u='m' c='vp78_decode_frame'/>
+<use f='ffmpeg/libavcodec/vp8.c' l='2834' u='m' c='ff_vp8_decode_free'/>
+<use f='ffmpeg/libavcodec/vp8.c' l='2843' u='m' c='vp8_init_frames'/>
+<use f='ffmpeg/libavcodec/vp8.c' l='2844' u='m' c='vp8_init_frames'/>
+<use f='ffmpeg/libavcodec/vp8.c' l='2923' u='m' c='vp8_decode_update_thread_context'/>
+<offset>0</offset>

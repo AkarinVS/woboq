@@ -1,0 +1,37 @@
+<dec f='ffmpeg/libavutil/intfloat.h' l='29' type='float'/>
+<use f='ffmpeg/libavutil/intfloat.h' l='44' u='r' c='av_int2float'/>
+<use f='ffmpeg/libavutil/intfloat.h' l='53' u='w' c='av_float2int'/>
+<offset>0</offset>
+<use f='ffmpeg/libavcodec/aacdec.c' l='117' u='w' c='VMUL2S'/>
+<use f='ffmpeg/libavcodec/aacdec.c' l='117' u='w' c='VMUL2S'/>
+<use f='ffmpeg/libavcodec/aacdec.c' l='121' u='r' c='VMUL2S'/>
+<use f='ffmpeg/libavcodec/aacdec.c' l='122' u='r' c='VMUL2S'/>
+<use f='ffmpeg/libavcodec/aacdec.c' l='133' u='w' c='VMUL4S'/>
+<use f='ffmpeg/libavcodec/aacdec.c' l='137' u='r' c='VMUL4S'/>
+<use f='ffmpeg/libavcodec/aacdec.c' l='141' u='r' c='VMUL4S'/>
+<use f='ffmpeg/libavcodec/aacdec.c' l='145' u='r' c='VMUL4S'/>
+<use f='ffmpeg/libavcodec/aacdec.c' l='149' u='r' c='VMUL4S'/>
+<use f='ffmpeg/libavcodec/aacdec.c' l='158' u='w' c='flt16_round'/>
+<use f='ffmpeg/libavcodec/aacdec.c' l='160' u='r' c='flt16_round'/>
+<use f='ffmpeg/libavcodec/aacdec.c' l='166' u='w' c='flt16_even'/>
+<use f='ffmpeg/libavcodec/aacdec.c' l='168' u='r' c='flt16_even'/>
+<use f='ffmpeg/libavcodec/aacdec.c' l='174' u='w' c='flt16_trunc'/>
+<use f='ffmpeg/libavcodec/aacdec.c' l='176' u='r' c='flt16_trunc'/>
+<use f='ffmpeg/libavcodec/aacenc_pred.c' l='43' u='w' c='flt16_round'/>
+<use f='ffmpeg/libavcodec/aacenc_pred.c' l='45' u='r' c='flt16_round'/>
+<use f='ffmpeg/libavcodec/aacenc_pred.c' l='51' u='w' c='flt16_even'/>
+<use f='ffmpeg/libavcodec/aacenc_pred.c' l='53' u='r' c='flt16_even'/>
+<use f='ffmpeg/libavcodec/aacenc_pred.c' l='59' u='w' c='flt16_trunc'/>
+<use f='ffmpeg/libavcodec/aacenc_pred.c' l='61' u='r' c='flt16_trunc'/>
+<use f='ffmpeg/libavcodec/exr.c' l='1119' u='r' c='dwa_uncompress'/>
+<use f='ffmpeg/libavcodec/exr.c' l='1394' u='w' c='decode_block'/>
+<use f='ffmpeg/libavcodec/exr.c' l='1394' u='r' c='decode_block'/>
+<use f='ffmpeg/libavcodec/exr.c' l='1400' u='r' c='decode_block'/>
+<use f='ffmpeg/libavcodec/exr.c' l='1401' u='w' c='decode_block'/>
+<use f='ffmpeg/libavcodec/exr.c' l='1401' u='r' c='decode_block'/>
+<use f='ffmpeg/libavcodec/exr.c' l='2223' u='w' c='decode_init'/>
+<use f='ffmpeg/libavcodec/exr.c' l='2223' u='r' c='decode_init'/>
+<use f='ffmpeg/libavcodec/exr.c' l='2235' u='r' c='decode_init'/>
+<use f='ffmpeg/libavcodec/exr.c' l='2238' u='w' c='decode_init'/>
+<use f='ffmpeg/libavcodec/exr.c' l='2238' u='r' c='decode_init'/>
+<use f='ffmpeg/libavfilter/vf_lut3d.c' l='120' u='w' c='sanitizef'/>
