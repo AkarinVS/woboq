@@ -1,0 +1,28 @@
+<def f='x264/encoder/rdo.c' l='918' ll='1094' type='int quant_trellis_cavlc(x264_t * h, dctcoef * dct, const udctcoef * quant_mf, const int * unquant_mf, const uint8_t * zigzag, int ctx_block_cat, int lambda2, int b_ac, int b_chroma, int dc, int num_coefs, int idx, int b_8x8)'/>
+<use f='x264/encoder/rdo.c' l='1104' u='c' c='x264_10_quant_luma_dc_trellis'/>
+<use f='x264/encoder/rdo.c' l='1135' u='c' c='x264_10_quant_chroma_dc_trellis'/>
+<use f='x264/encoder/rdo.c' l='1151' u='c' c='x264_10_quant_4x4_trellis'/>
+<use f='x264/encoder/rdo.c' l='1172' u='c' c='x264_10_quant_8x8_trellis'/>
+<doc f='x264/encoder/rdo.c' l='895'>/* FIXME: This is a gigantic hack.  See below.
+ *
+ * CAVLC is much more difficult to trellis than CABAC.
+ *
+ * CABAC has only three states to track: significance map, last, and the
+ * level state machine.
+ * CAVLC, by comparison, has five: coeff_token (trailing + total),
+ * total_zeroes, zero_run, and the level state machine.
+ *
+ * I know of no paper that has managed to design a close-to-optimal trellis
+ * that covers all five of these and isn&apos;t exponential-time.  As a result, this
+ * &quot;trellis&quot; isn&apos;t: it&apos;s just a QNS search.  Patches welcome for something better.
+ * It&apos;s actually surprisingly fast, albeit not quite optimal.  It&apos;s pretty close
+ * though; since CAVLC only has 2^16 possible rounding modes (assuming only two
+ * roundings as options), a bruteforce search is feasible.  Testing shows
+ * that this QNS is reasonably close to optimal in terms of compression.
+ *
+ * TODO:
+ *  Don&apos;t bother changing large coefficients when it wouldn&apos;t affect bit cost
+ *  (e.g. only affecting bypassed suffix bits).
+ *  Don&apos;t re-run all parts of CAVLC bit cost calculation when not necessary.
+ *  e.g. when changing a coefficient from one non-zero value to another in
+ *  such a way that trailing ones and suffix length isn&apos;t affected. */</doc>

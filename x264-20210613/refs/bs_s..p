@@ -1,0 +1,23 @@
+<dec f='x264/common/bitstream.h' l='42' type='uint8_t *'/>
+<use f='x264/common/bitstream.h' l='89' u='w' c='bs_init'/>
+<use f='x264/common/bitstream.h' l='94' u='r' c='bs_init'/>
+<use f='x264/common/bitstream.h' l='102' u='r' c='bs_pos'/>
+<use f='x264/common/bitstream.h' l='108' u='r' c='bs_flush'/>
+<use f='x264/common/bitstream.h' l='109' u='w' c='bs_flush'/>
+<use f='x264/common/bitstream.h' l='115' u='r' c='bs_realign'/>
+<use f='x264/common/bitstream.h' l='118' u='w' c='bs_realign'/>
+<use f='x264/common/bitstream.h' l='118' u='r' c='bs_realign'/>
+<use f='x264/common/bitstream.h' l='120' u='r' c='bs_realign'/>
+<use f='x264/common/bitstream.h' l='136' u='r' c='bs_write'/>
+<use f='x264/common/bitstream.h' l='139' u='w' c='bs_write'/>
+<use f='x264/common/bitstream.h' l='153' u='r' c='bs_write'/>
+<use f='x264/common/bitstream.h' l='154' u='w' c='bs_write'/>
+<use f='x264/common/bitstream.h' l='176' u='r' c='bs_write1'/>
+<use f='x264/common/bitstream.h' l='177' u='w' c='bs_write1'/>
+<offset>64</offset>
+<use f='x264/encoder/encoder.c' l='371' u='r' c='bitstream_check_buffer_internal'/>
+<use f='x264/encoder/encoder.c' l='386' u='w' c='bitstream_check_buffer_internal'/>
+<use f='x264/encoder/encoder.c' l='2807' u='r' c='slice_write'/>
+<use f='x264/encoder/encoder.c' l='2811' u='r' c='slice_write'/>
+<use f='x264/encoder/encoder.c' l='2923' u='r' c='slice_write'/>
+<use f='x264/encoder/encoder.c' l='3091' u='w' c='slice_write'/>
