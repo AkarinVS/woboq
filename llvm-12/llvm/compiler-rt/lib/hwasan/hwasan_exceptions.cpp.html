@@ -1,0 +1,83 @@
+<!doctype html>
+<html>
+<head>
+<meta name="viewport" content="width=device-width, initial-scale=1.0"><title>hwasan_exceptions.cpp source code [llvm/compiler-rt/lib/hwasan/hwasan_exceptions.cpp] - Woboq Code Browser</title>
+<link rel="stylesheet" href="../../../.././data/qtcreator.css" title="QtCreator"/>
+<link rel="alternate stylesheet" href="../../../.././data/kdevelop.css" title="KDevelop"/>
+<script type="text/javascript" src="../../../.././data/jquery/jquery.min.js"></script>
+<script type="text/javascript" src="../../../.././data/jquery/jquery-ui.min.js"></script>
+<script>var file = 'llvm/compiler-rt/lib/hwasan/hwasan_exceptions.cpp'; var root_path = '../../../..'; var data_path = '../../../.././data'; var ecma_script_api_version = 2;</script>
+<script src='../../../.././data/codebrowser.js'></script>
+</head>
+<body><div id='header'><h1 id='breadcrumb'><span>Browse the source code of </span><a href='../../..'>llvm</a>/<a href='../..'>compiler-rt</a>/<a href='..'>lib</a>/<a href='./'>hwasan</a>/<a href='hwasan_exceptions.cpp.html'>hwasan_exceptions.cpp</a></h1></div>
+<hr/><div id='content'><table class="code">
+<tr><th id="1">1</th><td><i>//===-- hwasan_exceptions.cpp ---------------------------------------------===//</i></td></tr>
+<tr><th id="2">2</th><td><i>//</i></td></tr>
+<tr><th id="3">3</th><td><i>// Part of the LLVM Project, under the Apache License v2.0 with LLVM Exceptions.</i></td></tr>
+<tr><th id="4">4</th><td><i>// See <a href="https://llvm.org/LICENSE.txt">https://llvm.org/LICENSE.txt</a> for license information.</i></td></tr>
+<tr><th id="5">5</th><td><i>// SPDX-License-Identifier: Apache-2.0 WITH LLVM-exception</i></td></tr>
+<tr><th id="6">6</th><td><i>//</i></td></tr>
+<tr><th id="7">7</th><td><i>//===----------------------------------------------------------------------===//</i></td></tr>
+<tr><th id="8">8</th><td><i>//</i></td></tr>
+<tr><th id="9">9</th><td><i>// This file is a part of HWAddressSanitizer.</i></td></tr>
+<tr><th id="10">10</th><td><i>//</i></td></tr>
+<tr><th id="11">11</th><td><i>// HWAddressSanitizer runtime.</i></td></tr>
+<tr><th id="12">12</th><td><i>//===----------------------------------------------------------------------===//</i></td></tr>
+<tr><th id="13">13</th><td></td></tr>
+<tr><th id="14">14</th><td><u>#include <a href="hwasan_poisoning.h.html">"hwasan_poisoning.h"</a></u></td></tr>
+<tr><th id="15">15</th><td><u>#include <a href="../sanitizer_common/sanitizer_common.h.html">"sanitizer_common/sanitizer_common.h"</a></u></td></tr>
+<tr><th id="16">16</th><td></td></tr>
+<tr><th id="17">17</th><td><u>#include &lt;unwind.h&gt;</u></td></tr>
+<tr><th id="18">18</th><td></td></tr>
+<tr><th id="19">19</th><td><b>using</b> <b>namespace</b> <span class="namespace">__hwasan</span>;</td></tr>
+<tr><th id="20">20</th><td><b>using</b> <b>namespace</b> <span class="namespace">__sanitizer</span>;</td></tr>
+<tr><th id="21">21</th><td></td></tr>
+<tr><th id="22">22</th><td><b>typedef</b> <span class='typedef' title='_Unwind_Reason_Code' data-type='enum _Unwind_Reason_Code' data-ref="_Unwind_Reason_Code" data-ref-filename="_Unwind_Reason_Code">_Unwind_Reason_Code</span> <dfn class="typedef" id="PersonalityFn" title='PersonalityFn' data-type='_Unwind_Reason_Code (int, _Unwind_Action, uint64_t, _Unwind_Exception *, _Unwind_Context *)' data-ref="PersonalityFn" data-ref-filename="PersonalityFn">PersonalityFn</dfn>(<em>int</em> <dfn class="local col1 decl" id="1version" title='version' data-type='int' data-ref="1version" data-ref-filename="1version">version</dfn>, <span class='typedef' title='_Unwind_Action' data-type='enum _Unwind_Action' data-ref="_Unwind_Action" data-ref-filename="_Unwind_Action">_Unwind_Action</span> <dfn class="local col2 decl" id="2actions" title='actions' data-type='_Unwind_Action' data-ref="2actions" data-ref-filename="2actions">actions</dfn>,</td></tr>
+<tr><th id="23">23</th><td>                                          <span class='typedef' title='uint64_t' data-type='__uint64_t' data-ref="uint64_t" data-ref-filename="uint64_t">uint64_t</span> <dfn class="local col3 decl" id="3exception_class" title='exception_class' data-type='uint64_t' data-ref="3exception_class" data-ref-filename="3exception_class">exception_class</dfn>,</td></tr>
+<tr><th id="24">24</th><td>                                          <span class='typedef' title='_Unwind_Exception' data-type='struct _Unwind_Exception' data-ref="_Unwind_Exception" data-ref-filename="_Unwind_Exception">_Unwind_Exception</span>* <dfn class="local col4 decl" id="4unwind_exception" title='unwind_exception' data-type='_Unwind_Exception *' data-ref="4unwind_exception" data-ref-filename="4unwind_exception">unwind_exception</dfn>,</td></tr>
+<tr><th id="25">25</th><td>                                          <span class='type' title='_Unwind_Context' data-ref="_Unwind_Context" data-ref-filename="_Unwind_Context">_Unwind_Context</span>* <dfn class="local col5 decl" id="5context" title='context' data-type='_Unwind_Context *' data-ref="5context" data-ref-filename="5context">context</dfn>);</td></tr>
+<tr><th id="26">26</th><td></td></tr>
+<tr><th id="27">27</th><td><i>// Pointers to the _Unwind_GetGR and _Unwind_GetCFA functions are passed in</i></td></tr>
+<tr><th id="28">28</th><td><i>// instead of being called directly. This is to handle cases where the unwinder</i></td></tr>
+<tr><th id="29">29</th><td><i>// is statically linked and the sanitizer runtime and the program are linked</i></td></tr>
+<tr><th id="30">30</th><td><i>// against different unwinders. The _Unwind_Context data structure is opaque so</i></td></tr>
+<tr><th id="31">31</th><td><i>// it may be incompatible between unwinders.</i></td></tr>
+<tr><th id="32">32</th><td><b>typedef</b> <span class='typedef' title='_Unwind_Word' data-type='unsigned long' data-ref="_Unwind_Word" data-ref-filename="_Unwind_Word">_Unwind_Word</span> <dfn class="typedef" id="GetGRFn" title='GetGRFn' data-type='_Unwind_Word (_Unwind_Context *, int)' data-ref="GetGRFn" data-ref-filename="GetGRFn">GetGRFn</dfn>(<span class='type' title='_Unwind_Context' data-ref="_Unwind_Context" data-ref-filename="_Unwind_Context">_Unwind_Context</span>* <dfn class="local col6 decl" id="6context" title='context' data-type='_Unwind_Context *' data-ref="6context" data-ref-filename="6context">context</dfn>, <em>int</em> <dfn class="local col7 decl" id="7index" title='index' data-type='int' data-ref="7index" data-ref-filename="7index">index</dfn>);</td></tr>
+<tr><th id="33">33</th><td><b>typedef</b> <span class='typedef' title='_Unwind_Word' data-type='unsigned long' data-ref="_Unwind_Word" data-ref-filename="_Unwind_Word">_Unwind_Word</span> <dfn class="typedef" id="GetCFAFn" title='GetCFAFn' data-type='_Unwind_Word (_Unwind_Context *)' data-ref="GetCFAFn" data-ref-filename="GetCFAFn">GetCFAFn</dfn>(<span class='type' title='_Unwind_Context' data-ref="_Unwind_Context" data-ref-filename="_Unwind_Context">_Unwind_Context</span>* <dfn class="local col8 decl" id="8context" title='context' data-type='_Unwind_Context *' data-ref="8context" data-ref-filename="8context">context</dfn>);</td></tr>
+<tr><th id="34">34</th><td></td></tr>
+<tr><th id="35">35</th><td><b>extern</b> <q>"C"</q> <a class="macro" href="../sanitizer_common/sanitizer_internal_defs.h.html#36" title="__attribute__((visibility(&quot;default&quot;)))" data-ref="_M/SANITIZER_INTERFACE_ATTRIBUTE">SANITIZER_INTERFACE_ATTRIBUTE</a> <span class='typedef' title='_Unwind_Reason_Code' data-type='enum _Unwind_Reason_Code' data-ref="_Unwind_Reason_Code" data-ref-filename="_Unwind_Reason_Code">_Unwind_Reason_Code</span></td></tr>
+<tr><th id="36">36</th><td><dfn class="decl def fn" id="__hwasan_personality_wrapper" title='__hwasan_personality_wrapper' data-ref="__hwasan_personality_wrapper" data-ref-filename="__hwasan_personality_wrapper">__hwasan_personality_wrapper</dfn>(<em>int</em> <dfn class="local col9 decl" id="9version" title='version' data-type='int' data-ref="9version" data-ref-filename="9version">version</dfn>, <span class='typedef' title='_Unwind_Action' data-type='enum _Unwind_Action' data-ref="_Unwind_Action" data-ref-filename="_Unwind_Action">_Unwind_Action</span> <dfn class="local col0 decl" id="10actions" title='actions' data-type='_Unwind_Action' data-ref="10actions" data-ref-filename="10actions">actions</dfn>,</td></tr>
+<tr><th id="37">37</th><td>                             <span class='typedef' title='uint64_t' data-type='__uint64_t' data-ref="uint64_t" data-ref-filename="uint64_t">uint64_t</span> <dfn class="local col1 decl" id="11exception_class" title='exception_class' data-type='uint64_t' data-ref="11exception_class" data-ref-filename="11exception_class">exception_class</dfn>,</td></tr>
+<tr><th id="38">38</th><td>                             <span class='typedef' title='_Unwind_Exception' data-type='struct _Unwind_Exception' data-ref="_Unwind_Exception" data-ref-filename="_Unwind_Exception">_Unwind_Exception</span>* <dfn class="local col2 decl" id="12unwind_exception" title='unwind_exception' data-type='_Unwind_Exception *' data-ref="12unwind_exception" data-ref-filename="12unwind_exception">unwind_exception</dfn>,</td></tr>
+<tr><th id="39">39</th><td>                             <span class='type' title='_Unwind_Context' data-ref="_Unwind_Context" data-ref-filename="_Unwind_Context">_Unwind_Context</span>* <dfn class="local col3 decl" id="13context" title='context' data-type='_Unwind_Context *' data-ref="13context" data-ref-filename="13context">context</dfn>,</td></tr>
+<tr><th id="40">40</th><td>                             <a class="typedef" href="#PersonalityFn" title='PersonalityFn' data-type='_Unwind_Reason_Code (int, _Unwind_Action, uint64_t, _Unwind_Exception *, _Unwind_Context *)' data-ref="PersonalityFn" data-ref-filename="PersonalityFn">PersonalityFn</a>* <dfn class="local col4 decl" id="14real_personality" title='real_personality' data-type='PersonalityFn *' data-ref="14real_personality" data-ref-filename="14real_personality">real_personality</dfn>, <a class="typedef" href="#GetGRFn" title='GetGRFn' data-type='_Unwind_Word (_Unwind_Context *, int)' data-ref="GetGRFn" data-ref-filename="GetGRFn">GetGRFn</a>* <dfn class="local col5 decl" id="15get_gr" title='get_gr' data-type='GetGRFn *' data-ref="15get_gr" data-ref-filename="15get_gr">get_gr</dfn>,</td></tr>
+<tr><th id="41">41</th><td>                             <a class="typedef" href="#GetCFAFn" title='GetCFAFn' data-type='_Unwind_Word (_Unwind_Context *)' data-ref="GetCFAFn" data-ref-filename="GetCFAFn">GetCFAFn</a>* <dfn class="local col6 decl" id="16get_cfa" title='get_cfa' data-type='GetCFAFn *' data-ref="16get_cfa" data-ref-filename="16get_cfa">get_cfa</dfn>) {</td></tr>
+<tr><th id="42">42</th><td>  <span class='typedef' title='_Unwind_Reason_Code' data-type='enum _Unwind_Reason_Code' data-ref="_Unwind_Reason_Code" data-ref-filename="_Unwind_Reason_Code">_Unwind_Reason_Code</span> <dfn class="local col7 decl" id="17rc" title='rc' data-type='_Unwind_Reason_Code' data-ref="17rc" data-ref-filename="17rc">rc</dfn>;</td></tr>
+<tr><th id="43">43</th><td>  <b>if</b> (<a class="local col4 ref" href="#14real_personality" title='real_personality' data-ref="14real_personality" data-ref-filename="14real_personality">real_personality</a>)</td></tr>
+<tr><th id="44">44</th><td>    <a class="local col7 ref" href="#17rc" title='rc' data-ref="17rc" data-ref-filename="17rc">rc</a> = <a class="local col4 ref" href="#14real_personality" title='real_personality' data-ref="14real_personality" data-ref-filename="14real_personality">real_personality</a>(<a class="local col9 ref" href="#9version" title='version' data-ref="9version" data-ref-filename="9version">version</a>, <a class="local col0 ref" href="#10actions" title='actions' data-ref="10actions" data-ref-filename="10actions">actions</a>, <a class="local col1 ref" href="#11exception_class" title='exception_class' data-ref="11exception_class" data-ref-filename="11exception_class">exception_class</a>, <a class="local col2 ref" href="#12unwind_exception" title='unwind_exception' data-ref="12unwind_exception" data-ref-filename="12unwind_exception">unwind_exception</a>,</td></tr>
+<tr><th id="45">45</th><td>                          <a class="local col3 ref" href="#13context" title='context' data-ref="13context" data-ref-filename="13context">context</a>);</td></tr>
+<tr><th id="46">46</th><td>  <b>else</b></td></tr>
+<tr><th id="47">47</th><td>    <a class="local col7 ref" href="#17rc" title='rc' data-ref="17rc" data-ref-filename="17rc">rc</a> = <span class='enum' title='_URC_CONTINUE_UNWIND' data-ref="_URC_CONTINUE_UNWIND" data-ref-filename="_URC_CONTINUE_UNWIND">_URC_CONTINUE_UNWIND</span>;</td></tr>
+<tr><th id="48">48</th><td></td></tr>
+<tr><th id="49">49</th><td>  <i>// We only untag frames without a landing pad because landing pads are</i></td></tr>
+<tr><th id="50">50</th><td><i>  // responsible for untagging the stack themselves if they resume.</i></td></tr>
+<tr><th id="51">51</th><td><i>  //</i></td></tr>
+<tr><th id="52">52</th><td><i>  // Here we assume that the frame record appears after any locals. This is not</i></td></tr>
+<tr><th id="53">53</th><td><i>  // required by AAPCS but is a requirement for HWASAN instrumented functions.</i></td></tr>
+<tr><th id="54">54</th><td>  <b>if</b> ((<a class="local col0 ref" href="#10actions" title='actions' data-ref="10actions" data-ref-filename="10actions">actions</a> &amp; <span class='enum' title='_UA_CLEANUP_PHASE' data-ref="_UA_CLEANUP_PHASE" data-ref-filename="_UA_CLEANUP_PHASE">_UA_CLEANUP_PHASE</span>) &amp;&amp; <a class="local col7 ref" href="#17rc" title='rc' data-ref="17rc" data-ref-filename="17rc">rc</a> == <span class='enum' title='_URC_CONTINUE_UNWIND' data-ref="_URC_CONTINUE_UNWIND" data-ref-filename="_URC_CONTINUE_UNWIND">_URC_CONTINUE_UNWIND</span>) {</td></tr>
+<tr><th id="55">55</th><td><u>#<span data-ppcond="55">if</span> defined(<span class="macro" data-ref="_M/__x86_64__">__x86_64__</span>)</u></td></tr>
+<tr><th id="56">56</th><td>    <a class="typedef" href="../sanitizer_common/sanitizer_internal_defs.h.html#__sanitizer::uptr" title='__sanitizer::uptr' data-type='unsigned long' data-ref="__sanitizer::uptr" data-ref-filename="__sanitizer..uptr">uptr</a> <dfn class="local col8 decl" id="18fp" title='fp' data-type='__sanitizer::uptr' data-ref="18fp" data-ref-filename="18fp">fp</dfn> = <a class="local col5 ref" href="#15get_gr" title='get_gr' data-ref="15get_gr" data-ref-filename="15get_gr">get_gr</a>(<a class="local col3 ref" href="#13context" title='context' data-ref="13context" data-ref-filename="13context">context</a>, <var>6</var>); <i>// rbp</i></td></tr>
+<tr><th id="57">57</th><td><u>#<span data-ppcond="55">elif</span> defined(__aarch64__)</u></td></tr>
+<tr><th id="58">58</th><td>    uptr fp = get_gr(context, <var>29</var>); <i>// x29</i></td></tr>
+<tr><th id="59">59</th><td><u>#else</u></td></tr>
+<tr><th id="60">60</th><td><u>#error Unsupported architecture</u></td></tr>
+<tr><th id="61">61</th><td><u>#<span data-ppcond="55">endif</span></u></td></tr>
+<tr><th id="62">62</th><td>    <a class="typedef" href="../sanitizer_common/sanitizer_internal_defs.h.html#__sanitizer::uptr" title='__sanitizer::uptr' data-type='unsigned long' data-ref="__sanitizer::uptr" data-ref-filename="__sanitizer..uptr">uptr</a> <dfn class="local col9 decl" id="19sp" title='sp' data-type='__sanitizer::uptr' data-ref="19sp" data-ref-filename="19sp">sp</dfn> = <a class="local col6 ref" href="#16get_cfa" title='get_cfa' data-ref="16get_cfa" data-ref-filename="16get_cfa">get_cfa</a>(<a class="local col3 ref" href="#13context" title='context' data-ref="13context" data-ref-filename="13context">context</a>);</td></tr>
+<tr><th id="63">63</th><td>    <a class="ref fn" href="hwasan_poisoning.h.html#__hwasan::TagMemory" title='__hwasan::TagMemory' data-ref="__hwasan::TagMemory" data-ref-filename="__hwasan..TagMemory">TagMemory</a>(<a class="local col9 ref" href="#19sp" title='sp' data-ref="19sp" data-ref-filename="19sp">sp</a>, <a class="local col8 ref" href="#18fp" title='fp' data-ref="18fp" data-ref-filename="18fp">fp</a> - <a class="local col9 ref" href="#19sp" title='sp' data-ref="19sp" data-ref-filename="19sp">sp</a>, <var>0</var>);</td></tr>
+<tr><th id="64">64</th><td>  }</td></tr>
+<tr><th id="65">65</th><td></td></tr>
+<tr><th id="66">66</th><td>  <b>return</b> <a class="local col7 ref" href="#17rc" title='rc' data-ref="17rc" data-ref-filename="17rc">rc</a>;</td></tr>
+<tr><th id="67">67</th><td>}</td></tr>
+<tr><th id="68">68</th><td></td></tr>
+</table><hr/><p id='footer'>
+Generated on <em>2021-Jul-01</em> from project llvm revision <em>12</em>

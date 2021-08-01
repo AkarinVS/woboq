@@ -1,0 +1,4 @@
+<dec f='llvm/llvm/include/llvm/MC/MCExpr.h' l='506' type='const llvm::MCExpr *'/>
+<use f='llvm/llvm/include/llvm/MC/MCExpr.h' l='510' u='w' c='_ZN4llvm12MCBinaryExprC1ENS0_6OpcodeEPKNS_6MCExprES4_NS_5SMLocE'/>
+<use f='llvm/llvm/include/llvm/MC/MCExpr.h' l='623' u='r' c='_ZNK4llvm12MCBinaryExpr6getLHSEv'/>
+<offset>128</offset>

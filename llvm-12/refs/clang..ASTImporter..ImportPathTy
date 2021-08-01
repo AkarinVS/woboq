@@ -1,0 +1,92 @@
+<def f='llvm/clang/include/clang/AST/ASTImporter.h' l='177' ll='220'/>
+<use f='llvm/clang/include/clang/AST/ASTImporter.h' l='228'/>
+<size>792</size>
+<doc f='llvm/clang/include/clang/AST/ASTImporter.h' l='101'>// An ImportPath is the list of the AST nodes which we visit during an
+    // Import call.
+    // If node `A` depends on node `B` then the path contains an `A`-&gt;`B` edge.
+    // From the call stack of the import functions we can read the very same
+    // path.
+    //
+    // Now imagine the following AST, where the `-&gt;` represents dependency in
+    // therms of the import.
+    // ```
+    // A-&gt;B-&gt;C-&gt;D
+    //    `-&gt;E
+    // ```
+    // We would like to import A.
+    // The import behaves like a DFS, so we will visit the nodes in this order:
+    // ABCDE.
+    // During the visitation we will have the following ImportPaths:
+    // ```
+    // A
+    // AB
+    // ABC
+    // ABCD
+    // ABC
+    // AB
+    // ABE
+    // AB
+    // A
+    // ```
+    // If during the visit of E there is an error then we set an error for E,
+    // then as the call stack shrinks for B, then for A:
+    // ```
+    // A
+    // AB
+    // ABC
+    // ABCD
+    // ABC
+    // AB
+    // ABE // Error! Set an error to E
+    // AB  // Set an error to B
+    // A   // Set an error to A
+    // ```
+    // However, during the import we could import C and D without any error and
+    // they are independent from A,B and E.
+    // We must not set up an error for C and D.
+    // So, at the end of the import we have an entry in `ImportDeclErrors` for
+    // A,B,E but not for C,D.
+    //
+    // Now what happens if there is a cycle in the import path?
+    // Let&apos;s consider this AST:
+    // ```
+    // A-&gt;B-&gt;C-&gt;A
+    //    `-&gt;E
+    // ```
+    // During the visitation we will have the below ImportPaths and if during
+    // the visit of E there is an error then we will set up an error for E,B,A.
+    // But what&apos;s up with C?
+    // ```
+    // A
+    // AB
+    // ABC
+    // ABCA
+    // ABC
+    // AB
+    // ABE // Error! Set an error to E
+    // AB  // Set an error to B
+    // A   // Set an error to A
+    // ```
+    // This time we know that both B and C are dependent on A.
+    // This means we must set up an error for C too.
+    // As the call stack reverses back we get to A and we must set up an error
+    // to all nodes which depend on A (this includes C).
+    // But C is no longer on the import path, it just had been previously.
+    // Such situation can happen only if during the visitation we had a cycle.
+    // If we didn&apos;t have any cycle, then the normal way of passing an Error
+    // object through the call stack could handle the situation.
+    // This is why we must track cycles during the import process for each
+    // visited declaration.</doc>
+<fun r='_ZN5clang11ASTImporter12ImportPathTy4pushEPNS_4DeclE'/>
+<fun r='_ZN5clang11ASTImporter12ImportPathTy3popEv'/>
+<fun r='_ZNK5clang11ASTImporter12ImportPathTy14hasCycleAtBackEv'/>
+<fun r='_ZNK5clang11ASTImporter12ImportPathTy14getCycleAtBackEv'/>
+<fun r='_ZNK5clang11ASTImporter12ImportPathTy15copyCycleAtBackEv'/>
+<mbr r='clang::ASTImporter::ImportPathTy::Nodes' o='0' t='clang::ASTImporter::ImportPathTy::VecTy'/>
+<mbr r='clang::ASTImporter::ImportPathTy::Aux' o='2176' t='llvm::SmallDenseMap&lt;Decl *, int, 32&gt;'/>
+<use f='llvm/clang/unittests/AST/ASTImporterTest.cpp' l='162' c='_ZN5clang12ast_matchers20ImportPath_Push_Test8TestBodyEv'/>
+<use f='llvm/clang/unittests/AST/ASTImporterTest.cpp' l='168' c='_ZN5clang12ast_matchers26ImportPath_SmallCycle_Test8TestBodyEv'/>
+<use f='llvm/clang/unittests/AST/ASTImporterTest.cpp' l='179' c='_ZN5clang12ast_matchers29ImportPath_GetSmallCycle_Test8TestBodyEv'/>
+<use f='llvm/clang/unittests/AST/ASTImporterTest.cpp' l='194' c='_ZN5clang12ast_matchers24ImportPath_GetCycle_Test8TestBodyEv'/>
+<use f='llvm/clang/unittests/AST/ASTImporterTest.cpp' l='213' c='_ZN5clang12ast_matchers31ImportPath_CycleAfterCycle_Test8TestBodyEv'/>
+<size>792</size>

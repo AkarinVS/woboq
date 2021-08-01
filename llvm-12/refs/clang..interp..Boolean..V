@@ -1,0 +1,34 @@
+<dec f='llvm/clang/lib/AST/Interp/Boolean.h' l='28' type='bool'/>
+<use f='llvm/clang/lib/AST/Interp/Boolean.h' l='31' u='w' c='_ZN5clang6interp7BooleanC1Eb'/>
+<use f='llvm/clang/lib/AST/Interp/Boolean.h' l='35' u='w' c='_ZN5clang6interp7BooleanC1Ev'/>
+<use f='llvm/clang/lib/AST/Interp/Boolean.h' l='37' u='r' c='_ZNK5clang6interp7BooleanltES1_'/>
+<use f='llvm/clang/lib/AST/Interp/Boolean.h' l='37' u='r' c='_ZNK5clang6interp7BooleanltES1_'/>
+<use f='llvm/clang/lib/AST/Interp/Boolean.h' l='38' u='r' c='_ZNK5clang6interp7BooleangtES1_'/>
+<use f='llvm/clang/lib/AST/Interp/Boolean.h' l='38' u='r' c='_ZNK5clang6interp7BooleangtES1_'/>
+<use f='llvm/clang/lib/AST/Interp/Boolean.h' l='39' u='r' c='_ZNK5clang6interp7BooleanleES1_'/>
+<use f='llvm/clang/lib/AST/Interp/Boolean.h' l='39' u='r' c='_ZNK5clang6interp7BooleanleES1_'/>
+<use f='llvm/clang/lib/AST/Interp/Boolean.h' l='40' u='r' c='_ZNK5clang6interp7BooleangeES1_'/>
+<use f='llvm/clang/lib/AST/Interp/Boolean.h' l='40' u='r' c='_ZNK5clang6interp7BooleangeES1_'/>
+<use f='llvm/clang/lib/AST/Interp/Boolean.h' l='41' u='r' c='_ZNK5clang6interp7BooleaneqES1_'/>
+<use f='llvm/clang/lib/AST/Interp/Boolean.h' l='41' u='r' c='_ZNK5clang6interp7BooleaneqES1_'/>
+<use f='llvm/clang/lib/AST/Interp/Boolean.h' l='42' u='r' c='_ZNK5clang6interp7BooleanneES1_'/>
+<use f='llvm/clang/lib/AST/Interp/Boolean.h' l='42' u='r' c='_ZNK5clang6interp7BooleanneES1_'/>
+<use f='llvm/clang/lib/AST/Interp/Boolean.h' l='44' u='r' c='_ZNK5clang6interp7BooleangtEj'/>
+<use f='llvm/clang/lib/AST/Interp/Boolean.h' l='46' u='r' c='_ZNK5clang6interp7BooleanngEv'/>
+<use f='llvm/clang/lib/AST/Interp/Boolean.h' l='49' u='r' c='_ZNK5clang6interp7BooleancvjEv'/>
+<use f='llvm/clang/lib/AST/Interp/Boolean.h' l='50' u='r' c='_ZNK5clang6interp7BooleancvlEv'/>
+<use f='llvm/clang/lib/AST/Interp/Boolean.h' l='51' u='r' c='_ZNK5clang6interp7BooleancvmEv'/>
+<use f='llvm/clang/lib/AST/Interp/Boolean.h' l='54' u='r' c='_ZNK5clang6interp7Boolean8toAPSIntEv'/>
+<use f='llvm/clang/lib/AST/Interp/Boolean.h' l='64' u='r' c='_ZNK5clang6interp7Boolean6isZeroEv'/>
+<use f='llvm/clang/lib/AST/Interp/Boolean.h' l='75' u='r' c='_ZNK5clang6interp7Boolean7compareERKS1_'/>
+<use f='llvm/clang/lib/AST/Interp/Boolean.h' l='75' u='r' c='_ZNK5clang6interp7Boolean7compareERKS1_'/>
+<use f='llvm/clang/lib/AST/Interp/Boolean.h' l='78' u='r' c='_ZNK5clang6interp7Boolean17countLeadingZerosEv'/>
+<use f='llvm/clang/lib/AST/Interp/Boolean.h' l='82' u='r' c='_ZNK5clang6interp7Boolean5printERN4llvm11raw_ostreamE'/>
+<use f='llvm/clang/lib/AST/Interp/Boolean.h' l='124' u='r' c='_ZN5clang6interp7Boolean3addES1_S1_jPS1_'/>
+<use f='llvm/clang/lib/AST/Interp/Boolean.h' l='124' u='r' c='_ZN5clang6interp7Boolean3addES1_S1_jPS1_'/>
+<use f='llvm/clang/lib/AST/Interp/Boolean.h' l='129' u='r' c='_ZN5clang6interp7Boolean3subES1_S1_jPS1_'/>
+<use f='llvm/clang/lib/AST/Interp/Boolean.h' l='129' u='r' c='_ZN5clang6interp7Boolean3subES1_S1_jPS1_'/>
+<use f='llvm/clang/lib/AST/Interp/Boolean.h' l='134' u='r' c='_ZN5clang6interp7Boolean3mulES1_S1_jPS1_'/>
+<use f='llvm/clang/lib/AST/Interp/Boolean.h' l='134' u='r' c='_ZN5clang6interp7Boolean3mulES1_S1_jPS1_'/>
+<offset>0</offset>
+<doc f='llvm/clang/lib/AST/Interp/Boolean.h' l='27'>/// Underlying boolean.</doc>

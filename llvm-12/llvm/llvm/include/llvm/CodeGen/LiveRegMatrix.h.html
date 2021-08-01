@@ -1,0 +1,179 @@
+<!doctype html>
+<html>
+<head>
+<meta name="viewport" content="width=device-width, initial-scale=1.0"><title>LiveRegMatrix.h source code [llvm/llvm/include/llvm/CodeGen/LiveRegMatrix.h] - Woboq Code Browser</title>
+<meta name="woboq:interestingDefinitions" content="llvm::LiveRegMatrix "/>
+<link rel="stylesheet" href="../../../../.././data/qtcreator.css" title="QtCreator"/>
+<link rel="alternate stylesheet" href="../../../../.././data/kdevelop.css" title="KDevelop"/>
+<script type="text/javascript" src="../../../../.././data/jquery/jquery.min.js"></script>
+<script type="text/javascript" src="../../../../.././data/jquery/jquery-ui.min.js"></script>
+<script>var file = 'llvm/llvm/include/llvm/CodeGen/LiveRegMatrix.h'; var root_path = '../../../../..'; var data_path = '../../../../.././data'; var ecma_script_api_version = 2;</script>
+<script src='../../../../.././data/codebrowser.js'></script>
+</head>
+<body><div id='header'><h1 id='breadcrumb'><span>Browse the source code of </span><a href='../../../..'>llvm</a>/<a href='../../..'>llvm</a>/<a href='../..'>include</a>/<a href='..'>llvm</a>/<a href='./'>CodeGen</a>/<a href='LiveRegMatrix.h.html'>LiveRegMatrix.h</a></h1></div>
+<hr/><div id='content'><table class="code">
+<tr><th id="1">1</th><td><i>//===- LiveRegMatrix.h - Track register interference ----------*- C++ -*---===//</i></td></tr>
+<tr><th id="2">2</th><td><i>//</i></td></tr>
+<tr><th id="3">3</th><td><i>// Part of the LLVM Project, under the Apache License v2.0 with LLVM Exceptions.</i></td></tr>
+<tr><th id="4">4</th><td><i>// See <a href="https://llvm.org/LICENSE.txt">https://llvm.org/LICENSE.txt</a> for license information.</i></td></tr>
+<tr><th id="5">5</th><td><i>// SPDX-License-Identifier: Apache-2.0 WITH LLVM-exception</i></td></tr>
+<tr><th id="6">6</th><td><i>//</i></td></tr>
+<tr><th id="7">7</th><td><i>//===----------------------------------------------------------------------===//</i></td></tr>
+<tr><th id="8">8</th><td><i>//</i></td></tr>
+<tr><th id="9">9</th><td><i>// The LiveRegMatrix analysis pass keeps track of virtual register interference</i></td></tr>
+<tr><th id="10">10</th><td><i>// along two dimensions: Slot indexes and register units. The matrix is used by</i></td></tr>
+<tr><th id="11">11</th><td><i>// register allocators to ensure that no interfering virtual registers get</i></td></tr>
+<tr><th id="12">12</th><td><i>// assigned to overlapping physical registers.</i></td></tr>
+<tr><th id="13">13</th><td><i>//</i></td></tr>
+<tr><th id="14">14</th><td><i>// Register units are defined in MCRegisterInfo.h, they represent the smallest</i></td></tr>
+<tr><th id="15">15</th><td><i>// unit of interference when dealing with overlapping physical registers. The</i></td></tr>
+<tr><th id="16">16</th><td><i>// LiveRegMatrix is represented as a LiveIntervalUnion per register unit. When</i></td></tr>
+<tr><th id="17">17</th><td><i>// a virtual register is assigned to a physical register, the live range for</i></td></tr>
+<tr><th id="18">18</th><td><i>// the virtual register is inserted into the LiveIntervalUnion for each regunit</i></td></tr>
+<tr><th id="19">19</th><td><i>// in the physreg.</i></td></tr>
+<tr><th id="20">20</th><td><i>//</i></td></tr>
+<tr><th id="21">21</th><td><i>//===----------------------------------------------------------------------===//</i></td></tr>
+<tr><th id="22">22</th><td></td></tr>
+<tr><th id="23">23</th><td><u>#<span data-ppcond="23">ifndef</span> <span class="macro" data-ref="_M/LLVM_CODEGEN_LIVEREGMATRIX_H">LLVM_CODEGEN_LIVEREGMATRIX_H</span></u></td></tr>
+<tr><th id="24">24</th><td><u>#define <dfn class="macro" id="_M/LLVM_CODEGEN_LIVEREGMATRIX_H" data-ref="_M/LLVM_CODEGEN_LIVEREGMATRIX_H">LLVM_CODEGEN_LIVEREGMATRIX_H</dfn></u></td></tr>
+<tr><th id="25">25</th><td></td></tr>
+<tr><th id="26">26</th><td><u>#include <a href="../ADT/BitVector.h.html">"llvm/ADT/BitVector.h"</a></u></td></tr>
+<tr><th id="27">27</th><td><u>#include <a href="LiveIntervalUnion.h.html">"llvm/CodeGen/LiveIntervalUnion.h"</a></u></td></tr>
+<tr><th id="28">28</th><td><u>#include <a href="MachineFunctionPass.h.html">"llvm/CodeGen/MachineFunctionPass.h"</a></u></td></tr>
+<tr><th id="29">29</th><td><u>#include &lt;memory&gt;</u></td></tr>
+<tr><th id="30">30</th><td></td></tr>
+<tr><th id="31">31</th><td><b>namespace</b> <span class="namespace">llvm</span> {</td></tr>
+<tr><th id="32">32</th><td></td></tr>
+<tr><th id="33">33</th><td><b>class</b> <a class="type" href="../PassAnalysisSupport.h.html#llvm::AnalysisUsage" title='llvm::AnalysisUsage' data-ref="llvm::AnalysisUsage" data-ref-filename="llvm..AnalysisUsage" id="llvm::AnalysisUsage">AnalysisUsage</a>;</td></tr>
+<tr><th id="34">34</th><td><b>class</b> <a class="type" href="LiveInterval.h.html#llvm::LiveInterval" title='llvm::LiveInterval' data-ref="llvm::LiveInterval" data-ref-filename="llvm..LiveInterval" id="llvm::LiveInterval">LiveInterval</a>;</td></tr>
+<tr><th id="35">35</th><td><b>class</b> <a class="type" href="LiveIntervals.h.html#llvm::LiveIntervals" title='llvm::LiveIntervals' data-ref="llvm::LiveIntervals" data-ref-filename="llvm..LiveIntervals" id="llvm::LiveIntervals">LiveIntervals</a>;</td></tr>
+<tr><th id="36">36</th><td><b>class</b> <a class="type" href="MachineFunction.h.html#llvm::MachineFunction" title='llvm::MachineFunction' data-ref="llvm::MachineFunction" data-ref-filename="llvm..MachineFunction" id="llvm::MachineFunction">MachineFunction</a>;</td></tr>
+<tr><th id="37">37</th><td><b>class</b> <a class="type" href="TargetRegisterInfo.h.html#llvm::TargetRegisterInfo" title='llvm::TargetRegisterInfo' data-ref="llvm::TargetRegisterInfo" data-ref-filename="llvm..TargetRegisterInfo" id="llvm::TargetRegisterInfo">TargetRegisterInfo</a>;</td></tr>
+<tr><th id="38">38</th><td><b>class</b> <a class="type" href="VirtRegMap.h.html#llvm::VirtRegMap" title='llvm::VirtRegMap' data-ref="llvm::VirtRegMap" data-ref-filename="llvm..VirtRegMap" id="llvm::VirtRegMap">VirtRegMap</a>;</td></tr>
+<tr><th id="39">39</th><td></td></tr>
+<tr><th id="40">40</th><td><b>class</b> <dfn class="type def" id="llvm::LiveRegMatrix" title='llvm::LiveRegMatrix' data-ref="llvm::LiveRegMatrix" data-ref-filename="llvm..LiveRegMatrix">LiveRegMatrix</dfn> : <b>public</b> <a class="type" href="MachineFunctionPass.h.html#llvm::MachineFunctionPass" title='llvm::MachineFunctionPass' data-ref="llvm::MachineFunctionPass" data-ref-filename="llvm..MachineFunctionPass">MachineFunctionPass</a> {</td></tr>
+<tr><th id="41">41</th><td>  <em>const</em> <a class="type" href="TargetRegisterInfo.h.html#llvm::TargetRegisterInfo" title='llvm::TargetRegisterInfo' data-ref="llvm::TargetRegisterInfo" data-ref-filename="llvm..TargetRegisterInfo">TargetRegisterInfo</a> *<dfn class="decl field" id="llvm::LiveRegMatrix::TRI" title='llvm::LiveRegMatrix::TRI' data-ref="llvm::LiveRegMatrix::TRI" data-ref-filename="llvm..LiveRegMatrix..TRI">TRI</dfn>;</td></tr>
+<tr><th id="42">42</th><td>  <a class="type" href="LiveIntervals.h.html#llvm::LiveIntervals" title='llvm::LiveIntervals' data-ref="llvm::LiveIntervals" data-ref-filename="llvm..LiveIntervals">LiveIntervals</a> *<dfn class="decl field" id="llvm::LiveRegMatrix::LIS" title='llvm::LiveRegMatrix::LIS' data-ref="llvm::LiveRegMatrix::LIS" data-ref-filename="llvm..LiveRegMatrix..LIS">LIS</dfn>;</td></tr>
+<tr><th id="43">43</th><td>  <a class="type" href="VirtRegMap.h.html#llvm::VirtRegMap" title='llvm::VirtRegMap' data-ref="llvm::VirtRegMap" data-ref-filename="llvm..VirtRegMap">VirtRegMap</a> *<dfn class="decl field" id="llvm::LiveRegMatrix::VRM" title='llvm::LiveRegMatrix::VRM' data-ref="llvm::LiveRegMatrix::VRM" data-ref-filename="llvm..LiveRegMatrix..VRM">VRM</dfn>;</td></tr>
+<tr><th id="44">44</th><td></td></tr>
+<tr><th id="45">45</th><td>  <i>// UserTag changes whenever virtual registers have been modified.</i></td></tr>
+<tr><th id="46">46</th><td>  <em>unsigned</em> <dfn class="decl field" id="llvm::LiveRegMatrix::UserTag" title='llvm::LiveRegMatrix::UserTag' data-ref="llvm::LiveRegMatrix::UserTag" data-ref-filename="llvm..LiveRegMatrix..UserTag">UserTag</dfn> = <var>0</var>;</td></tr>
+<tr><th id="47">47</th><td></td></tr>
+<tr><th id="48">48</th><td>  <i>// The matrix is represented as a LiveIntervalUnion per register unit.</i></td></tr>
+<tr><th id="49">49</th><td>  <a class="type" href="LiveIntervalUnion.h.html#llvm::LiveIntervalUnion" title='llvm::LiveIntervalUnion' data-ref="llvm::LiveIntervalUnion" data-ref-filename="llvm..LiveIntervalUnion">LiveIntervalUnion</a>::<a class="typedef" href="LiveIntervalUnion.h.html#llvm::LiveIntervalUnion::Allocator" title='llvm::LiveIntervalUnion::Allocator' data-type='LiveSegments::Allocator' data-ref="llvm::LiveIntervalUnion::Allocator" data-ref-filename="llvm..LiveIntervalUnion..Allocator">Allocator</a> <dfn class="decl field" id="llvm::LiveRegMatrix::LIUAlloc" title='llvm::LiveRegMatrix::LIUAlloc' data-ref="llvm::LiveRegMatrix::LIUAlloc" data-ref-filename="llvm..LiveRegMatrix..LIUAlloc">LIUAlloc</dfn>;</td></tr>
+<tr><th id="50">50</th><td>  <a class="type" href="LiveIntervalUnion.h.html#llvm::LiveIntervalUnion" title='llvm::LiveIntervalUnion' data-ref="llvm::LiveIntervalUnion" data-ref-filename="llvm..LiveIntervalUnion">LiveIntervalUnion</a>::<a class="type" href="LiveIntervalUnion.h.html#llvm::LiveIntervalUnion::Array" title='llvm::LiveIntervalUnion::Array' data-ref="llvm::LiveIntervalUnion::Array" data-ref-filename="llvm..LiveIntervalUnion..Array">Array</a> <dfn class="decl field" id="llvm::LiveRegMatrix::Matrix" title='llvm::LiveRegMatrix::Matrix' data-ref="llvm::LiveRegMatrix::Matrix" data-ref-filename="llvm..LiveRegMatrix..Matrix">Matrix</dfn>;</td></tr>
+<tr><th id="51">51</th><td></td></tr>
+<tr><th id="52">52</th><td>  <i>// Cached queries per register unit.</i></td></tr>
+<tr><th id="53">53</th><td>  <span class="namespace">std::</span><span class='type' title='std::unique_ptr' data-ref="std::unique_ptr" data-ref-filename="std..unique_ptr">unique_ptr</span>&lt;<a class="type" href="LiveIntervalUnion.h.html#llvm::LiveIntervalUnion" title='llvm::LiveIntervalUnion' data-ref="llvm::LiveIntervalUnion" data-ref-filename="llvm..LiveIntervalUnion">LiveIntervalUnion</a>::<a class="type" href="LiveIntervalUnion.h.html#llvm::LiveIntervalUnion::Query" title='llvm::LiveIntervalUnion::Query' data-ref="llvm::LiveIntervalUnion::Query" data-ref-filename="llvm..LiveIntervalUnion..Query">Query</a>[]&gt; <dfn class="decl field" id="llvm::LiveRegMatrix::Queries" title='llvm::LiveRegMatrix::Queries' data-ref="llvm::LiveRegMatrix::Queries" data-ref-filename="llvm..LiveRegMatrix..Queries">Queries</dfn>;</td></tr>
+<tr><th id="54">54</th><td></td></tr>
+<tr><th id="55">55</th><td>  <i>// Cached register mask interference info.</i></td></tr>
+<tr><th id="56">56</th><td>  <em>unsigned</em> <dfn class="decl field" id="llvm::LiveRegMatrix::RegMaskTag" title='llvm::LiveRegMatrix::RegMaskTag' data-ref="llvm::LiveRegMatrix::RegMaskTag" data-ref-filename="llvm..LiveRegMatrix..RegMaskTag">RegMaskTag</dfn> = <var>0</var>;</td></tr>
+<tr><th id="57">57</th><td>  <em>unsigned</em> <dfn class="decl field" id="llvm::LiveRegMatrix::RegMaskVirtReg" title='llvm::LiveRegMatrix::RegMaskVirtReg' data-ref="llvm::LiveRegMatrix::RegMaskVirtReg" data-ref-filename="llvm..LiveRegMatrix..RegMaskVirtReg">RegMaskVirtReg</dfn> = <var>0</var>;</td></tr>
+<tr><th id="58">58</th><td>  <a class="type" href="../ADT/BitVector.h.html#llvm::BitVector" title='llvm::BitVector' data-ref="llvm::BitVector" data-ref-filename="llvm..BitVector">BitVector</a> <dfn class="decl field" id="llvm::LiveRegMatrix::RegMaskUsable" title='llvm::LiveRegMatrix::RegMaskUsable' data-ref="llvm::LiveRegMatrix::RegMaskUsable" data-ref-filename="llvm..LiveRegMatrix..RegMaskUsable">RegMaskUsable</dfn>;</td></tr>
+<tr><th id="59">59</th><td></td></tr>
+<tr><th id="60">60</th><td>  <i>// MachineFunctionPass boilerplate.</i></td></tr>
+<tr><th id="61">61</th><td>  <em>void</em> <a class="virtual decl fn" href="../../../lib/CodeGen/LiveRegMatrix.cpp.html#_ZNK4llvm13LiveRegMatrix16getAnalysisUsageERNS_13AnalysisUsageE" title='llvm::LiveRegMatrix::getAnalysisUsage' data-ref="_ZNK4llvm13LiveRegMatrix16getAnalysisUsageERNS_13AnalysisUsageE" data-ref-filename="_ZNK4llvm13LiveRegMatrix16getAnalysisUsageERNS_13AnalysisUsageE" id="_ZNK4llvm13LiveRegMatrix16getAnalysisUsageERNS_13AnalysisUsageE">getAnalysisUsage</a>(<a class="type" href="../PassAnalysisSupport.h.html#llvm::AnalysisUsage" title='llvm::AnalysisUsage' data-ref="llvm::AnalysisUsage" data-ref-filename="llvm..AnalysisUsage">AnalysisUsage</a> &amp;) <em>const</em> override;</td></tr>
+<tr><th id="62">62</th><td>  <em>bool</em> <a class="virtual decl fn" href="../../../lib/CodeGen/LiveRegMatrix.cpp.html#_ZN4llvm13LiveRegMatrix20runOnMachineFunctionERNS_15MachineFunctionE" title='llvm::LiveRegMatrix::runOnMachineFunction' data-ref="_ZN4llvm13LiveRegMatrix20runOnMachineFunctionERNS_15MachineFunctionE" data-ref-filename="_ZN4llvm13LiveRegMatrix20runOnMachineFunctionERNS_15MachineFunctionE" id="_ZN4llvm13LiveRegMatrix20runOnMachineFunctionERNS_15MachineFunctionE">runOnMachineFunction</a>(<a class="type" href="MachineFunction.h.html#llvm::MachineFunction" title='llvm::MachineFunction' data-ref="llvm::MachineFunction" data-ref-filename="llvm..MachineFunction">MachineFunction</a> &amp;) override;</td></tr>
+<tr><th id="63">63</th><td>  <em>void</em> <a class="virtual decl fn" href="../../../lib/CodeGen/LiveRegMatrix.cpp.html#_ZN4llvm13LiveRegMatrix13releaseMemoryEv" title='llvm::LiveRegMatrix::releaseMemory' data-ref="_ZN4llvm13LiveRegMatrix13releaseMemoryEv" data-ref-filename="_ZN4llvm13LiveRegMatrix13releaseMemoryEv" id="_ZN4llvm13LiveRegMatrix13releaseMemoryEv">releaseMemory</a>() override;</td></tr>
+<tr><th id="64">64</th><td></td></tr>
+<tr><th id="65">65</th><td><b>public</b>:</td></tr>
+<tr><th id="66">66</th><td>  <em>static</em> <em>char</em> <dfn class="decl" id="llvm::LiveRegMatrix::ID" title='llvm::LiveRegMatrix::ID' data-ref="llvm::LiveRegMatrix::ID" data-ref-filename="llvm..LiveRegMatrix..ID">ID</dfn>;</td></tr>
+<tr><th id="67">67</th><td></td></tr>
+<tr><th id="68">68</th><td>  <a class="decl fn" href="../../../lib/CodeGen/LiveRegMatrix.cpp.html#_ZN4llvm13LiveRegMatrixC1Ev" title='llvm::LiveRegMatrix::LiveRegMatrix' data-ref="_ZN4llvm13LiveRegMatrixC1Ev" data-ref-filename="_ZN4llvm13LiveRegMatrixC1Ev" id="_ZN4llvm13LiveRegMatrixC1Ev">LiveRegMatrix</a>();</td></tr>
+<tr><th id="69">69</th><td></td></tr>
+<tr><th id="70">70</th><td>  <i>//===--------------------------------------------------------------------===//</i></td></tr>
+<tr><th id="71">71</th><td><i>  // High-level interface.</i></td></tr>
+<tr><th id="72">72</th><td><i>  //===--------------------------------------------------------------------===//</i></td></tr>
+<tr><th id="73">73</th><td><i>  //</i></td></tr>
+<tr><th id="74">74</th><td><i>  // Check for interference before assigning virtual registers to physical</i></td></tr>
+<tr><th id="75">75</th><td><i>  // registers.</i></td></tr>
+<tr><th id="76">76</th><td><i>  //</i></td></tr>
+<tr><th id="77">77</th><td><i></i></td></tr>
+<tr><th id="78">78</th><td><i>  /// Invalidate cached interference queries after modifying virtual register</i></td></tr>
+<tr><th id="79">79</th><td><i>  /// live ranges. Interference checks may return stale information unless</i></td></tr>
+<tr><th id="80">80</th><td><i>  /// caches are invalidated.</i></td></tr>
+<tr><th id="81">81</th><td>  <em>void</em> <dfn class="decl def fn" id="_ZN4llvm13LiveRegMatrix18invalidateVirtRegsEv" title='llvm::LiveRegMatrix::invalidateVirtRegs' data-ref="_ZN4llvm13LiveRegMatrix18invalidateVirtRegsEv" data-ref-filename="_ZN4llvm13LiveRegMatrix18invalidateVirtRegsEv">invalidateVirtRegs</dfn>() { ++<a class="member field" href="#llvm::LiveRegMatrix::UserTag" title='llvm::LiveRegMatrix::UserTag' data-ref="llvm::LiveRegMatrix::UserTag" data-ref-filename="llvm..LiveRegMatrix..UserTag">UserTag</a>; }</td></tr>
+<tr><th id="82">82</th><td></td></tr>
+<tr><th id="83">83</th><td>  <b>enum</b> <dfn class="type def" id="llvm::LiveRegMatrix::InterferenceKind" title='llvm::LiveRegMatrix::InterferenceKind' data-ref="llvm::LiveRegMatrix::InterferenceKind" data-ref-filename="llvm..LiveRegMatrix..InterferenceKind">InterferenceKind</dfn> {</td></tr>
+<tr><th id="84">84</th><td>    <i class="doc">/// No interference, go ahead and assign.</i></td></tr>
+<tr><th id="85">85</th><td>    <dfn class="enum" id="llvm::LiveRegMatrix::IK_Free" title='llvm::LiveRegMatrix::IK_Free' data-ref="llvm::LiveRegMatrix::IK_Free" data-ref-filename="llvm..LiveRegMatrix..IK_Free">IK_Free</dfn> = <var>0</var>,</td></tr>
+<tr><th id="86">86</th><td></td></tr>
+<tr><th id="87">87</th><td>    <i class="doc">/// Virtual register interference. There are interfering virtual registers</i></td></tr>
+<tr><th id="88">88</th><td><i class="doc">    /// assigned to PhysReg or its aliases. This interference could be resolved</i></td></tr>
+<tr><th id="89">89</th><td><i class="doc">    /// by unassigning those other virtual registers.</i></td></tr>
+<tr><th id="90">90</th><td>    <dfn class="enum" id="llvm::LiveRegMatrix::IK_VirtReg" title='llvm::LiveRegMatrix::IK_VirtReg' data-ref="llvm::LiveRegMatrix::IK_VirtReg" data-ref-filename="llvm..LiveRegMatrix..IK_VirtReg">IK_VirtReg</dfn>,</td></tr>
+<tr><th id="91">91</th><td></td></tr>
+<tr><th id="92">92</th><td>    <i class="doc">/// Register unit interference. A fixed live range is in the way, typically</i></td></tr>
+<tr><th id="93">93</th><td><i class="doc">    /// argument registers for a call. This can't be resolved by unassigning</i></td></tr>
+<tr><th id="94">94</th><td><i class="doc">    /// other virtual registers.</i></td></tr>
+<tr><th id="95">95</th><td>    <dfn class="enum" id="llvm::LiveRegMatrix::IK_RegUnit" title='llvm::LiveRegMatrix::IK_RegUnit' data-ref="llvm::LiveRegMatrix::IK_RegUnit" data-ref-filename="llvm..LiveRegMatrix..IK_RegUnit">IK_RegUnit</dfn>,</td></tr>
+<tr><th id="96">96</th><td></td></tr>
+<tr><th id="97">97</th><td>    <i class="doc">/// RegMask interference. The live range is crossing an instruction with a</i></td></tr>
+<tr><th id="98">98</th><td><i class="doc">    /// regmask operand that doesn't preserve PhysReg. This typically means</i></td></tr>
+<tr><th id="99">99</th><td><i class="doc">    /// VirtReg is live across a call, and PhysReg isn't call-preserved.</i></td></tr>
+<tr><th id="100">100</th><td>    <dfn class="enum" id="llvm::LiveRegMatrix::IK_RegMask" title='llvm::LiveRegMatrix::IK_RegMask' data-ref="llvm::LiveRegMatrix::IK_RegMask" data-ref-filename="llvm..LiveRegMatrix..IK_RegMask">IK_RegMask</dfn></td></tr>
+<tr><th id="101">101</th><td>  };</td></tr>
+<tr><th id="102">102</th><td></td></tr>
+<tr><th id="103">103</th><td>  <i class="doc">/// Check for interference before assigning VirtReg to PhysReg.</i></td></tr>
+<tr><th id="104">104</th><td><i class="doc">  /// If this function returns IK_Free, it is legal to assign(VirtReg, PhysReg).</i></td></tr>
+<tr><th id="105">105</th><td><i class="doc">  /// When there is more than one kind of interference, the InterferenceKind</i></td></tr>
+<tr><th id="106">106</th><td><i class="doc">  /// with the highest enum value is returned.</i></td></tr>
+<tr><th id="107">107</th><td>  <a class="type" href="#llvm::LiveRegMatrix::InterferenceKind" title='llvm::LiveRegMatrix::InterferenceKind' data-ref="llvm::LiveRegMatrix::InterferenceKind" data-ref-filename="llvm..LiveRegMatrix..InterferenceKind">InterferenceKind</a> <a class="decl fn" href="../../../lib/CodeGen/LiveRegMatrix.cpp.html#_ZN4llvm13LiveRegMatrix17checkInterferenceERNS_12LiveIntervalENS_10MCRegisterE" title='llvm::LiveRegMatrix::checkInterference' data-ref="_ZN4llvm13LiveRegMatrix17checkInterferenceERNS_12LiveIntervalENS_10MCRegisterE" data-ref-filename="_ZN4llvm13LiveRegMatrix17checkInterferenceERNS_12LiveIntervalENS_10MCRegisterE" id="_ZN4llvm13LiveRegMatrix17checkInterferenceERNS_12LiveIntervalENS_10MCRegisterE">checkInterference</a>(<a class="type" href="LiveInterval.h.html#llvm::LiveInterval" title='llvm::LiveInterval' data-ref="llvm::LiveInterval" data-ref-filename="llvm..LiveInterval">LiveInterval</a> &amp;<dfn class="local col1 decl" id="1VirtReg" title='VirtReg' data-type='llvm::LiveInterval &amp;' data-ref="1VirtReg" data-ref-filename="1VirtReg">VirtReg</dfn>, <a class="type" href="../MC/MCRegister.h.html#llvm::MCRegister" title='llvm::MCRegister' data-ref="llvm::MCRegister" data-ref-filename="llvm..MCRegister">MCRegister</a> <dfn class="local col2 decl" id="2PhysReg" title='PhysReg' data-type='llvm::MCRegister' data-ref="2PhysReg" data-ref-filename="2PhysReg">PhysReg</dfn>);</td></tr>
+<tr><th id="108">108</th><td></td></tr>
+<tr><th id="109">109</th><td>  <i class="doc">/// Check for interference in the segment [Start, End) that may prevent</i></td></tr>
+<tr><th id="110">110</th><td><i class="doc">  /// assignment to PhysReg. If this function returns true, there is</i></td></tr>
+<tr><th id="111">111</th><td><i class="doc">  /// interference in the segment [Start, End) of some other interval already</i></td></tr>
+<tr><th id="112">112</th><td><i class="doc">  /// assigned to PhysReg. If this function returns false, PhysReg is free at</i></td></tr>
+<tr><th id="113">113</th><td><i class="doc">  /// the segment [Start, End).</i></td></tr>
+<tr><th id="114">114</th><td>  <em>bool</em> <a class="decl fn" href="../../../lib/CodeGen/LiveRegMatrix.cpp.html#_ZN4llvm13LiveRegMatrix17checkInterferenceENS_9SlotIndexES1_NS_10MCRegisterE" title='llvm::LiveRegMatrix::checkInterference' data-ref="_ZN4llvm13LiveRegMatrix17checkInterferenceENS_9SlotIndexES1_NS_10MCRegisterE" data-ref-filename="_ZN4llvm13LiveRegMatrix17checkInterferenceENS_9SlotIndexES1_NS_10MCRegisterE" id="_ZN4llvm13LiveRegMatrix17checkInterferenceENS_9SlotIndexES1_NS_10MCRegisterE">checkInterference</a>(<a class="type" href="SlotIndexes.h.html#llvm::SlotIndex" title='llvm::SlotIndex' data-ref="llvm::SlotIndex" data-ref-filename="llvm..SlotIndex">SlotIndex</a> <dfn class="local col3 decl" id="3Start" title='Start' data-type='llvm::SlotIndex' data-ref="3Start" data-ref-filename="3Start">Start</dfn>, <a class="type" href="SlotIndexes.h.html#llvm::SlotIndex" title='llvm::SlotIndex' data-ref="llvm::SlotIndex" data-ref-filename="llvm..SlotIndex">SlotIndex</a> <dfn class="local col4 decl" id="4End" title='End' data-type='llvm::SlotIndex' data-ref="4End" data-ref-filename="4End">End</dfn>, <a class="type" href="../MC/MCRegister.h.html#llvm::MCRegister" title='llvm::MCRegister' data-ref="llvm::MCRegister" data-ref-filename="llvm..MCRegister">MCRegister</a> <dfn class="local col5 decl" id="5PhysReg" title='PhysReg' data-type='llvm::MCRegister' data-ref="5PhysReg" data-ref-filename="5PhysReg">PhysReg</dfn>);</td></tr>
+<tr><th id="115">115</th><td></td></tr>
+<tr><th id="116">116</th><td>  <i class="doc">/// Assign VirtReg to PhysReg.</i></td></tr>
+<tr><th id="117">117</th><td><i class="doc">  /// This will mark VirtReg's live range as occupied in the LiveRegMatrix and</i></td></tr>
+<tr><th id="118">118</th><td><i class="doc">  /// update VirtRegMap. The live range is expected to be available in PhysReg.</i></td></tr>
+<tr><th id="119">119</th><td>  <em>void</em> <a class="decl fn" href="../../../lib/CodeGen/LiveRegMatrix.cpp.html#_ZN4llvm13LiveRegMatrix6assignERNS_12LiveIntervalENS_10MCRegisterE" title='llvm::LiveRegMatrix::assign' data-ref="_ZN4llvm13LiveRegMatrix6assignERNS_12LiveIntervalENS_10MCRegisterE" data-ref-filename="_ZN4llvm13LiveRegMatrix6assignERNS_12LiveIntervalENS_10MCRegisterE" id="_ZN4llvm13LiveRegMatrix6assignERNS_12LiveIntervalENS_10MCRegisterE">assign</a>(<a class="type" href="LiveInterval.h.html#llvm::LiveInterval" title='llvm::LiveInterval' data-ref="llvm::LiveInterval" data-ref-filename="llvm..LiveInterval">LiveInterval</a> &amp;<dfn class="local col6 decl" id="6VirtReg" title='VirtReg' data-type='llvm::LiveInterval &amp;' data-ref="6VirtReg" data-ref-filename="6VirtReg">VirtReg</dfn>, <a class="type" href="../MC/MCRegister.h.html#llvm::MCRegister" title='llvm::MCRegister' data-ref="llvm::MCRegister" data-ref-filename="llvm..MCRegister">MCRegister</a> <dfn class="local col7 decl" id="7PhysReg" title='PhysReg' data-type='llvm::MCRegister' data-ref="7PhysReg" data-ref-filename="7PhysReg">PhysReg</dfn>);</td></tr>
+<tr><th id="120">120</th><td></td></tr>
+<tr><th id="121">121</th><td>  <i class="doc">/// Unassign VirtReg from its PhysReg.</i></td></tr>
+<tr><th id="122">122</th><td><i class="doc">  /// Assuming that VirtReg was previously assigned to a PhysReg, this undoes</i></td></tr>
+<tr><th id="123">123</th><td><i class="doc">  /// the assignment and updates VirtRegMap accordingly.</i></td></tr>
+<tr><th id="124">124</th><td>  <em>void</em> <a class="decl fn" href="../../../lib/CodeGen/LiveRegMatrix.cpp.html#_ZN4llvm13LiveRegMatrix8unassignERNS_12LiveIntervalE" title='llvm::LiveRegMatrix::unassign' data-ref="_ZN4llvm13LiveRegMatrix8unassignERNS_12LiveIntervalE" data-ref-filename="_ZN4llvm13LiveRegMatrix8unassignERNS_12LiveIntervalE" id="_ZN4llvm13LiveRegMatrix8unassignERNS_12LiveIntervalE">unassign</a>(<a class="type" href="LiveInterval.h.html#llvm::LiveInterval" title='llvm::LiveInterval' data-ref="llvm::LiveInterval" data-ref-filename="llvm..LiveInterval">LiveInterval</a> &amp;<dfn class="local col8 decl" id="8VirtReg" title='VirtReg' data-type='llvm::LiveInterval &amp;' data-ref="8VirtReg" data-ref-filename="8VirtReg">VirtReg</dfn>);</td></tr>
+<tr><th id="125">125</th><td></td></tr>
+<tr><th id="126">126</th><td>  <i class="doc">/// Returns true if the given<span class="command"> \p</span> <span class="arg">PhysReg</span> has any live intervals assigned.</i></td></tr>
+<tr><th id="127">127</th><td>  <em>bool</em> <a class="decl fn" href="../../../lib/CodeGen/LiveRegMatrix.cpp.html#_ZNK4llvm13LiveRegMatrix13isPhysRegUsedENS_10MCRegisterE" title='llvm::LiveRegMatrix::isPhysRegUsed' data-ref="_ZNK4llvm13LiveRegMatrix13isPhysRegUsedENS_10MCRegisterE" data-ref-filename="_ZNK4llvm13LiveRegMatrix13isPhysRegUsedENS_10MCRegisterE" id="_ZNK4llvm13LiveRegMatrix13isPhysRegUsedENS_10MCRegisterE">isPhysRegUsed</a>(<a class="type" href="../MC/MCRegister.h.html#llvm::MCRegister" title='llvm::MCRegister' data-ref="llvm::MCRegister" data-ref-filename="llvm..MCRegister">MCRegister</a> <dfn class="local col9 decl" id="9PhysReg" title='PhysReg' data-type='llvm::MCRegister' data-ref="9PhysReg" data-ref-filename="9PhysReg">PhysReg</dfn>) <em>const</em>;</td></tr>
+<tr><th id="128">128</th><td></td></tr>
+<tr><th id="129">129</th><td>  <i>//===--------------------------------------------------------------------===//</i></td></tr>
+<tr><th id="130">130</th><td><i>  // Low-level interface.</i></td></tr>
+<tr><th id="131">131</th><td><i>  //===--------------------------------------------------------------------===//</i></td></tr>
+<tr><th id="132">132</th><td><i>  //</i></td></tr>
+<tr><th id="133">133</th><td><i>  // Provide access to the underlying LiveIntervalUnions.</i></td></tr>
+<tr><th id="134">134</th><td><i>  //</i></td></tr>
+<tr><th id="135">135</th><td><i></i></td></tr>
+<tr><th id="136">136</th><td><i>  /// Check for regmask interference only.</i></td></tr>
+<tr><th id="137">137</th><td><i>  /// Return true if VirtReg crosses a regmask operand that clobbers PhysReg.</i></td></tr>
+<tr><th id="138">138</th><td><i>  /// If PhysReg is null, check if VirtReg crosses any regmask operands.</i></td></tr>
+<tr><th id="139">139</th><td>  <em>bool</em> <a class="decl fn" href="../../../lib/CodeGen/LiveRegMatrix.cpp.html#_ZN4llvm13LiveRegMatrix24checkRegMaskInterferenceERNS_12LiveIntervalENS_10MCRegisterE" title='llvm::LiveRegMatrix::checkRegMaskInterference' data-ref="_ZN4llvm13LiveRegMatrix24checkRegMaskInterferenceERNS_12LiveIntervalENS_10MCRegisterE" data-ref-filename="_ZN4llvm13LiveRegMatrix24checkRegMaskInterferenceERNS_12LiveIntervalENS_10MCRegisterE" id="_ZN4llvm13LiveRegMatrix24checkRegMaskInterferenceERNS_12LiveIntervalENS_10MCRegisterE">checkRegMaskInterference</a>(<a class="type" href="LiveInterval.h.html#llvm::LiveInterval" title='llvm::LiveInterval' data-ref="llvm::LiveInterval" data-ref-filename="llvm..LiveInterval">LiveInterval</a> &amp;<dfn class="local col0 decl" id="10VirtReg" title='VirtReg' data-type='llvm::LiveInterval &amp;' data-ref="10VirtReg" data-ref-filename="10VirtReg">VirtReg</dfn>,</td></tr>
+<tr><th id="140">140</th><td>                                <a class="type" href="../MC/MCRegister.h.html#llvm::MCRegister" title='llvm::MCRegister' data-ref="llvm::MCRegister" data-ref-filename="llvm..MCRegister">MCRegister</a> <dfn class="local col1 decl" id="11PhysReg" title='PhysReg' data-type='llvm::MCRegister' data-ref="11PhysReg" data-ref-filename="11PhysReg">PhysReg</dfn> = <a class="ref fn fake" href="../MC/MCRegister.h.html#_ZN4llvm10MCRegisterC1Ej" title='llvm::MCRegister::MCRegister' data-ref="_ZN4llvm10MCRegisterC1Ej" data-ref-filename="_ZN4llvm10MCRegisterC1Ej"></a><a class="ref fn fake" href="../MC/MCRegister.h.html#_ZN4llvm10MCRegisterC1Ej" title='llvm::MCRegister::MCRegister' data-ref="_ZN4llvm10MCRegisterC1Ej" data-ref-filename="_ZN4llvm10MCRegisterC1Ej"></a><a class="type" href="../MC/MCRegister.h.html#llvm::MCRegister" title='llvm::MCRegister' data-ref="llvm::MCRegister" data-ref-filename="llvm..MCRegister">MCRegister</a>::<a class="ref" href="../MC/MCRegister.h.html#llvm::MCRegister::NoRegister" title='llvm::MCRegister::NoRegister' data-ref="llvm::MCRegister::NoRegister" data-ref-filename="llvm..MCRegister..NoRegister">NoRegister</a>);</td></tr>
+<tr><th id="141">141</th><td></td></tr>
+<tr><th id="142">142</th><td>  <i class="doc">/// Check for regunit interference only.</i></td></tr>
+<tr><th id="143">143</th><td><i class="doc">  /// Return true if VirtReg overlaps a fixed assignment of one of PhysRegs's</i></td></tr>
+<tr><th id="144">144</th><td><i class="doc">  /// register units.</i></td></tr>
+<tr><th id="145">145</th><td>  <em>bool</em> <a class="decl fn" href="../../../lib/CodeGen/LiveRegMatrix.cpp.html#_ZN4llvm13LiveRegMatrix24checkRegUnitInterferenceERNS_12LiveIntervalENS_10MCRegisterE" title='llvm::LiveRegMatrix::checkRegUnitInterference' data-ref="_ZN4llvm13LiveRegMatrix24checkRegUnitInterferenceERNS_12LiveIntervalENS_10MCRegisterE" data-ref-filename="_ZN4llvm13LiveRegMatrix24checkRegUnitInterferenceERNS_12LiveIntervalENS_10MCRegisterE" id="_ZN4llvm13LiveRegMatrix24checkRegUnitInterferenceERNS_12LiveIntervalENS_10MCRegisterE">checkRegUnitInterference</a>(<a class="type" href="LiveInterval.h.html#llvm::LiveInterval" title='llvm::LiveInterval' data-ref="llvm::LiveInterval" data-ref-filename="llvm..LiveInterval">LiveInterval</a> &amp;<dfn class="local col2 decl" id="12VirtReg" title='VirtReg' data-type='llvm::LiveInterval &amp;' data-ref="12VirtReg" data-ref-filename="12VirtReg">VirtReg</dfn>, <a class="type" href="../MC/MCRegister.h.html#llvm::MCRegister" title='llvm::MCRegister' data-ref="llvm::MCRegister" data-ref-filename="llvm..MCRegister">MCRegister</a> <dfn class="local col3 decl" id="13PhysReg" title='PhysReg' data-type='llvm::MCRegister' data-ref="13PhysReg" data-ref-filename="13PhysReg">PhysReg</dfn>);</td></tr>
+<tr><th id="146">146</th><td></td></tr>
+<tr><th id="147">147</th><td>  <i class="doc">/// Query a line of the assigned virtual register matrix directly.</i></td></tr>
+<tr><th id="148">148</th><td><i class="doc">  /// Use MCRegUnitIterator to enumerate all regunits in the desired PhysReg.</i></td></tr>
+<tr><th id="149">149</th><td><i class="doc">  /// This returns a reference to an internal Query data structure that is only</i></td></tr>
+<tr><th id="150">150</th><td><i class="doc">  /// valid until the next query() call.</i></td></tr>
+<tr><th id="151">151</th><td>  <a class="type" href="LiveIntervalUnion.h.html#llvm::LiveIntervalUnion" title='llvm::LiveIntervalUnion' data-ref="llvm::LiveIntervalUnion" data-ref-filename="llvm..LiveIntervalUnion">LiveIntervalUnion</a>::<a class="type" href="LiveIntervalUnion.h.html#llvm::LiveIntervalUnion::Query" title='llvm::LiveIntervalUnion::Query' data-ref="llvm::LiveIntervalUnion::Query" data-ref-filename="llvm..LiveIntervalUnion..Query">Query</a> &amp;<a class="decl fn" href="../../../lib/CodeGen/LiveRegMatrix.cpp.html#_ZN4llvm13LiveRegMatrix5queryERKNS_9LiveRangeENS_10MCRegisterE" title='llvm::LiveRegMatrix::query' data-ref="_ZN4llvm13LiveRegMatrix5queryERKNS_9LiveRangeENS_10MCRegisterE" data-ref-filename="_ZN4llvm13LiveRegMatrix5queryERKNS_9LiveRangeENS_10MCRegisterE" id="_ZN4llvm13LiveRegMatrix5queryERKNS_9LiveRangeENS_10MCRegisterE">query</a>(<em>const</em> <a class="type" href="LiveInterval.h.html#llvm::LiveRange" title='llvm::LiveRange' data-ref="llvm::LiveRange" data-ref-filename="llvm..LiveRange">LiveRange</a> &amp;<dfn class="local col4 decl" id="14LR" title='LR' data-type='const llvm::LiveRange &amp;' data-ref="14LR" data-ref-filename="14LR">LR</dfn>, <a class="type" href="../MC/MCRegister.h.html#llvm::MCRegister" title='llvm::MCRegister' data-ref="llvm::MCRegister" data-ref-filename="llvm..MCRegister">MCRegister</a> <dfn class="local col5 decl" id="15RegUnit" title='RegUnit' data-type='llvm::MCRegister' data-ref="15RegUnit" data-ref-filename="15RegUnit">RegUnit</dfn>);</td></tr>
+<tr><th id="152">152</th><td></td></tr>
+<tr><th id="153">153</th><td>  <i class="doc">/// Directly access the live interval unions per regunit.</i></td></tr>
+<tr><th id="154">154</th><td><i class="doc">  /// This returns an array indexed by the regunit number.</i></td></tr>
+<tr><th id="155">155</th><td>  <a class="type" href="LiveIntervalUnion.h.html#llvm::LiveIntervalUnion" title='llvm::LiveIntervalUnion' data-ref="llvm::LiveIntervalUnion" data-ref-filename="llvm..LiveIntervalUnion">LiveIntervalUnion</a> *<dfn class="decl def fn" id="_ZN4llvm13LiveRegMatrix13getLiveUnionsEv" title='llvm::LiveRegMatrix::getLiveUnions' data-ref="_ZN4llvm13LiveRegMatrix13getLiveUnionsEv" data-ref-filename="_ZN4llvm13LiveRegMatrix13getLiveUnionsEv">getLiveUnions</dfn>() { <b>return</b> &amp;<a class="member field" href="#llvm::LiveRegMatrix::Matrix" title='llvm::LiveRegMatrix::Matrix' data-ref="llvm::LiveRegMatrix::Matrix" data-ref-filename="llvm..LiveRegMatrix..Matrix">Matrix</a><a class="ref fn" href="LiveIntervalUnion.h.html#_ZN4llvm17LiveIntervalUnion5ArrayixEj" title='llvm::LiveIntervalUnion::Array::operator[]' data-ref="_ZN4llvm17LiveIntervalUnion5ArrayixEj" data-ref-filename="_ZN4llvm17LiveIntervalUnion5ArrayixEj">[<var>0</var>]</a>; }</td></tr>
+<tr><th id="156">156</th><td></td></tr>
+<tr><th id="157">157</th><td>  <a class="type" href="Register.h.html#llvm::Register" title='llvm::Register' data-ref="llvm::Register" data-ref-filename="llvm..Register">Register</a> <a class="decl fn" href="../../../lib/CodeGen/LiveRegMatrix.cpp.html#_ZNK4llvm13LiveRegMatrix10getOneVRegEj" title='llvm::LiveRegMatrix::getOneVReg' data-ref="_ZNK4llvm13LiveRegMatrix10getOneVRegEj" data-ref-filename="_ZNK4llvm13LiveRegMatrix10getOneVRegEj" id="_ZNK4llvm13LiveRegMatrix10getOneVRegEj">getOneVReg</a>(<em>unsigned</em> <dfn class="local col6 decl" id="16PhysReg" title='PhysReg' data-type='unsigned int' data-ref="16PhysReg" data-ref-filename="16PhysReg">PhysReg</dfn>) <em>const</em>;</td></tr>
+<tr><th id="158">158</th><td>};</td></tr>
+<tr><th id="159">159</th><td></td></tr>
+<tr><th id="160">160</th><td>} <i>// end namespace llvm</i></td></tr>
+<tr><th id="161">161</th><td></td></tr>
+<tr><th id="162">162</th><td><u>#<span data-ppcond="23">endif</span> // LLVM_CODEGEN_LIVEREGMATRIX_H</u></td></tr>
+<tr><th id="163">163</th><td></td></tr>
+</table><hr/><p id='footer'>
+Generated while processing <a href='../../../lib/CodeGen/LiveRegMatrix.cpp.html'>llvm/llvm/lib/CodeGen/LiveRegMatrix.cpp</a><br/>Generated on <em>2021-Jul-01</em> from project llvm revision <em>12</em>

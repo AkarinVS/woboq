@@ -1,0 +1,128 @@
+<!doctype html>
+<html>
+<head>
+<meta name="viewport" content="width=device-width, initial-scale=1.0"><title>AppleGetThreadItemInfoHandler.h source code [llvm/lldb/source/Plugins/SystemRuntime/MacOSX/AppleGetThreadItemInfoHandler.h] - Woboq Code Browser</title>
+<meta name="woboq:interestingDefinitions" content="lldb_private::AppleGetThreadItemInfoHandler "/>
+<link rel="stylesheet" href="../../../../../.././data/qtcreator.css" title="QtCreator"/>
+<link rel="alternate stylesheet" href="../../../../../.././data/kdevelop.css" title="KDevelop"/>
+<script type="text/javascript" src="../../../../../.././data/jquery/jquery.min.js"></script>
+<script type="text/javascript" src="../../../../../.././data/jquery/jquery-ui.min.js"></script>
+<script>var file = 'llvm/lldb/source/Plugins/SystemRuntime/MacOSX/AppleGetThreadItemInfoHandler.h'; var root_path = '../../../../../..'; var data_path = '../../../../../.././data'; var ecma_script_api_version = 2;</script>
+<script src='../../../../../.././data/codebrowser.js'></script>
+</head>
+<body><div id='header'><h1 id='breadcrumb'><span>Browse the source code of </span><a href='../../../../..'>llvm</a>/<a href='../../../..'>lldb</a>/<a href='../../..'>source</a>/<a href='../..'>Plugins</a>/<a href='..'>SystemRuntime</a>/<a href='./'>MacOSX</a>/<a href='AppleGetThreadItemInfoHandler.h.html'>AppleGetThreadItemInfoHandler.h</a></h1></div>
+<hr/><div id='content'><table class="code">
+<tr><th id="1">1</th><td><i>//===-- AppleGetThreadItemInfoHandler.h ----------------------------*- C++</i></td></tr>
+<tr><th id="2">2</th><td><i>//-*-===//</i></td></tr>
+<tr><th id="3">3</th><td><i>//</i></td></tr>
+<tr><th id="4">4</th><td><i>// Part of the LLVM Project, under the Apache License v2.0 with LLVM Exceptions.</i></td></tr>
+<tr><th id="5">5</th><td><i>// See <a href="https://llvm.org/LICENSE.txt">https://llvm.org/LICENSE.txt</a> for license information.</i></td></tr>
+<tr><th id="6">6</th><td><i>// SPDX-License-Identifier: Apache-2.0 WITH LLVM-exception</i></td></tr>
+<tr><th id="7">7</th><td><i>//</i></td></tr>
+<tr><th id="8">8</th><td><i>//===----------------------------------------------------------------------===//</i></td></tr>
+<tr><th id="9">9</th><td></td></tr>
+<tr><th id="10">10</th><td><u>#<span data-ppcond="10">ifndef</span> <span class="macro" data-ref="_M/LLDB_SOURCE_PLUGINS_SYSTEMRUNTIME_MACOSX_APPLEGETTHREADITEMINFOHANDLER_H">LLDB_SOURCE_PLUGINS_SYSTEMRUNTIME_MACOSX_APPLEGETTHREADITEMINFOHANDLER_H</span></u></td></tr>
+<tr><th id="11">11</th><td><u>#define <dfn class="macro" id="_M/LLDB_SOURCE_PLUGINS_SYSTEMRUNTIME_MACOSX_APPLEGETTHREADITEMINFOHANDLER_H" data-ref="_M/LLDB_SOURCE_PLUGINS_SYSTEMRUNTIME_MACOSX_APPLEGETTHREADITEMINFOHANDLER_H">LLDB_SOURCE_PLUGINS_SYSTEMRUNTIME_MACOSX_APPLEGETTHREADITEMINFOHANDLER_H</dfn></u></td></tr>
+<tr><th id="12">12</th><td></td></tr>
+<tr><th id="13">13</th><td><u>#include &lt;map&gt;</u></td></tr>
+<tr><th id="14">14</th><td><u>#include &lt;mutex&gt;</u></td></tr>
+<tr><th id="15">15</th><td><u>#include &lt;vector&gt;</u></td></tr>
+<tr><th id="16">16</th><td></td></tr>
+<tr><th id="17">17</th><td><u>#include <a href="../../../../include/lldb/Symbol/CompilerType.h.html">"lldb/Symbol/CompilerType.h"</a></u></td></tr>
+<tr><th id="18">18</th><td><u>#include <a href="../../../../include/lldb/Utility/Status.h.html">"lldb/Utility/Status.h"</a></u></td></tr>
+<tr><th id="19">19</th><td><u>#include <a href="../../../../include/lldb/lldb-public.h.html">"lldb/lldb-public.h"</a></u></td></tr>
+<tr><th id="20">20</th><td></td></tr>
+<tr><th id="21">21</th><td><i>// This class will insert a UtilityFunction into the inferior process for</i></td></tr>
+<tr><th id="22">22</th><td><i>// calling libBacktraceRecording's</i></td></tr>
+<tr><th id="23">23</th><td><i>// __introspection_dispatch_thread_get_item_info()</i></td></tr>
+<tr><th id="24">24</th><td><i>// function.  The function in the inferior will return a struct by value</i></td></tr>
+<tr><th id="25">25</th><td><i>// with these members:</i></td></tr>
+<tr><th id="26">26</th><td><i>//</i></td></tr>
+<tr><th id="27">27</th><td><i>//     struct get_thread_item_info_return_values</i></td></tr>
+<tr><th id="28">28</th><td><i>//     {</i></td></tr>
+<tr><th id="29">29</th><td><i>//         introspection_dispatch_item_info_ref *item_buffer;</i></td></tr>
+<tr><th id="30">30</th><td><i>//         uint64_t item_buffer_size;</i></td></tr>
+<tr><th id="31">31</th><td><i>//     };</i></td></tr>
+<tr><th id="32">32</th><td><i>//</i></td></tr>
+<tr><th id="33">33</th><td><i>// The item_buffer pointer is an address in the inferior program's address</i></td></tr>
+<tr><th id="34">34</th><td><i>// space (item_buffer_size in size) which must be mach_vm_deallocate'd by</i></td></tr>
+<tr><th id="35">35</th><td><i>// lldb.</i></td></tr>
+<tr><th id="36">36</th><td><i>//</i></td></tr>
+<tr><th id="37">37</th><td><i>// The AppleGetThreadItemInfoHandler object should persist so that the</i></td></tr>
+<tr><th id="38">38</th><td><i>// UtilityFunction</i></td></tr>
+<tr><th id="39">39</th><td><i>// can be reused multiple times.</i></td></tr>
+<tr><th id="40">40</th><td></td></tr>
+<tr><th id="41">41</th><td><b>namespace</b> <span class="namespace">lldb_private</span> {</td></tr>
+<tr><th id="42">42</th><td></td></tr>
+<tr><th id="43">43</th><td><b>class</b> <dfn class="type def" id="lldb_private::AppleGetThreadItemInfoHandler" title='lldb_private::AppleGetThreadItemInfoHandler' data-ref="lldb_private::AppleGetThreadItemInfoHandler" data-ref-filename="lldb_private..AppleGetThreadItemInfoHandler">AppleGetThreadItemInfoHandler</dfn> {</td></tr>
+<tr><th id="44">44</th><td><b>public</b>:</td></tr>
+<tr><th id="45">45</th><td>  <a class="decl fn" href="AppleGetThreadItemInfoHandler.cpp.html#_ZN12lldb_private29AppleGetThreadItemInfoHandlerC1EPNS_7ProcessE" title='lldb_private::AppleGetThreadItemInfoHandler::AppleGetThreadItemInfoHandler' data-ref="_ZN12lldb_private29AppleGetThreadItemInfoHandlerC1EPNS_7ProcessE" data-ref-filename="_ZN12lldb_private29AppleGetThreadItemInfoHandlerC1EPNS_7ProcessE" id="_ZN12lldb_private29AppleGetThreadItemInfoHandlerC1EPNS_7ProcessE">AppleGetThreadItemInfoHandler</a>(<span class="namespace">lldb_private::</span><a class="type" href="../../../../include/lldb/Target/Process.h.html#lldb_private::Process" title='lldb_private::Process' data-ref="lldb_private::Process" data-ref-filename="lldb_private..Process">Process</a> *<dfn class="local col1 decl" id="1process" title='process' data-type='lldb_private::Process *' data-ref="1process" data-ref-filename="1process">process</dfn>);</td></tr>
+<tr><th id="46">46</th><td></td></tr>
+<tr><th id="47">47</th><td>  <a class="decl fn" href="AppleGetThreadItemInfoHandler.cpp.html#_ZN12lldb_private29AppleGetThreadItemInfoHandlerD1Ev" title='lldb_private::AppleGetThreadItemInfoHandler::~AppleGetThreadItemInfoHandler' data-ref="_ZN12lldb_private29AppleGetThreadItemInfoHandlerD1Ev" data-ref-filename="_ZN12lldb_private29AppleGetThreadItemInfoHandlerD1Ev" id="_ZN12lldb_private29AppleGetThreadItemInfoHandlerD1Ev">~AppleGetThreadItemInfoHandler</a>();</td></tr>
+<tr><th id="48">48</th><td></td></tr>
+<tr><th id="49">49</th><td>  <b>struct</b> <dfn class="type def" id="lldb_private::AppleGetThreadItemInfoHandler::GetThreadItemInfoReturnInfo" title='lldb_private::AppleGetThreadItemInfoHandler::GetThreadItemInfoReturnInfo' data-ref="lldb_private::AppleGetThreadItemInfoHandler::GetThreadItemInfoReturnInfo" data-ref-filename="lldb_private..AppleGetThreadItemInfoHandler..GetThreadItemInfoReturnInfo">GetThreadItemInfoReturnInfo</dfn> {</td></tr>
+<tr><th id="50">50</th><td>    <span class="namespace">lldb::</span><a class="typedef" href="../../../../include/lldb/lldb-types.h.html#lldb::addr_t" title='lldb::addr_t' data-type='uint64_t' data-ref="lldb::addr_t" data-ref-filename="lldb..addr_t">addr_t</a> <dfn class="decl field" id="lldb_private::AppleGetThreadItemInfoHandler::GetThreadItemInfoReturnInfo::item_buffer_ptr" title='lldb_private::AppleGetThreadItemInfoHandler::GetThreadItemInfoReturnInfo::item_buffer_ptr' data-ref="lldb_private::AppleGetThreadItemInfoHandler::GetThreadItemInfoReturnInfo::item_buffer_ptr" data-ref-filename="lldb_private..AppleGetThreadItemInfoHandler..GetThreadItemInfoReturnInfo..item_buffer_ptr">item_buffer_ptr</dfn>;  <i>/* the address of the item buffer from</i></td></tr>
+<tr><th id="51">51</th><td><i>                                      libBacktraceRecording */</i></td></tr>
+<tr><th id="52">52</th><td>    <span class="namespace">lldb::</span><a class="typedef" href="../../../../include/lldb/lldb-types.h.html#lldb::addr_t" title='lldb::addr_t' data-type='uint64_t' data-ref="lldb::addr_t" data-ref-filename="lldb..addr_t">addr_t</a> <dfn class="decl field" id="lldb_private::AppleGetThreadItemInfoHandler::GetThreadItemInfoReturnInfo::item_buffer_size" title='lldb_private::AppleGetThreadItemInfoHandler::GetThreadItemInfoReturnInfo::item_buffer_size' data-ref="lldb_private::AppleGetThreadItemInfoHandler::GetThreadItemInfoReturnInfo::item_buffer_size" data-ref-filename="lldb_private..AppleGetThreadItemInfoHandler..GetThreadItemInfoReturnInfo..item_buffer_size">item_buffer_size</dfn>; <i>/* the size of the item buffer from</i></td></tr>
+<tr><th id="53">53</th><td><i>                                      libBacktraceRecording */</i></td></tr>
+<tr><th id="54">54</th><td></td></tr>
+<tr><th id="55">55</th><td>    <dfn class="decl def fn" id="_ZN12lldb_private29AppleGetThreadItemInfoHandler27GetThreadItemInfoReturnInfoC1Ev" title='lldb_private::AppleGetThreadItemInfoHandler::GetThreadItemInfoReturnInfo::GetThreadItemInfoReturnInfo' data-ref="_ZN12lldb_private29AppleGetThreadItemInfoHandler27GetThreadItemInfoReturnInfoC1Ev" data-ref-filename="_ZN12lldb_private29AppleGetThreadItemInfoHandler27GetThreadItemInfoReturnInfoC1Ev">GetThreadItemInfoReturnInfo</dfn>()</td></tr>
+<tr><th id="56">56</th><td>        : <a class="member field" href="#lldb_private::AppleGetThreadItemInfoHandler::GetThreadItemInfoReturnInfo::item_buffer_ptr" title='lldb_private::AppleGetThreadItemInfoHandler::GetThreadItemInfoReturnInfo::item_buffer_ptr' data-ref="lldb_private::AppleGetThreadItemInfoHandler::GetThreadItemInfoReturnInfo::item_buffer_ptr" data-ref-filename="lldb_private..AppleGetThreadItemInfoHandler..GetThreadItemInfoReturnInfo..item_buffer_ptr">item_buffer_ptr</a>(<a class="macro" href="../../../../include/lldb/lldb-defines.h.html#85" title="(18446744073709551615UL)" data-ref="_M/LLDB_INVALID_ADDRESS">LLDB_INVALID_ADDRESS</a>), <a class="member field" href="#lldb_private::AppleGetThreadItemInfoHandler::GetThreadItemInfoReturnInfo::item_buffer_size" title='lldb_private::AppleGetThreadItemInfoHandler::GetThreadItemInfoReturnInfo::item_buffer_size' data-ref="lldb_private::AppleGetThreadItemInfoHandler::GetThreadItemInfoReturnInfo::item_buffer_size" data-ref-filename="lldb_private..AppleGetThreadItemInfoHandler..GetThreadItemInfoReturnInfo..item_buffer_size">item_buffer_size</a>(<var>0</var>) {}</td></tr>
+<tr><th id="57">57</th><td>  };</td></tr>
+<tr><th id="58">58</th><td></td></tr>
+<tr><th id="59">59</th><td>  <i class="doc">/// Get the information about a work item by calling</i></td></tr>
+<tr><th id="60">60</th><td><i class="doc">  /// __introspection_dispatch_thread_get_item_info.  If there's a page of</i></td></tr>
+<tr><th id="61">61</th><td><i class="doc">  /// memory that needs to be freed, pass in the address and size and it will</i></td></tr>
+<tr><th id="62">62</th><td><i class="doc">  /// be freed before getting the list of queues.</i></td></tr>
+<tr><th id="63">63</th><td><i class="doc">  ///</i></td></tr>
+<tr><th id="64">64</th><td><i class="doc">  /// <span class="command">\param</span> [in] <span class="arg">thread_id</span></i></td></tr>
+<tr><th id="65">65</th><td><i class="doc">  ///     The thread to get the extended backtrace for.</i></td></tr>
+<tr><th id="66">66</th><td><i class="doc">  ///</i></td></tr>
+<tr><th id="67">67</th><td><i class="doc">  /// <span class="command">\param</span> [in] <span class="arg">page_to_free</span></i></td></tr>
+<tr><th id="68">68</th><td><i class="doc">  ///     An address of an inferior process vm page that needs to be</i></td></tr>
+<tr><th id="69">69</th><td><i class="doc">  ///     deallocated,</i></td></tr>
+<tr><th id="70">70</th><td><i class="doc">  ///     LLDB_INVALID_ADDRESS if this is not needed.</i></td></tr>
+<tr><th id="71">71</th><td><i class="doc">  ///</i></td></tr>
+<tr><th id="72">72</th><td><i class="doc">  /// <span class="command">\param</span> [in] <span class="arg">page_to_free_size</span></i></td></tr>
+<tr><th id="73">73</th><td><i class="doc">  ///     The size of the vm page that needs to be deallocated if an address was</i></td></tr>
+<tr><th id="74">74</th><td><i class="doc">  ///     passed in to page_to_free.</i></td></tr>
+<tr><th id="75">75</th><td><i class="doc">  ///</i></td></tr>
+<tr><th id="76">76</th><td><i class="doc">  /// <span class="command">\param</span> [out] <span class="arg">error</span></i></td></tr>
+<tr><th id="77">77</th><td><i class="doc">  ///     This object will be updated with the error status / error string from</i></td></tr>
+<tr><th id="78">78</th><td><i class="doc">  ///     any failures encountered.</i></td></tr>
+<tr><th id="79">79</th><td><i class="doc">  ///</i></td></tr>
+<tr><th id="80">80</th><td><i class="doc">  /// <span class="command">\returns</span></i></td></tr>
+<tr><th id="81">81</th><td><i class="doc">  ///     The result of the inferior function call execution.  If there was a</i></td></tr>
+<tr><th id="82">82</th><td><i class="doc">  ///     failure of any kind while getting</i></td></tr>
+<tr><th id="83">83</th><td><i class="doc">  ///     the information, the item_buffer_ptr value will be</i></td></tr>
+<tr><th id="84">84</th><td><i class="doc">  ///     LLDB_INVALID_ADDRESS.</i></td></tr>
+<tr><th id="85">85</th><td>  <a class="type" href="#lldb_private::AppleGetThreadItemInfoHandler::GetThreadItemInfoReturnInfo" title='lldb_private::AppleGetThreadItemInfoHandler::GetThreadItemInfoReturnInfo' data-ref="lldb_private::AppleGetThreadItemInfoHandler::GetThreadItemInfoReturnInfo" data-ref-filename="lldb_private..AppleGetThreadItemInfoHandler..GetThreadItemInfoReturnInfo">GetThreadItemInfoReturnInfo</a> <a class="decl fn" href="AppleGetThreadItemInfoHandler.cpp.html#_ZN12lldb_private29AppleGetThreadItemInfoHandler17GetThreadItemInfoERNS_6ThreadEmmmRNS_6StatusE" title='lldb_private::AppleGetThreadItemInfoHandler::GetThreadItemInfo' data-ref="_ZN12lldb_private29AppleGetThreadItemInfoHandler17GetThreadItemInfoERNS_6ThreadEmmmRNS_6StatusE" data-ref-filename="_ZN12lldb_private29AppleGetThreadItemInfoHandler17GetThreadItemInfoERNS_6ThreadEmmmRNS_6StatusE" id="_ZN12lldb_private29AppleGetThreadItemInfoHandler17GetThreadItemInfoERNS_6ThreadEmmmRNS_6StatusE">GetThreadItemInfo</a>(<a class="type" href="../../../../include/lldb/Target/Thread.h.html#lldb_private::Thread" title='lldb_private::Thread' data-ref="lldb_private::Thread" data-ref-filename="lldb_private..Thread">Thread</a> &amp;<dfn class="local col2 decl" id="2thread" title='thread' data-type='lldb_private::Thread &amp;' data-ref="2thread" data-ref-filename="2thread">thread</dfn>,</td></tr>
+<tr><th id="86">86</th><td>                                                <span class="namespace">lldb::</span><a class="typedef" href="../../../../include/lldb/lldb-types.h.html#lldb::tid_t" title='lldb::tid_t' data-type='uint64_t' data-ref="lldb::tid_t" data-ref-filename="lldb..tid_t">tid_t</a> <dfn class="local col3 decl" id="3thread_id" title='thread_id' data-type='lldb::tid_t' data-ref="3thread_id" data-ref-filename="3thread_id">thread_id</dfn>,</td></tr>
+<tr><th id="87">87</th><td>                                                <span class="namespace">lldb::</span><a class="typedef" href="../../../../include/lldb/lldb-types.h.html#lldb::addr_t" title='lldb::addr_t' data-type='uint64_t' data-ref="lldb::addr_t" data-ref-filename="lldb..addr_t">addr_t</a> <dfn class="local col4 decl" id="4page_to_free" title='page_to_free' data-type='lldb::addr_t' data-ref="4page_to_free" data-ref-filename="4page_to_free">page_to_free</dfn>,</td></tr>
+<tr><th id="88">88</th><td>                                                <a class="typedef" href="../../../../../../include/bits/stdint-uintn.h.html#uint64_t" title='uint64_t' data-type='__uint64_t' data-ref="uint64_t" data-ref-filename="uint64_t">uint64_t</a> <dfn class="local col5 decl" id="5page_to_free_size" title='page_to_free_size' data-type='uint64_t' data-ref="5page_to_free_size" data-ref-filename="5page_to_free_size">page_to_free_size</dfn>,</td></tr>
+<tr><th id="89">89</th><td>                                                <span class="namespace">lldb_private::</span><a class="type" href="../../../../include/lldb/Utility/Status.h.html#lldb_private::Status" title='lldb_private::Status' data-ref="lldb_private::Status" data-ref-filename="lldb_private..Status">Status</a> &amp;<dfn class="local col6 decl" id="6error" title='error' data-type='lldb_private::Status &amp;' data-ref="6error" data-ref-filename="6error">error</dfn>);</td></tr>
+<tr><th id="90">90</th><td></td></tr>
+<tr><th id="91">91</th><td>  <em>void</em> <a class="decl fn" href="AppleGetThreadItemInfoHandler.cpp.html#_ZN12lldb_private29AppleGetThreadItemInfoHandler6DetachEv" title='lldb_private::AppleGetThreadItemInfoHandler::Detach' data-ref="_ZN12lldb_private29AppleGetThreadItemInfoHandler6DetachEv" data-ref-filename="_ZN12lldb_private29AppleGetThreadItemInfoHandler6DetachEv" id="_ZN12lldb_private29AppleGetThreadItemInfoHandler6DetachEv">Detach</a>();</td></tr>
+<tr><th id="92">92</th><td></td></tr>
+<tr><th id="93">93</th><td><b>private</b>:</td></tr>
+<tr><th id="94">94</th><td>  <span class="namespace">lldb::</span><a class="typedef" href="../../../../include/lldb/lldb-types.h.html#lldb::addr_t" title='lldb::addr_t' data-type='uint64_t' data-ref="lldb::addr_t" data-ref-filename="lldb..addr_t">addr_t</a></td></tr>
+<tr><th id="95">95</th><td>  <a class="decl fn" href="AppleGetThreadItemInfoHandler.cpp.html#_ZN12lldb_private29AppleGetThreadItemInfoHandler30SetupGetThreadItemInfoFunctionERNS_6ThreadERNS_9ValueListE" title='lldb_private::AppleGetThreadItemInfoHandler::SetupGetThreadItemInfoFunction' data-ref="_ZN12lldb_private29AppleGetThreadItemInfoHandler30SetupGetThreadItemInfoFunctionERNS_6ThreadERNS_9ValueListE" data-ref-filename="_ZN12lldb_private29AppleGetThreadItemInfoHandler30SetupGetThreadItemInfoFunctionERNS_6ThreadERNS_9ValueListE" id="_ZN12lldb_private29AppleGetThreadItemInfoHandler30SetupGetThreadItemInfoFunctionERNS_6ThreadERNS_9ValueListE">SetupGetThreadItemInfoFunction</a>(<a class="type" href="../../../../include/lldb/Target/Thread.h.html#lldb_private::Thread" title='lldb_private::Thread' data-ref="lldb_private::Thread" data-ref-filename="lldb_private..Thread">Thread</a> &amp;<dfn class="local col7 decl" id="7thread" title='thread' data-type='lldb_private::Thread &amp;' data-ref="7thread" data-ref-filename="7thread">thread</dfn>,</td></tr>
+<tr><th id="96">96</th><td>                                 <a class="type" href="../../../../include/lldb/Core/Value.h.html#lldb_private::ValueList" title='lldb_private::ValueList' data-ref="lldb_private::ValueList" data-ref-filename="lldb_private..ValueList">ValueList</a> &amp;<dfn class="local col8 decl" id="8get_thread_item_info_arglist" title='get_thread_item_info_arglist' data-type='lldb_private::ValueList &amp;' data-ref="8get_thread_item_info_arglist" data-ref-filename="8get_thread_item_info_arglist">get_thread_item_info_arglist</dfn>);</td></tr>
+<tr><th id="97">97</th><td></td></tr>
+<tr><th id="98">98</th><td>  <em>static</em> <em>const</em> <em>char</em> *<dfn class="decl" id="lldb_private::AppleGetThreadItemInfoHandler::g_get_thread_item_info_function_name" title='lldb_private::AppleGetThreadItemInfoHandler::g_get_thread_item_info_function_name' data-ref="lldb_private::AppleGetThreadItemInfoHandler::g_get_thread_item_info_function_name" data-ref-filename="lldb_private..AppleGetThreadItemInfoHandler..g_get_thread_item_info_function_name">g_get_thread_item_info_function_name</dfn>;</td></tr>
+<tr><th id="99">99</th><td>  <em>static</em> <em>const</em> <em>char</em> *<dfn class="decl" id="lldb_private::AppleGetThreadItemInfoHandler::g_get_thread_item_info_function_code" title='lldb_private::AppleGetThreadItemInfoHandler::g_get_thread_item_info_function_code' data-ref="lldb_private::AppleGetThreadItemInfoHandler::g_get_thread_item_info_function_code" data-ref-filename="lldb_private..AppleGetThreadItemInfoHandler..g_get_thread_item_info_function_code">g_get_thread_item_info_function_code</dfn>;</td></tr>
+<tr><th id="100">100</th><td></td></tr>
+<tr><th id="101">101</th><td>  <span class="namespace">lldb_private::</span><a class="type" href="../../../../include/lldb/Target/Process.h.html#lldb_private::Process" title='lldb_private::Process' data-ref="lldb_private::Process" data-ref-filename="lldb_private..Process">Process</a> *<dfn class="decl field" id="lldb_private::AppleGetThreadItemInfoHandler::m_process" title='lldb_private::AppleGetThreadItemInfoHandler::m_process' data-ref="lldb_private::AppleGetThreadItemInfoHandler::m_process" data-ref-filename="lldb_private..AppleGetThreadItemInfoHandler..m_process">m_process</dfn>;</td></tr>
+<tr><th id="102">102</th><td>  <span class="namespace">std::</span><span class='type' title='std::unique_ptr' data-ref="std::unique_ptr" data-ref-filename="std..unique_ptr">unique_ptr</span>&lt;<a class="type" href="../../../../include/lldb/Expression/UtilityFunction.h.html#lldb_private::UtilityFunction" title='lldb_private::UtilityFunction' data-ref="lldb_private::UtilityFunction" data-ref-filename="lldb_private..UtilityFunction">UtilityFunction</a>&gt; <dfn class="decl field" id="lldb_private::AppleGetThreadItemInfoHandler::m_get_thread_item_info_impl_code" title='lldb_private::AppleGetThreadItemInfoHandler::m_get_thread_item_info_impl_code' data-ref="lldb_private::AppleGetThreadItemInfoHandler::m_get_thread_item_info_impl_code" data-ref-filename="lldb_private..AppleGetThreadItemInfoHandler..m_get_thread_item_info_impl_code">m_get_thread_item_info_impl_code</dfn>;</td></tr>
+<tr><th id="103">103</th><td>  <span class="namespace">std::</span><span class='type' title='std::mutex' data-ref="std::mutex" data-ref-filename="std..mutex">mutex</span> <dfn class="decl field" id="lldb_private::AppleGetThreadItemInfoHandler::m_get_thread_item_info_function_mutex" title='lldb_private::AppleGetThreadItemInfoHandler::m_get_thread_item_info_function_mutex' data-ref="lldb_private::AppleGetThreadItemInfoHandler::m_get_thread_item_info_function_mutex" data-ref-filename="lldb_private..AppleGetThreadItemInfoHandler..m_get_thread_item_info_function_mutex">m_get_thread_item_info_function_mutex</dfn>;</td></tr>
+<tr><th id="104">104</th><td></td></tr>
+<tr><th id="105">105</th><td>  <span class="namespace">lldb::</span><a class="typedef" href="../../../../include/lldb/lldb-types.h.html#lldb::addr_t" title='lldb::addr_t' data-type='uint64_t' data-ref="lldb::addr_t" data-ref-filename="lldb..addr_t">addr_t</a> <dfn class="decl field" id="lldb_private::AppleGetThreadItemInfoHandler::m_get_thread_item_info_return_buffer_addr" title='lldb_private::AppleGetThreadItemInfoHandler::m_get_thread_item_info_return_buffer_addr' data-ref="lldb_private::AppleGetThreadItemInfoHandler::m_get_thread_item_info_return_buffer_addr" data-ref-filename="lldb_private..AppleGetThreadItemInfoHandler..m_get_thread_item_info_return_buffer_addr">m_get_thread_item_info_return_buffer_addr</dfn>;</td></tr>
+<tr><th id="106">106</th><td>  <span class="namespace">std::</span><span class='type' title='std::mutex' data-ref="std::mutex" data-ref-filename="std..mutex">mutex</span> <dfn class="decl field" id="lldb_private::AppleGetThreadItemInfoHandler::m_get_thread_item_info_retbuffer_mutex" title='lldb_private::AppleGetThreadItemInfoHandler::m_get_thread_item_info_retbuffer_mutex' data-ref="lldb_private::AppleGetThreadItemInfoHandler::m_get_thread_item_info_retbuffer_mutex" data-ref-filename="lldb_private..AppleGetThreadItemInfoHandler..m_get_thread_item_info_retbuffer_mutex">m_get_thread_item_info_retbuffer_mutex</dfn>;</td></tr>
+<tr><th id="107">107</th><td>};</td></tr>
+<tr><th id="108">108</th><td></td></tr>
+<tr><th id="109">109</th><td>} <i>// using namespace lldb_private</i></td></tr>
+<tr><th id="110">110</th><td></td></tr>
+<tr><th id="111">111</th><td><u>#<span data-ppcond="10">endif</span> // LLDB_SOURCE_PLUGINS_SYSTEMRUNTIME_MACOSX_APPLEGETTHREADITEMINFOHANDLER_H</u></td></tr>
+<tr><th id="112">112</th><td></td></tr>
+</table><hr/><p id='footer'>
+Generated while processing <a href='AppleGetThreadItemInfoHandler.cpp.html'>llvm/lldb/source/Plugins/SystemRuntime/MacOSX/AppleGetThreadItemInfoHandler.cpp</a><br/>Generated on <em>2021-Jul-01</em> from project llvm revision <em>12</em>

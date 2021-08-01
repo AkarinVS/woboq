@@ -1,0 +1,23 @@
+<dec f='llvm/llvm/include/llvm/Analysis/DependenceAnalysis.h' l='91' type='2'/>
+<use f='llvm/llvm/lib/Analysis/DependenceAnalysis.cpp' l='625' u='r' c='_ZNK4llvm10Dependence4dumpERNS_11raw_ostreamE'/>
+<use f='llvm/llvm/lib/Analysis/DependenceAnalysis.cpp' l='1204' u='r' c='_ZNK4llvm14DependenceInfo13strongSIVtestEPKNS_4SCEVES3_S3_PKNS_4LoopEjRNS_14FullDependenceERNS0_10ConstraintE'/>
+<use f='llvm/llvm/lib/Analysis/DependenceAnalysis.cpp' l='1211' u='r' c='_ZNK4llvm14DependenceInfo13strongSIVtestEPKNS_4SCEVES3_S3_PKNS_4LoopEjRNS_14FullDependenceERNS0_10ConstraintE'/>
+<use f='llvm/llvm/lib/Analysis/DependenceAnalysis.cpp' l='1241' u='r' c='_ZNK4llvm14DependenceInfo13strongSIVtestEPKNS_4SCEVES3_S3_PKNS_4LoopEjRNS_14FullDependenceERNS0_10ConstraintE'/>
+<use f='llvm/llvm/lib/Analysis/DependenceAnalysis.cpp' l='1391' u='r' c='_ZNK4llvm14DependenceInfo19weakCrossingSIVtestEPKNS_4SCEVES3_S3_PKNS_4LoopEjRNS_14FullDependenceERNS0_10ConstraintERS3_'/>
+<use f='llvm/llvm/lib/Analysis/DependenceAnalysis.cpp' l='1617' u='r' c='_ZNK4llvm14DependenceInfo12exactSIVtestEPKNS_4SCEVES3_S3_S3_PKNS_4LoopEjRNS_14FullDependenceERNS0_10ConstraintE'/>
+<use f='llvm/llvm/lib/Analysis/DependenceAnalysis.cpp' l='2473' u='r' c='_ZNK4llvm14DependenceInfo10gcdMIVtestEPKNS_4SCEVES3_RNS_14FullDependenceE'/>
+<use f='llvm/llvm/lib/Analysis/DependenceAnalysis.cpp' l='2685' u='r' c='_ZNK4llvm14DependenceInfo17exploreDirectionsEjPNS0_15CoefficientInfoES2_PNS0_9BoundInfoERKNS_14SmallBitVectorERjPKNS_4SCEVE'/>
+<use f='llvm/llvm/lib/Analysis/DependenceAnalysis.cpp' l='2772' u='w' c='_ZNK4llvm14DependenceInfo12findBoundsEQEPNS0_15CoefficientInfoES2_PNS0_9BoundInfoEj'/>
+<use f='llvm/llvm/lib/Analysis/DependenceAnalysis.cpp' l='2773' u='w' c='_ZNK4llvm14DependenceInfo12findBoundsEQEPNS0_15CoefficientInfoES2_PNS0_9BoundInfoEj'/>
+<use f='llvm/llvm/lib/Analysis/DependenceAnalysis.cpp' l='2777' u='w' c='_ZNK4llvm14DependenceInfo12findBoundsEQEPNS0_15CoefficientInfoES2_PNS0_9BoundInfoEj'/>
+<use f='llvm/llvm/lib/Analysis/DependenceAnalysis.cpp' l='2780' u='w' c='_ZNK4llvm14DependenceInfo12findBoundsEQEPNS0_15CoefficientInfoES2_PNS0_9BoundInfoEj'/>
+<use f='llvm/llvm/lib/Analysis/DependenceAnalysis.cpp' l='2789' u='w' c='_ZNK4llvm14DependenceInfo12findBoundsEQEPNS0_15CoefficientInfoES2_PNS0_9BoundInfoEj'/>
+<use f='llvm/llvm/lib/Analysis/DependenceAnalysis.cpp' l='2792' u='w' c='_ZNK4llvm14DependenceInfo12findBoundsEQEPNS0_15CoefficientInfoES2_PNS0_9BoundInfoEj'/>
+<use f='llvm/llvm/lib/Analysis/DependenceAnalysis.cpp' l='3209' u='r' c='_ZNK4llvm14DependenceInfo15updateDirectionERNS_10Dependence7DVEntryERKNS0_10ConstraintE'/>
+<use f='llvm/llvm/lib/Analysis/DependenceAnalysis.cpp' l='3229' u='r' c='_ZNK4llvm14DependenceInfo15updateDirectionERNS_10Dependence7DVEntryERKNS0_10ConstraintE'/>
+<use f='llvm/llvm/lib/Analysis/DependenceAnalysis.cpp' l='3835' u='r' c='_ZN4llvm14DependenceInfo7dependsEPNS_11InstructionES2_b'/>
+<use f='llvm/llvm/lib/Analysis/DependenceAnalysis.cpp' l='3846' u='r' c='_ZN4llvm14DependenceInfo7dependsEPNS_11InstructionES2_b'/>
+<use f='llvm/llvm/lib/Analysis/DependenceGraphBuilder.cpp' l='343' u='r' c='_ZN4llvm30AbstractDependenceGraphBuilder27createMemoryDependencyEdgesEv'/>
+<use f='llvm/llvm/lib/Transforms/Scalar/LoopInterchange.cpp' l='161' u='r' c='_ZL24populateDependencyMatrixRSt6vectorIS_IcSaIcEESaIS1_EEjPN4llvm4LoopEPNS5_14DependenceInfoE'/>
+<use f='llvm/llvm/lib/Transforms/Utils/LoopUnrollAndJam.cpp' l='732' u='r' c='_ZL15checkDependencyPN4llvm11InstructionES1_jjbRNS_14DependenceInfoE'/>
+<use f='llvm/llvm/lib/Transforms/Utils/LoopUnrollAndJam.cpp' l='740' u='r' c='_ZL15checkDependencyPN4llvm11InstructionES1_jjbRNS_14DependenceInfoE'/>

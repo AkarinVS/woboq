@@ -1,0 +1,54 @@
+<dec f='llvm/llvm/lib/Target/PowerPC/PPCInstrInfo.h' l='350' type='bool llvm::PPCInstrInfo::getFMAPatterns(llvm::MachineInstr &amp; Root, SmallVectorImpl&lt;llvm::MachineCombinerPattern&gt; &amp; P, bool DoRegPressureReduce) const'/>
+<doc f='llvm/llvm/lib/Target/PowerPC/PPCInstrInfo.h' l='347'>/// Return true when there is potentially a faster code sequence for a fma
+  /// chain ending in \p Root. All potential patterns are output in the \p
+  /// P array.</doc>
+<def f='llvm/llvm/lib/Target/PowerPC/PPCInstrInfo.cpp' l='367' ll='541' type='bool llvm::PPCInstrInfo::getFMAPatterns(llvm::MachineInstr &amp; Root, SmallVectorImpl&lt;llvm::MachineCombinerPattern&gt; &amp; Patterns, bool DoRegPressureReduce) const'/>
+<use f='llvm/llvm/lib/Target/PowerPC/PPCInstrInfo.cpp' l='767' u='c' c='_ZNK4llvm12PPCInstrInfo26getMachineCombinerPatternsERNS_12MachineInstrERNS_15SmallVectorImplINS_22MachineCombinerPatternEEEb'/>
+<doc f='llvm/llvm/lib/Target/PowerPC/PPCInstrInfo.cpp' l='319'>// On PowerPC target, we have two kinds of patterns related to FMA:
+// 1: Improve ILP.
+// Try to reassociate FMA chains like below:
+//
+// Pattern 1:
+//   A =  FADD X,  Y          (Leaf)
+//   B =  FMA  A,  M21,  M22  (Prev)
+//   C =  FMA  B,  M31,  M32  (Root)
+// --&gt;
+//   A =  FMA  X,  M21,  M22
+//   B =  FMA  Y,  M31,  M32
+//   C =  FADD A,  B
+//
+// Pattern 2:
+//   A =  FMA  X,  M11,  M12  (Leaf)
+//   B =  FMA  A,  M21,  M22  (Prev)
+//   C =  FMA  B,  M31,  M32  (Root)
+// --&gt;
+//   A =  FMUL M11,  M12
+//   B =  FMA  X,  M21,  M22
+//   D =  FMA  A,  M31,  M32
+//   C =  FADD B,  D
+//
+// breaking the dependency between A and B, allowing FMA to be executed in
+// parallel (or back-to-back in a pipeline) instead of depending on each other.
+//
+// 2: Reduce register pressure.
+// Try to reassociate FMA with FSUB and a constant like below:
+// C is a floatint point const.
+//
+// Pattern 1:
+//   A = FSUB  X,  Y      (Leaf)
+//   D = FMA   B,  C,  A  (Root)
+// --&gt;
+//   A = FMA   B,  Y,  -C
+//   D = FMA   A,  X,  C
+//
+// Pattern 2:
+//   A = FSUB  X,  Y      (Leaf)
+//   D = FMA   B,  A,  C  (Root)
+// --&gt;
+//   A = FMA   B,  Y,  -C
+//   D = FMA   A,  X,  C
+//
+//  Before the transformation, A must be assigned with different hardware
+//  register with D. After the transformation, A and D must be assigned with
+//  same hardware register due to TIE attricute of FMA instructions.
+//</doc>

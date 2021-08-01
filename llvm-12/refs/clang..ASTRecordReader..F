@@ -1,0 +1,25 @@
+<dec f='llvm/clang/include/clang/Serialization/ASTRecordReader.h' l='35' type='clang::ASTRecordReader::ModuleFile *'/>
+<use f='llvm/clang/include/clang/Serialization/ASTRecordReader.h' l='45' u='w' c='_ZN5clang15ASTRecordReaderC1ERNS_9ASTReaderERNS_13serialization10ModuleFileE'/>
+<use f='llvm/clang/include/clang/Serialization/ASTRecordReader.h' l='53' u='r' c='_ZNK5clang15ASTRecordReader8isModuleEv'/>
+<use f='llvm/clang/include/clang/Serialization/ASTRecordReader.h' l='89' u='r' c='_ZN5clang15ASTRecordReader20getGlobalSubmoduleIDEj'/>
+<use f='llvm/clang/include/clang/Serialization/ASTRecordReader.h' l='99' u='r' c='_ZN5clang15ASTRecordReader29readLexicalDeclContextStorageEmPNS_11DeclContextE'/>
+<use f='llvm/clang/include/clang/Serialization/ASTRecordReader.h' l='99' u='r' c='_ZN5clang15ASTRecordReader29readLexicalDeclContextStorageEmPNS_11DeclContextE'/>
+<use f='llvm/clang/include/clang/Serialization/ASTRecordReader.h' l='106' u='r' c='_ZN5clang15ASTRecordReader29readVisibleDeclContextStorageEmj'/>
+<use f='llvm/clang/include/clang/Serialization/ASTRecordReader.h' l='106' u='r' c='_ZN5clang15ASTRecordReader29readVisibleDeclContextStorageEmj'/>
+<use f='llvm/clang/include/clang/Serialization/ASTRecordReader.h' l='124' u='r' c='_ZN5clang15ASTRecordReader18getGlobalBitOffsetEm'/>
+<use f='llvm/clang/include/clang/Serialization/ASTRecordReader.h' l='128' u='r' c='_ZN5clang15ASTRecordReader8readStmtEv'/>
+<use f='llvm/clang/include/clang/Serialization/ASTRecordReader.h' l='132' u='r' c='_ZN5clang15ASTRecordReader8readExprEv'/>
+<use f='llvm/clang/include/clang/Serialization/ASTRecordReader.h' l='145' u='r' c='_ZN5clang15ASTRecordReader14GetLocalDeclAsEj'/>
+<use f='llvm/clang/include/clang/Serialization/ASTRecordReader.h' l='168' u='r' c='_ZNK5clang15ASTRecordReader15getGlobalTypeIDEj'/>
+<use f='llvm/clang/include/clang/Serialization/ASTRecordReader.h' l='177' u='r' c='_ZN5clang15ASTRecordReader8readTypeEv'/>
+<use f='llvm/clang/include/clang/Serialization/ASTRecordReader.h' l='187' u='r' c='_ZN5clang15ASTRecordReader10readDeclIDEv'/>
+<use f='llvm/clang/include/clang/Serialization/ASTRecordReader.h' l='193' u='r' c='_ZN5clang15ASTRecordReader8readDeclEv'/>
+<use f='llvm/clang/include/clang/Serialization/ASTRecordReader.h' l='206' u='r' c='_ZN5clang15ASTRecordReader10readDeclAsEv'/>
+<use f='llvm/clang/include/clang/Serialization/ASTRecordReader.h' l='210' u='r' c='_ZN5clang15ASTRecordReader14readIdentifierEv'/>
+<use f='llvm/clang/include/clang/Serialization/ASTRecordReader.h' l='215' u='r' c='_ZN5clang15ASTRecordReader12readSelectorEv'/>
+<use f='llvm/clang/include/clang/Serialization/ASTRecordReader.h' l='261' u='r' c='_ZN5clang15ASTRecordReader16readCXXTemporaryEv'/>
+<use f='llvm/clang/include/clang/Serialization/ASTRecordReader.h' l='275' u='r' c='_ZN5clang15ASTRecordReader18readSourceLocationEv'/>
+<use f='llvm/clang/include/clang/Serialization/ASTRecordReader.h' l='280' u='r' c='_ZN5clang15ASTRecordReader15readSourceRangeEv'/>
+<use f='llvm/clang/include/clang/Serialization/ASTRecordReader.h' l='315' u='r' c='_ZN5clang15ASTRecordReader8readPathB5cxx11Ev'/>
+<use f='llvm/clang/include/clang/Serialization/ASTRecordReader.h' l='331' u='r' c='_ZN5clang15ASTRecordReader9readTokenEv'/>
+<offset>128</offset>

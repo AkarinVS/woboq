@@ -1,0 +1,395 @@
+<!doctype html>
+<html>
+<head>
+<meta name="viewport" content="width=device-width, initial-scale=1.0"><title>sanitizer_procmaps_mac.cpp source code [llvm/compiler-rt/lib/sanitizer_common/sanitizer_procmaps_mac.cpp] - Woboq Code Browser</title>
+<link rel="stylesheet" href="../../../.././data/qtcreator.css" title="QtCreator"/>
+<link rel="alternate stylesheet" href="../../../.././data/kdevelop.css" title="KDevelop"/>
+<script type="text/javascript" src="../../../.././data/jquery/jquery.min.js"></script>
+<script type="text/javascript" src="../../../.././data/jquery/jquery-ui.min.js"></script>
+<script>var file = 'llvm/compiler-rt/lib/sanitizer_common/sanitizer_procmaps_mac.cpp'; var root_path = '../../../..'; var data_path = '../../../.././data'; var ecma_script_api_version = 2;</script>
+<script src='../../../.././data/codebrowser.js'></script>
+</head>
+<body><div id='header'><h1 id='breadcrumb'><span>Browse the source code of </span><a href='../../..'>llvm</a>/<a href='../..'>compiler-rt</a>/<a href='..'>lib</a>/<a href='./'>sanitizer_common</a>/<a href='sanitizer_procmaps_mac.cpp.html'>sanitizer_procmaps_mac.cpp</a></h1></div>
+<hr/><div id='content'><table class="code">
+<tr><th id="1">1</th><td><i>//===-- sanitizer_procmaps_mac.cpp ----------------------------------------===//</i></td></tr>
+<tr><th id="2">2</th><td><i>//</i></td></tr>
+<tr><th id="3">3</th><td><i>// Part of the LLVM Project, under the Apache License v2.0 with LLVM Exceptions.</i></td></tr>
+<tr><th id="4">4</th><td><i>// See <a href="https://llvm.org/LICENSE.txt">https://llvm.org/LICENSE.txt</a> for license information.</i></td></tr>
+<tr><th id="5">5</th><td><i>// SPDX-License-Identifier: Apache-2.0 WITH LLVM-exception</i></td></tr>
+<tr><th id="6">6</th><td><i>//</i></td></tr>
+<tr><th id="7">7</th><td><i>//===----------------------------------------------------------------------===//</i></td></tr>
+<tr><th id="8">8</th><td><i>//</i></td></tr>
+<tr><th id="9">9</th><td><i>// Information about the process mappings (Mac-specific parts).</i></td></tr>
+<tr><th id="10">10</th><td><i>//===----------------------------------------------------------------------===//</i></td></tr>
+<tr><th id="11">11</th><td></td></tr>
+<tr><th id="12">12</th><td><u>#include <a href="sanitizer_platform.h.html">"sanitizer_platform.h"</a></u></td></tr>
+<tr><th id="13">13</th><td><u>#<span data-ppcond="13">if</span> <a class="macro" href="sanitizer_platform.h.html#73" title="0" data-ref="_M/SANITIZER_MAC">SANITIZER_MAC</a></u></td></tr>
+<tr><th id="14">14</th><td><u>#include "sanitizer_common.h"</u></td></tr>
+<tr><th id="15">15</th><td><u>#include "sanitizer_placement_new.h"</u></td></tr>
+<tr><th id="16">16</th><td><u>#include "sanitizer_procmaps.h"</u></td></tr>
+<tr><th id="17">17</th><td></td></tr>
+<tr><th id="18">18</th><td><u>#include &lt;mach-o/dyld.h&gt;</u></td></tr>
+<tr><th id="19">19</th><td><u>#include &lt;mach-o/loader.h&gt;</u></td></tr>
+<tr><th id="20">20</th><td><u>#include &lt;mach/mach.h&gt;</u></td></tr>
+<tr><th id="21">21</th><td></td></tr>
+<tr><th id="22">22</th><td><i>// These are not available in older macOS SDKs.</i></td></tr>
+<tr><th id="23">23</th><td><u>#ifndef CPU_SUBTYPE_X86_64_H</u></td></tr>
+<tr><th id="24">24</th><td><u>#define CPU_SUBTYPE_X86_64_H  ((cpu_subtype_t)8)   /* Haswell */</u></td></tr>
+<tr><th id="25">25</th><td><u>#endif</u></td></tr>
+<tr><th id="26">26</th><td><u>#ifndef CPU_SUBTYPE_ARM_V7S</u></td></tr>
+<tr><th id="27">27</th><td><u>#define CPU_SUBTYPE_ARM_V7S   ((cpu_subtype_t)11)  /* Swift */</u></td></tr>
+<tr><th id="28">28</th><td><u>#endif</u></td></tr>
+<tr><th id="29">29</th><td><u>#ifndef CPU_SUBTYPE_ARM_V7K</u></td></tr>
+<tr><th id="30">30</th><td><u>#define CPU_SUBTYPE_ARM_V7K   ((cpu_subtype_t)12)</u></td></tr>
+<tr><th id="31">31</th><td><u>#endif</u></td></tr>
+<tr><th id="32">32</th><td><u>#ifndef CPU_TYPE_ARM64</u></td></tr>
+<tr><th id="33">33</th><td><u>#define CPU_TYPE_ARM64        (CPU_TYPE_ARM | CPU_ARCH_ABI64)</u></td></tr>
+<tr><th id="34">34</th><td><u>#endif</u></td></tr>
+<tr><th id="35">35</th><td></td></tr>
+<tr><th id="36">36</th><td><b>namespace</b> __sanitizer {</td></tr>
+<tr><th id="37">37</th><td></td></tr>
+<tr><th id="38">38</th><td><i>// Contains information used to iterate through sections.</i></td></tr>
+<tr><th id="39">39</th><td><b>struct</b> MemoryMappedSegmentData {</td></tr>
+<tr><th id="40">40</th><td>  <em>char</em> name[kMaxSegName];</td></tr>
+<tr><th id="41">41</th><td>  uptr nsects;</td></tr>
+<tr><th id="42">42</th><td>  <em>const</em> <em>char</em> *current_load_cmd_addr;</td></tr>
+<tr><th id="43">43</th><td>  u32 lc_type;</td></tr>
+<tr><th id="44">44</th><td>  uptr base_virt_addr;</td></tr>
+<tr><th id="45">45</th><td>  uptr addr_mask;</td></tr>
+<tr><th id="46">46</th><td>};</td></tr>
+<tr><th id="47">47</th><td></td></tr>
+<tr><th id="48">48</th><td><b>template</b> &lt;<b>typename</b> Section&gt;</td></tr>
+<tr><th id="49">49</th><td><em>static</em> <em>void</em> NextSectionLoad(LoadedModule *module, MemoryMappedSegmentData *data,</td></tr>
+<tr><th id="50">50</th><td>                            <em>bool</em> isWritable) {</td></tr>
+<tr><th id="51">51</th><td>  <em>const</em> Section *sc = (<em>const</em> Section *)data-&gt;current_load_cmd_addr;</td></tr>
+<tr><th id="52">52</th><td>  data-&gt;current_load_cmd_addr += <b>sizeof</b>(Section);</td></tr>
+<tr><th id="53">53</th><td></td></tr>
+<tr><th id="54">54</th><td>  uptr sec_start = (sc-&gt;addr &amp; data-&gt;addr_mask) + data-&gt;base_virt_addr;</td></tr>
+<tr><th id="55">55</th><td>  uptr sec_end = sec_start + sc-&gt;size;</td></tr>
+<tr><th id="56">56</th><td>  module-&gt;addAddressRange(sec_start, sec_end, <i>/*executable=*/</i><b>false</b>, isWritable,</td></tr>
+<tr><th id="57">57</th><td>                          sc-&gt;sectname);</td></tr>
+<tr><th id="58">58</th><td>}</td></tr>
+<tr><th id="59">59</th><td></td></tr>
+<tr><th id="60">60</th><td><em>void</em> MemoryMappedSegment::AddAddressRanges(LoadedModule *module) {</td></tr>
+<tr><th id="61">61</th><td>  <i>// Don't iterate over sections when the caller hasn't set up the</i></td></tr>
+<tr><th id="62">62</th><td><i>  // data pointer, when there are no sections, or when the segment</i></td></tr>
+<tr><th id="63">63</th><td><i>  // is executable. Avoid iterating over executable sections because</i></td></tr>
+<tr><th id="64">64</th><td><i>  // it will confuse libignore, and because the extra granularity</i></td></tr>
+<tr><th id="65">65</th><td><i>  // of information is not needed by any sanitizers.</i></td></tr>
+<tr><th id="66">66</th><td>  <b>if</b> (!data_ || !data_-&gt;nsects || IsExecutable()) {</td></tr>
+<tr><th id="67">67</th><td>    module-&gt;addAddressRange(start, end, IsExecutable(), IsWritable(),</td></tr>
+<tr><th id="68">68</th><td>                            data_ ? data_-&gt;name : <b>nullptr</b>);</td></tr>
+<tr><th id="69">69</th><td>    <b>return</b>;</td></tr>
+<tr><th id="70">70</th><td>  }</td></tr>
+<tr><th id="71">71</th><td></td></tr>
+<tr><th id="72">72</th><td>  <b>do</b> {</td></tr>
+<tr><th id="73">73</th><td>    <b>if</b> (data_-&gt;lc_type == LC_SEGMENT) {</td></tr>
+<tr><th id="74">74</th><td>      NextSectionLoad&lt;<b>struct</b> section&gt;(module, data_, IsWritable());</td></tr>
+<tr><th id="75">75</th><td><u>#ifdef MH_MAGIC_64</u></td></tr>
+<tr><th id="76">76</th><td>    } <b>else</b> <b>if</b> (data_-&gt;lc_type == LC_SEGMENT_64) {</td></tr>
+<tr><th id="77">77</th><td>      NextSectionLoad&lt;<b>struct</b> section_64&gt;(module, data_, IsWritable());</td></tr>
+<tr><th id="78">78</th><td><u>#endif</u></td></tr>
+<tr><th id="79">79</th><td>    }</td></tr>
+<tr><th id="80">80</th><td>  } <b>while</b> (--data_-&gt;nsects);</td></tr>
+<tr><th id="81">81</th><td>}</td></tr>
+<tr><th id="82">82</th><td></td></tr>
+<tr><th id="83">83</th><td>MemoryMappingLayout::MemoryMappingLayout(<em>bool</em> cache_enabled) {</td></tr>
+<tr><th id="84">84</th><td>  Reset();</td></tr>
+<tr><th id="85">85</th><td>}</td></tr>
+<tr><th id="86">86</th><td></td></tr>
+<tr><th id="87">87</th><td>MemoryMappingLayout::~MemoryMappingLayout() {</td></tr>
+<tr><th id="88">88</th><td>}</td></tr>
+<tr><th id="89">89</th><td></td></tr>
+<tr><th id="90">90</th><td><em>bool</em> MemoryMappingLayout::Error() <em>const</em> {</td></tr>
+<tr><th id="91">91</th><td>  <b>return</b> <b>false</b>;</td></tr>
+<tr><th id="92">92</th><td>}</td></tr>
+<tr><th id="93">93</th><td></td></tr>
+<tr><th id="94">94</th><td><i>// More information about Mach-O headers can be found in mach-o/loader.h</i></td></tr>
+<tr><th id="95">95</th><td><i>// Each Mach-O image has a header (mach_header or mach_header_64) starting with</i></td></tr>
+<tr><th id="96">96</th><td><i>// a magic number, and a list of linker load commands directly following the</i></td></tr>
+<tr><th id="97">97</th><td><i>// header.</i></td></tr>
+<tr><th id="98">98</th><td><i>// A load command is at least two 32-bit words: the command type and the</i></td></tr>
+<tr><th id="99">99</th><td><i>// command size in bytes. We're interested only in segment load commands</i></td></tr>
+<tr><th id="100">100</th><td><i>// (LC_SEGMENT and LC_SEGMENT_64), which tell that a part of the file is mapped</i></td></tr>
+<tr><th id="101">101</th><td><i>// into the task's address space.</i></td></tr>
+<tr><th id="102">102</th><td><i>// The |vmaddr|, |vmsize| and |fileoff| fields of segment_command or</i></td></tr>
+<tr><th id="103">103</th><td><i>// segment_command_64 correspond to the memory address, memory size and the</i></td></tr>
+<tr><th id="104">104</th><td><i>// file offset of the current memory segment.</i></td></tr>
+<tr><th id="105">105</th><td><i>// Because these fields are taken from the images as is, one needs to add</i></td></tr>
+<tr><th id="106">106</th><td><i>// _dyld_get_image_vmaddr_slide() to get the actual addresses at runtime.</i></td></tr>
+<tr><th id="107">107</th><td></td></tr>
+<tr><th id="108">108</th><td><em>void</em> MemoryMappingLayout::Reset() {</td></tr>
+<tr><th id="109">109</th><td>  <i>// Count down from the top.</i></td></tr>
+<tr><th id="110">110</th><td><i>  // TODO(glider): as per man 3 dyld, iterating over the headers with</i></td></tr>
+<tr><th id="111">111</th><td><i>  // _dyld_image_count is thread-unsafe. We need to register callbacks for</i></td></tr>
+<tr><th id="112">112</th><td><i>  // adding and removing images which will invalidate the MemoryMappingLayout</i></td></tr>
+<tr><th id="113">113</th><td><i>  // state.</i></td></tr>
+<tr><th id="114">114</th><td>  data_.current_image = _dyld_image_count();</td></tr>
+<tr><th id="115">115</th><td>  data_.current_load_cmd_count = -<var>1</var>;</td></tr>
+<tr><th id="116">116</th><td>  data_.current_load_cmd_addr = <var>0</var>;</td></tr>
+<tr><th id="117">117</th><td>  data_.current_magic = <var>0</var>;</td></tr>
+<tr><th id="118">118</th><td>  data_.current_filetype = <var>0</var>;</td></tr>
+<tr><th id="119">119</th><td>  data_.current_arch = kModuleArchUnknown;</td></tr>
+<tr><th id="120">120</th><td>  internal_memset(data_.current_uuid, <var>0</var>, kModuleUUIDSize);</td></tr>
+<tr><th id="121">121</th><td>}</td></tr>
+<tr><th id="122">122</th><td></td></tr>
+<tr><th id="123">123</th><td><i>// The dyld load address should be unchanged throughout process execution,</i></td></tr>
+<tr><th id="124">124</th><td><i>// and it is expensive to compute once many libraries have been loaded,</i></td></tr>
+<tr><th id="125">125</th><td><i>// so cache it here and do not reset.</i></td></tr>
+<tr><th id="126">126</th><td><em>static</em> mach_header *dyld_hdr = <var>0</var>;</td></tr>
+<tr><th id="127">127</th><td><em>static</em> <em>const</em> <em>char</em> kDyldPath[] = <q>"/usr/lib/dyld"</q>;</td></tr>
+<tr><th id="128">128</th><td><em>static</em> <em>const</em> <em>int</em> kDyldImageIdx = -<var>1</var>;</td></tr>
+<tr><th id="129">129</th><td></td></tr>
+<tr><th id="130">130</th><td><i>// static</i></td></tr>
+<tr><th id="131">131</th><td><em>void</em> MemoryMappingLayout::CacheMemoryMappings() {</td></tr>
+<tr><th id="132">132</th><td>  <i>// No-op on Mac for now.</i></td></tr>
+<tr><th id="133">133</th><td>}</td></tr>
+<tr><th id="134">134</th><td></td></tr>
+<tr><th id="135">135</th><td><em>void</em> MemoryMappingLayout::LoadFromCache() {</td></tr>
+<tr><th id="136">136</th><td>  <i>// No-op on Mac for now.</i></td></tr>
+<tr><th id="137">137</th><td>}</td></tr>
+<tr><th id="138">138</th><td></td></tr>
+<tr><th id="139">139</th><td><i>// _dyld_get_image_header() and related APIs don't report dyld itself.</i></td></tr>
+<tr><th id="140">140</th><td><i>// We work around this by manually recursing through the memory map</i></td></tr>
+<tr><th id="141">141</th><td><i>// until we hit a Mach header matching dyld instead. These recurse</i></td></tr>
+<tr><th id="142">142</th><td><i>// calls are expensive, but the first memory map generation occurs</i></td></tr>
+<tr><th id="143">143</th><td><i>// early in the process, when dyld is one of the only images loaded,</i></td></tr>
+<tr><th id="144">144</th><td><i>// so it will be hit after only a few iterations.</i></td></tr>
+<tr><th id="145">145</th><td><em>static</em> mach_header *get_dyld_image_header() {</td></tr>
+<tr><th id="146">146</th><td>  <em>unsigned</em> depth = <var>1</var>;</td></tr>
+<tr><th id="147">147</th><td>  vm_size_t size = <var>0</var>;</td></tr>
+<tr><th id="148">148</th><td>  vm_address_t address = <var>0</var>;</td></tr>
+<tr><th id="149">149</th><td>  kern_return_t err = KERN_SUCCESS;</td></tr>
+<tr><th id="150">150</th><td>  mach_msg_type_number_t count = VM_REGION_SUBMAP_INFO_COUNT_64;</td></tr>
+<tr><th id="151">151</th><td></td></tr>
+<tr><th id="152">152</th><td>  <b>while</b> (<b>true</b>) {</td></tr>
+<tr><th id="153">153</th><td>    <b>struct</b> vm_region_submap_info_64 info;</td></tr>
+<tr><th id="154">154</th><td>    err = vm_region_recurse_64(mach_task_self(), &amp;address, &amp;size, &amp;depth,</td></tr>
+<tr><th id="155">155</th><td>                               (vm_region_info_t)&amp;info, &amp;count);</td></tr>
+<tr><th id="156">156</th><td>    <b>if</b> (err != KERN_SUCCESS) <b>return</b> <b>nullptr</b>;</td></tr>
+<tr><th id="157">157</th><td></td></tr>
+<tr><th id="158">158</th><td>    <b>if</b> (size &gt;= <b>sizeof</b>(mach_header) &amp;&amp; info.protection &amp; kProtectionRead) {</td></tr>
+<tr><th id="159">159</th><td>      mach_header *hdr = (mach_header *)address;</td></tr>
+<tr><th id="160">160</th><td>      <b>if</b> ((hdr-&gt;magic == MH_MAGIC || hdr-&gt;magic == MH_MAGIC_64) &amp;&amp;</td></tr>
+<tr><th id="161">161</th><td>          hdr-&gt;filetype == MH_DYLINKER) {</td></tr>
+<tr><th id="162">162</th><td>        <b>return</b> hdr;</td></tr>
+<tr><th id="163">163</th><td>      }</td></tr>
+<tr><th id="164">164</th><td>    }</td></tr>
+<tr><th id="165">165</th><td>    address += size;</td></tr>
+<tr><th id="166">166</th><td>  }</td></tr>
+<tr><th id="167">167</th><td>}</td></tr>
+<tr><th id="168">168</th><td></td></tr>
+<tr><th id="169">169</th><td><em>const</em> mach_header *get_dyld_hdr() {</td></tr>
+<tr><th id="170">170</th><td>  <b>if</b> (!dyld_hdr) dyld_hdr = get_dyld_image_header();</td></tr>
+<tr><th id="171">171</th><td></td></tr>
+<tr><th id="172">172</th><td>  <b>return</b> dyld_hdr;</td></tr>
+<tr><th id="173">173</th><td>}</td></tr>
+<tr><th id="174">174</th><td></td></tr>
+<tr><th id="175">175</th><td><i>// Next and NextSegmentLoad were inspired by base/sysinfo.cc in</i></td></tr>
+<tr><th id="176">176</th><td><i>// Google Perftools, <a href="https://github.com/gperftools/gperftools">https://github.com/gperftools/gperftools</a>.</i></td></tr>
+<tr><th id="177">177</th><td><i></i></td></tr>
+<tr><th id="178">178</th><td><i>// NextSegmentLoad scans the current image for the next segment load command</i></td></tr>
+<tr><th id="179">179</th><td><i>// and returns the start and end addresses and file offset of the corresponding</i></td></tr>
+<tr><th id="180">180</th><td><i>// segment.</i></td></tr>
+<tr><th id="181">181</th><td><i>// Note that the segment addresses are not necessarily sorted.</i></td></tr>
+<tr><th id="182">182</th><td><b>template</b> &lt;u32 kLCSegment, <b>typename</b> SegmentCommand&gt;</td></tr>
+<tr><th id="183">183</th><td><em>static</em> <em>bool</em> NextSegmentLoad(MemoryMappedSegment *segment,</td></tr>
+<tr><th id="184">184</th><td>                            MemoryMappedSegmentData *seg_data,</td></tr>
+<tr><th id="185">185</th><td>                            MemoryMappingLayoutData *layout_data) {</td></tr>
+<tr><th id="186">186</th><td>  <em>const</em> <em>char</em> *lc = layout_data-&gt;current_load_cmd_addr;</td></tr>
+<tr><th id="187">187</th><td>  layout_data-&gt;current_load_cmd_addr += ((<em>const</em> load_command *)lc)-&gt;cmdsize;</td></tr>
+<tr><th id="188">188</th><td>  <b>if</b> (((<em>const</em> load_command *)lc)-&gt;cmd == kLCSegment) {</td></tr>
+<tr><th id="189">189</th><td>    <em>const</em> SegmentCommand* sc = (<em>const</em> SegmentCommand *)lc;</td></tr>
+<tr><th id="190">190</th><td>    uptr base_virt_addr, addr_mask;</td></tr>
+<tr><th id="191">191</th><td>    <b>if</b> (layout_data-&gt;current_image == kDyldImageIdx) {</td></tr>
+<tr><th id="192">192</th><td>      base_virt_addr = (uptr)get_dyld_hdr();</td></tr>
+<tr><th id="193">193</th><td>      <i>// vmaddr is masked with 0xfffff because on macOS versions &lt; 10.12,</i></td></tr>
+<tr><th id="194">194</th><td><i>      // it contains an absolute address rather than an offset for dyld.</i></td></tr>
+<tr><th id="195">195</th><td><i>      // To make matters even more complicated, this absolute address</i></td></tr>
+<tr><th id="196">196</th><td><i>      // isn't actually the absolute segment address, but the offset portion</i></td></tr>
+<tr><th id="197">197</th><td><i>      // of the address is accurate when combined with the dyld base address,</i></td></tr>
+<tr><th id="198">198</th><td><i>      // and the mask will give just this offset.</i></td></tr>
+<tr><th id="199">199</th><td>      addr_mask = <var>0xfffff</var>;</td></tr>
+<tr><th id="200">200</th><td>    } <b>else</b> {</td></tr>
+<tr><th id="201">201</th><td>      base_virt_addr =</td></tr>
+<tr><th id="202">202</th><td>          (uptr)_dyld_get_image_vmaddr_slide(layout_data-&gt;current_image);</td></tr>
+<tr><th id="203">203</th><td>      addr_mask = ~<var>0</var>;</td></tr>
+<tr><th id="204">204</th><td>    }</td></tr>
+<tr><th id="205">205</th><td></td></tr>
+<tr><th id="206">206</th><td>    segment-&gt;start = (sc-&gt;vmaddr &amp; addr_mask) + base_virt_addr;</td></tr>
+<tr><th id="207">207</th><td>    segment-&gt;end = segment-&gt;start + sc-&gt;vmsize;</td></tr>
+<tr><th id="208">208</th><td>    <i>// Most callers don't need section information, so only fill this struct</i></td></tr>
+<tr><th id="209">209</th><td><i>    // when required.</i></td></tr>
+<tr><th id="210">210</th><td>    <b>if</b> (seg_data) {</td></tr>
+<tr><th id="211">211</th><td>      seg_data-&gt;nsects = sc-&gt;nsects;</td></tr>
+<tr><th id="212">212</th><td>      seg_data-&gt;current_load_cmd_addr =</td></tr>
+<tr><th id="213">213</th><td>          (<em>const</em> <em>char</em> *)lc + <b>sizeof</b>(SegmentCommand);</td></tr>
+<tr><th id="214">214</th><td>      seg_data-&gt;lc_type = kLCSegment;</td></tr>
+<tr><th id="215">215</th><td>      seg_data-&gt;base_virt_addr = base_virt_addr;</td></tr>
+<tr><th id="216">216</th><td>      seg_data-&gt;addr_mask = addr_mask;</td></tr>
+<tr><th id="217">217</th><td>      internal_strncpy(seg_data-&gt;name, sc-&gt;segname,</td></tr>
+<tr><th id="218">218</th><td>                       ARRAY_SIZE(seg_data-&gt;name));</td></tr>
+<tr><th id="219">219</th><td>    }</td></tr>
+<tr><th id="220">220</th><td></td></tr>
+<tr><th id="221">221</th><td>    <i>// Return the initial protection.</i></td></tr>
+<tr><th id="222">222</th><td>    segment-&gt;protection = sc-&gt;initprot;</td></tr>
+<tr><th id="223">223</th><td>    segment-&gt;offset = (layout_data-&gt;current_filetype ==</td></tr>
+<tr><th id="224">224</th><td>                       <i>/*MH_EXECUTE*/</i> <var>0x2</var>)</td></tr>
+<tr><th id="225">225</th><td>                          ? sc-&gt;vmaddr</td></tr>
+<tr><th id="226">226</th><td>                          : sc-&gt;fileoff;</td></tr>
+<tr><th id="227">227</th><td>    <b>if</b> (segment-&gt;filename) {</td></tr>
+<tr><th id="228">228</th><td>      <em>const</em> <em>char</em> *src = (layout_data-&gt;current_image == kDyldImageIdx)</td></tr>
+<tr><th id="229">229</th><td>                            ? kDyldPath</td></tr>
+<tr><th id="230">230</th><td>                            : _dyld_get_image_name(layout_data-&gt;current_image);</td></tr>
+<tr><th id="231">231</th><td>      internal_strncpy(segment-&gt;filename, src, segment-&gt;filename_size);</td></tr>
+<tr><th id="232">232</th><td>    }</td></tr>
+<tr><th id="233">233</th><td>    segment-&gt;arch = layout_data-&gt;current_arch;</td></tr>
+<tr><th id="234">234</th><td>    internal_memcpy(segment-&gt;uuid, layout_data-&gt;current_uuid, kModuleUUIDSize);</td></tr>
+<tr><th id="235">235</th><td>    <b>return</b> <b>true</b>;</td></tr>
+<tr><th id="236">236</th><td>  }</td></tr>
+<tr><th id="237">237</th><td>  <b>return</b> <b>false</b>;</td></tr>
+<tr><th id="238">238</th><td>}</td></tr>
+<tr><th id="239">239</th><td></td></tr>
+<tr><th id="240">240</th><td>ModuleArch ModuleArchFromCpuType(cpu_type_t cputype, cpu_subtype_t cpusubtype) {</td></tr>
+<tr><th id="241">241</th><td>  cpusubtype = cpusubtype &amp; ~CPU_SUBTYPE_MASK;</td></tr>
+<tr><th id="242">242</th><td>  <b>switch</b> (cputype) {</td></tr>
+<tr><th id="243">243</th><td>    <b>case</b> CPU_TYPE_I386:</td></tr>
+<tr><th id="244">244</th><td>      <b>return</b> kModuleArchI386;</td></tr>
+<tr><th id="245">245</th><td>    <b>case</b> CPU_TYPE_X86_64:</td></tr>
+<tr><th id="246">246</th><td>      <b>if</b> (cpusubtype == CPU_SUBTYPE_X86_64_ALL) <b>return</b> kModuleArchX86_64;</td></tr>
+<tr><th id="247">247</th><td>      <b>if</b> (cpusubtype == CPU_SUBTYPE_X86_64_H) <b>return</b> kModuleArchX86_64H;</td></tr>
+<tr><th id="248">248</th><td>      CHECK(<var>0</var> &amp;&amp; <q>"Invalid subtype of x86_64"</q>);</td></tr>
+<tr><th id="249">249</th><td>      <b>return</b> kModuleArchUnknown;</td></tr>
+<tr><th id="250">250</th><td>    <b>case</b> CPU_TYPE_ARM:</td></tr>
+<tr><th id="251">251</th><td>      <b>if</b> (cpusubtype == CPU_SUBTYPE_ARM_V6) <b>return</b> kModuleArchARMV6;</td></tr>
+<tr><th id="252">252</th><td>      <b>if</b> (cpusubtype == CPU_SUBTYPE_ARM_V7) <b>return</b> kModuleArchARMV7;</td></tr>
+<tr><th id="253">253</th><td>      <b>if</b> (cpusubtype == CPU_SUBTYPE_ARM_V7S) <b>return</b> kModuleArchARMV7S;</td></tr>
+<tr><th id="254">254</th><td>      <b>if</b> (cpusubtype == CPU_SUBTYPE_ARM_V7K) <b>return</b> kModuleArchARMV7K;</td></tr>
+<tr><th id="255">255</th><td>      CHECK(<var>0</var> &amp;&amp; <q>"Invalid subtype of ARM"</q>);</td></tr>
+<tr><th id="256">256</th><td>      <b>return</b> kModuleArchUnknown;</td></tr>
+<tr><th id="257">257</th><td>    <b>case</b> CPU_TYPE_ARM64:</td></tr>
+<tr><th id="258">258</th><td>      <b>return</b> kModuleArchARM64;</td></tr>
+<tr><th id="259">259</th><td>    <b>default</b>:</td></tr>
+<tr><th id="260">260</th><td>      CHECK(<var>0</var> &amp;&amp; <q>"Invalid CPU type"</q>);</td></tr>
+<tr><th id="261">261</th><td>      <b>return</b> kModuleArchUnknown;</td></tr>
+<tr><th id="262">262</th><td>  }</td></tr>
+<tr><th id="263">263</th><td>}</td></tr>
+<tr><th id="264">264</th><td></td></tr>
+<tr><th id="265">265</th><td><em>static</em> <em>const</em> load_command *NextCommand(<em>const</em> load_command *lc) {</td></tr>
+<tr><th id="266">266</th><td>  <b>return</b> (<em>const</em> load_command *)((<em>const</em> <em>char</em> *)lc + lc-&gt;cmdsize);</td></tr>
+<tr><th id="267">267</th><td>}</td></tr>
+<tr><th id="268">268</th><td></td></tr>
+<tr><th id="269">269</th><td><em>static</em> <em>void</em> FindUUID(<em>const</em> load_command *first_lc, u8 *uuid_output) {</td></tr>
+<tr><th id="270">270</th><td>  <b>for</b> (<em>const</em> load_command *lc = first_lc; lc-&gt;cmd != <var>0</var>; lc = NextCommand(lc)) {</td></tr>
+<tr><th id="271">271</th><td>    <b>if</b> (lc-&gt;cmd != LC_UUID) <b>continue</b>;</td></tr>
+<tr><th id="272">272</th><td></td></tr>
+<tr><th id="273">273</th><td>    <em>const</em> uuid_command *uuid_lc = (<em>const</em> uuid_command *)lc;</td></tr>
+<tr><th id="274">274</th><td>    <em>const</em> uint8_t *uuid = &amp;uuid_lc-&gt;uuid[<var>0</var>];</td></tr>
+<tr><th id="275">275</th><td>    internal_memcpy(uuid_output, uuid, kModuleUUIDSize);</td></tr>
+<tr><th id="276">276</th><td>    <b>return</b>;</td></tr>
+<tr><th id="277">277</th><td>  }</td></tr>
+<tr><th id="278">278</th><td>}</td></tr>
+<tr><th id="279">279</th><td></td></tr>
+<tr><th id="280">280</th><td><em>static</em> <em>bool</em> IsModuleInstrumented(<em>const</em> load_command *first_lc) {</td></tr>
+<tr><th id="281">281</th><td>  <b>for</b> (<em>const</em> load_command *lc = first_lc; lc-&gt;cmd != <var>0</var>; lc = NextCommand(lc)) {</td></tr>
+<tr><th id="282">282</th><td>    <b>if</b> (lc-&gt;cmd != LC_LOAD_DYLIB) <b>continue</b>;</td></tr>
+<tr><th id="283">283</th><td></td></tr>
+<tr><th id="284">284</th><td>    <em>const</em> dylib_command *dylib_lc = (<em>const</em> dylib_command *)lc;</td></tr>
+<tr><th id="285">285</th><td>    uint32_t dylib_name_offset = dylib_lc-&gt;dylib.name.offset;</td></tr>
+<tr><th id="286">286</th><td>    <em>const</em> <em>char</em> *dylib_name = ((<em>const</em> <em>char</em> *)dylib_lc) + dylib_name_offset;</td></tr>
+<tr><th id="287">287</th><td>    dylib_name = StripModuleName(dylib_name);</td></tr>
+<tr><th id="288">288</th><td>    <b>if</b> (dylib_name != <var>0</var> &amp;&amp; (internal_strstr(dylib_name, <q>"libclang_rt."</q>))) {</td></tr>
+<tr><th id="289">289</th><td>      <b>return</b> <b>true</b>;</td></tr>
+<tr><th id="290">290</th><td>    }</td></tr>
+<tr><th id="291">291</th><td>  }</td></tr>
+<tr><th id="292">292</th><td>  <b>return</b> <b>false</b>;</td></tr>
+<tr><th id="293">293</th><td>}</td></tr>
+<tr><th id="294">294</th><td></td></tr>
+<tr><th id="295">295</th><td><em>bool</em> MemoryMappingLayout::Next(MemoryMappedSegment *segment) {</td></tr>
+<tr><th id="296">296</th><td>  <b>for</b> (; data_.current_image &gt;= kDyldImageIdx; data_.current_image--) {</td></tr>
+<tr><th id="297">297</th><td>    <em>const</em> mach_header *hdr = (data_.current_image == kDyldImageIdx)</td></tr>
+<tr><th id="298">298</th><td>                                 ? get_dyld_hdr()</td></tr>
+<tr><th id="299">299</th><td>                                 : _dyld_get_image_header(data_.current_image);</td></tr>
+<tr><th id="300">300</th><td>    <b>if</b> (!hdr) <b>continue</b>;</td></tr>
+<tr><th id="301">301</th><td>    <b>if</b> (data_.current_load_cmd_count &lt; <var>0</var>) {</td></tr>
+<tr><th id="302">302</th><td>      <i>// Set up for this image;</i></td></tr>
+<tr><th id="303">303</th><td>      data_.current_load_cmd_count = hdr-&gt;ncmds;</td></tr>
+<tr><th id="304">304</th><td>      data_.current_magic = hdr-&gt;magic;</td></tr>
+<tr><th id="305">305</th><td>      data_.current_filetype = hdr-&gt;filetype;</td></tr>
+<tr><th id="306">306</th><td>      data_.current_arch = ModuleArchFromCpuType(hdr-&gt;cputype, hdr-&gt;cpusubtype);</td></tr>
+<tr><th id="307">307</th><td>      <b>switch</b> (data_.current_magic) {</td></tr>
+<tr><th id="308">308</th><td><u>#ifdef MH_MAGIC_64</u></td></tr>
+<tr><th id="309">309</th><td>        <b>case</b> MH_MAGIC_64: {</td></tr>
+<tr><th id="310">310</th><td>          data_.current_load_cmd_addr =</td></tr>
+<tr><th id="311">311</th><td>              (<em>const</em> <em>char</em> *)hdr + <b>sizeof</b>(mach_header_64);</td></tr>
+<tr><th id="312">312</th><td>          <b>break</b>;</td></tr>
+<tr><th id="313">313</th><td>        }</td></tr>
+<tr><th id="314">314</th><td><u>#endif</u></td></tr>
+<tr><th id="315">315</th><td>        <b>case</b> MH_MAGIC: {</td></tr>
+<tr><th id="316">316</th><td>          data_.current_load_cmd_addr = (<em>const</em> <em>char</em> *)hdr + <b>sizeof</b>(mach_header);</td></tr>
+<tr><th id="317">317</th><td>          <b>break</b>;</td></tr>
+<tr><th id="318">318</th><td>        }</td></tr>
+<tr><th id="319">319</th><td>        <b>default</b>: {</td></tr>
+<tr><th id="320">320</th><td>          <b>continue</b>;</td></tr>
+<tr><th id="321">321</th><td>        }</td></tr>
+<tr><th id="322">322</th><td>      }</td></tr>
+<tr><th id="323">323</th><td>      FindUUID((<em>const</em> load_command *)data_.current_load_cmd_addr,</td></tr>
+<tr><th id="324">324</th><td>               data_.current_uuid);</td></tr>
+<tr><th id="325">325</th><td>      data_.current_instrumented = IsModuleInstrumented(</td></tr>
+<tr><th id="326">326</th><td>          (<em>const</em> load_command *)data_.current_load_cmd_addr);</td></tr>
+<tr><th id="327">327</th><td>    }</td></tr>
+<tr><th id="328">328</th><td></td></tr>
+<tr><th id="329">329</th><td>    <b>for</b> (; data_.current_load_cmd_count &gt;= <var>0</var>; data_.current_load_cmd_count--) {</td></tr>
+<tr><th id="330">330</th><td>      <b>switch</b> (data_.current_magic) {</td></tr>
+<tr><th id="331">331</th><td>        <i>// data_.current_magic may be only one of MH_MAGIC, MH_MAGIC_64.</i></td></tr>
+<tr><th id="332">332</th><td><u>#ifdef MH_MAGIC_64</u></td></tr>
+<tr><th id="333">333</th><td>        <b>case</b> MH_MAGIC_64: {</td></tr>
+<tr><th id="334">334</th><td>          <b>if</b> (NextSegmentLoad&lt;LC_SEGMENT_64, <b>struct</b> segment_command_64&gt;(</td></tr>
+<tr><th id="335">335</th><td>                  segment, segment-&gt;data_, &amp;data_))</td></tr>
+<tr><th id="336">336</th><td>            <b>return</b> <b>true</b>;</td></tr>
+<tr><th id="337">337</th><td>          <b>break</b>;</td></tr>
+<tr><th id="338">338</th><td>        }</td></tr>
+<tr><th id="339">339</th><td><u>#endif</u></td></tr>
+<tr><th id="340">340</th><td>        <b>case</b> MH_MAGIC: {</td></tr>
+<tr><th id="341">341</th><td>          <b>if</b> (NextSegmentLoad&lt;LC_SEGMENT, <b>struct</b> segment_command&gt;(</td></tr>
+<tr><th id="342">342</th><td>                  segment, segment-&gt;data_, &amp;data_))</td></tr>
+<tr><th id="343">343</th><td>            <b>return</b> <b>true</b>;</td></tr>
+<tr><th id="344">344</th><td>          <b>break</b>;</td></tr>
+<tr><th id="345">345</th><td>        }</td></tr>
+<tr><th id="346">346</th><td>      }</td></tr>
+<tr><th id="347">347</th><td>    }</td></tr>
+<tr><th id="348">348</th><td>    <i>// If we get here, no more load_cmd's in this image talk about</i></td></tr>
+<tr><th id="349">349</th><td><i>    // segments.  Go on to the next image.</i></td></tr>
+<tr><th id="350">350</th><td>  }</td></tr>
+<tr><th id="351">351</th><td>  <b>return</b> <b>false</b>;</td></tr>
+<tr><th id="352">352</th><td>}</td></tr>
+<tr><th id="353">353</th><td></td></tr>
+<tr><th id="354">354</th><td><em>void</em> MemoryMappingLayout::DumpListOfModules(</td></tr>
+<tr><th id="355">355</th><td>    InternalMmapVectorNoCtor&lt;LoadedModule&gt; *modules) {</td></tr>
+<tr><th id="356">356</th><td>  Reset();</td></tr>
+<tr><th id="357">357</th><td>  InternalScopedString module_name(kMaxPathLength);</td></tr>
+<tr><th id="358">358</th><td>  MemoryMappedSegment segment(module_name.data(), kMaxPathLength);</td></tr>
+<tr><th id="359">359</th><td>  MemoryMappedSegmentData data;</td></tr>
+<tr><th id="360">360</th><td>  segment.data_ = &amp;data;</td></tr>
+<tr><th id="361">361</th><td>  <b>while</b> (Next(&amp;segment)) {</td></tr>
+<tr><th id="362">362</th><td>    <b>if</b> (segment.filename[<var>0</var>] == <kbd>'\0'</kbd>) <b>continue</b>;</td></tr>
+<tr><th id="363">363</th><td>    LoadedModule *cur_module = <b>nullptr</b>;</td></tr>
+<tr><th id="364">364</th><td>    <b>if</b> (!modules-&gt;empty() &amp;&amp;</td></tr>
+<tr><th id="365">365</th><td>        <var>0</var> == internal_strcmp(segment.filename, modules-&gt;back().full_name())) {</td></tr>
+<tr><th id="366">366</th><td>      cur_module = &amp;modules-&gt;back();</td></tr>
+<tr><th id="367">367</th><td>    } <b>else</b> {</td></tr>
+<tr><th id="368">368</th><td>      modules-&gt;push_back(LoadedModule());</td></tr>
+<tr><th id="369">369</th><td>      cur_module = &amp;modules-&gt;back();</td></tr>
+<tr><th id="370">370</th><td>      cur_module-&gt;set(segment.filename, segment.start, segment.arch,</td></tr>
+<tr><th id="371">371</th><td>                      segment.uuid, data_.current_instrumented);</td></tr>
+<tr><th id="372">372</th><td>    }</td></tr>
+<tr><th id="373">373</th><td>    segment.AddAddressRanges(cur_module);</td></tr>
+<tr><th id="374">374</th><td>  }</td></tr>
+<tr><th id="375">375</th><td>}</td></tr>
+<tr><th id="376">376</th><td></td></tr>
+<tr><th id="377">377</th><td>}  <i>// namespace __sanitizer</i></td></tr>
+<tr><th id="378">378</th><td></td></tr>
+<tr><th id="379">379</th><td><u>#<span data-ppcond="13">endif</span>  // SANITIZER_MAC</u></td></tr>
+<tr><th id="380">380</th><td></td></tr>
+</table><hr/><p id='footer'>
+Generated on <em>2021-Jul-01</em> from project llvm revision <em>12</em>

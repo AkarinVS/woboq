@@ -1,0 +1,56 @@
+<dec f='llvm/llvm/lib/Transforms/InstCombine/InstCombineInternal.h' l='628' type='llvm::Instruction * llvm::InstCombinerImpl::foldIntegerTypedPHI(llvm::PHINode &amp; PN)'/>
+<doc f='llvm/llvm/lib/Transforms/InstCombine/InstCombineInternal.h' l='625'>/// If an integer typed PHI has only one use which is an IntToPtr operation,
+  /// replace the PHI with an existing pointer typed PHI if it exists. Otherwise
+  /// insert a new pointer typed PHI and replace the original one.</doc>
+<def f='llvm/llvm/lib/Transforms/InstCombine/InstCombinePHI.cpp' l='105' ll='300' type='llvm::Instruction * llvm::InstCombinerImpl::foldIntegerTypedPHI(llvm::PHINode &amp; PN)'/>
+<use f='llvm/llvm/lib/Transforms/InstCombine/InstCombinePHI.cpp' l='1323' u='c' c='_ZN4llvm16InstCombinerImpl12visitPHINodeERNS_7PHINodeE'/>
+<doc f='llvm/llvm/lib/Transforms/InstCombine/InstCombinePHI.cpp' l='55'>// Replace Integer typed PHI PN if the PHI&apos;s value is used as a pointer value.
+// If there is an existing pointer typed PHI that produces the same value as PN,
+// replace PN and the IntToPtr operation with it. Otherwise, synthesize a new
+// PHI node:
+//
+// Case-1:
+// bb1:
+//     int_init = PtrToInt(ptr_init)
+//     br label %bb2
+// bb2:
+//    int_val = PHI([int_init, %bb1], [int_val_inc, %bb2]
+//    ptr_val = PHI([ptr_init, %bb1], [ptr_val_inc, %bb2]
+//    ptr_val2 = IntToPtr(int_val)
+//    ...
+//    use(ptr_val2)
+//    ptr_val_inc = ...
+//    inc_val_inc = PtrToInt(ptr_val_inc)
+//
+// ==&gt;
+// bb1:
+//     br label %bb2
+// bb2:
+//    ptr_val = PHI([ptr_init, %bb1], [ptr_val_inc, %bb2]
+//    ...
+//    use(ptr_val)
+//    ptr_val_inc = ...
+//
+// Case-2:
+// bb1:
+//    int_ptr = BitCast(ptr_ptr)
+//    int_init = Load(int_ptr)
+//    br label %bb2
+// bb2:
+//    int_val = PHI([int_init, %bb1], [int_val_inc, %bb2]
+//    ptr_val2 = IntToPtr(int_val)
+//    ...
+//    use(ptr_val2)
+//    ptr_val_inc = ...
+//    inc_val_inc = PtrToInt(ptr_val_inc)
+// ==&gt;
+// bb1:
+//    ptr_init = Load(ptr_ptr)
+//    br label %bb2
+// bb2:
+//    ptr_val = PHI([ptr_init, %bb1], [ptr_val_inc, %bb2]
+//    ...
+//    use(ptr_val)
+//    ptr_val_inc = ...
+//    ...
+//</doc>

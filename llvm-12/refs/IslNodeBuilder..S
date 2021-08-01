@@ -1,0 +1,27 @@
+<use f='llvm/polly/include/polly/CodeGen/IslNodeBuilder.h' l='71' u='w' c='_ZN14IslNodeBuilderC1ERN4llvm9IRBuilderINS0_14ConstantFolderEN5polly10IRInserterEEERNS3_13ScopAnnotatorERKNS0_10DataLayoutERNS0_8LoopInfoERNS0_15Scala10521409'/>
+<use f='llvm/polly/include/polly/CodeGen/IslNodeBuilder.h' l='114' u='a' c='_ZN14IslNodeBuilder8finalizeEv'/>
+<dec f='llvm/polly/include/polly/CodeGen/IslNodeBuilder.h' l='129' type='polly::Scop &amp;'/>
+<offset>64</offset>
+<use f='llvm/polly/lib/CodeGen/IslNodeBuilder.cpp' l='313' u='r' c='_ZN14IslNodeBuilder22getReferencesInSubtreeEP12isl_ast_nodeRN4llvm9SetVectorIPNS2_5ValueESt6vectorIS5_SaIS5_EENS2_8DenseSetIS5_NS2_12DenseMapInfoIS5_E6344076'/>
+<use f='llvm/polly/lib/CodeGen/IslNodeBuilder.cpp' l='345' u='m' c='_ZN14IslNodeBuilder22getReferencesInSubtreeEP12isl_ast_nodeRN4llvm9SetVectorIPNS2_5ValueESt6vectorIS5_SaIS5_EENS2_8DenseSetIS5_NS2_12DenseMapInfoIS5_E6344076'/>
+<use f='llvm/polly/lib/CodeGen/IslNodeBuilder.cpp' l='345' u='m' c='_ZN14IslNodeBuilder22getReferencesInSubtreeEP12isl_ast_nodeRN4llvm9SetVectorIPNS2_5ValueESt6vectorIS5_SaIS5_EENS2_8DenseSetIS5_NS2_12DenseMapInfoIS5_E6344076'/>
+<use f='llvm/polly/lib/CodeGen/IslNodeBuilder.cpp' l='889' u='m' c='_ZN14IslNodeBuilder17createNewAccessesEPN5polly8ScopStmtEP12isl_ast_node'/>
+<use f='llvm/polly/lib/CodeGen/IslNodeBuilder.cpp' l='1051' u='m' c='_ZN14IslNodeBuilder16materializeValueEP6isl_id'/>
+<use f='llvm/polly/lib/CodeGen/IslNodeBuilder.cpp' l='1062' u='m' c='_ZN14IslNodeBuilder16materializeValueEP6isl_id'/>
+<use f='llvm/polly/lib/CodeGen/IslNodeBuilder.cpp' l='1065' u='m' c='_ZN14IslNodeBuilder16materializeValueEP6isl_id'/>
+<use f='llvm/polly/lib/CodeGen/IslNodeBuilder.cpp' l='1077' u='m' c='_ZN14IslNodeBuilder16materializeValueEP6isl_id'/>
+<use f='llvm/polly/lib/CodeGen/IslNodeBuilder.cpp' l='1111' u='m' c='_ZN14IslNodeBuilder21materializeParametersEv'/>
+<use f='llvm/polly/lib/CodeGen/IslNodeBuilder.cpp' l='1112' u='m' c='_ZN14IslNodeBuilder21materializeParametersEv'/>
+<use f='llvm/polly/lib/CodeGen/IslNodeBuilder.cpp' l='1163' u='m' c='_ZN14IslNodeBuilder41materializeFortranArrayOutermostDimensionEv'/>
+<use f='llvm/polly/lib/CodeGen/IslNodeBuilder.cpp' l='1229' u='m' c='_ZN14IslNodeBuilder20preloadInvariantLoadERKN5polly12MemoryAccessEP7isl_set'/>
+<use f='llvm/polly/lib/CodeGen/IslNodeBuilder.cpp' l='1238' u='m' c='_ZN14IslNodeBuilder20preloadInvariantLoadERKN5polly12MemoryAccessEP7isl_set'/>
+<use f='llvm/polly/lib/CodeGen/IslNodeBuilder.cpp' l='1347' u='m' c='_ZN14IslNodeBuilder26preloadInvariantEquivClassERN5polly21InvariantEquivClassTyE'/>
+<use f='llvm/polly/lib/CodeGen/IslNodeBuilder.cpp' l='1364' u='m' c='_ZN14IslNodeBuilder26preloadInvariantEquivClassERN5polly21InvariantEquivClassTyE'/>
+<use f='llvm/polly/lib/CodeGen/IslNodeBuilder.cpp' l='1390' u='m' c='_ZN14IslNodeBuilder26preloadInvariantEquivClassERN5polly21InvariantEquivClassTyE'/>
+<use f='llvm/polly/lib/CodeGen/IslNodeBuilder.cpp' l='1430' u='m' c='_ZN14IslNodeBuilder26preloadInvariantEquivClassERN5polly21InvariantEquivClassTyE'/>
+<use f='llvm/polly/lib/CodeGen/IslNodeBuilder.cpp' l='1444' u='m' c='_ZN14IslNodeBuilder17allocateNewArraysESt4pairIPN4llvm10BasicBlockES3_E'/>
+<use f='llvm/polly/lib/CodeGen/IslNodeBuilder.cpp' l='1507' u='m' c='_ZN14IslNodeBuilder21preloadInvariantLoadsEv'/>
+<use f='llvm/polly/lib/CodeGen/IslNodeBuilder.cpp' l='1539' u='m' c='_ZN14IslNodeBuilder13addParametersEP7isl_set'/>
+<use f='llvm/polly/lib/CodeGen/IslNodeBuilder.cpp' l='1541' u='m' c='_ZN14IslNodeBuilder13addParametersEP7isl_set'/>
+<use f='llvm/polly/lib/CodeGen/IslNodeBuilder.cpp' l='1567' u='a' c='_ZN14IslNodeBuilder12generateSCEVEPKN4llvm4SCEVE'/>
+<use f='llvm/polly/lib/CodeGen/IslNodeBuilder.cpp' l='1600' u='m' c='_ZN14IslNodeBuilder9createRTCEP12isl_ast_expr'/>

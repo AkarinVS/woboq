@@ -1,0 +1,202 @@
+<!doctype html>
+<html>
+<head>
+<meta name="viewport" content="width=device-width, initial-scale=1.0"><title>tsan_stat.cpp source code [llvm/compiler-rt/lib/tsan/rtl/tsan_stat.cpp] - Woboq Code Browser</title>
+<link rel="stylesheet" href="../../../../.././data/qtcreator.css" title="QtCreator"/>
+<link rel="alternate stylesheet" href="../../../../.././data/kdevelop.css" title="KDevelop"/>
+<script type="text/javascript" src="../../../../.././data/jquery/jquery.min.js"></script>
+<script type="text/javascript" src="../../../../.././data/jquery/jquery-ui.min.js"></script>
+<script>var file = 'llvm/compiler-rt/lib/tsan/rtl/tsan_stat.cpp'; var root_path = '../../../../..'; var data_path = '../../../../.././data'; var ecma_script_api_version = 2;</script>
+<script src='../../../../.././data/codebrowser.js'></script>
+</head>
+<body><div id='header'><h1 id='breadcrumb'><span>Browse the source code of </span><a href='../../../..'>llvm</a>/<a href='../../..'>compiler-rt</a>/<a href='../..'>lib</a>/<a href='..'>tsan</a>/<a href='./'>rtl</a>/<a href='tsan_stat.cpp.html'>tsan_stat.cpp</a></h1></div>
+<hr/><div id='content'><table class="code">
+<tr><th id="1">1</th><td><i>//===-- tsan_stat.cpp -----------------------------------------------------===//</i></td></tr>
+<tr><th id="2">2</th><td><i>//</i></td></tr>
+<tr><th id="3">3</th><td><i>// Part of the LLVM Project, under the Apache License v2.0 with LLVM Exceptions.</i></td></tr>
+<tr><th id="4">4</th><td><i>// See <a href="https://llvm.org/LICENSE.txt">https://llvm.org/LICENSE.txt</a> for license information.</i></td></tr>
+<tr><th id="5">5</th><td><i>// SPDX-License-Identifier: Apache-2.0 WITH LLVM-exception</i></td></tr>
+<tr><th id="6">6</th><td><i>//</i></td></tr>
+<tr><th id="7">7</th><td><i>//===----------------------------------------------------------------------===//</i></td></tr>
+<tr><th id="8">8</th><td><i>//</i></td></tr>
+<tr><th id="9">9</th><td><i>// This file is a part of ThreadSanitizer (TSan), a race detector.</i></td></tr>
+<tr><th id="10">10</th><td><i>//</i></td></tr>
+<tr><th id="11">11</th><td><i>//===----------------------------------------------------------------------===//</i></td></tr>
+<tr><th id="12">12</th><td><u>#include <a href="tsan_stat.h.html">"tsan_stat.h"</a></u></td></tr>
+<tr><th id="13">13</th><td><u>#include <a href="tsan_rtl.h.html">"tsan_rtl.h"</a></u></td></tr>
+<tr><th id="14">14</th><td></td></tr>
+<tr><th id="15">15</th><td><b>namespace</b> <span class="namespace">__tsan</span> {</td></tr>
+<tr><th id="16">16</th><td></td></tr>
+<tr><th id="17">17</th><td><u>#<span data-ppcond="17">if</span> <a class="macro" href="tsan_defs.h.html#27" title="0" data-ref="_M/TSAN_COLLECT_STATS">TSAN_COLLECT_STATS</a></u></td></tr>
+<tr><th id="18">18</th><td></td></tr>
+<tr><th id="19">19</th><td><em>void</em> StatAggregate(u64 *dst, u64 *src) {</td></tr>
+<tr><th id="20">20</th><td>  <b>for</b> (<em>int</em> i = <var>0</var>; i &lt; StatCnt; i++)</td></tr>
+<tr><th id="21">21</th><td>    dst[i] += src[i];</td></tr>
+<tr><th id="22">22</th><td>}</td></tr>
+<tr><th id="23">23</th><td></td></tr>
+<tr><th id="24">24</th><td><em>void</em> StatOutput(u64 *stat) {</td></tr>
+<tr><th id="25">25</th><td>  stat[StatShadowNonZero] = stat[StatShadowProcessed] - stat[StatShadowZero];</td></tr>
+<tr><th id="26">26</th><td></td></tr>
+<tr><th id="27">27</th><td>  <em>static</em> <em>const</em> <em>char</em> *name[StatCnt] = {};</td></tr>
+<tr><th id="28">28</th><td>  name[StatMop]                          = <q>"Memory accesses                   "</q>;</td></tr>
+<tr><th id="29">29</th><td>  name[StatMopRead]                      = <q>"  Including reads                 "</q>;</td></tr>
+<tr><th id="30">30</th><td>  name[StatMopWrite]                     = <q>"            writes                "</q>;</td></tr>
+<tr><th id="31">31</th><td>  name[StatMop1]                         = <q>"  Including size 1                "</q>;</td></tr>
+<tr><th id="32">32</th><td>  name[StatMop2]                         = <q>"            size 2                "</q>;</td></tr>
+<tr><th id="33">33</th><td>  name[StatMop4]                         = <q>"            size 4                "</q>;</td></tr>
+<tr><th id="34">34</th><td>  name[StatMop8]                         = <q>"            size 8                "</q>;</td></tr>
+<tr><th id="35">35</th><td>  name[StatMopSame]                      = <q>"  Including same                  "</q>;</td></tr>
+<tr><th id="36">36</th><td>  name[StatMopIgnored]                   = <q>"  Including ignored               "</q>;</td></tr>
+<tr><th id="37">37</th><td>  name[StatMopRange]                     = <q>"  Including range                 "</q>;</td></tr>
+<tr><th id="38">38</th><td>  name[StatMopRodata]                    = <q>"  Including .rodata               "</q>;</td></tr>
+<tr><th id="39">39</th><td>  name[StatMopRangeRodata]               = <q>"  Including .rodata range         "</q>;</td></tr>
+<tr><th id="40">40</th><td>  name[StatShadowProcessed]              = <q>"Shadow processed                  "</q>;</td></tr>
+<tr><th id="41">41</th><td>  name[StatShadowZero]                   = <q>"  Including empty                 "</q>;</td></tr>
+<tr><th id="42">42</th><td>  name[StatShadowNonZero]                = <q>"  Including non empty             "</q>;</td></tr>
+<tr><th id="43">43</th><td>  name[StatShadowSameSize]               = <q>"  Including same size             "</q>;</td></tr>
+<tr><th id="44">44</th><td>  name[StatShadowIntersect]              = <q>"            intersect             "</q>;</td></tr>
+<tr><th id="45">45</th><td>  name[StatShadowNotIntersect]           = <q>"            not intersect         "</q>;</td></tr>
+<tr><th id="46">46</th><td>  name[StatShadowSameThread]             = <q>"  Including same thread           "</q>;</td></tr>
+<tr><th id="47">47</th><td>  name[StatShadowAnotherThread]          = <q>"            another thread        "</q>;</td></tr>
+<tr><th id="48">48</th><td>  name[StatShadowReplace]                = <q>"  Including evicted               "</q>;</td></tr>
+<tr><th id="49">49</th><td></td></tr>
+<tr><th id="50">50</th><td>  name[StatFuncEnter]                    = <q>"Function entries                  "</q>;</td></tr>
+<tr><th id="51">51</th><td>  name[StatFuncExit]                     = <q>"Function exits                    "</q>;</td></tr>
+<tr><th id="52">52</th><td>  name[StatEvents]                       = <q>"Events collected                  "</q>;</td></tr>
+<tr><th id="53">53</th><td></td></tr>
+<tr><th id="54">54</th><td>  name[StatThreadCreate]                 = <q>"Total threads created             "</q>;</td></tr>
+<tr><th id="55">55</th><td>  name[StatThreadFinish]                 = <q>"  threads finished                "</q>;</td></tr>
+<tr><th id="56">56</th><td>  name[StatThreadReuse]                  = <q>"  threads reused                  "</q>;</td></tr>
+<tr><th id="57">57</th><td>  name[StatThreadMaxTid]                 = <q>"  max tid                         "</q>;</td></tr>
+<tr><th id="58">58</th><td>  name[StatThreadMaxAlive]               = <q>"  max alive threads               "</q>;</td></tr>
+<tr><th id="59">59</th><td></td></tr>
+<tr><th id="60">60</th><td>  name[StatMutexCreate]                  = <q>"Mutexes created                   "</q>;</td></tr>
+<tr><th id="61">61</th><td>  name[StatMutexDestroy]                 = <q>"  destroyed                       "</q>;</td></tr>
+<tr><th id="62">62</th><td>  name[StatMutexLock]                    = <q>"  lock                            "</q>;</td></tr>
+<tr><th id="63">63</th><td>  name[StatMutexUnlock]                  = <q>"  unlock                          "</q>;</td></tr>
+<tr><th id="64">64</th><td>  name[StatMutexRecLock]                 = <q>"  recursive lock                  "</q>;</td></tr>
+<tr><th id="65">65</th><td>  name[StatMutexRecUnlock]               = <q>"  recursive unlock                "</q>;</td></tr>
+<tr><th id="66">66</th><td>  name[StatMutexReadLock]                = <q>"  read lock                       "</q>;</td></tr>
+<tr><th id="67">67</th><td>  name[StatMutexReadUnlock]              = <q>"  read unlock                     "</q>;</td></tr>
+<tr><th id="68">68</th><td></td></tr>
+<tr><th id="69">69</th><td>  name[StatSyncCreated]                  = <q>"Sync objects created              "</q>;</td></tr>
+<tr><th id="70">70</th><td>  name[StatSyncDestroyed]                = <q>"             destroyed            "</q>;</td></tr>
+<tr><th id="71">71</th><td>  name[StatSyncAcquire]                  = <q>"             acquired             "</q>;</td></tr>
+<tr><th id="72">72</th><td>  name[StatSyncRelease]                  = <q>"             released             "</q>;</td></tr>
+<tr><th id="73">73</th><td></td></tr>
+<tr><th id="74">74</th><td>  name[StatClockAcquire]                 = <q>"Clock acquire                     "</q>;</td></tr>
+<tr><th id="75">75</th><td>  name[StatClockAcquireEmpty]            = <q>"  empty clock                     "</q>;</td></tr>
+<tr><th id="76">76</th><td>  name[StatClockAcquireFastRelease]      = <q>"  fast from release-store         "</q>;</td></tr>
+<tr><th id="77">77</th><td>  name[StatClockAcquireFull]             = <q>"  full (slow)                     "</q>;</td></tr>
+<tr><th id="78">78</th><td>  name[StatClockAcquiredSomething]       = <q>"  acquired something              "</q>;</td></tr>
+<tr><th id="79">79</th><td>  name[StatClockRelease]                 = <q>"Clock release                     "</q>;</td></tr>
+<tr><th id="80">80</th><td>  name[StatClockReleaseResize]           = <q>"  resize                          "</q>;</td></tr>
+<tr><th id="81">81</th><td>  name[StatClockReleaseFast]             = <q>"  fast                            "</q>;</td></tr>
+<tr><th id="82">82</th><td>  name[StatClockReleaseSlow]             = <q>"  dirty overflow (slow)           "</q>;</td></tr>
+<tr><th id="83">83</th><td>  name[StatClockReleaseFull]             = <q>"  full (slow)                     "</q>;</td></tr>
+<tr><th id="84">84</th><td>  name[StatClockReleaseAcquired]         = <q>"  was acquired                    "</q>;</td></tr>
+<tr><th id="85">85</th><td>  name[StatClockReleaseClearTail]        = <q>"  clear tail                      "</q>;</td></tr>
+<tr><th id="86">86</th><td>  name[StatClockStore]                   = <q>"Clock release store               "</q>;</td></tr>
+<tr><th id="87">87</th><td>  name[StatClockStoreResize]             = <q>"  resize                          "</q>;</td></tr>
+<tr><th id="88">88</th><td>  name[StatClockStoreFast]               = <q>"  fast                            "</q>;</td></tr>
+<tr><th id="89">89</th><td>  name[StatClockStoreFull]               = <q>"  slow                            "</q>;</td></tr>
+<tr><th id="90">90</th><td>  name[StatClockStoreTail]               = <q>"  clear tail                      "</q>;</td></tr>
+<tr><th id="91">91</th><td>  name[StatClockAcquireRelease]          = <q>"Clock acquire-release             "</q>;</td></tr>
+<tr><th id="92">92</th><td></td></tr>
+<tr><th id="93">93</th><td>  name[StatAtomic]                       = <q>"Atomic operations                 "</q>;</td></tr>
+<tr><th id="94">94</th><td>  name[StatAtomicLoad]                   = <q>"  Including load                  "</q>;</td></tr>
+<tr><th id="95">95</th><td>  name[StatAtomicStore]                  = <q>"            store                 "</q>;</td></tr>
+<tr><th id="96">96</th><td>  name[StatAtomicExchange]               = <q>"            exchange              "</q>;</td></tr>
+<tr><th id="97">97</th><td>  name[StatAtomicFetchAdd]               = <q>"            fetch_add             "</q>;</td></tr>
+<tr><th id="98">98</th><td>  name[StatAtomicFetchSub]               = <q>"            fetch_sub             "</q>;</td></tr>
+<tr><th id="99">99</th><td>  name[StatAtomicFetchAnd]               = <q>"            fetch_and             "</q>;</td></tr>
+<tr><th id="100">100</th><td>  name[StatAtomicFetchOr]                = <q>"            fetch_or              "</q>;</td></tr>
+<tr><th id="101">101</th><td>  name[StatAtomicFetchXor]               = <q>"            fetch_xor             "</q>;</td></tr>
+<tr><th id="102">102</th><td>  name[StatAtomicFetchNand]              = <q>"            fetch_nand            "</q>;</td></tr>
+<tr><th id="103">103</th><td>  name[StatAtomicCAS]                    = <q>"            compare_exchange      "</q>;</td></tr>
+<tr><th id="104">104</th><td>  name[StatAtomicFence]                  = <q>"            fence                 "</q>;</td></tr>
+<tr><th id="105">105</th><td>  name[StatAtomicRelaxed]                = <q>"  Including relaxed               "</q>;</td></tr>
+<tr><th id="106">106</th><td>  name[StatAtomicConsume]                = <q>"            consume               "</q>;</td></tr>
+<tr><th id="107">107</th><td>  name[StatAtomicAcquire]                = <q>"            acquire               "</q>;</td></tr>
+<tr><th id="108">108</th><td>  name[StatAtomicRelease]                = <q>"            release               "</q>;</td></tr>
+<tr><th id="109">109</th><td>  name[StatAtomicAcq_Rel]                = <q>"            acq_rel               "</q>;</td></tr>
+<tr><th id="110">110</th><td>  name[StatAtomicSeq_Cst]                = <q>"            seq_cst               "</q>;</td></tr>
+<tr><th id="111">111</th><td>  name[StatAtomic1]                      = <q>"  Including size 1                "</q>;</td></tr>
+<tr><th id="112">112</th><td>  name[StatAtomic2]                      = <q>"            size 2                "</q>;</td></tr>
+<tr><th id="113">113</th><td>  name[StatAtomic4]                      = <q>"            size 4                "</q>;</td></tr>
+<tr><th id="114">114</th><td>  name[StatAtomic8]                      = <q>"            size 8                "</q>;</td></tr>
+<tr><th id="115">115</th><td>  name[StatAtomic16]                     = <q>"            size 16               "</q>;</td></tr>
+<tr><th id="116">116</th><td></td></tr>
+<tr><th id="117">117</th><td>  name[StatAnnotation]                   = <q>"Dynamic annotations               "</q>;</td></tr>
+<tr><th id="118">118</th><td>  name[StatAnnotateHappensBefore]        = <q>"  HappensBefore                   "</q>;</td></tr>
+<tr><th id="119">119</th><td>  name[StatAnnotateHappensAfter]         = <q>"  HappensAfter                    "</q>;</td></tr>
+<tr><th id="120">120</th><td>  name[StatAnnotateCondVarSignal]        = <q>"  CondVarSignal                   "</q>;</td></tr>
+<tr><th id="121">121</th><td>  name[StatAnnotateCondVarSignalAll]     = <q>"  CondVarSignalAll                "</q>;</td></tr>
+<tr><th id="122">122</th><td>  name[StatAnnotateMutexIsNotPHB]        = <q>"  MutexIsNotPHB                   "</q>;</td></tr>
+<tr><th id="123">123</th><td>  name[StatAnnotateCondVarWait]          = <q>"  CondVarWait                     "</q>;</td></tr>
+<tr><th id="124">124</th><td>  name[StatAnnotateRWLockCreate]         = <q>"  RWLockCreate                    "</q>;</td></tr>
+<tr><th id="125">125</th><td>  name[StatAnnotateRWLockCreateStatic]   = <q>"  StatAnnotateRWLockCreateStatic  "</q>;</td></tr>
+<tr><th id="126">126</th><td>  name[StatAnnotateRWLockDestroy]        = <q>"  RWLockDestroy                   "</q>;</td></tr>
+<tr><th id="127">127</th><td>  name[StatAnnotateRWLockAcquired]       = <q>"  RWLockAcquired                  "</q>;</td></tr>
+<tr><th id="128">128</th><td>  name[StatAnnotateRWLockReleased]       = <q>"  RWLockReleased                  "</q>;</td></tr>
+<tr><th id="129">129</th><td>  name[StatAnnotateTraceMemory]          = <q>"  TraceMemory                     "</q>;</td></tr>
+<tr><th id="130">130</th><td>  name[StatAnnotateFlushState]           = <q>"  FlushState                      "</q>;</td></tr>
+<tr><th id="131">131</th><td>  name[StatAnnotateNewMemory]            = <q>"  NewMemory                       "</q>;</td></tr>
+<tr><th id="132">132</th><td>  name[StatAnnotateNoOp]                 = <q>"  NoOp                            "</q>;</td></tr>
+<tr><th id="133">133</th><td>  name[StatAnnotateFlushExpectedRaces]   = <q>"  FlushExpectedRaces              "</q>;</td></tr>
+<tr><th id="134">134</th><td>  name[StatAnnotateEnableRaceDetection]  = <q>"  EnableRaceDetection             "</q>;</td></tr>
+<tr><th id="135">135</th><td>  name[StatAnnotateMutexIsUsedAsCondVar] = <q>"  MutexIsUsedAsCondVar            "</q>;</td></tr>
+<tr><th id="136">136</th><td>  name[StatAnnotatePCQGet]               = <q>"  PCQGet                          "</q>;</td></tr>
+<tr><th id="137">137</th><td>  name[StatAnnotatePCQPut]               = <q>"  PCQPut                          "</q>;</td></tr>
+<tr><th id="138">138</th><td>  name[StatAnnotatePCQDestroy]           = <q>"  PCQDestroy                      "</q>;</td></tr>
+<tr><th id="139">139</th><td>  name[StatAnnotatePCQCreate]            = <q>"  PCQCreate                       "</q>;</td></tr>
+<tr><th id="140">140</th><td>  name[StatAnnotateExpectRace]           = <q>"  ExpectRace                      "</q>;</td></tr>
+<tr><th id="141">141</th><td>  name[StatAnnotateBenignRaceSized]      = <q>"  BenignRaceSized                 "</q>;</td></tr>
+<tr><th id="142">142</th><td>  name[StatAnnotateBenignRace]           = <q>"  BenignRace                      "</q>;</td></tr>
+<tr><th id="143">143</th><td>  name[StatAnnotateIgnoreReadsBegin]     = <q>"  IgnoreReadsBegin                "</q>;</td></tr>
+<tr><th id="144">144</th><td>  name[StatAnnotateIgnoreReadsEnd]       = <q>"  IgnoreReadsEnd                  "</q>;</td></tr>
+<tr><th id="145">145</th><td>  name[StatAnnotateIgnoreWritesBegin]    = <q>"  IgnoreWritesBegin               "</q>;</td></tr>
+<tr><th id="146">146</th><td>  name[StatAnnotateIgnoreWritesEnd]      = <q>"  IgnoreWritesEnd                 "</q>;</td></tr>
+<tr><th id="147">147</th><td>  name[StatAnnotateIgnoreSyncBegin]      = <q>"  IgnoreSyncBegin                 "</q>;</td></tr>
+<tr><th id="148">148</th><td>  name[StatAnnotateIgnoreSyncEnd]        = <q>"  IgnoreSyncEnd                   "</q>;</td></tr>
+<tr><th id="149">149</th><td>  name[StatAnnotatePublishMemoryRange]   = <q>"  PublishMemoryRange              "</q>;</td></tr>
+<tr><th id="150">150</th><td>  name[StatAnnotateUnpublishMemoryRange] = <q>"  UnpublishMemoryRange            "</q>;</td></tr>
+<tr><th id="151">151</th><td>  name[StatAnnotateThreadName]           = <q>"  ThreadName                      "</q>;</td></tr>
+<tr><th id="152">152</th><td>  name[Stat__tsan_mutex_create]          = <q>"  __tsan_mutex_create             "</q>;</td></tr>
+<tr><th id="153">153</th><td>  name[Stat__tsan_mutex_destroy]         = <q>"  __tsan_mutex_destroy            "</q>;</td></tr>
+<tr><th id="154">154</th><td>  name[Stat__tsan_mutex_pre_lock]        = <q>"  __tsan_mutex_pre_lock           "</q>;</td></tr>
+<tr><th id="155">155</th><td>  name[Stat__tsan_mutex_post_lock]       = <q>"  __tsan_mutex_post_lock          "</q>;</td></tr>
+<tr><th id="156">156</th><td>  name[Stat__tsan_mutex_pre_unlock]      = <q>"  __tsan_mutex_pre_unlock         "</q>;</td></tr>
+<tr><th id="157">157</th><td>  name[Stat__tsan_mutex_post_unlock]     = <q>"  __tsan_mutex_post_unlock        "</q>;</td></tr>
+<tr><th id="158">158</th><td>  name[Stat__tsan_mutex_pre_signal]      = <q>"  __tsan_mutex_pre_signal         "</q>;</td></tr>
+<tr><th id="159">159</th><td>  name[Stat__tsan_mutex_post_signal]     = <q>"  __tsan_mutex_post_signal        "</q>;</td></tr>
+<tr><th id="160">160</th><td>  name[Stat__tsan_mutex_pre_divert]      = <q>"  __tsan_mutex_pre_divert         "</q>;</td></tr>
+<tr><th id="161">161</th><td>  name[Stat__tsan_mutex_post_divert]     = <q>"  __tsan_mutex_post_divert        "</q>;</td></tr>
+<tr><th id="162">162</th><td></td></tr>
+<tr><th id="163">163</th><td>  name[StatMtxTotal]                     = <q>"Contentionz                       "</q>;</td></tr>
+<tr><th id="164">164</th><td>  name[StatMtxTrace]                     = <q>"  Trace                           "</q>;</td></tr>
+<tr><th id="165">165</th><td>  name[StatMtxThreads]                   = <q>"  Threads                         "</q>;</td></tr>
+<tr><th id="166">166</th><td>  name[StatMtxReport]                    = <q>"  Report                          "</q>;</td></tr>
+<tr><th id="167">167</th><td>  name[StatMtxSyncVar]                   = <q>"  SyncVar                         "</q>;</td></tr>
+<tr><th id="168">168</th><td>  name[StatMtxSyncTab]                   = <q>"  SyncTab                         "</q>;</td></tr>
+<tr><th id="169">169</th><td>  name[StatMtxSlab]                      = <q>"  Slab                            "</q>;</td></tr>
+<tr><th id="170">170</th><td>  name[StatMtxAtExit]                    = <q>"  Atexit                          "</q>;</td></tr>
+<tr><th id="171">171</th><td>  name[StatMtxAnnotations]               = <q>"  Annotations                     "</q>;</td></tr>
+<tr><th id="172">172</th><td>  name[StatMtxMBlock]                    = <q>"  MBlock                          "</q>;</td></tr>
+<tr><th id="173">173</th><td>  name[StatMtxDeadlockDetector]          = <q>"  DeadlockDetector                "</q>;</td></tr>
+<tr><th id="174">174</th><td>  name[StatMtxFired]                     = <q>"  FiredSuppressions               "</q>;</td></tr>
+<tr><th id="175">175</th><td>  name[StatMtxRacy]                      = <q>"  RacyStacks                      "</q>;</td></tr>
+<tr><th id="176">176</th><td>  name[StatMtxFD]                        = <q>"  FD                              "</q>;</td></tr>
+<tr><th id="177">177</th><td>  name[StatMtxGlobalProc]                = <q>"  GlobalProc                      "</q>;</td></tr>
+<tr><th id="178">178</th><td></td></tr>
+<tr><th id="179">179</th><td>  Printf(<q>"Statistics:\n"</q>);</td></tr>
+<tr><th id="180">180</th><td>  <b>for</b> (<em>int</em> i = <var>0</var>; i &lt; StatCnt; i++)</td></tr>
+<tr><th id="181">181</th><td>    Printf(<q>"%s: %16zu\n"</q>, name[i], (uptr)stat[i]);</td></tr>
+<tr><th id="182">182</th><td>}</td></tr>
+<tr><th id="183">183</th><td></td></tr>
+<tr><th id="184">184</th><td><u>#<span data-ppcond="17">endif</span></u></td></tr>
+<tr><th id="185">185</th><td></td></tr>
+<tr><th id="186">186</th><td>}  <i>// namespace __tsan</i></td></tr>
+<tr><th id="187">187</th><td></td></tr>
+</table><hr/><p id='footer'>
+Generated on <em>2021-Jul-01</em> from project llvm revision <em>12</em>

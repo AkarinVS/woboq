@@ -1,0 +1,168 @@
+<!doctype html>
+<html>
+<head>
+<meta name="viewport" content="width=device-width, initial-scale=1.0"><title>hwasan_tag_mismatch_aarch64.S source code [llvm/compiler-rt/lib/hwasan/hwasan_tag_mismatch_aarch64.S] - Woboq Code Browser</title>
+<link rel="stylesheet" href="../../../.././data/qtcreator.css" title="QtCreator"/>
+<link rel="alternate stylesheet" href="../../../.././data/kdevelop.css" title="KDevelop"/>
+<script type="text/javascript" src="../../../.././data/jquery/jquery.min.js"></script>
+<script type="text/javascript" src="../../../.././data/jquery/jquery-ui.min.js"></script>
+<script>var file = 'llvm/compiler-rt/lib/hwasan/hwasan_tag_mismatch_aarch64.S'; var root_path = '../../../..'; var data_path = '../../../.././data'; var ecma_script_api_version = 2;</script>
+<script src='../../../.././data/codebrowser.js'></script>
+</head>
+<body><div id='header'><h1 id='breadcrumb'><span>Browse the source code of </span><a href='../../..'>llvm</a>/<a href='../..'>compiler-rt</a>/<a href='..'>lib</a>/<a href='./'>hwasan</a>/<a href='hwasan_tag_mismatch_aarch64.S.html'>hwasan_tag_mismatch_aarch64.S</a></h1></div>
+<hr/><div id='content'><table class="code">
+<tr><th id="1">1</th><td><u>#include <a href="../sanitizer_common/sanitizer_asm.h.html">"sanitizer_common/sanitizer_asm.h"</a></u></td></tr>
+<tr><th id="2">2</th><td></td></tr>
+<tr><th id="3">3</th><td><i>// The content of this file is AArch64-only:</i></td></tr>
+<tr><th id="4">4</th><td><u>#<span data-ppcond="4">if</span> defined(<span class="macro" data-ref="_M/__aarch64__">__aarch64__</span>)</u></td></tr>
+<tr><th id="5">5</th><td></td></tr>
+<tr><th id="6">6</th><td><i>// The responsibility of the HWASan entry point in compiler-rt is to primarily</i></td></tr>
+<tr><th id="7">7</th><td><i>// readjust the stack from the callee and save the current register values to</i></td></tr>
+<tr><th id="8">8</th><td><i>// the stack.</i></td></tr>
+<tr><th id="9">9</th><td><i>// This entry point function should be called from a __hwasan_check_* symbol.</i></td></tr>
+<tr><th id="10">10</th><td><i>// These are generated during a lowering pass in the backend, and are found in</i></td></tr>
+<tr><th id="11">11</th><td><i>// AArch64AsmPrinter::EmitHwasanMemaccessSymbols(). Please look there for</i></td></tr>
+<tr><th id="12">12</th><td><i>// further information.</i></td></tr>
+<tr><th id="13">13</th><td><i>// The __hwasan_check_* caller of this function should have expanded the stack</i></td></tr>
+<tr><th id="14">14</th><td><i>// and saved the previous values of x0, x1, x29, and x30. This function will</i></td></tr>
+<tr><th id="15">15</th><td><i>// "consume" these saved values and treats it as part of its own stack frame.</i></td></tr>
+<tr><th id="16">16</th><td><i>// In this sense, the __hwasan_check_* callee and this function "share" a stack</i></td></tr>
+<tr><th id="17">17</th><td><i>// frame. This allows us to omit having unwinding information (.cfi_*) present</i></td></tr>
+<tr><th id="18">18</th><td><i>// in every __hwasan_check_* function, therefore reducing binary size. This is</i></td></tr>
+<tr><th id="19">19</th><td><i>// particularly important as hwasan_check_* instances are duplicated in every</i></td></tr>
+<tr><th id="20">20</th><td><i>// translation unit where HWASan is enabled.</i></td></tr>
+<tr><th id="21">21</th><td><i>// This function calls HwasanTagMismatch to step back into the C++ code that</i></td></tr>
+<tr><th id="22">22</th><td><i>// completes the stack unwinding and error printing. This function is is not</i></td></tr>
+<tr><th id="23">23</th><td><i>// permitted to return.</i></td></tr>
+<tr><th id="24">24</th><td><i></i></td></tr>
+<tr><th id="25">25</th><td><i></i></td></tr>
+<tr><th id="26">26</th><td><i>// Frame from __hwasan_check_:</i></td></tr>
+<tr><th id="27">27</th><td><i>// |              ...                |</i></td></tr>
+<tr><th id="28">28</th><td><i>// |              ...                |</i></td></tr>
+<tr><th id="29">29</th><td><i>// | Previous stack frames...        |</i></td></tr>
+<tr><th id="30">30</th><td><i>// +=================================+</i></td></tr>
+<tr><th id="31">31</th><td><i>// | Unused 8-bytes for maintaining  |</i></td></tr>
+<tr><th id="32">32</th><td><i>// | 16-byte SP alignment.           |</i></td></tr>
+<tr><th id="33">33</th><td><i>// +---------------------------------+</i></td></tr>
+<tr><th id="34">34</th><td><i>// | Return address (x30) for caller |</i></td></tr>
+<tr><th id="35">35</th><td><i>// | of __hwasan_check_*.            |</i></td></tr>
+<tr><th id="36">36</th><td><i>// +---------------------------------+</i></td></tr>
+<tr><th id="37">37</th><td><i>// | Frame address (x29) for caller  |</i></td></tr>
+<tr><th id="38">38</th><td><i>// | of __hwasan_check_*             |</i></td></tr>
+<tr><th id="39">39</th><td><i>// +---------------------------------+ &lt;-- [SP + 232]</i></td></tr>
+<tr><th id="40">40</th><td><i>// |              ...                |</i></td></tr>
+<tr><th id="41">41</th><td><i>// |                                 |</i></td></tr>
+<tr><th id="42">42</th><td><i>// | Stack frame space for x2 - x28. |</i></td></tr>
+<tr><th id="43">43</th><td><i>// |                                 |</i></td></tr>
+<tr><th id="44">44</th><td><i>// |              ...                |</i></td></tr>
+<tr><th id="45">45</th><td><i>// +---------------------------------+ &lt;-- [SP + 16]</i></td></tr>
+<tr><th id="46">46</th><td><i>// |                                 |</i></td></tr>
+<tr><th id="47">47</th><td><i>// | Saved x1, as __hwasan_check_*   |</i></td></tr>
+<tr><th id="48">48</th><td><i>// | clobbers it.                    |</i></td></tr>
+<tr><th id="49">49</th><td><i>// +---------------------------------+</i></td></tr>
+<tr><th id="50">50</th><td><i>// | Saved x0, likewise above.       |</i></td></tr>
+<tr><th id="51">51</th><td><i>// +---------------------------------+ &lt;-- [x30 / SP]</i></td></tr>
+<tr><th id="52">52</th><td><i></i></td></tr>
+<tr><th id="53">53</th><td><i>// This function takes two arguments:</i></td></tr>
+<tr><th id="54">54</th><td><i>//   * x0: The data address.</i></td></tr>
+<tr><th id="55">55</th><td><i>//   * x1: The encoded access info for the failing access.</i></td></tr>
+<tr><th id="56">56</th><td><i></i></td></tr>
+<tr><th id="57">57</th><td><i>// This function has two entry points. The first, __hwasan_tag_mismatch, is used</i></td></tr>
+<tr><th id="58">58</th><td><i>// by clients that were compiled without short tag checks (i.e. binaries built</i></td></tr>
+<tr><th id="59">59</th><td><i>// by older compilers and binaries targeting older runtimes). In this case the</i></td></tr>
+<tr><th id="60">60</th><td><i>// outlined tag check will be missing the code handling short tags (which won't</i></td></tr>
+<tr><th id="61">61</th><td><i>// be used in the binary's own stack variables but may be used on the heap</i></td></tr>
+<tr><th id="62">62</th><td><i>// or stack variables in other binaries), so the check needs to be done here.</i></td></tr>
+<tr><th id="63">63</th><td><i>//</i></td></tr>
+<tr><th id="64">64</th><td><i>// The second, __hwasan_tag_mismatch_v2, is used by binaries targeting newer</i></td></tr>
+<tr><th id="65">65</th><td><i>// runtimes. This entry point bypasses the short tag check since it will have</i></td></tr>
+<tr><th id="66">66</th><td><i>// already been done as part of the outlined tag check. Since tag mismatches are</i></td></tr>
+<tr><th id="67">67</th><td><i>// uncommon, there isn't a significant performance benefit to being able to</i></td></tr>
+<tr><th id="68">68</th><td><i>// bypass the check; the main benefits are that we can sometimes avoid</i></td></tr>
+<tr><th id="69">69</th><td><i>// clobbering the x17 register in error reports, and that the program will have</i></td></tr>
+<tr><th id="70">70</th><td><i>// a runtime dependency on the __hwasan_tag_mismatch_v2 symbol therefore it will</i></td></tr>
+<tr><th id="71">71</th><td><i>// fail to start up given an older (i.e. incompatible) runtime.</i></td></tr>
+<tr><th id="72">72</th><td>.section .text</td></tr>
+<tr><th id="73">73</th><td>.file <q>"hwasan_tag_mismatch_aarch64.S"</q></td></tr>
+<tr><th id="74">74</th><td>.global __hwasan_tag_mismatch</td></tr>
+<tr><th id="75">75</th><td>.type __hwasan_tag_mismatch, %function</td></tr>
+<tr><th id="76">76</th><td>__hwasan_tag_mismatch:</td></tr>
+<tr><th id="77">77</th><td>  <i>// Compute the granule position one past the end of the access.</i></td></tr>
+<tr><th id="78">78</th><td>  mov x16, #<var>1</var></td></tr>
+<tr><th id="79">79</th><td>  and x17, x1, #<var>0xf</var></td></tr>
+<tr><th id="80">80</th><td>  lsl x16, x16, x17</td></tr>
+<tr><th id="81">81</th><td>  and x17, x0, #<var>0xf</var></td></tr>
+<tr><th id="82">82</th><td>  add x17, x16, x17</td></tr>
+<tr><th id="83">83</th><td></td></tr>
+<tr><th id="84">84</th><td>  <i>// Load the shadow byte again and check whether it is a short tag within the</i></td></tr>
+<tr><th id="85">85</th><td><i>  // range of the granule position computed above.</i></td></tr>
+<tr><th id="86">86</th><td>  ubfx x16, x0, #<var>4</var>, #<var>52</var></td></tr>
+<tr><th id="87">87</th><td>  ldrb w16, [x9, x16]</td></tr>
+<tr><th id="88">88</th><td>  cmp w16, #<var>0xf</var></td></tr>
+<tr><th id="89">89</th><td>  b.hi __hwasan_tag_mismatch_v2</td></tr>
+<tr><th id="90">90</th><td>  cmp w16, w17</td></tr>
+<tr><th id="91">91</th><td>  b.lo __hwasan_tag_mismatch_v2</td></tr>
+<tr><th id="92">92</th><td></td></tr>
+<tr><th id="93">93</th><td>  <i>// Load the real tag from the last byte of the granule and compare against</i></td></tr>
+<tr><th id="94">94</th><td><i>  // the pointer tag.</i></td></tr>
+<tr><th id="95">95</th><td>  orr x16, x0, #<var>0xf</var></td></tr>
+<tr><th id="96">96</th><td>  ldrb w16, [x16]</td></tr>
+<tr><th id="97">97</th><td>  cmp x16, x0, lsr #<var>56</var></td></tr>
+<tr><th id="98">98</th><td>  b.ne __hwasan_tag_mismatch_v2</td></tr>
+<tr><th id="99">99</th><td></td></tr>
+<tr><th id="100">100</th><td>  <i>// Restore x0, x1 and sp to their values from before the __hwasan_tag_mismatch</i></td></tr>
+<tr><th id="101">101</th><td><i>  // call and resume execution.</i></td></tr>
+<tr><th id="102">102</th><td>  ldp x0, x1, [sp], #<var>256</var></td></tr>
+<tr><th id="103">103</th><td>  ret</td></tr>
+<tr><th id="104">104</th><td></td></tr>
+<tr><th id="105">105</th><td>.global __hwasan_tag_mismatch_v2</td></tr>
+<tr><th id="106">106</th><td>.type __hwasan_tag_mismatch_v2, %function</td></tr>
+<tr><th id="107">107</th><td>__hwasan_tag_mismatch_v2:</td></tr>
+<tr><th id="108">108</th><td>  CFI_STARTPROC</td></tr>
+<tr><th id="109">109</th><td></td></tr>
+<tr><th id="110">110</th><td>  <i>// Set the CFA to be the return address for caller of __hwasan_check_*. Note</i></td></tr>
+<tr><th id="111">111</th><td><i>  // that we do not emit CFI predicates to describe the contents of this stack</i></td></tr>
+<tr><th id="112">112</th><td><i>  // frame, as this proxy entry point should never be debugged. The contents</i></td></tr>
+<tr><th id="113">113</th><td><i>  // are static and are handled by the unwinder after calling</i></td></tr>
+<tr><th id="114">114</th><td><i>  // __hwasan_tag_mismatch. The frame pointer is already correctly setup</i></td></tr>
+<tr><th id="115">115</th><td><i>  // by __hwasan_check_*.</i></td></tr>
+<tr><th id="116">116</th><td>  add x29, sp, #<var>232</var></td></tr>
+<tr><th id="117">117</th><td>  CFI_DEF_CFA(w29, <var>24</var>)</td></tr>
+<tr><th id="118">118</th><td>  CFI_OFFSET(w30, -<var>16</var>)</td></tr>
+<tr><th id="119">119</th><td>  CFI_OFFSET(w29, -<var>24</var>)</td></tr>
+<tr><th id="120">120</th><td></td></tr>
+<tr><th id="121">121</th><td>  <i>// Save the rest of the registers into the preallocated space left by</i></td></tr>
+<tr><th id="122">122</th><td><i>  // __hwasan_check.</i></td></tr>
+<tr><th id="123">123</th><td>  str     x28,      [sp, #<var>224</var>]</td></tr>
+<tr><th id="124">124</th><td>  stp     x26, x27, [sp, #<var>208</var>]</td></tr>
+<tr><th id="125">125</th><td>  stp     x24, x25, [sp, #<var>192</var>]</td></tr>
+<tr><th id="126">126</th><td>  stp     x22, x23, [sp, #<var>176</var>]</td></tr>
+<tr><th id="127">127</th><td>  stp     x20, x21, [sp, #<var>160</var>]</td></tr>
+<tr><th id="128">128</th><td>  stp     x18, x19, [sp, #<var>144</var>]</td></tr>
+<tr><th id="129">129</th><td>  stp     x16, x17, [sp, #<var>128</var>]</td></tr>
+<tr><th id="130">130</th><td>  stp     x14, x15, [sp, #<var>112</var>]</td></tr>
+<tr><th id="131">131</th><td>  stp     x12, x13, [sp, #<var>96</var>]</td></tr>
+<tr><th id="132">132</th><td>  stp     x10, x11, [sp, #<var>80</var>]</td></tr>
+<tr><th id="133">133</th><td>  stp     x8,  x9,  [sp, #<var>64</var>]</td></tr>
+<tr><th id="134">134</th><td>  stp     x6,  x7,  [sp, #<var>48</var>]</td></tr>
+<tr><th id="135">135</th><td>  stp     x4,  x5,  [sp, #<var>32</var>]</td></tr>
+<tr><th id="136">136</th><td>  stp     x2,  x3,  [sp, #<var>16</var>]</td></tr>
+<tr><th id="137">137</th><td></td></tr>
+<tr><th id="138">138</th><td>  <i>// Pass the address of the frame to __hwasan_tag_mismatch4, so that it can</i></td></tr>
+<tr><th id="139">139</th><td><i>  // extract the saved registers from this frame without having to worry about</i></td></tr>
+<tr><th id="140">140</th><td><i>  // finding this frame.</i></td></tr>
+<tr><th id="141">141</th><td>  mov x2, sp</td></tr>
+<tr><th id="142">142</th><td></td></tr>
+<tr><th id="143">143</th><td>  bl __hwasan_tag_mismatch4</td></tr>
+<tr><th id="144">144</th><td>  CFI_ENDPROC</td></tr>
+<tr><th id="145">145</th><td></td></tr>
+<tr><th id="146">146</th><td>.Lfunc_end0:</td></tr>
+<tr><th id="147">147</th><td>  .size __hwasan_tag_mismatch, .Lfunc_end0-__hwasan_tag_mismatch</td></tr>
+<tr><th id="148">148</th><td></td></tr>
+<tr><th id="149">149</th><td><u>#<span data-ppcond="4">endif</span>  // defined(__aarch64__)</u></td></tr>
+<tr><th id="150">150</th><td></td></tr>
+<tr><th id="151">151</th><td><i>// We do not need executable stack.</i></td></tr>
+<tr><th id="152">152</th><td><a class="macro" href="../sanitizer_common/sanitizer_asm.h.html#64" title=".section .note.GNU-stack,&quot;&quot;,%progbits" data-ref="_M/NO_EXEC_STACK_DIRECTIVE">NO_EXEC_STACK_DIRECTIVE</a></td></tr>
+<tr><th id="153">153</th><td></td></tr>
+</table><hr/><p id='footer'>
+Generated on <em>2021-Jul-01</em> from project llvm revision <em>12</em>

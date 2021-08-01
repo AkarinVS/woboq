@@ -1,0 +1,54 @@
+<dec f='llvm/llvm/lib/Target/Mips/MipsFrameLowering.h' l='31' type='static const llvm::MipsFrameLowering * llvm::MipsFrameLowering::create(const llvm::MipsSubtarget &amp; ST)'/>
+<def f='llvm/llvm/lib/Target/Mips/MipsFrameLowering.cpp' l='82' ll='87' type='static const llvm::MipsFrameLowering * llvm::MipsFrameLowering::create(const llvm::MipsSubtarget &amp; ST)'/>
+<doc f='llvm/llvm/lib/Target/Mips/MipsFrameLowering.cpp' l='30'>//===----------------------------------------------------------------------===//
+//
+// Stack Frame Processing methods
+// +----------------------------+
+//
+// The stack is allocated decrementing the stack pointer on
+// the first instruction of a function prologue. Once decremented,
+// all stack references are done thought a positive offset
+// from the stack/frame pointer, so the stack is considering
+// to grow up! Otherwise terrible hacks would have to be made
+// to get this stack ABI compliant :)
+//
+//  The stack frame required by the ABI (after call):
+//  Offset
+//
+//  0                 ----------
+//  4                 Args to pass
+//  .                 saved $GP  (used in PIC)
+//  .                 Alloca allocations
+//  .                 Local Area
+//  .                 CPU &quot;Callee Saved&quot; Registers
+//  .                 saved FP
+//  .                 saved RA
+//  .                 FPU &quot;Callee Saved&quot; Registers
+//  StackSize         -----------
+//
+// Offset - offset from sp after stack allocation on function prologue
+//
+// The sp is the stack pointer subtracted/added from the stack size
+// at the Prologue/Epilogue
+//
+// References to the previous stack (to obtain arguments) are done
+// with offsets that exceeds the stack size: (stacksize+(4*(num_arg-1))
+//
+// Examples:
+// - reference to the actual stack frame
+//   for any local area var there is smt like : FI &gt;= 0, StackOffset: 4
+//     sw REGX, 4(SP)
+//
+// - reference to previous stack frame
+//   suppose there&apos;s a load to the 5th arguments : FI &lt; 0, StackOffset: 16.
+//   The emitted instruction will be something like:
+//     lw REGX, 16+StackSize(SP)
+//
+// Since the total stack size is unknown on LowerFormalArguments, all
+// stack references (ObjectOffset) created to reference the function
+// arguments, are negative numbers. This way, on eliminateFrameIndex it&apos;s
+// possible to detect those references and the offsets are adjusted to
+// their real location.
+//
+//===----------------------------------------------------------------------===//</doc>
+<use f='llvm/llvm/lib/Target/Mips/MipsSubtarget.cpp' l='88' u='c' c='_ZN4llvm13MipsSubtargetC1ERKNS_6TripleENS_9StringRefES4_bRKNS_17MipsTargetMachineENS_10MaybeAlignE'/>

@@ -1,0 +1,296 @@
+<use f='llvm/llvm/include/llvm/IR/Function.h' l='841' c='_ZNK4llvm8Function7viewCFGEbPKNS_18BlockFrequencyInfoEPKNS_21BranchProbabilityInfoE'/>
+<use f='llvm/llvm/include/llvm/IR/Function.h' l='852' c='_ZNK4llvm8Function11viewCFGOnlyEPKNS_18BlockFrequencyInfoEPKNS_21BranchProbabilityInfoE'/>
+<use f='llvm/llvm/include/llvm/Analysis/BlockFrequencyInfo.h' l='44' c='_ZN4llvm18BlockFrequencyInfoC1ERKNS_8FunctionERKNS_21BranchProbabilityInfoERKNS_8LoopInfoE'/>
+<use f='llvm/llvm/include/llvm/Analysis/BlockFrequencyInfo.h' l='57' c='_ZNK4llvm18BlockFrequencyInfo6getBPIEv'/>
+<use f='llvm/llvm/include/llvm/Analysis/BlockFrequencyInfo.h' l='92' c='_ZN4llvm18BlockFrequencyInfo9calculateERKNS_8FunctionERKNS_21BranchProbabilityInfoERKNS_8LoopInfoE'/>
+<def f='llvm/llvm/include/llvm/Analysis/BranchProbabilityInfo.h' l='115' ll='417'/>
+<use f='llvm/llvm/include/llvm/Analysis/BranchProbabilityInfo.h' l='126' c='_ZN4llvm21BranchProbabilityInfoC1EOS0_'/>
+<use f='llvm/llvm/include/llvm/Analysis/BranchProbabilityInfo.h' l='130' c='_ZN4llvm21BranchProbabilityInfoC1ERKS0_'/>
+<use f='llvm/llvm/include/llvm/Analysis/BranchProbabilityInfo.h' l='131' c='_ZN4llvm21BranchProbabilityInfoaSERKS0_'/>
+<use f='llvm/llvm/include/llvm/Analysis/BranchProbabilityInfo.h' l='131' c='_ZN4llvm21BranchProbabilityInfoaSERKS0_'/>
+<use f='llvm/llvm/include/llvm/Analysis/BranchProbabilityInfo.h' l='133' c='_ZN4llvm21BranchProbabilityInfoaSEOS0_'/>
+<use f='llvm/llvm/include/llvm/Analysis/BranchProbabilityInfo.h' l='133' c='_ZN4llvm21BranchProbabilityInfoaSEOS0_'/>
+<use f='llvm/llvm/include/llvm/Analysis/BranchProbabilityInfo.h' l='279'/>
+<use f='llvm/llvm/include/llvm/Analysis/BranchProbabilityInfo.h' l='287' c='_ZN4llvm21BranchProbabilityInfo20BasicBlockCallbackVHC1EPKNS_5ValueEPS0_'/>
+<use f='llvm/llvm/include/llvm/Analysis/BranchProbabilityInfo.h' l='428'/>
+<use f='llvm/llvm/include/llvm/Analysis/BranchProbabilityInfo.h' l='431' c='_ZN4llvm25BranchProbabilityAnalysis3runERNS_8FunctionERNS_15AnalysisManagerIS1_JEEE'/>
+<use f='llvm/llvm/include/llvm/Analysis/BranchProbabilityInfo.h' l='447'/>
+<use f='llvm/llvm/include/llvm/Analysis/BranchProbabilityInfo.h' l='454' c='_ZN4llvm32BranchProbabilityInfoWrapperPass6getBPIEv'/>
+<use f='llvm/llvm/include/llvm/Analysis/BranchProbabilityInfo.h' l='455' c='_ZNK4llvm32BranchProbabilityInfoWrapperPass6getBPIEv'/>
+<use f='llvm/llvm/include/llvm/ExecutionEngine/Orc/SpeculateAnalyses.h' l='70' c='_ZN4llvm3orc15SequenceBBQuery20traverseToEntryBlockEPKNS_10BasicBlockERKNS_11SmallVectorIS4_Lj8EEERKNS5_ISt4pairIS4_S4_ELj8EEEPKNS_21BranchProbability11256374'/>
+<use f='llvm/llvm/include/llvm/ExecutionEngine/Orc/SpeculateAnalyses.h' l='74' c='_ZN4llvm3orc15SequenceBBQuery19traverseToExitBlockEPKNS_10BasicBlockERKNS_11SmallVectorIS4_Lj8EEERKNS5_ISt4pairIS4_S4_ELj8EEEPKNS_21BranchProbabilityI10388141'/>
+<size>248</size>
+<doc f='llvm/llvm/include/llvm/Analysis/BranchProbabilityInfo.h' l='44'>/// Analysis providing branch probability information.
+///
+/// This is a function analysis which provides information on the relative
+/// probabilities of each &quot;edge&quot; in the function&apos;s CFG where such an edge is
+/// defined by a pair (PredBlock and an index in the successors). The
+/// probability of an edge from one block is always relative to the
+/// probabilities of other edges from the block. The probabilites of all edges
+/// from a block sum to exactly one (100%).
+/// We use a pair (PredBlock and an index in the successors) to uniquely
+/// identify an edge, since we can have multiple edges from Src to Dst.
+/// As an example, we can have a switch which jumps to Dst with value 0 and
+/// value 10.
+///
+/// Process of computing branch probabilities can be logically viewed as three
+/// step process:
+///
+///   First, if there is a profile information associated with the branch then
+/// it is trivially translated to branch probabilities. There is one exception
+/// from this rule though. Probabilities for edges leading to &quot;unreachable&quot;
+/// blocks (blocks with the estimated weight not greater than
+/// UNREACHABLE_WEIGHT) are evaluated according to static estimation and
+/// override profile information. If no branch probabilities were calculated
+/// on this step then take the next one.
+///
+///   Second, estimate absolute execution weights for each block based on
+/// statically known information. Roots of such information are &quot;cold&quot;,
+/// &quot;unreachable&quot;, &quot;noreturn&quot; and &quot;unwind&quot; blocks. Those blocks get their
+/// weights set to BlockExecWeight::COLD, BlockExecWeight::UNREACHABLE,
+/// BlockExecWeight::NORETURN and BlockExecWeight::UNWIND respectively. Then the
+/// weights are propagated to the other blocks up the domination line. In
+/// addition, if all successors have estimated weights set then maximum of these
+/// weights assigned to the block itself (while this is not ideal heuristic in
+/// theory it&apos;s simple and works reasonably well in most cases) and the process
+/// repeats. Once the process of weights propagation converges branch
+/// probabilities are set for all such branches that have at least one successor
+/// with the weight set. Default execution weight (BlockExecWeight::DEFAULT) is
+/// used for any successors which doesn&apos;t have its weight set. For loop back
+/// branches we use their weights scaled by loop trip count equal to
+/// &apos;LBH_TAKEN_WEIGHT/LBH_NOTTAKEN_WEIGHT&apos;.
+///
+/// Here is a simple example demonstrating how the described algorithm works.
+///
+///          BB1
+///         /   \
+///        v     v
+///      BB2     BB3
+///     /   \
+///    v     v
+///  ColdBB  UnreachBB
+///
+/// Initially, ColdBB is associated with COLD_WEIGHT and UnreachBB with
+/// UNREACHABLE_WEIGHT. COLD_WEIGHT is set to BB2 as maximum between its
+/// successors. BB1 and BB3 has no explicit estimated weights and assumed to
+/// have DEFAULT_WEIGHT. Based on assigned weights branches will have the
+/// following probabilities:
+/// P(BB1-&gt;BB2) = COLD_WEIGHT/(COLD_WEIGHT + DEFAULT_WEIGHT) =
+///   0xffff / (0xffff + 0xfffff) = 0.0588(5.9%)
+/// P(BB1-&gt;BB3) = DEFAULT_WEIGHT_WEIGHT/(COLD_WEIGHT + DEFAULT_WEIGHT) =
+///          0xfffff / (0xffff + 0xfffff) = 0.941(94.1%)
+/// P(BB2-&gt;ColdBB) = COLD_WEIGHT/(COLD_WEIGHT + UNREACHABLE_WEIGHT) = 1(100%)
+/// P(BB2-&gt;UnreachBB) =
+///   UNREACHABLE_WEIGHT/(COLD_WEIGHT+UNREACHABLE_WEIGHT) = 0(0%)
+///
+/// If no branch probabilities were calculated on this step then take the next
+/// one.
+///
+///   Third, apply different kinds of local heuristics for each individual
+/// branch until first match. For example probability of a pointer to be null is
+/// estimated as PH_TAKEN_WEIGHT/(PH_TAKEN_WEIGHT + PH_NONTAKEN_WEIGHT). If
+/// no local heuristic has been matched then branch is left with no explicit
+/// probability set and assumed to have default probability.</doc>
+<fun r='_ZN4llvm21BranchProbabilityInfoC1Ev'/>
+<fun r='_ZN4llvm21BranchProbabilityInfoC1ERKNS_8FunctionERKNS_8LoopInfoEPKNS_17TargetLibraryInfoEPNS_13DominatorTreeEPNS_17PostDominatorTreeE'/>
+<fun r='_ZN4llvm21BranchProbabilityInfoC1EOS0_'/>
+<fun r='_ZN4llvm21BranchProbabilityInfoC1ERKS0_'/>
+<fun r='_ZN4llvm21BranchProbabilityInfoaSERKS0_'/>
+<fun r='_ZN4llvm21BranchProbabilityInfoaSEOS0_'/>
+<fun r='_ZN4llvm21BranchProbabilityInfo10invalidateERNS_8FunctionERKNS_17PreservedAnalysesERNS_15AnalysisManagerIS1_JEE11InvalidatorE'/>
+<fun r='_ZN4llvm21BranchProbabilityInfo13releaseMemoryEv'/>
+<fun r='_ZNK4llvm21BranchProbabilityInfo5printERNS_11raw_ostreamE'/>
+<fun r='_ZNK4llvm21BranchProbabilityInfo18getEdgeProbabilityEPKNS_10BasicBlockEj'/>
+<fun r='_ZNK4llvm21BranchProbabilityInfo18getEdgeProbabilityEPKNS_10BasicBlockES3_'/>
+<fun r='_ZNK4llvm21BranchProbabilityInfo18getEdgeProbabilityEPKNS_10BasicBlockENS_12SuccIteratorIKNS_11InstructionES2_EE'/>
+<fun r='_ZNK4llvm21BranchProbabilityInfo9isEdgeHotEPKNS_10BasicBlockES3_'/>
+<fun r='_ZNK4llvm21BranchProbabilityInfo10getHotSuccEPKNS_10BasicBlockE'/>
+<fun r='_ZNK4llvm21BranchProbabilityInfo20printEdgeProbabilityERNS_11raw_ostreamEPKNS_10BasicBlockES5_'/>
+<fun r='_ZN4llvm21BranchProbabilityInfo18setEdgeProbabilityEPKNS_10BasicBlockERKNS_15SmallVectorImplINS_17BranchProbabilityEEE'/>
+<fun r='_ZN4llvm21BranchProbabilityInfo21copyEdgeProbabilitiesEPNS_10BasicBlockES2_'/>
+<fun r='_ZN4llvm21BranchProbabilityInfo27getBranchProbStackProtectorEb'/>
+<fun r='_ZN4llvm21BranchProbabilityInfo9calculateERKNS_8FunctionERKNS_8LoopInfoEPKNS_17TargetLibraryInfoEPNS_13DominatorTreeEPNS_17PostDominatorTreeE'/>
+<fun r='_ZN4llvm21BranchProbabilityInfo10eraseBlockEPKNS_10BasicBlockE'/>
+<mbr r='llvm::BranchProbabilityInfo::Handles' o='0' t='DenseSet&lt;llvm::BranchProbabilityInfo::BasicBlockCallbackVH, DenseMapInfo&lt;llvm::Value *&gt; &gt;'/>
+<mbr r='llvm::BranchProbabilityInfo::Probs' o='192' t='DenseMap&lt;llvm::BranchProbabilityInfo::Edge, llvm::BranchProbability&gt;'/>
+<mbr r='llvm::BranchProbabilityInfo::LastF' o='384' t='const llvm::Function *'/>
+<mbr r='llvm::BranchProbabilityInfo::LI' o='448' t='const llvm::LoopInfo *'/>
+<mbr r='llvm::BranchProbabilityInfo::SccI' o='512' t='std::unique_ptr&lt;const SccInfo&gt;'/>
+<mbr r='llvm::BranchProbabilityInfo::EstimatedBlockWeight' o='576' t='SmallDenseMap&lt;const llvm::BasicBlock *, uint32_t&gt;'/>
+<mbr r='llvm::BranchProbabilityInfo::EstimatedLoopWeight' o='1152' t='SmallDenseMap&lt;llvm::BranchProbabilityInfo::LoopData, uint32_t&gt;'/>
+<fun r='_ZNK4llvm21BranchProbabilityInfo12getLoopBlockEPKNS_10BasicBlockE'/>
+<fun r='_ZNK4llvm21BranchProbabilityInfo18isLoopEnteringEdgeERKSt4pairIRKNS0_9LoopBlockES4_E'/>
+<fun r='_ZNK4llvm21BranchProbabilityInfo17isLoopExitingEdgeERKSt4pairIRKNS0_9LoopBlockES4_E'/>
+<fun r='_ZNK4llvm21BranchProbabilityInfo25isLoopEnteringExitingEdgeERKSt4pairIRKNS0_9LoopBlockES4_E'/>
+<fun r='_ZNK4llvm21BranchProbabilityInfo14isLoopBackEdgeERKSt4pairIRKNS0_9LoopBlockES4_E'/>
+<fun r='_ZNK4llvm21BranchProbabilityInfo18getLoopEnterBlocksERKNS0_9LoopBlockERNS_15SmallVectorImplIPNS_10BasicBlockEEE'/>
+<fun r='_ZNK4llvm21BranchProbabilityInfo17getLoopExitBlocksERKNS0_9LoopBlockERNS_15SmallVectorImplIPNS_10BasicBlockEEE'/>
+<fun r='_ZNK4llvm21BranchProbabilityInfo23getEstimatedBlockWeightEPKNS_10BasicBlockE'/>
+<fun r='_ZNK4llvm21BranchProbabilityInfo22getEstimatedLoopWeightERKSt4pairIPNS_4LoopEiE'/>
+<fun r='_ZNK4llvm21BranchProbabilityInfo22getEstimatedEdgeWeightERKSt4pairIRKNS0_9LoopBlockES4_E'/>
+<fun r='_ZNK4llvm21BranchProbabilityInfo25getMaxEstimatedEdgeWeightERKNS0_9LoopBlockENS_14iterator_rangeIT_EE'/>
+<fun r='_ZN4llvm21BranchProbabilityInfo26updateEstimatedBlockWeightERNS0_9LoopBlockEjRNS_15SmallVectorImplIPNS_10BasicBlockEEERNS3_IS1_EE'/>
+<fun r='_ZN4llvm21BranchProbabilityInfo29propagateEstimatedBlockWeightERKNS0_9LoopBlockEPNS_13DominatorTreeEPNS_17PostDominatorTreeEjRNS_15SmallVectorImplIPNS1926'/>
+<fun r='_ZN4llvm21BranchProbabilityInfo30getInitialEstimatedBlockWeightEPKNS_10BasicBlockE'/>
+<fun r='_ZN4llvm21BranchProbabilityInfo27computeEestimateBlockWeightERKNS_8FunctionEPNS_13DominatorTreeEPNS_17PostDominatorTreeE'/>
+<fun r='_ZN4llvm21BranchProbabilityInfo23calcEstimatedHeuristicsEPKNS_10BasicBlockE'/>
+<fun r='_ZN4llvm21BranchProbabilityInfo19calcMetadataWeightsEPKNS_10BasicBlockE'/>
+<fun r='_ZN4llvm21BranchProbabilityInfo21calcPointerHeuristicsEPKNS_10BasicBlockE'/>
+<fun r='_ZN4llvm21BranchProbabilityInfo18calcZeroHeuristicsEPKNS_10BasicBlockEPKNS_17TargetLibraryInfoE'/>
+<fun r='_ZN4llvm21BranchProbabilityInfo27calcFloatingPointHeuristicsEPKNS_10BasicBlockE'/>
+<use f='llvm/llvm/include/llvm/Analysis/BlockFrequencyInfoImpl.h' l='553'/>
+<use f='llvm/llvm/lib/Analysis/BlockFrequencyInfo.cpp' l='124'/>
+<use f='llvm/llvm/lib/Analysis/BlockFrequencyInfo.cpp' l='155' c='_ZN4llvm18BlockFrequencyInfoC1ERKNS_8FunctionERKNS_21BranchProbabilityInfoERKNS_8LoopInfoE'/>
+<use f='llvm/llvm/lib/Analysis/BlockFrequencyInfo.cpp' l='185' c='_ZN4llvm18BlockFrequencyInfo9calculateERKNS_8FunctionERKNS_21BranchProbabilityInfoERKNS_8LoopInfoE'/>
+<use f='llvm/llvm/lib/Analysis/BlockFrequencyInfo.cpp' l='264' c='_ZNK4llvm18BlockFrequencyInfo6getBPIEv'/>
+<use f='llvm/llvm/lib/Analysis/BlockFrequencyInfo.cpp' l='325' c='_ZN4llvm29BlockFrequencyInfoWrapperPass13runOnFunctionERNS_8FunctionE'/>
+<size>248</size>
+<use f='llvm/llvm/lib/Analysis/BranchProbabilityInfo.cpp' l='1345' c='_ZN4llvm25BranchProbabilityAnalysis3runERNS_8FunctionERNS_15AnalysisManagerIS1_JEEE'/>
+<use f='llvm/llvm/lib/Analysis/BranchProbabilityInfo.cpp' l='1347' c='_ZN4llvm25BranchProbabilityAnalysis3runERNS_8FunctionERNS_15AnalysisManagerIS1_JEEE'/>
+<size>248</size>
+<fun r='_ZNK4llvm21BranchProbabilityInfo18isLoopEnteringEdgeERKSt4pairIRKNS0_9LoopBlockES4_E'/>
+<fun r='_ZNK4llvm21BranchProbabilityInfo17isLoopExitingEdgeERKSt4pairIRKNS0_9LoopBlockES4_E'/>
+<fun r='_ZNK4llvm21BranchProbabilityInfo25isLoopEnteringExitingEdgeERKSt4pairIRKNS0_9LoopBlockES4_E'/>
+<fun r='_ZNK4llvm21BranchProbabilityInfo14isLoopBackEdgeERKSt4pairIRKNS0_9LoopBlockES4_E'/>
+<fun r='_ZNK4llvm21BranchProbabilityInfo18getLoopEnterBlocksERKNS0_9LoopBlockERNS_15SmallVectorImplIPNS_10BasicBlockEEE'/>
+<fun r='_ZNK4llvm21BranchProbabilityInfo17getLoopExitBlocksERKNS0_9LoopBlockERNS_15SmallVectorImplIPNS_10BasicBlockEEE'/>
+<fun r='_ZN4llvm21BranchProbabilityInfo19calcMetadataWeightsEPKNS_10BasicBlockE'/>
+<fun r='_ZN4llvm21BranchProbabilityInfo21calcPointerHeuristicsEPKNS_10BasicBlockE'/>
+<fun r='_ZNK4llvm21BranchProbabilityInfo23getEstimatedBlockWeightEPKNS_10BasicBlockE'/>
+<fun r='_ZNK4llvm21BranchProbabilityInfo22getEstimatedLoopWeightERKSt4pairIPNS_4LoopEiE'/>
+<fun r='_ZNK4llvm21BranchProbabilityInfo22getEstimatedEdgeWeightERKSt4pairIRKNS0_9LoopBlockES4_E'/>
+<fun r='_ZNK4llvm21BranchProbabilityInfo25getMaxEstimatedEdgeWeightERKNS0_9LoopBlockENS_14iterator_rangeIT_EE'/>
+<fun r='_ZN4llvm21BranchProbabilityInfo26updateEstimatedBlockWeightERNS0_9LoopBlockEjRNS_15SmallVectorImplIPNS_10BasicBlockEEERNS3_IS1_EE'/>
+<fun r='_ZN4llvm21BranchProbabilityInfo29propagateEstimatedBlockWeightERKNS0_9LoopBlockEPNS_13DominatorTreeEPNS_17PostDominatorTreeEjRNS_15SmallVectorImplIPNS1926'/>
+<fun r='_ZN4llvm21BranchProbabilityInfo30getInitialEstimatedBlockWeightEPKNS_10BasicBlockE'/>
+<fun r='_ZN4llvm21BranchProbabilityInfo27computeEestimateBlockWeightERKNS_8FunctionEPNS_13DominatorTreeEPNS_17PostDominatorTreeE'/>
+<fun r='_ZN4llvm21BranchProbabilityInfo23calcEstimatedHeuristicsEPKNS_10BasicBlockE'/>
+<fun r='_ZN4llvm21BranchProbabilityInfo18calcZeroHeuristicsEPKNS_10BasicBlockEPKNS_17TargetLibraryInfoE'/>
+<fun r='_ZN4llvm21BranchProbabilityInfo27calcFloatingPointHeuristicsEPKNS_10BasicBlockE'/>
+<fun r='_ZN4llvm21BranchProbabilityInfo13releaseMemoryEv'/>
+<fun r='_ZN4llvm21BranchProbabilityInfo10invalidateERNS_8FunctionERKNS_17PreservedAnalysesERNS_15AnalysisManagerIS1_JEE11InvalidatorE'/>
+<fun r='_ZNK4llvm21BranchProbabilityInfo5printERNS_11raw_ostreamE'/>
+<fun r='_ZNK4llvm21BranchProbabilityInfo9isEdgeHotEPKNS_10BasicBlockES3_'/>
+<fun r='_ZNK4llvm21BranchProbabilityInfo10getHotSuccEPKNS_10BasicBlockE'/>
+<fun r='_ZNK4llvm21BranchProbabilityInfo18getEdgeProbabilityEPKNS_10BasicBlockEj'/>
+<fun r='_ZNK4llvm21BranchProbabilityInfo18getEdgeProbabilityEPKNS_10BasicBlockENS_12SuccIteratorIKNS_11InstructionES2_EE'/>
+<fun r='_ZNK4llvm21BranchProbabilityInfo18getEdgeProbabilityEPKNS_10BasicBlockES3_'/>
+<fun r='_ZN4llvm21BranchProbabilityInfo18setEdgeProbabilityEPKNS_10BasicBlockERKNS_15SmallVectorImplINS_17BranchProbabilityEEE'/>
+<fun r='_ZN4llvm21BranchProbabilityInfo21copyEdgeProbabilitiesEPNS_10BasicBlockES2_'/>
+<fun r='_ZNK4llvm21BranchProbabilityInfo20printEdgeProbabilityERNS_11raw_ostreamEPKNS_10BasicBlockES5_'/>
+<fun r='_ZN4llvm21BranchProbabilityInfo10eraseBlockEPKNS_10BasicBlockE'/>
+<fun r='_ZN4llvm21BranchProbabilityInfo9calculateERKNS_8FunctionERKNS_8LoopInfoEPKNS_17TargetLibraryInfoEPNS_13DominatorTreeEPNS_17PostDominatorTreeE'/>
+<use f='llvm/llvm/include/llvm/Analysis/CFGPrinter.h' l='58'/>
+<use f='llvm/llvm/include/llvm/Analysis/CFGPrinter.h' l='68' c='_ZN4llvm11DOTFuncInfoC1EPKNS_8FunctionEPKNS_18BlockFrequencyInfoEPKNS_21BranchProbabilityInfoEm'/>
+<use f='llvm/llvm/include/llvm/Analysis/CFGPrinter.h' l='77' c='_ZN4llvm11DOTFuncInfo6getBPIEv'/>
+<use f='llvm/llvm/lib/Analysis/CFGPrinter.cpp' l='59' c='_ZL17writeCFGToDotFileRN4llvm8FunctionEPNS_18BlockFrequencyInfoEPNS_21BranchProbabilityInfoEmb'/>
+<use f='llvm/llvm/lib/Analysis/CFGPrinter.cpp' l='81' c='_ZL7viewCFGRN4llvm8FunctionEPKNS_18BlockFrequencyInfoEPKNS_21BranchProbabilityInfoEmb'/>
+<use f='llvm/llvm/lib/Analysis/CFGPrinter.cpp' l='246' c='_ZNK4llvm8Function7viewCFGEbPKNS_18BlockFrequencyInfoEPKNS_21BranchProbabilityInfoE'/>
+<use f='llvm/llvm/lib/Analysis/CFGPrinter.cpp' l='261' c='_ZNK4llvm8Function11viewCFGOnlyEPKNS_18BlockFrequencyInfoEPKNS_21BranchProbabilityInfoE'/>
+<size>248</size>
+<use f='llvm/llvm/include/llvm/Analysis/LazyBranchProbabilityInfo.h' l='63' c='_ZN4llvm29LazyBranchProbabilityInfoPass25LazyBranchProbabilityInfo13getCalculatedEv'/>
+<use f='llvm/llvm/include/llvm/Analysis/LazyBranchProbabilityInfo.h' l='72' c='_ZNK4llvm29LazyBranchProbabilityInfoPass25LazyBranchProbabilityInfo13getCalculatedEv'/>
+<use f='llvm/llvm/include/llvm/Analysis/LazyBranchProbabilityInfo.h' l='77'/>
+<use f='llvm/llvm/include/llvm/Analysis/LazyBranchProbabilityInfo.h' l='92' c='_ZN4llvm29LazyBranchProbabilityInfoPass6getBPIEv'/>
+<use f='llvm/llvm/include/llvm/Analysis/LazyBranchProbabilityInfo.h' l='95' c='_ZNK4llvm29LazyBranchProbabilityInfoPass6getBPIEv'/>
+<use f='llvm/llvm/include/llvm/Analysis/LazyBranchProbabilityInfo.h' l='118' c='_ZN4llvm12BPIPassTraitINS_29LazyBranchProbabilityInfoPassEE6getBPIEPS1_'/>
+<size>248</size>
+<use f='llvm/llvm/lib/Analysis/ModuleSummaryAnalysis.cpp' l='758' c='_ZN4llvm23buildModuleSummaryIndexERKNS_6ModuleESt8functionIFPNS_18BlockFrequencyInfoERKNS_8FunctionEEEPNS_18ProfileSummaryInfoES3_IFPKNS_15StackSafetyInfoES8_EE'/>
+<size>248</size>
+<use f='llvm/llvm/lib/Analysis/OptimizationRemarkEmitter.cpp' l='40' c='_ZN4llvm25OptimizationRemarkEmitterC1EPKNS_8FunctionE'/>
+<size>248</size>
+<use f='llvm/llvm/include/llvm/Transforms/Utils/BasicBlockUtils.h' l='488' c='_ZN4llvm28SplitIndirectBrCriticalEdgesERNS_8FunctionEPNS_21BranchProbabilityInfoEPNS_18BlockFrequencyInfoE'/>
+<use f='llvm/llvm/lib/CodeGen/CodeGenPrepare.cpp' l='279'/>
+<use f='llvm/llvm/lib/CodeGen/CodeGenPrepare.cpp' l='470' c='_ZN12_GLOBAL__N_114CodeGenPrepare13runOnFunctionERN4llvm8FunctionE'/>
+<use f='llvm/llvm/lib/CodeGen/CodeGenPrepare.cpp' l='650' c='_ZN12_GLOBAL__N_114CodeGenPrepare16verifyBFIUpdatesERN4llvm8FunctionE'/>
+<size>248</size>
+<use f='llvm/llvm/include/llvm/CodeGen/FunctionLoweringInfo.h' l='59'/>
+<use f='llvm/llvm/lib/CodeGen/GlobalISel/IRTranslator.cpp' l='687' c='_ZN4llvm12IRTranslator15translateSwitchERKNS_4UserERNS_16MachineIRBuilderE'/>
+<use f='llvm/llvm/lib/CodeGen/GlobalISel/IRTranslator.cpp' l='2409' c='_ZN4llvm12IRTranslator22findUnwindDestinationsEPKNS_10BasicBlockENS_17BranchProbabilityERNS_15SmallVectorImplISt4pairIPNS_17MachineBasicBlockES4_EEE'/>
+<use f='llvm/llvm/lib/CodeGen/GlobalISel/IRTranslator.cpp' l='2457' c='_ZN4llvm12IRTranslator15translateInvokeERKNS_4UserERNS_16MachineIRBuilderE'/>
+<size>248</size>
+<use f='llvm/llvm/lib/CodeGen/SelectionDAG/SelectionDAGBuilder.cpp' l='1748' c='_ZL22findUnwindDestinationsRN4llvm20FunctionLoweringInfoEPKNS_10BasicBlockENS_17BranchProbabilityERNS_15SmallVectorImplISt4pairIPNS_17MachineBasicBlockES5_EEE'/>
+<use f='llvm/llvm/lib/CodeGen/SelectionDAG/SelectionDAGBuilder.cpp' l='1759' c='_ZN4llvm19SelectionDAGBuilder15visitCleanupRetERKNS_17CleanupReturnInstE'/>
+<use f='llvm/llvm/lib/CodeGen/SelectionDAG/SelectionDAGBuilder.cpp' l='2009' c='_ZNK4llvm19SelectionDAGBuilder18getEdgeProbabilityEPKNS_17MachineBasicBlockES3_'/>
+<use f='llvm/llvm/lib/CodeGen/SelectionDAG/SelectionDAGBuilder.cpp' l='2844' c='_ZN4llvm19SelectionDAGBuilder11visitInvokeERKNS_10InvokeInstE'/>
+<use f='llvm/llvm/lib/CodeGen/SelectionDAG/SelectionDAGBuilder.cpp' l='10283' c='_ZN4llvm19SelectionDAGBuilder13lowerWorkItemENS_8SwitchCG18SwitchWorkListItemEPNS_5ValueEPNS_17MachineBasicBlockES6_'/>
+<use f='llvm/llvm/lib/CodeGen/SelectionDAG/SelectionDAGBuilder.cpp' l='10726' c='_ZN4llvm19SelectionDAGBuilder11visitSwitchERKNS_10SwitchInstE'/>
+<size>248</size>
+<use f='llvm/llvm/lib/ExecutionEngine/Orc/SpeculateAnalyses.cpp' l='151' c='_ZN4llvm3orc15SequenceBBQuery20traverseToEntryBlockEPKNS_10BasicBlockERKNS_11SmallVectorIS4_Lj8EEERKNS5_ISt4pairIS4_S4_ELj8EEEPKNS_21BranchProbability11256374'/>
+<use f='llvm/llvm/lib/ExecutionEngine/Orc/SpeculateAnalyses.cpp' l='194' c='_ZN4llvm3orc15SequenceBBQuery19traverseToExitBlockEPKNS_10BasicBlockERKNS_11SmallVectorIS4_Lj8EEERKNS5_ISt4pairIS4_S4_ELj8EEEPKNS_21BranchProbabilityI10388141'/>
+<use f='llvm/llvm/lib/ExecutionEngine/Orc/SpeculateAnalyses.cpp' l='260' c='_ZN4llvm3orc15SequenceBBQuery8queryCFGERNS_8FunctionERKNS_11SmallVectorIPKNS_10BasicBlockELj8EEE'/>
+<size>248</size>
+<use f='llvm/llvm/include/llvm/Transforms/Utils/CodeExtractor.h' l='92'/>
+<use f='llvm/llvm/include/llvm/Transforms/Utils/CodeExtractor.h' l='121' c='_ZN4llvm13CodeExtractorC1ENS_8ArrayRefIPNS_10BasicBlockEEEPNS_13DominatorTreeEbPNS_18BlockFrequencyInfoEPNS_21BranchProbabilityInfoEPNS_15AssumptionCa14458893'/>
+<use f='llvm/llvm/include/llvm/Transforms/Utils/CodeExtractor.h' l='132' c='_ZN4llvm13CodeExtractorC1ERNS_13DominatorTreeERNS_4LoopEbPNS_18BlockFrequencyInfoEPNS_21BranchProbabilityInfoEPNS_15AssumptionCacheENSt7__cxx1112basic639635'/>
+<use f='llvm/llvm/include/llvm/Transforms/Utils/CodeExtractor.h' l='226' c='_ZN4llvm13CodeExtractor33calculateNewCallTerminatorWeightsEPNS_10BasicBlockERNS_8DenseMapIS2_NS_14BlockFrequencyENS_12DenseMapInfoIS2_EENS_6detail12De2699329'/>
+<use f='llvm/llvm/include/llvm/Transforms/Scalar/JumpThreading.h' l='85'/>
+<use f='llvm/llvm/include/llvm/Transforms/Scalar/JumpThreading.h' l='105' c='_ZN4llvm17JumpThreadingPass7runImplERNS_8FunctionEPNS_17TargetLibraryInfoEPNS_13LazyValueInfoEPNS_9AAResultsEPNS_14DomTreeUpdaterEbSt10unique_ptrINS_16218292'/>
+<size>248</size>
+<use f='llvm/llvm/lib/Transforms/IPO/PartialInlining.cpp' l='401' c='_ZNK12_GLOBAL__N_118PartialInlinerImpl31computeOutliningColdRegionsInfoERN4llvm8FunctionERNS1_25OptimizationRemarkEmitterE'/>
+<use f='llvm/llvm/lib/Transforms/IPO/PartialInlining.cpp' l='962' c='_ZNK12_GLOBAL__N_118PartialInlinerImpl29computeCallsiteToProfCountMapEPN4llvm8FunctionERNS1_8DenseMapIPNS1_4UserEmNS1_12DenseMapInfoIS6_EENS1_6detail19842992'/>
+<use f='llvm/llvm/lib/Transforms/IPO/PartialInlining.cpp' l='1147' c='_ZN12_GLOBAL__N_118PartialInlinerImpl14FunctionCloner30doMultiRegionFunctionOutliningEv'/>
+<use f='llvm/llvm/lib/Transforms/IPO/PartialInlining.cpp' l='1218' c='_ZN12_GLOBAL__N_118PartialInlinerImpl14FunctionCloner31doSingleRegionFunctionOutliningEv'/>
+<size>248</size>
+<use f='llvm/llvm/lib/Transforms/Instrumentation/CFGMST.h' l='278'/>
+<use f='llvm/llvm/lib/Transforms/Instrumentation/CFGMST.h' l='286' c='_ZN4llvm6CFGMSTC1ERNS_8FunctionEbPNS_21BranchProbabilityInfoEPNS_18BlockFrequencyInfoE'/>
+<use f='llvm/llvm/lib/Transforms/Instrumentation/GCOVProfiling.cpp' l='105' c='_ZN12_GLOBAL__N_112GCOVProfiler11runOnModuleERN4llvm6ModuleENS1_12function_refIFPNS1_18BlockFrequencyInfoERNS1_8FunctionEEEENS4_IFPNS1_21BranchProbabi12471256'/>
+<use f='llvm/llvm/lib/Transforms/Instrumentation/GCOVProfiling.cpp' l='125' c='_ZN12_GLOBAL__N_112GCOVProfiler16emitProfileNotesEPN4llvm11NamedMDNodeEbNS1_12function_refIFPNS1_18BlockFrequencyInfoERNS1_8FunctionEEEENS4_IFPNS1_21B3522672'/>
+<use f='llvm/llvm/lib/Transforms/Instrumentation/GCOVProfiling.cpp' l='606' c='_ZN12_GLOBAL__N_112GCOVProfiler11runOnModuleERN4llvm6ModuleENS1_12function_refIFPNS1_18BlockFrequencyInfoERNS1_8FunctionEEEENS4_IFPNS1_21BranchProbabi12471256'/>
+<use f='llvm/llvm/lib/Transforms/Instrumentation/GCOVProfiling.cpp' l='814' c='_ZN12_GLOBAL__N_112GCOVProfiler16emitProfileNotesEPN4llvm11NamedMDNodeEbNS1_12function_refIFPNS1_18BlockFrequencyInfoERNS1_8FunctionEEEENS4_IFPNS1_21B3522672'/>
+<use f='llvm/llvm/lib/Transforms/Instrumentation/GCOVProfiling.cpp' l='857' c='_ZN12_GLOBAL__N_112GCOVProfiler16emitProfileNotesEPN4llvm11NamedMDNodeEbNS1_12function_refIFPNS1_18BlockFrequencyInfoERNS1_8FunctionEEEENS4_IFPNS1_21B3522672'/>
+<size>248</size>
+<use f='llvm/llvm/lib/Transforms/Instrumentation/InstrProfiling.cpp' l='492' c='_ZN4llvm14InstrProfiling24promoteCounterLoadStoresEPNS_8FunctionE'/>
+<use f='llvm/llvm/lib/Transforms/Instrumentation/InstrProfiling.cpp' l='493' c='_ZN4llvm14InstrProfiling24promoteCounterLoadStoresEPNS_8FunctionE'/>
+<size>248</size>
+<use f='llvm/llvm/lib/Transforms/Instrumentation/PGOInstrumentation.cpp' l='609' c='_ZN12_GLOBAL__N_122FuncPGOInstrumentationC1ERN4llvm8FunctionERNS1_17TargetLibraryInfoERSt18unordered_multimapIPNS1_6ComdatEPNS1_11GlobalValueESt4hashI5349384'/>
+<use f='llvm/llvm/lib/Transforms/Instrumentation/PGOInstrumentation.cpp' l='893' c='_ZL17instrumentOneFuncRN4llvm8FunctionEPNS_6ModuleERNS_17TargetLibraryInfoEPNS_21BranchProbabilityInfoEPNS_18BlockFrequencyInfoERSt18unordered_multima3315825'/>
+<use f='llvm/llvm/lib/Transforms/Instrumentation/PGOInstrumentation.cpp' l='1059' c='_ZN12_GLOBAL__N_110PGOUseFuncC1ERN4llvm8FunctionEPNS1_6ModuleERNS1_17TargetLibraryInfoERSt18unordered_multimapIPNS1_6ComdatEPNS1_11GlobalValueESt4hash10524015'/>
+<use f='llvm/llvm/lib/Transforms/Instrumentation/PGOInstrumentation.cpp' l='1582' c='_ZL22InstrumentAllFunctionsRN4llvm6ModuleENS_12function_refIFRNS_17TargetLibraryInfoERNS_8FunctionEEEENS2_IFPNS_21BranchProbabilityInfoES6_EEENS2_IFPN2256735'/>
+<use f='llvm/llvm/lib/Transforms/Instrumentation/PGOInstrumentation.cpp' l='1649' c='_ZL17fixFuncEntryCountRN12_GLOBAL__N_110PGOUseFuncERN4llvm8LoopInfoERNS2_21BranchProbabilityInfoE'/>
+<use f='llvm/llvm/lib/Transforms/Instrumentation/PGOInstrumentation.cpp' l='1696' c='_ZL13verifyFuncBFIRN12_GLOBAL__N_110PGOUseFuncERN4llvm8LoopInfoERNS2_21BranchProbabilityInfoEmm'/>
+<use f='llvm/llvm/lib/Transforms/Instrumentation/PGOInstrumentation.cpp' l='1772' c='_ZL20annotateAllFunctionsRN4llvm6ModuleENS_9StringRefES2_NS_12function_refIFRNS_17TargetLibraryInfoERNS_8FunctionEEEENS3_IFPNS_21BranchProbabilityInfo5927786'/>
+<use f='llvm/llvm/lib/Transforms/Instrumentation/PGOInstrumentation.cpp' l='1870' c='_ZL20annotateAllFunctionsRN4llvm6ModuleENS_9StringRefES2_NS_12function_refIFRNS_17TargetLibraryInfoERNS_8FunctionEEEENS3_IFPNS_21BranchProbabilityInfo5927786'/>
+<use f='llvm/llvm/lib/Transforms/Instrumentation/PGOInstrumentation.cpp' l='1871' c='_ZL20annotateAllFunctionsRN4llvm6ModuleENS_9StringRefES2_NS_12function_refIFRNS_17TargetLibraryInfoERNS_8FunctionEEEENS3_IFPNS_21BranchProbabilityInfo5927786'/>
+<use f='llvm/llvm/lib/Transforms/Instrumentation/PGOInstrumentation.cpp' l='1897' c='_ZL20annotateAllFunctionsRN4llvm6ModuleENS_9StringRefES2_NS_12function_refIFRNS_17TargetLibraryInfoERNS_8FunctionEEEENS3_IFPNS_21BranchProbabilityInfo5927786'/>
+<size>248</size>
+<use f='llvm/llvm/lib/Transforms/Scalar/InductiveRangeCheckElimination.cpp' l='227' c='_ZN12_GLOBAL__N_119InductiveRangeCheck28extractRangeChecksFromBranchEPN4llvm10BranchInstEPNS1_4LoopERNS1_15ScalarEvolutionEPNS1_21BranchProbabilityInf7331769'/>
+<use f='llvm/llvm/lib/Transforms/Scalar/InductiveRangeCheckElimination.cpp' l='235'/>
+<use f='llvm/llvm/lib/Transforms/Scalar/InductiveRangeCheckElimination.cpp' l='249' c='_ZN12_GLOBAL__N_130InductiveRangeCheckEliminationC1ERN4llvm15ScalarEvolutionEPNS1_21BranchProbabilityInfoERNS1_13DominatorTreeERNS1_8LoopInfoENS1_8Opt3804825'/>
+<use f='llvm/llvm/lib/Transforms/Scalar/InductiveRangeCheckElimination.cpp' l='410' c='_ZN12_GLOBAL__N_119InductiveRangeCheck28extractRangeChecksFromBranchEPN4llvm10BranchInstEPNS1_4LoopERNS1_15ScalarEvolutionEPNS1_21BranchProbabilityInf7331769'/>
+<use f='llvm/llvm/lib/Transforms/Scalar/InductiveRangeCheckElimination.cpp' l='1818' c='_ZN12_GLOBAL__N_114IRCELegacyPass13runOnFunctionERN4llvm8FunctionE'/>
+<size>248</size>
+<use f='llvm/llvm/lib/Transforms/Scalar/JumpThreading.cpp' l='326' c='_ZN12_GLOBAL__N_113JumpThreading13runOnFunctionERN4llvm8FunctionE'/>
+<use f='llvm/llvm/lib/Transforms/Scalar/JumpThreading.cpp' l='329' c='_ZN12_GLOBAL__N_113JumpThreading13runOnFunctionERN4llvm8FunctionE'/>
+<use f='llvm/llvm/lib/Transforms/Scalar/JumpThreading.cpp' l='355' c='_ZN4llvm17JumpThreadingPass3runERNS_8FunctionERNS_15AnalysisManagerIS1_JEEE'/>
+<use f='llvm/llvm/lib/Transforms/Scalar/JumpThreading.cpp' l='358' c='_ZN4llvm17JumpThreadingPass3runERNS_8FunctionERNS_15AnalysisManagerIS1_JEEE'/>
+<use f='llvm/llvm/lib/Transforms/Scalar/JumpThreading.cpp' l='383' c='_ZN4llvm17JumpThreadingPass7runImplERNS_8FunctionEPNS_17TargetLibraryInfoEPNS_13LazyValueInfoEPNS_9AAResultsEPNS_14DomTreeUpdaterEbSt10unique_ptrINS_16218292'/>
+<size>248</size>
+<use f='llvm/llvm/lib/Transforms/Scalar/LoopPredication.cpp' l='257'/>
+<use f='llvm/llvm/lib/Transforms/Scalar/LoopPredication.cpp' l='313' c='_ZN12_GLOBAL__N_115LoopPredicationC1EPN4llvm9AAResultsEPNS1_13DominatorTreeEPNS1_15ScalarEvolutionEPNS1_8LoopInfoEPNS1_21BranchProbabilityInfoE'/>
+<use f='llvm/llvm/lib/Transforms/Scalar/LoopPredication.cpp' l='336' c='_ZN12_GLOBAL__N_125LoopPredicationLegacyPass9runOnLoopEPN4llvm4LoopERNS1_13LPPassManagerE'/>
+<use f='llvm/llvm/lib/Transforms/Scalar/LoopPredication.cpp' l='365' c='_ZN4llvm19LoopPredicationPass3runERNS_4LoopERNS_15AnalysisManagerIS1_JRNS_27LoopStandardAnalysisResultsEEEES5_RNS_10LPMUpdaterE'/>
+<size>248</size>
+<use f='llvm/llvm/lib/Transforms/Utils/BreakCriticalEdges.cpp' l='379' c='_ZN4llvm28SplitIndirectBrCriticalEdgesERNS_8FunctionEPNS_21BranchProbabilityInfoEPNS_18BlockFrequencyInfoE'/>
+<size>248</size>
+<use f='llvm/llvm/lib/Transforms/Utils/CodeExtractor.cpp' l='249' c='_ZN4llvm13CodeExtractorC1ENS_8ArrayRefIPNS_10BasicBlockEEEPNS_13DominatorTreeEbPNS_18BlockFrequencyInfoEPNS_21BranchProbabilityInfoEPNS_15AssumptionCa14458893'/>
+<use f='llvm/llvm/lib/Transforms/Utils/CodeExtractor.cpp' l='259' c='_ZN4llvm13CodeExtractorC1ERNS_13DominatorTreeERNS_4LoopEbPNS_18BlockFrequencyInfoEPNS_21BranchProbabilityInfoEPNS_15AssumptionCacheENSt7__cxx1112basic639635'/>
+<use f='llvm/llvm/lib/Transforms/Utils/CodeExtractor.cpp' l='1401' c='_ZN4llvm13CodeExtractor33calculateNewCallTerminatorWeightsEPNS_10BasicBlockERNS_8DenseMapIS2_NS_14BlockFrequencyENS_12DenseMapInfoIS2_EENS_6detail12De2699329'/>
+<size>248</size>
+<use f='llvm/llvm/unittests/Analysis/BlockFrequencyInfoTest.cpp' l='29'/>
+<use f='llvm/llvm/unittests/Analysis/BlockFrequencyInfoTest.cpp' l='37' c='_ZN4llvm12_GLOBAL__N_122BlockFrequencyInfoTest8buildBFIERNS_8FunctionE'/>
+<size>248</size>
+<use f='llvm/llvm/unittests/Analysis/BranchProbabilityInfoTest.cpp' l='28'/>
+<use f='llvm/llvm/unittests/Analysis/BranchProbabilityInfoTest.cpp' l='33' c='_ZN4llvm12_GLOBAL__N_125BranchProbabilityInfoTest8buildBPIERNS_8FunctionE'/>
+<use f='llvm/llvm/unittests/Analysis/BranchProbabilityInfoTest.cpp' l='36' c='_ZN4llvm12_GLOBAL__N_125BranchProbabilityInfoTest8buildBPIERNS_8FunctionE'/>
+<use f='llvm/llvm/unittests/Analysis/BranchProbabilityInfoTest.cpp' l='77' c='_ZN4llvm12_GLOBAL__N_157BranchProbabilityInfoTest_StressUnreachableHeuristic_Test8TestBodyEv'/>
+<size>248</size>
+<use f='llvm/llvm/unittests/Analysis/ProfileSummaryInfoTest.cpp' l='35'/>
+<use f='llvm/llvm/unittests/Analysis/ProfileSummaryInfoTest.cpp' l='45' c='_ZN4llvm12_GLOBAL__N_122ProfileSummaryInfoTest8buildBFIERNS_8FunctionE'/>
+<size>248</size>
+<use f='llvm/llvm/unittests/Transforms/Utils/BasicBlockUtilsTest.cpp' l='394' c='_ZN48BasicBlockUtils_SplitIndirectBrCriticalEdge_Test8TestBodyEv'/>
+<use f='llvm/llvm/unittests/Transforms/Utils/BasicBlockUtilsTest.cpp' l='492' c='_ZN39BasicBlockUtils_SetEdgeProbability_Test8TestBodyEv'/>
+<size>248</size>
+<use f='llvm/llvm/unittests/Transforms/Utils/SizeOptsTest.cpp' l='36'/>
+<use f='llvm/llvm/unittests/Transforms/Utils/SizeOptsTest.cpp' l='41' c='_ZN12_GLOBAL__N_112SizeOptsTest7BFIDataC1ERN4llvm8FunctionE'/>
+<size>248</size>

@@ -1,0 +1,101 @@
+<!doctype html>
+<html>
+<head>
+<meta name="viewport" content="width=device-width, initial-scale=1.0"><title>sanitizer_stacktrace_sparc.cpp source code [llvm/compiler-rt/lib/sanitizer_common/sanitizer_stacktrace_sparc.cpp] - Woboq Code Browser</title>
+<link rel="stylesheet" href="../../../.././data/qtcreator.css" title="QtCreator"/>
+<link rel="alternate stylesheet" href="../../../.././data/kdevelop.css" title="KDevelop"/>
+<script type="text/javascript" src="../../../.././data/jquery/jquery.min.js"></script>
+<script type="text/javascript" src="../../../.././data/jquery/jquery-ui.min.js"></script>
+<script>var file = 'llvm/compiler-rt/lib/sanitizer_common/sanitizer_stacktrace_sparc.cpp'; var root_path = '../../../..'; var data_path = '../../../.././data'; var ecma_script_api_version = 2;</script>
+<script src='../../../.././data/codebrowser.js'></script>
+</head>
+<body><div id='header'><h1 id='breadcrumb'><span>Browse the source code of </span><a href='../../..'>llvm</a>/<a href='../..'>compiler-rt</a>/<a href='..'>lib</a>/<a href='./'>sanitizer_common</a>/<a href='sanitizer_stacktrace_sparc.cpp.html'>sanitizer_stacktrace_sparc.cpp</a></h1></div>
+<hr/><div id='content'><table class="code">
+<tr><th id="1">1</th><td><i>//===-- sanitizer_stacktrace_sparc.cpp ------------------------------------===//</i></td></tr>
+<tr><th id="2">2</th><td><i>//</i></td></tr>
+<tr><th id="3">3</th><td><i>// Part of the LLVM Project, under the Apache License v2.0 with LLVM Exceptions.</i></td></tr>
+<tr><th id="4">4</th><td><i>// See <a href="https://llvm.org/LICENSE.txt">https://llvm.org/LICENSE.txt</a> for license information.</i></td></tr>
+<tr><th id="5">5</th><td><i>// SPDX-License-Identifier: Apache-2.0 WITH LLVM-exception</i></td></tr>
+<tr><th id="6">6</th><td><i>//</i></td></tr>
+<tr><th id="7">7</th><td><i>//===----------------------------------------------------------------------===//</i></td></tr>
+<tr><th id="8">8</th><td><i>//</i></td></tr>
+<tr><th id="9">9</th><td><i>// This file is shared between AddressSanitizer and ThreadSanitizer</i></td></tr>
+<tr><th id="10">10</th><td><i>// run-time libraries.</i></td></tr>
+<tr><th id="11">11</th><td><i>//</i></td></tr>
+<tr><th id="12">12</th><td><i>// Implemention of fast stack unwinding for Sparc.</i></td></tr>
+<tr><th id="13">13</th><td><i>//===----------------------------------------------------------------------===//</i></td></tr>
+<tr><th id="14">14</th><td></td></tr>
+<tr><th id="15">15</th><td><u>#<span data-ppcond="15">if</span> defined(<span class="macro" data-ref="_M/__sparc__">__sparc__</span>)</u></td></tr>
+<tr><th id="16">16</th><td></td></tr>
+<tr><th id="17">17</th><td><u>#if defined(__arch64__) || defined(__sparcv9)</u></td></tr>
+<tr><th id="18">18</th><td><u>#define STACK_BIAS 2047</u></td></tr>
+<tr><th id="19">19</th><td><u>#else</u></td></tr>
+<tr><th id="20">20</th><td><u>#define STACK_BIAS 0</u></td></tr>
+<tr><th id="21">21</th><td><u>#endif</u></td></tr>
+<tr><th id="22">22</th><td></td></tr>
+<tr><th id="23">23</th><td><u>#include "sanitizer_common.h"</u></td></tr>
+<tr><th id="24">24</th><td><u>#include "sanitizer_stacktrace.h"</u></td></tr>
+<tr><th id="25">25</th><td></td></tr>
+<tr><th id="26">26</th><td><b>namespace</b> __sanitizer {</td></tr>
+<tr><th id="27">27</th><td></td></tr>
+<tr><th id="28">28</th><td><em>void</em> BufferedStackTrace::UnwindFast(uptr pc, uptr bp, uptr stack_top,</td></tr>
+<tr><th id="29">29</th><td>                                    uptr stack_bottom, u32 max_depth) {</td></tr>
+<tr><th id="30">30</th><td>  <i>// TODO(yln): add arg sanity check for stack_top/stack_bottom</i></td></tr>
+<tr><th id="31">31</th><td>  CHECK_GE(max_depth, <var>2</var>);</td></tr>
+<tr><th id="32">32</th><td>  <em>const</em> uptr kPageSize = GetPageSizeCached();</td></tr>
+<tr><th id="33">33</th><td><u>#if defined(__GNUC__)</u></td></tr>
+<tr><th id="34">34</th><td>  <i>// __builtin_return_address returns the address of the call instruction</i></td></tr>
+<tr><th id="35">35</th><td><i>  // on the SPARC and not the return address, so we need to compensate.</i></td></tr>
+<tr><th id="36">36</th><td>  trace_buffer[<var>0</var>] = GetNextInstructionPc(pc);</td></tr>
+<tr><th id="37">37</th><td><u>#else</u></td></tr>
+<tr><th id="38">38</th><td>  trace_buffer[<var>0</var>] = pc;</td></tr>
+<tr><th id="39">39</th><td><u>#endif</u></td></tr>
+<tr><th id="40">40</th><td>  size = <var>1</var>;</td></tr>
+<tr><th id="41">41</th><td>  <b>if</b> (stack_top &lt; <var>4096</var>) <b>return</b>;  <i>// Sanity check for stack top.</i></td></tr>
+<tr><th id="42">42</th><td>  <i>// Flush register windows to memory</i></td></tr>
+<tr><th id="43">43</th><td><u>#if defined(__sparc_v9__) || defined(__sparcv9__) || defined(__sparcv9)</u></td></tr>
+<tr><th id="44">44</th><td>  <b>asm</b> <em>volatile</em>(<q>"flushw"</q> ::: <q>"memory"</q>);</td></tr>
+<tr><th id="45">45</th><td><u>#else</u></td></tr>
+<tr><th id="46">46</th><td>  <b>asm</b> <em>volatile</em>(<q>"ta 3"</q> ::: <q>"memory"</q>);</td></tr>
+<tr><th id="47">47</th><td><u>#endif</u></td></tr>
+<tr><th id="48">48</th><td>  <i>// On the SPARC, the return address is not in the frame, it is in a</i></td></tr>
+<tr><th id="49">49</th><td><i>  // register.  There is no way to access it off of the current frame</i></td></tr>
+<tr><th id="50">50</th><td><i>  // pointer, but it can be accessed off the previous frame pointer by</i></td></tr>
+<tr><th id="51">51</th><td><i>  // reading the value from the register window save area.</i></td></tr>
+<tr><th id="52">52</th><td>  uptr prev_bp = GET_CURRENT_FRAME();</td></tr>
+<tr><th id="53">53</th><td>  uptr next_bp = prev_bp;</td></tr>
+<tr><th id="54">54</th><td>  <em>unsigned</em> <em>int</em> i = <var>0</var>;</td></tr>
+<tr><th id="55">55</th><td>  <b>while</b> (next_bp != bp &amp;&amp; IsAligned(next_bp, <b>sizeof</b>(uhwptr)) &amp;&amp; i++ &lt; <var>8</var>) {</td></tr>
+<tr><th id="56">56</th><td>    prev_bp = next_bp;</td></tr>
+<tr><th id="57">57</th><td>    next_bp = (uptr)((uhwptr *)next_bp)[<var>14</var>] + STACK_BIAS;</td></tr>
+<tr><th id="58">58</th><td>  }</td></tr>
+<tr><th id="59">59</th><td>  <b>if</b> (next_bp == bp)</td></tr>
+<tr><th id="60">60</th><td>    bp = prev_bp;</td></tr>
+<tr><th id="61">61</th><td>  <i>// Lowest possible address that makes sense as the next frame pointer.</i></td></tr>
+<tr><th id="62">62</th><td><i>  // Goes up as we walk the stack.</i></td></tr>
+<tr><th id="63">63</th><td>  uptr bottom = stack_bottom;</td></tr>
+<tr><th id="64">64</th><td>  <i>// Avoid infinite loop when frame == frame[0] by using frame &gt; prev_frame.</i></td></tr>
+<tr><th id="65">65</th><td>  <b>while</b> (IsValidFrame(bp, stack_top, bottom) &amp;&amp; IsAligned(bp, <b>sizeof</b>(uhwptr)) &amp;&amp;</td></tr>
+<tr><th id="66">66</th><td>         size &lt; max_depth) {</td></tr>
+<tr><th id="67">67</th><td>    uhwptr pc1 = ((uhwptr *)bp)[<var>15</var>];</td></tr>
+<tr><th id="68">68</th><td>    <i>// Let's assume that any pointer in the 0th page is invalid and</i></td></tr>
+<tr><th id="69">69</th><td><i>    // stop unwinding here.  If we're adding support for a platform</i></td></tr>
+<tr><th id="70">70</th><td><i>    // where this isn't true, we need to reconsider this check.</i></td></tr>
+<tr><th id="71">71</th><td>    <b>if</b> (pc1 &lt; kPageSize)</td></tr>
+<tr><th id="72">72</th><td>      <b>break</b>;</td></tr>
+<tr><th id="73">73</th><td>    <b>if</b> (pc1 != pc) {</td></tr>
+<tr><th id="74">74</th><td>      <i>// %o7 contains the address of the call instruction and not the</i></td></tr>
+<tr><th id="75">75</th><td><i>      // return address, so we need to compensate.</i></td></tr>
+<tr><th id="76">76</th><td>      trace_buffer[size++] = GetNextInstructionPc((uptr)pc1);</td></tr>
+<tr><th id="77">77</th><td>    }</td></tr>
+<tr><th id="78">78</th><td>    bottom = bp;</td></tr>
+<tr><th id="79">79</th><td>    bp = (uptr)((uhwptr *)bp)[<var>14</var>] + STACK_BIAS;</td></tr>
+<tr><th id="80">80</th><td>  }</td></tr>
+<tr><th id="81">81</th><td>}</td></tr>
+<tr><th id="82">82</th><td></td></tr>
+<tr><th id="83">83</th><td>}  <i>// namespace __sanitizer</i></td></tr>
+<tr><th id="84">84</th><td></td></tr>
+<tr><th id="85">85</th><td><u>#<span data-ppcond="15">endif</span>  // !defined(__sparc__)</u></td></tr>
+<tr><th id="86">86</th><td></td></tr>
+</table><hr/><p id='footer'>
+Generated on <em>2021-Jul-01</em> from project llvm revision <em>12</em>

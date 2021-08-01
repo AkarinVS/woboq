@@ -1,0 +1,192 @@
+<!doctype html>
+<html>
+<head>
+<meta name="viewport" content="width=device-width, initial-scale=1.0"><title>clear_cache.c source code [llvm/compiler-rt/lib/builtins/clear_cache.c] - Woboq Code Browser</title>
+<link rel="stylesheet" href="../../../.././data/qtcreator.css" title="QtCreator"/>
+<link rel="alternate stylesheet" href="../../../.././data/kdevelop.css" title="KDevelop"/>
+<script type="text/javascript" src="../../../.././data/jquery/jquery.min.js"></script>
+<script type="text/javascript" src="../../../.././data/jquery/jquery-ui.min.js"></script>
+<script>var file = 'llvm/compiler-rt/lib/builtins/clear_cache.c'; var root_path = '../../../..'; var data_path = '../../../.././data'; var ecma_script_api_version = 2;</script>
+<script src='../../../.././data/codebrowser.js'></script>
+</head>
+<body><div id='header'><h1 id='breadcrumb'><span>Browse the source code of </span><a href='../../..'>llvm</a>/<a href='../..'>compiler-rt</a>/<a href='..'>lib</a>/<a href='./'>builtins</a>/<a href='clear_cache.c.html'>clear_cache.c</a></h1></div>
+<hr/><div id='content'><table class="code">
+<tr><th id="1">1</th><td><i>//===-- clear_cache.c - Implement __clear_cache ---------------------------===//</i></td></tr>
+<tr><th id="2">2</th><td><i>//</i></td></tr>
+<tr><th id="3">3</th><td><i>// Part of the LLVM Project, under the Apache License v2.0 with LLVM Exceptions.</i></td></tr>
+<tr><th id="4">4</th><td><i>// See <a href="https://llvm.org/LICENSE.txt">https://llvm.org/LICENSE.txt</a> for license information.</i></td></tr>
+<tr><th id="5">5</th><td><i>// SPDX-License-Identifier: Apache-2.0 WITH LLVM-exception</i></td></tr>
+<tr><th id="6">6</th><td><i>//</i></td></tr>
+<tr><th id="7">7</th><td><i>//===----------------------------------------------------------------------===//</i></td></tr>
+<tr><th id="8">8</th><td></td></tr>
+<tr><th id="9">9</th><td><u>#include <a href="int_lib.h.html">"int_lib.h"</a></u></td></tr>
+<tr><th id="10">10</th><td><u>#include <a href="../../../../include/assert.h.html">&lt;assert.h&gt;</a></u></td></tr>
+<tr><th id="11">11</th><td><u>#include &lt;stddef.h&gt;</u></td></tr>
+<tr><th id="12">12</th><td></td></tr>
+<tr><th id="13">13</th><td><u>#<span data-ppcond="13">if</span> __APPLE__</u></td></tr>
+<tr><th id="14">14</th><td><u>#include &lt;libkern/OSCacheControl.h&gt;</u></td></tr>
+<tr><th id="15">15</th><td><u>#<span data-ppcond="13">endif</span></u></td></tr>
+<tr><th id="16">16</th><td></td></tr>
+<tr><th id="17">17</th><td><u>#<span data-ppcond="17">if</span> defined(<span class="macro" data-ref="_M/_WIN32">_WIN32</span>)</u></td></tr>
+<tr><th id="18">18</th><td><i>// Forward declare Win32 APIs since the GCC mode driver does not handle the</i></td></tr>
+<tr><th id="19">19</th><td><i>// newer SDKs as well as needed.</i></td></tr>
+<tr><th id="20">20</th><td>uint32_t FlushInstructionCache(uintptr_t hProcess, <em>void</em> *lpBaseAddress,</td></tr>
+<tr><th id="21">21</th><td>                               uintptr_t dwSize);</td></tr>
+<tr><th id="22">22</th><td>uintptr_t GetCurrentProcess(<em>void</em>);</td></tr>
+<tr><th id="23">23</th><td><u>#<span data-ppcond="17">endif</span></u></td></tr>
+<tr><th id="24">24</th><td></td></tr>
+<tr><th id="25">25</th><td><u>#<span data-ppcond="25">if</span> defined(<span class="macro" data-ref="_M/__FreeBSD__">__FreeBSD__</span>) &amp;&amp; defined(<span class="macro" data-ref="_M/__arm__">__arm__</span>)</u></td></tr>
+<tr><th id="26">26</th><td><i>// clang-format off</i></td></tr>
+<tr><th id="27">27</th><td><u>#include &lt;sys/types.h&gt;</u></td></tr>
+<tr><th id="28">28</th><td><u>#include &lt;machine/sysarch.h&gt;</u></td></tr>
+<tr><th id="29">29</th><td><i>// clang-format on</i></td></tr>
+<tr><th id="30">30</th><td><u>#<span data-ppcond="25">endif</span></u></td></tr>
+<tr><th id="31">31</th><td></td></tr>
+<tr><th id="32">32</th><td><u>#<span data-ppcond="32">if</span> defined(<span class="macro" data-ref="_M/__NetBSD__">__NetBSD__</span>) &amp;&amp; defined(<span class="macro" data-ref="_M/__arm__">__arm__</span>)</u></td></tr>
+<tr><th id="33">33</th><td><u>#include &lt;machine/sysarch.h&gt;</u></td></tr>
+<tr><th id="34">34</th><td><u>#<span data-ppcond="32">endif</span></u></td></tr>
+<tr><th id="35">35</th><td></td></tr>
+<tr><th id="36">36</th><td><u>#<span data-ppcond="36">if</span> defined(<span class="macro" data-ref="_M/__OpenBSD__">__OpenBSD__</span>) &amp;&amp; (defined(<span class="macro" data-ref="_M/__arm__">__arm__</span>) || defined(<span class="macro" data-ref="_M/__mips__">__mips__</span>))</u></td></tr>
+<tr><th id="37">37</th><td><i>// clang-format off</i></td></tr>
+<tr><th id="38">38</th><td><u>#include &lt;sys/types.h&gt;</u></td></tr>
+<tr><th id="39">39</th><td><u>#include &lt;machine/sysarch.h&gt;</u></td></tr>
+<tr><th id="40">40</th><td><i>// clang-format on</i></td></tr>
+<tr><th id="41">41</th><td><u>#<span data-ppcond="36">endif</span></u></td></tr>
+<tr><th id="42">42</th><td></td></tr>
+<tr><th id="43">43</th><td><u>#<span data-ppcond="43">if</span> defined(<span class="macro" data-ref="_M/__linux__">__linux__</span>) &amp;&amp; defined(<span class="macro" data-ref="_M/__mips__">__mips__</span>)</u></td></tr>
+<tr><th id="44">44</th><td><u>#include &lt;sys/cachectl.h&gt;</u></td></tr>
+<tr><th id="45">45</th><td><u>#include &lt;sys/syscall.h&gt;</u></td></tr>
+<tr><th id="46">46</th><td><u>#include &lt;unistd.h&gt;</u></td></tr>
+<tr><th id="47">47</th><td><u>#<span data-ppcond="43">endif</span></u></td></tr>
+<tr><th id="48">48</th><td></td></tr>
+<tr><th id="49">49</th><td><u>#<span data-ppcond="49">if</span> defined(<span class="macro" data-ref="_M/__linux__">__linux__</span>) &amp;&amp; defined(<span class="macro" data-ref="_M/__riscv">__riscv</span>)</u></td></tr>
+<tr><th id="50">50</th><td><i>// to get platform-specific syscall definitions</i></td></tr>
+<tr><th id="51">51</th><td><u>#include &lt;linux/unistd.h&gt;</u></td></tr>
+<tr><th id="52">52</th><td><u>#<span data-ppcond="49">endif</span></u></td></tr>
+<tr><th id="53">53</th><td></td></tr>
+<tr><th id="54">54</th><td><i>// The compiler generates calls to __clear_cache() when creating</i></td></tr>
+<tr><th id="55">55</th><td><i>// trampoline functions on the stack for use with nested functions.</i></td></tr>
+<tr><th id="56">56</th><td><i>// It is expected to invalidate the instruction cache for the</i></td></tr>
+<tr><th id="57">57</th><td><i>// specified range.</i></td></tr>
+<tr><th id="58">58</th><td></td></tr>
+<tr><th id="59">59</th><td><em>void</em> <dfn class="decl def fn" id="__clear_cache" title='__clear_cache' data-ref="__clear_cache" data-ref-filename="__clear_cache">__clear_cache</dfn>(<em>void</em> *<dfn class="local col1 decl" id="1start" title='start' data-type='void *' data-ref="1start" data-ref-filename="1start">start</dfn>, <em>void</em> *<dfn class="local col2 decl" id="2end" title='end' data-type='void *' data-ref="2end" data-ref-filename="2end">end</dfn>) {</td></tr>
+<tr><th id="60">60</th><td><u>#<span data-ppcond="60">if</span> <span class="macro" title="1" data-ref="_M/__i386__">__i386__</span> || __x86_64__ || defined(<span class="macro" data-ref="_M/_M_IX86">_M_IX86</span>) || defined(<span class="macro" data-ref="_M/_M_X64">_M_X64</span>)</u></td></tr>
+<tr><th id="61">61</th><td><i>// Intel processors have a unified instruction and data cache</i></td></tr>
+<tr><th id="62">62</th><td><i>// so there is nothing to do</i></td></tr>
+<tr><th id="63">63</th><td><u>#<span data-ppcond="60">elif</span> defined(_WIN32) &amp;&amp; (defined(__arm__) || defined(__aarch64__))</u></td></tr>
+<tr><th id="64">64</th><td>  FlushInstructionCache(GetCurrentProcess(), start, end - start);</td></tr>
+<tr><th id="65">65</th><td><u>#elif defined(__arm__) &amp;&amp; !defined(__APPLE__)</u></td></tr>
+<tr><th id="66">66</th><td><u>#if defined(__FreeBSD__) || defined(__NetBSD__) || defined(__OpenBSD__)</u></td></tr>
+<tr><th id="67">67</th><td>  <b>struct</b> arm_sync_icache_args arg;</td></tr>
+<tr><th id="68">68</th><td></td></tr>
+<tr><th id="69">69</th><td>  arg.addr = (uintptr_t)start;</td></tr>
+<tr><th id="70">70</th><td>  arg.len = (uintptr_t)end - (uintptr_t)start;</td></tr>
+<tr><th id="71">71</th><td></td></tr>
+<tr><th id="72">72</th><td>  sysarch(ARM_SYNC_ICACHE, &amp;arg);</td></tr>
+<tr><th id="73">73</th><td><u>#elif defined(__linux__)</u></td></tr>
+<tr><th id="74">74</th><td><i>// We used to include asm/unistd.h for the __ARM_NR_cacheflush define, but</i></td></tr>
+<tr><th id="75">75</th><td><i>// it also brought many other unused defines, as well as a dependency on</i></td></tr>
+<tr><th id="76">76</th><td><i>// kernel headers to be installed.</i></td></tr>
+<tr><th id="77">77</th><td><i>//</i></td></tr>
+<tr><th id="78">78</th><td><i>// This value is stable at least since Linux 3.13 and should remain so for</i></td></tr>
+<tr><th id="79">79</th><td><i>// compatibility reasons, warranting it's re-definition here.</i></td></tr>
+<tr><th id="80">80</th><td><u>#define __ARM_NR_cacheflush 0x0f0002</u></td></tr>
+<tr><th id="81">81</th><td>  <em>register</em> <em>int</em> start_reg <b>__asm</b>(<q>"r0"</q>) = (<em>int</em>)(intptr_t)start;</td></tr>
+<tr><th id="82">82</th><td>  <em>const</em> <em>register</em> <em>int</em> end_reg <b>__asm</b>(<q>"r1"</q>) = (<em>int</em>)(intptr_t)end;</td></tr>
+<tr><th id="83">83</th><td>  <em>const</em> <em>register</em> <em>int</em> flags <b>__asm</b>(<q>"r2"</q>) = <var>0</var>;</td></tr>
+<tr><th id="84">84</th><td>  <em>const</em> <em>register</em> <em>int</em> syscall_nr <b>__asm</b>(<q>"r7"</q>) = __ARM_NR_cacheflush;</td></tr>
+<tr><th id="85">85</th><td>  <b>__asm</b> <em>__volatile</em>(<q>"svc 0x0"</q></td></tr>
+<tr><th id="86">86</th><td>                   : <q>"=r"</q>(start_reg)</td></tr>
+<tr><th id="87">87</th><td>                   : <q>"r"</q>(syscall_nr), <q>"r"</q>(start_reg), <q>"r"</q>(end_reg), <q>"r"</q>(flags));</td></tr>
+<tr><th id="88">88</th><td>  assert(start_reg == <var>0</var> &amp;&amp; <q>"Cache flush syscall failed."</q>);</td></tr>
+<tr><th id="89">89</th><td><u>#else</u></td></tr>
+<tr><th id="90">90</th><td>  compilerrt_abort();</td></tr>
+<tr><th id="91">91</th><td><u>#endif</u></td></tr>
+<tr><th id="92">92</th><td><u>#elif defined(__linux__) &amp;&amp; defined(__mips__)</u></td></tr>
+<tr><th id="93">93</th><td>  <em>const</em> uintptr_t start_int = (uintptr_t)start;</td></tr>
+<tr><th id="94">94</th><td>  <em>const</em> uintptr_t end_int = (uintptr_t)end;</td></tr>
+<tr><th id="95">95</th><td>  syscall(__NR_cacheflush, start, (end_int - start_int), BCACHE);</td></tr>
+<tr><th id="96">96</th><td><u>#elif defined(__mips__) &amp;&amp; defined(__OpenBSD__)</u></td></tr>
+<tr><th id="97">97</th><td>  cacheflush(start, (uintptr_t)end - (uintptr_t)start, BCACHE);</td></tr>
+<tr><th id="98">98</th><td><u>#elif defined(__aarch64__) &amp;&amp; !defined(__APPLE__)</u></td></tr>
+<tr><th id="99">99</th><td>  uint64_t xstart = (uint64_t)(uintptr_t)start;</td></tr>
+<tr><th id="100">100</th><td>  uint64_t xend = (uint64_t)(uintptr_t)end;</td></tr>
+<tr><th id="101">101</th><td></td></tr>
+<tr><th id="102">102</th><td>  <i>// Get Cache Type Info.</i></td></tr>
+<tr><th id="103">103</th><td>  <em>static</em> uint64_t ctr_el0 = <var>0</var>;</td></tr>
+<tr><th id="104">104</th><td>  <b>if</b> (ctr_el0 == <var>0</var>)</td></tr>
+<tr><th id="105">105</th><td>    <b>__asm</b> <em>__volatile</em>(<q>"mrs %0, ctr_el0"</q> : <q>"=r"</q>(ctr_el0));</td></tr>
+<tr><th id="106">106</th><td></td></tr>
+<tr><th id="107">107</th><td>  <i>// The DC and IC instructions must use 64-bit registers so we don't use</i></td></tr>
+<tr><th id="108">108</th><td><i>  // uintptr_t in case this runs in an IPL32 environment.</i></td></tr>
+<tr><th id="109">109</th><td>  uint64_t addr;</td></tr>
+<tr><th id="110">110</th><td></td></tr>
+<tr><th id="111">111</th><td>  <i>// If CTR_EL0.IDC is set, data cache cleaning to the point of unification</i></td></tr>
+<tr><th id="112">112</th><td><i>  // is not required for instruction to data coherence.</i></td></tr>
+<tr><th id="113">113</th><td>  <b>if</b> (((ctr_el0 &gt;&gt; <var>28</var>) &amp; <var>0x1</var>) == <var>0x0</var>) {</td></tr>
+<tr><th id="114">114</th><td>    <em>const</em> size_t dcache_line_size = <var>4</var> &lt;&lt; ((ctr_el0 &gt;&gt; <var>16</var>) &amp; <var>15</var>);</td></tr>
+<tr><th id="115">115</th><td>    <b>for</b> (addr = xstart &amp; ~(dcache_line_size - <var>1</var>); addr &lt; xend;</td></tr>
+<tr><th id="116">116</th><td>         addr += dcache_line_size)</td></tr>
+<tr><th id="117">117</th><td>      <b>__asm</b> <em>__volatile</em>(<q>"dc cvau, %0"</q> ::<q>"r"</q>(addr));</td></tr>
+<tr><th id="118">118</th><td>  }</td></tr>
+<tr><th id="119">119</th><td>  <b>__asm</b> <em>__volatile</em>(<q>"dsb ish"</q>);</td></tr>
+<tr><th id="120">120</th><td></td></tr>
+<tr><th id="121">121</th><td>  <i>// If CTR_EL0.DIC is set, instruction cache invalidation to the point of</i></td></tr>
+<tr><th id="122">122</th><td><i>  // unification is not required for instruction to data coherence.</i></td></tr>
+<tr><th id="123">123</th><td>  <b>if</b> (((ctr_el0 &gt;&gt; <var>29</var>) &amp; <var>0x1</var>) == <var>0x0</var>) {</td></tr>
+<tr><th id="124">124</th><td>    <em>const</em> size_t icache_line_size = <var>4</var> &lt;&lt; ((ctr_el0 &gt;&gt; <var>0</var>) &amp; <var>15</var>);</td></tr>
+<tr><th id="125">125</th><td>    <b>for</b> (addr = xstart &amp; ~(icache_line_size - <var>1</var>); addr &lt; xend;</td></tr>
+<tr><th id="126">126</th><td>         addr += icache_line_size)</td></tr>
+<tr><th id="127">127</th><td>      <b>__asm</b> <em>__volatile</em>(<q>"ic ivau, %0"</q> ::<q>"r"</q>(addr));</td></tr>
+<tr><th id="128">128</th><td>  }</td></tr>
+<tr><th id="129">129</th><td>  <b>__asm</b> <em>__volatile</em>(<q>"isb sy"</q>);</td></tr>
+<tr><th id="130">130</th><td><u>#elif defined(__powerpc64__)</u></td></tr>
+<tr><th id="131">131</th><td>  <em>const</em> size_t line_size = <var>32</var>;</td></tr>
+<tr><th id="132">132</th><td>  <em>const</em> size_t len = (uintptr_t)end - (uintptr_t)start;</td></tr>
+<tr><th id="133">133</th><td></td></tr>
+<tr><th id="134">134</th><td>  <em>const</em> uintptr_t mask = ~(line_size - <var>1</var>);</td></tr>
+<tr><th id="135">135</th><td>  <em>const</em> uintptr_t start_line = ((uintptr_t)start) &amp; mask;</td></tr>
+<tr><th id="136">136</th><td>  <em>const</em> uintptr_t end_line = ((uintptr_t)start + len + line_size - <var>1</var>) &amp; mask;</td></tr>
+<tr><th id="137">137</th><td></td></tr>
+<tr><th id="138">138</th><td>  <b>for</b> (uintptr_t line = start_line; line &lt; end_line; line += line_size)</td></tr>
+<tr><th id="139">139</th><td>    <b>__asm__</b> <em>volatile</em>(<q>"dcbf 0, %0"</q> : : <q>"r"</q>(line));</td></tr>
+<tr><th id="140">140</th><td>  <b>__asm__</b> <em>volatile</em>(<q>"sync"</q>);</td></tr>
+<tr><th id="141">141</th><td></td></tr>
+<tr><th id="142">142</th><td>  <b>for</b> (uintptr_t line = start_line; line &lt; end_line; line += line_size)</td></tr>
+<tr><th id="143">143</th><td>    <b>__asm__</b> <em>volatile</em>(<q>"icbi 0, %0"</q> : : <q>"r"</q>(line));</td></tr>
+<tr><th id="144">144</th><td>  <b>__asm__</b> <em>volatile</em>(<q>"isync"</q>);</td></tr>
+<tr><th id="145">145</th><td><u>#elif defined(__sparc__)</u></td></tr>
+<tr><th id="146">146</th><td>  <em>const</em> size_t dword_size = <var>8</var>;</td></tr>
+<tr><th id="147">147</th><td>  <em>const</em> size_t len = (uintptr_t)end - (uintptr_t)start;</td></tr>
+<tr><th id="148">148</th><td></td></tr>
+<tr><th id="149">149</th><td>  <em>const</em> uintptr_t mask = ~(dword_size - <var>1</var>);</td></tr>
+<tr><th id="150">150</th><td>  <em>const</em> uintptr_t start_dword = ((uintptr_t)start) &amp; mask;</td></tr>
+<tr><th id="151">151</th><td>  <em>const</em> uintptr_t end_dword = ((uintptr_t)start + len + dword_size - <var>1</var>) &amp; mask;</td></tr>
+<tr><th id="152">152</th><td></td></tr>
+<tr><th id="153">153</th><td>  <b>for</b> (uintptr_t dword = start_dword; dword &lt; end_dword; dword += dword_size)</td></tr>
+<tr><th id="154">154</th><td>    <b>__asm__</b> <em>volatile</em>(<q>"flush %0"</q> : : <q>"r"</q>(dword));</td></tr>
+<tr><th id="155">155</th><td><u>#elif defined(__riscv) &amp;&amp; defined(__linux__)</u></td></tr>
+<tr><th id="156">156</th><td>  <i>// See: arch/riscv/include/asm/cacheflush.h, arch/riscv/kernel/sys_riscv.c</i></td></tr>
+<tr><th id="157">157</th><td>  <em>register</em> <em>void</em> *start_reg <b>__asm</b>(<q>"a0"</q>) = start;</td></tr>
+<tr><th id="158">158</th><td>  <em>const</em> <em>register</em> <em>void</em> *end_reg <b>__asm</b>(<q>"a1"</q>) = end;</td></tr>
+<tr><th id="159">159</th><td>  <i>// "0" means that we clear cache for all threads (SYS_RISCV_FLUSH_ICACHE_ALL)</i></td></tr>
+<tr><th id="160">160</th><td>  <em>const</em> <em>register</em> <em>long</em> flags <b>__asm</b>(<q>"a2"</q>) = <var>0</var>;</td></tr>
+<tr><th id="161">161</th><td>  <em>const</em> <em>register</em> <em>long</em> syscall_nr <b>__asm</b>(<q>"a7"</q>) = __NR_riscv_flush_icache;</td></tr>
+<tr><th id="162">162</th><td>  <b>__asm</b> <em>__volatile</em>(<q>"ecall"</q></td></tr>
+<tr><th id="163">163</th><td>                   : <q>"=r"</q>(start_reg)</td></tr>
+<tr><th id="164">164</th><td>                   : <q>"r"</q>(start_reg), <q>"r"</q>(end_reg), <q>"r"</q>(flags), <q>"r"</q>(syscall_nr));</td></tr>
+<tr><th id="165">165</th><td>  assert(start_reg == <var>0</var> &amp;&amp; <q>"Cache flush syscall failed."</q>);</td></tr>
+<tr><th id="166">166</th><td><u>#else</u></td></tr>
+<tr><th id="167">167</th><td><u>#if __APPLE__</u></td></tr>
+<tr><th id="168">168</th><td>  <i>// On Darwin, sys_icache_invalidate() provides this functionality</i></td></tr>
+<tr><th id="169">169</th><td>  sys_icache_invalidate(start, end - start);</td></tr>
+<tr><th id="170">170</th><td><u>#elif defined(__ve__)</u></td></tr>
+<tr><th id="171">171</th><td>  <b>__asm__</b> <em>volatile</em>(<q>"fencec 2"</q>);</td></tr>
+<tr><th id="172">172</th><td><u>#else</u></td></tr>
+<tr><th id="173">173</th><td>  compilerrt_abort();</td></tr>
+<tr><th id="174">174</th><td><u>#endif</u></td></tr>
+<tr><th id="175">175</th><td><u>#<span data-ppcond="60">endif</span></u></td></tr>
+<tr><th id="176">176</th><td>}</td></tr>
+<tr><th id="177">177</th><td></td></tr>
+</table><hr/><p id='footer'>
+Generated on <em>2021-Jul-01</em> from project llvm revision <em>12</em>

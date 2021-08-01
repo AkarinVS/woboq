@@ -1,0 +1,141 @@
+<!doctype html>
+<html>
+<head>
+<meta name="viewport" content="width=device-width, initial-scale=1.0"><title>RegAllocBase.h source code [llvm/llvm/lib/CodeGen/RegAllocBase.h] - Woboq Code Browser</title>
+<meta name="woboq:interestingDefinitions" content="llvm::RegAllocBase "/>
+<link rel="stylesheet" href="../../../.././data/qtcreator.css" title="QtCreator"/>
+<link rel="alternate stylesheet" href="../../../.././data/kdevelop.css" title="KDevelop"/>
+<script type="text/javascript" src="../../../.././data/jquery/jquery.min.js"></script>
+<script type="text/javascript" src="../../../.././data/jquery/jquery-ui.min.js"></script>
+<script>var file = 'llvm/llvm/lib/CodeGen/RegAllocBase.h'; var root_path = '../../../..'; var data_path = '../../../.././data'; var ecma_script_api_version = 2;</script>
+<script src='../../../.././data/codebrowser.js'></script>
+</head>
+<body><div id='header'><h1 id='breadcrumb'><span>Browse the source code of </span><a href='../../..'>llvm</a>/<a href='../..'>llvm</a>/<a href='..'>lib</a>/<a href='./'>CodeGen</a>/<a href='RegAllocBase.h.html'>RegAllocBase.h</a></h1></div>
+<hr/><div id='content'><table class="code">
+<tr><th id="1">1</th><td><i>//===- RegAllocBase.h - basic regalloc interface and driver -----*- C++ -*-===//</i></td></tr>
+<tr><th id="2">2</th><td><i>//</i></td></tr>
+<tr><th id="3">3</th><td><i>// Part of the LLVM Project, under the Apache License v2.0 with LLVM Exceptions.</i></td></tr>
+<tr><th id="4">4</th><td><i>// See <a href="https://llvm.org/LICENSE.txt">https://llvm.org/LICENSE.txt</a> for license information.</i></td></tr>
+<tr><th id="5">5</th><td><i>// SPDX-License-Identifier: Apache-2.0 WITH LLVM-exception</i></td></tr>
+<tr><th id="6">6</th><td><i>//</i></td></tr>
+<tr><th id="7">7</th><td><i>//===----------------------------------------------------------------------===//</i></td></tr>
+<tr><th id="8">8</th><td><i>//</i></td></tr>
+<tr><th id="9">9</th><td><i>// This file defines the RegAllocBase class, which is the skeleton of a basic</i></td></tr>
+<tr><th id="10">10</th><td><i>// register allocation algorithm and interface for extending it. It provides the</i></td></tr>
+<tr><th id="11">11</th><td><i>// building blocks on which to construct other experimental allocators and test</i></td></tr>
+<tr><th id="12">12</th><td><i>// the validity of two principles:</i></td></tr>
+<tr><th id="13">13</th><td><i>//</i></td></tr>
+<tr><th id="14">14</th><td><i>// - If virtual and physical register liveness is modeled using intervals, then</i></td></tr>
+<tr><th id="15">15</th><td><i>// on-the-fly interference checking is cheap. Furthermore, interferences can be</i></td></tr>
+<tr><th id="16">16</th><td><i>// lazily cached and reused.</i></td></tr>
+<tr><th id="17">17</th><td><i>//</i></td></tr>
+<tr><th id="18">18</th><td><i>// - Register allocation complexity, and generated code performance is</i></td></tr>
+<tr><th id="19">19</th><td><i>// determined by the effectiveness of live range splitting rather than optimal</i></td></tr>
+<tr><th id="20">20</th><td><i>// coloring.</i></td></tr>
+<tr><th id="21">21</th><td><i>//</i></td></tr>
+<tr><th id="22">22</th><td><i>// Following the first principle, interfering checking revolves around the</i></td></tr>
+<tr><th id="23">23</th><td><i>// LiveIntervalUnion data structure.</i></td></tr>
+<tr><th id="24">24</th><td><i>//</i></td></tr>
+<tr><th id="25">25</th><td><i>// To fulfill the second principle, the basic allocator provides a driver for</i></td></tr>
+<tr><th id="26">26</th><td><i>// incremental splitting. It essentially punts on the problem of register</i></td></tr>
+<tr><th id="27">27</th><td><i>// coloring, instead driving the assignment of virtual to physical registers by</i></td></tr>
+<tr><th id="28">28</th><td><i>// the cost of splitting. The basic allocator allows for heuristic reassignment</i></td></tr>
+<tr><th id="29">29</th><td><i>// of registers, if a more sophisticated allocator chooses to do that.</i></td></tr>
+<tr><th id="30">30</th><td><i>//</i></td></tr>
+<tr><th id="31">31</th><td><i>// This framework provides a way to engineer the compile time vs. code</i></td></tr>
+<tr><th id="32">32</th><td><i>// quality trade-off without relying on a particular theoretical solver.</i></td></tr>
+<tr><th id="33">33</th><td><i>//</i></td></tr>
+<tr><th id="34">34</th><td><i>//===----------------------------------------------------------------------===//</i></td></tr>
+<tr><th id="35">35</th><td></td></tr>
+<tr><th id="36">36</th><td><u>#<span data-ppcond="36">ifndef</span> <span class="macro" data-ref="_M/LLVM_LIB_CODEGEN_REGALLOCBASE_H">LLVM_LIB_CODEGEN_REGALLOCBASE_H</span></u></td></tr>
+<tr><th id="37">37</th><td><u>#define <dfn class="macro" id="_M/LLVM_LIB_CODEGEN_REGALLOCBASE_H" data-ref="_M/LLVM_LIB_CODEGEN_REGALLOCBASE_H">LLVM_LIB_CODEGEN_REGALLOCBASE_H</dfn></u></td></tr>
+<tr><th id="38">38</th><td></td></tr>
+<tr><th id="39">39</th><td><u>#include <a href="../../include/llvm/ADT/SmallPtrSet.h.html">"llvm/ADT/SmallPtrSet.h"</a></u></td></tr>
+<tr><th id="40">40</th><td><u>#include <a href="../../include/llvm/CodeGen/RegisterClassInfo.h.html">"llvm/CodeGen/RegisterClassInfo.h"</a></u></td></tr>
+<tr><th id="41">41</th><td></td></tr>
+<tr><th id="42">42</th><td><b>namespace</b> <span class="namespace">llvm</span> {</td></tr>
+<tr><th id="43">43</th><td></td></tr>
+<tr><th id="44">44</th><td><b>class</b> <a class="type" href="../../include/llvm/CodeGen/LiveInterval.h.html#llvm::LiveInterval" title='llvm::LiveInterval' data-ref="llvm::LiveInterval" data-ref-filename="llvm..LiveInterval" id="llvm::LiveInterval">LiveInterval</a>;</td></tr>
+<tr><th id="45">45</th><td><b>class</b> <a class="type" href="../../include/llvm/CodeGen/LiveIntervals.h.html#llvm::LiveIntervals" title='llvm::LiveIntervals' data-ref="llvm::LiveIntervals" data-ref-filename="llvm..LiveIntervals" id="llvm::LiveIntervals">LiveIntervals</a>;</td></tr>
+<tr><th id="46">46</th><td><b>class</b> <a class="type" href="../../include/llvm/CodeGen/LiveRegMatrix.h.html#llvm::LiveRegMatrix" title='llvm::LiveRegMatrix' data-ref="llvm::LiveRegMatrix" data-ref-filename="llvm..LiveRegMatrix" id="llvm::LiveRegMatrix">LiveRegMatrix</a>;</td></tr>
+<tr><th id="47">47</th><td><b>class</b> <a class="type" href="../../include/llvm/CodeGen/MachineInstr.h.html#llvm::MachineInstr" title='llvm::MachineInstr' data-ref="llvm::MachineInstr" data-ref-filename="llvm..MachineInstr" id="llvm::MachineInstr">MachineInstr</a>;</td></tr>
+<tr><th id="48">48</th><td><b>class</b> <a class="type" href="../../include/llvm/CodeGen/MachineRegisterInfo.h.html#llvm::MachineRegisterInfo" title='llvm::MachineRegisterInfo' data-ref="llvm::MachineRegisterInfo" data-ref-filename="llvm..MachineRegisterInfo" id="llvm::MachineRegisterInfo">MachineRegisterInfo</a>;</td></tr>
+<tr><th id="49">49</th><td><b>template</b>&lt;<b>typename</b> T&gt; <b>class</b> <a class="type" href="../../include/llvm/ADT/SmallVector.h.html#llvm::SmallVectorImpl" title='llvm::SmallVectorImpl' data-ref="llvm::SmallVectorImpl" data-ref-filename="llvm..SmallVectorImpl" id="llvm::SmallVectorImpl">SmallVectorImpl</a>;</td></tr>
+<tr><th id="50">50</th><td><b>class</b> <a class="type" href="../../include/llvm/CodeGen/Spiller.h.html#llvm::Spiller" title='llvm::Spiller' data-ref="llvm::Spiller" data-ref-filename="llvm..Spiller" id="llvm::Spiller">Spiller</a>;</td></tr>
+<tr><th id="51">51</th><td><b>class</b> <a class="type" href="../../include/llvm/CodeGen/TargetRegisterInfo.h.html#llvm::TargetRegisterInfo" title='llvm::TargetRegisterInfo' data-ref="llvm::TargetRegisterInfo" data-ref-filename="llvm..TargetRegisterInfo" id="llvm::TargetRegisterInfo">TargetRegisterInfo</a>;</td></tr>
+<tr><th id="52">52</th><td><b>class</b> <a class="type" href="../../include/llvm/CodeGen/VirtRegMap.h.html#llvm::VirtRegMap" title='llvm::VirtRegMap' data-ref="llvm::VirtRegMap" data-ref-filename="llvm..VirtRegMap" id="llvm::VirtRegMap">VirtRegMap</a>;</td></tr>
+<tr><th id="53">53</th><td></td></tr>
+<tr><th id="54">54</th><td><i class="doc">/// RegAllocBase provides the register allocation driver and interface that can</i></td></tr>
+<tr><th id="55">55</th><td><i class="doc">/// be extended to add interesting heuristics.</i></td></tr>
+<tr><th id="56">56</th><td><i class="doc">///</i></td></tr>
+<tr><th id="57">57</th><td><i class="doc">/// Register allocators must override the selectOrSplit() method to implement</i></td></tr>
+<tr><th id="58">58</th><td><i class="doc">/// live range splitting. They must also override enqueue/dequeue to provide an</i></td></tr>
+<tr><th id="59">59</th><td><i class="doc">/// assignment order.</i></td></tr>
+<tr><th id="60">60</th><td><b>class</b> <dfn class="type def" id="llvm::RegAllocBase" title='llvm::RegAllocBase' data-ref="llvm::RegAllocBase" data-ref-filename="llvm..RegAllocBase">RegAllocBase</dfn> {</td></tr>
+<tr><th id="61">61</th><td>  <b>virtual</b> <em>void</em> <a class="virtual decl fn" href="RegAllocBase.cpp.html#_ZN4llvm12RegAllocBase6anchorEv" title='llvm::RegAllocBase::anchor' data-ref="_ZN4llvm12RegAllocBase6anchorEv" data-ref-filename="_ZN4llvm12RegAllocBase6anchorEv" id="_ZN4llvm12RegAllocBase6anchorEv">anchor</a>();</td></tr>
+<tr><th id="62">62</th><td></td></tr>
+<tr><th id="63">63</th><td><b>protected</b>:</td></tr>
+<tr><th id="64">64</th><td>  <em>const</em> <a class="type" href="../../include/llvm/CodeGen/TargetRegisterInfo.h.html#llvm::TargetRegisterInfo" title='llvm::TargetRegisterInfo' data-ref="llvm::TargetRegisterInfo" data-ref-filename="llvm..TargetRegisterInfo">TargetRegisterInfo</a> *<dfn class="decl field" id="llvm::RegAllocBase::TRI" title='llvm::RegAllocBase::TRI' data-ref="llvm::RegAllocBase::TRI" data-ref-filename="llvm..RegAllocBase..TRI">TRI</dfn> = <b>nullptr</b>;</td></tr>
+<tr><th id="65">65</th><td>  <a class="type" href="../../include/llvm/CodeGen/MachineRegisterInfo.h.html#llvm::MachineRegisterInfo" title='llvm::MachineRegisterInfo' data-ref="llvm::MachineRegisterInfo" data-ref-filename="llvm..MachineRegisterInfo">MachineRegisterInfo</a> *<dfn class="decl field" id="llvm::RegAllocBase::MRI" title='llvm::RegAllocBase::MRI' data-ref="llvm::RegAllocBase::MRI" data-ref-filename="llvm..RegAllocBase..MRI">MRI</dfn> = <b>nullptr</b>;</td></tr>
+<tr><th id="66">66</th><td>  <a class="type" href="../../include/llvm/CodeGen/VirtRegMap.h.html#llvm::VirtRegMap" title='llvm::VirtRegMap' data-ref="llvm::VirtRegMap" data-ref-filename="llvm..VirtRegMap">VirtRegMap</a> *<dfn class="decl field" id="llvm::RegAllocBase::VRM" title='llvm::RegAllocBase::VRM' data-ref="llvm::RegAllocBase::VRM" data-ref-filename="llvm..RegAllocBase..VRM">VRM</dfn> = <b>nullptr</b>;</td></tr>
+<tr><th id="67">67</th><td>  <a class="type" href="../../include/llvm/CodeGen/LiveIntervals.h.html#llvm::LiveIntervals" title='llvm::LiveIntervals' data-ref="llvm::LiveIntervals" data-ref-filename="llvm..LiveIntervals">LiveIntervals</a> *<dfn class="decl field" id="llvm::RegAllocBase::LIS" title='llvm::RegAllocBase::LIS' data-ref="llvm::RegAllocBase::LIS" data-ref-filename="llvm..RegAllocBase..LIS">LIS</dfn> = <b>nullptr</b>;</td></tr>
+<tr><th id="68">68</th><td>  <a class="type" href="../../include/llvm/CodeGen/LiveRegMatrix.h.html#llvm::LiveRegMatrix" title='llvm::LiveRegMatrix' data-ref="llvm::LiveRegMatrix" data-ref-filename="llvm..LiveRegMatrix">LiveRegMatrix</a> *<dfn class="decl field" id="llvm::RegAllocBase::Matrix" title='llvm::RegAllocBase::Matrix' data-ref="llvm::RegAllocBase::Matrix" data-ref-filename="llvm..RegAllocBase..Matrix">Matrix</dfn> = <b>nullptr</b>;</td></tr>
+<tr><th id="69">69</th><td>  <a class="type" href="../../include/llvm/CodeGen/RegisterClassInfo.h.html#llvm::RegisterClassInfo" title='llvm::RegisterClassInfo' data-ref="llvm::RegisterClassInfo" data-ref-filename="llvm..RegisterClassInfo">RegisterClassInfo</a> <dfn class="decl field" id="llvm::RegAllocBase::RegClassInfo" title='llvm::RegAllocBase::RegClassInfo' data-ref="llvm::RegAllocBase::RegClassInfo" data-ref-filename="llvm..RegAllocBase..RegClassInfo">RegClassInfo</dfn>;</td></tr>
+<tr><th id="70">70</th><td></td></tr>
+<tr><th id="71">71</th><td>  <i class="doc">/// Inst which is a def of an original reg and whose defs are already all</i></td></tr>
+<tr><th id="72">72</th><td><i class="doc">  /// dead after remat is saved in DeadRemats. The deletion of such inst is</i></td></tr>
+<tr><th id="73">73</th><td><i class="doc">  /// postponed till all the allocations are done, so its remat expr is</i></td></tr>
+<tr><th id="74">74</th><td><i class="doc">  /// always available for the remat of all the siblings of the original reg.</i></td></tr>
+<tr><th id="75">75</th><td>  <a class="type" href="../../include/llvm/ADT/SmallPtrSet.h.html#llvm::SmallPtrSet" title='llvm::SmallPtrSet' data-ref="llvm::SmallPtrSet" data-ref-filename="llvm..SmallPtrSet">SmallPtrSet</a>&lt;<a class="type" href="../../include/llvm/CodeGen/MachineInstr.h.html#llvm::MachineInstr" title='llvm::MachineInstr' data-ref="llvm::MachineInstr" data-ref-filename="llvm..MachineInstr">MachineInstr</a> *, <var>32</var>&gt; <dfn class="decl field" id="llvm::RegAllocBase::DeadRemats" title='llvm::RegAllocBase::DeadRemats' data-ref="llvm::RegAllocBase::DeadRemats" data-ref-filename="llvm..RegAllocBase..DeadRemats">DeadRemats</dfn>;</td></tr>
+<tr><th id="76">76</th><td></td></tr>
+<tr><th id="77">77</th><td>  <dfn class="decl def fn" id="_ZN4llvm12RegAllocBaseC1Ev" title='llvm::RegAllocBase::RegAllocBase' data-ref="_ZN4llvm12RegAllocBaseC1Ev" data-ref-filename="_ZN4llvm12RegAllocBaseC1Ev">RegAllocBase</dfn>() = <b>default</b>;</td></tr>
+<tr><th id="78">78</th><td>  <b>virtual</b> <dfn class="virtual decl def fn" id="_ZN4llvm12RegAllocBaseD1Ev" title='llvm::RegAllocBase::~RegAllocBase' data-ref="_ZN4llvm12RegAllocBaseD1Ev" data-ref-filename="_ZN4llvm12RegAllocBaseD1Ev">~RegAllocBase</dfn>() = <b>default</b>;</td></tr>
+<tr><th id="79">79</th><td></td></tr>
+<tr><th id="80">80</th><td>  <i>// A RegAlloc pass should call this before allocatePhysRegs.</i></td></tr>
+<tr><th id="81">81</th><td>  <em>void</em> <a class="decl fn" href="RegAllocBase.cpp.html#_ZN4llvm12RegAllocBase4initERNS_10VirtRegMapERNS_13LiveIntervalsERNS_13LiveRegMatrixE" title='llvm::RegAllocBase::init' data-ref="_ZN4llvm12RegAllocBase4initERNS_10VirtRegMapERNS_13LiveIntervalsERNS_13LiveRegMatrixE" data-ref-filename="_ZN4llvm12RegAllocBase4initERNS_10VirtRegMapERNS_13LiveIntervalsERNS_13LiveRegMatrixE" id="_ZN4llvm12RegAllocBase4initERNS_10VirtRegMapERNS_13LiveIntervalsERNS_13LiveRegMatrixE">init</a>(<a class="type" href="../../include/llvm/CodeGen/VirtRegMap.h.html#llvm::VirtRegMap" title='llvm::VirtRegMap' data-ref="llvm::VirtRegMap" data-ref-filename="llvm..VirtRegMap">VirtRegMap</a> &amp;<dfn class="local col1 decl" id="1vrm" title='vrm' data-type='llvm::VirtRegMap &amp;' data-ref="1vrm" data-ref-filename="1vrm">vrm</dfn>, <a class="type" href="../../include/llvm/CodeGen/LiveIntervals.h.html#llvm::LiveIntervals" title='llvm::LiveIntervals' data-ref="llvm::LiveIntervals" data-ref-filename="llvm..LiveIntervals">LiveIntervals</a> &amp;<dfn class="local col2 decl" id="2lis" title='lis' data-type='llvm::LiveIntervals &amp;' data-ref="2lis" data-ref-filename="2lis">lis</dfn>, <a class="type" href="../../include/llvm/CodeGen/LiveRegMatrix.h.html#llvm::LiveRegMatrix" title='llvm::LiveRegMatrix' data-ref="llvm::LiveRegMatrix" data-ref-filename="llvm..LiveRegMatrix">LiveRegMatrix</a> &amp;<dfn class="local col3 decl" id="3mat" title='mat' data-type='llvm::LiveRegMatrix &amp;' data-ref="3mat" data-ref-filename="3mat">mat</dfn>);</td></tr>
+<tr><th id="82">82</th><td></td></tr>
+<tr><th id="83">83</th><td>  <i>// The top-level driver. The output is a VirtRegMap that us updated with</i></td></tr>
+<tr><th id="84">84</th><td><i>  // physical register assignments.</i></td></tr>
+<tr><th id="85">85</th><td>  <em>void</em> <a class="decl fn" href="RegAllocBase.cpp.html#_ZN4llvm12RegAllocBase16allocatePhysRegsEv" title='llvm::RegAllocBase::allocatePhysRegs' data-ref="_ZN4llvm12RegAllocBase16allocatePhysRegsEv" data-ref-filename="_ZN4llvm12RegAllocBase16allocatePhysRegsEv" id="_ZN4llvm12RegAllocBase16allocatePhysRegsEv">allocatePhysRegs</a>();</td></tr>
+<tr><th id="86">86</th><td></td></tr>
+<tr><th id="87">87</th><td>  <i>// Include spiller post optimization and removing dead defs left because of</i></td></tr>
+<tr><th id="88">88</th><td><i>  // rematerialization.</i></td></tr>
+<tr><th id="89">89</th><td>  <b>virtual</b> <em>void</em> <a class="virtual decl fn" href="RegAllocBase.cpp.html#_ZN4llvm12RegAllocBase16postOptimizationEv" title='llvm::RegAllocBase::postOptimization' data-ref="_ZN4llvm12RegAllocBase16postOptimizationEv" data-ref-filename="_ZN4llvm12RegAllocBase16postOptimizationEv" id="_ZN4llvm12RegAllocBase16postOptimizationEv">postOptimization</a>();</td></tr>
+<tr><th id="90">90</th><td></td></tr>
+<tr><th id="91">91</th><td>  <i>// Get a temporary reference to a Spiller instance.</i></td></tr>
+<tr><th id="92">92</th><td>  <b>virtual</b> <a class="type" href="../../include/llvm/CodeGen/Spiller.h.html#llvm::Spiller" title='llvm::Spiller' data-ref="llvm::Spiller" data-ref-filename="llvm..Spiller">Spiller</a> &amp;<dfn class="virtual decl fn" id="_ZN4llvm12RegAllocBase7spillerEv" title='llvm::RegAllocBase::spiller' data-ref="_ZN4llvm12RegAllocBase7spillerEv" data-ref-filename="_ZN4llvm12RegAllocBase7spillerEv">spiller</dfn>() = <var>0</var>;</td></tr>
+<tr><th id="93">93</th><td></td></tr>
+<tr><th id="94">94</th><td>  <i class="doc">/// enqueue - Add VirtReg to the priority queue of unassigned registers.</i></td></tr>
+<tr><th id="95">95</th><td>  <b>virtual</b> <em>void</em> <dfn class="virtual decl fn" id="_ZN4llvm12RegAllocBase7enqueueEPNS_12LiveIntervalE" title='llvm::RegAllocBase::enqueue' data-ref="_ZN4llvm12RegAllocBase7enqueueEPNS_12LiveIntervalE" data-ref-filename="_ZN4llvm12RegAllocBase7enqueueEPNS_12LiveIntervalE">enqueue</dfn>(<a class="type" href="../../include/llvm/CodeGen/LiveInterval.h.html#llvm::LiveInterval" title='llvm::LiveInterval' data-ref="llvm::LiveInterval" data-ref-filename="llvm..LiveInterval">LiveInterval</a> *<dfn class="local col4 decl" id="4LI" title='LI' data-type='llvm::LiveInterval *' data-ref="4LI" data-ref-filename="4LI">LI</dfn>) = <var>0</var>;</td></tr>
+<tr><th id="96">96</th><td></td></tr>
+<tr><th id="97">97</th><td>  <i class="doc">/// dequeue - Return the next unassigned register, or NULL.</i></td></tr>
+<tr><th id="98">98</th><td>  <b>virtual</b> <a class="type" href="../../include/llvm/CodeGen/LiveInterval.h.html#llvm::LiveInterval" title='llvm::LiveInterval' data-ref="llvm::LiveInterval" data-ref-filename="llvm..LiveInterval">LiveInterval</a> *<dfn class="virtual decl fn" id="_ZN4llvm12RegAllocBase7dequeueEv" title='llvm::RegAllocBase::dequeue' data-ref="_ZN4llvm12RegAllocBase7dequeueEv" data-ref-filename="_ZN4llvm12RegAllocBase7dequeueEv">dequeue</dfn>() = <var>0</var>;</td></tr>
+<tr><th id="99">99</th><td></td></tr>
+<tr><th id="100">100</th><td>  <i>// A RegAlloc pass should override this to provide the allocation heuristics.</i></td></tr>
+<tr><th id="101">101</th><td><i>  // Each call must guarantee forward progess by returning an available PhysReg</i></td></tr>
+<tr><th id="102">102</th><td><i>  // or new set of split live virtual registers. It is up to the splitter to</i></td></tr>
+<tr><th id="103">103</th><td><i>  // converge quickly toward fully spilled live ranges.</i></td></tr>
+<tr><th id="104">104</th><td>  <b>virtual</b> <a class="type" href="../../include/llvm/MC/MCRegister.h.html#llvm::MCRegister" title='llvm::MCRegister' data-ref="llvm::MCRegister" data-ref-filename="llvm..MCRegister">MCRegister</a> <dfn class="virtual decl fn" id="_ZN4llvm12RegAllocBase13selectOrSplitERNS_12LiveIntervalERNS_15SmallVectorImplINS_8RegisterEEE" title='llvm::RegAllocBase::selectOrSplit' data-ref="_ZN4llvm12RegAllocBase13selectOrSplitERNS_12LiveIntervalERNS_15SmallVectorImplINS_8RegisterEEE" data-ref-filename="_ZN4llvm12RegAllocBase13selectOrSplitERNS_12LiveIntervalERNS_15SmallVectorImplINS_8RegisterEEE">selectOrSplit</dfn>(<a class="type" href="../../include/llvm/CodeGen/LiveInterval.h.html#llvm::LiveInterval" title='llvm::LiveInterval' data-ref="llvm::LiveInterval" data-ref-filename="llvm..LiveInterval">LiveInterval</a> &amp;<dfn class="local col5 decl" id="5VirtReg" title='VirtReg' data-type='llvm::LiveInterval &amp;' data-ref="5VirtReg" data-ref-filename="5VirtReg">VirtReg</dfn>,</td></tr>
+<tr><th id="105">105</th><td>                                   <a class="type" href="../../include/llvm/ADT/SmallVector.h.html#llvm::SmallVectorImpl" title='llvm::SmallVectorImpl' data-ref="llvm::SmallVectorImpl" data-ref-filename="llvm..SmallVectorImpl">SmallVectorImpl</a>&lt;<a class="type" href="../../include/llvm/CodeGen/Register.h.html#llvm::Register" title='llvm::Register' data-ref="llvm::Register" data-ref-filename="llvm..Register">Register</a>&gt; &amp;<dfn class="local col6 decl" id="6splitLVRs" title='splitLVRs' data-type='SmallVectorImpl&lt;llvm::Register&gt; &amp;' data-ref="6splitLVRs" data-ref-filename="6splitLVRs">splitLVRs</dfn>) = <var>0</var>;</td></tr>
+<tr><th id="106">106</th><td></td></tr>
+<tr><th id="107">107</th><td>  <i>// Use this group name for NamedRegionTimer.</i></td></tr>
+<tr><th id="108">108</th><td>  <em>static</em> <em>const</em> <em>char</em> <dfn class="decl" id="llvm::RegAllocBase::TimerGroupName" title='llvm::RegAllocBase::TimerGroupName' data-ref="llvm::RegAllocBase::TimerGroupName" data-ref-filename="llvm..RegAllocBase..TimerGroupName">TimerGroupName</dfn>[];</td></tr>
+<tr><th id="109">109</th><td>  <em>static</em> <em>const</em> <em>char</em> <dfn class="decl" id="llvm::RegAllocBase::TimerGroupDescription" title='llvm::RegAllocBase::TimerGroupDescription' data-ref="llvm::RegAllocBase::TimerGroupDescription" data-ref-filename="llvm..RegAllocBase..TimerGroupDescription">TimerGroupDescription</dfn>[];</td></tr>
+<tr><th id="110">110</th><td></td></tr>
+<tr><th id="111">111</th><td>  <i class="doc">/// Method called when the allocator is about to remove a LiveInterval.</i></td></tr>
+<tr><th id="112">112</th><td>  <b>virtual</b> <em>void</em> <dfn class="virtual decl def fn" id="_ZN4llvm12RegAllocBase21aboutToRemoveIntervalERNS_12LiveIntervalE" title='llvm::RegAllocBase::aboutToRemoveInterval' data-ref="_ZN4llvm12RegAllocBase21aboutToRemoveIntervalERNS_12LiveIntervalE" data-ref-filename="_ZN4llvm12RegAllocBase21aboutToRemoveIntervalERNS_12LiveIntervalE">aboutToRemoveInterval</dfn>(<a class="type" href="../../include/llvm/CodeGen/LiveInterval.h.html#llvm::LiveInterval" title='llvm::LiveInterval' data-ref="llvm::LiveInterval" data-ref-filename="llvm..LiveInterval">LiveInterval</a> &amp;<dfn class="local col7 decl" id="7LI" title='LI' data-type='llvm::LiveInterval &amp;' data-ref="7LI" data-ref-filename="7LI">LI</dfn>) {}</td></tr>
+<tr><th id="113">113</th><td></td></tr>
+<tr><th id="114">114</th><td><b>public</b>:</td></tr>
+<tr><th id="115">115</th><td>  <i class="doc">/// VerifyEnabled - True when -verify-regalloc is given.</i></td></tr>
+<tr><th id="116">116</th><td>  <em>static</em> <em>bool</em> <dfn class="decl" id="llvm::RegAllocBase::VerifyEnabled" title='llvm::RegAllocBase::VerifyEnabled' data-ref="llvm::RegAllocBase::VerifyEnabled" data-ref-filename="llvm..RegAllocBase..VerifyEnabled">VerifyEnabled</dfn>;</td></tr>
+<tr><th id="117">117</th><td></td></tr>
+<tr><th id="118">118</th><td><b>private</b>:</td></tr>
+<tr><th id="119">119</th><td>  <em>void</em> <a class="decl fn" href="RegAllocBase.cpp.html#_ZN4llvm12RegAllocBase12seedLiveRegsEv" title='llvm::RegAllocBase::seedLiveRegs' data-ref="_ZN4llvm12RegAllocBase12seedLiveRegsEv" data-ref-filename="_ZN4llvm12RegAllocBase12seedLiveRegsEv" id="_ZN4llvm12RegAllocBase12seedLiveRegsEv">seedLiveRegs</a>();</td></tr>
+<tr><th id="120">120</th><td>};</td></tr>
+<tr><th id="121">121</th><td></td></tr>
+<tr><th id="122">122</th><td>} <i>// end namespace llvm</i></td></tr>
+<tr><th id="123">123</th><td></td></tr>
+<tr><th id="124">124</th><td><u>#<span data-ppcond="36">endif</span> // LLVM_LIB_CODEGEN_REGALLOCBASE_H</u></td></tr>
+<tr><th id="125">125</th><td></td></tr>
+</table><hr/><p id='footer'>
+Generated while processing <a href='RegAllocBase.cpp.html'>llvm/llvm/lib/CodeGen/RegAllocBase.cpp</a><br/>Generated on <em>2021-Jul-01</em> from project llvm revision <em>12</em>

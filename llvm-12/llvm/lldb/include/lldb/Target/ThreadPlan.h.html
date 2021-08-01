@@ -1,0 +1,633 @@
+<!doctype html>
+<html>
+<head>
+<meta name="viewport" content="width=device-width, initial-scale=1.0"><title>ThreadPlan.h source code [llvm/lldb/include/lldb/Target/ThreadPlan.h] - Woboq Code Browser</title>
+<meta name="woboq:interestingDefinitions" content="lldb_private::ThreadPlan,lldb_private::ThreadPlanNull "/>
+<link rel="stylesheet" href="../../../../.././data/qtcreator.css" title="QtCreator"/>
+<link rel="alternate stylesheet" href="../../../../.././data/kdevelop.css" title="KDevelop"/>
+<script type="text/javascript" src="../../../../.././data/jquery/jquery.min.js"></script>
+<script type="text/javascript" src="../../../../.././data/jquery/jquery-ui.min.js"></script>
+<script>var file = 'llvm/lldb/include/lldb/Target/ThreadPlan.h'; var root_path = '../../../../..'; var data_path = '../../../../.././data'; var ecma_script_api_version = 2;</script>
+<script src='../../../../.././data/codebrowser.js'></script>
+</head>
+<body><div id='header'><h1 id='breadcrumb'><span>Browse the source code of </span><a href='../../../..'>llvm</a>/<a href='../../..'>lldb</a>/<a href='../..'>include</a>/<a href='..'>lldb</a>/<a href='./'>Target</a>/<a href='ThreadPlan.h.html'>ThreadPlan.h</a></h1></div>
+<hr/><div id='content'><table class="code">
+<tr><th id="1">1</th><td><i>//===-- ThreadPlan.h --------------------------------------------*- C++ -*-===//</i></td></tr>
+<tr><th id="2">2</th><td><i>//</i></td></tr>
+<tr><th id="3">3</th><td><i>// Part of the LLVM Project, under the Apache License v2.0 with LLVM Exceptions.</i></td></tr>
+<tr><th id="4">4</th><td><i>// See <a href="https://llvm.org/LICENSE.txt">https://llvm.org/LICENSE.txt</a> for license information.</i></td></tr>
+<tr><th id="5">5</th><td><i>// SPDX-License-Identifier: Apache-2.0 WITH LLVM-exception</i></td></tr>
+<tr><th id="6">6</th><td><i>//</i></td></tr>
+<tr><th id="7">7</th><td><i>//===----------------------------------------------------------------------===//</i></td></tr>
+<tr><th id="8">8</th><td></td></tr>
+<tr><th id="9">9</th><td><u>#<span data-ppcond="9">ifndef</span> <span class="macro" data-ref="_M/LLDB_TARGET_THREADPLAN_H">LLDB_TARGET_THREADPLAN_H</span></u></td></tr>
+<tr><th id="10">10</th><td><u>#define <dfn class="macro" id="_M/LLDB_TARGET_THREADPLAN_H" data-ref="_M/LLDB_TARGET_THREADPLAN_H">LLDB_TARGET_THREADPLAN_H</dfn></u></td></tr>
+<tr><th id="11">11</th><td></td></tr>
+<tr><th id="12">12</th><td><u>#include &lt;mutex&gt;</u></td></tr>
+<tr><th id="13">13</th><td><u>#include &lt;string&gt;</u></td></tr>
+<tr><th id="14">14</th><td></td></tr>
+<tr><th id="15">15</th><td><u>#include <a href="Process.h.html">"lldb/Target/Process.h"</a></u></td></tr>
+<tr><th id="16">16</th><td><u>#include <a href="StopInfo.h.html">"lldb/Target/StopInfo.h"</a></u></td></tr>
+<tr><th id="17">17</th><td><u>#include <a href="Target.h.html">"lldb/Target/Target.h"</a></u></td></tr>
+<tr><th id="18">18</th><td><u>#include <a href="Thread.h.html">"lldb/Target/Thread.h"</a></u></td></tr>
+<tr><th id="19">19</th><td><u>#include <a href="ThreadPlanTracer.h.html">"lldb/Target/ThreadPlanTracer.h"</a></u></td></tr>
+<tr><th id="20">20</th><td><u>#include <a href="../Utility/UserID.h.html">"lldb/Utility/UserID.h"</a></u></td></tr>
+<tr><th id="21">21</th><td><u>#include <a href="../lldb-private.h.html">"lldb/lldb-private.h"</a></u></td></tr>
+<tr><th id="22">22</th><td></td></tr>
+<tr><th id="23">23</th><td><b>namespace</b> <span class="namespace">lldb_private</span> {</td></tr>
+<tr><th id="24">24</th><td></td></tr>
+<tr><th id="25">25</th><td><i>//  ThreadPlan:</i></td></tr>
+<tr><th id="26">26</th><td><i>//</i></td></tr>
+<tr><th id="27">27</th><td><i>//  This is the pure virtual base class for thread plans.</i></td></tr>
+<tr><th id="28">28</th><td><i>//</i></td></tr>
+<tr><th id="29">29</th><td><i>//  The thread plans provide the "atoms" of behavior that all the logical</i></td></tr>
+<tr><th id="30">30</th><td><i>//  process control, either directly from commands or through more complex</i></td></tr>
+<tr><th id="31">31</th><td><i>//  composite plans will rely on.</i></td></tr>
+<tr><th id="32">32</th><td><i>//</i></td></tr>
+<tr><th id="33">33</th><td><i>//  Plan Stack:</i></td></tr>
+<tr><th id="34">34</th><td><i>//</i></td></tr>
+<tr><th id="35">35</th><td><i>//  The thread maintaining a thread plan stack, and you program the actions of</i></td></tr>
+<tr><th id="36">36</th><td><i>//  a particular thread by pushing plans onto the plan stack.  There is always</i></td></tr>
+<tr><th id="37">37</th><td><i>//  a "Current" plan, which is the top of the plan stack, though in some cases</i></td></tr>
+<tr><th id="38">38</th><td><i>//  a plan may defer to plans higher in the stack for some piece of information</i></td></tr>
+<tr><th id="39">39</th><td><i>//  (let us define that the plan stack grows downwards).</i></td></tr>
+<tr><th id="40">40</th><td><i>//</i></td></tr>
+<tr><th id="41">41</th><td><i>//  The plan stack is never empty, there is always a Base Plan which persists</i></td></tr>
+<tr><th id="42">42</th><td><i>//  through the life of the running process.</i></td></tr>
+<tr><th id="43">43</th><td><i>//</i></td></tr>
+<tr><th id="44">44</th><td><i>//</i></td></tr>
+<tr><th id="45">45</th><td><i>//  Creating Plans:</i></td></tr>
+<tr><th id="46">46</th><td><i>//</i></td></tr>
+<tr><th id="47">47</th><td><i>//  The thread plan is generally created and added to the plan stack through</i></td></tr>
+<tr><th id="48">48</th><td><i>//  the QueueThreadPlanFor... API in lldb::Thread.  Those API's will return the</i></td></tr>
+<tr><th id="49">49</th><td><i>//  plan that performs the named operation in a manner appropriate for the</i></td></tr>
+<tr><th id="50">50</th><td><i>//  current process.  The plans in lldb/source/Target are generic</i></td></tr>
+<tr><th id="51">51</th><td><i>//  implementations, but a Process plugin can override them.</i></td></tr>
+<tr><th id="52">52</th><td><i>//</i></td></tr>
+<tr><th id="53">53</th><td><i>//  ValidatePlan is then called.  If it returns false, the plan is unshipped.</i></td></tr>
+<tr><th id="54">54</th><td><i>//  This is a little convenience which keeps us from having to error out of the</i></td></tr>
+<tr><th id="55">55</th><td><i>//  constructor.</i></td></tr>
+<tr><th id="56">56</th><td><i>//</i></td></tr>
+<tr><th id="57">57</th><td><i>//  Then the plan is added to the plan stack.  When the plan is added to the</i></td></tr>
+<tr><th id="58">58</th><td><i>//  plan stack its DidPush will get called.  This is useful if a plan wants to</i></td></tr>
+<tr><th id="59">59</th><td><i>//  push any additional plans as it is constructed, since you need to make sure</i></td></tr>
+<tr><th id="60">60</th><td><i>//  you're already on the stack before you push additional plans.</i></td></tr>
+<tr><th id="61">61</th><td><i>//</i></td></tr>
+<tr><th id="62">62</th><td><i>//  Completed Plans:</i></td></tr>
+<tr><th id="63">63</th><td><i>//</i></td></tr>
+<tr><th id="64">64</th><td><i>//  When the target process stops the plans are queried, among other things,</i></td></tr>
+<tr><th id="65">65</th><td><i>//  for whether their job is done.  If it is they are moved from the plan stack</i></td></tr>
+<tr><th id="66">66</th><td><i>//  to the Completed Plan stack in reverse order from their position on the</i></td></tr>
+<tr><th id="67">67</th><td><i>//  plan stack (since multiple plans may be done at a given stop.)  This is</i></td></tr>
+<tr><th id="68">68</th><td><i>//  used primarily so that the lldb::Thread::StopInfo for the thread can be set</i></td></tr>
+<tr><th id="69">69</th><td><i>//  properly.  If one plan pushes another to achieve part of its job, but it</i></td></tr>
+<tr><th id="70">70</th><td><i>//  doesn't want that sub-plan to be the one that sets the StopInfo, then call</i></td></tr>
+<tr><th id="71">71</th><td><i>//  SetPrivate on the sub-plan when you create it, and the Thread will pass</i></td></tr>
+<tr><th id="72">72</th><td><i>//  over that plan in reporting the reason for the stop.</i></td></tr>
+<tr><th id="73">73</th><td><i>//</i></td></tr>
+<tr><th id="74">74</th><td><i>//  Discarded plans:</i></td></tr>
+<tr><th id="75">75</th><td><i>//</i></td></tr>
+<tr><th id="76">76</th><td><i>//  Your plan may also get discarded, i.e. moved from the plan stack to the</i></td></tr>
+<tr><th id="77">77</th><td><i>//  "discarded plan stack".  This can happen, for instance, if the plan is</i></td></tr>
+<tr><th id="78">78</th><td><i>//  calling a function and the function call crashes and you want to unwind the</i></td></tr>
+<tr><th id="79">79</th><td><i>//  attempt to call.  So don't assume that your plan will always successfully</i></td></tr>
+<tr><th id="80">80</th><td><i>//  stop.  Which leads to:</i></td></tr>
+<tr><th id="81">81</th><td><i>//</i></td></tr>
+<tr><th id="82">82</th><td><i>//  Cleaning up after your plans:</i></td></tr>
+<tr><th id="83">83</th><td><i>//</i></td></tr>
+<tr><th id="84">84</th><td><i>//  When the plan is moved from the plan stack its WillPop method is always</i></td></tr>
+<tr><th id="85">85</th><td><i>//  called, no matter why.  Once it is moved off the plan stack it is done, and</i></td></tr>
+<tr><th id="86">86</th><td><i>//  won't get a chance to run again.  So you should undo anything that affects</i></td></tr>
+<tr><th id="87">87</th><td><i>//  target state in this method.  But be sure to leave the plan able to</i></td></tr>
+<tr><th id="88">88</th><td><i>//  correctly fill the StopInfo, however.  N.B. Don't wait to do clean up</i></td></tr>
+<tr><th id="89">89</th><td><i>//  target state till the destructor, since that will usually get called when</i></td></tr>
+<tr><th id="90">90</th><td><i>//  the target resumes, and you want to leave the target state correct for new</i></td></tr>
+<tr><th id="91">91</th><td><i>//  plans in the time between when your plan gets unshipped and the next</i></td></tr>
+<tr><th id="92">92</th><td><i>//  resume.</i></td></tr>
+<tr><th id="93">93</th><td><i>//</i></td></tr>
+<tr><th id="94">94</th><td><i>//  Thread State Checkpoint:</i></td></tr>
+<tr><th id="95">95</th><td><i>//</i></td></tr>
+<tr><th id="96">96</th><td><i>//  Note that calling functions on target process (ThreadPlanCallFunction)</i></td></tr>
+<tr><th id="97">97</th><td><i>//  changes current thread state. The function can be called either by direct</i></td></tr>
+<tr><th id="98">98</th><td><i>//  user demand or internally, for example lldb allocates memory on device to</i></td></tr>
+<tr><th id="99">99</th><td><i>//  calculate breakpoint condition expression - on Linux it is performed by</i></td></tr>
+<tr><th id="100">100</th><td><i>//  calling mmap on device.  ThreadStateCheckpoint saves Thread state (stop</i></td></tr>
+<tr><th id="101">101</th><td><i>//  info and completed plan stack) to restore it after completing function</i></td></tr>
+<tr><th id="102">102</th><td><i>//  call.</i></td></tr>
+<tr><th id="103">103</th><td><i>//</i></td></tr>
+<tr><th id="104">104</th><td><i>//  Over the lifetime of the plan, various methods of the ThreadPlan are then</i></td></tr>
+<tr><th id="105">105</th><td><i>//  called in response to changes of state in the process we are debugging as</i></td></tr>
+<tr><th id="106">106</th><td><i>//  follows:</i></td></tr>
+<tr><th id="107">107</th><td><i>//</i></td></tr>
+<tr><th id="108">108</th><td><i>//  Resuming:</i></td></tr>
+<tr><th id="109">109</th><td><i>//</i></td></tr>
+<tr><th id="110">110</th><td><i>//  When the target process is about to be restarted, the plan's WillResume</i></td></tr>
+<tr><th id="111">111</th><td><i>//  method is called, giving the plan a chance to prepare for the run.  If</i></td></tr>
+<tr><th id="112">112</th><td><i>//  WillResume returns false, then the process is not restarted.  Be sure to</i></td></tr>
+<tr><th id="113">113</th><td><i>//  set an appropriate error value in the Process if you have to do this.</i></td></tr>
+<tr><th id="114">114</th><td><i>//  Note, ThreadPlans actually implement DoWillResume, WillResume wraps that</i></td></tr>
+<tr><th id="115">115</th><td><i>//  call.</i></td></tr>
+<tr><th id="116">116</th><td><i>//</i></td></tr>
+<tr><th id="117">117</th><td><i>//  Next the "StopOthers" method of all the threads are polled, and if one</i></td></tr>
+<tr><th id="118">118</th><td><i>//  thread's Current plan returns "true" then only that thread gets to run.  If</i></td></tr>
+<tr><th id="119">119</th><td><i>//  more than one returns "true" the threads that want to run solo get run one</i></td></tr>
+<tr><th id="120">120</th><td><i>//  by one round robin fashion.  Otherwise all are let to run.</i></td></tr>
+<tr><th id="121">121</th><td><i>//</i></td></tr>
+<tr><th id="122">122</th><td><i>//  Note, the way StopOthers is implemented, the base class implementation just</i></td></tr>
+<tr><th id="123">123</th><td><i>//  asks the previous plan.  So if your plan has no opinion about whether it</i></td></tr>
+<tr><th id="124">124</th><td><i>//  should run stopping others or not, just don't implement StopOthers, and the</i></td></tr>
+<tr><th id="125">125</th><td><i>//  parent will be asked.</i></td></tr>
+<tr><th id="126">126</th><td><i>//</i></td></tr>
+<tr><th id="127">127</th><td><i>//  Finally, for each thread that is running, it run state is set to the return</i></td></tr>
+<tr><th id="128">128</th><td><i>//  of RunState from the thread's Current plan.</i></td></tr>
+<tr><th id="129">129</th><td><i>//</i></td></tr>
+<tr><th id="130">130</th><td><i>//  Responding to a stop:</i></td></tr>
+<tr><th id="131">131</th><td><i>//</i></td></tr>
+<tr><th id="132">132</th><td><i>//  When the target process stops, the plan is called in the following stages:</i></td></tr>
+<tr><th id="133">133</th><td><i>//</i></td></tr>
+<tr><th id="134">134</th><td><i>//  First the thread asks the Current Plan if it can handle this stop by</i></td></tr>
+<tr><th id="135">135</th><td><i>//  calling PlanExplainsStop.  If the Current plan answers "true" then it is</i></td></tr>
+<tr><th id="136">136</th><td><i>//  asked if the stop should percolate all the way to the user by calling the</i></td></tr>
+<tr><th id="137">137</th><td><i>//  ShouldStop method.  If the current plan doesn't explain the stop, then we</i></td></tr>
+<tr><th id="138">138</th><td><i>//  query up the plan stack for a plan that does explain the stop.  The plan</i></td></tr>
+<tr><th id="139">139</th><td><i>//  that does explain the stop then needs to figure out what to do about the</i></td></tr>
+<tr><th id="140">140</th><td><i>//  plans below it in the stack.  If the stop is recoverable, then the plan</i></td></tr>
+<tr><th id="141">141</th><td><i>//  that understands it can just do what it needs to set up to restart, and</i></td></tr>
+<tr><th id="142">142</th><td><i>//  then continue.  Otherwise, the plan that understood the stop should call</i></td></tr>
+<tr><th id="143">143</th><td><i>//  DiscardPlanStack to clean up the stack below it.  Note, plans actually</i></td></tr>
+<tr><th id="144">144</th><td><i>//  implement DoPlanExplainsStop, the result is cached in PlanExplainsStop so</i></td></tr>
+<tr><th id="145">145</th><td><i>//  the DoPlanExplainsStop itself will only get called once per stop.</i></td></tr>
+<tr><th id="146">146</th><td><i>//</i></td></tr>
+<tr><th id="147">147</th><td><i>//  Master plans:</i></td></tr>
+<tr><th id="148">148</th><td><i>//</i></td></tr>
+<tr><th id="149">149</th><td><i>//  In the normal case, when we decide to stop, we will  collapse the plan</i></td></tr>
+<tr><th id="150">150</th><td><i>//  stack up to the point of the plan that understood the stop reason.</i></td></tr>
+<tr><th id="151">151</th><td><i>//  However, if a plan wishes to stay on the stack after an event it didn't</i></td></tr>
+<tr><th id="152">152</th><td><i>//  directly handle it can designate itself a "Master" plan by responding true</i></td></tr>
+<tr><th id="153">153</th><td><i>//  to IsMasterPlan, and then if it wants not to be discarded, it can return</i></td></tr>
+<tr><th id="154">154</th><td><i>//  false to OkayToDiscard, and it and all its dependent plans will be</i></td></tr>
+<tr><th id="155">155</th><td><i>//  preserved when we resume execution.</i></td></tr>
+<tr><th id="156">156</th><td><i>//</i></td></tr>
+<tr><th id="157">157</th><td><i>//  The other effect of being a master plan is that when the Master plan is</i></td></tr>
+<tr><th id="158">158</th><td><i>//  done , if it has set "OkayToDiscard" to false, then it will be popped &amp;</i></td></tr>
+<tr><th id="159">159</th><td><i>//  execution will stop and return to the user.  Remember that if OkayToDiscard</i></td></tr>
+<tr><th id="160">160</th><td><i>//  is false, the plan will be popped and control will be given to the next</i></td></tr>
+<tr><th id="161">161</th><td><i>//  plan above it on the stack  So setting OkayToDiscard to false means the</i></td></tr>
+<tr><th id="162">162</th><td><i>//  user will regain control when the MasterPlan is completed.</i></td></tr>
+<tr><th id="163">163</th><td><i>//</i></td></tr>
+<tr><th id="164">164</th><td><i>//  Between these two controls this allows things like: a</i></td></tr>
+<tr><th id="165">165</th><td><i>//  MasterPlan/DontDiscard Step Over to hit a breakpoint, stop and return</i></td></tr>
+<tr><th id="166">166</th><td><i>//  control to the user, but then when the user continues, the step out</i></td></tr>
+<tr><th id="167">167</th><td><i>//  succeeds.  Even more tricky, when the breakpoint is hit, the user can</i></td></tr>
+<tr><th id="168">168</th><td><i>//  continue to step in/step over/etc, and finally when they continue, they</i></td></tr>
+<tr><th id="169">169</th><td><i>//  will finish up the Step Over.</i></td></tr>
+<tr><th id="170">170</th><td><i>//</i></td></tr>
+<tr><th id="171">171</th><td><i>//  FIXME: MasterPlan &amp; OkayToDiscard aren't really orthogonal.  MasterPlan</i></td></tr>
+<tr><th id="172">172</th><td><i>//  designation means that this plan controls it's fate and the fate of plans</i></td></tr>
+<tr><th id="173">173</th><td><i>//  below it.  OkayToDiscard tells whether the MasterPlan wants to stay on the</i></td></tr>
+<tr><th id="174">174</th><td><i>//  stack.  I originally thought "MasterPlan-ness" would need to be a fixed</i></td></tr>
+<tr><th id="175">175</th><td><i>//  characteristic of a ThreadPlan, in which case you needed the extra control.</i></td></tr>
+<tr><th id="176">176</th><td><i>//  But that doesn't seem to be true.  So we should be able to convert to only</i></td></tr>
+<tr><th id="177">177</th><td><i>//  MasterPlan status to mean the current "MasterPlan/DontDiscard".  Then no</i></td></tr>
+<tr><th id="178">178</th><td><i>//  plans would be MasterPlans by default, and you would set the ones you</i></td></tr>
+<tr><th id="179">179</th><td><i>//  wanted to be "user level" in this way.</i></td></tr>
+<tr><th id="180">180</th><td><i>//</i></td></tr>
+<tr><th id="181">181</th><td><i>//</i></td></tr>
+<tr><th id="182">182</th><td><i>//  Actually Stopping:</i></td></tr>
+<tr><th id="183">183</th><td><i>//</i></td></tr>
+<tr><th id="184">184</th><td><i>//  If a plan says responds "true" to ShouldStop, then it is asked if it's job</i></td></tr>
+<tr><th id="185">185</th><td><i>//  is complete by calling MischiefManaged.  If that returns true, the plan is</i></td></tr>
+<tr><th id="186">186</th><td><i>//  popped from the plan stack and added to the Completed Plan Stack.  Then the</i></td></tr>
+<tr><th id="187">187</th><td><i>//  next plan in the stack is asked if it ShouldStop, and  it returns "true",</i></td></tr>
+<tr><th id="188">188</th><td><i>//  it is asked if it is done, and if yes popped, and so on till we reach a</i></td></tr>
+<tr><th id="189">189</th><td><i>//  plan that is not done.</i></td></tr>
+<tr><th id="190">190</th><td><i>//</i></td></tr>
+<tr><th id="191">191</th><td><i>//  Since you often know in the ShouldStop method whether your plan is</i></td></tr>
+<tr><th id="192">192</th><td><i>//  complete, as a convenience you can call SetPlanComplete and the ThreadPlan</i></td></tr>
+<tr><th id="193">193</th><td><i>//  implementation of MischiefManaged will return "true", without your having</i></td></tr>
+<tr><th id="194">194</th><td><i>//  to redo the calculation when your sub-classes MischiefManaged is called.</i></td></tr>
+<tr><th id="195">195</th><td><i>//  If you call SetPlanComplete, you can later use IsPlanComplete to determine</i></td></tr>
+<tr><th id="196">196</th><td><i>//  whether the plan is complete.  This is only a convenience for sub-classes,</i></td></tr>
+<tr><th id="197">197</th><td><i>//  the logic in lldb::Thread will only call MischiefManaged.</i></td></tr>
+<tr><th id="198">198</th><td><i>//</i></td></tr>
+<tr><th id="199">199</th><td><i>//  One slightly tricky point is you have to be careful using SetPlanComplete</i></td></tr>
+<tr><th id="200">200</th><td><i>//  in PlanExplainsStop because you are not guaranteed that PlanExplainsStop</i></td></tr>
+<tr><th id="201">201</th><td><i>//  for a plan will get called before ShouldStop gets called.  If your sub-plan</i></td></tr>
+<tr><th id="202">202</th><td><i>//  explained the stop and then popped itself, only your ShouldStop will get</i></td></tr>
+<tr><th id="203">203</th><td><i>//  called.</i></td></tr>
+<tr><th id="204">204</th><td><i>//</i></td></tr>
+<tr><th id="205">205</th><td><i>//  If ShouldStop for any thread returns "true", then the WillStop method of</i></td></tr>
+<tr><th id="206">206</th><td><i>//  the Current plan of all threads will be called, the stop event is placed on</i></td></tr>
+<tr><th id="207">207</th><td><i>//  the Process's public broadcaster, and control returns to the upper layers</i></td></tr>
+<tr><th id="208">208</th><td><i>//  of the debugger.</i></td></tr>
+<tr><th id="209">209</th><td><i>//</i></td></tr>
+<tr><th id="210">210</th><td><i>//  Reporting the stop:</i></td></tr>
+<tr><th id="211">211</th><td><i>//</i></td></tr>
+<tr><th id="212">212</th><td><i>//  When the process stops, the thread is given a StopReason, in the form of a</i></td></tr>
+<tr><th id="213">213</th><td><i>//  StopInfo object.  If there is a completed plan corresponding to the stop,</i></td></tr>
+<tr><th id="214">214</th><td><i>//  then the "actual" stop reason can be suppressed, and instead a</i></td></tr>
+<tr><th id="215">215</th><td><i>//  StopInfoThreadPlan object will be cons'ed up from the top completed plan in</i></td></tr>
+<tr><th id="216">216</th><td><i>//  the stack.  However, if the plan doesn't want to be the stop reason, then</i></td></tr>
+<tr><th id="217">217</th><td><i>//  it can call SetPlanComplete and pass in "false" for the "success"</i></td></tr>
+<tr><th id="218">218</th><td><i>//  parameter.  In that case, the real stop reason will be used instead.  One</i></td></tr>
+<tr><th id="219">219</th><td><i>//  example of this is the "StepRangeStepIn" thread plan.  If it stops because</i></td></tr>
+<tr><th id="220">220</th><td><i>//  of a crash or breakpoint hit, it wants to unship itself, because it isn't</i></td></tr>
+<tr><th id="221">221</th><td><i>//  so useful to have step in keep going after a breakpoint hit.  But it can't</i></td></tr>
+<tr><th id="222">222</th><td><i>//  be the reason for the stop or no-one would see that they had hit a</i></td></tr>
+<tr><th id="223">223</th><td><i>//  breakpoint.</i></td></tr>
+<tr><th id="224">224</th><td><i>//</i></td></tr>
+<tr><th id="225">225</th><td><i>//  Cleaning up the plan stack:</i></td></tr>
+<tr><th id="226">226</th><td><i>//</i></td></tr>
+<tr><th id="227">227</th><td><i>//  One of the complications of MasterPlans is that you may get past the limits</i></td></tr>
+<tr><th id="228">228</th><td><i>//  of a plan without triggering it to clean itself up.  For instance, if you</i></td></tr>
+<tr><th id="229">229</th><td><i>//  are doing a MasterPlan StepOver, and hit a breakpoint in a called function,</i></td></tr>
+<tr><th id="230">230</th><td><i>//  then step over enough times to step out of the initial StepOver range, each</i></td></tr>
+<tr><th id="231">231</th><td><i>//  of the step overs will explain the stop &amp; take themselves off the stack,</i></td></tr>
+<tr><th id="232">232</th><td><i>//  but control would never be returned to the original StepOver.  Eventually,</i></td></tr>
+<tr><th id="233">233</th><td><i>//  the user will continue, and when that continue stops, the old stale</i></td></tr>
+<tr><th id="234">234</th><td><i>//  StepOver plan that was left on the stack will get woken up and notice it is</i></td></tr>
+<tr><th id="235">235</th><td><i>//  done. But that can leave junk on the stack for a while.  To avoid that, the</i></td></tr>
+<tr><th id="236">236</th><td><i>//  plans implement a "IsPlanStale" method, that can check whether it is</i></td></tr>
+<tr><th id="237">237</th><td><i>//  relevant anymore.  On stop, after the regular plan negotiation, the</i></td></tr>
+<tr><th id="238">238</th><td><i>//  remaining plan stack is consulted and if any plan says it is stale, it and</i></td></tr>
+<tr><th id="239">239</th><td><i>//  the plans below it are discarded from the stack.</i></td></tr>
+<tr><th id="240">240</th><td><i>//</i></td></tr>
+<tr><th id="241">241</th><td><i>//  Automatically Resuming:</i></td></tr>
+<tr><th id="242">242</th><td><i>//</i></td></tr>
+<tr><th id="243">243</th><td><i>//  If ShouldStop for all threads returns "false", then the target process will</i></td></tr>
+<tr><th id="244">244</th><td><i>//  resume.  This then cycles back to Resuming above.</i></td></tr>
+<tr><th id="245">245</th><td><i>//</i></td></tr>
+<tr><th id="246">246</th><td><i>//  Reporting eStateStopped events when the target is restarted:</i></td></tr>
+<tr><th id="247">247</th><td><i>//</i></td></tr>
+<tr><th id="248">248</th><td><i>//  If a plan decides to auto-continue the target by returning "false" from</i></td></tr>
+<tr><th id="249">249</th><td><i>//  ShouldStop, then it will be asked whether the Stopped event should still be</i></td></tr>
+<tr><th id="250">250</th><td><i>//  reported.  For instance, if you hit a breakpoint that is a User set</i></td></tr>
+<tr><th id="251">251</th><td><i>//  breakpoint, but the breakpoint callback said to continue the target</i></td></tr>
+<tr><th id="252">252</th><td><i>//  process, you might still want to inform the upper layers of lldb that the</i></td></tr>
+<tr><th id="253">253</th><td><i>//  stop had happened.  The way this works is every thread gets to vote on</i></td></tr>
+<tr><th id="254">254</th><td><i>//  whether to report the stop.  If all votes are eVoteNoOpinion, then the</i></td></tr>
+<tr><th id="255">255</th><td><i>//  thread list will decide what to do (at present it will pretty much always</i></td></tr>
+<tr><th id="256">256</th><td><i>//  suppress these stopped events.) If there is an eVoteYes, then the event</i></td></tr>
+<tr><th id="257">257</th><td><i>//  will be reported regardless of the other votes.  If there is an eVoteNo and</i></td></tr>
+<tr><th id="258">258</th><td><i>//  no eVoteYes's, then the event won't be reported.</i></td></tr>
+<tr><th id="259">259</th><td><i>//</i></td></tr>
+<tr><th id="260">260</th><td><i>//  One other little detail here, sometimes a plan will push another plan onto</i></td></tr>
+<tr><th id="261">261</th><td><i>//  the plan stack to do some part of the first plan's job, and it would be</i></td></tr>
+<tr><th id="262">262</th><td><i>//  convenient to tell that plan how it should respond to ShouldReportStop.</i></td></tr>
+<tr><th id="263">263</th><td><i>//  You can do that by setting the stop_vote in the child plan when you create</i></td></tr>
+<tr><th id="264">264</th><td><i>//  it.</i></td></tr>
+<tr><th id="265">265</th><td><i>//</i></td></tr>
+<tr><th id="266">266</th><td><i>//  Suppressing the initial eStateRunning event:</i></td></tr>
+<tr><th id="267">267</th><td><i>//</i></td></tr>
+<tr><th id="268">268</th><td><i>//  The private process running thread will take care of ensuring that only one</i></td></tr>
+<tr><th id="269">269</th><td><i>//  "eStateRunning" event will be delivered to the public Process broadcaster</i></td></tr>
+<tr><th id="270">270</th><td><i>//  per public eStateStopped event.  However there are some cases where the</i></td></tr>
+<tr><th id="271">271</th><td><i>//  public state of this process is eStateStopped, but a thread plan needs to</i></td></tr>
+<tr><th id="272">272</th><td><i>//  restart the target, but doesn't want the running event to be publicly</i></td></tr>
+<tr><th id="273">273</th><td><i>//  broadcast.  The obvious example of this is running functions by hand as</i></td></tr>
+<tr><th id="274">274</th><td><i>//  part of expression evaluation.  To suppress the running event return</i></td></tr>
+<tr><th id="275">275</th><td><i>//  eVoteNo from ShouldReportStop, to force a running event to be reported</i></td></tr>
+<tr><th id="276">276</th><td><i>//  return eVoteYes, in general though you should return eVoteNoOpinion which</i></td></tr>
+<tr><th id="277">277</th><td><i>//  will allow the ThreadList to figure out the right thing to do.  The</i></td></tr>
+<tr><th id="278">278</th><td><i>//  run_vote argument to the constructor works like stop_vote, and is a way for</i></td></tr>
+<tr><th id="279">279</th><td><i>//  a plan to instruct a sub-plan on how to respond to ShouldReportStop.</i></td></tr>
+<tr><th id="280">280</th><td></td></tr>
+<tr><th id="281">281</th><td><b>class</b> <dfn class="type def" id="lldb_private::ThreadPlan" title='lldb_private::ThreadPlan' data-ref="lldb_private::ThreadPlan" data-ref-filename="lldb_private..ThreadPlan">ThreadPlan</dfn> : <b>public</b> <span class="namespace">std::</span><span class='type' title='std::enable_shared_from_this' data-ref="std::enable_shared_from_this" data-ref-filename="std..enable_shared_from_this">enable_shared_from_this</span>&lt;<a class="type" href="#lldb_private::ThreadPlan" title='lldb_private::ThreadPlan' data-ref="lldb_private::ThreadPlan" data-ref-filename="lldb_private..ThreadPlan">ThreadPlan</a>&gt;,</td></tr>
+<tr><th id="282">282</th><td>                   <b>public</b> <a class="type" href="../Utility/UserID.h.html#lldb_private::UserID" title='lldb_private::UserID' data-ref="lldb_private::UserID" data-ref-filename="lldb_private..UserID">UserID</a> {</td></tr>
+<tr><th id="283">283</th><td><b>public</b>:</td></tr>
+<tr><th id="284">284</th><td>  <b>enum</b> <dfn class="type def" id="lldb_private::ThreadPlan::ThreadScope" title='lldb_private::ThreadPlan::ThreadScope' data-ref="lldb_private::ThreadPlan::ThreadScope" data-ref-filename="lldb_private..ThreadPlan..ThreadScope">ThreadScope</dfn> { <dfn class="enum" id="lldb_private::ThreadPlan::eAllThreads" title='lldb_private::ThreadPlan::eAllThreads' data-ref="lldb_private::ThreadPlan::eAllThreads" data-ref-filename="lldb_private..ThreadPlan..eAllThreads">eAllThreads</dfn>, <dfn class="enum" id="lldb_private::ThreadPlan::eSomeThreads" title='lldb_private::ThreadPlan::eSomeThreads' data-ref="lldb_private::ThreadPlan::eSomeThreads" data-ref-filename="lldb_private..ThreadPlan..eSomeThreads">eSomeThreads</dfn>, <dfn class="enum" id="lldb_private::ThreadPlan::eThisThread" title='lldb_private::ThreadPlan::eThisThread' data-ref="lldb_private::ThreadPlan::eThisThread" data-ref-filename="lldb_private..ThreadPlan..eThisThread">eThisThread</dfn> };</td></tr>
+<tr><th id="285">285</th><td></td></tr>
+<tr><th id="286">286</th><td>  <i>// We use these enums so that we can cast a base thread plan to it's real</i></td></tr>
+<tr><th id="287">287</th><td><i>  // type without having to resort to dynamic casting.</i></td></tr>
+<tr><th id="288">288</th><td>  <b>enum</b> <dfn class="type def" id="lldb_private::ThreadPlan::ThreadPlanKind" title='lldb_private::ThreadPlan::ThreadPlanKind' data-ref="lldb_private::ThreadPlan::ThreadPlanKind" data-ref-filename="lldb_private..ThreadPlan..ThreadPlanKind">ThreadPlanKind</dfn> {</td></tr>
+<tr><th id="289">289</th><td>    <dfn class="enum" id="lldb_private::ThreadPlan::eKindGeneric" title='lldb_private::ThreadPlan::eKindGeneric' data-ref="lldb_private::ThreadPlan::eKindGeneric" data-ref-filename="lldb_private..ThreadPlan..eKindGeneric">eKindGeneric</dfn>,</td></tr>
+<tr><th id="290">290</th><td>    <dfn class="enum" id="lldb_private::ThreadPlan::eKindNull" title='lldb_private::ThreadPlan::eKindNull' data-ref="lldb_private::ThreadPlan::eKindNull" data-ref-filename="lldb_private..ThreadPlan..eKindNull">eKindNull</dfn>,</td></tr>
+<tr><th id="291">291</th><td>    <dfn class="enum" id="lldb_private::ThreadPlan::eKindBase" title='lldb_private::ThreadPlan::eKindBase' data-ref="lldb_private::ThreadPlan::eKindBase" data-ref-filename="lldb_private..ThreadPlan..eKindBase">eKindBase</dfn>,</td></tr>
+<tr><th id="292">292</th><td>    <dfn class="enum" id="lldb_private::ThreadPlan::eKindCallFunction" title='lldb_private::ThreadPlan::eKindCallFunction' data-ref="lldb_private::ThreadPlan::eKindCallFunction" data-ref-filename="lldb_private..ThreadPlan..eKindCallFunction">eKindCallFunction</dfn>,</td></tr>
+<tr><th id="293">293</th><td>    <dfn class="enum" id="lldb_private::ThreadPlan::eKindPython" title='lldb_private::ThreadPlan::eKindPython' data-ref="lldb_private::ThreadPlan::eKindPython" data-ref-filename="lldb_private..ThreadPlan..eKindPython">eKindPython</dfn>,</td></tr>
+<tr><th id="294">294</th><td>    <dfn class="enum" id="lldb_private::ThreadPlan::eKindStepInstruction" title='lldb_private::ThreadPlan::eKindStepInstruction' data-ref="lldb_private::ThreadPlan::eKindStepInstruction" data-ref-filename="lldb_private..ThreadPlan..eKindStepInstruction">eKindStepInstruction</dfn>,</td></tr>
+<tr><th id="295">295</th><td>    <dfn class="enum" id="lldb_private::ThreadPlan::eKindStepOut" title='lldb_private::ThreadPlan::eKindStepOut' data-ref="lldb_private::ThreadPlan::eKindStepOut" data-ref-filename="lldb_private..ThreadPlan..eKindStepOut">eKindStepOut</dfn>,</td></tr>
+<tr><th id="296">296</th><td>    <dfn class="enum" id="lldb_private::ThreadPlan::eKindStepOverBreakpoint" title='lldb_private::ThreadPlan::eKindStepOverBreakpoint' data-ref="lldb_private::ThreadPlan::eKindStepOverBreakpoint" data-ref-filename="lldb_private..ThreadPlan..eKindStepOverBreakpoint">eKindStepOverBreakpoint</dfn>,</td></tr>
+<tr><th id="297">297</th><td>    <dfn class="enum" id="lldb_private::ThreadPlan::eKindStepOverRange" title='lldb_private::ThreadPlan::eKindStepOverRange' data-ref="lldb_private::ThreadPlan::eKindStepOverRange" data-ref-filename="lldb_private..ThreadPlan..eKindStepOverRange">eKindStepOverRange</dfn>,</td></tr>
+<tr><th id="298">298</th><td>    <dfn class="enum" id="lldb_private::ThreadPlan::eKindStepInRange" title='lldb_private::ThreadPlan::eKindStepInRange' data-ref="lldb_private::ThreadPlan::eKindStepInRange" data-ref-filename="lldb_private..ThreadPlan..eKindStepInRange">eKindStepInRange</dfn>,</td></tr>
+<tr><th id="299">299</th><td>    <dfn class="enum" id="lldb_private::ThreadPlan::eKindRunToAddress" title='lldb_private::ThreadPlan::eKindRunToAddress' data-ref="lldb_private::ThreadPlan::eKindRunToAddress" data-ref-filename="lldb_private..ThreadPlan..eKindRunToAddress">eKindRunToAddress</dfn>,</td></tr>
+<tr><th id="300">300</th><td>    <dfn class="enum" id="lldb_private::ThreadPlan::eKindStepThrough" title='lldb_private::ThreadPlan::eKindStepThrough' data-ref="lldb_private::ThreadPlan::eKindStepThrough" data-ref-filename="lldb_private..ThreadPlan..eKindStepThrough">eKindStepThrough</dfn>,</td></tr>
+<tr><th id="301">301</th><td>    <dfn class="enum" id="lldb_private::ThreadPlan::eKindStepUntil" title='lldb_private::ThreadPlan::eKindStepUntil' data-ref="lldb_private::ThreadPlan::eKindStepUntil" data-ref-filename="lldb_private..ThreadPlan..eKindStepUntil">eKindStepUntil</dfn>,</td></tr>
+<tr><th id="302">302</th><td>    <dfn class="enum" id="lldb_private::ThreadPlan::eKindTestCondition" title='lldb_private::ThreadPlan::eKindTestCondition' data-ref="lldb_private::ThreadPlan::eKindTestCondition" data-ref-filename="lldb_private..ThreadPlan..eKindTestCondition">eKindTestCondition</dfn></td></tr>
+<tr><th id="303">303</th><td></td></tr>
+<tr><th id="304">304</th><td>  };</td></tr>
+<tr><th id="305">305</th><td></td></tr>
+<tr><th id="306">306</th><td>  <i>// Constructors and Destructors</i></td></tr>
+<tr><th id="307">307</th><td>  <dfn class="decl fn" id="_ZN12lldb_private10ThreadPlanC1ENS0_14ThreadPlanKindEPKcRNS_6ThreadENS_4VoteES6_" title='lldb_private::ThreadPlan::ThreadPlan' data-ref="_ZN12lldb_private10ThreadPlanC1ENS0_14ThreadPlanKindEPKcRNS_6ThreadENS_4VoteES6_" data-ref-filename="_ZN12lldb_private10ThreadPlanC1ENS0_14ThreadPlanKindEPKcRNS_6ThreadENS_4VoteES6_">ThreadPlan</dfn>(<a class="type" href="#lldb_private::ThreadPlan::ThreadPlanKind" title='lldb_private::ThreadPlan::ThreadPlanKind' data-ref="lldb_private::ThreadPlan::ThreadPlanKind" data-ref-filename="lldb_private..ThreadPlan..ThreadPlanKind">ThreadPlanKind</a> <dfn class="local col1 decl" id="11kind" title='kind' data-type='lldb_private::ThreadPlan::ThreadPlanKind' data-ref="11kind" data-ref-filename="11kind">kind</dfn>, <em>const</em> <em>char</em> *<dfn class="local col2 decl" id="12name" title='name' data-type='const char *' data-ref="12name" data-ref-filename="12name">name</dfn>, <a class="type" href="Thread.h.html#lldb_private::Thread" title='lldb_private::Thread' data-ref="lldb_private::Thread" data-ref-filename="lldb_private..Thread">Thread</a> &amp;<dfn class="local col3 decl" id="13thread" title='thread' data-type='lldb_private::Thread &amp;' data-ref="13thread" data-ref-filename="13thread">thread</dfn>,</td></tr>
+<tr><th id="308">308</th><td>             <a class="type" href="../lldb-private-enumerations.h.html#lldb_private::Vote" title='lldb_private::Vote' data-ref="lldb_private::Vote" data-ref-filename="lldb_private..Vote">Vote</a> <dfn class="local col4 decl" id="14stop_vote" title='stop_vote' data-type='lldb_private::Vote' data-ref="14stop_vote" data-ref-filename="14stop_vote">stop_vote</dfn>, <a class="type" href="../lldb-private-enumerations.h.html#lldb_private::Vote" title='lldb_private::Vote' data-ref="lldb_private::Vote" data-ref-filename="lldb_private..Vote">Vote</a> <dfn class="local col5 decl" id="15run_vote" title='run_vote' data-type='lldb_private::Vote' data-ref="15run_vote" data-ref-filename="15run_vote">run_vote</dfn>);</td></tr>
+<tr><th id="309">309</th><td></td></tr>
+<tr><th id="310">310</th><td>  <b>virtual</b> <dfn class="virtual decl fn" id="_ZN12lldb_private10ThreadPlanD1Ev" title='lldb_private::ThreadPlan::~ThreadPlan' data-ref="_ZN12lldb_private10ThreadPlanD1Ev" data-ref-filename="_ZN12lldb_private10ThreadPlanD1Ev">~ThreadPlan</dfn>();</td></tr>
+<tr><th id="311">311</th><td></td></tr>
+<tr><th id="312">312</th><td>  <i class="doc">/// Returns the name of this thread plan.</i></td></tr>
+<tr><th id="313">313</th><td><i class="doc">  ///</i></td></tr>
+<tr><th id="314">314</th><td><i class="doc">  /// <span class="command">\return</span></i></td></tr>
+<tr><th id="315">315</th><td><i class="doc">  ///   A const char * pointer to the thread plan's name.</i></td></tr>
+<tr><th id="316">316</th><td>  <em>const</em> <em>char</em> *<dfn class="decl def fn" id="_ZNK12lldb_private10ThreadPlan7GetNameEv" title='lldb_private::ThreadPlan::GetName' data-ref="_ZNK12lldb_private10ThreadPlan7GetNameEv" data-ref-filename="_ZNK12lldb_private10ThreadPlan7GetNameEv">GetName</dfn>() <em>const</em> { <b>return</b> <a class="member field" href="#lldb_private::ThreadPlan::m_name" title='lldb_private::ThreadPlan::m_name' data-ref="lldb_private::ThreadPlan::m_name" data-ref-filename="lldb_private..ThreadPlan..m_name">m_name</a>.<span class='ref fn' title='std::__cxx11::basic_string::c_str' data-ref="_ZNKSt7__cxx1112basic_string5c_strEv" data-ref-filename="_ZNKSt7__cxx1112basic_string5c_strEv">c_str</span>(); }</td></tr>
+<tr><th id="317">317</th><td></td></tr>
+<tr><th id="318">318</th><td>  <i class="doc">/// Returns the Thread that is using this thread plan.</i></td></tr>
+<tr><th id="319">319</th><td><i class="doc">  ///</i></td></tr>
+<tr><th id="320">320</th><td><i class="doc">  /// <span class="command">\return</span></i></td></tr>
+<tr><th id="321">321</th><td><i class="doc">  ///   A  pointer to the thread plan's owning thread.</i></td></tr>
+<tr><th id="322">322</th><td>  <a class="type" href="Thread.h.html#lldb_private::Thread" title='lldb_private::Thread' data-ref="lldb_private::Thread" data-ref-filename="lldb_private..Thread">Thread</a> &amp;<dfn class="decl fn" id="_ZN12lldb_private10ThreadPlan9GetThreadEv" title='lldb_private::ThreadPlan::GetThread' data-ref="_ZN12lldb_private10ThreadPlan9GetThreadEv" data-ref-filename="_ZN12lldb_private10ThreadPlan9GetThreadEv">GetThread</dfn>();</td></tr>
+<tr><th id="323">323</th><td></td></tr>
+<tr><th id="324">324</th><td>  <a class="type" href="Target.h.html#lldb_private::Target" title='lldb_private::Target' data-ref="lldb_private::Target" data-ref-filename="lldb_private..Target">Target</a> &amp;<dfn class="decl fn" id="_ZN12lldb_private10ThreadPlan9GetTargetEv" title='lldb_private::ThreadPlan::GetTarget' data-ref="_ZN12lldb_private10ThreadPlan9GetTargetEv" data-ref-filename="_ZN12lldb_private10ThreadPlan9GetTargetEv">GetTarget</dfn>();</td></tr>
+<tr><th id="325">325</th><td></td></tr>
+<tr><th id="326">326</th><td>  <em>const</em> <a class="type" href="Target.h.html#lldb_private::Target" title='lldb_private::Target' data-ref="lldb_private::Target" data-ref-filename="lldb_private..Target">Target</a> &amp;<dfn class="decl fn" id="_ZNK12lldb_private10ThreadPlan9GetTargetEv" title='lldb_private::ThreadPlan::GetTarget' data-ref="_ZNK12lldb_private10ThreadPlan9GetTargetEv" data-ref-filename="_ZNK12lldb_private10ThreadPlan9GetTargetEv">GetTarget</dfn>() <em>const</em>;</td></tr>
+<tr><th id="327">327</th><td></td></tr>
+<tr><th id="328">328</th><td>  <i class="doc">/// Clear the Thread* cache.</i></td></tr>
+<tr><th id="329">329</th><td><i class="doc">  ///</i></td></tr>
+<tr><th id="330">330</th><td><i class="doc">  /// This is useful in situations like when a new Thread list is being</i></td></tr>
+<tr><th id="331">331</th><td><i class="doc">  /// generated.</i></td></tr>
+<tr><th id="332">332</th><td>  <em>void</em> <dfn class="decl fn" id="_ZN12lldb_private10ThreadPlan16ClearThreadCacheEv" title='lldb_private::ThreadPlan::ClearThreadCache' data-ref="_ZN12lldb_private10ThreadPlan16ClearThreadCacheEv" data-ref-filename="_ZN12lldb_private10ThreadPlan16ClearThreadCacheEv">ClearThreadCache</dfn>();</td></tr>
+<tr><th id="333">333</th><td></td></tr>
+<tr><th id="334">334</th><td>  <i class="doc">/// Print a description of this thread to the stream<span class="command"> \a</span> <span class="arg">s.</span></i></td></tr>
+<tr><th id="335">335</th><td><i class="doc">  ///<span class="command"> \a</span> <span class="arg">thread.</span>  Don't expect that the result of GetThread is valid in</i></td></tr>
+<tr><th id="336">336</th><td><i class="doc">  /// the description method.  This might get called when the underlying</i></td></tr>
+<tr><th id="337">337</th><td><i class="doc">  /// Thread has not been reported, so we only know the TID and not the thread.</i></td></tr>
+<tr><th id="338">338</th><td><i class="doc">  ///</i></td></tr>
+<tr><th id="339">339</th><td><i class="doc">  /// <span class="command">\param</span>[in] <span class="arg">s</span></i></td></tr>
+<tr><th id="340">340</th><td><i class="doc">  ///    The stream to which to print the description.</i></td></tr>
+<tr><th id="341">341</th><td><i class="doc">  ///</i></td></tr>
+<tr><th id="342">342</th><td><i class="doc">  /// <span class="command">\param</span>[in] <span class="arg">level</span></i></td></tr>
+<tr><th id="343">343</th><td><i class="doc">  ///    The level of description desired.  Note that eDescriptionLevelBrief</i></td></tr>
+<tr><th id="344">344</th><td><i class="doc">  ///    will be used in the stop message printed when the plan is complete.</i></td></tr>
+<tr><th id="345">345</th><td>  <b>virtual</b> <em>void</em> <dfn class="virtual decl fn" id="_ZN12lldb_private10ThreadPlan14GetDescriptionEPNS_6StreamEN4lldb16DescriptionLevelE" title='lldb_private::ThreadPlan::GetDescription' data-ref="_ZN12lldb_private10ThreadPlan14GetDescriptionEPNS_6StreamEN4lldb16DescriptionLevelE" data-ref-filename="_ZN12lldb_private10ThreadPlan14GetDescriptionEPNS_6StreamEN4lldb16DescriptionLevelE">GetDescription</dfn>(<a class="type" href="../Utility/Stream.h.html#lldb_private::Stream" title='lldb_private::Stream' data-ref="lldb_private::Stream" data-ref-filename="lldb_private..Stream">Stream</a> *<dfn class="local col6 decl" id="16s" title='s' data-type='lldb_private::Stream *' data-ref="16s" data-ref-filename="16s">s</dfn>, <span class="namespace">lldb::</span><a class="type" href="../lldb-enumerations.h.html#lldb::DescriptionLevel" title='lldb::DescriptionLevel' data-ref="lldb::DescriptionLevel" data-ref-filename="lldb..DescriptionLevel">DescriptionLevel</a> <dfn class="local col7 decl" id="17level" title='level' data-type='lldb::DescriptionLevel' data-ref="17level" data-ref-filename="17level">level</dfn>) = <var>0</var>;</td></tr>
+<tr><th id="346">346</th><td></td></tr>
+<tr><th id="347">347</th><td>  <i class="doc">/// Returns whether this plan could be successfully created.</i></td></tr>
+<tr><th id="348">348</th><td><i class="doc">  ///</i></td></tr>
+<tr><th id="349">349</th><td><i class="doc">  /// <span class="command">\param</span>[in] <span class="arg">error</span></i></td></tr>
+<tr><th id="350">350</th><td><i class="doc">  ///    A stream to which to print some reason why the plan could not be</i></td></tr>
+<tr><th id="351">351</th><td><i class="doc">  ///    created.</i></td></tr>
+<tr><th id="352">352</th><td><i class="doc">  ///    Can be NULL.</i></td></tr>
+<tr><th id="353">353</th><td><i class="doc">  ///</i></td></tr>
+<tr><th id="354">354</th><td><i class="doc">  /// <span class="command">\return</span></i></td></tr>
+<tr><th id="355">355</th><td><i class="doc">  ///  <span class="command"> \b</span> <span class="arg">true</span> if the plan should be queued,<span class="command"> \b</span> <span class="arg">false</span> otherwise.</i></td></tr>
+<tr><th id="356">356</th><td>  <b>virtual</b> <em>bool</em> <dfn class="virtual decl fn" id="_ZN12lldb_private10ThreadPlan12ValidatePlanEPNS_6StreamE" title='lldb_private::ThreadPlan::ValidatePlan' data-ref="_ZN12lldb_private10ThreadPlan12ValidatePlanEPNS_6StreamE" data-ref-filename="_ZN12lldb_private10ThreadPlan12ValidatePlanEPNS_6StreamE">ValidatePlan</dfn>(<a class="type" href="../Utility/Stream.h.html#lldb_private::Stream" title='lldb_private::Stream' data-ref="lldb_private::Stream" data-ref-filename="lldb_private..Stream">Stream</a> *<dfn class="local col8 decl" id="18error" title='error' data-type='lldb_private::Stream *' data-ref="18error" data-ref-filename="18error">error</dfn>) = <var>0</var>;</td></tr>
+<tr><th id="357">357</th><td></td></tr>
+<tr><th id="358">358</th><td>  <em>bool</em> <dfn class="decl def fn" id="_ZN12lldb_private10ThreadPlan18TracerExplainsStopEv" title='lldb_private::ThreadPlan::TracerExplainsStop' data-ref="_ZN12lldb_private10ThreadPlan18TracerExplainsStopEv" data-ref-filename="_ZN12lldb_private10ThreadPlan18TracerExplainsStopEv">TracerExplainsStop</dfn>() {</td></tr>
+<tr><th id="359">359</th><td>    <b>if</b> (!<span class='ref fn fake' title='std::__shared_ptr::operator bool' data-ref="_ZNKSt12__shared_ptrcvbEv" data-ref-filename="_ZNKSt12__shared_ptrcvbEv"></span><a class="member field" href="#lldb_private::ThreadPlan::m_tracer_sp" title='lldb_private::ThreadPlan::m_tracer_sp' data-ref="lldb_private::ThreadPlan::m_tracer_sp" data-ref-filename="lldb_private..ThreadPlan..m_tracer_sp">m_tracer_sp</a>)</td></tr>
+<tr><th id="360">360</th><td>      <b>return</b> <b>false</b>;</td></tr>
+<tr><th id="361">361</th><td>    <b>else</b></td></tr>
+<tr><th id="362">362</th><td>      <b>return</b> <a class="member field" href="#lldb_private::ThreadPlan::m_tracer_sp" title='lldb_private::ThreadPlan::m_tracer_sp' data-ref="lldb_private::ThreadPlan::m_tracer_sp" data-ref-filename="lldb_private..ThreadPlan..m_tracer_sp">m_tracer_sp</a><span class='ref fn' title='std::__shared_ptr_access::operator-&gt;' data-ref="_ZNKSt19__shared_ptr_accessptEv" data-ref-filename="_ZNKSt19__shared_ptr_accessptEv">-&gt;</span><a class="ref fn" href="ThreadPlanTracer.h.html#_ZN12lldb_private16ThreadPlanTracer18TracerExplainsStopEv" title='lldb_private::ThreadPlanTracer::TracerExplainsStop' data-ref="_ZN12lldb_private16ThreadPlanTracer18TracerExplainsStopEv" data-ref-filename="_ZN12lldb_private16ThreadPlanTracer18TracerExplainsStopEv">TracerExplainsStop</a>();</td></tr>
+<tr><th id="363">363</th><td>  }</td></tr>
+<tr><th id="364">364</th><td></td></tr>
+<tr><th id="365">365</th><td>  <span class="namespace">lldb::</span><a class="type" href="../lldb-enumerations.h.html#lldb::StateType" title='lldb::StateType' data-ref="lldb::StateType" data-ref-filename="lldb..StateType">StateType</a> <dfn class="decl fn" id="_ZN12lldb_private10ThreadPlan8RunStateEv" title='lldb_private::ThreadPlan::RunState' data-ref="_ZN12lldb_private10ThreadPlan8RunStateEv" data-ref-filename="_ZN12lldb_private10ThreadPlan8RunStateEv">RunState</dfn>();</td></tr>
+<tr><th id="366">366</th><td></td></tr>
+<tr><th id="367">367</th><td>  <em>bool</em> <dfn class="decl fn" id="_ZN12lldb_private10ThreadPlan16PlanExplainsStopEPNS_5EventE" title='lldb_private::ThreadPlan::PlanExplainsStop' data-ref="_ZN12lldb_private10ThreadPlan16PlanExplainsStopEPNS_5EventE" data-ref-filename="_ZN12lldb_private10ThreadPlan16PlanExplainsStopEPNS_5EventE">PlanExplainsStop</dfn>(<a class="type" href="../Utility/Event.h.html#lldb_private::Event" title='lldb_private::Event' data-ref="lldb_private::Event" data-ref-filename="lldb_private..Event">Event</a> *<dfn class="local col9 decl" id="19event_ptr" title='event_ptr' data-type='lldb_private::Event *' data-ref="19event_ptr" data-ref-filename="19event_ptr">event_ptr</dfn>);</td></tr>
+<tr><th id="368">368</th><td></td></tr>
+<tr><th id="369">369</th><td>  <b>virtual</b> <em>bool</em> <dfn class="virtual decl fn" id="_ZN12lldb_private10ThreadPlan10ShouldStopEPNS_5EventE" title='lldb_private::ThreadPlan::ShouldStop' data-ref="_ZN12lldb_private10ThreadPlan10ShouldStopEPNS_5EventE" data-ref-filename="_ZN12lldb_private10ThreadPlan10ShouldStopEPNS_5EventE">ShouldStop</dfn>(<a class="type" href="../Utility/Event.h.html#lldb_private::Event" title='lldb_private::Event' data-ref="lldb_private::Event" data-ref-filename="lldb_private..Event">Event</a> *<dfn class="local col0 decl" id="20event_ptr" title='event_ptr' data-type='lldb_private::Event *' data-ref="20event_ptr" data-ref-filename="20event_ptr">event_ptr</dfn>) = <var>0</var>;</td></tr>
+<tr><th id="370">370</th><td></td></tr>
+<tr><th id="371">371</th><td>  <b>virtual</b> <em>bool</em> <dfn class="virtual decl def fn" id="_ZN12lldb_private10ThreadPlan18ShouldAutoContinueEPNS_5EventE" title='lldb_private::ThreadPlan::ShouldAutoContinue' data-ref="_ZN12lldb_private10ThreadPlan18ShouldAutoContinueEPNS_5EventE" data-ref-filename="_ZN12lldb_private10ThreadPlan18ShouldAutoContinueEPNS_5EventE">ShouldAutoContinue</dfn>(<a class="type" href="../Utility/Event.h.html#lldb_private::Event" title='lldb_private::Event' data-ref="lldb_private::Event" data-ref-filename="lldb_private..Event">Event</a> *<dfn class="local col1 decl" id="21event_ptr" title='event_ptr' data-type='lldb_private::Event *' data-ref="21event_ptr" data-ref-filename="21event_ptr">event_ptr</dfn>) { <b>return</b> <b>false</b>; }</td></tr>
+<tr><th id="372">372</th><td></td></tr>
+<tr><th id="373">373</th><td>  <i>// Whether a "stop class" event should be reported to the "outside world".</i></td></tr>
+<tr><th id="374">374</th><td><i>  // In general if a thread plan is active, events should not be reported.</i></td></tr>
+<tr><th id="375">375</th><td></td></tr>
+<tr><th id="376">376</th><td>  <b>virtual</b> <a class="type" href="../lldb-private-enumerations.h.html#lldb_private::Vote" title='lldb_private::Vote' data-ref="lldb_private::Vote" data-ref-filename="lldb_private..Vote">Vote</a> <dfn class="virtual decl fn" id="_ZN12lldb_private10ThreadPlan16ShouldReportStopEPNS_5EventE" title='lldb_private::ThreadPlan::ShouldReportStop' data-ref="_ZN12lldb_private10ThreadPlan16ShouldReportStopEPNS_5EventE" data-ref-filename="_ZN12lldb_private10ThreadPlan16ShouldReportStopEPNS_5EventE">ShouldReportStop</dfn>(<a class="type" href="../Utility/Event.h.html#lldb_private::Event" title='lldb_private::Event' data-ref="lldb_private::Event" data-ref-filename="lldb_private..Event">Event</a> *<dfn class="local col2 decl" id="22event_ptr" title='event_ptr' data-type='lldb_private::Event *' data-ref="22event_ptr" data-ref-filename="22event_ptr">event_ptr</dfn>);</td></tr>
+<tr><th id="377">377</th><td></td></tr>
+<tr><th id="378">378</th><td>  <b>virtual</b> <a class="type" href="../lldb-private-enumerations.h.html#lldb_private::Vote" title='lldb_private::Vote' data-ref="lldb_private::Vote" data-ref-filename="lldb_private..Vote">Vote</a> <dfn class="virtual decl fn" id="_ZN12lldb_private10ThreadPlan15ShouldReportRunEPNS_5EventE" title='lldb_private::ThreadPlan::ShouldReportRun' data-ref="_ZN12lldb_private10ThreadPlan15ShouldReportRunEPNS_5EventE" data-ref-filename="_ZN12lldb_private10ThreadPlan15ShouldReportRunEPNS_5EventE">ShouldReportRun</dfn>(<a class="type" href="../Utility/Event.h.html#lldb_private::Event" title='lldb_private::Event' data-ref="lldb_private::Event" data-ref-filename="lldb_private..Event">Event</a> *<dfn class="local col3 decl" id="23event_ptr" title='event_ptr' data-type='lldb_private::Event *' data-ref="23event_ptr" data-ref-filename="23event_ptr">event_ptr</dfn>);</td></tr>
+<tr><th id="379">379</th><td></td></tr>
+<tr><th id="380">380</th><td>  <b>virtual</b> <em>void</em> <dfn class="virtual decl fn" id="_ZN12lldb_private10ThreadPlan13SetStopOthersEb" title='lldb_private::ThreadPlan::SetStopOthers' data-ref="_ZN12lldb_private10ThreadPlan13SetStopOthersEb" data-ref-filename="_ZN12lldb_private10ThreadPlan13SetStopOthersEb">SetStopOthers</dfn>(<em>bool</em> <dfn class="local col4 decl" id="24new_value" title='new_value' data-type='bool' data-ref="24new_value" data-ref-filename="24new_value">new_value</dfn>);</td></tr>
+<tr><th id="381">381</th><td></td></tr>
+<tr><th id="382">382</th><td>  <b>virtual</b> <em>bool</em> <dfn class="virtual decl fn" id="_ZN12lldb_private10ThreadPlan10StopOthersEv" title='lldb_private::ThreadPlan::StopOthers' data-ref="_ZN12lldb_private10ThreadPlan10StopOthersEv" data-ref-filename="_ZN12lldb_private10ThreadPlan10StopOthersEv">StopOthers</dfn>();</td></tr>
+<tr><th id="383">383</th><td></td></tr>
+<tr><th id="384">384</th><td>  <i>// This is the wrapper for DoWillResume that does generic ThreadPlan logic,</i></td></tr>
+<tr><th id="385">385</th><td><i>  // then calls DoWillResume.</i></td></tr>
+<tr><th id="386">386</th><td>  <em>bool</em> <dfn class="decl fn" id="_ZN12lldb_private10ThreadPlan10WillResumeEN4lldb9StateTypeEb" title='lldb_private::ThreadPlan::WillResume' data-ref="_ZN12lldb_private10ThreadPlan10WillResumeEN4lldb9StateTypeEb" data-ref-filename="_ZN12lldb_private10ThreadPlan10WillResumeEN4lldb9StateTypeEb">WillResume</dfn>(<span class="namespace">lldb::</span><a class="type" href="../lldb-enumerations.h.html#lldb::StateType" title='lldb::StateType' data-ref="lldb::StateType" data-ref-filename="lldb..StateType">StateType</a> <dfn class="local col5 decl" id="25resume_state" title='resume_state' data-type='lldb::StateType' data-ref="25resume_state" data-ref-filename="25resume_state">resume_state</dfn>, <em>bool</em> <dfn class="local col6 decl" id="26current_plan" title='current_plan' data-type='bool' data-ref="26current_plan" data-ref-filename="26current_plan">current_plan</dfn>);</td></tr>
+<tr><th id="387">387</th><td></td></tr>
+<tr><th id="388">388</th><td>  <b>virtual</b> <em>bool</em> <dfn class="virtual decl fn" id="_ZN12lldb_private10ThreadPlan8WillStopEv" title='lldb_private::ThreadPlan::WillStop' data-ref="_ZN12lldb_private10ThreadPlan8WillStopEv" data-ref-filename="_ZN12lldb_private10ThreadPlan8WillStopEv">WillStop</dfn>() = <var>0</var>;</td></tr>
+<tr><th id="389">389</th><td></td></tr>
+<tr><th id="390">390</th><td>  <em>bool</em> <dfn class="decl def fn" id="_ZN12lldb_private10ThreadPlan12IsMasterPlanEv" title='lldb_private::ThreadPlan::IsMasterPlan' data-ref="_ZN12lldb_private10ThreadPlan12IsMasterPlanEv" data-ref-filename="_ZN12lldb_private10ThreadPlan12IsMasterPlanEv">IsMasterPlan</dfn>() { <b>return</b> <a class="member field" href="#lldb_private::ThreadPlan::m_is_master_plan" title='lldb_private::ThreadPlan::m_is_master_plan' data-ref="lldb_private::ThreadPlan::m_is_master_plan" data-ref-filename="lldb_private..ThreadPlan..m_is_master_plan">m_is_master_plan</a>; }</td></tr>
+<tr><th id="391">391</th><td></td></tr>
+<tr><th id="392">392</th><td>  <em>bool</em> <dfn class="decl def fn" id="_ZN12lldb_private10ThreadPlan15SetIsMasterPlanEb" title='lldb_private::ThreadPlan::SetIsMasterPlan' data-ref="_ZN12lldb_private10ThreadPlan15SetIsMasterPlanEb" data-ref-filename="_ZN12lldb_private10ThreadPlan15SetIsMasterPlanEb">SetIsMasterPlan</dfn>(<em>bool</em> <dfn class="local col7 decl" id="27value" title='value' data-type='bool' data-ref="27value" data-ref-filename="27value">value</dfn>) {</td></tr>
+<tr><th id="393">393</th><td>    <em>bool</em> <dfn class="local col8 decl" id="28old_value" title='old_value' data-type='bool' data-ref="28old_value" data-ref-filename="28old_value">old_value</dfn> = <a class="member field" href="#lldb_private::ThreadPlan::m_is_master_plan" title='lldb_private::ThreadPlan::m_is_master_plan' data-ref="lldb_private::ThreadPlan::m_is_master_plan" data-ref-filename="lldb_private..ThreadPlan..m_is_master_plan">m_is_master_plan</a>;</td></tr>
+<tr><th id="394">394</th><td>    <a class="member field" href="#lldb_private::ThreadPlan::m_is_master_plan" title='lldb_private::ThreadPlan::m_is_master_plan' data-ref="lldb_private::ThreadPlan::m_is_master_plan" data-ref-filename="lldb_private..ThreadPlan..m_is_master_plan">m_is_master_plan</a> = <a class="local col7 ref" href="#27value" title='value' data-ref="27value" data-ref-filename="27value">value</a>;</td></tr>
+<tr><th id="395">395</th><td>    <b>return</b> <a class="local col8 ref" href="#28old_value" title='old_value' data-ref="28old_value" data-ref-filename="28old_value">old_value</a>;</td></tr>
+<tr><th id="396">396</th><td>  }</td></tr>
+<tr><th id="397">397</th><td></td></tr>
+<tr><th id="398">398</th><td>  <b>virtual</b> <em>bool</em> <dfn class="virtual decl fn" id="_ZN12lldb_private10ThreadPlan13OkayToDiscardEv" title='lldb_private::ThreadPlan::OkayToDiscard' data-ref="_ZN12lldb_private10ThreadPlan13OkayToDiscardEv" data-ref-filename="_ZN12lldb_private10ThreadPlan13OkayToDiscardEv">OkayToDiscard</dfn>();</td></tr>
+<tr><th id="399">399</th><td></td></tr>
+<tr><th id="400">400</th><td>  <em>void</em> <dfn class="decl def fn" id="_ZN12lldb_private10ThreadPlan16SetOkayToDiscardEb" title='lldb_private::ThreadPlan::SetOkayToDiscard' data-ref="_ZN12lldb_private10ThreadPlan16SetOkayToDiscardEb" data-ref-filename="_ZN12lldb_private10ThreadPlan16SetOkayToDiscardEb">SetOkayToDiscard</dfn>(<em>bool</em> <dfn class="local col9 decl" id="29value" title='value' data-type='bool' data-ref="29value" data-ref-filename="29value">value</dfn>) { <a class="member field" href="#lldb_private::ThreadPlan::m_okay_to_discard" title='lldb_private::ThreadPlan::m_okay_to_discard' data-ref="lldb_private::ThreadPlan::m_okay_to_discard" data-ref-filename="lldb_private..ThreadPlan..m_okay_to_discard">m_okay_to_discard</a> = <a class="local col9 ref" href="#29value" title='value' data-ref="29value" data-ref-filename="29value">value</a>; }</td></tr>
+<tr><th id="401">401</th><td></td></tr>
+<tr><th id="402">402</th><td>  <i>// The base class MischiefManaged does some cleanup - so you have to call it</i></td></tr>
+<tr><th id="403">403</th><td><i>  // in your MischiefManaged derived class.</i></td></tr>
+<tr><th id="404">404</th><td>  <b>virtual</b> <em>bool</em> <dfn class="virtual decl fn" id="_ZN12lldb_private10ThreadPlan15MischiefManagedEv" title='lldb_private::ThreadPlan::MischiefManaged' data-ref="_ZN12lldb_private10ThreadPlan15MischiefManagedEv" data-ref-filename="_ZN12lldb_private10ThreadPlan15MischiefManagedEv">MischiefManaged</dfn>();</td></tr>
+<tr><th id="405">405</th><td></td></tr>
+<tr><th id="406">406</th><td>  <b>virtual</b> <em>void</em> <dfn class="virtual decl def fn" id="_ZN12lldb_private10ThreadPlan15ThreadDestroyedEv" title='lldb_private::ThreadPlan::ThreadDestroyed' data-ref="_ZN12lldb_private10ThreadPlan15ThreadDestroyedEv" data-ref-filename="_ZN12lldb_private10ThreadPlan15ThreadDestroyedEv">ThreadDestroyed</dfn>() {</td></tr>
+<tr><th id="407">407</th><td>    <i>// Any cleanup that a plan might want to do in case the thread goes away in</i></td></tr>
+<tr><th id="408">408</th><td><i>    // the middle of the plan being queued on a thread can be done here.</i></td></tr>
+<tr><th id="409">409</th><td>  }</td></tr>
+<tr><th id="410">410</th><td></td></tr>
+<tr><th id="411">411</th><td>  <em>bool</em> <dfn class="decl def fn" id="_ZN12lldb_private10ThreadPlan10GetPrivateEv" title='lldb_private::ThreadPlan::GetPrivate' data-ref="_ZN12lldb_private10ThreadPlan10GetPrivateEv" data-ref-filename="_ZN12lldb_private10ThreadPlan10GetPrivateEv">GetPrivate</dfn>() { <b>return</b> <a class="member field" href="#lldb_private::ThreadPlan::m_plan_private" title='lldb_private::ThreadPlan::m_plan_private' data-ref="lldb_private::ThreadPlan::m_plan_private" data-ref-filename="lldb_private..ThreadPlan..m_plan_private">m_plan_private</a>; }</td></tr>
+<tr><th id="412">412</th><td></td></tr>
+<tr><th id="413">413</th><td>  <em>void</em> <dfn class="decl def fn" id="_ZN12lldb_private10ThreadPlan10SetPrivateEb" title='lldb_private::ThreadPlan::SetPrivate' data-ref="_ZN12lldb_private10ThreadPlan10SetPrivateEb" data-ref-filename="_ZN12lldb_private10ThreadPlan10SetPrivateEb">SetPrivate</dfn>(<em>bool</em> <dfn class="local col0 decl" id="30input" title='input' data-type='bool' data-ref="30input" data-ref-filename="30input">input</dfn>) { <a class="member field" href="#lldb_private::ThreadPlan::m_plan_private" title='lldb_private::ThreadPlan::m_plan_private' data-ref="lldb_private::ThreadPlan::m_plan_private" data-ref-filename="lldb_private..ThreadPlan..m_plan_private">m_plan_private</a> = <a class="local col0 ref" href="#30input" title='input' data-ref="30input" data-ref-filename="30input">input</a>; }</td></tr>
+<tr><th id="414">414</th><td></td></tr>
+<tr><th id="415">415</th><td>  <b>virtual</b> <em>void</em> <dfn class="virtual decl fn" id="_ZN12lldb_private10ThreadPlan7DidPushEv" title='lldb_private::ThreadPlan::DidPush' data-ref="_ZN12lldb_private10ThreadPlan7DidPushEv" data-ref-filename="_ZN12lldb_private10ThreadPlan7DidPushEv">DidPush</dfn>();</td></tr>
+<tr><th id="416">416</th><td></td></tr>
+<tr><th id="417">417</th><td>  <b>virtual</b> <em>void</em> <dfn class="virtual decl fn" id="_ZN12lldb_private10ThreadPlan7WillPopEv" title='lldb_private::ThreadPlan::WillPop' data-ref="_ZN12lldb_private10ThreadPlan7WillPopEv" data-ref-filename="_ZN12lldb_private10ThreadPlan7WillPopEv">WillPop</dfn>();</td></tr>
+<tr><th id="418">418</th><td></td></tr>
+<tr><th id="419">419</th><td>  <i>// This pushes a plan onto the plan stack of the current plan's thread.</i></td></tr>
+<tr><th id="420">420</th><td><i>  // Also sets the plans to private and not master plans.  A plan pushed by </i></td></tr>
+<tr><th id="421">421</th><td><i>  // another thread plan is never either of the above.</i></td></tr>
+<tr><th id="422">422</th><td>  <em>void</em> <dfn class="decl def fn" id="_ZN12lldb_private10ThreadPlan8PushPlanERSt10shared_ptrIS0_E" title='lldb_private::ThreadPlan::PushPlan' data-ref="_ZN12lldb_private10ThreadPlan8PushPlanERSt10shared_ptrIS0_E" data-ref-filename="_ZN12lldb_private10ThreadPlan8PushPlanERSt10shared_ptrIS0_E">PushPlan</dfn>(<span class="namespace">lldb::</span><a class="typedef" href="../lldb-forward.h.html#lldb::ThreadPlanSP" title='lldb::ThreadPlanSP' data-type='std::shared_ptr&lt;lldb_private::ThreadPlan&gt;' data-ref="lldb::ThreadPlanSP" data-ref-filename="lldb..ThreadPlanSP">ThreadPlanSP</a> &amp;<dfn class="local col1 decl" id="31thread_plan_sp" title='thread_plan_sp' data-type='lldb::ThreadPlanSP &amp;' data-ref="31thread_plan_sp" data-ref-filename="31thread_plan_sp">thread_plan_sp</dfn>) {</td></tr>
+<tr><th id="423">423</th><td>    <a class="member fn" href="#_ZN12lldb_private10ThreadPlan9GetThreadEv" title='lldb_private::ThreadPlan::GetThread' data-ref="_ZN12lldb_private10ThreadPlan9GetThreadEv" data-ref-filename="_ZN12lldb_private10ThreadPlan9GetThreadEv">GetThread</a>().<a class="ref fn" href="Thread.h.html#_ZN12lldb_private6Thread8PushPlanESt10shared_ptrINS_10ThreadPlanEE" title='lldb_private::Thread::PushPlan' data-ref="_ZN12lldb_private6Thread8PushPlanESt10shared_ptrINS_10ThreadPlanEE" data-ref-filename="_ZN12lldb_private6Thread8PushPlanESt10shared_ptrINS_10ThreadPlanEE">PushPlan</a>(<span class='ref fn fake' title='std::shared_ptr::shared_ptr&lt;_Tp&gt;' data-ref="_ZNSt10shared_ptrC1ERKSt10shared_ptrIT_E" data-ref-filename="_ZNSt10shared_ptrC1ERKSt10shared_ptrIT_E"></span><a class="local col1 ref" href="#31thread_plan_sp" title='thread_plan_sp' data-ref="31thread_plan_sp" data-ref-filename="31thread_plan_sp">thread_plan_sp</a>);</td></tr>
+<tr><th id="424">424</th><td>    <a class="local col1 ref" href="#31thread_plan_sp" title='thread_plan_sp' data-ref="31thread_plan_sp" data-ref-filename="31thread_plan_sp">thread_plan_sp</a><span class='ref fn' title='std::__shared_ptr_access::operator-&gt;' data-ref="_ZNKSt19__shared_ptr_accessptEv" data-ref-filename="_ZNKSt19__shared_ptr_accessptEv">-&gt;</span><a class="member fn" href="#_ZN12lldb_private10ThreadPlan10SetPrivateEb" title='lldb_private::ThreadPlan::SetPrivate' data-ref="_ZN12lldb_private10ThreadPlan10SetPrivateEb" data-ref-filename="_ZN12lldb_private10ThreadPlan10SetPrivateEb">SetPrivate</a>(<b>false</b>);</td></tr>
+<tr><th id="425">425</th><td>    <a class="local col1 ref" href="#31thread_plan_sp" title='thread_plan_sp' data-ref="31thread_plan_sp" data-ref-filename="31thread_plan_sp">thread_plan_sp</a><span class='ref fn' title='std::__shared_ptr_access::operator-&gt;' data-ref="_ZNKSt19__shared_ptr_accessptEv" data-ref-filename="_ZNKSt19__shared_ptr_accessptEv">-&gt;</span><a class="member fn" href="#_ZN12lldb_private10ThreadPlan15SetIsMasterPlanEb" title='lldb_private::ThreadPlan::SetIsMasterPlan' data-ref="_ZN12lldb_private10ThreadPlan15SetIsMasterPlanEb" data-ref-filename="_ZN12lldb_private10ThreadPlan15SetIsMasterPlanEb">SetIsMasterPlan</a>(<b>false</b>);</td></tr>
+<tr><th id="426">426</th><td>  }</td></tr>
+<tr><th id="427">427</th><td></td></tr>
+<tr><th id="428">428</th><td>  <a class="type" href="#lldb_private::ThreadPlan::ThreadPlanKind" title='lldb_private::ThreadPlan::ThreadPlanKind' data-ref="lldb_private::ThreadPlan::ThreadPlanKind" data-ref-filename="lldb_private..ThreadPlan..ThreadPlanKind">ThreadPlanKind</a> <dfn class="decl def fn" id="_ZNK12lldb_private10ThreadPlan7GetKindEv" title='lldb_private::ThreadPlan::GetKind' data-ref="_ZNK12lldb_private10ThreadPlan7GetKindEv" data-ref-filename="_ZNK12lldb_private10ThreadPlan7GetKindEv">GetKind</dfn>() <em>const</em> { <b>return</b> <a class="member field" href="#lldb_private::ThreadPlan::m_kind" title='lldb_private::ThreadPlan::m_kind' data-ref="lldb_private::ThreadPlan::m_kind" data-ref-filename="lldb_private..ThreadPlan..m_kind">m_kind</a>; }</td></tr>
+<tr><th id="429">429</th><td></td></tr>
+<tr><th id="430">430</th><td>  <em>bool</em> <dfn class="decl fn" id="_ZN12lldb_private10ThreadPlan14IsPlanCompleteEv" title='lldb_private::ThreadPlan::IsPlanComplete' data-ref="_ZN12lldb_private10ThreadPlan14IsPlanCompleteEv" data-ref-filename="_ZN12lldb_private10ThreadPlan14IsPlanCompleteEv">IsPlanComplete</dfn>();</td></tr>
+<tr><th id="431">431</th><td></td></tr>
+<tr><th id="432">432</th><td>  <em>void</em> <dfn class="decl fn" id="_ZN12lldb_private10ThreadPlan15SetPlanCompleteEb" title='lldb_private::ThreadPlan::SetPlanComplete' data-ref="_ZN12lldb_private10ThreadPlan15SetPlanCompleteEb" data-ref-filename="_ZN12lldb_private10ThreadPlan15SetPlanCompleteEb">SetPlanComplete</dfn>(<em>bool</em> <dfn class="local col2 decl" id="32success" title='success' data-type='bool' data-ref="32success" data-ref-filename="32success">success</dfn> = <b>true</b>);</td></tr>
+<tr><th id="433">433</th><td></td></tr>
+<tr><th id="434">434</th><td>  <b>virtual</b> <em>bool</em> <dfn class="virtual decl def fn" id="_ZN12lldb_private10ThreadPlan11IsPlanStaleEv" title='lldb_private::ThreadPlan::IsPlanStale' data-ref="_ZN12lldb_private10ThreadPlan11IsPlanStaleEv" data-ref-filename="_ZN12lldb_private10ThreadPlan11IsPlanStaleEv">IsPlanStale</dfn>() { <b>return</b> <b>false</b>; }</td></tr>
+<tr><th id="435">435</th><td></td></tr>
+<tr><th id="436">436</th><td>  <em>bool</em> <dfn class="decl def fn" id="_ZN12lldb_private10ThreadPlan13PlanSucceededEv" title='lldb_private::ThreadPlan::PlanSucceeded' data-ref="_ZN12lldb_private10ThreadPlan13PlanSucceededEv" data-ref-filename="_ZN12lldb_private10ThreadPlan13PlanSucceededEv">PlanSucceeded</dfn>() { <b>return</b> <a class="member field" href="#lldb_private::ThreadPlan::m_plan_succeeded" title='lldb_private::ThreadPlan::m_plan_succeeded' data-ref="lldb_private::ThreadPlan::m_plan_succeeded" data-ref-filename="lldb_private..ThreadPlan..m_plan_succeeded">m_plan_succeeded</a>; }</td></tr>
+<tr><th id="437">437</th><td></td></tr>
+<tr><th id="438">438</th><td>  <b>virtual</b> <em>bool</em> <dfn class="virtual decl def fn" id="_ZN12lldb_private10ThreadPlan10IsBasePlanEv" title='lldb_private::ThreadPlan::IsBasePlan' data-ref="_ZN12lldb_private10ThreadPlan10IsBasePlanEv" data-ref-filename="_ZN12lldb_private10ThreadPlan10IsBasePlanEv">IsBasePlan</dfn>() { <b>return</b> <b>false</b>; }</td></tr>
+<tr><th id="439">439</th><td></td></tr>
+<tr><th id="440">440</th><td>  <span class="namespace">lldb::</span><a class="typedef" href="../lldb-forward.h.html#lldb::ThreadPlanTracerSP" title='lldb::ThreadPlanTracerSP' data-type='std::shared_ptr&lt;lldb_private::ThreadPlanTracer&gt;' data-ref="lldb::ThreadPlanTracerSP" data-ref-filename="lldb..ThreadPlanTracerSP">ThreadPlanTracerSP</a> &amp;<dfn class="decl def fn" id="_ZN12lldb_private10ThreadPlan19GetThreadPlanTracerEv" title='lldb_private::ThreadPlan::GetThreadPlanTracer' data-ref="_ZN12lldb_private10ThreadPlan19GetThreadPlanTracerEv" data-ref-filename="_ZN12lldb_private10ThreadPlan19GetThreadPlanTracerEv">GetThreadPlanTracer</dfn>() { <b>return</b> <a class="member field" href="#lldb_private::ThreadPlan::m_tracer_sp" title='lldb_private::ThreadPlan::m_tracer_sp' data-ref="lldb_private::ThreadPlan::m_tracer_sp" data-ref-filename="lldb_private..ThreadPlan..m_tracer_sp">m_tracer_sp</a>; }</td></tr>
+<tr><th id="441">441</th><td></td></tr>
+<tr><th id="442">442</th><td>  <em>void</em> <dfn class="decl def fn" id="_ZN12lldb_private10ThreadPlan19SetThreadPlanTracerESt10shared_ptrINS_16ThreadPlanTracerEE" title='lldb_private::ThreadPlan::SetThreadPlanTracer' data-ref="_ZN12lldb_private10ThreadPlan19SetThreadPlanTracerESt10shared_ptrINS_16ThreadPlanTracerEE" data-ref-filename="_ZN12lldb_private10ThreadPlan19SetThreadPlanTracerESt10shared_ptrINS_16ThreadPlanTracerEE">SetThreadPlanTracer</dfn>(<span class="namespace">lldb::</span><a class="typedef" href="../lldb-forward.h.html#lldb::ThreadPlanTracerSP" title='lldb::ThreadPlanTracerSP' data-type='std::shared_ptr&lt;lldb_private::ThreadPlanTracer&gt;' data-ref="lldb::ThreadPlanTracerSP" data-ref-filename="lldb..ThreadPlanTracerSP">ThreadPlanTracerSP</a> <dfn class="local col3 decl" id="33new_tracer_sp" title='new_tracer_sp' data-type='lldb::ThreadPlanTracerSP' data-ref="33new_tracer_sp" data-ref-filename="33new_tracer_sp">new_tracer_sp</dfn>) {</td></tr>
+<tr><th id="443">443</th><td>    <a class="member field" href="#lldb_private::ThreadPlan::m_tracer_sp" title='lldb_private::ThreadPlan::m_tracer_sp' data-ref="lldb_private::ThreadPlan::m_tracer_sp" data-ref-filename="lldb_private..ThreadPlan..m_tracer_sp">m_tracer_sp</a> <span class='ref fn' title='std::shared_ptr::operator=' data-ref="_ZNSt10shared_ptraSERKSt10shared_ptrIT_E" data-ref-filename="_ZNSt10shared_ptraSERKSt10shared_ptrIT_E">=</span> <a class="local col3 ref" href="#33new_tracer_sp" title='new_tracer_sp' data-ref="33new_tracer_sp" data-ref-filename="33new_tracer_sp">new_tracer_sp</a>;</td></tr>
+<tr><th id="444">444</th><td>  }</td></tr>
+<tr><th id="445">445</th><td></td></tr>
+<tr><th id="446">446</th><td>  <em>void</em> <dfn class="decl def fn" id="_ZN12lldb_private10ThreadPlan10DoTraceLogEv" title='lldb_private::ThreadPlan::DoTraceLog' data-ref="_ZN12lldb_private10ThreadPlan10DoTraceLogEv" data-ref-filename="_ZN12lldb_private10ThreadPlan10DoTraceLogEv">DoTraceLog</dfn>() {</td></tr>
+<tr><th id="447">447</th><td>    <b>if</b> (<span class='ref fn fake' title='std::__shared_ptr::operator bool' data-ref="_ZNKSt12__shared_ptrcvbEv" data-ref-filename="_ZNKSt12__shared_ptrcvbEv"></span><a class="member field" href="#lldb_private::ThreadPlan::m_tracer_sp" title='lldb_private::ThreadPlan::m_tracer_sp' data-ref="lldb_private::ThreadPlan::m_tracer_sp" data-ref-filename="lldb_private..ThreadPlan..m_tracer_sp">m_tracer_sp</a> &amp;&amp; <a class="member field" href="#lldb_private::ThreadPlan::m_tracer_sp" title='lldb_private::ThreadPlan::m_tracer_sp' data-ref="lldb_private::ThreadPlan::m_tracer_sp" data-ref-filename="lldb_private..ThreadPlan..m_tracer_sp">m_tracer_sp</a><span class='ref fn' title='std::__shared_ptr_access::operator-&gt;' data-ref="_ZNKSt19__shared_ptr_accessptEv" data-ref-filename="_ZNKSt19__shared_ptr_accessptEv">-&gt;</span><a class="ref fn" href="ThreadPlanTracer.h.html#_ZN12lldb_private16ThreadPlanTracer14TracingEnabledEv" title='lldb_private::ThreadPlanTracer::TracingEnabled' data-ref="_ZN12lldb_private16ThreadPlanTracer14TracingEnabledEv" data-ref-filename="_ZN12lldb_private16ThreadPlanTracer14TracingEnabledEv">TracingEnabled</a>())</td></tr>
+<tr><th id="448">448</th><td>      <a class="member field" href="#lldb_private::ThreadPlan::m_tracer_sp" title='lldb_private::ThreadPlan::m_tracer_sp' data-ref="lldb_private::ThreadPlan::m_tracer_sp" data-ref-filename="lldb_private..ThreadPlan..m_tracer_sp">m_tracer_sp</a><span class='ref fn' title='std::__shared_ptr_access::operator-&gt;' data-ref="_ZNKSt19__shared_ptr_accessptEv" data-ref-filename="_ZNKSt19__shared_ptr_accessptEv">-&gt;</span><a class="virtual ref fn" href="ThreadPlanTracer.h.html#_ZN12lldb_private16ThreadPlanTracer3LogEv" title='lldb_private::ThreadPlanTracer::Log' data-ref="_ZN12lldb_private16ThreadPlanTracer3LogEv" data-ref-filename="_ZN12lldb_private16ThreadPlanTracer3LogEv">Log</a>();</td></tr>
+<tr><th id="449">449</th><td>  }</td></tr>
+<tr><th id="450">450</th><td></td></tr>
+<tr><th id="451">451</th><td>  <i>// Some thread plans hide away the actual stop info which caused any</i></td></tr>
+<tr><th id="452">452</th><td><i>  // particular stop.  For instance the ThreadPlanCallFunction restores the</i></td></tr>
+<tr><th id="453">453</th><td><i>  // original stop reason so that stopping and calling a few functions won't</i></td></tr>
+<tr><th id="454">454</th><td><i>  // lose the history of the run. This call can be implemented to get you back</i></td></tr>
+<tr><th id="455">455</th><td><i>  // to the real stop info.</i></td></tr>
+<tr><th id="456">456</th><td>  <b>virtual</b> <span class="namespace">lldb::</span><a class="typedef" href="../lldb-forward.h.html#lldb::StopInfoSP" title='lldb::StopInfoSP' data-type='std::shared_ptr&lt;lldb_private::StopInfo&gt;' data-ref="lldb::StopInfoSP" data-ref-filename="lldb..StopInfoSP">StopInfoSP</a> <dfn class="virtual decl def fn" id="_ZN12lldb_private10ThreadPlan15GetRealStopInfoEv" title='lldb_private::ThreadPlan::GetRealStopInfo' data-ref="_ZN12lldb_private10ThreadPlan15GetRealStopInfoEv" data-ref-filename="_ZN12lldb_private10ThreadPlan15GetRealStopInfoEv">GetRealStopInfo</dfn>() { </td></tr>
+<tr><th id="457">457</th><td>    <b>return</b> <a class="member fn" href="#_ZN12lldb_private10ThreadPlan9GetThreadEv" title='lldb_private::ThreadPlan::GetThread' data-ref="_ZN12lldb_private10ThreadPlan9GetThreadEv" data-ref-filename="_ZN12lldb_private10ThreadPlan9GetThreadEv">GetThread</a>().<a class="ref fn" href="Thread.h.html#_ZN12lldb_private6Thread11GetStopInfoEv" title='lldb_private::Thread::GetStopInfo' data-ref="_ZN12lldb_private6Thread11GetStopInfoEv" data-ref-filename="_ZN12lldb_private6Thread11GetStopInfoEv">GetStopInfo</a>();</td></tr>
+<tr><th id="458">458</th><td>  }</td></tr>
+<tr><th id="459">459</th><td></td></tr>
+<tr><th id="460">460</th><td>  <i>// If the completion of the thread plan stepped out of a function, the return</i></td></tr>
+<tr><th id="461">461</th><td><i>  // value of the function might have been captured by the thread plan</i></td></tr>
+<tr><th id="462">462</th><td><i>  // (currently only ThreadPlanStepOut does this.) If so, the ReturnValueObject</i></td></tr>
+<tr><th id="463">463</th><td><i>  // can be retrieved from here.</i></td></tr>
+<tr><th id="464">464</th><td></td></tr>
+<tr><th id="465">465</th><td>  <b>virtual</b> <span class="namespace">lldb::</span><a class="typedef" href="../lldb-forward.h.html#lldb::ValueObjectSP" title='lldb::ValueObjectSP' data-type='std::shared_ptr&lt;lldb_private::ValueObject&gt;' data-ref="lldb::ValueObjectSP" data-ref-filename="lldb..ValueObjectSP">ValueObjectSP</a> <dfn class="virtual decl def fn" id="_ZN12lldb_private10ThreadPlan20GetReturnValueObjectEv" title='lldb_private::ThreadPlan::GetReturnValueObject' data-ref="_ZN12lldb_private10ThreadPlan20GetReturnValueObjectEv" data-ref-filename="_ZN12lldb_private10ThreadPlan20GetReturnValueObjectEv">GetReturnValueObject</dfn>() {</td></tr>
+<tr><th id="466">466</th><td>    <b>return</b> <span class="namespace">lldb::</span><a class="typedef" href="../lldb-forward.h.html#lldb::ValueObjectSP" title='lldb::ValueObjectSP' data-type='std::shared_ptr&lt;lldb_private::ValueObject&gt;' data-ref="lldb::ValueObjectSP" data-ref-filename="lldb..ValueObjectSP">ValueObjectSP</a><span class='ref fn' title='std::shared_ptr::shared_ptr&lt;_Tp&gt;' data-ref="_ZNSt10shared_ptrC1Ev" data-ref-filename="_ZNSt10shared_ptrC1Ev">(</span>);</td></tr>
+<tr><th id="467">467</th><td>  }</td></tr>
+<tr><th id="468">468</th><td></td></tr>
+<tr><th id="469">469</th><td>  <i>// If the thread plan managing the evaluation of a user expression lives</i></td></tr>
+<tr><th id="470">470</th><td><i>  // longer than the command that instigated the expression (generally because</i></td></tr>
+<tr><th id="471">471</th><td><i>  // the expression evaluation hit a breakpoint, and the user regained control</i></td></tr>
+<tr><th id="472">472</th><td><i>  // at that point) a subsequent process control command step/continue/etc.</i></td></tr>
+<tr><th id="473">473</th><td><i>  // might complete the expression evaluations.  If so, the result of the</i></td></tr>
+<tr><th id="474">474</th><td><i>  // expression evaluation will show up here.</i></td></tr>
+<tr><th id="475">475</th><td></td></tr>
+<tr><th id="476">476</th><td>  <b>virtual</b> <span class="namespace">lldb::</span><a class="typedef" href="../lldb-forward.h.html#lldb::ExpressionVariableSP" title='lldb::ExpressionVariableSP' data-type='std::shared_ptr&lt;lldb_private::ExpressionVariable&gt;' data-ref="lldb::ExpressionVariableSP" data-ref-filename="lldb..ExpressionVariableSP">ExpressionVariableSP</a> <dfn class="virtual decl def fn" id="_ZN12lldb_private10ThreadPlan21GetExpressionVariableEv" title='lldb_private::ThreadPlan::GetExpressionVariable' data-ref="_ZN12lldb_private10ThreadPlan21GetExpressionVariableEv" data-ref-filename="_ZN12lldb_private10ThreadPlan21GetExpressionVariableEv">GetExpressionVariable</dfn>() {</td></tr>
+<tr><th id="477">477</th><td>    <b>return</b> <span class="namespace">lldb::</span><a class="typedef" href="../lldb-forward.h.html#lldb::ExpressionVariableSP" title='lldb::ExpressionVariableSP' data-type='std::shared_ptr&lt;lldb_private::ExpressionVariable&gt;' data-ref="lldb::ExpressionVariableSP" data-ref-filename="lldb..ExpressionVariableSP">ExpressionVariableSP</a><span class='ref fn' title='std::shared_ptr::shared_ptr&lt;_Tp&gt;' data-ref="_ZNSt10shared_ptrC1Ev" data-ref-filename="_ZNSt10shared_ptrC1Ev">(</span>);</td></tr>
+<tr><th id="478">478</th><td>  }</td></tr>
+<tr><th id="479">479</th><td></td></tr>
+<tr><th id="480">480</th><td>  <i>// If a thread plan stores the state before it was run, then you might want</i></td></tr>
+<tr><th id="481">481</th><td><i>  // to restore the state when it is done.  This will do that job. This is</i></td></tr>
+<tr><th id="482">482</th><td><i>  // mostly useful for artificial plans like CallFunction plans.</i></td></tr>
+<tr><th id="483">483</th><td></td></tr>
+<tr><th id="484">484</th><td>  <b>virtual</b> <em>bool</em> <dfn class="virtual decl def fn" id="_ZN12lldb_private10ThreadPlan18RestoreThreadStateEv" title='lldb_private::ThreadPlan::RestoreThreadState' data-ref="_ZN12lldb_private10ThreadPlan18RestoreThreadStateEv" data-ref-filename="_ZN12lldb_private10ThreadPlan18RestoreThreadStateEv">RestoreThreadState</dfn>() {</td></tr>
+<tr><th id="485">485</th><td>    <i>// Nothing to do in general.</i></td></tr>
+<tr><th id="486">486</th><td>    <b>return</b> <b>true</b>;</td></tr>
+<tr><th id="487">487</th><td>  }</td></tr>
+<tr><th id="488">488</th><td></td></tr>
+<tr><th id="489">489</th><td>  <b>virtual</b> <em>bool</em> <dfn class="virtual decl def fn" id="_ZN12lldb_private10ThreadPlan13IsVirtualStepEv" title='lldb_private::ThreadPlan::IsVirtualStep' data-ref="_ZN12lldb_private10ThreadPlan13IsVirtualStepEv" data-ref-filename="_ZN12lldb_private10ThreadPlan13IsVirtualStepEv">IsVirtualStep</dfn>() { <b>return</b> <b>false</b>; }</td></tr>
+<tr><th id="490">490</th><td></td></tr>
+<tr><th id="491">491</th><td>  <b>virtual</b> <em>bool</em> <dfn class="virtual decl def fn" id="_ZN12lldb_private10ThreadPlan17SetIterationCountEm" title='lldb_private::ThreadPlan::SetIterationCount' data-ref="_ZN12lldb_private10ThreadPlan17SetIterationCountEm" data-ref-filename="_ZN12lldb_private10ThreadPlan17SetIterationCountEm">SetIterationCount</dfn>(<span class='typedef' title='size_t' data-type='unsigned long' data-ref="size_t" data-ref-filename="size_t">size_t</span> <dfn class="local col4 decl" id="34count" title='count' data-type='size_t' data-ref="34count" data-ref-filename="34count">count</dfn>) {</td></tr>
+<tr><th id="492">492</th><td>    <b>if</b> (<a class="member field" href="#lldb_private::ThreadPlan::m_takes_iteration_count" title='lldb_private::ThreadPlan::m_takes_iteration_count' data-ref="lldb_private::ThreadPlan::m_takes_iteration_count" data-ref-filename="lldb_private..ThreadPlan..m_takes_iteration_count">m_takes_iteration_count</a>) {</td></tr>
+<tr><th id="493">493</th><td>      <i>// Don't tell me to do something 0 times...</i></td></tr>
+<tr><th id="494">494</th><td>      <b>if</b> (<a class="local col4 ref" href="#34count" title='count' data-ref="34count" data-ref-filename="34count">count</a> == <var>0</var>)</td></tr>
+<tr><th id="495">495</th><td>        <b>return</b> <b>false</b>;</td></tr>
+<tr><th id="496">496</th><td>      <a class="member field" href="#lldb_private::ThreadPlan::m_iteration_count" title='lldb_private::ThreadPlan::m_iteration_count' data-ref="lldb_private::ThreadPlan::m_iteration_count" data-ref-filename="lldb_private..ThreadPlan..m_iteration_count">m_iteration_count</a> = <a class="local col4 ref" href="#34count" title='count' data-ref="34count" data-ref-filename="34count">count</a>;</td></tr>
+<tr><th id="497">497</th><td>    }</td></tr>
+<tr><th id="498">498</th><td>    <b>return</b> <a class="member field" href="#lldb_private::ThreadPlan::m_takes_iteration_count" title='lldb_private::ThreadPlan::m_takes_iteration_count' data-ref="lldb_private::ThreadPlan::m_takes_iteration_count" data-ref-filename="lldb_private..ThreadPlan..m_takes_iteration_count">m_takes_iteration_count</a>;</td></tr>
+<tr><th id="499">499</th><td>  }</td></tr>
+<tr><th id="500">500</th><td></td></tr>
+<tr><th id="501">501</th><td>  <b>virtual</b> <span class='typedef' title='size_t' data-type='unsigned long' data-ref="size_t" data-ref-filename="size_t">size_t</span> <dfn class="virtual decl def fn" id="_ZN12lldb_private10ThreadPlan17GetIterationCountEv" title='lldb_private::ThreadPlan::GetIterationCount' data-ref="_ZN12lldb_private10ThreadPlan17GetIterationCountEv" data-ref-filename="_ZN12lldb_private10ThreadPlan17GetIterationCountEv">GetIterationCount</dfn>() {</td></tr>
+<tr><th id="502">502</th><td>    <b>if</b> (!<a class="member field" href="#lldb_private::ThreadPlan::m_takes_iteration_count" title='lldb_private::ThreadPlan::m_takes_iteration_count' data-ref="lldb_private::ThreadPlan::m_takes_iteration_count" data-ref-filename="lldb_private..ThreadPlan..m_takes_iteration_count">m_takes_iteration_count</a>)</td></tr>
+<tr><th id="503">503</th><td>      <b>return</b> <var>0</var>;</td></tr>
+<tr><th id="504">504</th><td>    <b>else</b></td></tr>
+<tr><th id="505">505</th><td>      <b>return</b> <a class="member field" href="#lldb_private::ThreadPlan::m_iteration_count" title='lldb_private::ThreadPlan::m_iteration_count' data-ref="lldb_private::ThreadPlan::m_iteration_count" data-ref-filename="lldb_private..ThreadPlan..m_iteration_count">m_iteration_count</a>;</td></tr>
+<tr><th id="506">506</th><td>  }</td></tr>
+<tr><th id="507">507</th><td></td></tr>
+<tr><th id="508">508</th><td><b>protected</b>:</td></tr>
+<tr><th id="509">509</th><td>  <i>// Classes that inherit from ThreadPlan can see and modify these</i></td></tr>
+<tr><th id="510">510</th><td></td></tr>
+<tr><th id="511">511</th><td>  <b>virtual</b> <em>bool</em> <dfn class="virtual decl def fn" id="_ZN12lldb_private10ThreadPlan12DoWillResumeEN4lldb9StateTypeEb" title='lldb_private::ThreadPlan::DoWillResume' data-ref="_ZN12lldb_private10ThreadPlan12DoWillResumeEN4lldb9StateTypeEb" data-ref-filename="_ZN12lldb_private10ThreadPlan12DoWillResumeEN4lldb9StateTypeEb">DoWillResume</dfn>(<span class="namespace">lldb::</span><a class="type" href="../lldb-enumerations.h.html#lldb::StateType" title='lldb::StateType' data-ref="lldb::StateType" data-ref-filename="lldb..StateType">StateType</a> <dfn class="local col5 decl" id="35resume_state" title='resume_state' data-type='lldb::StateType' data-ref="35resume_state" data-ref-filename="35resume_state">resume_state</dfn>, <em>bool</em> <dfn class="local col6 decl" id="36current_plan" title='current_plan' data-type='bool' data-ref="36current_plan" data-ref-filename="36current_plan">current_plan</dfn>) {</td></tr>
+<tr><th id="512">512</th><td>    <b>return</b> <b>true</b>;</td></tr>
+<tr><th id="513">513</th><td>  }</td></tr>
+<tr><th id="514">514</th><td></td></tr>
+<tr><th id="515">515</th><td>  <b>virtual</b> <em>bool</em> <dfn class="virtual decl fn" id="_ZN12lldb_private10ThreadPlan18DoPlanExplainsStopEPNS_5EventE" title='lldb_private::ThreadPlan::DoPlanExplainsStop' data-ref="_ZN12lldb_private10ThreadPlan18DoPlanExplainsStopEPNS_5EventE" data-ref-filename="_ZN12lldb_private10ThreadPlan18DoPlanExplainsStopEPNS_5EventE">DoPlanExplainsStop</dfn>(<a class="type" href="../Utility/Event.h.html#lldb_private::Event" title='lldb_private::Event' data-ref="lldb_private::Event" data-ref-filename="lldb_private..Event">Event</a> *<dfn class="local col7 decl" id="37event_ptr" title='event_ptr' data-type='lldb_private::Event *' data-ref="37event_ptr" data-ref-filename="37event_ptr">event_ptr</dfn>) = <var>0</var>;</td></tr>
+<tr><th id="516">516</th><td></td></tr>
+<tr><th id="517">517</th><td>  <i>// This gets the previous plan to the current plan (for forwarding requests).</i></td></tr>
+<tr><th id="518">518</th><td><i>  // This is mostly a formal requirement, it allows us to make the Thread's</i></td></tr>
+<tr><th id="519">519</th><td><i>  // GetPreviousPlan protected, but only friend ThreadPlan to thread.</i></td></tr>
+<tr><th id="520">520</th><td></td></tr>
+<tr><th id="521">521</th><td>  <a class="type" href="#lldb_private::ThreadPlan" title='lldb_private::ThreadPlan' data-ref="lldb_private::ThreadPlan" data-ref-filename="lldb_private..ThreadPlan">ThreadPlan</a> *<dfn class="decl def fn" id="_ZN12lldb_private10ThreadPlan15GetPreviousPlanEv" title='lldb_private::ThreadPlan::GetPreviousPlan' data-ref="_ZN12lldb_private10ThreadPlan15GetPreviousPlanEv" data-ref-filename="_ZN12lldb_private10ThreadPlan15GetPreviousPlanEv">GetPreviousPlan</dfn>() { <b>return</b> <a class="member fn" href="#_ZN12lldb_private10ThreadPlan9GetThreadEv" title='lldb_private::ThreadPlan::GetThread' data-ref="_ZN12lldb_private10ThreadPlan9GetThreadEv" data-ref-filename="_ZN12lldb_private10ThreadPlan9GetThreadEv">GetThread</a>().<a class="ref fn" href="Thread.h.html#_ZNK12lldb_private6Thread15GetPreviousPlanEPNS_10ThreadPlanE" title='lldb_private::Thread::GetPreviousPlan' data-ref="_ZNK12lldb_private6Thread15GetPreviousPlanEPNS_10ThreadPlanE" data-ref-filename="_ZNK12lldb_private6Thread15GetPreviousPlanEPNS_10ThreadPlanE">GetPreviousPlan</a>(<b>this</b>); }</td></tr>
+<tr><th id="522">522</th><td></td></tr>
+<tr><th id="523">523</th><td>  <i>// This forwards the private Thread::GetPrivateStopInfo which is generally</i></td></tr>
+<tr><th id="524">524</th><td><i>  // what ThreadPlan's need to know.</i></td></tr>
+<tr><th id="525">525</th><td></td></tr>
+<tr><th id="526">526</th><td>  <span class="namespace">lldb::</span><a class="typedef" href="../lldb-forward.h.html#lldb::StopInfoSP" title='lldb::StopInfoSP' data-type='std::shared_ptr&lt;lldb_private::StopInfo&gt;' data-ref="lldb::StopInfoSP" data-ref-filename="lldb..StopInfoSP">StopInfoSP</a> <dfn class="decl def fn" id="_ZN12lldb_private10ThreadPlan18GetPrivateStopInfoEv" title='lldb_private::ThreadPlan::GetPrivateStopInfo' data-ref="_ZN12lldb_private10ThreadPlan18GetPrivateStopInfoEv" data-ref-filename="_ZN12lldb_private10ThreadPlan18GetPrivateStopInfoEv">GetPrivateStopInfo</dfn>() {</td></tr>
+<tr><th id="527">527</th><td>    <b>return</b> <a class="member fn" href="#_ZN12lldb_private10ThreadPlan9GetThreadEv" title='lldb_private::ThreadPlan::GetThread' data-ref="_ZN12lldb_private10ThreadPlan9GetThreadEv" data-ref-filename="_ZN12lldb_private10ThreadPlan9GetThreadEv">GetThread</a>().<a class="virtual ref fn" href="Thread.h.html#_ZN12lldb_private6Thread18GetPrivateStopInfoEv" title='lldb_private::Thread::GetPrivateStopInfo' data-ref="_ZN12lldb_private6Thread18GetPrivateStopInfoEv" data-ref-filename="_ZN12lldb_private6Thread18GetPrivateStopInfoEv">GetPrivateStopInfo</a>();</td></tr>
+<tr><th id="528">528</th><td>  }</td></tr>
+<tr><th id="529">529</th><td></td></tr>
+<tr><th id="530">530</th><td>  <em>void</em> <dfn class="decl def fn" id="_ZN12lldb_private10ThreadPlan11SetStopInfoESt10shared_ptrINS_8StopInfoEE" title='lldb_private::ThreadPlan::SetStopInfo' data-ref="_ZN12lldb_private10ThreadPlan11SetStopInfoESt10shared_ptrINS_8StopInfoEE" data-ref-filename="_ZN12lldb_private10ThreadPlan11SetStopInfoESt10shared_ptrINS_8StopInfoEE">SetStopInfo</dfn>(<span class="namespace">lldb::</span><a class="typedef" href="../lldb-forward.h.html#lldb::StopInfoSP" title='lldb::StopInfoSP' data-type='std::shared_ptr&lt;lldb_private::StopInfo&gt;' data-ref="lldb::StopInfoSP" data-ref-filename="lldb..StopInfoSP">StopInfoSP</a> <dfn class="local col8 decl" id="38stop_reason_sp" title='stop_reason_sp' data-type='lldb::StopInfoSP' data-ref="38stop_reason_sp" data-ref-filename="38stop_reason_sp">stop_reason_sp</dfn>) {</td></tr>
+<tr><th id="531">531</th><td>    <a class="member fn" href="#_ZN12lldb_private10ThreadPlan9GetThreadEv" title='lldb_private::ThreadPlan::GetThread' data-ref="_ZN12lldb_private10ThreadPlan9GetThreadEv" data-ref-filename="_ZN12lldb_private10ThreadPlan9GetThreadEv">GetThread</a>().<a class="ref fn" href="Thread.h.html#_ZN12lldb_private6Thread11SetStopInfoERKSt10shared_ptrINS_8StopInfoEE" title='lldb_private::Thread::SetStopInfo' data-ref="_ZN12lldb_private6Thread11SetStopInfoERKSt10shared_ptrINS_8StopInfoEE" data-ref-filename="_ZN12lldb_private6Thread11SetStopInfoERKSt10shared_ptrINS_8StopInfoEE">SetStopInfo</a>(<a class="local col8 ref" href="#38stop_reason_sp" title='stop_reason_sp' data-ref="38stop_reason_sp" data-ref-filename="38stop_reason_sp">stop_reason_sp</a>);</td></tr>
+<tr><th id="532">532</th><td>  }</td></tr>
+<tr><th id="533">533</th><td></td></tr>
+<tr><th id="534">534</th><td>  <em>void</em> <dfn class="decl def fn" id="_ZN12lldb_private10ThreadPlan21CachePlanExplainsStopEb" title='lldb_private::ThreadPlan::CachePlanExplainsStop' data-ref="_ZN12lldb_private10ThreadPlan21CachePlanExplainsStopEb" data-ref-filename="_ZN12lldb_private10ThreadPlan21CachePlanExplainsStopEb">CachePlanExplainsStop</dfn>(<em>bool</em> <dfn class="local col9 decl" id="39does_explain" title='does_explain' data-type='bool' data-ref="39does_explain" data-ref-filename="39does_explain">does_explain</dfn>) {</td></tr>
+<tr><th id="535">535</th><td>    <a class="member field" href="#lldb_private::ThreadPlan::m_cached_plan_explains_stop" title='lldb_private::ThreadPlan::m_cached_plan_explains_stop' data-ref="lldb_private::ThreadPlan::m_cached_plan_explains_stop" data-ref-filename="lldb_private..ThreadPlan..m_cached_plan_explains_stop">m_cached_plan_explains_stop</a> = <a class="local col9 ref" href="#39does_explain" title='does_explain' data-ref="39does_explain" data-ref-filename="39does_explain">does_explain</a> ? <a class="enum" href="../lldb-private-enumerations.h.html#lldb_private::eLazyBoolYes" title='lldb_private::eLazyBoolYes' data-ref="lldb_private::eLazyBoolYes" data-ref-filename="lldb_private..eLazyBoolYes">eLazyBoolYes</a> : <a class="enum" href="../lldb-private-enumerations.h.html#lldb_private::eLazyBoolNo" title='lldb_private::eLazyBoolNo' data-ref="lldb_private::eLazyBoolNo" data-ref-filename="lldb_private..eLazyBoolNo">eLazyBoolNo</a>;</td></tr>
+<tr><th id="536">536</th><td>  }</td></tr>
+<tr><th id="537">537</th><td></td></tr>
+<tr><th id="538">538</th><td>  <a class="type" href="../lldb-private-enumerations.h.html#lldb_private::LazyBool" title='lldb_private::LazyBool' data-ref="lldb_private::LazyBool" data-ref-filename="lldb_private..LazyBool">LazyBool</a> <dfn class="decl def fn" id="_ZNK12lldb_private10ThreadPlan25GetCachedPlanExplainsStopEv" title='lldb_private::ThreadPlan::GetCachedPlanExplainsStop' data-ref="_ZNK12lldb_private10ThreadPlan25GetCachedPlanExplainsStopEv" data-ref-filename="_ZNK12lldb_private10ThreadPlan25GetCachedPlanExplainsStopEv">GetCachedPlanExplainsStop</dfn>() <em>const</em> {</td></tr>
+<tr><th id="539">539</th><td>    <b>return</b> <a class="member field" href="#lldb_private::ThreadPlan::m_cached_plan_explains_stop" title='lldb_private::ThreadPlan::m_cached_plan_explains_stop' data-ref="lldb_private::ThreadPlan::m_cached_plan_explains_stop" data-ref-filename="lldb_private..ThreadPlan..m_cached_plan_explains_stop">m_cached_plan_explains_stop</a>;</td></tr>
+<tr><th id="540">540</th><td>  }</td></tr>
+<tr><th id="541">541</th><td></td></tr>
+<tr><th id="542">542</th><td>  <b>virtual</b> <span class="namespace">lldb::</span><a class="type" href="../lldb-enumerations.h.html#lldb::StateType" title='lldb::StateType' data-ref="lldb::StateType" data-ref-filename="lldb..StateType">StateType</a> <dfn class="virtual decl fn" id="_ZN12lldb_private10ThreadPlan15GetPlanRunStateEv" title='lldb_private::ThreadPlan::GetPlanRunState' data-ref="_ZN12lldb_private10ThreadPlan15GetPlanRunStateEv" data-ref-filename="_ZN12lldb_private10ThreadPlan15GetPlanRunStateEv">GetPlanRunState</dfn>() = <var>0</var>;</td></tr>
+<tr><th id="543">543</th><td></td></tr>
+<tr><th id="544">544</th><td>  <em>bool</em> <dfn class="decl fn" id="_ZN12lldb_private10ThreadPlan30IsUsuallyUnexplainedStopReasonEN4lldb10StopReasonE" title='lldb_private::ThreadPlan::IsUsuallyUnexplainedStopReason' data-ref="_ZN12lldb_private10ThreadPlan30IsUsuallyUnexplainedStopReasonEN4lldb10StopReasonE" data-ref-filename="_ZN12lldb_private10ThreadPlan30IsUsuallyUnexplainedStopReasonEN4lldb10StopReasonE">IsUsuallyUnexplainedStopReason</dfn>(<span class="namespace">lldb::</span><a class="type" href="../lldb-enumerations.h.html#lldb::StopReason" title='lldb::StopReason' data-ref="lldb::StopReason" data-ref-filename="lldb..StopReason">StopReason</a>);</td></tr>
+<tr><th id="545">545</th><td></td></tr>
+<tr><th id="546">546</th><td>  <a class="type" href="../Utility/Status.h.html#lldb_private::Status" title='lldb_private::Status' data-ref="lldb_private::Status" data-ref-filename="lldb_private..Status">Status</a> <dfn class="decl field" id="lldb_private::ThreadPlan::m_status" title='lldb_private::ThreadPlan::m_status' data-ref="lldb_private::ThreadPlan::m_status" data-ref-filename="lldb_private..ThreadPlan..m_status">m_status</dfn>;</td></tr>
+<tr><th id="547">547</th><td>  <a class="type" href="Process.h.html#lldb_private::Process" title='lldb_private::Process' data-ref="lldb_private::Process" data-ref-filename="lldb_private..Process">Process</a> &amp;<dfn class="decl field" id="lldb_private::ThreadPlan::m_process" title='lldb_private::ThreadPlan::m_process' data-ref="lldb_private::ThreadPlan::m_process" data-ref-filename="lldb_private..ThreadPlan..m_process">m_process</dfn>;</td></tr>
+<tr><th id="548">548</th><td>  <span class="namespace">lldb::</span><a class="typedef" href="../lldb-types.h.html#lldb::tid_t" title='lldb::tid_t' data-type='uint64_t' data-ref="lldb::tid_t" data-ref-filename="lldb..tid_t">tid_t</a> <dfn class="decl field" id="lldb_private::ThreadPlan::m_tid" title='lldb_private::ThreadPlan::m_tid' data-ref="lldb_private::ThreadPlan::m_tid" data-ref-filename="lldb_private..ThreadPlan..m_tid">m_tid</dfn>;</td></tr>
+<tr><th id="549">549</th><td>  <a class="type" href="../lldb-private-enumerations.h.html#lldb_private::Vote" title='lldb_private::Vote' data-ref="lldb_private::Vote" data-ref-filename="lldb_private..Vote">Vote</a> <dfn class="decl field" id="lldb_private::ThreadPlan::m_stop_vote" title='lldb_private::ThreadPlan::m_stop_vote' data-ref="lldb_private::ThreadPlan::m_stop_vote" data-ref-filename="lldb_private..ThreadPlan..m_stop_vote">m_stop_vote</dfn>;</td></tr>
+<tr><th id="550">550</th><td>  <a class="type" href="../lldb-private-enumerations.h.html#lldb_private::Vote" title='lldb_private::Vote' data-ref="lldb_private::Vote" data-ref-filename="lldb_private..Vote">Vote</a> <dfn class="decl field" id="lldb_private::ThreadPlan::m_run_vote" title='lldb_private::ThreadPlan::m_run_vote' data-ref="lldb_private::ThreadPlan::m_run_vote" data-ref-filename="lldb_private..ThreadPlan..m_run_vote">m_run_vote</dfn>;</td></tr>
+<tr><th id="551">551</th><td>  <em>bool</em> <dfn class="decl field" id="lldb_private::ThreadPlan::m_takes_iteration_count" title='lldb_private::ThreadPlan::m_takes_iteration_count' data-ref="lldb_private::ThreadPlan::m_takes_iteration_count" data-ref-filename="lldb_private..ThreadPlan..m_takes_iteration_count">m_takes_iteration_count</dfn>;</td></tr>
+<tr><th id="552">552</th><td>  <em>bool</em> <dfn class="decl field" id="lldb_private::ThreadPlan::m_could_not_resolve_hw_bp" title='lldb_private::ThreadPlan::m_could_not_resolve_hw_bp' data-ref="lldb_private::ThreadPlan::m_could_not_resolve_hw_bp" data-ref-filename="lldb_private..ThreadPlan..m_could_not_resolve_hw_bp">m_could_not_resolve_hw_bp</dfn>;</td></tr>
+<tr><th id="553">553</th><td>  <a class="typedef" href="../../../../../include/bits/stdint-intn.h.html#int32_t" title='int32_t' data-type='__int32_t' data-ref="int32_t" data-ref-filename="int32_t">int32_t</a> <dfn class="decl field" id="lldb_private::ThreadPlan::m_iteration_count" title='lldb_private::ThreadPlan::m_iteration_count' data-ref="lldb_private::ThreadPlan::m_iteration_count" data-ref-filename="lldb_private..ThreadPlan..m_iteration_count">m_iteration_count</dfn> = <var>1</var>;</td></tr>
+<tr><th id="554">554</th><td></td></tr>
+<tr><th id="555">555</th><td><b>private</b>:</td></tr>
+<tr><th id="556">556</th><td>  <i>// For ThreadPlan only</i></td></tr>
+<tr><th id="557">557</th><td>  <em>static</em> <span class="namespace">lldb::</span><a class="typedef" href="../lldb-types.h.html#lldb::user_id_t" title='lldb::user_id_t' data-type='uint64_t' data-ref="lldb::user_id_t" data-ref-filename="lldb..user_id_t">user_id_t</a> <dfn class="decl fn" id="_ZN12lldb_private10ThreadPlan9GetNextIDEv" title='lldb_private::ThreadPlan::GetNextID' data-ref="_ZN12lldb_private10ThreadPlan9GetNextIDEv" data-ref-filename="_ZN12lldb_private10ThreadPlan9GetNextIDEv">GetNextID</dfn>();</td></tr>
+<tr><th id="558">558</th><td></td></tr>
+<tr><th id="559">559</th><td>  <a class="type" href="Thread.h.html#lldb_private::Thread" title='lldb_private::Thread' data-ref="lldb_private::Thread" data-ref-filename="lldb_private..Thread">Thread</a> *<dfn class="decl field" id="lldb_private::ThreadPlan::m_thread" title='lldb_private::ThreadPlan::m_thread' data-ref="lldb_private::ThreadPlan::m_thread" data-ref-filename="lldb_private..ThreadPlan..m_thread">m_thread</dfn>; <i>// Stores a cached value of the thread, which is set to</i></td></tr>
+<tr><th id="560">560</th><td>                    <i>// nullptr when the thread resumes.  Don't use this anywhere</i></td></tr>
+<tr><th id="561">561</th><td><i>                    // but ThreadPlan::GetThread().</i></td></tr>
+<tr><th id="562">562</th><td>  <a class="type" href="#lldb_private::ThreadPlan::ThreadPlanKind" title='lldb_private::ThreadPlan::ThreadPlanKind' data-ref="lldb_private::ThreadPlan::ThreadPlanKind" data-ref-filename="lldb_private..ThreadPlan..ThreadPlanKind">ThreadPlanKind</a> <dfn class="decl field" id="lldb_private::ThreadPlan::m_kind" title='lldb_private::ThreadPlan::m_kind' data-ref="lldb_private::ThreadPlan::m_kind" data-ref-filename="lldb_private..ThreadPlan..m_kind">m_kind</dfn>;</td></tr>
+<tr><th id="563">563</th><td>  <span class="namespace">std::</span><span class='typedef' title='std::string' data-type='basic_string&lt;char&gt;' data-ref="std::string" data-ref-filename="std..string">string</span> <dfn class="decl field" id="lldb_private::ThreadPlan::m_name" title='lldb_private::ThreadPlan::m_name' data-ref="lldb_private::ThreadPlan::m_name" data-ref-filename="lldb_private..ThreadPlan..m_name">m_name</dfn>;</td></tr>
+<tr><th id="564">564</th><td>  <span class="namespace">std::</span><span class='type' title='std::recursive_mutex' data-ref="std::recursive_mutex" data-ref-filename="std..recursive_mutex">recursive_mutex</span> <dfn class="decl field" id="lldb_private::ThreadPlan::m_plan_complete_mutex" title='lldb_private::ThreadPlan::m_plan_complete_mutex' data-ref="lldb_private::ThreadPlan::m_plan_complete_mutex" data-ref-filename="lldb_private..ThreadPlan..m_plan_complete_mutex">m_plan_complete_mutex</dfn>;</td></tr>
+<tr><th id="565">565</th><td>  <a class="type" href="../lldb-private-enumerations.h.html#lldb_private::LazyBool" title='lldb_private::LazyBool' data-ref="lldb_private::LazyBool" data-ref-filename="lldb_private..LazyBool">LazyBool</a> <dfn class="decl field" id="lldb_private::ThreadPlan::m_cached_plan_explains_stop" title='lldb_private::ThreadPlan::m_cached_plan_explains_stop' data-ref="lldb_private::ThreadPlan::m_cached_plan_explains_stop" data-ref-filename="lldb_private..ThreadPlan..m_cached_plan_explains_stop">m_cached_plan_explains_stop</dfn>;</td></tr>
+<tr><th id="566">566</th><td>  <em>bool</em> <dfn class="decl field" id="lldb_private::ThreadPlan::m_plan_complete" title='lldb_private::ThreadPlan::m_plan_complete' data-ref="lldb_private::ThreadPlan::m_plan_complete" data-ref-filename="lldb_private..ThreadPlan..m_plan_complete">m_plan_complete</dfn>;</td></tr>
+<tr><th id="567">567</th><td>  <em>bool</em> <dfn class="decl field" id="lldb_private::ThreadPlan::m_plan_private" title='lldb_private::ThreadPlan::m_plan_private' data-ref="lldb_private::ThreadPlan::m_plan_private" data-ref-filename="lldb_private..ThreadPlan..m_plan_private">m_plan_private</dfn>;</td></tr>
+<tr><th id="568">568</th><td>  <em>bool</em> <dfn class="decl field" id="lldb_private::ThreadPlan::m_okay_to_discard" title='lldb_private::ThreadPlan::m_okay_to_discard' data-ref="lldb_private::ThreadPlan::m_okay_to_discard" data-ref-filename="lldb_private..ThreadPlan..m_okay_to_discard">m_okay_to_discard</dfn>;</td></tr>
+<tr><th id="569">569</th><td>  <em>bool</em> <dfn class="decl field" id="lldb_private::ThreadPlan::m_is_master_plan" title='lldb_private::ThreadPlan::m_is_master_plan' data-ref="lldb_private::ThreadPlan::m_is_master_plan" data-ref-filename="lldb_private..ThreadPlan..m_is_master_plan">m_is_master_plan</dfn>;</td></tr>
+<tr><th id="570">570</th><td>  <em>bool</em> <dfn class="decl field" id="lldb_private::ThreadPlan::m_plan_succeeded" title='lldb_private::ThreadPlan::m_plan_succeeded' data-ref="lldb_private::ThreadPlan::m_plan_succeeded" data-ref-filename="lldb_private..ThreadPlan..m_plan_succeeded">m_plan_succeeded</dfn>;</td></tr>
+<tr><th id="571">571</th><td></td></tr>
+<tr><th id="572">572</th><td>  <span class="namespace">lldb::</span><a class="typedef" href="../lldb-forward.h.html#lldb::ThreadPlanTracerSP" title='lldb::ThreadPlanTracerSP' data-type='std::shared_ptr&lt;lldb_private::ThreadPlanTracer&gt;' data-ref="lldb::ThreadPlanTracerSP" data-ref-filename="lldb..ThreadPlanTracerSP">ThreadPlanTracerSP</a> <dfn class="decl field" id="lldb_private::ThreadPlan::m_tracer_sp" title='lldb_private::ThreadPlan::m_tracer_sp' data-ref="lldb_private::ThreadPlan::m_tracer_sp" data-ref-filename="lldb_private..ThreadPlan..m_tracer_sp">m_tracer_sp</dfn>;</td></tr>
+<tr><th id="573">573</th><td></td></tr>
+<tr><th id="574">574</th><td>  <dfn class="decl def fn" id="_ZN12lldb_private10ThreadPlanC1ERKS0_" title='lldb_private::ThreadPlan::ThreadPlan' data-ref="_ZN12lldb_private10ThreadPlanC1ERKS0_" data-ref-filename="_ZN12lldb_private10ThreadPlanC1ERKS0_">ThreadPlan</dfn>(<em>const</em> <a class="type" href="#lldb_private::ThreadPlan" title='lldb_private::ThreadPlan' data-ref="lldb_private::ThreadPlan" data-ref-filename="lldb_private..ThreadPlan">ThreadPlan</a> &amp;) = <b>delete</b>;</td></tr>
+<tr><th id="575">575</th><td>  <em>const</em> <a class="type" href="#lldb_private::ThreadPlan" title='lldb_private::ThreadPlan' data-ref="lldb_private::ThreadPlan" data-ref-filename="lldb_private..ThreadPlan">ThreadPlan</a> &amp;<dfn class="decl def fn" id="_ZN12lldb_private10ThreadPlanaSERKS0_" title='lldb_private::ThreadPlan::operator=' data-ref="_ZN12lldb_private10ThreadPlanaSERKS0_" data-ref-filename="_ZN12lldb_private10ThreadPlanaSERKS0_"><b>operator</b>=</dfn>(<em>const</em> <a class="type" href="#lldb_private::ThreadPlan" title='lldb_private::ThreadPlan' data-ref="lldb_private::ThreadPlan" data-ref-filename="lldb_private..ThreadPlan">ThreadPlan</a> &amp;) = <b>delete</b>;</td></tr>
+<tr><th id="576">576</th><td>};</td></tr>
+<tr><th id="577">577</th><td></td></tr>
+<tr><th id="578">578</th><td><i>// ThreadPlanNull:</i></td></tr>
+<tr><th id="579">579</th><td><i>// Threads are assumed to always have at least one plan on the plan stack. This</i></td></tr>
+<tr><th id="580">580</th><td><i>// is put on the plan stack when a thread is destroyed so that if you</i></td></tr>
+<tr><th id="581">581</th><td><i>// accidentally access a thread after it is destroyed you won't crash. But</i></td></tr>
+<tr><th id="582">582</th><td><i>// asking questions of the ThreadPlanNull is definitely an error.</i></td></tr>
+<tr><th id="583">583</th><td></td></tr>
+<tr><th id="584">584</th><td><b>class</b> <dfn class="type def" id="lldb_private::ThreadPlanNull" title='lldb_private::ThreadPlanNull' data-ref="lldb_private::ThreadPlanNull" data-ref-filename="lldb_private..ThreadPlanNull">ThreadPlanNull</dfn> : <b>public</b> <a class="type" href="#lldb_private::ThreadPlan" title='lldb_private::ThreadPlan' data-ref="lldb_private::ThreadPlan" data-ref-filename="lldb_private..ThreadPlan">ThreadPlan</a> {</td></tr>
+<tr><th id="585">585</th><td><b>public</b>:</td></tr>
+<tr><th id="586">586</th><td>  <dfn class="decl fn" id="_ZN12lldb_private14ThreadPlanNullC1ERNS_6ThreadE" title='lldb_private::ThreadPlanNull::ThreadPlanNull' data-ref="_ZN12lldb_private14ThreadPlanNullC1ERNS_6ThreadE" data-ref-filename="_ZN12lldb_private14ThreadPlanNullC1ERNS_6ThreadE">ThreadPlanNull</dfn>(<a class="type" href="Thread.h.html#lldb_private::Thread" title='lldb_private::Thread' data-ref="lldb_private::Thread" data-ref-filename="lldb_private..Thread">Thread</a> &amp;<dfn class="local col0 decl" id="40thread" title='thread' data-type='lldb_private::Thread &amp;' data-ref="40thread" data-ref-filename="40thread">thread</dfn>);</td></tr>
+<tr><th id="587">587</th><td>  <dfn class="virtual decl fn" id="_ZN12lldb_private14ThreadPlanNullD1Ev" title='lldb_private::ThreadPlanNull::~ThreadPlanNull' data-ref="_ZN12lldb_private14ThreadPlanNullD1Ev" data-ref-filename="_ZN12lldb_private14ThreadPlanNullD1Ev">~ThreadPlanNull</dfn>() override;</td></tr>
+<tr><th id="588">588</th><td></td></tr>
+<tr><th id="589">589</th><td>  <em>void</em> <dfn class="virtual decl fn" id="_ZN12lldb_private14ThreadPlanNull14GetDescriptionEPNS_6StreamEN4lldb16DescriptionLevelE" title='lldb_private::ThreadPlanNull::GetDescription' data-ref="_ZN12lldb_private14ThreadPlanNull14GetDescriptionEPNS_6StreamEN4lldb16DescriptionLevelE" data-ref-filename="_ZN12lldb_private14ThreadPlanNull14GetDescriptionEPNS_6StreamEN4lldb16DescriptionLevelE">GetDescription</dfn>(<a class="type" href="../Utility/Stream.h.html#lldb_private::Stream" title='lldb_private::Stream' data-ref="lldb_private::Stream" data-ref-filename="lldb_private..Stream">Stream</a> *<dfn class="local col1 decl" id="41s" title='s' data-type='lldb_private::Stream *' data-ref="41s" data-ref-filename="41s">s</dfn>, <span class="namespace">lldb::</span><a class="type" href="../lldb-enumerations.h.html#lldb::DescriptionLevel" title='lldb::DescriptionLevel' data-ref="lldb::DescriptionLevel" data-ref-filename="lldb..DescriptionLevel">DescriptionLevel</a> <dfn class="local col2 decl" id="42level" title='level' data-type='lldb::DescriptionLevel' data-ref="42level" data-ref-filename="42level">level</dfn>) override;</td></tr>
+<tr><th id="590">590</th><td></td></tr>
+<tr><th id="591">591</th><td>  <em>bool</em> <dfn class="virtual decl fn" id="_ZN12lldb_private14ThreadPlanNull12ValidatePlanEPNS_6StreamE" title='lldb_private::ThreadPlanNull::ValidatePlan' data-ref="_ZN12lldb_private14ThreadPlanNull12ValidatePlanEPNS_6StreamE" data-ref-filename="_ZN12lldb_private14ThreadPlanNull12ValidatePlanEPNS_6StreamE">ValidatePlan</dfn>(<a class="type" href="../Utility/Stream.h.html#lldb_private::Stream" title='lldb_private::Stream' data-ref="lldb_private::Stream" data-ref-filename="lldb_private..Stream">Stream</a> *<dfn class="local col3 decl" id="43error" title='error' data-type='lldb_private::Stream *' data-ref="43error" data-ref-filename="43error">error</dfn>) override;</td></tr>
+<tr><th id="592">592</th><td></td></tr>
+<tr><th id="593">593</th><td>  <em>bool</em> <dfn class="virtual decl fn" id="_ZN12lldb_private14ThreadPlanNull10ShouldStopEPNS_5EventE" title='lldb_private::ThreadPlanNull::ShouldStop' data-ref="_ZN12lldb_private14ThreadPlanNull10ShouldStopEPNS_5EventE" data-ref-filename="_ZN12lldb_private14ThreadPlanNull10ShouldStopEPNS_5EventE">ShouldStop</dfn>(<a class="type" href="../Utility/Event.h.html#lldb_private::Event" title='lldb_private::Event' data-ref="lldb_private::Event" data-ref-filename="lldb_private..Event">Event</a> *<dfn class="local col4 decl" id="44event_ptr" title='event_ptr' data-type='lldb_private::Event *' data-ref="44event_ptr" data-ref-filename="44event_ptr">event_ptr</dfn>) override;</td></tr>
+<tr><th id="594">594</th><td></td></tr>
+<tr><th id="595">595</th><td>  <em>bool</em> <dfn class="virtual decl fn" id="_ZN12lldb_private14ThreadPlanNull15MischiefManagedEv" title='lldb_private::ThreadPlanNull::MischiefManaged' data-ref="_ZN12lldb_private14ThreadPlanNull15MischiefManagedEv" data-ref-filename="_ZN12lldb_private14ThreadPlanNull15MischiefManagedEv">MischiefManaged</dfn>() override;</td></tr>
+<tr><th id="596">596</th><td></td></tr>
+<tr><th id="597">597</th><td>  <em>bool</em> <dfn class="virtual decl fn" id="_ZN12lldb_private14ThreadPlanNull8WillStopEv" title='lldb_private::ThreadPlanNull::WillStop' data-ref="_ZN12lldb_private14ThreadPlanNull8WillStopEv" data-ref-filename="_ZN12lldb_private14ThreadPlanNull8WillStopEv">WillStop</dfn>() override;</td></tr>
+<tr><th id="598">598</th><td></td></tr>
+<tr><th id="599">599</th><td>  <em>bool</em> <dfn class="virtual decl def fn" id="_ZN12lldb_private14ThreadPlanNull10IsBasePlanEv" title='lldb_private::ThreadPlanNull::IsBasePlan' data-ref="_ZN12lldb_private14ThreadPlanNull10IsBasePlanEv" data-ref-filename="_ZN12lldb_private14ThreadPlanNull10IsBasePlanEv">IsBasePlan</dfn>() override { <b>return</b> <b>true</b>; }</td></tr>
+<tr><th id="600">600</th><td></td></tr>
+<tr><th id="601">601</th><td>  <em>bool</em> <dfn class="virtual decl def fn" id="_ZN12lldb_private14ThreadPlanNull13OkayToDiscardEv" title='lldb_private::ThreadPlanNull::OkayToDiscard' data-ref="_ZN12lldb_private14ThreadPlanNull13OkayToDiscardEv" data-ref-filename="_ZN12lldb_private14ThreadPlanNull13OkayToDiscardEv">OkayToDiscard</dfn>() override { <b>return</b> <b>false</b>; }</td></tr>
+<tr><th id="602">602</th><td></td></tr>
+<tr><th id="603">603</th><td>  <em>const</em> <a class="type" href="../Utility/Status.h.html#lldb_private::Status" title='lldb_private::Status' data-ref="lldb_private::Status" data-ref-filename="lldb_private..Status">Status</a> &amp;<dfn class="decl def fn" id="_ZN12lldb_private14ThreadPlanNull9GetStatusEv" title='lldb_private::ThreadPlanNull::GetStatus' data-ref="_ZN12lldb_private14ThreadPlanNull9GetStatusEv" data-ref-filename="_ZN12lldb_private14ThreadPlanNull9GetStatusEv">GetStatus</dfn>() { <b>return</b> <a class="member field" href="#lldb_private::ThreadPlan::m_status" title='lldb_private::ThreadPlan::m_status' data-ref="lldb_private::ThreadPlan::m_status" data-ref-filename="lldb_private..ThreadPlan..m_status">m_status</a>; }</td></tr>
+<tr><th id="604">604</th><td></td></tr>
+<tr><th id="605">605</th><td><b>protected</b>:</td></tr>
+<tr><th id="606">606</th><td>  <em>bool</em> <dfn class="virtual decl fn" id="_ZN12lldb_private14ThreadPlanNull18DoPlanExplainsStopEPNS_5EventE" title='lldb_private::ThreadPlanNull::DoPlanExplainsStop' data-ref="_ZN12lldb_private14ThreadPlanNull18DoPlanExplainsStopEPNS_5EventE" data-ref-filename="_ZN12lldb_private14ThreadPlanNull18DoPlanExplainsStopEPNS_5EventE">DoPlanExplainsStop</dfn>(<a class="type" href="../Utility/Event.h.html#lldb_private::Event" title='lldb_private::Event' data-ref="lldb_private::Event" data-ref-filename="lldb_private..Event">Event</a> *<dfn class="local col5 decl" id="45event_ptr" title='event_ptr' data-type='lldb_private::Event *' data-ref="45event_ptr" data-ref-filename="45event_ptr">event_ptr</dfn>) override;</td></tr>
+<tr><th id="607">607</th><td></td></tr>
+<tr><th id="608">608</th><td>  <span class="namespace">lldb::</span><a class="type" href="../lldb-enumerations.h.html#lldb::StateType" title='lldb::StateType' data-ref="lldb::StateType" data-ref-filename="lldb..StateType">StateType</a> <dfn class="virtual decl fn" id="_ZN12lldb_private14ThreadPlanNull15GetPlanRunStateEv" title='lldb_private::ThreadPlanNull::GetPlanRunState' data-ref="_ZN12lldb_private14ThreadPlanNull15GetPlanRunStateEv" data-ref-filename="_ZN12lldb_private14ThreadPlanNull15GetPlanRunStateEv">GetPlanRunState</dfn>() override;</td></tr>
+<tr><th id="609">609</th><td></td></tr>
+<tr><th id="610">610</th><td>  <dfn class="decl def fn" id="_ZN12lldb_private14ThreadPlanNullC1ERKS0_" title='lldb_private::ThreadPlanNull::ThreadPlanNull' data-ref="_ZN12lldb_private14ThreadPlanNullC1ERKS0_" data-ref-filename="_ZN12lldb_private14ThreadPlanNullC1ERKS0_">ThreadPlanNull</dfn>(<em>const</em> <a class="type" href="#lldb_private::ThreadPlanNull" title='lldb_private::ThreadPlanNull' data-ref="lldb_private::ThreadPlanNull" data-ref-filename="lldb_private..ThreadPlanNull">ThreadPlanNull</a> &amp;) = <b>delete</b>;</td></tr>
+<tr><th id="611">611</th><td>  <em>const</em> <a class="type" href="#lldb_private::ThreadPlanNull" title='lldb_private::ThreadPlanNull' data-ref="lldb_private::ThreadPlanNull" data-ref-filename="lldb_private..ThreadPlanNull">ThreadPlanNull</a> &amp;<dfn class="decl def fn" id="_ZN12lldb_private14ThreadPlanNullaSERKS0_" title='lldb_private::ThreadPlanNull::operator=' data-ref="_ZN12lldb_private14ThreadPlanNullaSERKS0_" data-ref-filename="_ZN12lldb_private14ThreadPlanNullaSERKS0_"><b>operator</b>=</dfn>(<em>const</em> <a class="type" href="#lldb_private::ThreadPlanNull" title='lldb_private::ThreadPlanNull' data-ref="lldb_private::ThreadPlanNull" data-ref-filename="lldb_private..ThreadPlanNull">ThreadPlanNull</a> &amp;) = <b>delete</b>;</td></tr>
+<tr><th id="612">612</th><td>};</td></tr>
+<tr><th id="613">613</th><td></td></tr>
+<tr><th id="614">614</th><td>} <i>// namespace lldb_private</i></td></tr>
+<tr><th id="615">615</th><td></td></tr>
+<tr><th id="616">616</th><td><u>#<span data-ppcond="9">endif</span> // LLDB_TARGET_THREADPLAN_H</u></td></tr>
+<tr><th id="617">617</th><td></td></tr>
+</table><hr/><p id='footer'>
+Generated while processing <a href='../../../source/API/SBThread.cpp.html'>llvm/lldb/source/API/SBThread.cpp</a><br/>Generated on <em>2021-Jul-01</em> from project llvm revision <em>12</em>

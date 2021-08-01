@@ -1,0 +1,259 @@
+<!doctype html>
+<html>
+<head>
+<meta name="viewport" content="width=device-width, initial-scale=1.0"><title>asan_linux.cpp source code [llvm/compiler-rt/lib/asan/asan_linux.cpp] - Woboq Code Browser</title>
+<link rel="stylesheet" href="../../../.././data/qtcreator.css" title="QtCreator"/>
+<link rel="alternate stylesheet" href="../../../.././data/kdevelop.css" title="KDevelop"/>
+<script type="text/javascript" src="../../../.././data/jquery/jquery.min.js"></script>
+<script type="text/javascript" src="../../../.././data/jquery/jquery-ui.min.js"></script>
+<script>var file = 'llvm/compiler-rt/lib/asan/asan_linux.cpp'; var root_path = '../../../..'; var data_path = '../../../.././data'; var ecma_script_api_version = 2;</script>
+<script src='../../../.././data/codebrowser.js'></script>
+</head>
+<body><div id='header'><h1 id='breadcrumb'><span>Browse the source code of </span><a href='../../..'>llvm</a>/<a href='../..'>compiler-rt</a>/<a href='..'>lib</a>/<a href='./'>asan</a>/<a href='asan_linux.cpp.html'>asan_linux.cpp</a></h1></div>
+<hr/><div id='content'><table class="code">
+<tr><th id="1">1</th><td><i>//===-- asan_linux.cpp ----------------------------------------------------===//</i></td></tr>
+<tr><th id="2">2</th><td><i>//</i></td></tr>
+<tr><th id="3">3</th><td><i>// Part of the LLVM Project, under the Apache License v2.0 with LLVM Exceptions.</i></td></tr>
+<tr><th id="4">4</th><td><i>// See <a href="https://llvm.org/LICENSE.txt">https://llvm.org/LICENSE.txt</a> for license information.</i></td></tr>
+<tr><th id="5">5</th><td><i>// SPDX-License-Identifier: Apache-2.0 WITH LLVM-exception</i></td></tr>
+<tr><th id="6">6</th><td><i>//</i></td></tr>
+<tr><th id="7">7</th><td><i>//===----------------------------------------------------------------------===//</i></td></tr>
+<tr><th id="8">8</th><td><i>//</i></td></tr>
+<tr><th id="9">9</th><td><i>// This file is a part of AddressSanitizer, an address sanity checker.</i></td></tr>
+<tr><th id="10">10</th><td><i>//</i></td></tr>
+<tr><th id="11">11</th><td><i>// Linux-specific details.</i></td></tr>
+<tr><th id="12">12</th><td><i>//===----------------------------------------------------------------------===//</i></td></tr>
+<tr><th id="13">13</th><td></td></tr>
+<tr><th id="14">14</th><td><u>#include <a href="../sanitizer_common/sanitizer_platform.h.html">"sanitizer_common/sanitizer_platform.h"</a></u></td></tr>
+<tr><th id="15">15</th><td><u>#<span data-ppcond="15">if</span> <a class="macro" href="../sanitizer_common/sanitizer_platform.h.html#44" title="0" data-ref="_M/SANITIZER_FREEBSD">SANITIZER_FREEBSD</a> || <a class="macro" href="../sanitizer_common/sanitizer_platform.h.html#30" title="1" data-ref="_M/SANITIZER_LINUX">SANITIZER_LINUX</a> || <a class="macro" href="../sanitizer_common/sanitizer_platform.h.html#50" title="0" data-ref="_M/SANITIZER_NETBSD">SANITIZER_NETBSD</a> || \</u></td></tr>
+<tr><th id="16">16</th><td><u>    <a class="macro" href="../sanitizer_common/sanitizer_platform.h.html#56" title="0" data-ref="_M/SANITIZER_SOLARIS">SANITIZER_SOLARIS</a></u></td></tr>
+<tr><th id="17">17</th><td></td></tr>
+<tr><th id="18">18</th><td><u>#include <a href="asan_interceptors.h.html">"asan_interceptors.h"</a></u></td></tr>
+<tr><th id="19">19</th><td><u>#include <a href="asan_internal.h.html">"asan_internal.h"</a></u></td></tr>
+<tr><th id="20">20</th><td><u>#include <a href="asan_premap_shadow.h.html">"asan_premap_shadow.h"</a></u></td></tr>
+<tr><th id="21">21</th><td><u>#include <a href="asan_thread.h.html">"asan_thread.h"</a></u></td></tr>
+<tr><th id="22">22</th><td><u>#include <a href="../sanitizer_common/sanitizer_flags.h.html">"sanitizer_common/sanitizer_flags.h"</a></u></td></tr>
+<tr><th id="23">23</th><td><u>#include <a href="../sanitizer_common/sanitizer_freebsd.h.html">"sanitizer_common/sanitizer_freebsd.h"</a></u></td></tr>
+<tr><th id="24">24</th><td><u>#include <a href="../sanitizer_common/sanitizer_libc.h.html">"sanitizer_common/sanitizer_libc.h"</a></u></td></tr>
+<tr><th id="25">25</th><td><u>#include <a href="../sanitizer_common/sanitizer_procmaps.h.html">"sanitizer_common/sanitizer_procmaps.h"</a></u></td></tr>
+<tr><th id="26">26</th><td></td></tr>
+<tr><th id="27">27</th><td><u>#include <a href="../../../../include/sys/time.h.html">&lt;sys/time.h&gt;</a></u></td></tr>
+<tr><th id="28">28</th><td><u>#include <a href="../../../../include/sys/resource.h.html">&lt;sys/resource.h&gt;</a></u></td></tr>
+<tr><th id="29">29</th><td><u>#include <a href="../../../../include/sys/mman.h.html">&lt;sys/mman.h&gt;</a></u></td></tr>
+<tr><th id="30">30</th><td><u>#include <a href="../../../../include/sys/syscall.h.html">&lt;sys/syscall.h&gt;</a></u></td></tr>
+<tr><th id="31">31</th><td><u>#include <a href="../../../../include/sys/types.h.html">&lt;sys/types.h&gt;</a></u></td></tr>
+<tr><th id="32">32</th><td><u>#include <a href="../../../../include/dlfcn.h.html">&lt;dlfcn.h&gt;</a></u></td></tr>
+<tr><th id="33">33</th><td><u>#include <a href="../../../../include/fcntl.h.html">&lt;fcntl.h&gt;</a></u></td></tr>
+<tr><th id="34">34</th><td><u>#include &lt;limits.h&gt;</u></td></tr>
+<tr><th id="35">35</th><td><u>#include <a href="../../../../include/pthread.h.html">&lt;pthread.h&gt;</a></u></td></tr>
+<tr><th id="36">36</th><td><u>#include <a href="../../../../include/stdio.h.html">&lt;stdio.h&gt;</a></u></td></tr>
+<tr><th id="37">37</th><td><u>#include <a href="../../../../include/unistd.h.html">&lt;unistd.h&gt;</a></u></td></tr>
+<tr><th id="38">38</th><td><u>#include &lt;unwind.h&gt;</u></td></tr>
+<tr><th id="39">39</th><td></td></tr>
+<tr><th id="40">40</th><td><u>#<span data-ppcond="40">if</span> <a class="macro" href="../sanitizer_common/sanitizer_platform.h.html#44" title="0" data-ref="_M/SANITIZER_FREEBSD">SANITIZER_FREEBSD</a></u></td></tr>
+<tr><th id="41">41</th><td><u>#include &lt;sys/link_elf.h&gt;</u></td></tr>
+<tr><th id="42">42</th><td><u>#<span data-ppcond="40">endif</span></u></td></tr>
+<tr><th id="43">43</th><td></td></tr>
+<tr><th id="44">44</th><td><u>#<span data-ppcond="44">if</span> <a class="macro" href="../sanitizer_common/sanitizer_platform.h.html#56" title="0" data-ref="_M/SANITIZER_SOLARIS">SANITIZER_SOLARIS</a></u></td></tr>
+<tr><th id="45">45</th><td><u>#include &lt;link.h&gt;</u></td></tr>
+<tr><th id="46">46</th><td><u>#<span data-ppcond="44">endif</span></u></td></tr>
+<tr><th id="47">47</th><td></td></tr>
+<tr><th id="48">48</th><td><u>#<span data-ppcond="48">if</span> <a class="macro" href="../sanitizer_common/sanitizer_platform.h.html#105" title="0" data-ref="_M/SANITIZER_ANDROID">SANITIZER_ANDROID</a> || <a class="macro" href="../sanitizer_common/sanitizer_platform.h.html#44" title="0" data-ref="_M/SANITIZER_FREEBSD">SANITIZER_FREEBSD</a> || <a class="macro" href="../sanitizer_common/sanitizer_platform.h.html#56" title="0" data-ref="_M/SANITIZER_SOLARIS">SANITIZER_SOLARIS</a></u></td></tr>
+<tr><th id="49">49</th><td><u>#include &lt;ucontext.h&gt;</u></td></tr>
+<tr><th id="50">50</th><td><b>extern</b> <q>"C"</q> <em>void</em>* _DYNAMIC;</td></tr>
+<tr><th id="51">51</th><td><u>#<span data-ppcond="48">elif</span> <a class="macro" href="../sanitizer_common/sanitizer_platform.h.html#50" title="0" data-ref="_M/SANITIZER_NETBSD">SANITIZER_NETBSD</a></u></td></tr>
+<tr><th id="52">52</th><td><u>#include &lt;link_elf.h&gt;</u></td></tr>
+<tr><th id="53">53</th><td><u>#include &lt;ucontext.h&gt;</u></td></tr>
+<tr><th id="54">54</th><td><b>extern</b> Elf_Dyn _DYNAMIC;</td></tr>
+<tr><th id="55">55</th><td><u>#<span data-ppcond="48">else</span></u></td></tr>
+<tr><th id="56">56</th><td><u>#include <a href="../../../../include/sys/ucontext.h.html">&lt;sys/ucontext.h&gt;</a></u></td></tr>
+<tr><th id="57">57</th><td><u>#include <a href="../../../../include/link.h.html">&lt;link.h&gt;</a></u></td></tr>
+<tr><th id="58">58</th><td><b>extern</b> <a class="macro" href="../../../../include/link.h.html#30" title="Elf64_Dyn" data-ref="_M/ElfW">ElfW</a>(Dyn) <a class="decl" href="../../../../include/link.h.html#_DYNAMIC" title='_DYNAMIC' data-ref="_DYNAMIC" data-ref-filename="_DYNAMIC" id="_DYNAMIC">_DYNAMIC</a>[];</td></tr>
+<tr><th id="59">59</th><td><u>#<span data-ppcond="48">endif</span></u></td></tr>
+<tr><th id="60">60</th><td></td></tr>
+<tr><th id="61">61</th><td><i>// x86-64 FreeBSD 9.2 and older define 'ucontext_t' incorrectly in</i></td></tr>
+<tr><th id="62">62</th><td><i>// 32-bit mode.</i></td></tr>
+<tr><th id="63">63</th><td><u>#<span data-ppcond="63">if</span> <a class="macro" href="../sanitizer_common/sanitizer_platform.h.html#44" title="0" data-ref="_M/SANITIZER_FREEBSD">SANITIZER_FREEBSD</a> &amp;&amp; (<a class="macro" href="../sanitizer_common/sanitizer_platform.h.html#125" title="64" data-ref="_M/SANITIZER_WORDSIZE">SANITIZER_WORDSIZE</a> == 32) &amp;&amp; \</u></td></tr>
+<tr><th id="64">64</th><td><u>  __FreeBSD_version &lt;= 902001  // v9.2</u></td></tr>
+<tr><th id="65">65</th><td><u>#define ucontext_t xucontext_t</u></td></tr>
+<tr><th id="66">66</th><td><u>#<span data-ppcond="63">endif</span></u></td></tr>
+<tr><th id="67">67</th><td></td></tr>
+<tr><th id="68">68</th><td><b>typedef</b> <b>enum</b> {</td></tr>
+<tr><th id="69">69</th><td>  <dfn class="enum" id="ASAN_RT_VERSION_UNDEFINED" title='ASAN_RT_VERSION_UNDEFINED' data-ref="ASAN_RT_VERSION_UNDEFINED" data-ref-filename="ASAN_RT_VERSION_UNDEFINED">ASAN_RT_VERSION_UNDEFINED</dfn> = <var>0</var>,</td></tr>
+<tr><th id="70">70</th><td>  <dfn class="enum" id="ASAN_RT_VERSION_DYNAMIC" title='ASAN_RT_VERSION_DYNAMIC' data-ref="ASAN_RT_VERSION_DYNAMIC" data-ref-filename="ASAN_RT_VERSION_DYNAMIC">ASAN_RT_VERSION_DYNAMIC</dfn>,</td></tr>
+<tr><th id="71">71</th><td>  <dfn class="enum" id="ASAN_RT_VERSION_STATIC" title='ASAN_RT_VERSION_STATIC' data-ref="ASAN_RT_VERSION_STATIC" data-ref-filename="ASAN_RT_VERSION_STATIC">ASAN_RT_VERSION_STATIC</dfn>,</td></tr>
+<tr><th id="72">72</th><td>} <dfn class="typedef" id="asan_rt_version_t" title='asan_rt_version_t' data-type='enum asan_rt_version_t' data-ref="asan_rt_version_t" data-ref-filename="asan_rt_version_t">asan_rt_version_t</dfn>;</td></tr>
+<tr><th id="73">73</th><td></td></tr>
+<tr><th id="74">74</th><td><i>// FIXME: perhaps also store abi version here?</i></td></tr>
+<tr><th id="75">75</th><td><b>extern</b> <q>"C"</q> {</td></tr>
+<tr><th id="76">76</th><td><a class="macro" href="../sanitizer_common/sanitizer_internal_defs.h.html#36" title="__attribute__((visibility(&quot;default&quot;)))" data-ref="_M/SANITIZER_INTERFACE_ATTRIBUTE">SANITIZER_INTERFACE_ATTRIBUTE</a></td></tr>
+<tr><th id="77">77</th><td><a class="typedef" href="#asan_rt_version_t" title='asan_rt_version_t' data-type='enum asan_rt_version_t' data-ref="asan_rt_version_t" data-ref-filename="asan_rt_version_t">asan_rt_version_t</a>  <dfn class="decl def" id="__asan_rt_version" title='__asan_rt_version' data-ref="__asan_rt_version" data-ref-filename="__asan_rt_version">__asan_rt_version</dfn>;</td></tr>
+<tr><th id="78">78</th><td>}</td></tr>
+<tr><th id="79">79</th><td></td></tr>
+<tr><th id="80">80</th><td><b>namespace</b> <span class="namespace">__asan</span> {</td></tr>
+<tr><th id="81">81</th><td></td></tr>
+<tr><th id="82">82</th><td><em>void</em> <dfn class="decl def fn" id="__asan::InitializePlatformInterceptors" title='__asan::InitializePlatformInterceptors' data-ref="__asan::InitializePlatformInterceptors" data-ref-filename="__asan..InitializePlatformInterceptors">InitializePlatformInterceptors</dfn>() {}</td></tr>
+<tr><th id="83">83</th><td><em>void</em> <dfn class="decl def fn" id="__asan::InitializePlatformExceptionHandlers" title='__asan::InitializePlatformExceptionHandlers' data-ref="__asan::InitializePlatformExceptionHandlers" data-ref-filename="__asan..InitializePlatformExceptionHandlers">InitializePlatformExceptionHandlers</dfn>() {}</td></tr>
+<tr><th id="84">84</th><td><em>bool</em> <dfn class="decl def fn" id="__asan::IsSystemHeapAddress" title='__asan::IsSystemHeapAddress' data-ref="__asan::IsSystemHeapAddress" data-ref-filename="__asan..IsSystemHeapAddress">IsSystemHeapAddress</dfn> (<a class="typedef" href="../sanitizer_common/sanitizer_internal_defs.h.html#__sanitizer::uptr" title='__sanitizer::uptr' data-type='unsigned long' data-ref="__sanitizer::uptr" data-ref-filename="__sanitizer..uptr">uptr</a> <dfn class="local col8 decl" id="118addr" title='addr' data-type='__sanitizer::uptr' data-ref="118addr" data-ref-filename="118addr">addr</dfn>) { <b>return</b> <b>false</b>; }</td></tr>
+<tr><th id="85">85</th><td></td></tr>
+<tr><th id="86">86</th><td><em>void</em> *<dfn class="decl def fn" id="__asan::AsanDoesNotSupportStaticLinkage" title='__asan::AsanDoesNotSupportStaticLinkage' data-ref="__asan::AsanDoesNotSupportStaticLinkage" data-ref-filename="__asan..AsanDoesNotSupportStaticLinkage">AsanDoesNotSupportStaticLinkage</dfn>() {</td></tr>
+<tr><th id="87">87</th><td>  <i>// This will fail to link with -static.</i></td></tr>
+<tr><th id="88">88</th><td>  <b>return</b> &amp;<a class="ref" href="../../../../include/link.h.html#_DYNAMIC" title='_DYNAMIC' data-ref="_DYNAMIC" data-ref-filename="_DYNAMIC">_DYNAMIC</a>;</td></tr>
+<tr><th id="89">89</th><td>}</td></tr>
+<tr><th id="90">90</th><td></td></tr>
+<tr><th id="91">91</th><td><u>#<span data-ppcond="91">if</span> <a class="macro" href="asan_mapping.h.html#254" title="0" data-ref="_M/ASAN_PREMAP_SHADOW">ASAN_PREMAP_SHADOW</a></u></td></tr>
+<tr><th id="92">92</th><td>uptr FindPremappedShadowStart(uptr shadow_size_bytes) {</td></tr>
+<tr><th id="93">93</th><td>  uptr granularity = GetMmapGranularity();</td></tr>
+<tr><th id="94">94</th><td>  uptr shadow_start = <b>reinterpret_cast</b>&lt;uptr&gt;(&amp;__asan_shadow);</td></tr>
+<tr><th id="95">95</th><td>  uptr premap_shadow_size = PremapShadowSize();</td></tr>
+<tr><th id="96">96</th><td>  uptr shadow_size = RoundUpTo(shadow_size_bytes, granularity);</td></tr>
+<tr><th id="97">97</th><td>  <i>// We may have mapped too much. Release extra memory.</i></td></tr>
+<tr><th id="98">98</th><td>  UnmapFromTo(shadow_start + shadow_size, shadow_start + premap_shadow_size);</td></tr>
+<tr><th id="99">99</th><td>  <b>return</b> shadow_start;</td></tr>
+<tr><th id="100">100</th><td>}</td></tr>
+<tr><th id="101">101</th><td><u>#<span data-ppcond="91">endif</span></u></td></tr>
+<tr><th id="102">102</th><td></td></tr>
+<tr><th id="103">103</th><td><a class="typedef" href="../sanitizer_common/sanitizer_internal_defs.h.html#__sanitizer::uptr" title='__sanitizer::uptr' data-type='unsigned long' data-ref="__sanitizer::uptr" data-ref-filename="__sanitizer..uptr">uptr</a> <dfn class="decl def fn" id="__asan::FindDynamicShadowStart" title='__asan::FindDynamicShadowStart' data-ref="__asan::FindDynamicShadowStart" data-ref-filename="__asan..FindDynamicShadowStart">FindDynamicShadowStart</dfn>() {</td></tr>
+<tr><th id="104">104</th><td>  <a class="typedef" href="../sanitizer_common/sanitizer_internal_defs.h.html#__sanitizer::uptr" title='__sanitizer::uptr' data-type='unsigned long' data-ref="__sanitizer::uptr" data-ref-filename="__sanitizer..uptr">uptr</a> <dfn class="local col9 decl" id="119shadow_size_bytes" title='shadow_size_bytes' data-type='__sanitizer::uptr' data-ref="119shadow_size_bytes" data-ref-filename="119shadow_size_bytes">shadow_size_bytes</dfn> = <a class="ref fn" href="asan_mapping.h.html#__asan::MemToShadowSize" title='__asan::MemToShadowSize' data-ref="__asan::MemToShadowSize" data-ref-filename="__asan..MemToShadowSize">MemToShadowSize</a>(<a class="ref" href="asan_mapping.h.html#__asan::kHighMemEnd" title='__asan::kHighMemEnd' data-ref="__asan::kHighMemEnd" data-ref-filename="__asan..kHighMemEnd">kHighMemEnd</a>);</td></tr>
+<tr><th id="105">105</th><td><u>#<span data-ppcond="105">if</span> <a class="macro" href="asan_mapping.h.html#254" title="0" data-ref="_M/ASAN_PREMAP_SHADOW">ASAN_PREMAP_SHADOW</a></u></td></tr>
+<tr><th id="106">106</th><td>  <b>if</b> (!PremapShadowFailed())</td></tr>
+<tr><th id="107">107</th><td>    <b>return</b> FindPremappedShadowStart(shadow_size_bytes);</td></tr>
+<tr><th id="108">108</th><td><u>#<span data-ppcond="105">endif</span></u></td></tr>
+<tr><th id="109">109</th><td></td></tr>
+<tr><th id="110">110</th><td>  <b>return</b> <a class="ref fn" href="../sanitizer_common/sanitizer_common.h.html#__sanitizer::MapDynamicShadow" title='__sanitizer::MapDynamicShadow' data-ref="__sanitizer::MapDynamicShadow" data-ref-filename="__sanitizer..MapDynamicShadow">MapDynamicShadow</a>(<a class="local col9 ref" href="#119shadow_size_bytes" title='shadow_size_bytes' data-ref="119shadow_size_bytes" data-ref-filename="119shadow_size_bytes">shadow_size_bytes</a>, <a class="macro" href="asan_mapping.h.html#199" title="kDefaultShadowScale" data-ref="_M/SHADOW_SCALE">SHADOW_SCALE</a>,</td></tr>
+<tr><th id="111">111</th><td>                          <i>/*min_shadow_base_alignment*/</i> <var>0</var>, <span class='refarg'><a class="ref" href="asan_mapping.h.html#__asan::kHighMemEnd" title='__asan::kHighMemEnd' data-ref="__asan::kHighMemEnd" data-ref-filename="__asan..kHighMemEnd">kHighMemEnd</a></span>);</td></tr>
+<tr><th id="112">112</th><td>}</td></tr>
+<tr><th id="113">113</th><td></td></tr>
+<tr><th id="114">114</th><td><em>void</em> <dfn class="decl def fn" id="__asan::AsanApplyToGlobals" title='__asan::AsanApplyToGlobals' data-ref="__asan::AsanApplyToGlobals" data-ref-filename="__asan..AsanApplyToGlobals">AsanApplyToGlobals</dfn>(<a class="typedef" href="asan_internal.h.html#__asan::globals_op_fptr" title='__asan::globals_op_fptr' data-type='void (*)(__asan_global *, __sanitizer::uptr)' data-ref="__asan::globals_op_fptr" data-ref-filename="__asan..globals_op_fptr">globals_op_fptr</a> <dfn class="local col0 decl" id="120op" title='op' data-type='__asan::globals_op_fptr' data-ref="120op" data-ref-filename="120op">op</dfn>, <em>const</em> <em>void</em> *<dfn class="local col1 decl" id="121needle" title='needle' data-type='const void *' data-ref="121needle" data-ref-filename="121needle">needle</dfn>) {</td></tr>
+<tr><th id="115">115</th><td>  <a class="macro" href="../sanitizer_common/sanitizer_internal_defs.h.html#330" title="do { do { __sanitizer::u64 v1 = (__sanitizer::u64)((0 &amp;&amp; &quot;unimplemented&quot;)); __sanitizer::u64 v2 = (__sanitizer::u64)(0); if (__builtin_expect(!!(!(v1 != v2)), 0)) __sanitizer::CheckFailed(&quot;/fast/tmp/llvm-proj-12/compiler-rt/lib/asan/asan_linux.cpp&quot;, 115, &quot;(&quot; &quot;(0 &amp;&amp; \&quot;unimplemented\&quot;)&quot; &quot;) &quot; &quot;!=&quot; &quot; (&quot; &quot;0&quot; &quot;)&quot;, v1, v2); } while (false); Die(); } while (0)" data-ref="_M/UNIMPLEMENTED">UNIMPLEMENTED</a>();</td></tr>
+<tr><th id="116">116</th><td>}</td></tr>
+<tr><th id="117">117</th><td></td></tr>
+<tr><th id="118">118</th><td><em>void</em> <dfn class="decl def fn" id="__asan::FlushUnneededASanShadowMemory" title='__asan::FlushUnneededASanShadowMemory' data-ref="__asan::FlushUnneededASanShadowMemory" data-ref-filename="__asan..FlushUnneededASanShadowMemory">FlushUnneededASanShadowMemory</dfn>(<a class="typedef" href="../sanitizer_common/sanitizer_internal_defs.h.html#__sanitizer::uptr" title='__sanitizer::uptr' data-type='unsigned long' data-ref="__sanitizer::uptr" data-ref-filename="__sanitizer..uptr">uptr</a> <dfn class="local col2 decl" id="122p" title='p' data-type='__sanitizer::uptr' data-ref="122p" data-ref-filename="122p">p</dfn>, <a class="typedef" href="../sanitizer_common/sanitizer_internal_defs.h.html#__sanitizer::uptr" title='__sanitizer::uptr' data-type='unsigned long' data-ref="__sanitizer::uptr" data-ref-filename="__sanitizer..uptr">uptr</a> <dfn class="local col3 decl" id="123size" title='size' data-type='__sanitizer::uptr' data-ref="123size" data-ref-filename="123size">size</dfn>) {</td></tr>
+<tr><th id="119">119</th><td>  <i>// Since asan's mapping is compacting, the shadow chunk may be</i></td></tr>
+<tr><th id="120">120</th><td><i>  // not page-aligned, so we only flush the page-aligned portion.</i></td></tr>
+<tr><th id="121">121</th><td>  <a class="ref fn" href="../sanitizer_common/sanitizer_common.h.html#__sanitizer::ReleaseMemoryPagesToOS" title='__sanitizer::ReleaseMemoryPagesToOS' data-ref="__sanitizer::ReleaseMemoryPagesToOS" data-ref-filename="__sanitizer..ReleaseMemoryPagesToOS">ReleaseMemoryPagesToOS</a>(<a class="ref fn" href="asan_mapping.h.html#__asan::MemToShadow" title='__asan::MemToShadow' data-ref="__asan::MemToShadow" data-ref-filename="__asan..MemToShadow">MemToShadow</a>(<a class="local col2 ref" href="#122p" title='p' data-ref="122p" data-ref-filename="122p">p</a>), <a class="ref fn" href="asan_mapping.h.html#__asan::MemToShadow" title='__asan::MemToShadow' data-ref="__asan::MemToShadow" data-ref-filename="__asan..MemToShadow">MemToShadow</a>(<a class="local col2 ref" href="#122p" title='p' data-ref="122p" data-ref-filename="122p">p</a> + <a class="local col3 ref" href="#123size" title='size' data-ref="123size" data-ref-filename="123size">size</a>));</td></tr>
+<tr><th id="122">122</th><td>}</td></tr>
+<tr><th id="123">123</th><td></td></tr>
+<tr><th id="124">124</th><td><u>#<span data-ppcond="124">if</span> <a class="macro" href="../sanitizer_common/sanitizer_platform.h.html#105" title="0" data-ref="_M/SANITIZER_ANDROID">SANITIZER_ANDROID</a></u></td></tr>
+<tr><th id="125">125</th><td><i>// FIXME: should we do anything for Android?</i></td></tr>
+<tr><th id="126">126</th><td><em>void</em> AsanCheckDynamicRTPrereqs() {}</td></tr>
+<tr><th id="127">127</th><td><em>void</em> AsanCheckIncompatibleRT() {}</td></tr>
+<tr><th id="128">128</th><td><u>#<span data-ppcond="124">else</span></u></td></tr>
+<tr><th id="129">129</th><td><em>static</em> <em>int</em> <dfn class="tu decl def fn" id="__asan::FindFirstDSOCallback" title='__asan::FindFirstDSOCallback' data-type='int __asan::FindFirstDSOCallback(struct dl_phdr_info * info, size_t size, void * data)' data-ref="__asan::FindFirstDSOCallback" data-ref-filename="__asan..FindFirstDSOCallback">FindFirstDSOCallback</dfn>(<b>struct</b> <a class="type" href="../../../../include/link.h.html#dl_phdr_info" title='dl_phdr_info' data-ref="dl_phdr_info" data-ref-filename="dl_phdr_info">dl_phdr_info</a> *<dfn class="local col4 decl" id="124info" title='info' data-type='struct dl_phdr_info *' data-ref="124info" data-ref-filename="124info">info</dfn>, <span class='typedef' title='size_t' data-type='unsigned long' data-ref="size_t" data-ref-filename="size_t">size_t</span> <dfn class="local col5 decl" id="125size" title='size' data-type='size_t' data-ref="125size" data-ref-filename="125size">size</dfn>,</td></tr>
+<tr><th id="130">130</th><td>                                <em>void</em> *<dfn class="local col6 decl" id="126data" title='data' data-type='void *' data-ref="126data" data-ref-filename="126data">data</dfn>) {</td></tr>
+<tr><th id="131">131</th><td>  <a class="macro" href="../sanitizer_common/sanitizer_common.h.html#219" title="do { if ((uptr)Verbosity() &gt;= (2)) Report(&quot;info-&gt;dlpi_name = %s\tinfo-&gt;dlpi_addr = %p\n&quot;, info-&gt;dlpi_name, info-&gt;dlpi_addr); } while (0)" data-ref="_M/VReport">VReport</a>(<var>2</var>, <q>"info-&gt;dlpi_name = %s\tinfo-&gt;dlpi_addr = %p\n"</q>,</td></tr>
+<tr><th id="132">132</th><td>          <a class="local col4 ref" href="#124info" title='info' data-ref="124info" data-ref-filename="124info">info</a>-&gt;<a class="ref field" href="../../../../include/link.h.html#dl_phdr_info::dlpi_name" title='dl_phdr_info::dlpi_name' data-ref="dl_phdr_info::dlpi_name" data-ref-filename="dl_phdr_info..dlpi_name">dlpi_name</a>, <a class="local col4 ref" href="#124info" title='info' data-ref="124info" data-ref-filename="124info">info</a>-&gt;<a class="ref field" href="../../../../include/link.h.html#dl_phdr_info::dlpi_addr" title='dl_phdr_info::dlpi_addr' data-ref="dl_phdr_info::dlpi_addr" data-ref-filename="dl_phdr_info..dlpi_addr">dlpi_addr</a>);</td></tr>
+<tr><th id="133">133</th><td></td></tr>
+<tr><th id="134">134</th><td>  <i>// Continue until the first dynamic library is found</i></td></tr>
+<tr><th id="135">135</th><td>  <b>if</b> (!<a class="local col4 ref" href="#124info" title='info' data-ref="124info" data-ref-filename="124info">info</a>-&gt;<a class="ref field" href="../../../../include/link.h.html#dl_phdr_info::dlpi_name" title='dl_phdr_info::dlpi_name' data-ref="dl_phdr_info::dlpi_name" data-ref-filename="dl_phdr_info..dlpi_name">dlpi_name</a> || <a class="local col4 ref" href="#124info" title='info' data-ref="124info" data-ref-filename="124info">info</a>-&gt;<a class="ref field" href="../../../../include/link.h.html#dl_phdr_info::dlpi_name" title='dl_phdr_info::dlpi_name' data-ref="dl_phdr_info::dlpi_name" data-ref-filename="dl_phdr_info..dlpi_name">dlpi_name</a>[<var>0</var>] == <var>0</var>)</td></tr>
+<tr><th id="136">136</th><td>    <b>return</b> <var>0</var>;</td></tr>
+<tr><th id="137">137</th><td></td></tr>
+<tr><th id="138">138</th><td>  <i>// Ignore vDSO</i></td></tr>
+<tr><th id="139">139</th><td>  <b>if</b> (<a class="ref fn" href="../sanitizer_common/sanitizer_libc.h.html#__sanitizer::internal_strncmp" title='__sanitizer::internal_strncmp' data-ref="__sanitizer::internal_strncmp" data-ref-filename="__sanitizer..internal_strncmp">internal_strncmp</a>(<a class="local col4 ref" href="#124info" title='info' data-ref="124info" data-ref-filename="124info">info</a>-&gt;<a class="ref field" href="../../../../include/link.h.html#dl_phdr_info::dlpi_name" title='dl_phdr_info::dlpi_name' data-ref="dl_phdr_info::dlpi_name" data-ref-filename="dl_phdr_info..dlpi_name">dlpi_name</a>, <q>"linux-"</q>, <b>sizeof</b>(<q>"linux-"</q>) - <var>1</var>) == <var>0</var>)</td></tr>
+<tr><th id="140">140</th><td>    <b>return</b> <var>0</var>;</td></tr>
+<tr><th id="141">141</th><td></td></tr>
+<tr><th id="142">142</th><td><u>#<span data-ppcond="142">if</span> <a class="macro" href="../sanitizer_common/sanitizer_platform.h.html#44" title="0" data-ref="_M/SANITIZER_FREEBSD">SANITIZER_FREEBSD</a> || <a class="macro" href="../sanitizer_common/sanitizer_platform.h.html#50" title="0" data-ref="_M/SANITIZER_NETBSD">SANITIZER_NETBSD</a></u></td></tr>
+<tr><th id="143">143</th><td>  <i>// Ignore first entry (the main program)</i></td></tr>
+<tr><th id="144">144</th><td>  <em>char</em> **p = (<em>char</em> **)data;</td></tr>
+<tr><th id="145">145</th><td>  <b>if</b> (!(*p)) {</td></tr>
+<tr><th id="146">146</th><td>    *p = (<em>char</em> *)-<var>1</var>;</td></tr>
+<tr><th id="147">147</th><td>    <b>return</b> <var>0</var>;</td></tr>
+<tr><th id="148">148</th><td>  }</td></tr>
+<tr><th id="149">149</th><td><u>#<span data-ppcond="142">endif</span></u></td></tr>
+<tr><th id="150">150</th><td></td></tr>
+<tr><th id="151">151</th><td><u>#<span data-ppcond="151">if</span> <a class="macro" href="../sanitizer_common/sanitizer_platform.h.html#56" title="0" data-ref="_M/SANITIZER_SOLARIS">SANITIZER_SOLARIS</a></u></td></tr>
+<tr><th id="152">152</th><td>  <i>// Ignore executable on Solaris</i></td></tr>
+<tr><th id="153">153</th><td>  <b>if</b> (info-&gt;dlpi_addr == <var>0</var>)</td></tr>
+<tr><th id="154">154</th><td>    <b>return</b> <var>0</var>;</td></tr>
+<tr><th id="155">155</th><td><u>#<span data-ppcond="151">endif</span></u></td></tr>
+<tr><th id="156">156</th><td></td></tr>
+<tr><th id="157">157</th><td>  *(<em>const</em> <em>char</em> **)<a class="local col6 ref" href="#126data" title='data' data-ref="126data" data-ref-filename="126data">data</a> = <a class="local col4 ref" href="#124info" title='info' data-ref="124info" data-ref-filename="124info">info</a>-&gt;<a class="ref field" href="../../../../include/link.h.html#dl_phdr_info::dlpi_name" title='dl_phdr_info::dlpi_name' data-ref="dl_phdr_info::dlpi_name" data-ref-filename="dl_phdr_info..dlpi_name">dlpi_name</a>;</td></tr>
+<tr><th id="158">158</th><td>  <b>return</b> <var>1</var>;</td></tr>
+<tr><th id="159">159</th><td>}</td></tr>
+<tr><th id="160">160</th><td></td></tr>
+<tr><th id="161">161</th><td><em>static</em> <em>bool</em> <dfn class="tu decl def fn" id="__asan::IsDynamicRTName" title='__asan::IsDynamicRTName' data-type='bool __asan::IsDynamicRTName(const char * libname)' data-ref="__asan::IsDynamicRTName" data-ref-filename="__asan..IsDynamicRTName">IsDynamicRTName</dfn>(<em>const</em> <em>char</em> *<dfn class="local col7 decl" id="127libname" title='libname' data-type='const char *' data-ref="127libname" data-ref-filename="127libname">libname</dfn>) {</td></tr>
+<tr><th id="162">162</th><td>  <b>return</b> <a class="ref fn" href="../sanitizer_common/sanitizer_libc.h.html#__sanitizer::internal_strstr" title='__sanitizer::internal_strstr' data-ref="__sanitizer::internal_strstr" data-ref-filename="__sanitizer..internal_strstr">internal_strstr</a>(<a class="local col7 ref" href="#127libname" title='libname' data-ref="127libname" data-ref-filename="127libname">libname</a>, <q>"libclang_rt.asan"</q>) ||</td></tr>
+<tr><th id="163">163</th><td>    <a class="ref fn" href="../sanitizer_common/sanitizer_libc.h.html#__sanitizer::internal_strstr" title='__sanitizer::internal_strstr' data-ref="__sanitizer::internal_strstr" data-ref-filename="__sanitizer..internal_strstr">internal_strstr</a>(<a class="local col7 ref" href="#127libname" title='libname' data-ref="127libname" data-ref-filename="127libname">libname</a>, <q>"libasan.so"</q>);</td></tr>
+<tr><th id="164">164</th><td>}</td></tr>
+<tr><th id="165">165</th><td></td></tr>
+<tr><th id="166">166</th><td><em>static</em> <em>void</em> <dfn class="tu decl def fn" id="__asan::ReportIncompatibleRT" title='__asan::ReportIncompatibleRT' data-type='void __asan::ReportIncompatibleRT()' data-ref="__asan::ReportIncompatibleRT" data-ref-filename="__asan..ReportIncompatibleRT">ReportIncompatibleRT</dfn>() {</td></tr>
+<tr><th id="167">167</th><td>  <a class="ref fn" href="../sanitizer_common/sanitizer_common.h.html#__sanitizer::Report" title='__sanitizer::Report' data-ref="__sanitizer::Report" data-ref-filename="__sanitizer..Report">Report</a>(<q>"Your application is linked against incompatible ASan runtimes.\n"</q>);</td></tr>
+<tr><th id="168">168</th><td>  <a class="ref fn" href="../sanitizer_common/sanitizer_internal_defs.h.html#__sanitizer::Die" title='__sanitizer::Die' data-ref="__sanitizer::Die" data-ref-filename="__sanitizer..Die">Die</a>();</td></tr>
+<tr><th id="169">169</th><td>}</td></tr>
+<tr><th id="170">170</th><td></td></tr>
+<tr><th id="171">171</th><td><em>void</em> <dfn class="decl def fn" id="__asan::AsanCheckDynamicRTPrereqs" title='__asan::AsanCheckDynamicRTPrereqs' data-ref="__asan::AsanCheckDynamicRTPrereqs" data-ref-filename="__asan..AsanCheckDynamicRTPrereqs">AsanCheckDynamicRTPrereqs</dfn>() {</td></tr>
+<tr><th id="172">172</th><td>  <b>if</b> (!<a class="macro" href="asan_internal.h.html#49" title="0" data-ref="_M/ASAN_DYNAMIC">ASAN_DYNAMIC</a> || !<a class="ref fn" href="asan_flags.h.html#__asan::flags" title='__asan::flags' data-ref="__asan::flags" data-ref-filename="__asan..flags">flags</a>()-&gt;<a class="ref field" href="asan_flags.inc.html#158" title='__asan::Flags::verify_asan_link_order' data-ref="__asan::Flags::verify_asan_link_order" data-ref-filename="__asan..Flags..verify_asan_link_order">verify_asan_link_order</a>)</td></tr>
+<tr><th id="173">173</th><td>    <b>return</b>;</td></tr>
+<tr><th id="174">174</th><td></td></tr>
+<tr><th id="175">175</th><td>  <i>// Ensure that dynamic RT is the first DSO in the list</i></td></tr>
+<tr><th id="176">176</th><td>  <em>const</em> <em>char</em> *<dfn class="local col8 decl" id="128first_dso_name" title='first_dso_name' data-type='const char *' data-ref="128first_dso_name" data-ref-filename="128first_dso_name">first_dso_name</dfn> = <b>nullptr</b>;</td></tr>
+<tr><th id="177">177</th><td>  <a class="ref fn" href="../../../../include/link.h.html#dl_iterate_phdr" title='dl_iterate_phdr' data-ref="dl_iterate_phdr" data-ref-filename="dl_iterate_phdr">dl_iterate_phdr</a>(<a class="tu ref fn" href="#__asan::FindFirstDSOCallback" title='__asan::FindFirstDSOCallback' data-use='r' data-ref="__asan::FindFirstDSOCallback" data-ref-filename="__asan..FindFirstDSOCallback">FindFirstDSOCallback</a>, &amp;<a class="local col8 ref" href="#128first_dso_name" title='first_dso_name' data-ref="128first_dso_name" data-ref-filename="128first_dso_name">first_dso_name</a>);</td></tr>
+<tr><th id="178">178</th><td>  <b>if</b> (<a class="local col8 ref" href="#128first_dso_name" title='first_dso_name' data-ref="128first_dso_name" data-ref-filename="128first_dso_name">first_dso_name</a> &amp;&amp; !<a class="tu ref fn" href="#__asan::IsDynamicRTName" title='__asan::IsDynamicRTName' data-use='c' data-ref="__asan::IsDynamicRTName" data-ref-filename="__asan..IsDynamicRTName">IsDynamicRTName</a>(<a class="local col8 ref" href="#128first_dso_name" title='first_dso_name' data-ref="128first_dso_name" data-ref-filename="128first_dso_name">first_dso_name</a>)) {</td></tr>
+<tr><th id="179">179</th><td>    <a class="ref fn" href="../sanitizer_common/sanitizer_common.h.html#__sanitizer::Report" title='__sanitizer::Report' data-ref="__sanitizer::Report" data-ref-filename="__sanitizer..Report">Report</a>(<q>"ASan runtime does not come first in initial library list; "</q></td></tr>
+<tr><th id="180">180</th><td>           <q>"you should either link runtime to your application or "</q></td></tr>
+<tr><th id="181">181</th><td>           <q>"manually preload it with LD_PRELOAD.\n"</q>);</td></tr>
+<tr><th id="182">182</th><td>    <a class="ref fn" href="../sanitizer_common/sanitizer_internal_defs.h.html#__sanitizer::Die" title='__sanitizer::Die' data-ref="__sanitizer::Die" data-ref-filename="__sanitizer..Die">Die</a>();</td></tr>
+<tr><th id="183">183</th><td>  }</td></tr>
+<tr><th id="184">184</th><td>}</td></tr>
+<tr><th id="185">185</th><td></td></tr>
+<tr><th id="186">186</th><td><em>void</em> <dfn class="decl def fn" id="__asan::AsanCheckIncompatibleRT" title='__asan::AsanCheckIncompatibleRT' data-ref="__asan::AsanCheckIncompatibleRT" data-ref-filename="__asan..AsanCheckIncompatibleRT">AsanCheckIncompatibleRT</dfn>() {</td></tr>
+<tr><th id="187">187</th><td>  <b>if</b> (<a class="macro" href="asan_internal.h.html#49" title="0" data-ref="_M/ASAN_DYNAMIC">ASAN_DYNAMIC</a>) {</td></tr>
+<tr><th id="188">188</th><td>    <b>if</b> (<a class="ref" href="#__asan_rt_version" title='__asan_rt_version' data-ref="__asan_rt_version" data-ref-filename="__asan_rt_version">__asan_rt_version</a> == <a class="enum" href="#ASAN_RT_VERSION_UNDEFINED" title='ASAN_RT_VERSION_UNDEFINED' data-ref="ASAN_RT_VERSION_UNDEFINED" data-ref-filename="ASAN_RT_VERSION_UNDEFINED">ASAN_RT_VERSION_UNDEFINED</a>) {</td></tr>
+<tr><th id="189">189</th><td>      <a class="ref" href="#__asan_rt_version" title='__asan_rt_version' data-ref="__asan_rt_version" data-ref-filename="__asan_rt_version">__asan_rt_version</a> = <a class="enum" href="#ASAN_RT_VERSION_DYNAMIC" title='ASAN_RT_VERSION_DYNAMIC' data-ref="ASAN_RT_VERSION_DYNAMIC" data-ref-filename="ASAN_RT_VERSION_DYNAMIC">ASAN_RT_VERSION_DYNAMIC</a>;</td></tr>
+<tr><th id="190">190</th><td>    } <b>else</b> <b>if</b> (<a class="ref" href="#__asan_rt_version" title='__asan_rt_version' data-ref="__asan_rt_version" data-ref-filename="__asan_rt_version">__asan_rt_version</a> != <a class="enum" href="#ASAN_RT_VERSION_DYNAMIC" title='ASAN_RT_VERSION_DYNAMIC' data-ref="ASAN_RT_VERSION_DYNAMIC" data-ref-filename="ASAN_RT_VERSION_DYNAMIC">ASAN_RT_VERSION_DYNAMIC</a>) {</td></tr>
+<tr><th id="191">191</th><td>      <a class="tu ref fn" href="#__asan::ReportIncompatibleRT" title='__asan::ReportIncompatibleRT' data-use='c' data-ref="__asan::ReportIncompatibleRT" data-ref-filename="__asan..ReportIncompatibleRT">ReportIncompatibleRT</a>();</td></tr>
+<tr><th id="192">192</th><td>    }</td></tr>
+<tr><th id="193">193</th><td>  } <b>else</b> {</td></tr>
+<tr><th id="194">194</th><td>    <b>if</b> (<a class="ref" href="#__asan_rt_version" title='__asan_rt_version' data-ref="__asan_rt_version" data-ref-filename="__asan_rt_version">__asan_rt_version</a> == <a class="enum" href="#ASAN_RT_VERSION_UNDEFINED" title='ASAN_RT_VERSION_UNDEFINED' data-ref="ASAN_RT_VERSION_UNDEFINED" data-ref-filename="ASAN_RT_VERSION_UNDEFINED">ASAN_RT_VERSION_UNDEFINED</a>) {</td></tr>
+<tr><th id="195">195</th><td>      <i>// Ensure that dynamic runtime is not present. We should detect it</i></td></tr>
+<tr><th id="196">196</th><td><i>      // as early as possible, otherwise ASan interceptors could bind to</i></td></tr>
+<tr><th id="197">197</th><td><i>      // the functions in dynamic ASan runtime instead of the functions in</i></td></tr>
+<tr><th id="198">198</th><td><i>      // system libraries, causing crashes later in ASan initialization.</i></td></tr>
+<tr><th id="199">199</th><td>      <a class="type" href="../sanitizer_common/sanitizer_procmaps.h.html#__sanitizer::MemoryMappingLayout" title='__sanitizer::MemoryMappingLayout' data-ref="__sanitizer::MemoryMappingLayout" data-ref-filename="__sanitizer..MemoryMappingLayout">MemoryMappingLayout</a> <dfn class="local col9 decl" id="129proc_maps" title='proc_maps' data-type='__sanitizer::MemoryMappingLayout' data-ref="129proc_maps" data-ref-filename="129proc_maps">proc_maps</dfn><a class="ref fn" href="../sanitizer_common/sanitizer_procmaps.h.html#__sanitizer::MemoryMappingLayout::MemoryMappingLayout" title='__sanitizer::MemoryMappingLayout::MemoryMappingLayout' data-ref="__sanitizer::MemoryMappingLayout::MemoryMappingLayout" data-ref-filename="__sanitizer..MemoryMappingLayout..MemoryMappingLayout">(</a><i>/*cache_enabled*/</i><b>true</b>);</td></tr>
+<tr><th id="200">200</th><td>      <em>char</em> <dfn class="local col0 decl" id="130filename" title='filename' data-type='char [4096]' data-ref="130filename" data-ref-filename="130filename">filename</dfn>[<a class="macro" href="../../../../include/linux/limits.h.html#13" title="4096" data-ref="_M/PATH_MAX">PATH_MAX</a>];</td></tr>
+<tr><th id="201">201</th><td>      <a class="type" href="../sanitizer_common/sanitizer_procmaps.h.html#__sanitizer::MemoryMappedSegment" title='__sanitizer::MemoryMappedSegment' data-ref="__sanitizer::MemoryMappedSegment" data-ref-filename="__sanitizer..MemoryMappedSegment">MemoryMappedSegment</a> <dfn class="local col1 decl" id="131segment" title='segment' data-type='__sanitizer::MemoryMappedSegment' data-ref="131segment" data-ref-filename="131segment">segment</dfn><a class="ref fn" href="../sanitizer_common/sanitizer_procmaps.h.html#__sanitizer::MemoryMappedSegment::MemoryMappedSegment" title='__sanitizer::MemoryMappedSegment::MemoryMappedSegment' data-ref="__sanitizer::MemoryMappedSegment::MemoryMappedSegment" data-ref-filename="__sanitizer..MemoryMappedSegment..MemoryMappedSegment">(</a><a class="local col0 ref" href="#130filename" title='filename' data-ref="130filename" data-ref-filename="130filename">filename</a>, <b>sizeof</b>(<a class="local col0 ref" href="#130filename" title='filename' data-ref="130filename" data-ref-filename="130filename">filename</a>));</td></tr>
+<tr><th id="202">202</th><td>      <b>while</b> (<a class="local col9 ref" href="#129proc_maps" title='proc_maps' data-ref="129proc_maps" data-ref-filename="129proc_maps">proc_maps</a>.<a class="ref fn" href="../sanitizer_common/sanitizer_procmaps.h.html#__sanitizer::MemoryMappingLayout::Next" title='__sanitizer::MemoryMappingLayout::Next' data-ref="__sanitizer::MemoryMappingLayout::Next" data-ref-filename="__sanitizer..MemoryMappingLayout..Next">Next</a>(&amp;<a class="local col1 ref" href="#131segment" title='segment' data-ref="131segment" data-ref-filename="131segment">segment</a>)) {</td></tr>
+<tr><th id="203">203</th><td>        <b>if</b> (<a class="tu ref fn" href="#__asan::IsDynamicRTName" title='__asan::IsDynamicRTName' data-use='c' data-ref="__asan::IsDynamicRTName" data-ref-filename="__asan..IsDynamicRTName">IsDynamicRTName</a>(<a class="local col1 ref" href="#131segment" title='segment' data-ref="131segment" data-ref-filename="131segment">segment</a>.<a class="ref field" href="../sanitizer_common/sanitizer_procmaps.h.html#__sanitizer::MemoryMappedSegment::filename" title='__sanitizer::MemoryMappedSegment::filename' data-ref="__sanitizer::MemoryMappedSegment::filename" data-ref-filename="__sanitizer..MemoryMappedSegment..filename">filename</a>)) {</td></tr>
+<tr><th id="204">204</th><td>          <a class="ref fn" href="../sanitizer_common/sanitizer_common.h.html#__sanitizer::Report" title='__sanitizer::Report' data-ref="__sanitizer::Report" data-ref-filename="__sanitizer..Report">Report</a>(<q>"Your application is linked against "</q></td></tr>
+<tr><th id="205">205</th><td>                 <q>"incompatible ASan runtimes.\n"</q>);</td></tr>
+<tr><th id="206">206</th><td>          <a class="ref fn" href="../sanitizer_common/sanitizer_internal_defs.h.html#__sanitizer::Die" title='__sanitizer::Die' data-ref="__sanitizer::Die" data-ref-filename="__sanitizer..Die">Die</a>();</td></tr>
+<tr><th id="207">207</th><td>        }</td></tr>
+<tr><th id="208">208</th><td>      }</td></tr>
+<tr><th id="209">209</th><td>      <a class="ref" href="#__asan_rt_version" title='__asan_rt_version' data-ref="__asan_rt_version" data-ref-filename="__asan_rt_version">__asan_rt_version</a> = <a class="enum" href="#ASAN_RT_VERSION_STATIC" title='ASAN_RT_VERSION_STATIC' data-ref="ASAN_RT_VERSION_STATIC" data-ref-filename="ASAN_RT_VERSION_STATIC">ASAN_RT_VERSION_STATIC</a>;</td></tr>
+<tr><th id="210">210</th><td>    } <b>else</b> <b>if</b> (<a class="ref" href="#__asan_rt_version" title='__asan_rt_version' data-ref="__asan_rt_version" data-ref-filename="__asan_rt_version">__asan_rt_version</a> != <a class="enum" href="#ASAN_RT_VERSION_STATIC" title='ASAN_RT_VERSION_STATIC' data-ref="ASAN_RT_VERSION_STATIC" data-ref-filename="ASAN_RT_VERSION_STATIC">ASAN_RT_VERSION_STATIC</a>) {</td></tr>
+<tr><th id="211">211</th><td>      <a class="tu ref fn" href="#__asan::ReportIncompatibleRT" title='__asan::ReportIncompatibleRT' data-use='c' data-ref="__asan::ReportIncompatibleRT" data-ref-filename="__asan..ReportIncompatibleRT">ReportIncompatibleRT</a>();</td></tr>
+<tr><th id="212">212</th><td>    }</td></tr>
+<tr><th id="213">213</th><td>  }</td></tr>
+<tr><th id="214">214</th><td>}</td></tr>
+<tr><th id="215">215</th><td><u>#<span data-ppcond="124">endif</span> // SANITIZER_ANDROID</u></td></tr>
+<tr><th id="216">216</th><td></td></tr>
+<tr><th id="217">217</th><td><u>#<span data-ppcond="217">if</span> !<a class="macro" href="../sanitizer_common/sanitizer_platform.h.html#105" title="0" data-ref="_M/SANITIZER_ANDROID">SANITIZER_ANDROID</a></u></td></tr>
+<tr><th id="218">218</th><td><em>void</em> <dfn class="decl def fn" id="__asan::ReadContextStack" title='__asan::ReadContextStack' data-ref="__asan::ReadContextStack" data-ref-filename="__asan..ReadContextStack">ReadContextStack</dfn>(<em>void</em> *<dfn class="local col2 decl" id="132context" title='context' data-type='void *' data-ref="132context" data-ref-filename="132context">context</dfn>, <a class="typedef" href="../sanitizer_common/sanitizer_internal_defs.h.html#__sanitizer::uptr" title='__sanitizer::uptr' data-type='unsigned long' data-ref="__sanitizer::uptr" data-ref-filename="__sanitizer..uptr">uptr</a> *<dfn class="local col3 decl" id="133stack" title='stack' data-type='__sanitizer::uptr *' data-ref="133stack" data-ref-filename="133stack">stack</dfn>, <a class="typedef" href="../sanitizer_common/sanitizer_internal_defs.h.html#__sanitizer::uptr" title='__sanitizer::uptr' data-type='unsigned long' data-ref="__sanitizer::uptr" data-ref-filename="__sanitizer..uptr">uptr</a> *<dfn class="local col4 decl" id="134ssize" title='ssize' data-type='__sanitizer::uptr *' data-ref="134ssize" data-ref-filename="134ssize">ssize</dfn>) {</td></tr>
+<tr><th id="219">219</th><td>  <a class="typedef" href="../../../../include/sys/ucontext.h.html#ucontext_t" title='ucontext_t' data-type='struct ucontext_t' data-ref="ucontext_t" data-ref-filename="ucontext_t">ucontext_t</a> *<dfn class="local col5 decl" id="135ucp" title='ucp' data-type='ucontext_t *' data-ref="135ucp" data-ref-filename="135ucp">ucp</dfn> = (<a class="typedef" href="../../../../include/sys/ucontext.h.html#ucontext_t" title='ucontext_t' data-type='struct ucontext_t' data-ref="ucontext_t" data-ref-filename="ucontext_t">ucontext_t</a>*)<a class="local col2 ref" href="#132context" title='context' data-ref="132context" data-ref-filename="132context">context</a>;</td></tr>
+<tr><th id="220">220</th><td>  *<a class="local col3 ref" href="#133stack" title='stack' data-ref="133stack" data-ref-filename="133stack">stack</a> = (<a class="typedef" href="../sanitizer_common/sanitizer_internal_defs.h.html#__sanitizer::uptr" title='__sanitizer::uptr' data-type='unsigned long' data-ref="__sanitizer::uptr" data-ref-filename="__sanitizer..uptr">uptr</a>)<a class="local col5 ref" href="#135ucp" title='ucp' data-ref="135ucp" data-ref-filename="135ucp">ucp</a>-&gt;<a class="ref field" href="../../../../include/sys/ucontext.h.html#ucontext_t::uc_stack" title='ucontext_t::uc_stack' data-ref="ucontext_t::uc_stack" data-ref-filename="ucontext_t..uc_stack">uc_stack</a>.<a class="ref field" href="../../../../include/bits/types/stack_t.h.html#(anonymous)::ss_sp" title='(anonymous struct)::ss_sp' data-ref="(anonymous)::ss_sp" data-ref-filename="(anonymous)..ss_sp">ss_sp</a>;</td></tr>
+<tr><th id="221">221</th><td>  *<a class="local col4 ref" href="#134ssize" title='ssize' data-ref="134ssize" data-ref-filename="134ssize">ssize</a> = <a class="local col5 ref" href="#135ucp" title='ucp' data-ref="135ucp" data-ref-filename="135ucp">ucp</a>-&gt;<a class="ref field" href="../../../../include/sys/ucontext.h.html#ucontext_t::uc_stack" title='ucontext_t::uc_stack' data-ref="ucontext_t::uc_stack" data-ref-filename="ucontext_t..uc_stack">uc_stack</a>.<a class="ref field" href="../../../../include/bits/types/stack_t.h.html#(anonymous)::ss_size" title='(anonymous struct)::ss_size' data-ref="(anonymous)::ss_size" data-ref-filename="(anonymous)..ss_size">ss_size</a>;</td></tr>
+<tr><th id="222">222</th><td>}</td></tr>
+<tr><th id="223">223</th><td><u>#<span data-ppcond="217">else</span></u></td></tr>
+<tr><th id="224">224</th><td><em>void</em> ReadContextStack(<em>void</em> *context, uptr *stack, uptr *ssize) {</td></tr>
+<tr><th id="225">225</th><td>  UNIMPLEMENTED();</td></tr>
+<tr><th id="226">226</th><td>}</td></tr>
+<tr><th id="227">227</th><td><u>#<span data-ppcond="217">endif</span></u></td></tr>
+<tr><th id="228">228</th><td></td></tr>
+<tr><th id="229">229</th><td><em>void</em> *<dfn class="decl def fn" id="__asan::AsanDlSymNext" title='__asan::AsanDlSymNext' data-ref="__asan::AsanDlSymNext" data-ref-filename="__asan..AsanDlSymNext">AsanDlSymNext</dfn>(<em>const</em> <em>char</em> *<dfn class="local col6 decl" id="136sym" title='sym' data-type='const char *' data-ref="136sym" data-ref-filename="136sym">sym</dfn>) {</td></tr>
+<tr><th id="230">230</th><td>  <b>return</b> <a class="ref fn" href="../../../../include/dlfcn.h.html#dlsym" title='dlsym' data-ref="dlsym" data-ref-filename="dlsym">dlsym</a>(<a class="macro" href="../../../../include/dlfcn.h.html#35" title="((void *) -1l)" data-ref="_M/RTLD_NEXT">RTLD_NEXT</a>, <a class="local col6 ref" href="#136sym" title='sym' data-ref="136sym" data-ref-filename="136sym">sym</a>);</td></tr>
+<tr><th id="231">231</th><td>}</td></tr>
+<tr><th id="232">232</th><td></td></tr>
+<tr><th id="233">233</th><td><em>bool</em> <dfn class="decl def fn" id="__asan::HandleDlopenInit" title='__asan::HandleDlopenInit' data-ref="__asan::HandleDlopenInit" data-ref-filename="__asan..HandleDlopenInit">HandleDlopenInit</dfn>() {</td></tr>
+<tr><th id="234">234</th><td>  <i>// Not supported on this platform.</i></td></tr>
+<tr><th id="235">235</th><td>  <b>static_assert</b>(!<a class="macro" href="../sanitizer_common/sanitizer_platform.h.html#380" title="0" data-ref="_M/SANITIZER_SUPPORTS_INIT_FOR_DLOPEN">SANITIZER_SUPPORTS_INIT_FOR_DLOPEN</a>,</td></tr>
+<tr><th id="236">236</th><td>                <q>"Expected SANITIZER_SUPPORTS_INIT_FOR_DLOPEN to be false"</q>);</td></tr>
+<tr><th id="237">237</th><td>  <b>return</b> <b>false</b>;</td></tr>
+<tr><th id="238">238</th><td>}</td></tr>
+<tr><th id="239">239</th><td></td></tr>
+<tr><th id="240">240</th><td>} <i>// namespace __asan</i></td></tr>
+<tr><th id="241">241</th><td></td></tr>
+<tr><th id="242">242</th><td><u>#<span data-ppcond="15">endif</span>  // SANITIZER_FREEBSD || SANITIZER_LINUX || SANITIZER_NETBSD ||</u></td></tr>
+<tr><th id="243">243</th><td>        <i>// SANITIZER_SOLARIS</i></td></tr>
+<tr><th id="244">244</th><td></td></tr>
+</table><hr/><p id='footer'>
+Generated on <em>2021-Jul-01</em> from project llvm revision <em>12</em>

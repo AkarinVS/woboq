@@ -1,0 +1,111 @@
+<!doctype html>
+<html>
+<head>
+<meta name="viewport" content="width=device-width, initial-scale=1.0"><title>MatrixUtils.h source code [llvm/llvm/include/llvm/Transforms/Utils/MatrixUtils.h] - Woboq Code Browser</title>
+<meta name="woboq:interestingDefinitions" content="llvm::TileInfo "/>
+<link rel="stylesheet" href="../../../../../.././data/qtcreator.css" title="QtCreator"/>
+<link rel="alternate stylesheet" href="../../../../../.././data/kdevelop.css" title="KDevelop"/>
+<script type="text/javascript" src="../../../../../.././data/jquery/jquery.min.js"></script>
+<script type="text/javascript" src="../../../../../.././data/jquery/jquery-ui.min.js"></script>
+<script>var file = 'llvm/llvm/include/llvm/Transforms/Utils/MatrixUtils.h'; var root_path = '../../../../../..'; var data_path = '../../../../../.././data'; var ecma_script_api_version = 2;</script>
+<script src='../../../../../.././data/codebrowser.js'></script>
+</head>
+<body><div id='header'><h1 id='breadcrumb'><span>Browse the source code of </span><a href='../../../../..'>llvm</a>/<a href='../../../..'>llvm</a>/<a href='../../..'>include</a>/<a href='../..'>llvm</a>/<a href='..'>Transforms</a>/<a href='./'>Utils</a>/<a href='MatrixUtils.h.html'>MatrixUtils.h</a></h1></div>
+<hr/><div id='content'><table class="code">
+<tr><th id="1">1</th><td><i>//===- MatrixUtils.h - Utilities to lower matrix intrinsics -----*- C++ -*-===//</i></td></tr>
+<tr><th id="2">2</th><td><i>//</i></td></tr>
+<tr><th id="3">3</th><td><i>// Part of the LLVM Project, under the Apache License v2.0 with LLVM Exceptions.</i></td></tr>
+<tr><th id="4">4</th><td><i>// See <a href="https://llvm.org/LICENSE.txt">https://llvm.org/LICENSE.txt</a> for license information.</i></td></tr>
+<tr><th id="5">5</th><td><i>// SPDX-License-Identifier: Apache-2.0 WITH LLVM-exception</i></td></tr>
+<tr><th id="6">6</th><td><i>//</i></td></tr>
+<tr><th id="7">7</th><td><i>//===----------------------------------------------------------------------===//</i></td></tr>
+<tr><th id="8">8</th><td><i>//</i></td></tr>
+<tr><th id="9">9</th><td><i>// Utilities for generating tiled loops for matrix operations.</i></td></tr>
+<tr><th id="10">10</th><td><i>//</i></td></tr>
+<tr><th id="11">11</th><td><i>//===----------------------------------------------------------------------===//</i></td></tr>
+<tr><th id="12">12</th><td></td></tr>
+<tr><th id="13">13</th><td><u>#<span data-ppcond="13">ifndef</span> <span class="macro" data-ref="_M/LLVM_TRANSFORMS_UTILS_MATRIXUTILS_H">LLVM_TRANSFORMS_UTILS_MATRIXUTILS_H</span></u></td></tr>
+<tr><th id="14">14</th><td><u>#define <dfn class="macro" id="_M/LLVM_TRANSFORMS_UTILS_MATRIXUTILS_H" data-ref="_M/LLVM_TRANSFORMS_UTILS_MATRIXUTILS_H">LLVM_TRANSFORMS_UTILS_MATRIXUTILS_H</dfn></u></td></tr>
+<tr><th id="15">15</th><td></td></tr>
+<tr><th id="16">16</th><td><u>#include <a href="../../ADT/StringRef.h.html">"llvm/ADT/StringRef.h"</a></u></td></tr>
+<tr><th id="17">17</th><td></td></tr>
+<tr><th id="18">18</th><td><b>namespace</b> <span class="namespace">llvm</span> {</td></tr>
+<tr><th id="19">19</th><td><b>class</b> <a class="type" href="../../Analysis/DomTreeUpdater.h.html#llvm::DomTreeUpdater" title='llvm::DomTreeUpdater' data-ref="llvm::DomTreeUpdater" data-ref-filename="llvm..DomTreeUpdater" id="llvm::DomTreeUpdater">DomTreeUpdater</a>;</td></tr>
+<tr><th id="20">20</th><td><b>class</b> <a class="type" href="../../IR/BasicBlock.h.html#llvm::BasicBlock" title='llvm::BasicBlock' data-ref="llvm::BasicBlock" data-ref-filename="llvm..BasicBlock" id="llvm::BasicBlock">BasicBlock</a>;</td></tr>
+<tr><th id="21">21</th><td><b>class</b> <a class="type" href="../../IR/Value.h.html#llvm::Value" title='llvm::Value' data-ref="llvm::Value" data-ref-filename="llvm..Value" id="llvm::Value">Value</a>;</td></tr>
+<tr><th id="22">22</th><td><b>class</b> <a class="type" href="../../Analysis/LoopInfo.h.html#llvm::Loop" title='llvm::Loop' data-ref="llvm::Loop" data-ref-filename="llvm..Loop" id="llvm::Loop">Loop</a>;</td></tr>
+<tr><th id="23">23</th><td><b>class</b> <a class="type" href="../../Analysis/LoopInfo.h.html#llvm::LoopInfo" title='llvm::LoopInfo' data-ref="llvm::LoopInfo" data-ref-filename="llvm..LoopInfo" id="llvm::LoopInfo">LoopInfo</a>;</td></tr>
+<tr><th id="24">24</th><td><b>class</b> <a class="type" href="../../IR/IRBuilder.h.html#llvm::IRBuilderBase" title='llvm::IRBuilderBase' data-ref="llvm::IRBuilderBase" data-ref-filename="llvm..IRBuilderBase" id="llvm::IRBuilderBase">IRBuilderBase</a>;</td></tr>
+<tr><th id="25">25</th><td></td></tr>
+<tr><th id="26">26</th><td><i class="doc">/// A helper struct to create IR loop nests for tiling in IR of the following</i></td></tr>
+<tr><th id="27">27</th><td><i class="doc">/// form:</i></td></tr>
+<tr><th id="28">28</th><td><i class="doc">///   for CurrentColumn = 0..NumColumns</i></td></tr>
+<tr><th id="29">29</th><td><i class="doc">///     for CurrentRow = 0..NumRows</i></td></tr>
+<tr><th id="30">30</th><td><i class="doc">///       for CurrentInner = 0..NumInner</i></td></tr>
+<tr><th id="31">31</th><td><b>struct</b> <dfn class="type def" id="llvm::TileInfo" title='llvm::TileInfo' data-ref="llvm::TileInfo" data-ref-filename="llvm..TileInfo">TileInfo</dfn> {</td></tr>
+<tr><th id="32">32</th><td>  <i class="doc">/// Number of rows of the matrix.</i></td></tr>
+<tr><th id="33">33</th><td>  <em>unsigned</em> <dfn class="decl field" id="llvm::TileInfo::NumRows" title='llvm::TileInfo::NumRows' data-ref="llvm::TileInfo::NumRows" data-ref-filename="llvm..TileInfo..NumRows">NumRows</dfn>;</td></tr>
+<tr><th id="34">34</th><td></td></tr>
+<tr><th id="35">35</th><td>  <i class="doc">/// Number of columns of the matrix.</i></td></tr>
+<tr><th id="36">36</th><td>  <em>unsigned</em> <dfn class="decl field" id="llvm::TileInfo::NumColumns" title='llvm::TileInfo::NumColumns' data-ref="llvm::TileInfo::NumColumns" data-ref-filename="llvm..TileInfo..NumColumns">NumColumns</dfn>;</td></tr>
+<tr><th id="37">37</th><td></td></tr>
+<tr><th id="38">38</th><td>  <i class="doc">/// Number of columns of the first matrix of a multiply /</i></td></tr>
+<tr><th id="39">39</th><td><i class="doc">  /// number of rows of the second matrix of a multiply.</i></td></tr>
+<tr><th id="40">40</th><td>  <em>unsigned</em> <dfn class="decl field" id="llvm::TileInfo::NumInner" title='llvm::TileInfo::NumInner' data-ref="llvm::TileInfo::NumInner" data-ref-filename="llvm..TileInfo..NumInner">NumInner</dfn>;</td></tr>
+<tr><th id="41">41</th><td></td></tr>
+<tr><th id="42">42</th><td>  <i class="doc">/// Number of rows/columns in a tile.</i></td></tr>
+<tr><th id="43">43</th><td>  <em>unsigned</em> <dfn class="decl field" id="llvm::TileInfo::TileSize" title='llvm::TileInfo::TileSize' data-ref="llvm::TileInfo::TileSize" data-ref-filename="llvm..TileInfo..TileSize">TileSize</dfn> = -<var>1</var>;</td></tr>
+<tr><th id="44">44</th><td></td></tr>
+<tr><th id="45">45</th><td>  <i class="doc">/// Start row of the current tile to compute.</i></td></tr>
+<tr><th id="46">46</th><td>  <a class="type" href="../../IR/Value.h.html#llvm::Value" title='llvm::Value' data-ref="llvm::Value" data-ref-filename="llvm..Value">Value</a> *<dfn class="decl field" id="llvm::TileInfo::CurrentRow" title='llvm::TileInfo::CurrentRow' data-ref="llvm::TileInfo::CurrentRow" data-ref-filename="llvm..TileInfo..CurrentRow">CurrentRow</dfn>;</td></tr>
+<tr><th id="47">47</th><td></td></tr>
+<tr><th id="48">48</th><td>  <i class="doc">/// Start column of the current tile to compute.</i></td></tr>
+<tr><th id="49">49</th><td>  <a class="type" href="../../IR/Value.h.html#llvm::Value" title='llvm::Value' data-ref="llvm::Value" data-ref-filename="llvm..Value">Value</a> *<dfn class="decl field" id="llvm::TileInfo::CurrentCol" title='llvm::TileInfo::CurrentCol' data-ref="llvm::TileInfo::CurrentCol" data-ref-filename="llvm..TileInfo..CurrentCol">CurrentCol</dfn>;</td></tr>
+<tr><th id="50">50</th><td></td></tr>
+<tr><th id="51">51</th><td>  <i class="doc">/// Current tile offset during the tile computation.</i></td></tr>
+<tr><th id="52">52</th><td>  <a class="type" href="../../IR/Value.h.html#llvm::Value" title='llvm::Value' data-ref="llvm::Value" data-ref-filename="llvm..Value">Value</a> *<dfn class="decl field" id="llvm::TileInfo::CurrentK" title='llvm::TileInfo::CurrentK' data-ref="llvm::TileInfo::CurrentK" data-ref-filename="llvm..TileInfo..CurrentK">CurrentK</dfn>;</td></tr>
+<tr><th id="53">53</th><td></td></tr>
+<tr><th id="54">54</th><td>  <i class="doc">/// Header of the outermost loop iterating from 0..NumColumns.</i></td></tr>
+<tr><th id="55">55</th><td>  <a class="type" href="../../IR/BasicBlock.h.html#llvm::BasicBlock" title='llvm::BasicBlock' data-ref="llvm::BasicBlock" data-ref-filename="llvm..BasicBlock">BasicBlock</a> *<dfn class="decl field" id="llvm::TileInfo::ColumnLoopHeader" title='llvm::TileInfo::ColumnLoopHeader' data-ref="llvm::TileInfo::ColumnLoopHeader" data-ref-filename="llvm..TileInfo..ColumnLoopHeader">ColumnLoopHeader</dfn> = <b>nullptr</b>;</td></tr>
+<tr><th id="56">56</th><td></td></tr>
+<tr><th id="57">57</th><td>  <i class="doc">/// Header of the second loop iterating from 0..NumRows.</i></td></tr>
+<tr><th id="58">58</th><td>  <a class="type" href="../../IR/BasicBlock.h.html#llvm::BasicBlock" title='llvm::BasicBlock' data-ref="llvm::BasicBlock" data-ref-filename="llvm..BasicBlock">BasicBlock</a> *<dfn class="decl field" id="llvm::TileInfo::RowLoopHeader" title='llvm::TileInfo::RowLoopHeader' data-ref="llvm::TileInfo::RowLoopHeader" data-ref-filename="llvm..TileInfo..RowLoopHeader">RowLoopHeader</dfn> = <b>nullptr</b>;</td></tr>
+<tr><th id="59">59</th><td>  <i class="doc">/// Latch of the second loop iterating from 0..NumRows.</i></td></tr>
+<tr><th id="60">60</th><td>  <a class="type" href="../../IR/BasicBlock.h.html#llvm::BasicBlock" title='llvm::BasicBlock' data-ref="llvm::BasicBlock" data-ref-filename="llvm..BasicBlock">BasicBlock</a> *<dfn class="decl field" id="llvm::TileInfo::RowLoopLatch" title='llvm::TileInfo::RowLoopLatch' data-ref="llvm::TileInfo::RowLoopLatch" data-ref-filename="llvm..TileInfo..RowLoopLatch">RowLoopLatch</dfn> = <b>nullptr</b>;</td></tr>
+<tr><th id="61">61</th><td>  <i class="doc">/// Header of the innermost loop iterating from 0..NumInner.</i></td></tr>
+<tr><th id="62">62</th><td>  <a class="type" href="../../IR/BasicBlock.h.html#llvm::BasicBlock" title='llvm::BasicBlock' data-ref="llvm::BasicBlock" data-ref-filename="llvm..BasicBlock">BasicBlock</a> *<dfn class="decl field" id="llvm::TileInfo::InnerLoopHeader" title='llvm::TileInfo::InnerLoopHeader' data-ref="llvm::TileInfo::InnerLoopHeader" data-ref-filename="llvm..TileInfo..InnerLoopHeader">InnerLoopHeader</dfn> = <b>nullptr</b>;</td></tr>
+<tr><th id="63">63</th><td>  <i class="doc">/// Latch of the innermost loop iterating from 0..NumInner.</i></td></tr>
+<tr><th id="64">64</th><td>  <a class="type" href="../../IR/BasicBlock.h.html#llvm::BasicBlock" title='llvm::BasicBlock' data-ref="llvm::BasicBlock" data-ref-filename="llvm..BasicBlock">BasicBlock</a> *<dfn class="decl field" id="llvm::TileInfo::InnerLoopLatch" title='llvm::TileInfo::InnerLoopLatch' data-ref="llvm::TileInfo::InnerLoopLatch" data-ref-filename="llvm..TileInfo..InnerLoopLatch">InnerLoopLatch</dfn> = <b>nullptr</b>;</td></tr>
+<tr><th id="65">65</th><td></td></tr>
+<tr><th id="66">66</th><td>  <dfn class="decl def fn" id="_ZN4llvm8TileInfoC1Ejjjj" title='llvm::TileInfo::TileInfo' data-ref="_ZN4llvm8TileInfoC1Ejjjj" data-ref-filename="_ZN4llvm8TileInfoC1Ejjjj">TileInfo</dfn>(<em>unsigned</em> <dfn class="local col1 decl" id="1NumRows" title='NumRows' data-type='unsigned int' data-ref="1NumRows" data-ref-filename="1NumRows">NumRows</dfn>, <em>unsigned</em> <dfn class="local col2 decl" id="2NumColumns" title='NumColumns' data-type='unsigned int' data-ref="2NumColumns" data-ref-filename="2NumColumns">NumColumns</dfn>, <em>unsigned</em> <dfn class="local col3 decl" id="3NumInner" title='NumInner' data-type='unsigned int' data-ref="3NumInner" data-ref-filename="3NumInner">NumInner</dfn>,</td></tr>
+<tr><th id="67">67</th><td>           <em>unsigned</em> <dfn class="local col4 decl" id="4TileSize" title='TileSize' data-type='unsigned int' data-ref="4TileSize" data-ref-filename="4TileSize">TileSize</dfn>)</td></tr>
+<tr><th id="68">68</th><td>      : <a class="member field" href="#llvm::TileInfo::NumRows" title='llvm::TileInfo::NumRows' data-ref="llvm::TileInfo::NumRows" data-ref-filename="llvm..TileInfo..NumRows">NumRows</a>(<a class="local col1 ref" href="#1NumRows" title='NumRows' data-ref="1NumRows" data-ref-filename="1NumRows">NumRows</a>), <a class="member field" href="#llvm::TileInfo::NumColumns" title='llvm::TileInfo::NumColumns' data-ref="llvm::TileInfo::NumColumns" data-ref-filename="llvm..TileInfo..NumColumns">NumColumns</a>(<a class="local col2 ref" href="#2NumColumns" title='NumColumns' data-ref="2NumColumns" data-ref-filename="2NumColumns">NumColumns</a>), <a class="member field" href="#llvm::TileInfo::NumInner" title='llvm::TileInfo::NumInner' data-ref="llvm::TileInfo::NumInner" data-ref-filename="llvm..TileInfo..NumInner">NumInner</a>(<a class="local col3 ref" href="#3NumInner" title='NumInner' data-ref="3NumInner" data-ref-filename="3NumInner">NumInner</a>),</td></tr>
+<tr><th id="69">69</th><td>        <a class="member field" href="#llvm::TileInfo::TileSize" title='llvm::TileInfo::TileSize' data-ref="llvm::TileInfo::TileSize" data-ref-filename="llvm..TileInfo..TileSize">TileSize</a>(<a class="local col4 ref" href="#4TileSize" title='TileSize' data-ref="4TileSize" data-ref-filename="4TileSize">TileSize</a>) {}</td></tr>
+<tr><th id="70">70</th><td></td></tr>
+<tr><th id="71">71</th><td>  <i class="doc">/// Creates an IR loop nests for tiling of the form below. Returns the block</i></td></tr>
+<tr><th id="72">72</th><td><i class="doc">  /// for the inner loop body and sets {Column,Row,Inner}LoopHeader/Latch</i></td></tr>
+<tr><th id="73">73</th><td><i class="doc">  /// fields.</i></td></tr>
+<tr><th id="74">74</th><td><i class="doc">  ///</i></td></tr>
+<tr><th id="75">75</th><td><i class="doc">  /// for CurrentColumn = 0..NumColumns</i></td></tr>
+<tr><th id="76">76</th><td><i class="doc">  ///   for CurrentRow = 0..NumRows</i></td></tr>
+<tr><th id="77">77</th><td><i class="doc">  ///     for CurrentInner = 0..NumInner</i></td></tr>
+<tr><th id="78">78</th><td>  <a class="type" href="../../IR/BasicBlock.h.html#llvm::BasicBlock" title='llvm::BasicBlock' data-ref="llvm::BasicBlock" data-ref-filename="llvm..BasicBlock">BasicBlock</a> *<dfn class="decl fn" id="_ZN4llvm8TileInfo16CreateTiledLoopsEPNS_10BasicBlockES2_RNS_13IRBuilderBaseERNS_14DomTreeUpdaterERNS_8LoopInfoE" title='llvm::TileInfo::CreateTiledLoops' data-ref="_ZN4llvm8TileInfo16CreateTiledLoopsEPNS_10BasicBlockES2_RNS_13IRBuilderBaseERNS_14DomTreeUpdaterERNS_8LoopInfoE" data-ref-filename="_ZN4llvm8TileInfo16CreateTiledLoopsEPNS_10BasicBlockES2_RNS_13IRBuilderBaseERNS_14DomTreeUpdaterERNS_8LoopInfoE">CreateTiledLoops</dfn>(<a class="type" href="../../IR/BasicBlock.h.html#llvm::BasicBlock" title='llvm::BasicBlock' data-ref="llvm::BasicBlock" data-ref-filename="llvm..BasicBlock">BasicBlock</a> *<dfn class="local col5 decl" id="5Start" title='Start' data-type='llvm::BasicBlock *' data-ref="5Start" data-ref-filename="5Start">Start</dfn>, <a class="type" href="../../IR/BasicBlock.h.html#llvm::BasicBlock" title='llvm::BasicBlock' data-ref="llvm::BasicBlock" data-ref-filename="llvm..BasicBlock">BasicBlock</a> *<dfn class="local col6 decl" id="6End" title='End' data-type='llvm::BasicBlock *' data-ref="6End" data-ref-filename="6End">End</dfn>,</td></tr>
+<tr><th id="79">79</th><td>                               <a class="type" href="../../IR/IRBuilder.h.html#llvm::IRBuilderBase" title='llvm::IRBuilderBase' data-ref="llvm::IRBuilderBase" data-ref-filename="llvm..IRBuilderBase">IRBuilderBase</a> &amp;<dfn class="local col7 decl" id="7B" title='B' data-type='llvm::IRBuilderBase &amp;' data-ref="7B" data-ref-filename="7B">B</dfn>, <a class="type" href="../../Analysis/DomTreeUpdater.h.html#llvm::DomTreeUpdater" title='llvm::DomTreeUpdater' data-ref="llvm::DomTreeUpdater" data-ref-filename="llvm..DomTreeUpdater">DomTreeUpdater</a> &amp;<dfn class="local col8 decl" id="8DTU" title='DTU' data-type='llvm::DomTreeUpdater &amp;' data-ref="8DTU" data-ref-filename="8DTU">DTU</dfn>,</td></tr>
+<tr><th id="80">80</th><td>                               <a class="type" href="../../Analysis/LoopInfo.h.html#llvm::LoopInfo" title='llvm::LoopInfo' data-ref="llvm::LoopInfo" data-ref-filename="llvm..LoopInfo">LoopInfo</a> &amp;<dfn class="local col9 decl" id="9LI" title='LI' data-type='llvm::LoopInfo &amp;' data-ref="9LI" data-ref-filename="9LI">LI</dfn>);</td></tr>
+<tr><th id="81">81</th><td></td></tr>
+<tr><th id="82">82</th><td><b>private</b>:</td></tr>
+<tr><th id="83">83</th><td>  <i class="doc">/// Creates a new loop with header, body and latch blocks that iterates from</i></td></tr>
+<tr><th id="84">84</th><td><i class="doc">  /// [0, Bound). Updates<span class="command"> \p</span> <span class="arg">Preheader</span> to branch to the new header and uses<span class="command"> \p</span></i></td></tr>
+<tr><th id="85">85</th><td><i class="doc">  /// <span class="arg">Exit</span> as exit block.  Adds the new loop blocks to<span class="command"> \L</span> and applies dominator</i></td></tr>
+<tr><th id="86">86</th><td><i class="doc">  /// tree updates to<span class="command"> \p</span> <span class="arg">DTU.</span></i></td></tr>
+<tr><th id="87">87</th><td>  <em>static</em> <a class="type" href="../../IR/BasicBlock.h.html#llvm::BasicBlock" title='llvm::BasicBlock' data-ref="llvm::BasicBlock" data-ref-filename="llvm..BasicBlock">BasicBlock</a> *<dfn class="decl fn" id="_ZN4llvm8TileInfo10CreateLoopEPNS_10BasicBlockES2_PNS_5ValueES4_NS_9StringRefERNS_13IRBuilderBaseERNS_14DomTreeUpdaterEPNS_4LoopERNS_8LoopInfoE" title='llvm::TileInfo::CreateLoop' data-ref="_ZN4llvm8TileInfo10CreateLoopEPNS_10BasicBlockES2_PNS_5ValueES4_NS_9StringRefERNS_13IRBuilderBaseERNS_14DomTreeUpdaterEPNS_4LoopERNS_8LoopInfoE" data-ref-filename="_ZN4llvm8TileInfo10CreateLoopEPNS_10BasicBlockES2_PNS_5ValueES4_NS_9StringRefERNS_13IRBuilderBaseERNS_14DomTreeUpdaterEPNS_4LoopERNS_8LoopInfoE">CreateLoop</dfn>(<a class="type" href="../../IR/BasicBlock.h.html#llvm::BasicBlock" title='llvm::BasicBlock' data-ref="llvm::BasicBlock" data-ref-filename="llvm..BasicBlock">BasicBlock</a> *<dfn class="local col0 decl" id="10Preheader" title='Preheader' data-type='llvm::BasicBlock *' data-ref="10Preheader" data-ref-filename="10Preheader">Preheader</dfn>, <a class="type" href="../../IR/BasicBlock.h.html#llvm::BasicBlock" title='llvm::BasicBlock' data-ref="llvm::BasicBlock" data-ref-filename="llvm..BasicBlock">BasicBlock</a> *<dfn class="local col1 decl" id="11Exit" title='Exit' data-type='llvm::BasicBlock *' data-ref="11Exit" data-ref-filename="11Exit">Exit</dfn>,</td></tr>
+<tr><th id="88">88</th><td>                                <a class="type" href="../../IR/Value.h.html#llvm::Value" title='llvm::Value' data-ref="llvm::Value" data-ref-filename="llvm..Value">Value</a> *<dfn class="local col2 decl" id="12Bound" title='Bound' data-type='llvm::Value *' data-ref="12Bound" data-ref-filename="12Bound">Bound</dfn>, <a class="type" href="../../IR/Value.h.html#llvm::Value" title='llvm::Value' data-ref="llvm::Value" data-ref-filename="llvm..Value">Value</a> *<dfn class="local col3 decl" id="13Step" title='Step' data-type='llvm::Value *' data-ref="13Step" data-ref-filename="13Step">Step</dfn>, <a class="type" href="../../ADT/StringRef.h.html#llvm::StringRef" title='llvm::StringRef' data-ref="llvm::StringRef" data-ref-filename="llvm..StringRef">StringRef</a> <dfn class="local col4 decl" id="14Name" title='Name' data-type='llvm::StringRef' data-ref="14Name" data-ref-filename="14Name">Name</dfn>,</td></tr>
+<tr><th id="89">89</th><td>                                <a class="type" href="../../IR/IRBuilder.h.html#llvm::IRBuilderBase" title='llvm::IRBuilderBase' data-ref="llvm::IRBuilderBase" data-ref-filename="llvm..IRBuilderBase">IRBuilderBase</a> &amp;<dfn class="local col5 decl" id="15B" title='B' data-type='llvm::IRBuilderBase &amp;' data-ref="15B" data-ref-filename="15B">B</dfn>, <a class="type" href="../../Analysis/DomTreeUpdater.h.html#llvm::DomTreeUpdater" title='llvm::DomTreeUpdater' data-ref="llvm::DomTreeUpdater" data-ref-filename="llvm..DomTreeUpdater">DomTreeUpdater</a> &amp;<dfn class="local col6 decl" id="16DTU" title='DTU' data-type='llvm::DomTreeUpdater &amp;' data-ref="16DTU" data-ref-filename="16DTU">DTU</dfn>, <a class="type" href="../../Analysis/LoopInfo.h.html#llvm::Loop" title='llvm::Loop' data-ref="llvm::Loop" data-ref-filename="llvm..Loop">Loop</a> *<dfn class="local col7 decl" id="17L" title='L' data-type='llvm::Loop *' data-ref="17L" data-ref-filename="17L">L</dfn>,</td></tr>
+<tr><th id="90">90</th><td>                                <a class="type" href="../../Analysis/LoopInfo.h.html#llvm::LoopInfo" title='llvm::LoopInfo' data-ref="llvm::LoopInfo" data-ref-filename="llvm..LoopInfo">LoopInfo</a> &amp;<dfn class="local col8 decl" id="18LI" title='LI' data-type='llvm::LoopInfo &amp;' data-ref="18LI" data-ref-filename="18LI">LI</dfn>);</td></tr>
+<tr><th id="91">91</th><td>};</td></tr>
+<tr><th id="92">92</th><td>} <i>// namespace llvm</i></td></tr>
+<tr><th id="93">93</th><td></td></tr>
+<tr><th id="94">94</th><td><u>#<span data-ppcond="13">endif</span></u></td></tr>
+<tr><th id="95">95</th><td></td></tr>
+</table><hr/><p id='footer'>
+Generated while processing <a href='../../../../lib/Transforms/Scalar/LowerMatrixIntrinsics.cpp.html'>llvm/llvm/lib/Transforms/Scalar/LowerMatrixIntrinsics.cpp</a><br/>Generated on <em>2021-Jul-01</em> from project llvm revision <em>12</em>

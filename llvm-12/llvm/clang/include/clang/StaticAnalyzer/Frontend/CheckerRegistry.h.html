@@ -1,0 +1,216 @@
+<!doctype html>
+<html>
+<head>
+<meta name="viewport" content="width=device-width, initial-scale=1.0"><title>CheckerRegistry.h source code [llvm/clang/include/clang/StaticAnalyzer/Frontend/CheckerRegistry.h] - Woboq Code Browser</title>
+<meta name="woboq:interestingDefinitions" content="clang::ento::CheckerRegistry "/>
+<link rel="stylesheet" href="../../../../../.././data/qtcreator.css" title="QtCreator"/>
+<link rel="alternate stylesheet" href="../../../../../.././data/kdevelop.css" title="KDevelop"/>
+<script type="text/javascript" src="../../../../../.././data/jquery/jquery.min.js"></script>
+<script type="text/javascript" src="../../../../../.././data/jquery/jquery-ui.min.js"></script>
+<script>var file = 'llvm/clang/include/clang/StaticAnalyzer/Frontend/CheckerRegistry.h'; var root_path = '../../../../../..'; var data_path = '../../../../../.././data'; var ecma_script_api_version = 2;</script>
+<script src='../../../../../.././data/codebrowser.js'></script>
+</head>
+<body><div id='header'><h1 id='breadcrumb'><span>Browse the source code of </span><a href='../../../../..'>llvm</a>/<a href='../../../..'>clang</a>/<a href='../../..'>include</a>/<a href='../..'>clang</a>/<a href='..'>StaticAnalyzer</a>/<a href='./'>Frontend</a>/<a href='CheckerRegistry.h.html'>CheckerRegistry.h</a></h1></div>
+<hr/><div id='content'><table class="code">
+<tr><th id="1">1</th><td><i>//===- CheckerRegistry.h - Maintains all available checkers -----*- C++ -*-===//</i></td></tr>
+<tr><th id="2">2</th><td><i>//</i></td></tr>
+<tr><th id="3">3</th><td><i>// Part of the LLVM Project, under the Apache License v2.0 with LLVM Exceptions.</i></td></tr>
+<tr><th id="4">4</th><td><i>// See <a href="https://llvm.org/LICENSE.txt">https://llvm.org/LICENSE.txt</a> for license information.</i></td></tr>
+<tr><th id="5">5</th><td><i>// SPDX-License-Identifier: Apache-2.0 WITH LLVM-exception</i></td></tr>
+<tr><th id="6">6</th><td><i>//</i></td></tr>
+<tr><th id="7">7</th><td><i>//===----------------------------------------------------------------------===//</i></td></tr>
+<tr><th id="8">8</th><td><i>//</i></td></tr>
+<tr><th id="9">9</th><td><i>// Contains the logic for parsing the TableGen file Checkers.td, and parsing the</i></td></tr>
+<tr><th id="10">10</th><td><i>// specific invocation of the analyzer (which checker/package is enabled, values</i></td></tr>
+<tr><th id="11">11</th><td><i>// of their options, etc). This is in the frontend library because checker</i></td></tr>
+<tr><th id="12">12</th><td><i>// registry functions are called from here but are defined in the dependent</i></td></tr>
+<tr><th id="13">13</th><td><i>// library libStaticAnalyzerCheckers, but the actual data structure that holds</i></td></tr>
+<tr><th id="14">14</th><td><i>// the parsed information is in the Core library.</i></td></tr>
+<tr><th id="15">15</th><td><i>//</i></td></tr>
+<tr><th id="16">16</th><td><i>//===----------------------------------------------------------------------===//</i></td></tr>
+<tr><th id="17">17</th><td></td></tr>
+<tr><th id="18">18</th><td><u>#<span data-ppcond="18">ifndef</span> <span class="macro" data-ref="_M/LLVM_CLANG_STATICANALYZER_FRONTEND_CHECKERREGISTRY_H">LLVM_CLANG_STATICANALYZER_FRONTEND_CHECKERREGISTRY_H</span></u></td></tr>
+<tr><th id="19">19</th><td><u>#define <dfn class="macro" id="_M/LLVM_CLANG_STATICANALYZER_FRONTEND_CHECKERREGISTRY_H" data-ref="_M/LLVM_CLANG_STATICANALYZER_FRONTEND_CHECKERREGISTRY_H">LLVM_CLANG_STATICANALYZER_FRONTEND_CHECKERREGISTRY_H</dfn></u></td></tr>
+<tr><th id="20">20</th><td></td></tr>
+<tr><th id="21">21</th><td><u>#include <a href="../../Basic/LLVM.h.html">"clang/Basic/LLVM.h"</a></u></td></tr>
+<tr><th id="22">22</th><td><u>#include <a href="../Core/CheckerRegistryData.h.html">"clang/StaticAnalyzer/Core/CheckerRegistryData.h"</a></u></td></tr>
+<tr><th id="23">23</th><td><u>#include <a href="../../../../../llvm/include/llvm/ADT/StringRef.h.html">"llvm/ADT/StringRef.h"</a></u></td></tr>
+<tr><th id="24">24</th><td></td></tr>
+<tr><th id="25">25</th><td><i>// FIXME: move this information to an HTML file in docs/.</i></td></tr>
+<tr><th id="26">26</th><td><i>// At the very least, a checker plugin is a dynamic library that exports</i></td></tr>
+<tr><th id="27">27</th><td><i>// clang_analyzerAPIVersionString. This should be defined as follows:</i></td></tr>
+<tr><th id="28">28</th><td><i>//</i></td></tr>
+<tr><th id="29">29</th><td><i>//   extern "C"</i></td></tr>
+<tr><th id="30">30</th><td><i>//   const char clang_analyzerAPIVersionString[] =</i></td></tr>
+<tr><th id="31">31</th><td><i>//     CLANG_ANALYZER_API_VERSION_STRING;</i></td></tr>
+<tr><th id="32">32</th><td><i>//</i></td></tr>
+<tr><th id="33">33</th><td><i>// This is used to check whether the current version of the analyzer is known to</i></td></tr>
+<tr><th id="34">34</th><td><i>// be incompatible with a plugin. Plugins with incompatible version strings,</i></td></tr>
+<tr><th id="35">35</th><td><i>// or without a version string at all, will not be loaded.</i></td></tr>
+<tr><th id="36">36</th><td><i>//</i></td></tr>
+<tr><th id="37">37</th><td><i>// To add a custom checker to the analyzer, the plugin must also define the</i></td></tr>
+<tr><th id="38">38</th><td><i>// function clang_registerCheckers. For example:</i></td></tr>
+<tr><th id="39">39</th><td><i>//</i></td></tr>
+<tr><th id="40">40</th><td><i>//    extern "C"</i></td></tr>
+<tr><th id="41">41</th><td><i>//    void clang_registerCheckers (CheckerRegistry &amp;registry) {</i></td></tr>
+<tr><th id="42">42</th><td><i>//      registry.addChecker&lt;MainCallChecker&gt;("example.MainCallChecker",</i></td></tr>
+<tr><th id="43">43</th><td><i>//        "Disallows calls to functions called main");</i></td></tr>
+<tr><th id="44">44</th><td><i>//    }</i></td></tr>
+<tr><th id="45">45</th><td><i>//</i></td></tr>
+<tr><th id="46">46</th><td><i>// The first method argument is the full name of the checker, including its</i></td></tr>
+<tr><th id="47">47</th><td><i>// enclosing package. By convention, the registered name of a checker is the</i></td></tr>
+<tr><th id="48">48</th><td><i>// name of the associated class (the template argument).</i></td></tr>
+<tr><th id="49">49</th><td><i>// The second method argument is a short human-readable description of the</i></td></tr>
+<tr><th id="50">50</th><td><i>// checker.</i></td></tr>
+<tr><th id="51">51</th><td><i>//</i></td></tr>
+<tr><th id="52">52</th><td><i>// The clang_registerCheckers function may add any number of checkers to the</i></td></tr>
+<tr><th id="53">53</th><td><i>// registry. If any checkers require additional initialization, use the three-</i></td></tr>
+<tr><th id="54">54</th><td><i>// argument form of CheckerRegistry::addChecker.</i></td></tr>
+<tr><th id="55">55</th><td><i>//</i></td></tr>
+<tr><th id="56">56</th><td><i>// To load a checker plugin, specify the full path to the dynamic library as</i></td></tr>
+<tr><th id="57">57</th><td><i>// the argument to the -load option in the cc1 frontend. You can then enable</i></td></tr>
+<tr><th id="58">58</th><td><i>// your custom checker using the -analyzer-checker:</i></td></tr>
+<tr><th id="59">59</th><td><i>//</i></td></tr>
+<tr><th id="60">60</th><td><i>//   clang -cc1 -load &lt;/path/to/plugin.dylib&gt; -analyze</i></td></tr>
+<tr><th id="61">61</th><td><i>//     -analyzer-checker=&lt;example.MainCallChecker&gt;</i></td></tr>
+<tr><th id="62">62</th><td><i>//</i></td></tr>
+<tr><th id="63">63</th><td><i>// For a complete working example, see examples/analyzer-plugin.</i></td></tr>
+<tr><th id="64">64</th><td></td></tr>
+<tr><th id="65">65</th><td><u>#<span data-ppcond="65">ifndef</span> <span class="macro" data-ref="_M/CLANG_ANALYZER_API_VERSION_STRING">CLANG_ANALYZER_API_VERSION_STRING</span></u></td></tr>
+<tr><th id="66">66</th><td><i>// FIXME: The Clang version string is not particularly granular;</i></td></tr>
+<tr><th id="67">67</th><td><i>// the analyzer infrastructure can change a lot between releases.</i></td></tr>
+<tr><th id="68">68</th><td><i>// Unfortunately, this string has to be statically embedded in each plugin,</i></td></tr>
+<tr><th id="69">69</th><td><i>// so we can't just use the functions defined in Version.h.</i></td></tr>
+<tr><th id="70">70</th><td><u>#include <a href="../../Basic/Version.h.html">"clang/Basic/Version.h"</a></u></td></tr>
+<tr><th id="71">71</th><td><u>#define <dfn class="macro" id="_M/CLANG_ANALYZER_API_VERSION_STRING" data-ref="_M/CLANG_ANALYZER_API_VERSION_STRING">CLANG_ANALYZER_API_VERSION_STRING</dfn> CLANG_VERSION_STRING</u></td></tr>
+<tr><th id="72">72</th><td><u>#<span data-ppcond="65">endif</span></u></td></tr>
+<tr><th id="73">73</th><td></td></tr>
+<tr><th id="74">74</th><td><b>namespace</b> <span class="namespace">clang</span> {</td></tr>
+<tr><th id="75">75</th><td></td></tr>
+<tr><th id="76">76</th><td><b>class</b> <a class="type" href="../Core/AnalyzerOptions.h.html#clang::AnalyzerOptions" title='clang::AnalyzerOptions' data-ref="clang::AnalyzerOptions" data-ref-filename="clang..AnalyzerOptions" id="clang::AnalyzerOptions">AnalyzerOptions</a>;</td></tr>
+<tr><th id="77">77</th><td><b>class</b> <a class="type" href="../../Basic/Diagnostic.h.html#clang::DiagnosticsEngine" title='clang::DiagnosticsEngine' data-ref="clang::DiagnosticsEngine" data-ref-filename="clang..DiagnosticsEngine" id="clang::DiagnosticsEngine">DiagnosticsEngine</a>;</td></tr>
+<tr><th id="78">78</th><td></td></tr>
+<tr><th id="79">79</th><td><b>namespace</b> <span class="namespace">ento</span> {</td></tr>
+<tr><th id="80">80</th><td></td></tr>
+<tr><th id="81">81</th><td><b>class</b> <a class="type" href="../Core/CheckerManager.h.html#clang::ento::CheckerManager" title='clang::ento::CheckerManager' data-ref="clang::ento::CheckerManager" data-ref-filename="clang..ento..CheckerManager" id="clang::ento::CheckerManager">CheckerManager</a>;</td></tr>
+<tr><th id="82">82</th><td></td></tr>
+<tr><th id="83">83</th><td><i class="doc">/// Manages a set of available checkers for running a static analysis.</i></td></tr>
+<tr><th id="84">84</th><td><i class="doc">/// The checkers are organized into packages by full name, where including</i></td></tr>
+<tr><th id="85">85</th><td><i class="doc">/// a package will recursively include all subpackages and checkers within it.</i></td></tr>
+<tr><th id="86">86</th><td><i class="doc">/// For example, the checker "core.builtin.NoReturnFunctionChecker" will be</i></td></tr>
+<tr><th id="87">87</th><td><i class="doc">/// included if initializeManager() is called with an option of "core",</i></td></tr>
+<tr><th id="88">88</th><td><i class="doc">/// "core.builtin", or the full name "core.builtin.NoReturnFunctionChecker".</i></td></tr>
+<tr><th id="89">89</th><td><b>class</b> <dfn class="type def" id="clang::ento::CheckerRegistry" title='clang::ento::CheckerRegistry' data-ref="clang::ento::CheckerRegistry" data-ref-filename="clang..ento..CheckerRegistry">CheckerRegistry</dfn> {</td></tr>
+<tr><th id="90">90</th><td><b>public</b>:</td></tr>
+<tr><th id="91">91</th><td>  <dfn class="decl fn" id="_ZN5clang4ento15CheckerRegistryC1ERNS0_19CheckerRegistryDataEN4llvm8ArrayRefINSt7__cxx1112basic_stringIcSt11char_traitsIcESaIcEEEEERNS_17DiagnosticsEn732865" title='clang::ento::CheckerRegistry::CheckerRegistry' data-ref="_ZN5clang4ento15CheckerRegistryC1ERNS0_19CheckerRegistryDataEN4llvm8ArrayRefINSt7__cxx1112basic_stringIcSt11char_traitsIcESaIcEEEEERNS_17DiagnosticsEn732865" data-ref-filename="_ZN5clang4ento15CheckerRegistryC1ERNS0_19CheckerRegistryDataEN4llvm8ArrayRefINSt7__cxx1112basic_stringIcSt11char_traitsIcESaIcEEEEERNS_17DiagnosticsEn732865">CheckerRegistry</dfn>(<a class="type" href="../Core/CheckerRegistryData.h.html#clang::ento::CheckerRegistryData" title='clang::ento::CheckerRegistryData' data-ref="clang::ento::CheckerRegistryData" data-ref-filename="clang..ento..CheckerRegistryData">CheckerRegistryData</a> &amp;<dfn class="local col6 decl" id="2896Data" title='Data' data-type='clang::ento::CheckerRegistryData &amp;' data-ref="2896Data" data-ref-filename="2896Data">Data</dfn>, <a class="type" href="../../Basic/LLVM.h.html#llvm::ArrayRef" title='llvm::ArrayRef' data-ref="llvm::ArrayRef" data-ref-filename="llvm..ArrayRef">ArrayRef</a>&lt;<span class="namespace">std::</span><span class='typedef' title='std::string' data-type='basic_string&lt;char&gt;' data-ref="std::string" data-ref-filename="std..string">string</span>&gt; <dfn class="local col7 decl" id="2897Plugins" title='Plugins' data-type='ArrayRef&lt;std::string&gt;' data-ref="2897Plugins" data-ref-filename="2897Plugins">Plugins</dfn>,</td></tr>
+<tr><th id="92">92</th><td>                  <a class="type" href="../../Basic/Diagnostic.h.html#clang::DiagnosticsEngine" title='clang::DiagnosticsEngine' data-ref="clang::DiagnosticsEngine" data-ref-filename="clang..DiagnosticsEngine">DiagnosticsEngine</a> &amp;<dfn class="local col8 decl" id="2898Diags" title='Diags' data-type='clang::DiagnosticsEngine &amp;' data-ref="2898Diags" data-ref-filename="2898Diags">Diags</dfn>, <a class="type" href="../Core/AnalyzerOptions.h.html#clang::AnalyzerOptions" title='clang::AnalyzerOptions' data-ref="clang::AnalyzerOptions" data-ref-filename="clang..AnalyzerOptions">AnalyzerOptions</a> &amp;<dfn class="local col9 decl" id="2899AnOpts" title='AnOpts' data-type='clang::AnalyzerOptions &amp;' data-ref="2899AnOpts" data-ref-filename="2899AnOpts">AnOpts</dfn>,</td></tr>
+<tr><th id="93">93</th><td>                  <a class="type" href="../../Basic/LLVM.h.html#llvm::ArrayRef" title='llvm::ArrayRef' data-ref="llvm::ArrayRef" data-ref-filename="llvm..ArrayRef">ArrayRef</a>&lt;<span class="namespace">std::</span><span class='type' title='std::function' data-ref="std::function" data-ref-filename="std..function">function</span>&lt;<em>void</em>(<a class="type" href="#clang::ento::CheckerRegistry" title='clang::ento::CheckerRegistry' data-ref="clang::ento::CheckerRegistry" data-ref-filename="clang..ento..CheckerRegistry">CheckerRegistry</a> &amp;)&gt;&gt;</td></tr>
+<tr><th id="94">94</th><td>                      <dfn class="local col0 decl" id="2900CheckerRegistrationFns" title='CheckerRegistrationFns' data-type='ArrayRef&lt;std::function&lt;void (CheckerRegistry &amp;)&gt; &gt;' data-ref="2900CheckerRegistrationFns" data-ref-filename="2900CheckerRegistrationFns">CheckerRegistrationFns</dfn> = <a class="ref fn" href="../../../../../llvm/include/llvm/ADT/ArrayRef.h.html#_ZN4llvm8ArrayRefC1Ev" title='llvm::ArrayRef::ArrayRef&lt;T&gt;' data-ref="_ZN4llvm8ArrayRefC1Ev" data-ref-filename="_ZN4llvm8ArrayRefC1Ev">{</a>});</td></tr>
+<tr><th id="95">95</th><td></td></tr>
+<tr><th id="96">96</th><td>  <i class="doc">/// Collects all enabled checkers in the field EnabledCheckers. It preserves</i></td></tr>
+<tr><th id="97">97</th><td><i class="doc">  /// the order of insertion, as dependencies have to be enabled before the</i></td></tr>
+<tr><th id="98">98</th><td><i class="doc">  /// checkers that depend on them.</i></td></tr>
+<tr><th id="99">99</th><td>  <em>void</em> <dfn class="decl fn" id="_ZN5clang4ento15CheckerRegistry18initializeRegistryERKNS0_14CheckerManagerE" title='clang::ento::CheckerRegistry::initializeRegistry' data-ref="_ZN5clang4ento15CheckerRegistry18initializeRegistryERKNS0_14CheckerManagerE" data-ref-filename="_ZN5clang4ento15CheckerRegistry18initializeRegistryERKNS0_14CheckerManagerE">initializeRegistry</dfn>(<em>const</em> <a class="type" href="../Core/CheckerManager.h.html#clang::ento::CheckerManager" title='clang::ento::CheckerManager' data-ref="clang::ento::CheckerManager" data-ref-filename="clang..ento..CheckerManager">CheckerManager</a> &amp;<dfn class="local col1 decl" id="2901Mgr" title='Mgr' data-type='const clang::ento::CheckerManager &amp;' data-ref="2901Mgr" data-ref-filename="2901Mgr">Mgr</dfn>);</td></tr>
+<tr><th id="100">100</th><td></td></tr>
+<tr><th id="101">101</th><td></td></tr>
+<tr><th id="102">102</th><td><b>private</b>:</td></tr>
+<tr><th id="103">103</th><td>  <i class="doc">/// Default initialization function for checkers -- since CheckerManager</i></td></tr>
+<tr><th id="104">104</th><td><i class="doc">  /// includes this header, we need to make it a template parameter, and since</i></td></tr>
+<tr><th id="105">105</th><td><i class="doc">  /// the checker must be a template parameter as well, we can't put this in the</i></td></tr>
+<tr><th id="106">106</th><td><i class="doc">  /// cpp file.</i></td></tr>
+<tr><th id="107">107</th><td>  <b>template</b> &lt;<b>typename</b> MGR, <b>typename</b> T&gt; <em>static</em> <em>void</em> <dfn class="decl def fn" id="_ZN5clang4ento15CheckerRegistry17initializeManagerERT_" title='clang::ento::CheckerRegistry::initializeManager' data-ref="_ZN5clang4ento15CheckerRegistry17initializeManagerERT_" data-ref-filename="_ZN5clang4ento15CheckerRegistry17initializeManagerERT_">initializeManager</dfn>(MGR &amp;<dfn class="local col2 decl" id="2902mgr" title='mgr' data-type='MGR &amp;' data-ref="2902mgr" data-ref-filename="2902mgr">mgr</dfn>) {</td></tr>
+<tr><th id="108">108</th><td>    <a class="local col2 ref" href="#2902mgr" title='mgr' data-ref="2902mgr" data-ref-filename="2902mgr">mgr</a>.<b>template</b> registerChecker&lt;T&gt;();</td></tr>
+<tr><th id="109">109</th><td>  }</td></tr>
+<tr><th id="110">110</th><td></td></tr>
+<tr><th id="111">111</th><td>  <b>template</b> &lt;<b>typename</b> T&gt; <em>static</em> <em>bool</em> <dfn class="decl def fn" id="_ZN5clang4ento15CheckerRegistry10returnTrueERKNS0_14CheckerManagerE" title='clang::ento::CheckerRegistry::returnTrue' data-ref="_ZN5clang4ento15CheckerRegistry10returnTrueERKNS0_14CheckerManagerE" data-ref-filename="_ZN5clang4ento15CheckerRegistry10returnTrueERKNS0_14CheckerManagerE">returnTrue</dfn>(<em>const</em> <a class="type" href="../Core/CheckerManager.h.html#clang::ento::CheckerManager" title='clang::ento::CheckerManager' data-ref="clang::ento::CheckerManager" data-ref-filename="clang..ento..CheckerManager">CheckerManager</a> &amp;<dfn class="local col3 decl" id="2903mgr" title='mgr' data-type='const clang::ento::CheckerManager &amp;' data-ref="2903mgr" data-ref-filename="2903mgr">mgr</dfn>) {</td></tr>
+<tr><th id="112">112</th><td>    <b>return</b> <b>true</b>;</td></tr>
+<tr><th id="113">113</th><td>  }</td></tr>
+<tr><th id="114">114</th><td></td></tr>
+<tr><th id="115">115</th><td><b>public</b>:</td></tr>
+<tr><th id="116">116</th><td>  <i class="doc">/// Adds a checker to the registry. Use this non-templated overload when your</i></td></tr>
+<tr><th id="117">117</th><td><i class="doc">  /// checker requires custom initialization.</i></td></tr>
+<tr><th id="118">118</th><td>  <em>void</em> <dfn class="decl fn" id="_ZN5clang4ento15CheckerRegistry10addCheckerEPFvRNS0_14CheckerManagerEEPFbRKS2_EN4llvm9StringRefESB_SB_b" title='clang::ento::CheckerRegistry::addChecker' data-ref="_ZN5clang4ento15CheckerRegistry10addCheckerEPFvRNS0_14CheckerManagerEEPFbRKS2_EN4llvm9StringRefESB_SB_b" data-ref-filename="_ZN5clang4ento15CheckerRegistry10addCheckerEPFvRNS0_14CheckerManagerEEPFbRKS2_EN4llvm9StringRefESB_SB_b">addChecker</dfn>(<a class="typedef" href="../Core/CheckerRegistryData.h.html#clang::ento::RegisterCheckerFn" title='clang::ento::RegisterCheckerFn' data-type='void (*)(clang::ento::CheckerManager &amp;)' data-ref="clang::ento::RegisterCheckerFn" data-ref-filename="clang..ento..RegisterCheckerFn">RegisterCheckerFn</a> <dfn class="local col4 decl" id="2904Fn" title='Fn' data-type='clang::ento::RegisterCheckerFn' data-ref="2904Fn" data-ref-filename="2904Fn">Fn</dfn>, <a class="typedef" href="../Core/CheckerRegistryData.h.html#clang::ento::ShouldRegisterFunction" title='clang::ento::ShouldRegisterFunction' data-type='bool (*)(const clang::ento::CheckerManager &amp;)' data-ref="clang::ento::ShouldRegisterFunction" data-ref-filename="clang..ento..ShouldRegisterFunction">ShouldRegisterFunction</a> <dfn class="local col5 decl" id="2905sfn" title='sfn' data-type='clang::ento::ShouldRegisterFunction' data-ref="2905sfn" data-ref-filename="2905sfn">sfn</dfn>,</td></tr>
+<tr><th id="119">119</th><td>                  <a class="type" href="../../../../../llvm/include/llvm/ADT/StringRef.h.html#llvm::StringRef" title='llvm::StringRef' data-ref="llvm::StringRef" data-ref-filename="llvm..StringRef">StringRef</a> <dfn class="local col6 decl" id="2906FullName" title='FullName' data-type='llvm::StringRef' data-ref="2906FullName" data-ref-filename="2906FullName">FullName</dfn>, <a class="type" href="../../../../../llvm/include/llvm/ADT/StringRef.h.html#llvm::StringRef" title='llvm::StringRef' data-ref="llvm::StringRef" data-ref-filename="llvm..StringRef">StringRef</a> <dfn class="local col7 decl" id="2907Desc" title='Desc' data-type='llvm::StringRef' data-ref="2907Desc" data-ref-filename="2907Desc">Desc</dfn>, <a class="type" href="../../../../../llvm/include/llvm/ADT/StringRef.h.html#llvm::StringRef" title='llvm::StringRef' data-ref="llvm::StringRef" data-ref-filename="llvm..StringRef">StringRef</a> <dfn class="local col8 decl" id="2908DocsUri" title='DocsUri' data-type='llvm::StringRef' data-ref="2908DocsUri" data-ref-filename="2908DocsUri">DocsUri</dfn>,</td></tr>
+<tr><th id="120">120</th><td>                  <em>bool</em> <dfn class="local col9 decl" id="2909IsHidden" title='IsHidden' data-type='bool' data-ref="2909IsHidden" data-ref-filename="2909IsHidden">IsHidden</dfn>);</td></tr>
+<tr><th id="121">121</th><td></td></tr>
+<tr><th id="122">122</th><td>  <i class="doc">/// Adds a checker to the registry. Use this templated overload when your</i></td></tr>
+<tr><th id="123">123</th><td><i class="doc">  /// checker does not require any custom initialization.</i></td></tr>
+<tr><th id="124">124</th><td><i class="doc">  /// This function isn't really needed and probably causes more headaches than</i></td></tr>
+<tr><th id="125">125</th><td><i class="doc">  /// the tiny convenience that it provides, but external plugins might use it,</i></td></tr>
+<tr><th id="126">126</th><td><i class="doc">  /// and there isn't a strong incentive to remove it.</i></td></tr>
+<tr><th id="127">127</th><td>  <b>template</b> &lt;<b>class</b> T&gt;</td></tr>
+<tr><th id="128">128</th><td>  <em>void</em> <dfn class="decl def fn" id="_ZN5clang4ento15CheckerRegistry10addCheckerEN4llvm9StringRefES3_S3_b" title='clang::ento::CheckerRegistry::addChecker' data-ref="_ZN5clang4ento15CheckerRegistry10addCheckerEN4llvm9StringRefES3_S3_b" data-ref-filename="_ZN5clang4ento15CheckerRegistry10addCheckerEN4llvm9StringRefES3_S3_b">addChecker</dfn>(<a class="type" href="../../../../../llvm/include/llvm/ADT/StringRef.h.html#llvm::StringRef" title='llvm::StringRef' data-ref="llvm::StringRef" data-ref-filename="llvm..StringRef">StringRef</a> <dfn class="local col0 decl" id="2910FullName" title='FullName' data-type='llvm::StringRef' data-ref="2910FullName" data-ref-filename="2910FullName">FullName</dfn>, <a class="type" href="../../../../../llvm/include/llvm/ADT/StringRef.h.html#llvm::StringRef" title='llvm::StringRef' data-ref="llvm::StringRef" data-ref-filename="llvm..StringRef">StringRef</a> <dfn class="local col1 decl" id="2911Desc" title='Desc' data-type='llvm::StringRef' data-ref="2911Desc" data-ref-filename="2911Desc">Desc</dfn>, <a class="type" href="../../../../../llvm/include/llvm/ADT/StringRef.h.html#llvm::StringRef" title='llvm::StringRef' data-ref="llvm::StringRef" data-ref-filename="llvm..StringRef">StringRef</a> <dfn class="local col2 decl" id="2912DocsUri" title='DocsUri' data-type='llvm::StringRef' data-ref="2912DocsUri" data-ref-filename="2912DocsUri">DocsUri</dfn>,</td></tr>
+<tr><th id="129">129</th><td>                  <em>bool</em> <dfn class="local col3 decl" id="2913IsHidden" title='IsHidden' data-type='bool' data-ref="2913IsHidden" data-ref-filename="2913IsHidden">IsHidden</dfn> = <b>false</b>) {</td></tr>
+<tr><th id="130">130</th><td>    <i>// Avoid MSVC's Compiler Error C2276:</i></td></tr>
+<tr><th id="131">131</th><td><i>    // <a href="http://msdn.microsoft.com/en-us/library/850cstw1(v=VS.80).aspx">http://msdn.microsoft.com/en-us/library/850cstw1(v=VS.80).aspx</a></i></td></tr>
+<tr><th id="132">132</th><td>    addChecker(&amp;<a class="type" href="#clang::ento::CheckerRegistry" title='clang::ento::CheckerRegistry' data-ref="clang::ento::CheckerRegistry" data-ref-filename="clang..ento..CheckerRegistry">CheckerRegistry</a>::initializeManager&lt;<a class="type" href="../Core/CheckerManager.h.html#clang::ento::CheckerManager" title='clang::ento::CheckerManager' data-ref="clang::ento::CheckerManager" data-ref-filename="clang..ento..CheckerManager">CheckerManager</a>, T&gt;,</td></tr>
+<tr><th id="133">133</th><td>               &amp;<a class="type" href="#clang::ento::CheckerRegistry" title='clang::ento::CheckerRegistry' data-ref="clang::ento::CheckerRegistry" data-ref-filename="clang..ento..CheckerRegistry">CheckerRegistry</a>::returnTrue&lt;T&gt;, <a class="local col0 ref" href="#2910FullName" title='FullName' data-ref="2910FullName" data-ref-filename="2910FullName">FullName</a>, <a class="local col1 ref" href="#2911Desc" title='Desc' data-ref="2911Desc" data-ref-filename="2911Desc">Desc</a>, <a class="local col2 ref" href="#2912DocsUri" title='DocsUri' data-ref="2912DocsUri" data-ref-filename="2912DocsUri">DocsUri</a>,</td></tr>
+<tr><th id="134">134</th><td>               <a class="local col3 ref" href="#2913IsHidden" title='IsHidden' data-ref="2913IsHidden" data-ref-filename="2913IsHidden">IsHidden</a>);</td></tr>
+<tr><th id="135">135</th><td>  }</td></tr>
+<tr><th id="136">136</th><td></td></tr>
+<tr><th id="137">137</th><td>  <i class="doc">/// Makes the checker with the full name<span class="command"> \p</span> <span class="arg">fullName</span> depend on the checker</i></td></tr>
+<tr><th id="138">138</th><td><i class="doc">  /// called<span class="command"> \p</span> <span class="arg">dependency.</span></i></td></tr>
+<tr><th id="139">139</th><td>  <em>void</em> <dfn class="decl fn" id="_ZN5clang4ento15CheckerRegistry13addDependencyEN4llvm9StringRefES3_" title='clang::ento::CheckerRegistry::addDependency' data-ref="_ZN5clang4ento15CheckerRegistry13addDependencyEN4llvm9StringRefES3_" data-ref-filename="_ZN5clang4ento15CheckerRegistry13addDependencyEN4llvm9StringRefES3_">addDependency</dfn>(<a class="type" href="../../../../../llvm/include/llvm/ADT/StringRef.h.html#llvm::StringRef" title='llvm::StringRef' data-ref="llvm::StringRef" data-ref-filename="llvm..StringRef">StringRef</a> <dfn class="local col4 decl" id="2914FullName" title='FullName' data-type='llvm::StringRef' data-ref="2914FullName" data-ref-filename="2914FullName">FullName</dfn>, <a class="type" href="../../../../../llvm/include/llvm/ADT/StringRef.h.html#llvm::StringRef" title='llvm::StringRef' data-ref="llvm::StringRef" data-ref-filename="llvm..StringRef">StringRef</a> <dfn class="local col5 decl" id="2915Dependency" title='Dependency' data-type='llvm::StringRef' data-ref="2915Dependency" data-ref-filename="2915Dependency">Dependency</dfn>);</td></tr>
+<tr><th id="140">140</th><td></td></tr>
+<tr><th id="141">141</th><td>  <i class="doc">/// Makes the checker with the full name<span class="command"> \p</span> <span class="arg">fullName</span> weak depend on the</i></td></tr>
+<tr><th id="142">142</th><td><i class="doc">  /// checker called<span class="command"> \p</span> <span class="arg">dependency.</span></i></td></tr>
+<tr><th id="143">143</th><td>  <em>void</em> <dfn class="decl fn" id="_ZN5clang4ento15CheckerRegistry17addWeakDependencyEN4llvm9StringRefES3_" title='clang::ento::CheckerRegistry::addWeakDependency' data-ref="_ZN5clang4ento15CheckerRegistry17addWeakDependencyEN4llvm9StringRefES3_" data-ref-filename="_ZN5clang4ento15CheckerRegistry17addWeakDependencyEN4llvm9StringRefES3_">addWeakDependency</dfn>(<a class="type" href="../../../../../llvm/include/llvm/ADT/StringRef.h.html#llvm::StringRef" title='llvm::StringRef' data-ref="llvm::StringRef" data-ref-filename="llvm..StringRef">StringRef</a> <dfn class="local col6 decl" id="2916FullName" title='FullName' data-type='llvm::StringRef' data-ref="2916FullName" data-ref-filename="2916FullName">FullName</dfn>, <a class="type" href="../../../../../llvm/include/llvm/ADT/StringRef.h.html#llvm::StringRef" title='llvm::StringRef' data-ref="llvm::StringRef" data-ref-filename="llvm..StringRef">StringRef</a> <dfn class="local col7 decl" id="2917Dependency" title='Dependency' data-type='llvm::StringRef' data-ref="2917Dependency" data-ref-filename="2917Dependency">Dependency</dfn>);</td></tr>
+<tr><th id="144">144</th><td></td></tr>
+<tr><th id="145">145</th><td>  <i class="doc">/// Registers an option to a given checker. A checker option will always have</i></td></tr>
+<tr><th id="146">146</th><td><i class="doc">  /// the following format:</i></td></tr>
+<tr><th id="147">147</th><td><i class="doc">  ///   CheckerFullName:OptionName=Value</i></td></tr>
+<tr><th id="148">148</th><td><i class="doc">  /// And can be specified from the command line like this:</i></td></tr>
+<tr><th id="149">149</th><td><i class="doc">  ///   -analyzer-config CheckerFullName:OptionName=Value</i></td></tr>
+<tr><th id="150">150</th><td><i class="doc">  ///</i></td></tr>
+<tr><th id="151">151</th><td><i class="doc">  /// Options for unknown checkers, or unknown options for a given checker, or</i></td></tr>
+<tr><th id="152">152</th><td><i class="doc">  /// invalid value types for that given option are reported as an error in</i></td></tr>
+<tr><th id="153">153</th><td><i class="doc">  /// non-compatibility mode.</i></td></tr>
+<tr><th id="154">154</th><td>  <em>void</em> <dfn class="decl fn" id="_ZN5clang4ento15CheckerRegistry16addCheckerOptionEN4llvm9StringRefES3_S3_S3_S3_S3_b" title='clang::ento::CheckerRegistry::addCheckerOption' data-ref="_ZN5clang4ento15CheckerRegistry16addCheckerOptionEN4llvm9StringRefES3_S3_S3_S3_S3_b" data-ref-filename="_ZN5clang4ento15CheckerRegistry16addCheckerOptionEN4llvm9StringRefES3_S3_S3_S3_S3_b">addCheckerOption</dfn>(<a class="type" href="../../../../../llvm/include/llvm/ADT/StringRef.h.html#llvm::StringRef" title='llvm::StringRef' data-ref="llvm::StringRef" data-ref-filename="llvm..StringRef">StringRef</a> <dfn class="local col8 decl" id="2918OptionType" title='OptionType' data-type='llvm::StringRef' data-ref="2918OptionType" data-ref-filename="2918OptionType">OptionType</dfn>, <a class="type" href="../../../../../llvm/include/llvm/ADT/StringRef.h.html#llvm::StringRef" title='llvm::StringRef' data-ref="llvm::StringRef" data-ref-filename="llvm..StringRef">StringRef</a> <dfn class="local col9 decl" id="2919CheckerFullName" title='CheckerFullName' data-type='llvm::StringRef' data-ref="2919CheckerFullName" data-ref-filename="2919CheckerFullName">CheckerFullName</dfn>,</td></tr>
+<tr><th id="155">155</th><td>                        <a class="type" href="../../../../../llvm/include/llvm/ADT/StringRef.h.html#llvm::StringRef" title='llvm::StringRef' data-ref="llvm::StringRef" data-ref-filename="llvm..StringRef">StringRef</a> <dfn class="local col0 decl" id="2920OptionName" title='OptionName' data-type='llvm::StringRef' data-ref="2920OptionName" data-ref-filename="2920OptionName">OptionName</dfn>, <a class="type" href="../../../../../llvm/include/llvm/ADT/StringRef.h.html#llvm::StringRef" title='llvm::StringRef' data-ref="llvm::StringRef" data-ref-filename="llvm..StringRef">StringRef</a> <dfn class="local col1 decl" id="2921DefaultValStr" title='DefaultValStr' data-type='llvm::StringRef' data-ref="2921DefaultValStr" data-ref-filename="2921DefaultValStr">DefaultValStr</dfn>,</td></tr>
+<tr><th id="156">156</th><td>                        <a class="type" href="../../../../../llvm/include/llvm/ADT/StringRef.h.html#llvm::StringRef" title='llvm::StringRef' data-ref="llvm::StringRef" data-ref-filename="llvm..StringRef">StringRef</a> <dfn class="local col2 decl" id="2922Description" title='Description' data-type='llvm::StringRef' data-ref="2922Description" data-ref-filename="2922Description">Description</dfn>, <a class="type" href="../../../../../llvm/include/llvm/ADT/StringRef.h.html#llvm::StringRef" title='llvm::StringRef' data-ref="llvm::StringRef" data-ref-filename="llvm..StringRef">StringRef</a> <dfn class="local col3 decl" id="2923DevelopmentStatus" title='DevelopmentStatus' data-type='llvm::StringRef' data-ref="2923DevelopmentStatus" data-ref-filename="2923DevelopmentStatus">DevelopmentStatus</dfn>,</td></tr>
+<tr><th id="157">157</th><td>                        <em>bool</em> <dfn class="local col4 decl" id="2924IsHidden" title='IsHidden' data-type='bool' data-ref="2924IsHidden" data-ref-filename="2924IsHidden">IsHidden</dfn> = <b>false</b>);</td></tr>
+<tr><th id="158">158</th><td></td></tr>
+<tr><th id="159">159</th><td>  <i class="doc">/// Adds a package to the registry.</i></td></tr>
+<tr><th id="160">160</th><td>  <em>void</em> <dfn class="decl fn" id="_ZN5clang4ento15CheckerRegistry10addPackageEN4llvm9StringRefE" title='clang::ento::CheckerRegistry::addPackage' data-ref="_ZN5clang4ento15CheckerRegistry10addPackageEN4llvm9StringRefE" data-ref-filename="_ZN5clang4ento15CheckerRegistry10addPackageEN4llvm9StringRefE">addPackage</dfn>(<a class="type" href="../../../../../llvm/include/llvm/ADT/StringRef.h.html#llvm::StringRef" title='llvm::StringRef' data-ref="llvm::StringRef" data-ref-filename="llvm..StringRef">StringRef</a> <dfn class="local col5 decl" id="2925FullName" title='FullName' data-type='llvm::StringRef' data-ref="2925FullName" data-ref-filename="2925FullName">FullName</dfn>);</td></tr>
+<tr><th id="161">161</th><td></td></tr>
+<tr><th id="162">162</th><td>  <i class="doc">/// Registers an option to a given package. A package option will always have</i></td></tr>
+<tr><th id="163">163</th><td><i class="doc">  /// the following format:</i></td></tr>
+<tr><th id="164">164</th><td><i class="doc">  ///   PackageFullName:OptionName=Value</i></td></tr>
+<tr><th id="165">165</th><td><i class="doc">  /// And can be specified from the command line like this:</i></td></tr>
+<tr><th id="166">166</th><td><i class="doc">  ///   -analyzer-config PackageFullName:OptionName=Value</i></td></tr>
+<tr><th id="167">167</th><td><i class="doc">  ///</i></td></tr>
+<tr><th id="168">168</th><td><i class="doc">  /// Options for unknown packages, or unknown options for a given package, or</i></td></tr>
+<tr><th id="169">169</th><td><i class="doc">  /// invalid value types for that given option are reported as an error in</i></td></tr>
+<tr><th id="170">170</th><td><i class="doc">  /// non-compatibility mode.</i></td></tr>
+<tr><th id="171">171</th><td>  <em>void</em> <dfn class="decl fn" id="_ZN5clang4ento15CheckerRegistry16addPackageOptionEN4llvm9StringRefES3_S3_S3_S3_S3_b" title='clang::ento::CheckerRegistry::addPackageOption' data-ref="_ZN5clang4ento15CheckerRegistry16addPackageOptionEN4llvm9StringRefES3_S3_S3_S3_S3_b" data-ref-filename="_ZN5clang4ento15CheckerRegistry16addPackageOptionEN4llvm9StringRefES3_S3_S3_S3_S3_b">addPackageOption</dfn>(<a class="type" href="../../../../../llvm/include/llvm/ADT/StringRef.h.html#llvm::StringRef" title='llvm::StringRef' data-ref="llvm::StringRef" data-ref-filename="llvm..StringRef">StringRef</a> <dfn class="local col6 decl" id="2926OptionType" title='OptionType' data-type='llvm::StringRef' data-ref="2926OptionType" data-ref-filename="2926OptionType">OptionType</dfn>, <a class="type" href="../../../../../llvm/include/llvm/ADT/StringRef.h.html#llvm::StringRef" title='llvm::StringRef' data-ref="llvm::StringRef" data-ref-filename="llvm..StringRef">StringRef</a> <dfn class="local col7 decl" id="2927PackageFullName" title='PackageFullName' data-type='llvm::StringRef' data-ref="2927PackageFullName" data-ref-filename="2927PackageFullName">PackageFullName</dfn>,</td></tr>
+<tr><th id="172">172</th><td>                        <a class="type" href="../../../../../llvm/include/llvm/ADT/StringRef.h.html#llvm::StringRef" title='llvm::StringRef' data-ref="llvm::StringRef" data-ref-filename="llvm..StringRef">StringRef</a> <dfn class="local col8 decl" id="2928OptionName" title='OptionName' data-type='llvm::StringRef' data-ref="2928OptionName" data-ref-filename="2928OptionName">OptionName</dfn>, <a class="type" href="../../../../../llvm/include/llvm/ADT/StringRef.h.html#llvm::StringRef" title='llvm::StringRef' data-ref="llvm::StringRef" data-ref-filename="llvm..StringRef">StringRef</a> <dfn class="local col9 decl" id="2929DefaultValStr" title='DefaultValStr' data-type='llvm::StringRef' data-ref="2929DefaultValStr" data-ref-filename="2929DefaultValStr">DefaultValStr</dfn>,</td></tr>
+<tr><th id="173">173</th><td>                        <a class="type" href="../../../../../llvm/include/llvm/ADT/StringRef.h.html#llvm::StringRef" title='llvm::StringRef' data-ref="llvm::StringRef" data-ref-filename="llvm..StringRef">StringRef</a> <dfn class="local col0 decl" id="2930Description" title='Description' data-type='llvm::StringRef' data-ref="2930Description" data-ref-filename="2930Description">Description</dfn>, <a class="type" href="../../../../../llvm/include/llvm/ADT/StringRef.h.html#llvm::StringRef" title='llvm::StringRef' data-ref="llvm::StringRef" data-ref-filename="llvm..StringRef">StringRef</a> <dfn class="local col1 decl" id="2931DevelopmentStatus" title='DevelopmentStatus' data-type='llvm::StringRef' data-ref="2931DevelopmentStatus" data-ref-filename="2931DevelopmentStatus">DevelopmentStatus</dfn>,</td></tr>
+<tr><th id="174">174</th><td>                        <em>bool</em> <dfn class="local col2 decl" id="2932IsHidden" title='IsHidden' data-type='bool' data-ref="2932IsHidden" data-ref-filename="2932IsHidden">IsHidden</dfn> = <b>false</b>);</td></tr>
+<tr><th id="175">175</th><td></td></tr>
+<tr><th id="176">176</th><td>  <i>// FIXME: This *really* should be added to the frontend flag descriptions.</i></td></tr>
+<tr><th id="177">177</th><td><i>  /// Initializes a CheckerManager by calling the initialization functions for</i></td></tr>
+<tr><th id="178">178</th><td><i>  /// all checkers specified by the given CheckerOptInfo list. The order of this</i></td></tr>
+<tr><th id="179">179</th><td><i>  /// list is significant; later options can be used to reverse earlier ones.</i></td></tr>
+<tr><th id="180">180</th><td><i>  /// This can be used to exclude certain checkers in an included package.</i></td></tr>
+<tr><th id="181">181</th><td>  <em>void</em> <dfn class="decl fn" id="_ZNK5clang4ento15CheckerRegistry17initializeManagerERNS0_14CheckerManagerE" title='clang::ento::CheckerRegistry::initializeManager' data-ref="_ZNK5clang4ento15CheckerRegistry17initializeManagerERNS0_14CheckerManagerE" data-ref-filename="_ZNK5clang4ento15CheckerRegistry17initializeManagerERNS0_14CheckerManagerE">initializeManager</dfn>(<a class="type" href="../Core/CheckerManager.h.html#clang::ento::CheckerManager" title='clang::ento::CheckerManager' data-ref="clang::ento::CheckerManager" data-ref-filename="clang..ento..CheckerManager">CheckerManager</a> &amp;<dfn class="local col3 decl" id="2933CheckerMgr" title='CheckerMgr' data-type='clang::ento::CheckerManager &amp;' data-ref="2933CheckerMgr" data-ref-filename="2933CheckerMgr">CheckerMgr</dfn>) <em>const</em>;</td></tr>
+<tr><th id="182">182</th><td></td></tr>
+<tr><th id="183">183</th><td>  <i class="doc">/// Check if every option corresponds to a specific checker or package.</i></td></tr>
+<tr><th id="184">184</th><td>  <em>void</em> <dfn class="decl fn" id="_ZNK5clang4ento15CheckerRegistry22validateCheckerOptionsEv" title='clang::ento::CheckerRegistry::validateCheckerOptions' data-ref="_ZNK5clang4ento15CheckerRegistry22validateCheckerOptionsEv" data-ref-filename="_ZNK5clang4ento15CheckerRegistry22validateCheckerOptionsEv">validateCheckerOptions</dfn>() <em>const</em>;</td></tr>
+<tr><th id="185">185</th><td></td></tr>
+<tr><th id="186">186</th><td><b>private</b>:</td></tr>
+<tr><th id="187">187</th><td>  <b>template</b> &lt;<em>bool</em> IsWeak&gt; <em>void</em> <dfn class="decl fn" id="_ZN5clang4ento15CheckerRegistry19resolveDependenciesEv" title='clang::ento::CheckerRegistry::resolveDependencies' data-ref="_ZN5clang4ento15CheckerRegistry19resolveDependenciesEv" data-ref-filename="_ZN5clang4ento15CheckerRegistry19resolveDependenciesEv">resolveDependencies</dfn>();</td></tr>
+<tr><th id="188">188</th><td>  <em>void</em> <dfn class="decl fn" id="_ZN5clang4ento15CheckerRegistry31resolveCheckerAndPackageOptionsEv" title='clang::ento::CheckerRegistry::resolveCheckerAndPackageOptions' data-ref="_ZN5clang4ento15CheckerRegistry31resolveCheckerAndPackageOptionsEv" data-ref-filename="_ZN5clang4ento15CheckerRegistry31resolveCheckerAndPackageOptionsEv">resolveCheckerAndPackageOptions</dfn>();</td></tr>
+<tr><th id="189">189</th><td></td></tr>
+<tr><th id="190">190</th><td>  <a class="type" href="../Core/CheckerRegistryData.h.html#clang::ento::CheckerRegistryData" title='clang::ento::CheckerRegistryData' data-ref="clang::ento::CheckerRegistryData" data-ref-filename="clang..ento..CheckerRegistryData">CheckerRegistryData</a> &amp;<dfn class="decl field" id="clang::ento::CheckerRegistry::Data" title='clang::ento::CheckerRegistry::Data' data-ref="clang::ento::CheckerRegistry::Data" data-ref-filename="clang..ento..CheckerRegistry..Data">Data</dfn>;</td></tr>
+<tr><th id="191">191</th><td></td></tr>
+<tr><th id="192">192</th><td>  <a class="type" href="../../Basic/Diagnostic.h.html#clang::DiagnosticsEngine" title='clang::DiagnosticsEngine' data-ref="clang::DiagnosticsEngine" data-ref-filename="clang..DiagnosticsEngine">DiagnosticsEngine</a> &amp;<dfn class="decl field" id="clang::ento::CheckerRegistry::Diags" title='clang::ento::CheckerRegistry::Diags' data-ref="clang::ento::CheckerRegistry::Diags" data-ref-filename="clang..ento..CheckerRegistry..Diags">Diags</dfn>;</td></tr>
+<tr><th id="193">193</th><td>  <a class="type" href="../Core/AnalyzerOptions.h.html#clang::AnalyzerOptions" title='clang::AnalyzerOptions' data-ref="clang::AnalyzerOptions" data-ref-filename="clang..AnalyzerOptions">AnalyzerOptions</a> &amp;<dfn class="decl field" id="clang::ento::CheckerRegistry::AnOpts" title='clang::ento::CheckerRegistry::AnOpts' data-ref="clang::ento::CheckerRegistry::AnOpts" data-ref-filename="clang..ento..CheckerRegistry..AnOpts">AnOpts</dfn>;</td></tr>
+<tr><th id="194">194</th><td>};</td></tr>
+<tr><th id="195">195</th><td></td></tr>
+<tr><th id="196">196</th><td>} <i>// namespace ento</i></td></tr>
+<tr><th id="197">197</th><td>} <i>// namespace clang</i></td></tr>
+<tr><th id="198">198</th><td></td></tr>
+<tr><th id="199">199</th><td><u>#<span data-ppcond="18">endif</span> // LLVM_CLANG_STATICANALYZER_FRONTEND_CHECKERREGISTRY_H</u></td></tr>
+<tr><th id="200">200</th><td></td></tr>
+</table><hr/><p id='footer'>
+Generated while processing <a href='../../../../lib/Analysis/plugins/CheckerDependencyHandling/CheckerDependencyHandling.cpp.html'>llvm/clang/lib/Analysis/plugins/CheckerDependencyHandling/CheckerDependencyHandling.cpp</a><br/>Generated on <em>2021-Jul-01</em> from project llvm revision <em>12</em>

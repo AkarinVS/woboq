@@ -1,0 +1,43 @@
+<dec f='llvm/lld/MachO/UnwindInfoSection.h' l='43' type='void lld::macho::UnwindInfoSection::UnwindInfoSection()'/>
+<def f='llvm/lld/MachO/UnwindInfoSection.cpp' l='88' ll='91' type='void lld::macho::UnwindInfoSection::UnwindInfoSection()'/>
+<doc f='llvm/lld/MachO/UnwindInfoSection.cpp' l='46'>// Compact Unwind format is a Mach-O evolution of DWARF Unwind that
+// optimizes space and exception-time lookup.  Most DWARF unwind
+// entries can be replaced with Compact Unwind entries, but the ones
+// that cannot are retained in DWARF form.
+//
+// This comment will address macro-level organization of the pre-link
+// and post-link compact unwind tables. For micro-level organization
+// pertaining to the bitfield layout of the 32-bit compact unwind
+// entries, see libunwind/include/mach-o/compact_unwind_encoding.h
+//
+// Important clarifying factoids:
+//
+// * __LD,__compact_unwind is the compact unwind format for compiler
+// output and linker input. It is never a final output. It could be
+// an intermediate output with the `-r` option which retains relocs.
+//
+// * __TEXT,__unwind_info is the compact unwind format for final
+// linker output. It is never an input.
+//
+// * __TEXT,__eh_frame is the DWARF format for both linker input and output.
+//
+// * __TEXT,__unwind_info entries are divided into 4 KiB pages (2nd
+// level) by ascending address, and the pages are referenced by an
+// index (1st level) in the section header.
+//
+// * Following the headers in __TEXT,__unwind_info, the bulk of the
+// section contains a vector of compact unwind entries
+// `{functionOffset, encoding}` sorted by ascending `functionOffset`.
+// Adjacent entries with the same encoding can be folded to great
+// advantage, achieving a 3-order-of-magnitude reduction in the
+// number of entries.
+//
+// * The __TEXT,__unwind_info format can accommodate up to 127 unique
+// encodings for the space-efficient compressed format. In practice,
+// fewer than a dozen unique encodings are used by C++ programs of
+// all sizes. Therefore, we don&apos;t even bother implementing the regular
+// non-compressed format. Time will tell if anyone in the field ever
+// overflows the 127-encodings limit.
+
+// TODO(gkm): prune __eh_frame entries superseded by __unwind_info
+// TODO(gkm): how do we align the 2nd-level pages?</doc>

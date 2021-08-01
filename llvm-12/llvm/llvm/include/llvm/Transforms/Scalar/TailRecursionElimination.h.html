@@ -1,0 +1,82 @@
+<!doctype html>
+<html>
+<head>
+<meta name="viewport" content="width=device-width, initial-scale=1.0"><title>TailRecursionElimination.h source code [llvm/llvm/include/llvm/Transforms/Scalar/TailRecursionElimination.h] - Woboq Code Browser</title>
+<meta name="woboq:interestingDefinitions" content="llvm::TailCallElimPass "/>
+<link rel="stylesheet" href="../../../../../.././data/qtcreator.css" title="QtCreator"/>
+<link rel="alternate stylesheet" href="../../../../../.././data/kdevelop.css" title="KDevelop"/>
+<script type="text/javascript" src="../../../../../.././data/jquery/jquery.min.js"></script>
+<script type="text/javascript" src="../../../../../.././data/jquery/jquery-ui.min.js"></script>
+<script>var file = 'llvm/llvm/include/llvm/Transforms/Scalar/TailRecursionElimination.h'; var root_path = '../../../../../..'; var data_path = '../../../../../.././data'; var ecma_script_api_version = 2;</script>
+<script src='../../../../../.././data/codebrowser.js'></script>
+</head>
+<body><div id='header'><h1 id='breadcrumb'><span>Browse the source code of </span><a href='../../../../..'>llvm</a>/<a href='../../../..'>llvm</a>/<a href='../../..'>include</a>/<a href='../..'>llvm</a>/<a href='..'>Transforms</a>/<a href='./'>Scalar</a>/<a href='TailRecursionElimination.h.html'>TailRecursionElimination.h</a></h1></div>
+<hr/><div id='content'><table class="code">
+<tr><th id="1">1</th><td><i>//===---- TailRecursionElimination.h ----------------------------*- C++ -*-===//</i></td></tr>
+<tr><th id="2">2</th><td><i>//</i></td></tr>
+<tr><th id="3">3</th><td><i>// Part of the LLVM Project, under the Apache License v2.0 with LLVM Exceptions.</i></td></tr>
+<tr><th id="4">4</th><td><i>// See <a href="https://llvm.org/LICENSE.txt">https://llvm.org/LICENSE.txt</a> for license information.</i></td></tr>
+<tr><th id="5">5</th><td><i>// SPDX-License-Identifier: Apache-2.0 WITH LLVM-exception</i></td></tr>
+<tr><th id="6">6</th><td><i>//</i></td></tr>
+<tr><th id="7">7</th><td><i>//===----------------------------------------------------------------------===//</i></td></tr>
+<tr><th id="8">8</th><td><i>//</i></td></tr>
+<tr><th id="9">9</th><td><i>// This file transforms calls of the current function (self recursion) followed</i></td></tr>
+<tr><th id="10">10</th><td><i>// by a return instruction with a branch to the entry of the function, creating</i></td></tr>
+<tr><th id="11">11</th><td><i>// a loop.  This pass also implements the following extensions to the basic</i></td></tr>
+<tr><th id="12">12</th><td><i>// algorithm:</i></td></tr>
+<tr><th id="13">13</th><td><i>//</i></td></tr>
+<tr><th id="14">14</th><td><i>//  1. Trivial instructions between the call and return do not prevent the</i></td></tr>
+<tr><th id="15">15</th><td><i>//     transformation from taking place, though currently the analysis cannot</i></td></tr>
+<tr><th id="16">16</th><td><i>//     support moving any really useful instructions (only dead ones).</i></td></tr>
+<tr><th id="17">17</th><td><i>//  2. This pass transforms functions that are prevented from being tail</i></td></tr>
+<tr><th id="18">18</th><td><i>//     recursive by an associative and commutative expression to use an</i></td></tr>
+<tr><th id="19">19</th><td><i>//     accumulator variable, thus compiling the typical naive factorial or</i></td></tr>
+<tr><th id="20">20</th><td><i>//     'fib' implementation into efficient code.</i></td></tr>
+<tr><th id="21">21</th><td><i>//  3. TRE is performed if the function returns void, if the return</i></td></tr>
+<tr><th id="22">22</th><td><i>//     returns the result returned by the call, or if the function returns a</i></td></tr>
+<tr><th id="23">23</th><td><i>//     run-time constant on all exits from the function.  It is possible, though</i></td></tr>
+<tr><th id="24">24</th><td><i>//     unlikely, that the return returns something else (like constant 0), and</i></td></tr>
+<tr><th id="25">25</th><td><i>//     can still be TRE'd.  It can be TRE'd if ALL OTHER return instructions in</i></td></tr>
+<tr><th id="26">26</th><td><i>//     the function return the exact same value.</i></td></tr>
+<tr><th id="27">27</th><td><i>//  4. If it can prove that callees do not access their caller stack frame,</i></td></tr>
+<tr><th id="28">28</th><td><i>//     they are marked as eligible for tail call elimination (by the code</i></td></tr>
+<tr><th id="29">29</th><td><i>//     generator).</i></td></tr>
+<tr><th id="30">30</th><td><i>//</i></td></tr>
+<tr><th id="31">31</th><td><i>// There are several improvements that could be made:</i></td></tr>
+<tr><th id="32">32</th><td><i>//</i></td></tr>
+<tr><th id="33">33</th><td><i>//  1. If the function has any alloca instructions, these instructions will be</i></td></tr>
+<tr><th id="34">34</th><td><i>//     moved out of the entry block of the function, causing them to be</i></td></tr>
+<tr><th id="35">35</th><td><i>//     evaluated each time through the tail recursion.  Safely keeping allocas</i></td></tr>
+<tr><th id="36">36</th><td><i>//     in the entry block requires analysis to proves that the tail-called</i></td></tr>
+<tr><th id="37">37</th><td><i>//     function does not read or write the stack object.</i></td></tr>
+<tr><th id="38">38</th><td><i>//  2. Tail recursion is only performed if the call immediately precedes the</i></td></tr>
+<tr><th id="39">39</th><td><i>//     return instruction.  It's possible that there could be a jump between</i></td></tr>
+<tr><th id="40">40</th><td><i>//     the call and the return.</i></td></tr>
+<tr><th id="41">41</th><td><i>//  3. There can be intervening operations between the call and the return that</i></td></tr>
+<tr><th id="42">42</th><td><i>//     prevent the TRE from occurring.  For example, there could be GEP's and</i></td></tr>
+<tr><th id="43">43</th><td><i>//     stores to memory that will not be read or written by the call.  This</i></td></tr>
+<tr><th id="44">44</th><td><i>//     requires some substantial analysis (such as with DSA) to prove safe to</i></td></tr>
+<tr><th id="45">45</th><td><i>//     move ahead of the call, but doing so could allow many more TREs to be</i></td></tr>
+<tr><th id="46">46</th><td><i>//     performed, for example in TreeAdd/TreeAlloc from the treeadd benchmark.</i></td></tr>
+<tr><th id="47">47</th><td><i>//  4. The algorithm we use to detect if callees access their caller stack</i></td></tr>
+<tr><th id="48">48</th><td><i>//     frames is very primitive.</i></td></tr>
+<tr><th id="49">49</th><td><i>//</i></td></tr>
+<tr><th id="50">50</th><td><i>//===----------------------------------------------------------------------===//</i></td></tr>
+<tr><th id="51">51</th><td></td></tr>
+<tr><th id="52">52</th><td><u>#<span data-ppcond="52">ifndef</span> <span class="macro" data-ref="_M/LLVM_TRANSFORMS_SCALAR_TAILRECURSIONELIMINATION_H">LLVM_TRANSFORMS_SCALAR_TAILRECURSIONELIMINATION_H</span></u></td></tr>
+<tr><th id="53">53</th><td><u>#define <dfn class="macro" id="_M/LLVM_TRANSFORMS_SCALAR_TAILRECURSIONELIMINATION_H" data-ref="_M/LLVM_TRANSFORMS_SCALAR_TAILRECURSIONELIMINATION_H">LLVM_TRANSFORMS_SCALAR_TAILRECURSIONELIMINATION_H</dfn></u></td></tr>
+<tr><th id="54">54</th><td></td></tr>
+<tr><th id="55">55</th><td><u>#include <a href="../../IR/Function.h.html">"llvm/IR/Function.h"</a></u></td></tr>
+<tr><th id="56">56</th><td><u>#include <a href="../../IR/PassManager.h.html">"llvm/IR/PassManager.h"</a></u></td></tr>
+<tr><th id="57">57</th><td></td></tr>
+<tr><th id="58">58</th><td><b>namespace</b> <span class="namespace">llvm</span> {</td></tr>
+<tr><th id="59">59</th><td></td></tr>
+<tr><th id="60">60</th><td><b>struct</b> <dfn class="type def" id="llvm::TailCallElimPass" title='llvm::TailCallElimPass' data-ref="llvm::TailCallElimPass" data-ref-filename="llvm..TailCallElimPass">TailCallElimPass</dfn> : <a class="type" href="../../IR/PassManager.h.html#llvm::PassInfoMixin" title='llvm::PassInfoMixin' data-ref="llvm::PassInfoMixin" data-ref-filename="llvm..PassInfoMixin">PassInfoMixin</a>&lt;<a class="type" href="#llvm::TailCallElimPass" title='llvm::TailCallElimPass' data-ref="llvm::TailCallElimPass" data-ref-filename="llvm..TailCallElimPass">TailCallElimPass</a>&gt; {</td></tr>
+<tr><th id="61">61</th><td>  <a class="type" href="../../IR/PassManager.h.html#llvm::PreservedAnalyses" title='llvm::PreservedAnalyses' data-ref="llvm::PreservedAnalyses" data-ref-filename="llvm..PreservedAnalyses">PreservedAnalyses</a> <dfn class="decl fn" id="_ZN4llvm16TailCallElimPass3runERNS_8FunctionERNS_15AnalysisManagerIS1_JEEE" title='llvm::TailCallElimPass::run' data-ref="_ZN4llvm16TailCallElimPass3runERNS_8FunctionERNS_15AnalysisManagerIS1_JEEE" data-ref-filename="_ZN4llvm16TailCallElimPass3runERNS_8FunctionERNS_15AnalysisManagerIS1_JEEE">run</dfn>(<a class="type" href="../../IR/Function.h.html#llvm::Function" title='llvm::Function' data-ref="llvm::Function" data-ref-filename="llvm..Function">Function</a> &amp;<dfn class="local col4 decl" id="654F" title='F' data-type='llvm::Function &amp;' data-ref="654F" data-ref-filename="654F">F</dfn>, <a class="typedef" href="../../IR/PassManager.h.html#llvm::FunctionAnalysisManager" title='llvm::FunctionAnalysisManager' data-type='AnalysisManager&lt;llvm::Function&gt;' data-ref="llvm::FunctionAnalysisManager" data-ref-filename="llvm..FunctionAnalysisManager">FunctionAnalysisManager</a> &amp;<dfn class="local col5 decl" id="655AM" title='AM' data-type='llvm::FunctionAnalysisManager &amp;' data-ref="655AM" data-ref-filename="655AM">AM</dfn>);</td></tr>
+<tr><th id="62">62</th><td>};</td></tr>
+<tr><th id="63">63</th><td>}</td></tr>
+<tr><th id="64">64</th><td></td></tr>
+<tr><th id="65">65</th><td><u>#<span data-ppcond="52">endif</span> // LLVM_TRANSFORMS_SCALAR_TAILRECURSIONELIMINATION_H</u></td></tr>
+<tr><th id="66">66</th><td></td></tr>
+</table><hr/><p id='footer'>
+Generated while processing <a href='../../../../lib/Passes/PassBuilder.cpp.html'>llvm/llvm/lib/Passes/PassBuilder.cpp</a><br/>Generated on <em>2021-Jul-01</em> from project llvm revision <em>12</em>

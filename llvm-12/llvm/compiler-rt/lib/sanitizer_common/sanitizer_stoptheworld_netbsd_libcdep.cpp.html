@@ -1,0 +1,378 @@
+<!doctype html>
+<html>
+<head>
+<meta name="viewport" content="width=device-width, initial-scale=1.0"><title>sanitizer_stoptheworld_netbsd_libcdep.cpp source code [llvm/compiler-rt/lib/sanitizer_common/sanitizer_stoptheworld_netbsd_libcdep.cpp] - Woboq Code Browser</title>
+<link rel="stylesheet" href="../../../.././data/qtcreator.css" title="QtCreator"/>
+<link rel="alternate stylesheet" href="../../../.././data/kdevelop.css" title="KDevelop"/>
+<script type="text/javascript" src="../../../.././data/jquery/jquery.min.js"></script>
+<script type="text/javascript" src="../../../.././data/jquery/jquery-ui.min.js"></script>
+<script>var file = 'llvm/compiler-rt/lib/sanitizer_common/sanitizer_stoptheworld_netbsd_libcdep.cpp'; var root_path = '../../../..'; var data_path = '../../../.././data'; var ecma_script_api_version = 2;</script>
+<script src='../../../.././data/codebrowser.js'></script>
+</head>
+<body><div id='header'><h1 id='breadcrumb'><span>Browse the source code of </span><a href='../../..'>llvm</a>/<a href='../..'>compiler-rt</a>/<a href='..'>lib</a>/<a href='./'>sanitizer_common</a>/<a href='sanitizer_stoptheworld_netbsd_libcdep.cpp.html'>sanitizer_stoptheworld_netbsd_libcdep.cpp</a></h1></div>
+<hr/><div id='content'><table class="code">
+<tr><th id="1">1</th><td><i>//===-- sanitizer_stoptheworld_netbsd_libcdep.cpp -------------------------===//</i></td></tr>
+<tr><th id="2">2</th><td><i>//</i></td></tr>
+<tr><th id="3">3</th><td><i>// Part of the LLVM Project, under the Apache License v2.0 with LLVM Exceptions.</i></td></tr>
+<tr><th id="4">4</th><td><i>// See <a href="https://llvm.org/LICENSE.txt">https://llvm.org/LICENSE.txt</a> for license information.</i></td></tr>
+<tr><th id="5">5</th><td><i>// SPDX-License-Identifier: Apache-2.0 WITH LLVM-exception</i></td></tr>
+<tr><th id="6">6</th><td><i>//</i></td></tr>
+<tr><th id="7">7</th><td><i>//===----------------------------------------------------------------------===//</i></td></tr>
+<tr><th id="8">8</th><td><i>//</i></td></tr>
+<tr><th id="9">9</th><td><i>// See sanitizer_stoptheworld.h for details.</i></td></tr>
+<tr><th id="10">10</th><td><i>// This implementation was inspired by Markus Gutschke's linuxthreads.cc.</i></td></tr>
+<tr><th id="11">11</th><td><i>//</i></td></tr>
+<tr><th id="12">12</th><td><i>// This is a NetBSD variation of Linux stoptheworld implementation</i></td></tr>
+<tr><th id="13">13</th><td><i>// See sanitizer_stoptheworld_linux_libcdep.cpp for code comments.</i></td></tr>
+<tr><th id="14">14</th><td><i>//</i></td></tr>
+<tr><th id="15">15</th><td><i>//===----------------------------------------------------------------------===//</i></td></tr>
+<tr><th id="16">16</th><td></td></tr>
+<tr><th id="17">17</th><td><u>#include <a href="sanitizer_platform.h.html">"sanitizer_platform.h"</a></u></td></tr>
+<tr><th id="18">18</th><td></td></tr>
+<tr><th id="19">19</th><td><u>#<span data-ppcond="19">if</span> <a class="macro" href="sanitizer_platform.h.html#50" title="0" data-ref="_M/SANITIZER_NETBSD">SANITIZER_NETBSD</a></u></td></tr>
+<tr><th id="20">20</th><td></td></tr>
+<tr><th id="21">21</th><td><u>#include "sanitizer_stoptheworld.h"</u></td></tr>
+<tr><th id="22">22</th><td></td></tr>
+<tr><th id="23">23</th><td><u>#include "sanitizer_atomic.h"</u></td></tr>
+<tr><th id="24">24</th><td><u>#include "sanitizer_platform_limits_posix.h"</u></td></tr>
+<tr><th id="25">25</th><td></td></tr>
+<tr><th id="26">26</th><td><u>#include &lt;sys/types.h&gt;</u></td></tr>
+<tr><th id="27">27</th><td></td></tr>
+<tr><th id="28">28</th><td><u>#include &lt;sys/ptrace.h&gt;</u></td></tr>
+<tr><th id="29">29</th><td><u>#include &lt;sys/uio.h&gt;</u></td></tr>
+<tr><th id="30">30</th><td><u>#include &lt;sys/wait.h&gt;</u></td></tr>
+<tr><th id="31">31</th><td></td></tr>
+<tr><th id="32">32</th><td><u>#include &lt;machine/reg.h&gt;</u></td></tr>
+<tr><th id="33">33</th><td></td></tr>
+<tr><th id="34">34</th><td><u>#include &lt;elf.h&gt;</u></td></tr>
+<tr><th id="35">35</th><td><u>#include &lt;errno.h&gt;</u></td></tr>
+<tr><th id="36">36</th><td><u>#include &lt;sched.h&gt;</u></td></tr>
+<tr><th id="37">37</th><td><u>#include &lt;signal.h&gt;</u></td></tr>
+<tr><th id="38">38</th><td><u>#include &lt;stddef.h&gt;</u></td></tr>
+<tr><th id="39">39</th><td></td></tr>
+<tr><th id="40">40</th><td><u>#define internal_sigaction_norestorer internal_sigaction</u></td></tr>
+<tr><th id="41">41</th><td></td></tr>
+<tr><th id="42">42</th><td><u>#include "sanitizer_common.h"</u></td></tr>
+<tr><th id="43">43</th><td><u>#include "sanitizer_flags.h"</u></td></tr>
+<tr><th id="44">44</th><td><u>#include "sanitizer_libc.h"</u></td></tr>
+<tr><th id="45">45</th><td><u>#include "sanitizer_linux.h"</u></td></tr>
+<tr><th id="46">46</th><td><u>#include "sanitizer_mutex.h"</u></td></tr>
+<tr><th id="47">47</th><td><u>#include "sanitizer_placement_new.h"</u></td></tr>
+<tr><th id="48">48</th><td></td></tr>
+<tr><th id="49">49</th><td><b>namespace</b> __sanitizer {</td></tr>
+<tr><th id="50">50</th><td></td></tr>
+<tr><th id="51">51</th><td><b>class</b> SuspendedThreadsListNetBSD final : <b>public</b> SuspendedThreadsList {</td></tr>
+<tr><th id="52">52</th><td> <b>public</b>:</td></tr>
+<tr><th id="53">53</th><td>  SuspendedThreadsListNetBSD() { thread_ids_.reserve(<var>1024</var>); }</td></tr>
+<tr><th id="54">54</th><td></td></tr>
+<tr><th id="55">55</th><td>  tid_t GetThreadID(uptr index) <em>const</em>;</td></tr>
+<tr><th id="56">56</th><td>  uptr ThreadCount() <em>const</em>;</td></tr>
+<tr><th id="57">57</th><td>  <em>bool</em> ContainsTid(tid_t thread_id) <em>const</em>;</td></tr>
+<tr><th id="58">58</th><td>  <em>void</em> Append(tid_t tid);</td></tr>
+<tr><th id="59">59</th><td></td></tr>
+<tr><th id="60">60</th><td>  PtraceRegistersStatus GetRegistersAndSP(uptr index,</td></tr>
+<tr><th id="61">61</th><td>                                          InternalMmapVector&lt;uptr&gt; *buffer,</td></tr>
+<tr><th id="62">62</th><td>                                          uptr *sp) <em>const</em>;</td></tr>
+<tr><th id="63">63</th><td></td></tr>
+<tr><th id="64">64</th><td> <b>private</b>:</td></tr>
+<tr><th id="65">65</th><td>  InternalMmapVector&lt;tid_t&gt; thread_ids_;</td></tr>
+<tr><th id="66">66</th><td>};</td></tr>
+<tr><th id="67">67</th><td></td></tr>
+<tr><th id="68">68</th><td><b>struct</b> TracerThreadArgument {</td></tr>
+<tr><th id="69">69</th><td>  StopTheWorldCallback callback;</td></tr>
+<tr><th id="70">70</th><td>  <em>void</em> *callback_argument;</td></tr>
+<tr><th id="71">71</th><td>  BlockingMutex mutex;</td></tr>
+<tr><th id="72">72</th><td>  atomic_uintptr_t done;</td></tr>
+<tr><th id="73">73</th><td>  uptr parent_pid;</td></tr>
+<tr><th id="74">74</th><td>};</td></tr>
+<tr><th id="75">75</th><td></td></tr>
+<tr><th id="76">76</th><td><b>class</b> ThreadSuspender {</td></tr>
+<tr><th id="77">77</th><td> <b>public</b>:</td></tr>
+<tr><th id="78">78</th><td>  <b>explicit</b> ThreadSuspender(pid_t pid, TracerThreadArgument *arg)</td></tr>
+<tr><th id="79">79</th><td>      : arg(arg), pid_(pid) {</td></tr>
+<tr><th id="80">80</th><td>    CHECK_GE(pid, <var>0</var>);</td></tr>
+<tr><th id="81">81</th><td>  }</td></tr>
+<tr><th id="82">82</th><td>  <em>bool</em> SuspendAllThreads();</td></tr>
+<tr><th id="83">83</th><td>  <em>void</em> ResumeAllThreads();</td></tr>
+<tr><th id="84">84</th><td>  <em>void</em> KillAllThreads();</td></tr>
+<tr><th id="85">85</th><td>  SuspendedThreadsListNetBSD &amp;suspended_threads_list() {</td></tr>
+<tr><th id="86">86</th><td>    <b>return</b> suspended_threads_list_;</td></tr>
+<tr><th id="87">87</th><td>  }</td></tr>
+<tr><th id="88">88</th><td>  TracerThreadArgument *arg;</td></tr>
+<tr><th id="89">89</th><td></td></tr>
+<tr><th id="90">90</th><td> <b>private</b>:</td></tr>
+<tr><th id="91">91</th><td>  SuspendedThreadsListNetBSD suspended_threads_list_;</td></tr>
+<tr><th id="92">92</th><td>  pid_t pid_;</td></tr>
+<tr><th id="93">93</th><td>};</td></tr>
+<tr><th id="94">94</th><td></td></tr>
+<tr><th id="95">95</th><td><em>void</em> ThreadSuspender::ResumeAllThreads() {</td></tr>
+<tr><th id="96">96</th><td>  <em>int</em> pterrno;</td></tr>
+<tr><th id="97">97</th><td>  <b>if</b> (!internal_iserror(internal_ptrace(PT_DETACH, pid_, (<em>void</em> *)(uptr)<var>1</var>, <var>0</var>),</td></tr>
+<tr><th id="98">98</th><td>                        &amp;pterrno)) {</td></tr>
+<tr><th id="99">99</th><td>    VReport(<var>2</var>, <q>"Detached from process %d.\n"</q>, pid_);</td></tr>
+<tr><th id="100">100</th><td>  } <b>else</b> {</td></tr>
+<tr><th id="101">101</th><td>    VReport(<var>1</var>, <q>"Could not detach from process %d (errno %d).\n"</q>, pid_, pterrno);</td></tr>
+<tr><th id="102">102</th><td>  }</td></tr>
+<tr><th id="103">103</th><td>}</td></tr>
+<tr><th id="104">104</th><td></td></tr>
+<tr><th id="105">105</th><td><em>void</em> ThreadSuspender::KillAllThreads() {</td></tr>
+<tr><th id="106">106</th><td>  internal_ptrace(PT_KILL, pid_, <b>nullptr</b>, <var>0</var>);</td></tr>
+<tr><th id="107">107</th><td>}</td></tr>
+<tr><th id="108">108</th><td></td></tr>
+<tr><th id="109">109</th><td><em>bool</em> ThreadSuspender::SuspendAllThreads() {</td></tr>
+<tr><th id="110">110</th><td>  <em>int</em> pterrno;</td></tr>
+<tr><th id="111">111</th><td>  <b>if</b> (internal_iserror(internal_ptrace(PT_ATTACH, pid_, <b>nullptr</b>, <var>0</var>),</td></tr>
+<tr><th id="112">112</th><td>                       &amp;pterrno)) {</td></tr>
+<tr><th id="113">113</th><td>    Printf(<q>"Could not attach to process %d (errno %d).\n"</q>, pid_, pterrno);</td></tr>
+<tr><th id="114">114</th><td>    <b>return</b> <b>false</b>;</td></tr>
+<tr><th id="115">115</th><td>  }</td></tr>
+<tr><th id="116">116</th><td></td></tr>
+<tr><th id="117">117</th><td>  <em>int</em> status;</td></tr>
+<tr><th id="118">118</th><td>  uptr waitpid_status;</td></tr>
+<tr><th id="119">119</th><td>  HANDLE_EINTR(waitpid_status, internal_waitpid(pid_, &amp;status, <var>0</var>));</td></tr>
+<tr><th id="120">120</th><td></td></tr>
+<tr><th id="121">121</th><td>  VReport(<var>2</var>, <q>"Attached to process %d.\n"</q>, pid_);</td></tr>
+<tr><th id="122">122</th><td></td></tr>
+<tr><th id="123">123</th><td><u>#ifdef PT_LWPNEXT</u></td></tr>
+<tr><th id="124">124</th><td>  <b>struct</b> ptrace_lwpstatus pl;</td></tr>
+<tr><th id="125">125</th><td>  <em>int</em> op = PT_LWPNEXT;</td></tr>
+<tr><th id="126">126</th><td><u>#else</u></td></tr>
+<tr><th id="127">127</th><td>  <b>struct</b> ptrace_lwpinfo pl;</td></tr>
+<tr><th id="128">128</th><td>  <em>int</em> op = PT_LWPINFO;</td></tr>
+<tr><th id="129">129</th><td><u>#endif</u></td></tr>
+<tr><th id="130">130</th><td></td></tr>
+<tr><th id="131">131</th><td>  pl.pl_lwpid = <var>0</var>;</td></tr>
+<tr><th id="132">132</th><td></td></tr>
+<tr><th id="133">133</th><td>  <em>int</em> val;</td></tr>
+<tr><th id="134">134</th><td>  <b>while</b> ((val = internal_ptrace(op, pid_, (<em>void</em> *)&amp;pl, <b>sizeof</b>(pl))) != -<var>1</var> &amp;&amp;</td></tr>
+<tr><th id="135">135</th><td>         pl.pl_lwpid != <var>0</var>) {</td></tr>
+<tr><th id="136">136</th><td>    suspended_threads_list_.Append(pl.pl_lwpid);</td></tr>
+<tr><th id="137">137</th><td>    VReport(<var>2</var>, <q>"Appended thread %d in process %d.\n"</q>, pl.pl_lwpid, pid_);</td></tr>
+<tr><th id="138">138</th><td>  }</td></tr>
+<tr><th id="139">139</th><td>  <b>return</b> <b>true</b>;</td></tr>
+<tr><th id="140">140</th><td>}</td></tr>
+<tr><th id="141">141</th><td></td></tr>
+<tr><th id="142">142</th><td><i>// Pointer to the ThreadSuspender instance for use in signal handler.</i></td></tr>
+<tr><th id="143">143</th><td><em>static</em> ThreadSuspender *thread_suspender_instance = <b>nullptr</b>;</td></tr>
+<tr><th id="144">144</th><td></td></tr>
+<tr><th id="145">145</th><td><i>// Synchronous signals that should not be blocked.</i></td></tr>
+<tr><th id="146">146</th><td><em>static</em> <em>const</em> <em>int</em> kSyncSignals[] = {SIGABRT, SIGILL,  SIGFPE, SIGSEGV,</td></tr>
+<tr><th id="147">147</th><td>                                   SIGBUS,  SIGXCPU, SIGXFSZ};</td></tr>
+<tr><th id="148">148</th><td></td></tr>
+<tr><th id="149">149</th><td><em>static</em> <em>void</em> TracerThreadDieCallback() {</td></tr>
+<tr><th id="150">150</th><td>  ThreadSuspender *inst = thread_suspender_instance;</td></tr>
+<tr><th id="151">151</th><td>  <b>if</b> (inst &amp;&amp; stoptheworld_tracer_pid == internal_getpid()) {</td></tr>
+<tr><th id="152">152</th><td>    inst-&gt;KillAllThreads();</td></tr>
+<tr><th id="153">153</th><td>    thread_suspender_instance = <b>nullptr</b>;</td></tr>
+<tr><th id="154">154</th><td>  }</td></tr>
+<tr><th id="155">155</th><td>}</td></tr>
+<tr><th id="156">156</th><td></td></tr>
+<tr><th id="157">157</th><td><i>// Signal handler to wake up suspended threads when the tracer thread dies.</i></td></tr>
+<tr><th id="158">158</th><td><em>static</em> <em>void</em> TracerThreadSignalHandler(<em>int</em> signum, __sanitizer_siginfo *siginfo,</td></tr>
+<tr><th id="159">159</th><td>                                      <em>void</em> *uctx) {</td></tr>
+<tr><th id="160">160</th><td>  SignalContext ctx(siginfo, uctx);</td></tr>
+<tr><th id="161">161</th><td>  Printf(<q>"Tracer caught signal %d: addr=0x%zx pc=0x%zx sp=0x%zx\n"</q>, signum,</td></tr>
+<tr><th id="162">162</th><td>         ctx.addr, ctx.pc, ctx.sp);</td></tr>
+<tr><th id="163">163</th><td>  ThreadSuspender *inst = thread_suspender_instance;</td></tr>
+<tr><th id="164">164</th><td>  <b>if</b> (inst) {</td></tr>
+<tr><th id="165">165</th><td>    <b>if</b> (signum == SIGABRT)</td></tr>
+<tr><th id="166">166</th><td>      inst-&gt;KillAllThreads();</td></tr>
+<tr><th id="167">167</th><td>    <b>else</b></td></tr>
+<tr><th id="168">168</th><td>      inst-&gt;ResumeAllThreads();</td></tr>
+<tr><th id="169">169</th><td>    RAW_CHECK(RemoveDieCallback(TracerThreadDieCallback));</td></tr>
+<tr><th id="170">170</th><td>    thread_suspender_instance = <b>nullptr</b>;</td></tr>
+<tr><th id="171">171</th><td>    atomic_store(&amp;inst-&gt;arg-&gt;done, <var>1</var>, memory_order_relaxed);</td></tr>
+<tr><th id="172">172</th><td>  }</td></tr>
+<tr><th id="173">173</th><td>  internal__exit((signum == SIGABRT) ? <var>1</var> : <var>2</var>);</td></tr>
+<tr><th id="174">174</th><td>}</td></tr>
+<tr><th id="175">175</th><td></td></tr>
+<tr><th id="176">176</th><td><i>// Size of alternative stack for signal handlers in the tracer thread.</i></td></tr>
+<tr><th id="177">177</th><td><em>static</em> <em>const</em> <em>int</em> kHandlerStackSize = <var>8192</var>;</td></tr>
+<tr><th id="178">178</th><td></td></tr>
+<tr><th id="179">179</th><td><i>// This function will be run as a cloned task.</i></td></tr>
+<tr><th id="180">180</th><td><em>static</em> <em>int</em> TracerThread(<em>void</em> *argument) {</td></tr>
+<tr><th id="181">181</th><td>  TracerThreadArgument *tracer_thread_argument =</td></tr>
+<tr><th id="182">182</th><td>      (TracerThreadArgument *)argument;</td></tr>
+<tr><th id="183">183</th><td></td></tr>
+<tr><th id="184">184</th><td>  <i>// Check if parent is already dead.</i></td></tr>
+<tr><th id="185">185</th><td>  <b>if</b> (internal_getppid() != tracer_thread_argument-&gt;parent_pid)</td></tr>
+<tr><th id="186">186</th><td>    internal__exit(<var>4</var>);</td></tr>
+<tr><th id="187">187</th><td></td></tr>
+<tr><th id="188">188</th><td>  <i>// Wait for the parent thread to finish preparations.</i></td></tr>
+<tr><th id="189">189</th><td>  tracer_thread_argument-&gt;mutex.Lock();</td></tr>
+<tr><th id="190">190</th><td>  tracer_thread_argument-&gt;mutex.Unlock();</td></tr>
+<tr><th id="191">191</th><td></td></tr>
+<tr><th id="192">192</th><td>  RAW_CHECK(AddDieCallback(TracerThreadDieCallback));</td></tr>
+<tr><th id="193">193</th><td></td></tr>
+<tr><th id="194">194</th><td>  ThreadSuspender thread_suspender(internal_getppid(), tracer_thread_argument);</td></tr>
+<tr><th id="195">195</th><td>  <i>// Global pointer for the signal handler.</i></td></tr>
+<tr><th id="196">196</th><td>  thread_suspender_instance = &amp;thread_suspender;</td></tr>
+<tr><th id="197">197</th><td></td></tr>
+<tr><th id="198">198</th><td>  <i>// Alternate stack for signal handling.</i></td></tr>
+<tr><th id="199">199</th><td>  InternalMmapVector&lt;<em>char</em>&gt; handler_stack_memory(kHandlerStackSize);</td></tr>
+<tr><th id="200">200</th><td>  stack_t handler_stack;</td></tr>
+<tr><th id="201">201</th><td>  internal_memset(&amp;handler_stack, <var>0</var>, <b>sizeof</b>(handler_stack));</td></tr>
+<tr><th id="202">202</th><td>  handler_stack.ss_sp = handler_stack_memory.data();</td></tr>
+<tr><th id="203">203</th><td>  handler_stack.ss_size = kHandlerStackSize;</td></tr>
+<tr><th id="204">204</th><td>  internal_sigaltstack(&amp;handler_stack, <b>nullptr</b>);</td></tr>
+<tr><th id="205">205</th><td></td></tr>
+<tr><th id="206">206</th><td>  <i>// Install our handler for synchronous signals. Other signals should be</i></td></tr>
+<tr><th id="207">207</th><td><i>  // blocked by the mask we inherited from the parent thread.</i></td></tr>
+<tr><th id="208">208</th><td>  <b>for</b> (uptr i = <var>0</var>; i &lt; ARRAY_SIZE(kSyncSignals); i++) {</td></tr>
+<tr><th id="209">209</th><td>    __sanitizer_sigaction act;</td></tr>
+<tr><th id="210">210</th><td>    internal_memset(&amp;act, <var>0</var>, <b>sizeof</b>(act));</td></tr>
+<tr><th id="211">211</th><td>    act.sigaction = TracerThreadSignalHandler;</td></tr>
+<tr><th id="212">212</th><td>    act.sa_flags = SA_ONSTACK | SA_SIGINFO;</td></tr>
+<tr><th id="213">213</th><td>    internal_sigaction_norestorer(kSyncSignals[i], &amp;act, <var>0</var>);</td></tr>
+<tr><th id="214">214</th><td>  }</td></tr>
+<tr><th id="215">215</th><td></td></tr>
+<tr><th id="216">216</th><td>  <em>int</em> exit_code = <var>0</var>;</td></tr>
+<tr><th id="217">217</th><td>  <b>if</b> (!thread_suspender.SuspendAllThreads()) {</td></tr>
+<tr><th id="218">218</th><td>    VReport(<var>1</var>, <q>"Failed suspending threads.\n"</q>);</td></tr>
+<tr><th id="219">219</th><td>    exit_code = <var>3</var>;</td></tr>
+<tr><th id="220">220</th><td>  } <b>else</b> {</td></tr>
+<tr><th id="221">221</th><td>    tracer_thread_argument-&gt;callback(thread_suspender.suspended_threads_list(),</td></tr>
+<tr><th id="222">222</th><td>                                     tracer_thread_argument-&gt;callback_argument);</td></tr>
+<tr><th id="223">223</th><td>    thread_suspender.ResumeAllThreads();</td></tr>
+<tr><th id="224">224</th><td>    exit_code = <var>0</var>;</td></tr>
+<tr><th id="225">225</th><td>  }</td></tr>
+<tr><th id="226">226</th><td>  RAW_CHECK(RemoveDieCallback(TracerThreadDieCallback));</td></tr>
+<tr><th id="227">227</th><td>  thread_suspender_instance = <b>nullptr</b>;</td></tr>
+<tr><th id="228">228</th><td>  atomic_store(&amp;tracer_thread_argument-&gt;done, <var>1</var>, memory_order_relaxed);</td></tr>
+<tr><th id="229">229</th><td>  <b>return</b> exit_code;</td></tr>
+<tr><th id="230">230</th><td>}</td></tr>
+<tr><th id="231">231</th><td></td></tr>
+<tr><th id="232">232</th><td><b>class</b> ScopedStackSpaceWithGuard {</td></tr>
+<tr><th id="233">233</th><td> <b>public</b>:</td></tr>
+<tr><th id="234">234</th><td>  <b>explicit</b> ScopedStackSpaceWithGuard(uptr stack_size) {</td></tr>
+<tr><th id="235">235</th><td>    stack_size_ = stack_size;</td></tr>
+<tr><th id="236">236</th><td>    guard_size_ = GetPageSizeCached();</td></tr>
+<tr><th id="237">237</th><td>    <i>// FIXME: Omitting MAP_STACK here works in current kernels but might break</i></td></tr>
+<tr><th id="238">238</th><td><i>    // in the future.</i></td></tr>
+<tr><th id="239">239</th><td>    guard_start_ =</td></tr>
+<tr><th id="240">240</th><td>        (uptr)MmapOrDie(stack_size_ + guard_size_, <q>"ScopedStackWithGuard"</q>);</td></tr>
+<tr><th id="241">241</th><td>    CHECK(MprotectNoAccess((uptr)guard_start_, guard_size_));</td></tr>
+<tr><th id="242">242</th><td>  }</td></tr>
+<tr><th id="243">243</th><td>  ~ScopedStackSpaceWithGuard() {</td></tr>
+<tr><th id="244">244</th><td>    UnmapOrDie((<em>void</em> *)guard_start_, stack_size_ + guard_size_);</td></tr>
+<tr><th id="245">245</th><td>  }</td></tr>
+<tr><th id="246">246</th><td>  <em>void</em> *Bottom() <em>const</em> {</td></tr>
+<tr><th id="247">247</th><td>    <b>return</b> (<em>void</em> *)(guard_start_ + stack_size_ + guard_size_);</td></tr>
+<tr><th id="248">248</th><td>  }</td></tr>
+<tr><th id="249">249</th><td></td></tr>
+<tr><th id="250">250</th><td> <b>private</b>:</td></tr>
+<tr><th id="251">251</th><td>  uptr stack_size_;</td></tr>
+<tr><th id="252">252</th><td>  uptr guard_size_;</td></tr>
+<tr><th id="253">253</th><td>  uptr guard_start_;</td></tr>
+<tr><th id="254">254</th><td>};</td></tr>
+<tr><th id="255">255</th><td></td></tr>
+<tr><th id="256">256</th><td><em>static</em> __sanitizer_sigset_t blocked_sigset;</td></tr>
+<tr><th id="257">257</th><td><em>static</em> __sanitizer_sigset_t old_sigset;</td></tr>
+<tr><th id="258">258</th><td></td></tr>
+<tr><th id="259">259</th><td><b>struct</b> ScopedSetTracerPID {</td></tr>
+<tr><th id="260">260</th><td>  <b>explicit</b> ScopedSetTracerPID(uptr tracer_pid) {</td></tr>
+<tr><th id="261">261</th><td>    stoptheworld_tracer_pid = tracer_pid;</td></tr>
+<tr><th id="262">262</th><td>    stoptheworld_tracer_ppid = internal_getpid();</td></tr>
+<tr><th id="263">263</th><td>  }</td></tr>
+<tr><th id="264">264</th><td>  ~ScopedSetTracerPID() {</td></tr>
+<tr><th id="265">265</th><td>    stoptheworld_tracer_pid = <var>0</var>;</td></tr>
+<tr><th id="266">266</th><td>    stoptheworld_tracer_ppid = <var>0</var>;</td></tr>
+<tr><th id="267">267</th><td>  }</td></tr>
+<tr><th id="268">268</th><td>};</td></tr>
+<tr><th id="269">269</th><td></td></tr>
+<tr><th id="270">270</th><td><em>void</em> StopTheWorld(StopTheWorldCallback callback, <em>void</em> *argument) {</td></tr>
+<tr><th id="271">271</th><td>  <i>// Prepare the arguments for TracerThread.</i></td></tr>
+<tr><th id="272">272</th><td>  <b>struct</b> TracerThreadArgument tracer_thread_argument;</td></tr>
+<tr><th id="273">273</th><td>  tracer_thread_argument.callback = callback;</td></tr>
+<tr><th id="274">274</th><td>  tracer_thread_argument.callback_argument = argument;</td></tr>
+<tr><th id="275">275</th><td>  tracer_thread_argument.parent_pid = internal_getpid();</td></tr>
+<tr><th id="276">276</th><td>  atomic_store(&amp;tracer_thread_argument.done, <var>0</var>, memory_order_relaxed);</td></tr>
+<tr><th id="277">277</th><td>  <em>const</em> uptr kTracerStackSize = <var>2</var> * <var>1024</var> * <var>1024</var>;</td></tr>
+<tr><th id="278">278</th><td>  ScopedStackSpaceWithGuard tracer_stack(kTracerStackSize);</td></tr>
+<tr><th id="279">279</th><td></td></tr>
+<tr><th id="280">280</th><td>  tracer_thread_argument.mutex.Lock();</td></tr>
+<tr><th id="281">281</th><td></td></tr>
+<tr><th id="282">282</th><td>  internal_sigfillset(&amp;blocked_sigset);</td></tr>
+<tr><th id="283">283</th><td>  <b>for</b> (uptr i = <var>0</var>; i &lt; ARRAY_SIZE(kSyncSignals); i++)</td></tr>
+<tr><th id="284">284</th><td>    internal_sigdelset(&amp;blocked_sigset, kSyncSignals[i]);</td></tr>
+<tr><th id="285">285</th><td>  <em>int</em> rv = internal_sigprocmask(SIG_BLOCK, &amp;blocked_sigset, &amp;old_sigset);</td></tr>
+<tr><th id="286">286</th><td>  CHECK_EQ(rv, <var>0</var>);</td></tr>
+<tr><th id="287">287</th><td>  uptr tracer_pid = internal_clone(TracerThread, tracer_stack.Bottom(),</td></tr>
+<tr><th id="288">288</th><td>                                   CLONE_VM | CLONE_FS | CLONE_FILES,</td></tr>
+<tr><th id="289">289</th><td>                                   &amp;tracer_thread_argument);</td></tr>
+<tr><th id="290">290</th><td>  internal_sigprocmask(SIG_SETMASK, &amp;old_sigset, <var>0</var>);</td></tr>
+<tr><th id="291">291</th><td>  <em>int</em> local_errno = <var>0</var>;</td></tr>
+<tr><th id="292">292</th><td>  <b>if</b> (internal_iserror(tracer_pid, &amp;local_errno)) {</td></tr>
+<tr><th id="293">293</th><td>    VReport(<var>1</var>, <q>"Failed spawning a tracer thread (errno %d).\n"</q>, local_errno);</td></tr>
+<tr><th id="294">294</th><td>    tracer_thread_argument.mutex.Unlock();</td></tr>
+<tr><th id="295">295</th><td>  } <b>else</b> {</td></tr>
+<tr><th id="296">296</th><td>    ScopedSetTracerPID scoped_set_tracer_pid(tracer_pid);</td></tr>
+<tr><th id="297">297</th><td></td></tr>
+<tr><th id="298">298</th><td>    tracer_thread_argument.mutex.Unlock();</td></tr>
+<tr><th id="299">299</th><td></td></tr>
+<tr><th id="300">300</th><td>    <b>while</b> (atomic_load(&amp;tracer_thread_argument.done, memory_order_relaxed) == <var>0</var>)</td></tr>
+<tr><th id="301">301</th><td>      sched_yield();</td></tr>
+<tr><th id="302">302</th><td></td></tr>
+<tr><th id="303">303</th><td>    <b>for</b> (;;) {</td></tr>
+<tr><th id="304">304</th><td>      uptr waitpid_status = internal_waitpid(tracer_pid, <b>nullptr</b>, __WALL);</td></tr>
+<tr><th id="305">305</th><td>      <b>if</b> (!internal_iserror(waitpid_status, &amp;local_errno))</td></tr>
+<tr><th id="306">306</th><td>        <b>break</b>;</td></tr>
+<tr><th id="307">307</th><td>      <b>if</b> (local_errno == EINTR)</td></tr>
+<tr><th id="308">308</th><td>        <b>continue</b>;</td></tr>
+<tr><th id="309">309</th><td>      VReport(<var>1</var>, <q>"Waiting on the tracer thread failed (errno %d).\n"</q>,</td></tr>
+<tr><th id="310">310</th><td>              local_errno);</td></tr>
+<tr><th id="311">311</th><td>      <b>break</b>;</td></tr>
+<tr><th id="312">312</th><td>    }</td></tr>
+<tr><th id="313">313</th><td>  }</td></tr>
+<tr><th id="314">314</th><td>}</td></tr>
+<tr><th id="315">315</th><td></td></tr>
+<tr><th id="316">316</th><td>tid_t SuspendedThreadsListNetBSD::GetThreadID(uptr index) <em>const</em> {</td></tr>
+<tr><th id="317">317</th><td>  CHECK_LT(index, thread_ids_.size());</td></tr>
+<tr><th id="318">318</th><td>  <b>return</b> thread_ids_[index];</td></tr>
+<tr><th id="319">319</th><td>}</td></tr>
+<tr><th id="320">320</th><td></td></tr>
+<tr><th id="321">321</th><td>uptr SuspendedThreadsListNetBSD::ThreadCount() <em>const</em> {</td></tr>
+<tr><th id="322">322</th><td>  <b>return</b> thread_ids_.size();</td></tr>
+<tr><th id="323">323</th><td>}</td></tr>
+<tr><th id="324">324</th><td></td></tr>
+<tr><th id="325">325</th><td><em>bool</em> SuspendedThreadsListNetBSD::ContainsTid(tid_t thread_id) <em>const</em> {</td></tr>
+<tr><th id="326">326</th><td>  <b>for</b> (uptr i = <var>0</var>; i &lt; thread_ids_.size(); i++) {</td></tr>
+<tr><th id="327">327</th><td>    <b>if</b> (thread_ids_[i] == thread_id)</td></tr>
+<tr><th id="328">328</th><td>      <b>return</b> <b>true</b>;</td></tr>
+<tr><th id="329">329</th><td>  }</td></tr>
+<tr><th id="330">330</th><td>  <b>return</b> <b>false</b>;</td></tr>
+<tr><th id="331">331</th><td>}</td></tr>
+<tr><th id="332">332</th><td></td></tr>
+<tr><th id="333">333</th><td><em>void</em> SuspendedThreadsListNetBSD::Append(tid_t tid) {</td></tr>
+<tr><th id="334">334</th><td>  thread_ids_.push_back(tid);</td></tr>
+<tr><th id="335">335</th><td>}</td></tr>
+<tr><th id="336">336</th><td></td></tr>
+<tr><th id="337">337</th><td>PtraceRegistersStatus SuspendedThreadsListNetBSD::GetRegistersAndSP(</td></tr>
+<tr><th id="338">338</th><td>    uptr index, InternalMmapVector&lt;uptr&gt; *buffer, uptr *sp) <em>const</em> {</td></tr>
+<tr><th id="339">339</th><td>  lwpid_t tid = GetThreadID(index);</td></tr>
+<tr><th id="340">340</th><td>  pid_t ppid = internal_getppid();</td></tr>
+<tr><th id="341">341</th><td>  <b>struct</b> reg regs;</td></tr>
+<tr><th id="342">342</th><td>  <em>int</em> pterrno;</td></tr>
+<tr><th id="343">343</th><td>  <em>bool</em> isErr =</td></tr>
+<tr><th id="344">344</th><td>      internal_iserror(internal_ptrace(PT_GETREGS, ppid, &amp;regs, tid), &amp;pterrno);</td></tr>
+<tr><th id="345">345</th><td>  <b>if</b> (isErr) {</td></tr>
+<tr><th id="346">346</th><td>    VReport(<var>1</var>,</td></tr>
+<tr><th id="347">347</th><td>            <q>"Could not get registers from process %d thread %d (errno %d).\n"</q>,</td></tr>
+<tr><th id="348">348</th><td>            ppid, tid, pterrno);</td></tr>
+<tr><th id="349">349</th><td>    <b>return</b> pterrno == ESRCH ? REGISTERS_UNAVAILABLE_FATAL</td></tr>
+<tr><th id="350">350</th><td>                            : REGISTERS_UNAVAILABLE;</td></tr>
+<tr><th id="351">351</th><td>  }</td></tr>
+<tr><th id="352">352</th><td></td></tr>
+<tr><th id="353">353</th><td>  *sp = PTRACE_REG_SP(&amp;regs);</td></tr>
+<tr><th id="354">354</th><td>  buffer-&gt;resize(RoundUpTo(<b>sizeof</b>(regs), <b>sizeof</b>(uptr)) / <b>sizeof</b>(uptr));</td></tr>
+<tr><th id="355">355</th><td>  internal_memcpy(buffer-&gt;data(), &amp;regs, <b>sizeof</b>(regs));</td></tr>
+<tr><th id="356">356</th><td></td></tr>
+<tr><th id="357">357</th><td>  <b>return</b> REGISTERS_AVAILABLE;</td></tr>
+<tr><th id="358">358</th><td>}</td></tr>
+<tr><th id="359">359</th><td></td></tr>
+<tr><th id="360">360</th><td>}  <i>// namespace __sanitizer</i></td></tr>
+<tr><th id="361">361</th><td></td></tr>
+<tr><th id="362">362</th><td><u>#<span data-ppcond="19">endif</span></u></td></tr>
+<tr><th id="363">363</th><td></td></tr>
+</table><hr/><p id='footer'>
+Generated on <em>2021-Jul-01</em> from project llvm revision <em>12</em>

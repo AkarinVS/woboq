@@ -1,0 +1,56 @@
+<dec f='llvm/clang/lib/StaticAnalyzer/Checkers/UninitializedObject/UninitializedObject.h' l='290' type='bool clang::ento::FindUninitializedFields::isUnionUninit(const clang::ento::TypedValueRegion * R)'/>
+<use f='llvm/clang/lib/StaticAnalyzer/Checkers/UninitializedObject/UninitializedObjectChecker.cpp' l='318' u='c' c='_ZN5clang4ento23FindUninitializedFields16isNonUnionUninitEPKNS0_16TypedValueRegionENS0_14FieldChainInfoE'/>
+<def f='llvm/clang/lib/StaticAnalyzer/Checkers/UninitializedObject/UninitializedObjectChecker.cpp' l='377' ll='382' type='bool clang::ento::FindUninitializedFields::isUnionUninit(const clang::ento::TypedValueRegion * R)'/>
+<doc f='llvm/clang/lib/StaticAnalyzer/Checkers/UninitializedObject/UninitializedObject.h' l='238'>// For the purposes of this checker, we&apos;ll regard the analyzed region as a
+  // directed tree, where
+  //   * the root is the object under checking
+  //   * every node is an object that is
+  //     - a union
+  //     - a non-union record
+  //     - dereferenceable (see isDereferencableType())
+  //     - an array
+  //     - of a primitive type (see isPrimitiveType())
+  //   * the parent of each node is the object that contains it
+  //   * every leaf is an array, a primitive object, a nullptr or an undefined
+  //   pointer.
+  //
+  // Example:
+  //
+  //   struct A {
+  //      struct B {
+  //        int x, y = 0;
+  //      };
+  //      B b;
+  //      int *iptr = new int;
+  //      B* bptr;
+  //
+  //      A() {}
+  //   };
+  //
+  // The directed tree:
+  //
+  //           -&gt;x
+  //          /
+  //      -&gt;b---&gt;y
+  //     /
+  //    A--&gt;iptr-&gt;(int value)
+  //     \
+  //      -&gt;bptr
+  //
+  // From this we&apos;ll construct a vector of fieldchains, where each fieldchain
+  // represents an uninitialized field. An uninitialized field may be a
+  // primitive object, a pointer, a pointee or a union without a single
+  // initialized field.
+  // In the above example, for the default constructor call we&apos;ll end up with
+  // these fieldchains:
+  //
+  //   this-&gt;b.x
+  //   this-&gt;iptr (pointee uninit)
+  //   this-&gt;bptr (pointer uninit)
+  //
+  // We&apos;ll traverse each node of the above graph with the appropriate one of
+  // these methods:
+
+  /// Checks the region of a union object, and returns true if no field is
+  /// initialized within the region.</doc>
+<use f='llvm/clang/lib/StaticAnalyzer/Checkers/UninitializedObject/UninitializedPointee.cpp' l='186' u='c' c='_ZN5clang4ento23FindUninitializedFields22isDereferencableUninitEPKNS0_11FieldRegionENS0_14FieldChainInfoE'/>

@@ -1,0 +1,566 @@
+<!doctype html>
+<html>
+<head>
+<meta name="viewport" content="width=device-width, initial-scale=1.0"><title>FuzzerUtilFuchsia.cpp source code [llvm/compiler-rt/lib/fuzzer/FuzzerUtilFuchsia.cpp] - Woboq Code Browser</title>
+<link rel="stylesheet" href="../../../.././data/qtcreator.css" title="QtCreator"/>
+<link rel="alternate stylesheet" href="../../../.././data/kdevelop.css" title="KDevelop"/>
+<script type="text/javascript" src="../../../.././data/jquery/jquery.min.js"></script>
+<script type="text/javascript" src="../../../.././data/jquery/jquery-ui.min.js"></script>
+<script>var file = 'llvm/compiler-rt/lib/fuzzer/FuzzerUtilFuchsia.cpp'; var root_path = '../../../..'; var data_path = '../../../.././data'; var ecma_script_api_version = 2;</script>
+<script src='../../../.././data/codebrowser.js'></script>
+</head>
+<body><div id='header'><h1 id='breadcrumb'><span>Browse the source code of </span><a href='../../..'>llvm</a>/<a href='../..'>compiler-rt</a>/<a href='..'>lib</a>/<a href='./'>fuzzer</a>/<a href='FuzzerUtilFuchsia.cpp.html'>FuzzerUtilFuchsia.cpp</a></h1></div>
+<hr/><div id='content'><table class="code">
+<tr><th id="1">1</th><td><i>//===- FuzzerUtilFuchsia.cpp - Misc utils for Fuchsia. --------------------===//</i></td></tr>
+<tr><th id="2">2</th><td><i>//</i></td></tr>
+<tr><th id="3">3</th><td><i>// Part of the LLVM Project, under the Apache License v2.0 with LLVM Exceptions.</i></td></tr>
+<tr><th id="4">4</th><td><i>// See <a href="https://llvm.org/LICENSE.txt">https://llvm.org/LICENSE.txt</a> for license information.</i></td></tr>
+<tr><th id="5">5</th><td><i>// SPDX-License-Identifier: Apache-2.0 WITH LLVM-exception</i></td></tr>
+<tr><th id="6">6</th><td><i>//</i></td></tr>
+<tr><th id="7">7</th><td><i>//===----------------------------------------------------------------------===//</i></td></tr>
+<tr><th id="8">8</th><td><i>// Misc utils implementation using Fuchsia/Zircon APIs.</i></td></tr>
+<tr><th id="9">9</th><td><i>//===----------------------------------------------------------------------===//</i></td></tr>
+<tr><th id="10">10</th><td><u>#include <a href="FuzzerPlatform.h.html">"FuzzerPlatform.h"</a></u></td></tr>
+<tr><th id="11">11</th><td></td></tr>
+<tr><th id="12">12</th><td><u>#<span data-ppcond="12">if</span> <a class="macro" href="FuzzerPlatform.h.html#17" title="0" data-ref="_M/LIBFUZZER_FUCHSIA">LIBFUZZER_FUCHSIA</a></u></td></tr>
+<tr><th id="13">13</th><td></td></tr>
+<tr><th id="14">14</th><td><u>#include "FuzzerInternal.h"</u></td></tr>
+<tr><th id="15">15</th><td><u>#include "FuzzerUtil.h"</u></td></tr>
+<tr><th id="16">16</th><td><u>#include &lt;cassert&gt;</u></td></tr>
+<tr><th id="17">17</th><td><u>#include &lt;cerrno&gt;</u></td></tr>
+<tr><th id="18">18</th><td><u>#include &lt;cinttypes&gt;</u></td></tr>
+<tr><th id="19">19</th><td><u>#include &lt;cstdint&gt;</u></td></tr>
+<tr><th id="20">20</th><td><u>#include &lt;fcntl.h&gt;</u></td></tr>
+<tr><th id="21">21</th><td><u>#include &lt;lib/fdio/fdio.h&gt;</u></td></tr>
+<tr><th id="22">22</th><td><u>#include &lt;lib/fdio/spawn.h&gt;</u></td></tr>
+<tr><th id="23">23</th><td><u>#include &lt;string&gt;</u></td></tr>
+<tr><th id="24">24</th><td><u>#include &lt;sys/select.h&gt;</u></td></tr>
+<tr><th id="25">25</th><td><u>#include &lt;thread&gt;</u></td></tr>
+<tr><th id="26">26</th><td><u>#include &lt;unistd.h&gt;</u></td></tr>
+<tr><th id="27">27</th><td><u>#include &lt;zircon/errors.h&gt;</u></td></tr>
+<tr><th id="28">28</th><td><u>#include &lt;zircon/process.h&gt;</u></td></tr>
+<tr><th id="29">29</th><td><u>#include &lt;zircon/sanitizer.h&gt;</u></td></tr>
+<tr><th id="30">30</th><td><u>#include &lt;zircon/status.h&gt;</u></td></tr>
+<tr><th id="31">31</th><td><u>#include &lt;zircon/syscalls.h&gt;</u></td></tr>
+<tr><th id="32">32</th><td><u>#include &lt;zircon/syscalls/debug.h&gt;</u></td></tr>
+<tr><th id="33">33</th><td><u>#include &lt;zircon/syscalls/exception.h&gt;</u></td></tr>
+<tr><th id="34">34</th><td><u>#include &lt;zircon/syscalls/object.h&gt;</u></td></tr>
+<tr><th id="35">35</th><td><u>#include &lt;zircon/types.h&gt;</u></td></tr>
+<tr><th id="36">36</th><td></td></tr>
+<tr><th id="37">37</th><td><u>#include &lt;vector&gt;</u></td></tr>
+<tr><th id="38">38</th><td></td></tr>
+<tr><th id="39">39</th><td><b>namespace</b> fuzzer {</td></tr>
+<tr><th id="40">40</th><td></td></tr>
+<tr><th id="41">41</th><td><i>// Given that Fuchsia doesn't have the POSIX signals that libFuzzer was written</i></td></tr>
+<tr><th id="42">42</th><td><i>// around, the general approach is to spin up dedicated threads to watch for</i></td></tr>
+<tr><th id="43">43</th><td><i>// each requested condition (alarm, interrupt, crash).  Of these, the crash</i></td></tr>
+<tr><th id="44">44</th><td><i>// handler is the most involved, as it requires resuming the crashed thread in</i></td></tr>
+<tr><th id="45">45</th><td><i>// order to invoke the sanitizers to get the needed state.</i></td></tr>
+<tr><th id="46">46</th><td><i></i></td></tr>
+<tr><th id="47">47</th><td><i>// Forward declaration of assembly trampoline needed to resume crashed threads.</i></td></tr>
+<tr><th id="48">48</th><td><i>// This appears to have external linkage to  C++, which is why it's not in the</i></td></tr>
+<tr><th id="49">49</th><td><i>// anonymous namespace.  The assembly definition inside MakeTrampoline()</i></td></tr>
+<tr><th id="50">50</th><td><i>// actually defines the symbol with internal linkage only.</i></td></tr>
+<tr><th id="51">51</th><td><em>void</em> CrashTrampolineAsm() <b>__asm__</b>(<q>"CrashTrampolineAsm"</q>);</td></tr>
+<tr><th id="52">52</th><td></td></tr>
+<tr><th id="53">53</th><td><b>namespace</b> {</td></tr>
+<tr><th id="54">54</th><td></td></tr>
+<tr><th id="55">55</th><td><i>// Helper function to handle Zircon syscall failures.</i></td></tr>
+<tr><th id="56">56</th><td><em>void</em> ExitOnErr(zx_status_t Status, <em>const</em> <em>char</em> *Syscall) {</td></tr>
+<tr><th id="57">57</th><td>  <b>if</b> (Status != ZX_OK) {</td></tr>
+<tr><th id="58">58</th><td>    Printf(<q>"libFuzzer: %s failed: %s\n"</q>, Syscall,</td></tr>
+<tr><th id="59">59</th><td>           _zx_status_get_string(Status));</td></tr>
+<tr><th id="60">60</th><td>    exit(<var>1</var>);</td></tr>
+<tr><th id="61">61</th><td>  }</td></tr>
+<tr><th id="62">62</th><td>}</td></tr>
+<tr><th id="63">63</th><td></td></tr>
+<tr><th id="64">64</th><td><em>void</em> AlarmHandler(<em>int</em> Seconds) {</td></tr>
+<tr><th id="65">65</th><td>  <b>while</b> (<b>true</b>) {</td></tr>
+<tr><th id="66">66</th><td>    SleepSeconds(Seconds);</td></tr>
+<tr><th id="67">67</th><td>    Fuzzer::StaticAlarmCallback();</td></tr>
+<tr><th id="68">68</th><td>  }</td></tr>
+<tr><th id="69">69</th><td>}</td></tr>
+<tr><th id="70">70</th><td></td></tr>
+<tr><th id="71">71</th><td><i>// CFAOffset is used to reference the stack pointer before entering the</i></td></tr>
+<tr><th id="72">72</th><td><i>// trampoline (Stack Pointer + CFAOffset = prev Stack Pointer). Before jumping</i></td></tr>
+<tr><th id="73">73</th><td><i>// to the trampoline we copy all the registers onto the stack. We need to make</i></td></tr>
+<tr><th id="74">74</th><td><i>// sure that the new stack has enough space to store all the registers.</i></td></tr>
+<tr><th id="75">75</th><td><i>//</i></td></tr>
+<tr><th id="76">76</th><td><i>// The trampoline holds CFI information regarding the registers stored in the</i></td></tr>
+<tr><th id="77">77</th><td><i>// stack, which is then used by the unwinder to restore them.</i></td></tr>
+<tr><th id="78">78</th><td><u>#if defined(__x86_64__)</u></td></tr>
+<tr><th id="79">79</th><td><i>// In x86_64 the crashing function might also be using the red zone (128 bytes</i></td></tr>
+<tr><th id="80">80</th><td><i>// on top of their rsp).</i></td></tr>
+<tr><th id="81">81</th><td><b>constexpr</b> size_t CFAOffset = <var>128</var> + <b>sizeof</b>(zx_thread_state_general_regs_t);</td></tr>
+<tr><th id="82">82</th><td><u>#elif defined(__aarch64__)</u></td></tr>
+<tr><th id="83">83</th><td><i>// In aarch64 we need to always have the stack pointer aligned to 16 bytes, so we</i></td></tr>
+<tr><th id="84">84</th><td><i>// make sure that we are keeping that same alignment.</i></td></tr>
+<tr><th id="85">85</th><td><b>constexpr</b> size_t CFAOffset = (<b>sizeof</b>(zx_thread_state_general_regs_t) + <var>15</var>) &amp; -(uintptr_t)<var>16</var>;</td></tr>
+<tr><th id="86">86</th><td><u>#endif</u></td></tr>
+<tr><th id="87">87</th><td></td></tr>
+<tr><th id="88">88</th><td><i>// For the crash handler, we need to call Fuzzer::StaticCrashSignalCallback</i></td></tr>
+<tr><th id="89">89</th><td><i>// without POSIX signal handlers.  To achieve this, we use an assembly function</i></td></tr>
+<tr><th id="90">90</th><td><i>// to add the necessary CFI unwinding information and a C function to bridge</i></td></tr>
+<tr><th id="91">91</th><td><i>// from that back into C++.</i></td></tr>
+<tr><th id="92">92</th><td><i></i></td></tr>
+<tr><th id="93">93</th><td><i>// FIXME: This works as a short-term solution, but this code really shouldn't be</i></td></tr>
+<tr><th id="94">94</th><td><i>// architecture dependent. A better long term solution is to implement remote</i></td></tr>
+<tr><th id="95">95</th><td><i>// unwinding and expose the necessary APIs through sanitizer_common and/or ASAN</i></td></tr>
+<tr><th id="96">96</th><td><i>// to allow the exception handling thread to gather the crash state directly.</i></td></tr>
+<tr><th id="97">97</th><td><i>//</i></td></tr>
+<tr><th id="98">98</th><td><i>// Alternatively, Fuchsia may in future actually implement basic signal</i></td></tr>
+<tr><th id="99">99</th><td><i>// handling for the machine trap signals.</i></td></tr>
+<tr><th id="100">100</th><td><u>#if defined(__x86_64__)</u></td></tr>
+<tr><th id="101">101</th><td><u>#define FOREACH_REGISTER(OP_REG, OP_NUM) \</u></td></tr>
+<tr><th id="102">102</th><td><u>  OP_REG(rax)                            \</u></td></tr>
+<tr><th id="103">103</th><td><u>  OP_REG(rbx)                            \</u></td></tr>
+<tr><th id="104">104</th><td><u>  OP_REG(rcx)                            \</u></td></tr>
+<tr><th id="105">105</th><td><u>  OP_REG(rdx)                            \</u></td></tr>
+<tr><th id="106">106</th><td><u>  OP_REG(rsi)                            \</u></td></tr>
+<tr><th id="107">107</th><td><u>  OP_REG(rdi)                            \</u></td></tr>
+<tr><th id="108">108</th><td><u>  OP_REG(rbp)                            \</u></td></tr>
+<tr><th id="109">109</th><td><u>  OP_REG(rsp)                            \</u></td></tr>
+<tr><th id="110">110</th><td><u>  OP_REG(r8)                             \</u></td></tr>
+<tr><th id="111">111</th><td><u>  OP_REG(r9)                             \</u></td></tr>
+<tr><th id="112">112</th><td><u>  OP_REG(r10)                            \</u></td></tr>
+<tr><th id="113">113</th><td><u>  OP_REG(r11)                            \</u></td></tr>
+<tr><th id="114">114</th><td><u>  OP_REG(r12)                            \</u></td></tr>
+<tr><th id="115">115</th><td><u>  OP_REG(r13)                            \</u></td></tr>
+<tr><th id="116">116</th><td><u>  OP_REG(r14)                            \</u></td></tr>
+<tr><th id="117">117</th><td><u>  OP_REG(r15)                            \</u></td></tr>
+<tr><th id="118">118</th><td><u>  OP_REG(rip)</u></td></tr>
+<tr><th id="119">119</th><td></td></tr>
+<tr><th id="120">120</th><td><u>#elif defined(__aarch64__)</u></td></tr>
+<tr><th id="121">121</th><td><u>#define FOREACH_REGISTER(OP_REG, OP_NUM) \</u></td></tr>
+<tr><th id="122">122</th><td><u>  OP_NUM(0)                              \</u></td></tr>
+<tr><th id="123">123</th><td><u>  OP_NUM(1)                              \</u></td></tr>
+<tr><th id="124">124</th><td><u>  OP_NUM(2)                              \</u></td></tr>
+<tr><th id="125">125</th><td><u>  OP_NUM(3)                              \</u></td></tr>
+<tr><th id="126">126</th><td><u>  OP_NUM(4)                              \</u></td></tr>
+<tr><th id="127">127</th><td><u>  OP_NUM(5)                              \</u></td></tr>
+<tr><th id="128">128</th><td><u>  OP_NUM(6)                              \</u></td></tr>
+<tr><th id="129">129</th><td><u>  OP_NUM(7)                              \</u></td></tr>
+<tr><th id="130">130</th><td><u>  OP_NUM(8)                              \</u></td></tr>
+<tr><th id="131">131</th><td><u>  OP_NUM(9)                              \</u></td></tr>
+<tr><th id="132">132</th><td><u>  OP_NUM(10)                             \</u></td></tr>
+<tr><th id="133">133</th><td><u>  OP_NUM(11)                             \</u></td></tr>
+<tr><th id="134">134</th><td><u>  OP_NUM(12)                             \</u></td></tr>
+<tr><th id="135">135</th><td><u>  OP_NUM(13)                             \</u></td></tr>
+<tr><th id="136">136</th><td><u>  OP_NUM(14)                             \</u></td></tr>
+<tr><th id="137">137</th><td><u>  OP_NUM(15)                             \</u></td></tr>
+<tr><th id="138">138</th><td><u>  OP_NUM(16)                             \</u></td></tr>
+<tr><th id="139">139</th><td><u>  OP_NUM(17)                             \</u></td></tr>
+<tr><th id="140">140</th><td><u>  OP_NUM(18)                             \</u></td></tr>
+<tr><th id="141">141</th><td><u>  OP_NUM(19)                             \</u></td></tr>
+<tr><th id="142">142</th><td><u>  OP_NUM(20)                             \</u></td></tr>
+<tr><th id="143">143</th><td><u>  OP_NUM(21)                             \</u></td></tr>
+<tr><th id="144">144</th><td><u>  OP_NUM(22)                             \</u></td></tr>
+<tr><th id="145">145</th><td><u>  OP_NUM(23)                             \</u></td></tr>
+<tr><th id="146">146</th><td><u>  OP_NUM(24)                             \</u></td></tr>
+<tr><th id="147">147</th><td><u>  OP_NUM(25)                             \</u></td></tr>
+<tr><th id="148">148</th><td><u>  OP_NUM(26)                             \</u></td></tr>
+<tr><th id="149">149</th><td><u>  OP_NUM(27)                             \</u></td></tr>
+<tr><th id="150">150</th><td><u>  OP_NUM(28)                             \</u></td></tr>
+<tr><th id="151">151</th><td><u>  OP_NUM(29)                             \</u></td></tr>
+<tr><th id="152">152</th><td><u>  OP_REG(sp)</u></td></tr>
+<tr><th id="153">153</th><td></td></tr>
+<tr><th id="154">154</th><td><u>#else</u></td></tr>
+<tr><th id="155">155</th><td><u>#error "Unsupported architecture for fuzzing on Fuchsia"</u></td></tr>
+<tr><th id="156">156</th><td><u>#endif</u></td></tr>
+<tr><th id="157">157</th><td></td></tr>
+<tr><th id="158">158</th><td><i>// Produces a CFI directive for the named or numbered register.</i></td></tr>
+<tr><th id="159">159</th><td><i>// The value used refers to an assembler immediate operand with the same name</i></td></tr>
+<tr><th id="160">160</th><td><i>// as the register (see ASM_OPERAND_REG).</i></td></tr>
+<tr><th id="161">161</th><td><u>#define CFI_OFFSET_REG(reg) ".cfi_offset " #reg ", %c[" #reg "]\n"</u></td></tr>
+<tr><th id="162">162</th><td><u>#define CFI_OFFSET_NUM(num) CFI_OFFSET_REG(x##num)</u></td></tr>
+<tr><th id="163">163</th><td></td></tr>
+<tr><th id="164">164</th><td><i>// Produces an assembler immediate operand for the named or numbered register.</i></td></tr>
+<tr><th id="165">165</th><td><i>// This operand contains the offset of the register relative to the CFA.</i></td></tr>
+<tr><th id="166">166</th><td><u>#define ASM_OPERAND_REG(reg) \</u></td></tr>
+<tr><th id="167">167</th><td><u>  [reg] "i"(offsetof(zx_thread_state_general_regs_t, reg) - CFAOffset),</u></td></tr>
+<tr><th id="168">168</th><td><u>#define ASM_OPERAND_NUM(num)                                 \</u></td></tr>
+<tr><th id="169">169</th><td><u>  [x##num] "i"(offsetof(zx_thread_state_general_regs_t, r[num]) - CFAOffset),</u></td></tr>
+<tr><th id="170">170</th><td></td></tr>
+<tr><th id="171">171</th><td><i>// Trampoline to bridge from the assembly below to the static C++ crash</i></td></tr>
+<tr><th id="172">172</th><td><i>// callback.</i></td></tr>
+<tr><th id="173">173</th><td><b>__attribute__</b>((noreturn))</td></tr>
+<tr><th id="174">174</th><td><em>static</em> <em>void</em> StaticCrashHandler() {</td></tr>
+<tr><th id="175">175</th><td>  Fuzzer::StaticCrashSignalCallback();</td></tr>
+<tr><th id="176">176</th><td>  <b>for</b> (;;) {</td></tr>
+<tr><th id="177">177</th><td>    _Exit(<var>1</var>);</td></tr>
+<tr><th id="178">178</th><td>  }</td></tr>
+<tr><th id="179">179</th><td>}</td></tr>
+<tr><th id="180">180</th><td></td></tr>
+<tr><th id="181">181</th><td><i>// Creates the trampoline with the necessary CFI information to unwind through</i></td></tr>
+<tr><th id="182">182</th><td><i>// to the crashing call stack:</i></td></tr>
+<tr><th id="183">183</th><td><i>//  * Defining the CFA so that it points to the stack pointer at the point</i></td></tr>
+<tr><th id="184">184</th><td><i>//    of crash.</i></td></tr>
+<tr><th id="185">185</th><td><i>//  * Storing all registers at the point of crash in the stack and refer to them</i></td></tr>
+<tr><th id="186">186</th><td><i>//    via CFI information (relative to the CFA).</i></td></tr>
+<tr><th id="187">187</th><td><i>//  * Setting the return column so the unwinder knows how to continue unwinding.</i></td></tr>
+<tr><th id="188">188</th><td><i>//  * (x86_64) making sure rsp is aligned before calling StaticCrashHandler.</i></td></tr>
+<tr><th id="189">189</th><td><i>//  * Calling StaticCrashHandler that will trigger the unwinder.</i></td></tr>
+<tr><th id="190">190</th><td><i>//</i></td></tr>
+<tr><th id="191">191</th><td><i>// The __attribute__((used)) is necessary because the function</i></td></tr>
+<tr><th id="192">192</th><td><i>// is never called; it's just a container around the assembly to allow it to</i></td></tr>
+<tr><th id="193">193</th><td><i>// use operands for compile-time computed constants.</i></td></tr>
+<tr><th id="194">194</th><td><b>__attribute__</b>((used))</td></tr>
+<tr><th id="195">195</th><td><em>void</em> MakeTrampoline() {</td></tr>
+<tr><th id="196">196</th><td>  <b>__asm__</b>(<q>".cfi_endproc\n"</q></td></tr>
+<tr><th id="197">197</th><td>    <q>".pushsection .text.CrashTrampolineAsm\n"</q></td></tr>
+<tr><th id="198">198</th><td>    <q>".type CrashTrampolineAsm,STT_FUNC\n"</q></td></tr>
+<tr><th id="199">199</th><td><q>"CrashTrampolineAsm:\n"</q></td></tr>
+<tr><th id="200">200</th><td>    <q>".cfi_startproc simple\n"</q></td></tr>
+<tr><th id="201">201</th><td>    <q>".cfi_signal_frame\n"</q></td></tr>
+<tr><th id="202">202</th><td><u>#if defined(__x86_64__)</u></td></tr>
+<tr><th id="203">203</th><td>    <q>".cfi_return_column rip\n"</q></td></tr>
+<tr><th id="204">204</th><td>    <q>".cfi_def_cfa rsp, %c[CFAOffset]\n"</q></td></tr>
+<tr><th id="205">205</th><td>    FOREACH_REGISTER(CFI_OFFSET_REG, CFI_OFFSET_NUM)</td></tr>
+<tr><th id="206">206</th><td>    <q>"mov %%rsp, %%rbp\n"</q></td></tr>
+<tr><th id="207">207</th><td>    <q>".cfi_def_cfa_register rbp\n"</q></td></tr>
+<tr><th id="208">208</th><td>    <q>"andq $-16, %%rsp\n"</q></td></tr>
+<tr><th id="209">209</th><td>    <q>"call %c[StaticCrashHandler]\n"</q></td></tr>
+<tr><th id="210">210</th><td>    <q>"ud2\n"</q></td></tr>
+<tr><th id="211">211</th><td><u>#elif defined(__aarch64__)</u></td></tr>
+<tr><th id="212">212</th><td>    <q>".cfi_return_column 33\n"</q></td></tr>
+<tr><th id="213">213</th><td>    <q>".cfi_def_cfa sp, %c[CFAOffset]\n"</q></td></tr>
+<tr><th id="214">214</th><td>    FOREACH_REGISTER(CFI_OFFSET_REG, CFI_OFFSET_NUM)</td></tr>
+<tr><th id="215">215</th><td>    <q>".cfi_offset 33, %c[pc]\n"</q></td></tr>
+<tr><th id="216">216</th><td>    <q>".cfi_offset 30, %c[lr]\n"</q></td></tr>
+<tr><th id="217">217</th><td>    <q>"bl %c[StaticCrashHandler]\n"</q></td></tr>
+<tr><th id="218">218</th><td>    <q>"brk 1\n"</q></td></tr>
+<tr><th id="219">219</th><td><u>#else</u></td></tr>
+<tr><th id="220">220</th><td><u>#error "Unsupported architecture for fuzzing on Fuchsia"</u></td></tr>
+<tr><th id="221">221</th><td><u>#endif</u></td></tr>
+<tr><th id="222">222</th><td>    <q>".cfi_endproc\n"</q></td></tr>
+<tr><th id="223">223</th><td>    <q>".size CrashTrampolineAsm, . - CrashTrampolineAsm\n"</q></td></tr>
+<tr><th id="224">224</th><td>    <q>".popsection\n"</q></td></tr>
+<tr><th id="225">225</th><td>    <q>".cfi_startproc\n"</q></td></tr>
+<tr><th id="226">226</th><td>    : <i>// No outputs</i></td></tr>
+<tr><th id="227">227</th><td>    : FOREACH_REGISTER(ASM_OPERAND_REG, ASM_OPERAND_NUM)</td></tr>
+<tr><th id="228">228</th><td><u>#if defined(__aarch64__)</u></td></tr>
+<tr><th id="229">229</th><td>      ASM_OPERAND_REG(pc)</td></tr>
+<tr><th id="230">230</th><td>      ASM_OPERAND_REG(lr)</td></tr>
+<tr><th id="231">231</th><td><u>#endif</u></td></tr>
+<tr><th id="232">232</th><td>      [StaticCrashHandler] <q>"i"</q> (StaticCrashHandler),</td></tr>
+<tr><th id="233">233</th><td>      [CFAOffset] <q>"i"</q> (CFAOffset));</td></tr>
+<tr><th id="234">234</th><td>}</td></tr>
+<tr><th id="235">235</th><td></td></tr>
+<tr><th id="236">236</th><td><em>void</em> CrashHandler(zx_handle_t *Event) {</td></tr>
+<tr><th id="237">237</th><td>  <i>// This structure is used to ensure we close handles to objects we create in</i></td></tr>
+<tr><th id="238">238</th><td><i>  // this handler.</i></td></tr>
+<tr><th id="239">239</th><td>  <b>struct</b> ScopedHandle {</td></tr>
+<tr><th id="240">240</th><td>    ~ScopedHandle() { _zx_handle_close(Handle); }</td></tr>
+<tr><th id="241">241</th><td>    zx_handle_t Handle = ZX_HANDLE_INVALID;</td></tr>
+<tr><th id="242">242</th><td>  };</td></tr>
+<tr><th id="243">243</th><td></td></tr>
+<tr><th id="244">244</th><td>  <i>// Create the exception channel.  We need to claim to be a "debugger" so the</i></td></tr>
+<tr><th id="245">245</th><td><i>  // kernel will allow us to modify and resume dying threads (see below). Once</i></td></tr>
+<tr><th id="246">246</th><td><i>  // the channel is set, we can signal the main thread to continue and wait</i></td></tr>
+<tr><th id="247">247</th><td><i>  // for the exception to arrive.</i></td></tr>
+<tr><th id="248">248</th><td>  ScopedHandle Channel;</td></tr>
+<tr><th id="249">249</th><td>  zx_handle_t Self = _zx_process_self();</td></tr>
+<tr><th id="250">250</th><td>  ExitOnErr(_zx_task_create_exception_channel(</td></tr>
+<tr><th id="251">251</th><td>                Self, ZX_EXCEPTION_CHANNEL_DEBUGGER, &amp;Channel.Handle),</td></tr>
+<tr><th id="252">252</th><td>            <q>"_zx_task_create_exception_channel"</q>);</td></tr>
+<tr><th id="253">253</th><td></td></tr>
+<tr><th id="254">254</th><td>  ExitOnErr(_zx_object_signal(*Event, <var>0</var>, ZX_USER_SIGNAL_0),</td></tr>
+<tr><th id="255">255</th><td>            <q>"_zx_object_signal"</q>);</td></tr>
+<tr><th id="256">256</th><td></td></tr>
+<tr><th id="257">257</th><td>  <i>// This thread lives as long as the process in order to keep handling</i></td></tr>
+<tr><th id="258">258</th><td><i>  // crashes.  In practice, the first crashed thread to reach the end of the</i></td></tr>
+<tr><th id="259">259</th><td><i>  // StaticCrashHandler will end the process.</i></td></tr>
+<tr><th id="260">260</th><td>  <b>while</b> (<b>true</b>) {</td></tr>
+<tr><th id="261">261</th><td>    ExitOnErr(_zx_object_wait_one(Channel.Handle, ZX_CHANNEL_READABLE,</td></tr>
+<tr><th id="262">262</th><td>                                  ZX_TIME_INFINITE, <b>nullptr</b>),</td></tr>
+<tr><th id="263">263</th><td>              <q>"_zx_object_wait_one"</q>);</td></tr>
+<tr><th id="264">264</th><td></td></tr>
+<tr><th id="265">265</th><td>    zx_exception_info_t ExceptionInfo;</td></tr>
+<tr><th id="266">266</th><td>    ScopedHandle Exception;</td></tr>
+<tr><th id="267">267</th><td>    ExitOnErr(_zx_channel_read(Channel.Handle, <var>0</var>, &amp;ExceptionInfo,</td></tr>
+<tr><th id="268">268</th><td>                               &amp;Exception.Handle, <b>sizeof</b>(ExceptionInfo), <var>1</var>,</td></tr>
+<tr><th id="269">269</th><td>                               <b>nullptr</b>, <b>nullptr</b>),</td></tr>
+<tr><th id="270">270</th><td>              <q>"_zx_channel_read"</q>);</td></tr>
+<tr><th id="271">271</th><td></td></tr>
+<tr><th id="272">272</th><td>    <i>// Ignore informational synthetic exceptions.</i></td></tr>
+<tr><th id="273">273</th><td>    <b>if</b> (ZX_EXCP_THREAD_STARTING == ExceptionInfo.type ||</td></tr>
+<tr><th id="274">274</th><td>        ZX_EXCP_THREAD_EXITING == ExceptionInfo.type ||</td></tr>
+<tr><th id="275">275</th><td>        ZX_EXCP_PROCESS_STARTING == ExceptionInfo.type) {</td></tr>
+<tr><th id="276">276</th><td>      <b>continue</b>;</td></tr>
+<tr><th id="277">277</th><td>    }</td></tr>
+<tr><th id="278">278</th><td></td></tr>
+<tr><th id="279">279</th><td>    <i>// At this point, we want to get the state of the crashing thread, but</i></td></tr>
+<tr><th id="280">280</th><td><i>    // libFuzzer and the sanitizers assume this will happen from that same</i></td></tr>
+<tr><th id="281">281</th><td><i>    // thread via a POSIX signal handler. "Resurrecting" the thread in the</i></td></tr>
+<tr><th id="282">282</th><td><i>    // middle of the appropriate callback is as simple as forcibly setting the</i></td></tr>
+<tr><th id="283">283</th><td><i>    // instruction pointer/program counter, provided we NEVER EVER return from</i></td></tr>
+<tr><th id="284">284</th><td><i>    // that function (since otherwise our stack will not be valid).</i></td></tr>
+<tr><th id="285">285</th><td>    ScopedHandle Thread;</td></tr>
+<tr><th id="286">286</th><td>    ExitOnErr(_zx_exception_get_thread(Exception.Handle, &amp;Thread.Handle),</td></tr>
+<tr><th id="287">287</th><td>              <q>"_zx_exception_get_thread"</q>);</td></tr>
+<tr><th id="288">288</th><td></td></tr>
+<tr><th id="289">289</th><td>    zx_thread_state_general_regs_t GeneralRegisters;</td></tr>
+<tr><th id="290">290</th><td>    ExitOnErr(_zx_thread_read_state(Thread.Handle, ZX_THREAD_STATE_GENERAL_REGS,</td></tr>
+<tr><th id="291">291</th><td>                                    &amp;GeneralRegisters,</td></tr>
+<tr><th id="292">292</th><td>                                    <b>sizeof</b>(GeneralRegisters)),</td></tr>
+<tr><th id="293">293</th><td>              <q>"_zx_thread_read_state"</q>);</td></tr>
+<tr><th id="294">294</th><td></td></tr>
+<tr><th id="295">295</th><td>    <i>// To unwind properly, we need to push the crashing thread's register state</i></td></tr>
+<tr><th id="296">296</th><td><i>    // onto the stack and jump into a trampoline with CFI instructions on how</i></td></tr>
+<tr><th id="297">297</th><td><i>    // to restore it.</i></td></tr>
+<tr><th id="298">298</th><td><u>#if defined(__x86_64__)</u></td></tr>
+<tr><th id="299">299</th><td>    uintptr_t StackPtr = GeneralRegisters.rsp - CFAOffset;</td></tr>
+<tr><th id="300">300</th><td>    __unsanitized_memcpy(<b>reinterpret_cast</b>&lt;<em>void</em> *&gt;(StackPtr), &amp;GeneralRegisters,</td></tr>
+<tr><th id="301">301</th><td>                         <b>sizeof</b>(GeneralRegisters));</td></tr>
+<tr><th id="302">302</th><td>    GeneralRegisters.rsp = StackPtr;</td></tr>
+<tr><th id="303">303</th><td>    GeneralRegisters.rip = <b>reinterpret_cast</b>&lt;zx_vaddr_t&gt;(CrashTrampolineAsm);</td></tr>
+<tr><th id="304">304</th><td></td></tr>
+<tr><th id="305">305</th><td><u>#elif defined(__aarch64__)</u></td></tr>
+<tr><th id="306">306</th><td>    uintptr_t StackPtr = GeneralRegisters.sp - CFAOffset;</td></tr>
+<tr><th id="307">307</th><td>    __unsanitized_memcpy(<b>reinterpret_cast</b>&lt;<em>void</em> *&gt;(StackPtr), &amp;GeneralRegisters,</td></tr>
+<tr><th id="308">308</th><td>                         <b>sizeof</b>(GeneralRegisters));</td></tr>
+<tr><th id="309">309</th><td>    GeneralRegisters.sp = StackPtr;</td></tr>
+<tr><th id="310">310</th><td>    GeneralRegisters.pc = <b>reinterpret_cast</b>&lt;zx_vaddr_t&gt;(CrashTrampolineAsm);</td></tr>
+<tr><th id="311">311</th><td></td></tr>
+<tr><th id="312">312</th><td><u>#else</u></td></tr>
+<tr><th id="313">313</th><td><u>#error "Unsupported architecture for fuzzing on Fuchsia"</u></td></tr>
+<tr><th id="314">314</th><td><u>#endif</u></td></tr>
+<tr><th id="315">315</th><td></td></tr>
+<tr><th id="316">316</th><td>    <i>// Now force the crashing thread's state.</i></td></tr>
+<tr><th id="317">317</th><td>    ExitOnErr(</td></tr>
+<tr><th id="318">318</th><td>        _zx_thread_write_state(Thread.Handle, ZX_THREAD_STATE_GENERAL_REGS,</td></tr>
+<tr><th id="319">319</th><td>                               &amp;GeneralRegisters, <b>sizeof</b>(GeneralRegisters)),</td></tr>
+<tr><th id="320">320</th><td>        <q>"_zx_thread_write_state"</q>);</td></tr>
+<tr><th id="321">321</th><td></td></tr>
+<tr><th id="322">322</th><td>    <i>// Set the exception to HANDLED so it resumes the thread on close.</i></td></tr>
+<tr><th id="323">323</th><td>    uint32_t ExceptionState = ZX_EXCEPTION_STATE_HANDLED;</td></tr>
+<tr><th id="324">324</th><td>    ExitOnErr(_zx_object_set_property(Exception.Handle, ZX_PROP_EXCEPTION_STATE,</td></tr>
+<tr><th id="325">325</th><td>                                      &amp;ExceptionState, <b>sizeof</b>(ExceptionState)),</td></tr>
+<tr><th id="326">326</th><td>              <q>"zx_object_set_property"</q>);</td></tr>
+<tr><th id="327">327</th><td>  }</td></tr>
+<tr><th id="328">328</th><td>}</td></tr>
+<tr><th id="329">329</th><td></td></tr>
+<tr><th id="330">330</th><td>} <i>// namespace</i></td></tr>
+<tr><th id="331">331</th><td></td></tr>
+<tr><th id="332">332</th><td><i>// Platform specific functions.</i></td></tr>
+<tr><th id="333">333</th><td><em>void</em> SetSignalHandler(<em>const</em> FuzzingOptions &amp;Options) {</td></tr>
+<tr><th id="334">334</th><td>  <i>// Make sure information from libFuzzer and the sanitizers are easy to</i></td></tr>
+<tr><th id="335">335</th><td><i>  // reassemble. `__sanitizer_log_write` has the added benefit of ensuring the</i></td></tr>
+<tr><th id="336">336</th><td><i>  // DSO map is always available for the symbolizer.</i></td></tr>
+<tr><th id="337">337</th><td><i>  // A uint64_t fits in 20 chars, so 64 is plenty.</i></td></tr>
+<tr><th id="338">338</th><td>  <em>char</em> Buf[<var>64</var>];</td></tr>
+<tr><th id="339">339</th><td>  memset(Buf, <var>0</var>, <b>sizeof</b>(Buf));</td></tr>
+<tr><th id="340">340</th><td>  snprintf(Buf, <b>sizeof</b>(Buf), <q>"==%lu== INFO: libFuzzer starting.\n"</q>, GetPid());</td></tr>
+<tr><th id="341">341</th><td>  <b>if</b> (EF-&gt;__sanitizer_log_write)</td></tr>
+<tr><th id="342">342</th><td>    __sanitizer_log_write(Buf, <b>sizeof</b>(Buf));</td></tr>
+<tr><th id="343">343</th><td>  Printf(<q>"%s"</q>, Buf);</td></tr>
+<tr><th id="344">344</th><td></td></tr>
+<tr><th id="345">345</th><td>  <i>// Set up alarm handler if needed.</i></td></tr>
+<tr><th id="346">346</th><td>  <b>if</b> (Options.HandleAlrm &amp;&amp; Options.UnitTimeoutSec &gt; <var>0</var>) {</td></tr>
+<tr><th id="347">347</th><td>    std::thread T(AlarmHandler, Options.UnitTimeoutSec / <var>2</var> + <var>1</var>);</td></tr>
+<tr><th id="348">348</th><td>    T.detach();</td></tr>
+<tr><th id="349">349</th><td>  }</td></tr>
+<tr><th id="350">350</th><td></td></tr>
+<tr><th id="351">351</th><td>  <i>// Options.HandleInt and Options.HandleTerm are not supported on Fuchsia</i></td></tr>
+<tr><th id="352">352</th><td><i></i></td></tr>
+<tr><th id="353">353</th><td><i>  // Early exit if no crash handler needed.</i></td></tr>
+<tr><th id="354">354</th><td>  <b>if</b> (!Options.HandleSegv &amp;&amp; !Options.HandleBus &amp;&amp; !Options.HandleIll &amp;&amp;</td></tr>
+<tr><th id="355">355</th><td>      !Options.HandleFpe &amp;&amp; !Options.HandleAbrt)</td></tr>
+<tr><th id="356">356</th><td>    <b>return</b>;</td></tr>
+<tr><th id="357">357</th><td></td></tr>
+<tr><th id="358">358</th><td>  <i>// Set up the crash handler and wait until it is ready before proceeding.</i></td></tr>
+<tr><th id="359">359</th><td>  zx_handle_t Event;</td></tr>
+<tr><th id="360">360</th><td>  ExitOnErr(_zx_event_create(<var>0</var>, &amp;Event), <q>"_zx_event_create"</q>);</td></tr>
+<tr><th id="361">361</th><td></td></tr>
+<tr><th id="362">362</th><td>  std::thread T(CrashHandler, &amp;Event);</td></tr>
+<tr><th id="363">363</th><td>  zx_status_t Status =</td></tr>
+<tr><th id="364">364</th><td>      _zx_object_wait_one(Event, ZX_USER_SIGNAL_0, ZX_TIME_INFINITE, <b>nullptr</b>);</td></tr>
+<tr><th id="365">365</th><td>  _zx_handle_close(Event);</td></tr>
+<tr><th id="366">366</th><td>  ExitOnErr(Status, <q>"_zx_object_wait_one"</q>);</td></tr>
+<tr><th id="367">367</th><td></td></tr>
+<tr><th id="368">368</th><td>  T.detach();</td></tr>
+<tr><th id="369">369</th><td>}</td></tr>
+<tr><th id="370">370</th><td></td></tr>
+<tr><th id="371">371</th><td><em>void</em> SleepSeconds(<em>int</em> Seconds) {</td></tr>
+<tr><th id="372">372</th><td>  _zx_nanosleep(_zx_deadline_after(ZX_SEC(Seconds)));</td></tr>
+<tr><th id="373">373</th><td>}</td></tr>
+<tr><th id="374">374</th><td></td></tr>
+<tr><th id="375">375</th><td><em>unsigned</em> <em>long</em> GetPid() {</td></tr>
+<tr><th id="376">376</th><td>  zx_status_t rc;</td></tr>
+<tr><th id="377">377</th><td>  zx_info_handle_basic_t Info;</td></tr>
+<tr><th id="378">378</th><td>  <b>if</b> ((rc = _zx_object_get_info(_zx_process_self(), ZX_INFO_HANDLE_BASIC, &amp;Info,</td></tr>
+<tr><th id="379">379</th><td>                                <b>sizeof</b>(Info), NULL, NULL)) != ZX_OK) {</td></tr>
+<tr><th id="380">380</th><td>    Printf(<q>"libFuzzer: unable to get info about self: %s\n"</q>,</td></tr>
+<tr><th id="381">381</th><td>           _zx_status_get_string(rc));</td></tr>
+<tr><th id="382">382</th><td>    exit(<var>1</var>);</td></tr>
+<tr><th id="383">383</th><td>  }</td></tr>
+<tr><th id="384">384</th><td>  <b>return</b> Info.koid;</td></tr>
+<tr><th id="385">385</th><td>}</td></tr>
+<tr><th id="386">386</th><td></td></tr>
+<tr><th id="387">387</th><td>size_t GetPeakRSSMb() {</td></tr>
+<tr><th id="388">388</th><td>  zx_status_t rc;</td></tr>
+<tr><th id="389">389</th><td>  zx_info_task_stats_t Info;</td></tr>
+<tr><th id="390">390</th><td>  <b>if</b> ((rc = _zx_object_get_info(_zx_process_self(), ZX_INFO_TASK_STATS, &amp;Info,</td></tr>
+<tr><th id="391">391</th><td>                                <b>sizeof</b>(Info), NULL, NULL)) != ZX_OK) {</td></tr>
+<tr><th id="392">392</th><td>    Printf(<q>"libFuzzer: unable to get info about self: %s\n"</q>,</td></tr>
+<tr><th id="393">393</th><td>           _zx_status_get_string(rc));</td></tr>
+<tr><th id="394">394</th><td>    exit(<var>1</var>);</td></tr>
+<tr><th id="395">395</th><td>  }</td></tr>
+<tr><th id="396">396</th><td>  <b>return</b> (Info.mem_private_bytes + Info.mem_shared_bytes) &gt;&gt; <var>20</var>;</td></tr>
+<tr><th id="397">397</th><td>}</td></tr>
+<tr><th id="398">398</th><td></td></tr>
+<tr><th id="399">399</th><td><b>template</b> &lt;<b>typename</b> Fn&gt;</td></tr>
+<tr><th id="400">400</th><td><b>class</b> RunOnDestruction {</td></tr>
+<tr><th id="401">401</th><td> <b>public</b>:</td></tr>
+<tr><th id="402">402</th><td>  <b>explicit</b> RunOnDestruction(Fn fn) : fn_(fn) {}</td></tr>
+<tr><th id="403">403</th><td>  ~RunOnDestruction() { fn_(); }</td></tr>
+<tr><th id="404">404</th><td></td></tr>
+<tr><th id="405">405</th><td> <b>private</b>:</td></tr>
+<tr><th id="406">406</th><td>  Fn fn_;</td></tr>
+<tr><th id="407">407</th><td>};</td></tr>
+<tr><th id="408">408</th><td></td></tr>
+<tr><th id="409">409</th><td><b>template</b> &lt;<b>typename</b> Fn&gt;</td></tr>
+<tr><th id="410">410</th><td>RunOnDestruction&lt;Fn&gt; at_scope_exit(Fn fn) {</td></tr>
+<tr><th id="411">411</th><td>  <b>return</b> RunOnDestruction&lt;Fn&gt;(fn);</td></tr>
+<tr><th id="412">412</th><td>}</td></tr>
+<tr><th id="413">413</th><td></td></tr>
+<tr><th id="414">414</th><td><em>static</em> fdio_spawn_action_t clone_fd_action(<em>int</em> localFd, <em>int</em> targetFd) {</td></tr>
+<tr><th id="415">415</th><td>  <b>return</b> {</td></tr>
+<tr><th id="416">416</th><td>      .action = FDIO_SPAWN_ACTION_CLONE_FD,</td></tr>
+<tr><th id="417">417</th><td>      .fd =</td></tr>
+<tr><th id="418">418</th><td>          {</td></tr>
+<tr><th id="419">419</th><td>              .local_fd = localFd,</td></tr>
+<tr><th id="420">420</th><td>              .target_fd = targetFd,</td></tr>
+<tr><th id="421">421</th><td>          },</td></tr>
+<tr><th id="422">422</th><td>  };</td></tr>
+<tr><th id="423">423</th><td>}</td></tr>
+<tr><th id="424">424</th><td></td></tr>
+<tr><th id="425">425</th><td><em>int</em> ExecuteCommand(<em>const</em> Command &amp;Cmd) {</td></tr>
+<tr><th id="426">426</th><td>  zx_status_t rc;</td></tr>
+<tr><th id="427">427</th><td></td></tr>
+<tr><th id="428">428</th><td>  <i>// Convert arguments to C array</i></td></tr>
+<tr><th id="429">429</th><td>  <em>auto</em> Args = Cmd.getArguments();</td></tr>
+<tr><th id="430">430</th><td>  size_t Argc = Args.size();</td></tr>
+<tr><th id="431">431</th><td>  assert(Argc != <var>0</var>);</td></tr>
+<tr><th id="432">432</th><td>  std::unique_ptr&lt;<em>const</em> <em>char</em> *[]&gt; Argv(<b>new</b> <em>const</em> <em>char</em> *[Argc + <var>1</var>]);</td></tr>
+<tr><th id="433">433</th><td>  <b>for</b> (size_t i = <var>0</var>; i &lt; Argc; ++i)</td></tr>
+<tr><th id="434">434</th><td>    Argv[i] = Args[i].c_str();</td></tr>
+<tr><th id="435">435</th><td>  Argv[Argc] = <b>nullptr</b>;</td></tr>
+<tr><th id="436">436</th><td></td></tr>
+<tr><th id="437">437</th><td>  <i>// Determine output.  On Fuchsia, the fuzzer is typically run as a component</i></td></tr>
+<tr><th id="438">438</th><td><i>  // that lacks a mutable working directory. Fortunately, when this is the case</i></td></tr>
+<tr><th id="439">439</th><td><i>  // a mutable output directory must be specified using "-artifact_prefix=...",</i></td></tr>
+<tr><th id="440">440</th><td><i>  // so write the log file(s) there.</i></td></tr>
+<tr><th id="441">441</th><td><i>  // However, we don't want to apply this logic for absolute paths.</i></td></tr>
+<tr><th id="442">442</th><td>  <em>int</em> FdOut = STDOUT_FILENO;</td></tr>
+<tr><th id="443">443</th><td>  <em>bool</em> discardStdout = <b>false</b>;</td></tr>
+<tr><th id="444">444</th><td>  <em>bool</em> discardStderr = <b>false</b>;</td></tr>
+<tr><th id="445">445</th><td></td></tr>
+<tr><th id="446">446</th><td>  <b>if</b> (Cmd.hasOutputFile()) {</td></tr>
+<tr><th id="447">447</th><td>    std::string Path = Cmd.getOutputFile();</td></tr>
+<tr><th id="448">448</th><td>    <b>if</b> (Path == getDevNull()) {</td></tr>
+<tr><th id="449">449</th><td>      <i>// On Fuchsia, there's no "/dev/null" like-file, so we</i></td></tr>
+<tr><th id="450">450</th><td><i>      // just don't copy the FDs into the spawned process.</i></td></tr>
+<tr><th id="451">451</th><td>      discardStdout = <b>true</b>;</td></tr>
+<tr><th id="452">452</th><td>    } <b>else</b> {</td></tr>
+<tr><th id="453">453</th><td>      <em>bool</em> IsAbsolutePath = Path.length() &gt; <var>1</var> &amp;&amp; Path[<var>0</var>] == <kbd>'/'</kbd>;</td></tr>
+<tr><th id="454">454</th><td>      <b>if</b> (!IsAbsolutePath &amp;&amp; Cmd.hasFlag(<q>"artifact_prefix"</q>))</td></tr>
+<tr><th id="455">455</th><td>        Path = Cmd.getFlagValue(<q>"artifact_prefix"</q>) + <q>"/"</q> + Path;</td></tr>
+<tr><th id="456">456</th><td></td></tr>
+<tr><th id="457">457</th><td>      FdOut = open(Path.c_str(), O_WRONLY | O_CREAT | O_TRUNC, <var>0</var>);</td></tr>
+<tr><th id="458">458</th><td>      <b>if</b> (FdOut == -<var>1</var>) {</td></tr>
+<tr><th id="459">459</th><td>        Printf(<q>"libFuzzer: failed to open %s: %s\n"</q>, Path.c_str(),</td></tr>
+<tr><th id="460">460</th><td>               strerror(errno));</td></tr>
+<tr><th id="461">461</th><td>        <b>return</b> ZX_ERR_IO;</td></tr>
+<tr><th id="462">462</th><td>      }</td></tr>
+<tr><th id="463">463</th><td>    }</td></tr>
+<tr><th id="464">464</th><td>  }</td></tr>
+<tr><th id="465">465</th><td>  <em>auto</em> CloseFdOut = at_scope_exit([FdOut]() {</td></tr>
+<tr><th id="466">466</th><td>    <b>if</b> (FdOut != STDOUT_FILENO)</td></tr>
+<tr><th id="467">467</th><td>      close(FdOut);</td></tr>
+<tr><th id="468">468</th><td>  });</td></tr>
+<tr><th id="469">469</th><td></td></tr>
+<tr><th id="470">470</th><td>  <i>// Determine stderr</i></td></tr>
+<tr><th id="471">471</th><td>  <em>int</em> FdErr = STDERR_FILENO;</td></tr>
+<tr><th id="472">472</th><td>  <b>if</b> (Cmd.isOutAndErrCombined()) {</td></tr>
+<tr><th id="473">473</th><td>    FdErr = FdOut;</td></tr>
+<tr><th id="474">474</th><td>    <b>if</b> (discardStdout)</td></tr>
+<tr><th id="475">475</th><td>      discardStderr = <b>true</b>;</td></tr>
+<tr><th id="476">476</th><td>  }</td></tr>
+<tr><th id="477">477</th><td></td></tr>
+<tr><th id="478">478</th><td>  <i>// Clone the file descriptors into the new process</i></td></tr>
+<tr><th id="479">479</th><td>  std::vector&lt;fdio_spawn_action_t&gt; SpawnActions;</td></tr>
+<tr><th id="480">480</th><td>  SpawnActions.push_back(clone_fd_action(STDIN_FILENO, STDIN_FILENO));</td></tr>
+<tr><th id="481">481</th><td></td></tr>
+<tr><th id="482">482</th><td>  <b>if</b> (!discardStdout)</td></tr>
+<tr><th id="483">483</th><td>    SpawnActions.push_back(clone_fd_action(FdOut, STDOUT_FILENO));</td></tr>
+<tr><th id="484">484</th><td>  <b>if</b> (!discardStderr)</td></tr>
+<tr><th id="485">485</th><td>    SpawnActions.push_back(clone_fd_action(FdErr, STDERR_FILENO));</td></tr>
+<tr><th id="486">486</th><td></td></tr>
+<tr><th id="487">487</th><td>  <i>// Start the process.</i></td></tr>
+<tr><th id="488">488</th><td>  <em>char</em> ErrorMsg[FDIO_SPAWN_ERR_MSG_MAX_LENGTH];</td></tr>
+<tr><th id="489">489</th><td>  zx_handle_t ProcessHandle = ZX_HANDLE_INVALID;</td></tr>
+<tr><th id="490">490</th><td>  rc = fdio_spawn_etc(ZX_HANDLE_INVALID,</td></tr>
+<tr><th id="491">491</th><td>                      FDIO_SPAWN_CLONE_ALL &amp; (~FDIO_SPAWN_CLONE_STDIO), Argv[<var>0</var>],</td></tr>
+<tr><th id="492">492</th><td>                      Argv.get(), <b>nullptr</b>, SpawnActions.size(),</td></tr>
+<tr><th id="493">493</th><td>                      SpawnActions.data(), &amp;ProcessHandle, ErrorMsg);</td></tr>
+<tr><th id="494">494</th><td></td></tr>
+<tr><th id="495">495</th><td>  <b>if</b> (rc != ZX_OK) {</td></tr>
+<tr><th id="496">496</th><td>    Printf(<q>"libFuzzer: failed to launch '%s': %s, %s\n"</q>, Argv[<var>0</var>], ErrorMsg,</td></tr>
+<tr><th id="497">497</th><td>           _zx_status_get_string(rc));</td></tr>
+<tr><th id="498">498</th><td>    <b>return</b> rc;</td></tr>
+<tr><th id="499">499</th><td>  }</td></tr>
+<tr><th id="500">500</th><td>  <em>auto</em> CloseHandle = at_scope_exit([&amp;]() { _zx_handle_close(ProcessHandle); });</td></tr>
+<tr><th id="501">501</th><td></td></tr>
+<tr><th id="502">502</th><td>  <i>// Now join the process and return the exit status.</i></td></tr>
+<tr><th id="503">503</th><td>  <b>if</b> ((rc = _zx_object_wait_one(ProcessHandle, ZX_PROCESS_TERMINATED,</td></tr>
+<tr><th id="504">504</th><td>                                ZX_TIME_INFINITE, <b>nullptr</b>)) != ZX_OK) {</td></tr>
+<tr><th id="505">505</th><td>    Printf(<q>"libFuzzer: failed to join '%s': %s\n"</q>, Argv[<var>0</var>],</td></tr>
+<tr><th id="506">506</th><td>           _zx_status_get_string(rc));</td></tr>
+<tr><th id="507">507</th><td>    <b>return</b> rc;</td></tr>
+<tr><th id="508">508</th><td>  }</td></tr>
+<tr><th id="509">509</th><td></td></tr>
+<tr><th id="510">510</th><td>  zx_info_process_t Info;</td></tr>
+<tr><th id="511">511</th><td>  <b>if</b> ((rc = _zx_object_get_info(ProcessHandle, ZX_INFO_PROCESS, &amp;Info,</td></tr>
+<tr><th id="512">512</th><td>                                <b>sizeof</b>(Info), <b>nullptr</b>, <b>nullptr</b>)) != ZX_OK) {</td></tr>
+<tr><th id="513">513</th><td>    Printf(<q>"libFuzzer: unable to get return code from '%s': %s\n"</q>, Argv[<var>0</var>],</td></tr>
+<tr><th id="514">514</th><td>           _zx_status_get_string(rc));</td></tr>
+<tr><th id="515">515</th><td>    <b>return</b> rc;</td></tr>
+<tr><th id="516">516</th><td>  }</td></tr>
+<tr><th id="517">517</th><td></td></tr>
+<tr><th id="518">518</th><td>  <b>return</b> Info.return_code;</td></tr>
+<tr><th id="519">519</th><td>}</td></tr>
+<tr><th id="520">520</th><td></td></tr>
+<tr><th id="521">521</th><td><em>bool</em> ExecuteCommand(<em>const</em> Command &amp;BaseCmd, std::string *CmdOutput) {</td></tr>
+<tr><th id="522">522</th><td>  <em>auto</em> LogFilePath = TempPath(<q>"SimPopenOut"</q>, <q>".txt"</q>);</td></tr>
+<tr><th id="523">523</th><td>  Command Cmd(BaseCmd);</td></tr>
+<tr><th id="524">524</th><td>  Cmd.setOutputFile(LogFilePath);</td></tr>
+<tr><th id="525">525</th><td>  <em>int</em> Ret = ExecuteCommand(Cmd);</td></tr>
+<tr><th id="526">526</th><td>  *CmdOutput = FileToString(LogFilePath);</td></tr>
+<tr><th id="527">527</th><td>  RemoveFile(LogFilePath);</td></tr>
+<tr><th id="528">528</th><td>  <b>return</b> Ret == <var>0</var>;</td></tr>
+<tr><th id="529">529</th><td>}</td></tr>
+<tr><th id="530">530</th><td></td></tr>
+<tr><th id="531">531</th><td><em>const</em> <em>void</em> *SearchMemory(<em>const</em> <em>void</em> *Data, size_t DataLen, <em>const</em> <em>void</em> *Patt,</td></tr>
+<tr><th id="532">532</th><td>                         size_t PattLen) {</td></tr>
+<tr><th id="533">533</th><td>  <b>return</b> memmem(Data, DataLen, Patt, PattLen);</td></tr>
+<tr><th id="534">534</th><td>}</td></tr>
+<tr><th id="535">535</th><td></td></tr>
+<tr><th id="536">536</th><td><i>// In fuchsia, accessing /dev/null is not supported. There's nothing</i></td></tr>
+<tr><th id="537">537</th><td><i>// similar to a file that discards everything that is written to it.</i></td></tr>
+<tr><th id="538">538</th><td><i>// The way of doing something similar in fuchsia is by using</i></td></tr>
+<tr><th id="539">539</th><td><i>// fdio_null_create and binding that to a file descriptor.</i></td></tr>
+<tr><th id="540">540</th><td><em>void</em> DiscardOutput(<em>int</em> Fd) {</td></tr>
+<tr><th id="541">541</th><td>  fdio_t *fdio_null = fdio_null_create();</td></tr>
+<tr><th id="542">542</th><td>  <b>if</b> (fdio_null == <b>nullptr</b>) <b>return</b>;</td></tr>
+<tr><th id="543">543</th><td>  <em>int</em> nullfd = fdio_bind_to_fd(fdio_null, -<var>1</var>, <var>0</var>);</td></tr>
+<tr><th id="544">544</th><td>  <b>if</b> (nullfd &lt; <var>0</var>) <b>return</b>;</td></tr>
+<tr><th id="545">545</th><td>  dup2(nullfd, Fd);</td></tr>
+<tr><th id="546">546</th><td>}</td></tr>
+<tr><th id="547">547</th><td></td></tr>
+<tr><th id="548">548</th><td>} <i>// namespace fuzzer</i></td></tr>
+<tr><th id="549">549</th><td></td></tr>
+<tr><th id="550">550</th><td><u>#<span data-ppcond="12">endif</span> // LIBFUZZER_FUCHSIA</u></td></tr>
+<tr><th id="551">551</th><td></td></tr>
+</table><hr/><p id='footer'>
+Generated on <em>2021-Jul-01</em> from project llvm revision <em>12</em>

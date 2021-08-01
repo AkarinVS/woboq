@@ -1,0 +1,236 @@
+<!doctype html>
+<html>
+<head>
+<meta name="viewport" content="width=device-width, initial-scale=1.0"><title>LowerTypeTests.h source code [llvm/llvm/include/llvm/Transforms/IPO/LowerTypeTests.h] - Woboq Code Browser</title>
+<meta name="woboq:interestingDefinitions" content="llvm::LowerTypeTestsPass,llvm::lowertypetests::BitSetBuilder,llvm::lowertypetests::BitSetInfo,llvm::lowertypetests::ByteArrayBuilder,llvm::lowertypetests::GlobalLayoutBuilder "/>
+<link rel="stylesheet" href="../../../../../.././data/qtcreator.css" title="QtCreator"/>
+<link rel="alternate stylesheet" href="../../../../../.././data/kdevelop.css" title="KDevelop"/>
+<script type="text/javascript" src="../../../../../.././data/jquery/jquery.min.js"></script>
+<script type="text/javascript" src="../../../../../.././data/jquery/jquery-ui.min.js"></script>
+<script>var file = 'llvm/llvm/include/llvm/Transforms/IPO/LowerTypeTests.h'; var root_path = '../../../../../..'; var data_path = '../../../../../.././data'; var ecma_script_api_version = 2;</script>
+<script src='../../../../../.././data/codebrowser.js'></script>
+</head>
+<body><div id='header'><h1 id='breadcrumb'><span>Browse the source code of </span><a href='../../../../..'>llvm</a>/<a href='../../../..'>llvm</a>/<a href='../../..'>include</a>/<a href='../..'>llvm</a>/<a href='..'>Transforms</a>/<a href='./'>IPO</a>/<a href='LowerTypeTests.h.html'>LowerTypeTests.h</a></h1></div>
+<hr/><div id='content'><table class="code">
+<tr><th id="1">1</th><td><i>//===- LowerTypeTests.h - type metadata lowering pass -----------*- C++ -*-===//</i></td></tr>
+<tr><th id="2">2</th><td><i>//</i></td></tr>
+<tr><th id="3">3</th><td><i>// Part of the LLVM Project, under the Apache License v2.0 with LLVM Exceptions.</i></td></tr>
+<tr><th id="4">4</th><td><i>// See <a href="https://llvm.org/LICENSE.txt">https://llvm.org/LICENSE.txt</a> for license information.</i></td></tr>
+<tr><th id="5">5</th><td><i>// SPDX-License-Identifier: Apache-2.0 WITH LLVM-exception</i></td></tr>
+<tr><th id="6">6</th><td><i>//</i></td></tr>
+<tr><th id="7">7</th><td><i>//===----------------------------------------------------------------------===//</i></td></tr>
+<tr><th id="8">8</th><td><i>//</i></td></tr>
+<tr><th id="9">9</th><td><i>// This file defines parts of the type test lowering pass implementation that</i></td></tr>
+<tr><th id="10">10</th><td><i>// may be usefully unit tested.</i></td></tr>
+<tr><th id="11">11</th><td><i>//</i></td></tr>
+<tr><th id="12">12</th><td><i>//===----------------------------------------------------------------------===//</i></td></tr>
+<tr><th id="13">13</th><td></td></tr>
+<tr><th id="14">14</th><td><u>#<span data-ppcond="14">ifndef</span> <span class="macro" data-ref="_M/LLVM_TRANSFORMS_IPO_LOWERTYPETESTS_H">LLVM_TRANSFORMS_IPO_LOWERTYPETESTS_H</span></u></td></tr>
+<tr><th id="15">15</th><td><u>#define <dfn class="macro" id="_M/LLVM_TRANSFORMS_IPO_LOWERTYPETESTS_H" data-ref="_M/LLVM_TRANSFORMS_IPO_LOWERTYPETESTS_H">LLVM_TRANSFORMS_IPO_LOWERTYPETESTS_H</dfn></u></td></tr>
+<tr><th id="16">16</th><td></td></tr>
+<tr><th id="17">17</th><td><u>#include <a href="../../ADT/SmallVector.h.html">"llvm/ADT/SmallVector.h"</a></u></td></tr>
+<tr><th id="18">18</th><td><u>#include <a href="../../IR/PassManager.h.html">"llvm/IR/PassManager.h"</a></u></td></tr>
+<tr><th id="19">19</th><td><u>#include &lt;cstdint&gt;</u></td></tr>
+<tr><th id="20">20</th><td><u>#include &lt;cstring&gt;</u></td></tr>
+<tr><th id="21">21</th><td><u>#include &lt;limits&gt;</u></td></tr>
+<tr><th id="22">22</th><td><u>#include &lt;set&gt;</u></td></tr>
+<tr><th id="23">23</th><td><u>#include &lt;vector&gt;</u></td></tr>
+<tr><th id="24">24</th><td></td></tr>
+<tr><th id="25">25</th><td><b>namespace</b> <span class="namespace">llvm</span> {</td></tr>
+<tr><th id="26">26</th><td></td></tr>
+<tr><th id="27">27</th><td><b>class</b> <a class="type" href="../../IR/Module.h.html#llvm::Module" title='llvm::Module' data-ref="llvm::Module" data-ref-filename="llvm..Module" id="llvm::Module">Module</a>;</td></tr>
+<tr><th id="28">28</th><td><b>class</b> <a class="type" href="../../IR/ModuleSummaryIndex.h.html#llvm::ModuleSummaryIndex" title='llvm::ModuleSummaryIndex' data-ref="llvm::ModuleSummaryIndex" data-ref-filename="llvm..ModuleSummaryIndex" id="llvm::ModuleSummaryIndex">ModuleSummaryIndex</a>;</td></tr>
+<tr><th id="29">29</th><td><b>class</b> <a class="type" href="../../Support/raw_ostream.h.html#llvm::raw_ostream" title='llvm::raw_ostream' data-ref="llvm::raw_ostream" data-ref-filename="llvm..raw_ostream" id="llvm::raw_ostream">raw_ostream</a>;</td></tr>
+<tr><th id="30">30</th><td></td></tr>
+<tr><th id="31">31</th><td><b>namespace</b> <span class="namespace">lowertypetests</span> {</td></tr>
+<tr><th id="32">32</th><td></td></tr>
+<tr><th id="33">33</th><td><b>struct</b> <dfn class="type def" id="llvm::lowertypetests::BitSetInfo" title='llvm::lowertypetests::BitSetInfo' data-ref="llvm::lowertypetests::BitSetInfo" data-ref-filename="llvm..lowertypetests..BitSetInfo">BitSetInfo</dfn> {</td></tr>
+<tr><th id="34">34</th><td>  <i>// The indices of the set bits in the bitset.</i></td></tr>
+<tr><th id="35">35</th><td>  <span class="namespace">std::</span><span class='type' title='std::set' data-ref="std::set" data-ref-filename="std..set">set</span>&lt;<a class="typedef" href="../../../../../../include/bits/stdint-uintn.h.html#uint64_t" title='uint64_t' data-type='__uint64_t' data-ref="uint64_t" data-ref-filename="uint64_t">uint64_t</a>&gt; <dfn class="decl field" id="llvm::lowertypetests::BitSetInfo::Bits" title='llvm::lowertypetests::BitSetInfo::Bits' data-ref="llvm::lowertypetests::BitSetInfo::Bits" data-ref-filename="llvm..lowertypetests..BitSetInfo..Bits">Bits</dfn>;</td></tr>
+<tr><th id="36">36</th><td></td></tr>
+<tr><th id="37">37</th><td>  <i>// The byte offset into the combined global represented by the bitset.</i></td></tr>
+<tr><th id="38">38</th><td>  <a class="typedef" href="../../../../../../include/bits/stdint-uintn.h.html#uint64_t" title='uint64_t' data-type='__uint64_t' data-ref="uint64_t" data-ref-filename="uint64_t">uint64_t</a> <dfn class="decl field" id="llvm::lowertypetests::BitSetInfo::ByteOffset" title='llvm::lowertypetests::BitSetInfo::ByteOffset' data-ref="llvm::lowertypetests::BitSetInfo::ByteOffset" data-ref-filename="llvm..lowertypetests..BitSetInfo..ByteOffset">ByteOffset</dfn>;</td></tr>
+<tr><th id="39">39</th><td></td></tr>
+<tr><th id="40">40</th><td>  <i>// The size of the bitset in bits.</i></td></tr>
+<tr><th id="41">41</th><td>  <a class="typedef" href="../../../../../../include/bits/stdint-uintn.h.html#uint64_t" title='uint64_t' data-type='__uint64_t' data-ref="uint64_t" data-ref-filename="uint64_t">uint64_t</a> <dfn class="decl field" id="llvm::lowertypetests::BitSetInfo::BitSize" title='llvm::lowertypetests::BitSetInfo::BitSize' data-ref="llvm::lowertypetests::BitSetInfo::BitSize" data-ref-filename="llvm..lowertypetests..BitSetInfo..BitSize">BitSize</dfn>;</td></tr>
+<tr><th id="42">42</th><td></td></tr>
+<tr><th id="43">43</th><td>  <i>// Log2 alignment of the bit set relative to the combined global.</i></td></tr>
+<tr><th id="44">44</th><td><i>  // For example, a log2 alignment of 3 means that bits in the bitset</i></td></tr>
+<tr><th id="45">45</th><td><i>  // represent addresses 8 bytes apart.</i></td></tr>
+<tr><th id="46">46</th><td>  <em>unsigned</em> <dfn class="decl field" id="llvm::lowertypetests::BitSetInfo::AlignLog2" title='llvm::lowertypetests::BitSetInfo::AlignLog2' data-ref="llvm::lowertypetests::BitSetInfo::AlignLog2" data-ref-filename="llvm..lowertypetests..BitSetInfo..AlignLog2">AlignLog2</dfn>;</td></tr>
+<tr><th id="47">47</th><td></td></tr>
+<tr><th id="48">48</th><td>  <em>bool</em> <dfn class="decl def fn" id="_ZNK4llvm14lowertypetests10BitSetInfo14isSingleOffsetEv" title='llvm::lowertypetests::BitSetInfo::isSingleOffset' data-ref="_ZNK4llvm14lowertypetests10BitSetInfo14isSingleOffsetEv" data-ref-filename="_ZNK4llvm14lowertypetests10BitSetInfo14isSingleOffsetEv">isSingleOffset</dfn>() <em>const</em> {</td></tr>
+<tr><th id="49">49</th><td>    <b>return</b> <a class="member field" href="#llvm::lowertypetests::BitSetInfo::Bits" title='llvm::lowertypetests::BitSetInfo::Bits' data-ref="llvm::lowertypetests::BitSetInfo::Bits" data-ref-filename="llvm..lowertypetests..BitSetInfo..Bits">Bits</a>.<span class='ref fn' title='std::set::size' data-ref="_ZNKSt3set4sizeEv" data-ref-filename="_ZNKSt3set4sizeEv">size</span>() == <var>1</var>;</td></tr>
+<tr><th id="50">50</th><td>  }</td></tr>
+<tr><th id="51">51</th><td></td></tr>
+<tr><th id="52">52</th><td>  <em>bool</em> <dfn class="decl def fn" id="_ZNK4llvm14lowertypetests10BitSetInfo9isAllOnesEv" title='llvm::lowertypetests::BitSetInfo::isAllOnes' data-ref="_ZNK4llvm14lowertypetests10BitSetInfo9isAllOnesEv" data-ref-filename="_ZNK4llvm14lowertypetests10BitSetInfo9isAllOnesEv">isAllOnes</dfn>() <em>const</em> {</td></tr>
+<tr><th id="53">53</th><td>    <b>return</b> <a class="member field" href="#llvm::lowertypetests::BitSetInfo::Bits" title='llvm::lowertypetests::BitSetInfo::Bits' data-ref="llvm::lowertypetests::BitSetInfo::Bits" data-ref-filename="llvm..lowertypetests..BitSetInfo..Bits">Bits</a>.<span class='ref fn' title='std::set::size' data-ref="_ZNKSt3set4sizeEv" data-ref-filename="_ZNKSt3set4sizeEv">size</span>() == <a class="member field" href="#llvm::lowertypetests::BitSetInfo::BitSize" title='llvm::lowertypetests::BitSetInfo::BitSize' data-ref="llvm::lowertypetests::BitSetInfo::BitSize" data-ref-filename="llvm..lowertypetests..BitSetInfo..BitSize">BitSize</a>;</td></tr>
+<tr><th id="54">54</th><td>  }</td></tr>
+<tr><th id="55">55</th><td></td></tr>
+<tr><th id="56">56</th><td>  <em>bool</em> <dfn class="decl fn" id="_ZNK4llvm14lowertypetests10BitSetInfo20containsGlobalOffsetEm" title='llvm::lowertypetests::BitSetInfo::containsGlobalOffset' data-ref="_ZNK4llvm14lowertypetests10BitSetInfo20containsGlobalOffsetEm" data-ref-filename="_ZNK4llvm14lowertypetests10BitSetInfo20containsGlobalOffsetEm">containsGlobalOffset</dfn>(<a class="typedef" href="../../../../../../include/bits/stdint-uintn.h.html#uint64_t" title='uint64_t' data-type='__uint64_t' data-ref="uint64_t" data-ref-filename="uint64_t">uint64_t</a> <dfn class="local col8 decl" id="7778Offset" title='Offset' data-type='uint64_t' data-ref="7778Offset" data-ref-filename="7778Offset">Offset</dfn>) <em>const</em>;</td></tr>
+<tr><th id="57">57</th><td></td></tr>
+<tr><th id="58">58</th><td>  <em>void</em> <dfn class="decl fn" id="_ZNK4llvm14lowertypetests10BitSetInfo5printERNS_11raw_ostreamE" title='llvm::lowertypetests::BitSetInfo::print' data-ref="_ZNK4llvm14lowertypetests10BitSetInfo5printERNS_11raw_ostreamE" data-ref-filename="_ZNK4llvm14lowertypetests10BitSetInfo5printERNS_11raw_ostreamE">print</dfn>(<a class="type" href="../../Support/raw_ostream.h.html#llvm::raw_ostream" title='llvm::raw_ostream' data-ref="llvm::raw_ostream" data-ref-filename="llvm..raw_ostream">raw_ostream</a> &amp;<dfn class="local col9 decl" id="7779OS" title='OS' data-type='llvm::raw_ostream &amp;' data-ref="7779OS" data-ref-filename="7779OS">OS</dfn>) <em>const</em>;</td></tr>
+<tr><th id="59">59</th><td>};</td></tr>
+<tr><th id="60">60</th><td></td></tr>
+<tr><th id="61">61</th><td><b>struct</b> <dfn class="type def" id="llvm::lowertypetests::BitSetBuilder" title='llvm::lowertypetests::BitSetBuilder' data-ref="llvm::lowertypetests::BitSetBuilder" data-ref-filename="llvm..lowertypetests..BitSetBuilder">BitSetBuilder</dfn> {</td></tr>
+<tr><th id="62">62</th><td>  <a class="type" href="../../../../../clang/include/clang/Basic/LLVM.h.html#llvm::SmallVector" title='llvm::SmallVector' data-ref="llvm::SmallVector" data-ref-filename="llvm..SmallVector">SmallVector</a>&lt;<a class="typedef" href="../../../../../../include/bits/stdint-uintn.h.html#uint64_t" title='uint64_t' data-type='__uint64_t' data-ref="uint64_t" data-ref-filename="uint64_t">uint64_t</a>, <var>16</var>&gt; <dfn class="decl field" id="llvm::lowertypetests::BitSetBuilder::Offsets" title='llvm::lowertypetests::BitSetBuilder::Offsets' data-ref="llvm::lowertypetests::BitSetBuilder::Offsets" data-ref-filename="llvm..lowertypetests..BitSetBuilder..Offsets">Offsets</dfn>;</td></tr>
+<tr><th id="63">63</th><td>  <a class="typedef" href="../../../../../../include/bits/stdint-uintn.h.html#uint64_t" title='uint64_t' data-type='__uint64_t' data-ref="uint64_t" data-ref-filename="uint64_t">uint64_t</a> <dfn class="decl field" id="llvm::lowertypetests::BitSetBuilder::Min" title='llvm::lowertypetests::BitSetBuilder::Min' data-ref="llvm::lowertypetests::BitSetBuilder::Min" data-ref-filename="llvm..lowertypetests..BitSetBuilder..Min">Min</dfn> = <span class="namespace">std::</span><span class='type' title='std::numeric_limits' data-ref="std::numeric_limits" data-ref-filename="std..numeric_limits">numeric_limits</span>&lt;<a class="typedef" href="../../../../../../include/bits/stdint-uintn.h.html#uint64_t" title='uint64_t' data-type='__uint64_t' data-ref="uint64_t" data-ref-filename="uint64_t">uint64_t</a>&gt;::<span class='ref fn' title='std::numeric_limits&lt;unsigned long&gt;::max' data-ref="_ZNSt14numeric_limitsImE3maxEv" data-ref-filename="_ZNSt14numeric_limitsImE3maxEv">max</span>();</td></tr>
+<tr><th id="64">64</th><td>  <a class="typedef" href="../../../../../../include/bits/stdint-uintn.h.html#uint64_t" title='uint64_t' data-type='__uint64_t' data-ref="uint64_t" data-ref-filename="uint64_t">uint64_t</a> <dfn class="decl field" id="llvm::lowertypetests::BitSetBuilder::Max" title='llvm::lowertypetests::BitSetBuilder::Max' data-ref="llvm::lowertypetests::BitSetBuilder::Max" data-ref-filename="llvm..lowertypetests..BitSetBuilder..Max">Max</dfn> = <var>0</var>;</td></tr>
+<tr><th id="65">65</th><td></td></tr>
+<tr><th id="66">66</th><td>  <dfn class="decl def fn" id="_ZN4llvm14lowertypetests13BitSetBuilderC1Ev" title='llvm::lowertypetests::BitSetBuilder::BitSetBuilder' data-ref="_ZN4llvm14lowertypetests13BitSetBuilderC1Ev" data-ref-filename="_ZN4llvm14lowertypetests13BitSetBuilderC1Ev">BitSetBuilder</dfn>() = <b>default</b>;</td></tr>
+<tr><th id="67">67</th><td></td></tr>
+<tr><th id="68">68</th><td>  <em>void</em> <dfn class="decl def fn" id="_ZN4llvm14lowertypetests13BitSetBuilder9addOffsetEm" title='llvm::lowertypetests::BitSetBuilder::addOffset' data-ref="_ZN4llvm14lowertypetests13BitSetBuilder9addOffsetEm" data-ref-filename="_ZN4llvm14lowertypetests13BitSetBuilder9addOffsetEm">addOffset</dfn>(<a class="typedef" href="../../../../../../include/bits/stdint-uintn.h.html#uint64_t" title='uint64_t' data-type='__uint64_t' data-ref="uint64_t" data-ref-filename="uint64_t">uint64_t</a> <dfn class="local col0 decl" id="7780Offset" title='Offset' data-type='uint64_t' data-ref="7780Offset" data-ref-filename="7780Offset">Offset</dfn>) {</td></tr>
+<tr><th id="69">69</th><td>    <b>if</b> (<a class="member field" href="#llvm::lowertypetests::BitSetBuilder::Min" title='llvm::lowertypetests::BitSetBuilder::Min' data-ref="llvm::lowertypetests::BitSetBuilder::Min" data-ref-filename="llvm..lowertypetests..BitSetBuilder..Min">Min</a> &gt; <a class="local col0 ref" href="#7780Offset" title='Offset' data-ref="7780Offset" data-ref-filename="7780Offset">Offset</a>)</td></tr>
+<tr><th id="70">70</th><td>      <a class="member field" href="#llvm::lowertypetests::BitSetBuilder::Min" title='llvm::lowertypetests::BitSetBuilder::Min' data-ref="llvm::lowertypetests::BitSetBuilder::Min" data-ref-filename="llvm..lowertypetests..BitSetBuilder..Min">Min</a> = <a class="local col0 ref" href="#7780Offset" title='Offset' data-ref="7780Offset" data-ref-filename="7780Offset">Offset</a>;</td></tr>
+<tr><th id="71">71</th><td>    <b>if</b> (<a class="member field" href="#llvm::lowertypetests::BitSetBuilder::Max" title='llvm::lowertypetests::BitSetBuilder::Max' data-ref="llvm::lowertypetests::BitSetBuilder::Max" data-ref-filename="llvm..lowertypetests..BitSetBuilder..Max">Max</a> &lt; <a class="local col0 ref" href="#7780Offset" title='Offset' data-ref="7780Offset" data-ref-filename="7780Offset">Offset</a>)</td></tr>
+<tr><th id="72">72</th><td>      <a class="member field" href="#llvm::lowertypetests::BitSetBuilder::Max" title='llvm::lowertypetests::BitSetBuilder::Max' data-ref="llvm::lowertypetests::BitSetBuilder::Max" data-ref-filename="llvm..lowertypetests..BitSetBuilder..Max">Max</a> = <a class="local col0 ref" href="#7780Offset" title='Offset' data-ref="7780Offset" data-ref-filename="7780Offset">Offset</a>;</td></tr>
+<tr><th id="73">73</th><td></td></tr>
+<tr><th id="74">74</th><td>    <a class="member field" href="#llvm::lowertypetests::BitSetBuilder::Offsets" title='llvm::lowertypetests::BitSetBuilder::Offsets' data-ref="llvm::lowertypetests::BitSetBuilder::Offsets" data-ref-filename="llvm..lowertypetests..BitSetBuilder..Offsets">Offsets</a>.<a class="ref fn" href="../../ADT/SmallVector.h.html#_ZN4llvm23SmallVectorTemplateBaseIT_Lb1EE9push_backENSt11conditionalIL_ZNS2_17TakesParamByValueEES1_RKS1_E4typeE" title='llvm::SmallVectorTemplateBase&lt;type-parameter-0-0, true&gt;::push_back' data-ref="_ZN4llvm23SmallVectorTemplateBaseIT_Lb1EE9push_backENSt11conditionalIL_ZNS2_17TakesParamByValueEES1_RKS1_E4typeE" data-ref-filename="_ZN4llvm23SmallVectorTemplateBaseIT_Lb1EE9push_backENSt11conditionalIL_ZNS2_17TakesParamByValueEES1_RKS1_E4typeE">push_back</a>(<a class="local col0 ref" href="#7780Offset" title='Offset' data-ref="7780Offset" data-ref-filename="7780Offset">Offset</a>);</td></tr>
+<tr><th id="75">75</th><td>  }</td></tr>
+<tr><th id="76">76</th><td></td></tr>
+<tr><th id="77">77</th><td>  <a class="type" href="#llvm::lowertypetests::BitSetInfo" title='llvm::lowertypetests::BitSetInfo' data-ref="llvm::lowertypetests::BitSetInfo" data-ref-filename="llvm..lowertypetests..BitSetInfo">BitSetInfo</a> <dfn class="decl fn" id="_ZN4llvm14lowertypetests13BitSetBuilder5buildEv" title='llvm::lowertypetests::BitSetBuilder::build' data-ref="_ZN4llvm14lowertypetests13BitSetBuilder5buildEv" data-ref-filename="_ZN4llvm14lowertypetests13BitSetBuilder5buildEv">build</dfn>();</td></tr>
+<tr><th id="78">78</th><td>};</td></tr>
+<tr><th id="79">79</th><td></td></tr>
+<tr><th id="80">80</th><td><i class="doc">/// This class implements a layout algorithm for globals referenced by bit sets</i></td></tr>
+<tr><th id="81">81</th><td><i class="doc">/// that tries to keep members of small bit sets together. This can</i></td></tr>
+<tr><th id="82">82</th><td><i class="doc">/// significantly reduce bit set sizes in many cases.</i></td></tr>
+<tr><th id="83">83</th><td><i class="doc">///</i></td></tr>
+<tr><th id="84">84</th><td><i class="doc">/// It works by assembling fragments of layout from sets of referenced globals.</i></td></tr>
+<tr><th id="85">85</th><td><i class="doc">/// Each set of referenced globals causes the algorithm to create a new</i></td></tr>
+<tr><th id="86">86</th><td><i class="doc">/// fragment, which is assembled by appending each referenced global in the set</i></td></tr>
+<tr><th id="87">87</th><td><i class="doc">/// into the fragment. If a referenced global has already been referenced by an</i></td></tr>
+<tr><th id="88">88</th><td><i class="doc">/// fragment created earlier, we instead delete that fragment and append its</i></td></tr>
+<tr><th id="89">89</th><td><i class="doc">/// contents into the fragment we are assembling.</i></td></tr>
+<tr><th id="90">90</th><td><i class="doc">///</i></td></tr>
+<tr><th id="91">91</th><td><i class="doc">/// By starting with the smallest fragments, we minimize the size of the</i></td></tr>
+<tr><th id="92">92</th><td><i class="doc">/// fragments that are copied into larger fragments. This is most intuitively</i></td></tr>
+<tr><th id="93">93</th><td><i class="doc">/// thought about when considering the case where the globals are virtual tables</i></td></tr>
+<tr><th id="94">94</th><td><i class="doc">/// and the bit sets represent their derived classes: in a single inheritance</i></td></tr>
+<tr><th id="95">95</th><td><i class="doc">/// hierarchy, the optimum layout would involve a depth-first search of the</i></td></tr>
+<tr><th id="96">96</th><td><i class="doc">/// class hierarchy (and in fact the computed layout ends up looking a lot like</i></td></tr>
+<tr><th id="97">97</th><td><i class="doc">/// a DFS), but a naive DFS would not work well in the presence of multiple</i></td></tr>
+<tr><th id="98">98</th><td><i class="doc">/// inheritance. This aspect of the algorithm ends up fitting smaller</i></td></tr>
+<tr><th id="99">99</th><td><i class="doc">/// hierarchies inside larger ones where that would be beneficial.</i></td></tr>
+<tr><th id="100">100</th><td><i class="doc">///</i></td></tr>
+<tr><th id="101">101</th><td><i class="doc">/// For example, consider this class hierarchy:</i></td></tr>
+<tr><th id="102">102</th><td><i class="doc">///</i></td></tr>
+<tr><th id="103">103</th><td><i class="doc">/// A       B</i></td></tr>
+<tr><th id="104">104</th><td><i class="doc">///   \   / | \</i></td></tr>
+<tr><th id="105">105</th><td><i class="doc">///     C   D   E</i></td></tr>
+<tr><th id="106">106</th><td><i class="doc">///</i></td></tr>
+<tr><th id="107">107</th><td><i class="doc">/// We have five bit sets: bsA (A, C), bsB (B, C, D, E), bsC (C), bsD (D) and</i></td></tr>
+<tr><th id="108">108</th><td><i class="doc">/// bsE (E). If we laid out our objects by DFS traversing B followed by A, our</i></td></tr>
+<tr><th id="109">109</th><td><i class="doc">/// layout would be {B, C, D, E, A}. This is optimal for bsB as it needs to</i></td></tr>
+<tr><th id="110">110</th><td><i class="doc">/// cover the only 4 objects in its hierarchy, but not for bsA as it needs to</i></td></tr>
+<tr><th id="111">111</th><td><i class="doc">/// cover 5 objects, i.e. the entire layout. Our algorithm proceeds as follows:</i></td></tr>
+<tr><th id="112">112</th><td><i class="doc">///</i></td></tr>
+<tr><th id="113">113</th><td><i class="doc">/// Add bsC, fragments {{C}}</i></td></tr>
+<tr><th id="114">114</th><td><i class="doc">/// Add bsD, fragments {{C}, {D}}</i></td></tr>
+<tr><th id="115">115</th><td><i class="doc">/// Add bsE, fragments {{C}, {D}, {E}}</i></td></tr>
+<tr><th id="116">116</th><td><i class="doc">/// Add bsA, fragments {{A, C}, {D}, {E}}</i></td></tr>
+<tr><th id="117">117</th><td><i class="doc">/// Add bsB, fragments {{B, A, C, D, E}}</i></td></tr>
+<tr><th id="118">118</th><td><i class="doc">///</i></td></tr>
+<tr><th id="119">119</th><td><i class="doc">/// This layout is optimal for bsA, as it now only needs to cover two (i.e. 3</i></td></tr>
+<tr><th id="120">120</th><td><i class="doc">/// fewer) objects, at the cost of bsB needing to cover 1 more object.</i></td></tr>
+<tr><th id="121">121</th><td><i class="doc">///</i></td></tr>
+<tr><th id="122">122</th><td><i class="doc">/// The bit set lowering pass assigns an object index to each object that needs</i></td></tr>
+<tr><th id="123">123</th><td><i class="doc">/// to be laid out, and calls addFragment for each bit set passing the object</i></td></tr>
+<tr><th id="124">124</th><td><i class="doc">/// indices of its referenced globals. It then assembles a layout from the</i></td></tr>
+<tr><th id="125">125</th><td><i class="doc">/// computed layout in the Fragments field.</i></td></tr>
+<tr><th id="126">126</th><td><b>struct</b> <dfn class="type def" id="llvm::lowertypetests::GlobalLayoutBuilder" title='llvm::lowertypetests::GlobalLayoutBuilder' data-ref="llvm::lowertypetests::GlobalLayoutBuilder" data-ref-filename="llvm..lowertypetests..GlobalLayoutBuilder">GlobalLayoutBuilder</dfn> {</td></tr>
+<tr><th id="127">127</th><td>  <i class="doc">/// The computed layout. Each element of this vector contains a fragment of</i></td></tr>
+<tr><th id="128">128</th><td><i class="doc">  /// layout (which may be empty) consisting of object indices.</i></td></tr>
+<tr><th id="129">129</th><td>  <span class="namespace">std::</span><span class='type' title='std::vector' data-ref="std::vector" data-ref-filename="std..vector">vector</span>&lt;<span class="namespace">std::</span><span class='type' title='std::vector' data-ref="std::vector" data-ref-filename="std..vector">vector</span>&lt;<a class="typedef" href="../../../../../../include/bits/stdint-uintn.h.html#uint64_t" title='uint64_t' data-type='__uint64_t' data-ref="uint64_t" data-ref-filename="uint64_t">uint64_t</a>&gt;&gt; <dfn class="decl field" id="llvm::lowertypetests::GlobalLayoutBuilder::Fragments" title='llvm::lowertypetests::GlobalLayoutBuilder::Fragments' data-ref="llvm::lowertypetests::GlobalLayoutBuilder::Fragments" data-ref-filename="llvm..lowertypetests..GlobalLayoutBuilder..Fragments">Fragments</dfn>;</td></tr>
+<tr><th id="130">130</th><td></td></tr>
+<tr><th id="131">131</th><td>  <i class="doc">/// Mapping from object index to fragment index.</i></td></tr>
+<tr><th id="132">132</th><td>  <span class="namespace">std::</span><span class='type' title='std::vector' data-ref="std::vector" data-ref-filename="std..vector">vector</span>&lt;<a class="typedef" href="../../../../../../include/bits/stdint-uintn.h.html#uint64_t" title='uint64_t' data-type='__uint64_t' data-ref="uint64_t" data-ref-filename="uint64_t">uint64_t</a>&gt; <dfn class="decl field" id="llvm::lowertypetests::GlobalLayoutBuilder::FragmentMap" title='llvm::lowertypetests::GlobalLayoutBuilder::FragmentMap' data-ref="llvm::lowertypetests::GlobalLayoutBuilder::FragmentMap" data-ref-filename="llvm..lowertypetests..GlobalLayoutBuilder..FragmentMap">FragmentMap</dfn>;</td></tr>
+<tr><th id="133">133</th><td></td></tr>
+<tr><th id="134">134</th><td>  <dfn class="decl def fn" id="_ZN4llvm14lowertypetests19GlobalLayoutBuilderC1Em" title='llvm::lowertypetests::GlobalLayoutBuilder::GlobalLayoutBuilder' data-ref="_ZN4llvm14lowertypetests19GlobalLayoutBuilderC1Em" data-ref-filename="_ZN4llvm14lowertypetests19GlobalLayoutBuilderC1Em">GlobalLayoutBuilder</dfn>(<a class="typedef" href="../../../../../../include/bits/stdint-uintn.h.html#uint64_t" title='uint64_t' data-type='__uint64_t' data-ref="uint64_t" data-ref-filename="uint64_t">uint64_t</a> <dfn class="local col1 decl" id="7781NumObjects" title='NumObjects' data-type='uint64_t' data-ref="7781NumObjects" data-ref-filename="7781NumObjects">NumObjects</dfn>)</td></tr>
+<tr><th id="135">135</th><td>      : <a class="member field" href="#llvm::lowertypetests::GlobalLayoutBuilder::Fragments" title='llvm::lowertypetests::GlobalLayoutBuilder::Fragments' data-ref="llvm::lowertypetests::GlobalLayoutBuilder::Fragments" data-ref-filename="llvm..lowertypetests..GlobalLayoutBuilder..Fragments">Fragments</a><span class='ref fn' title='std::vector::vector&lt;_Tp, _Alloc&gt;' data-ref="_ZNSt6vectorC1EmRKT0_" data-ref-filename="_ZNSt6vectorC1EmRKT0_">(</span><var>1</var>), <a class="member field" href="#llvm::lowertypetests::GlobalLayoutBuilder::FragmentMap" title='llvm::lowertypetests::GlobalLayoutBuilder::FragmentMap' data-ref="llvm::lowertypetests::GlobalLayoutBuilder::FragmentMap" data-ref-filename="llvm..lowertypetests..GlobalLayoutBuilder..FragmentMap">FragmentMap</a><span class='ref fn' title='std::vector::vector&lt;_Tp, _Alloc&gt;' data-ref="_ZNSt6vectorC1EmRKT0_" data-ref-filename="_ZNSt6vectorC1EmRKT0_">(</span><a class="local col1 ref" href="#7781NumObjects" title='NumObjects' data-ref="7781NumObjects" data-ref-filename="7781NumObjects">NumObjects</a>) {}</td></tr>
+<tr><th id="136">136</th><td></td></tr>
+<tr><th id="137">137</th><td>  <i class="doc">/// Add F to the layout while trying to keep its indices contiguous.</i></td></tr>
+<tr><th id="138">138</th><td><i class="doc">  /// If a previously seen fragment uses any of F's indices, that</i></td></tr>
+<tr><th id="139">139</th><td><i class="doc">  /// fragment will be laid out inside F.</i></td></tr>
+<tr><th id="140">140</th><td>  <em>void</em> <dfn class="decl fn" id="_ZN4llvm14lowertypetests19GlobalLayoutBuilder11addFragmentERKSt3setImSt4lessImESaImEE" title='llvm::lowertypetests::GlobalLayoutBuilder::addFragment' data-ref="_ZN4llvm14lowertypetests19GlobalLayoutBuilder11addFragmentERKSt3setImSt4lessImESaImEE" data-ref-filename="_ZN4llvm14lowertypetests19GlobalLayoutBuilder11addFragmentERKSt3setImSt4lessImESaImEE">addFragment</dfn>(<em>const</em> <span class="namespace">std::</span><span class='type' title='std::set' data-ref="std::set" data-ref-filename="std..set">set</span>&lt;<a class="typedef" href="../../../../../../include/bits/stdint-uintn.h.html#uint64_t" title='uint64_t' data-type='__uint64_t' data-ref="uint64_t" data-ref-filename="uint64_t">uint64_t</a>&gt; &amp;<dfn class="local col2 decl" id="7782F" title='F' data-type='const std::set&lt;uint64_t&gt; &amp;' data-ref="7782F" data-ref-filename="7782F">F</dfn>);</td></tr>
+<tr><th id="141">141</th><td>};</td></tr>
+<tr><th id="142">142</th><td></td></tr>
+<tr><th id="143">143</th><td><i class="doc">/// This class is used to build a byte array containing overlapping bit sets. By</i></td></tr>
+<tr><th id="144">144</th><td><i class="doc">/// loading from indexed offsets into the byte array and applying a mask, a</i></td></tr>
+<tr><th id="145">145</th><td><i class="doc">/// program can test bits from the bit set with a relatively short instruction</i></td></tr>
+<tr><th id="146">146</th><td><i class="doc">/// sequence. For example, suppose we have 15 bit sets to lay out:</i></td></tr>
+<tr><th id="147">147</th><td><i class="doc">///</i></td></tr>
+<tr><th id="148">148</th><td><i class="doc">/// A (16 bits), B (15 bits), C (14 bits), D (13 bits), E (12 bits),</i></td></tr>
+<tr><th id="149">149</th><td><i class="doc">/// F (11 bits), G (10 bits), H (9 bits), I (7 bits), J (6 bits), K (5 bits),</i></td></tr>
+<tr><th id="150">150</th><td><i class="doc">/// L (4 bits), M (3 bits), N (2 bits), O (1 bit)</i></td></tr>
+<tr><th id="151">151</th><td><i class="doc">///</i></td></tr>
+<tr><th id="152">152</th><td><i class="doc">/// These bits can be laid out in a 16-byte array like this:</i></td></tr>
+<tr><th id="153">153</th><td><i class="doc">///</i></td></tr>
+<tr><th id="154">154</th><td><i class="doc">///       Byte Offset</i></td></tr>
+<tr><th id="155">155</th><td><i class="doc">///     0123456789ABCDEF</i></td></tr>
+<tr><th id="156">156</th><td><i class="doc">/// Bit</i></td></tr>
+<tr><th id="157">157</th><td><i class="doc">///   7 HHHHHHHHHIIIIIII</i></td></tr>
+<tr><th id="158">158</th><td><i class="doc">///   6 GGGGGGGGGGJJJJJJ</i></td></tr>
+<tr><th id="159">159</th><td><i class="doc">///   5 FFFFFFFFFFFKKKKK</i></td></tr>
+<tr><th id="160">160</th><td><i class="doc">///   4 EEEEEEEEEEEELLLL</i></td></tr>
+<tr><th id="161">161</th><td><i class="doc">///   3 DDDDDDDDDDDDDMMM</i></td></tr>
+<tr><th id="162">162</th><td><i class="doc">///   2 CCCCCCCCCCCCCCNN</i></td></tr>
+<tr><th id="163">163</th><td><i class="doc">///   1 BBBBBBBBBBBBBBBO</i></td></tr>
+<tr><th id="164">164</th><td><i class="doc">///   0 AAAAAAAAAAAAAAAA</i></td></tr>
+<tr><th id="165">165</th><td><i class="doc">///</i></td></tr>
+<tr><th id="166">166</th><td><i class="doc">/// For example, to test bit X of A, we evaluate ((bits[X] &amp; 1) != 0), or to</i></td></tr>
+<tr><th id="167">167</th><td><i class="doc">/// test bit X of I, we evaluate ((bits[9 + X] &amp; 0x80) != 0). This can be done</i></td></tr>
+<tr><th id="168">168</th><td><i class="doc">/// in 1-2 machine instructions on x86, or 4-6 instructions on ARM.</i></td></tr>
+<tr><th id="169">169</th><td><i class="doc">///</i></td></tr>
+<tr><th id="170">170</th><td><i class="doc">/// This is a byte array, rather than (say) a 2-byte array or a 4-byte array,</i></td></tr>
+<tr><th id="171">171</th><td><i class="doc">/// because for one thing it gives us better packing (the more bins there are,</i></td></tr>
+<tr><th id="172">172</th><td><i class="doc">/// the less evenly they will be filled), and for another, the instruction</i></td></tr>
+<tr><th id="173">173</th><td><i class="doc">/// sequences can be slightly shorter, both on x86 and ARM.</i></td></tr>
+<tr><th id="174">174</th><td><b>struct</b> <dfn class="type def" id="llvm::lowertypetests::ByteArrayBuilder" title='llvm::lowertypetests::ByteArrayBuilder' data-ref="llvm::lowertypetests::ByteArrayBuilder" data-ref-filename="llvm..lowertypetests..ByteArrayBuilder">ByteArrayBuilder</dfn> {</td></tr>
+<tr><th id="175">175</th><td>  <i class="doc">/// The byte array built so far.</i></td></tr>
+<tr><th id="176">176</th><td>  <span class="namespace">std::</span><span class='type' title='std::vector' data-ref="std::vector" data-ref-filename="std..vector">vector</span>&lt;<a class="typedef" href="../../../../../../include/bits/stdint-uintn.h.html#uint8_t" title='uint8_t' data-type='__uint8_t' data-ref="uint8_t" data-ref-filename="uint8_t">uint8_t</a>&gt; <dfn class="decl field" id="llvm::lowertypetests::ByteArrayBuilder::Bytes" title='llvm::lowertypetests::ByteArrayBuilder::Bytes' data-ref="llvm::lowertypetests::ByteArrayBuilder::Bytes" data-ref-filename="llvm..lowertypetests..ByteArrayBuilder..Bytes">Bytes</dfn>;</td></tr>
+<tr><th id="177">177</th><td></td></tr>
+<tr><th id="178">178</th><td>  <b>enum</b> { <dfn class="enum" id="llvm::lowertypetests::ByteArrayBuilder::BitsPerByte" title='llvm::lowertypetests::ByteArrayBuilder::BitsPerByte' data-ref="llvm::lowertypetests::ByteArrayBuilder::BitsPerByte" data-ref-filename="llvm..lowertypetests..ByteArrayBuilder..BitsPerByte">BitsPerByte</dfn> = <var>8</var> };</td></tr>
+<tr><th id="179">179</th><td></td></tr>
+<tr><th id="180">180</th><td>  <i class="doc">/// The number of bytes allocated so far for each of the bits.</i></td></tr>
+<tr><th id="181">181</th><td>  <a class="typedef" href="../../../../../../include/bits/stdint-uintn.h.html#uint64_t" title='uint64_t' data-type='__uint64_t' data-ref="uint64_t" data-ref-filename="uint64_t">uint64_t</a> <dfn class="decl field" id="llvm::lowertypetests::ByteArrayBuilder::BitAllocs" title='llvm::lowertypetests::ByteArrayBuilder::BitAllocs' data-ref="llvm::lowertypetests::ByteArrayBuilder::BitAllocs" data-ref-filename="llvm..lowertypetests..ByteArrayBuilder..BitAllocs">BitAllocs</dfn>[<a class="enum" href="#llvm::lowertypetests::ByteArrayBuilder::BitsPerByte" title='llvm::lowertypetests::ByteArrayBuilder::BitsPerByte' data-ref="llvm::lowertypetests::ByteArrayBuilder::BitsPerByte" data-ref-filename="llvm..lowertypetests..ByteArrayBuilder..BitsPerByte">BitsPerByte</a>];</td></tr>
+<tr><th id="182">182</th><td></td></tr>
+<tr><th id="183">183</th><td>  <dfn class="decl def fn" id="_ZN4llvm14lowertypetests16ByteArrayBuilderC1Ev" title='llvm::lowertypetests::ByteArrayBuilder::ByteArrayBuilder' data-ref="_ZN4llvm14lowertypetests16ByteArrayBuilderC1Ev" data-ref-filename="_ZN4llvm14lowertypetests16ByteArrayBuilderC1Ev">ByteArrayBuilder</dfn>() {</td></tr>
+<tr><th id="184">184</th><td>    <a class="ref fn" href="../../../../../../include/string.h.html#memset" title='memset' data-ref="memset" data-ref-filename="memset">memset</a>(<a class="member field" href="#llvm::lowertypetests::ByteArrayBuilder::BitAllocs" title='llvm::lowertypetests::ByteArrayBuilder::BitAllocs' data-ref="llvm::lowertypetests::ByteArrayBuilder::BitAllocs" data-ref-filename="llvm..lowertypetests..ByteArrayBuilder..BitAllocs">BitAllocs</a>, <var>0</var>, <b>sizeof</b>(<a class="member field" href="#llvm::lowertypetests::ByteArrayBuilder::BitAllocs" title='llvm::lowertypetests::ByteArrayBuilder::BitAllocs' data-ref="llvm::lowertypetests::ByteArrayBuilder::BitAllocs" data-ref-filename="llvm..lowertypetests..ByteArrayBuilder..BitAllocs">BitAllocs</a>));</td></tr>
+<tr><th id="185">185</th><td>  }</td></tr>
+<tr><th id="186">186</th><td></td></tr>
+<tr><th id="187">187</th><td>  <i class="doc">/// Allocate BitSize bits in the byte array where Bits contains the bits to</i></td></tr>
+<tr><th id="188">188</th><td><i class="doc">  /// set. AllocByteOffset is set to the offset within the byte array and</i></td></tr>
+<tr><th id="189">189</th><td><i class="doc">  /// AllocMask is set to the bitmask for those bits. This uses the LPT (Longest</i></td></tr>
+<tr><th id="190">190</th><td><i class="doc">  /// Processing Time) multiprocessor scheduling algorithm to lay out the bits</i></td></tr>
+<tr><th id="191">191</th><td><i class="doc">  /// efficiently; the pass allocates bit sets in decreasing size order.</i></td></tr>
+<tr><th id="192">192</th><td>  <em>void</em> <dfn class="decl fn" id="_ZN4llvm14lowertypetests16ByteArrayBuilder8allocateERKSt3setImSt4lessImESaImEEmRmRh" title='llvm::lowertypetests::ByteArrayBuilder::allocate' data-ref="_ZN4llvm14lowertypetests16ByteArrayBuilder8allocateERKSt3setImSt4lessImESaImEEmRmRh" data-ref-filename="_ZN4llvm14lowertypetests16ByteArrayBuilder8allocateERKSt3setImSt4lessImESaImEEmRmRh">allocate</dfn>(<em>const</em> <span class="namespace">std::</span><span class='type' title='std::set' data-ref="std::set" data-ref-filename="std..set">set</span>&lt;<a class="typedef" href="../../../../../../include/bits/stdint-uintn.h.html#uint64_t" title='uint64_t' data-type='__uint64_t' data-ref="uint64_t" data-ref-filename="uint64_t">uint64_t</a>&gt; &amp;<dfn class="local col3 decl" id="7783Bits" title='Bits' data-type='const std::set&lt;uint64_t&gt; &amp;' data-ref="7783Bits" data-ref-filename="7783Bits">Bits</dfn>, <a class="typedef" href="../../../../../../include/bits/stdint-uintn.h.html#uint64_t" title='uint64_t' data-type='__uint64_t' data-ref="uint64_t" data-ref-filename="uint64_t">uint64_t</a> <dfn class="local col4 decl" id="7784BitSize" title='BitSize' data-type='uint64_t' data-ref="7784BitSize" data-ref-filename="7784BitSize">BitSize</dfn>,</td></tr>
+<tr><th id="193">193</th><td>                <a class="typedef" href="../../../../../../include/bits/stdint-uintn.h.html#uint64_t" title='uint64_t' data-type='__uint64_t' data-ref="uint64_t" data-ref-filename="uint64_t">uint64_t</a> &amp;<dfn class="local col5 decl" id="7785AllocByteOffset" title='AllocByteOffset' data-type='uint64_t &amp;' data-ref="7785AllocByteOffset" data-ref-filename="7785AllocByteOffset">AllocByteOffset</dfn>, <a class="typedef" href="../../../../../../include/bits/stdint-uintn.h.html#uint8_t" title='uint8_t' data-type='__uint8_t' data-ref="uint8_t" data-ref-filename="uint8_t">uint8_t</a> &amp;<dfn class="local col6 decl" id="7786AllocMask" title='AllocMask' data-type='uint8_t &amp;' data-ref="7786AllocMask" data-ref-filename="7786AllocMask">AllocMask</dfn>);</td></tr>
+<tr><th id="194">194</th><td>};</td></tr>
+<tr><th id="195">195</th><td></td></tr>
+<tr><th id="196">196</th><td><em>bool</em> <dfn class="decl fn" id="_ZN4llvm14lowertypetests20isJumpTableCanonicalEPNS_8FunctionE" title='llvm::lowertypetests::isJumpTableCanonical' data-ref="_ZN4llvm14lowertypetests20isJumpTableCanonicalEPNS_8FunctionE" data-ref-filename="_ZN4llvm14lowertypetests20isJumpTableCanonicalEPNS_8FunctionE">isJumpTableCanonical</dfn>(<a class="type" href="../../IR/Function.h.html#llvm::Function" title='llvm::Function' data-ref="llvm::Function" data-ref-filename="llvm..Function">Function</a> *<dfn class="local col7 decl" id="7787F" title='F' data-type='llvm::Function *' data-ref="7787F" data-ref-filename="7787F">F</dfn>);</td></tr>
+<tr><th id="197">197</th><td></td></tr>
+<tr><th id="198">198</th><td>} <i>// end namespace lowertypetests</i></td></tr>
+<tr><th id="199">199</th><td></td></tr>
+<tr><th id="200">200</th><td><b>class</b> <dfn class="type def" id="llvm::LowerTypeTestsPass" title='llvm::LowerTypeTestsPass' data-ref="llvm::LowerTypeTestsPass" data-ref-filename="llvm..LowerTypeTestsPass">LowerTypeTestsPass</dfn> : <b>public</b> <a class="type" href="../../IR/PassManager.h.html#llvm::PassInfoMixin" title='llvm::PassInfoMixin' data-ref="llvm::PassInfoMixin" data-ref-filename="llvm..PassInfoMixin">PassInfoMixin</a>&lt;<a class="type" href="#llvm::LowerTypeTestsPass" title='llvm::LowerTypeTestsPass' data-ref="llvm::LowerTypeTestsPass" data-ref-filename="llvm..LowerTypeTestsPass">LowerTypeTestsPass</a>&gt; {</td></tr>
+<tr><th id="201">201</th><td>  <em>bool</em> <dfn class="decl field" id="llvm::LowerTypeTestsPass::UseCommandLine" title='llvm::LowerTypeTestsPass::UseCommandLine' data-ref="llvm::LowerTypeTestsPass::UseCommandLine" data-ref-filename="llvm..LowerTypeTestsPass..UseCommandLine">UseCommandLine</dfn> = <b>false</b>;</td></tr>
+<tr><th id="202">202</th><td></td></tr>
+<tr><th id="203">203</th><td>  <a class="type" href="../../IR/ModuleSummaryIndex.h.html#llvm::ModuleSummaryIndex" title='llvm::ModuleSummaryIndex' data-ref="llvm::ModuleSummaryIndex" data-ref-filename="llvm..ModuleSummaryIndex">ModuleSummaryIndex</a> *<dfn class="decl field" id="llvm::LowerTypeTestsPass::ExportSummary" title='llvm::LowerTypeTestsPass::ExportSummary' data-ref="llvm::LowerTypeTestsPass::ExportSummary" data-ref-filename="llvm..LowerTypeTestsPass..ExportSummary">ExportSummary</dfn> = <b>nullptr</b>;</td></tr>
+<tr><th id="204">204</th><td>  <em>const</em> <a class="type" href="../../IR/ModuleSummaryIndex.h.html#llvm::ModuleSummaryIndex" title='llvm::ModuleSummaryIndex' data-ref="llvm::ModuleSummaryIndex" data-ref-filename="llvm..ModuleSummaryIndex">ModuleSummaryIndex</a> *<dfn class="decl field" id="llvm::LowerTypeTestsPass::ImportSummary" title='llvm::LowerTypeTestsPass::ImportSummary' data-ref="llvm::LowerTypeTestsPass::ImportSummary" data-ref-filename="llvm..LowerTypeTestsPass..ImportSummary">ImportSummary</dfn> = <b>nullptr</b>;</td></tr>
+<tr><th id="205">205</th><td>  <em>bool</em> <dfn class="decl field" id="llvm::LowerTypeTestsPass::DropTypeTests" title='llvm::LowerTypeTestsPass::DropTypeTests' data-ref="llvm::LowerTypeTestsPass::DropTypeTests" data-ref-filename="llvm..LowerTypeTestsPass..DropTypeTests">DropTypeTests</dfn> = <b>true</b>;</td></tr>
+<tr><th id="206">206</th><td></td></tr>
+<tr><th id="207">207</th><td><b>public</b>:</td></tr>
+<tr><th id="208">208</th><td>  <dfn class="decl def fn" id="_ZN4llvm18LowerTypeTestsPassC1Ev" title='llvm::LowerTypeTestsPass::LowerTypeTestsPass' data-ref="_ZN4llvm18LowerTypeTestsPassC1Ev" data-ref-filename="_ZN4llvm18LowerTypeTestsPassC1Ev">LowerTypeTestsPass</dfn>() : <a class="member field" href="#llvm::LowerTypeTestsPass::UseCommandLine" title='llvm::LowerTypeTestsPass::UseCommandLine' data-ref="llvm::LowerTypeTestsPass::UseCommandLine" data-ref-filename="llvm..LowerTypeTestsPass..UseCommandLine">UseCommandLine</a>(<b>true</b>) {}</td></tr>
+<tr><th id="209">209</th><td>  <dfn class="decl def fn" id="_ZN4llvm18LowerTypeTestsPassC1EPNS_18ModuleSummaryIndexEPKS1_b" title='llvm::LowerTypeTestsPass::LowerTypeTestsPass' data-ref="_ZN4llvm18LowerTypeTestsPassC1EPNS_18ModuleSummaryIndexEPKS1_b" data-ref-filename="_ZN4llvm18LowerTypeTestsPassC1EPNS_18ModuleSummaryIndexEPKS1_b">LowerTypeTestsPass</dfn>(<a class="type" href="../../IR/ModuleSummaryIndex.h.html#llvm::ModuleSummaryIndex" title='llvm::ModuleSummaryIndex' data-ref="llvm::ModuleSummaryIndex" data-ref-filename="llvm..ModuleSummaryIndex">ModuleSummaryIndex</a> *<dfn class="local col8 decl" id="7788ExportSummary" title='ExportSummary' data-type='llvm::ModuleSummaryIndex *' data-ref="7788ExportSummary" data-ref-filename="7788ExportSummary">ExportSummary</dfn>,</td></tr>
+<tr><th id="210">210</th><td>                     <em>const</em> <a class="type" href="../../IR/ModuleSummaryIndex.h.html#llvm::ModuleSummaryIndex" title='llvm::ModuleSummaryIndex' data-ref="llvm::ModuleSummaryIndex" data-ref-filename="llvm..ModuleSummaryIndex">ModuleSummaryIndex</a> *<dfn class="local col9 decl" id="7789ImportSummary" title='ImportSummary' data-type='const llvm::ModuleSummaryIndex *' data-ref="7789ImportSummary" data-ref-filename="7789ImportSummary">ImportSummary</dfn>,</td></tr>
+<tr><th id="211">211</th><td>                     <em>bool</em> <dfn class="local col0 decl" id="7790DropTypeTests" title='DropTypeTests' data-type='bool' data-ref="7790DropTypeTests" data-ref-filename="7790DropTypeTests">DropTypeTests</dfn> = <b>false</b>)</td></tr>
+<tr><th id="212">212</th><td>      : <a class="member field" href="#llvm::LowerTypeTestsPass::ExportSummary" title='llvm::LowerTypeTestsPass::ExportSummary' data-ref="llvm::LowerTypeTestsPass::ExportSummary" data-ref-filename="llvm..LowerTypeTestsPass..ExportSummary">ExportSummary</a>(<a class="local col8 ref" href="#7788ExportSummary" title='ExportSummary' data-ref="7788ExportSummary" data-ref-filename="7788ExportSummary">ExportSummary</a>), <a class="member field" href="#llvm::LowerTypeTestsPass::ImportSummary" title='llvm::LowerTypeTestsPass::ImportSummary' data-ref="llvm::LowerTypeTestsPass::ImportSummary" data-ref-filename="llvm..LowerTypeTestsPass..ImportSummary">ImportSummary</a>(<a class="local col9 ref" href="#7789ImportSummary" title='ImportSummary' data-ref="7789ImportSummary" data-ref-filename="7789ImportSummary">ImportSummary</a>),</td></tr>
+<tr><th id="213">213</th><td>        <a class="member field" href="#llvm::LowerTypeTestsPass::DropTypeTests" title='llvm::LowerTypeTestsPass::DropTypeTests' data-ref="llvm::LowerTypeTestsPass::DropTypeTests" data-ref-filename="llvm..LowerTypeTestsPass..DropTypeTests">DropTypeTests</a>(<a class="local col0 ref" href="#7790DropTypeTests" title='DropTypeTests' data-ref="7790DropTypeTests" data-ref-filename="7790DropTypeTests">DropTypeTests</a>) {}</td></tr>
+<tr><th id="214">214</th><td>  <a class="type" href="../../IR/PassManager.h.html#llvm::PreservedAnalyses" title='llvm::PreservedAnalyses' data-ref="llvm::PreservedAnalyses" data-ref-filename="llvm..PreservedAnalyses">PreservedAnalyses</a> <dfn class="decl fn" id="_ZN4llvm18LowerTypeTestsPass3runERNS_6ModuleERNS_15AnalysisManagerIS1_JEEE" title='llvm::LowerTypeTestsPass::run' data-ref="_ZN4llvm18LowerTypeTestsPass3runERNS_6ModuleERNS_15AnalysisManagerIS1_JEEE" data-ref-filename="_ZN4llvm18LowerTypeTestsPass3runERNS_6ModuleERNS_15AnalysisManagerIS1_JEEE">run</dfn>(<a class="type" href="../../IR/Module.h.html#llvm::Module" title='llvm::Module' data-ref="llvm::Module" data-ref-filename="llvm..Module">Module</a> &amp;<dfn class="local col1 decl" id="7791M" title='M' data-type='llvm::Module &amp;' data-ref="7791M" data-ref-filename="7791M">M</dfn>, <a class="typedef" href="../../IR/PassManager.h.html#llvm::ModuleAnalysisManager" title='llvm::ModuleAnalysisManager' data-type='AnalysisManager&lt;llvm::Module&gt;' data-ref="llvm::ModuleAnalysisManager" data-ref-filename="llvm..ModuleAnalysisManager">ModuleAnalysisManager</a> &amp;<dfn class="local col2 decl" id="7792AM" title='AM' data-type='llvm::ModuleAnalysisManager &amp;' data-ref="7792AM" data-ref-filename="7792AM">AM</dfn>);</td></tr>
+<tr><th id="215">215</th><td>};</td></tr>
+<tr><th id="216">216</th><td></td></tr>
+<tr><th id="217">217</th><td>} <i>// end namespace llvm</i></td></tr>
+<tr><th id="218">218</th><td></td></tr>
+<tr><th id="219">219</th><td><u>#<span data-ppcond="14">endif</span> // LLVM_TRANSFORMS_IPO_LOWERTYPETESTS_H</u></td></tr>
+<tr><th id="220">220</th><td></td></tr>
+</table><hr/><p id='footer'>
+Generated while processing <a href='../../../../../clang/lib/CodeGen/BackendUtil.cpp.html'>llvm/clang/lib/CodeGen/BackendUtil.cpp</a><br/>Generated on <em>2021-Jul-01</em> from project llvm revision <em>12</em>

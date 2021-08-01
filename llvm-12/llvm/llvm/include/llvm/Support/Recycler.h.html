@@ -1,0 +1,132 @@
+<!doctype html>
+<html>
+<head>
+<meta name="viewport" content="width=device-width, initial-scale=1.0"><title>Recycler.h source code [llvm/llvm/include/llvm/Support/Recycler.h] - Woboq Code Browser</title>
+<meta name="woboq:interestingDefinitions" content="llvm::Recycler "/>
+<link rel="stylesheet" href="../../../../.././data/qtcreator.css" title="QtCreator"/>
+<link rel="alternate stylesheet" href="../../../../.././data/kdevelop.css" title="KDevelop"/>
+<script type="text/javascript" src="../../../../.././data/jquery/jquery.min.js"></script>
+<script type="text/javascript" src="../../../../.././data/jquery/jquery-ui.min.js"></script>
+<script>var file = 'llvm/llvm/include/llvm/Support/Recycler.h'; var root_path = '../../../../..'; var data_path = '../../../../.././data'; var ecma_script_api_version = 2;</script>
+<script src='../../../../.././data/codebrowser.js'></script>
+</head>
+<body><div id='header'><h1 id='breadcrumb'><span>Browse the source code of </span><a href='../../../..'>llvm</a>/<a href='../../..'>llvm</a>/<a href='../..'>include</a>/<a href='..'>llvm</a>/<a href='./'>Support</a>/<a href='Recycler.h.html'>Recycler.h</a></h1></div>
+<hr/><div id='content'><table class="code">
+<tr><th id="1">1</th><td><i>//==- llvm/Support/Recycler.h - Recycling Allocator --------------*- C++ -*-==//</i></td></tr>
+<tr><th id="2">2</th><td><i>//</i></td></tr>
+<tr><th id="3">3</th><td><i>// Part of the LLVM Project, under the Apache License v2.0 with LLVM Exceptions.</i></td></tr>
+<tr><th id="4">4</th><td><i>// See <a href="https://llvm.org/LICENSE.txt">https://llvm.org/LICENSE.txt</a> for license information.</i></td></tr>
+<tr><th id="5">5</th><td><i>// SPDX-License-Identifier: Apache-2.0 WITH LLVM-exception</i></td></tr>
+<tr><th id="6">6</th><td><i>//</i></td></tr>
+<tr><th id="7">7</th><td><i>//===----------------------------------------------------------------------===//</i></td></tr>
+<tr><th id="8">8</th><td><i>//</i></td></tr>
+<tr><th id="9">9</th><td><i>// This file defines the Recycler class template.  See the doxygen comment for</i></td></tr>
+<tr><th id="10">10</th><td><i>// Recycler for more details.</i></td></tr>
+<tr><th id="11">11</th><td><i>//</i></td></tr>
+<tr><th id="12">12</th><td><i>//===----------------------------------------------------------------------===//</i></td></tr>
+<tr><th id="13">13</th><td></td></tr>
+<tr><th id="14">14</th><td><u>#<span data-ppcond="14">ifndef</span> <span class="macro" data-ref="_M/LLVM_SUPPORT_RECYCLER_H">LLVM_SUPPORT_RECYCLER_H</span></u></td></tr>
+<tr><th id="15">15</th><td><u>#define <dfn class="macro" id="_M/LLVM_SUPPORT_RECYCLER_H" data-ref="_M/LLVM_SUPPORT_RECYCLER_H">LLVM_SUPPORT_RECYCLER_H</dfn></u></td></tr>
+<tr><th id="16">16</th><td></td></tr>
+<tr><th id="17">17</th><td><u>#include <a href="../ADT/ilist.h.html">"llvm/ADT/ilist.h"</a></u></td></tr>
+<tr><th id="18">18</th><td><u>#include <a href="Allocator.h.html">"llvm/Support/Allocator.h"</a></u></td></tr>
+<tr><th id="19">19</th><td><u>#include <a href="ErrorHandling.h.html">"llvm/Support/ErrorHandling.h"</a></u></td></tr>
+<tr><th id="20">20</th><td><u>#include &lt;cassert&gt;</u></td></tr>
+<tr><th id="21">21</th><td></td></tr>
+<tr><th id="22">22</th><td><b>namespace</b> <span class="namespace">llvm</span> {</td></tr>
+<tr><th id="23">23</th><td></td></tr>
+<tr><th id="24">24</th><td><i class="doc">/// PrintRecyclingAllocatorStats - Helper for RecyclingAllocator for</i></td></tr>
+<tr><th id="25">25</th><td><i class="doc">/// printing statistics.</i></td></tr>
+<tr><th id="26">26</th><td><i class="doc">///</i></td></tr>
+<tr><th id="27">27</th><td><em>void</em> <dfn class="decl fn" id="_ZN4llvm18PrintRecyclerStatsEmmm" title='llvm::PrintRecyclerStats' data-ref="_ZN4llvm18PrintRecyclerStatsEmmm" data-ref-filename="_ZN4llvm18PrintRecyclerStatsEmmm">PrintRecyclerStats</dfn>(<span class='typedef' title='size_t' data-type='unsigned long' data-ref="size_t" data-ref-filename="size_t">size_t</span> <dfn class="local col8 decl" id="1388Size" title='Size' data-type='size_t' data-ref="1388Size" data-ref-filename="1388Size">Size</dfn>, <span class='typedef' title='size_t' data-type='unsigned long' data-ref="size_t" data-ref-filename="size_t">size_t</span> <dfn class="local col9 decl" id="1389Align" title='Align' data-type='size_t' data-ref="1389Align" data-ref-filename="1389Align">Align</dfn>, <span class='typedef' title='size_t' data-type='unsigned long' data-ref="size_t" data-ref-filename="size_t">size_t</span> <dfn class="local col0 decl" id="1390FreeListSize" title='FreeListSize' data-type='size_t' data-ref="1390FreeListSize" data-ref-filename="1390FreeListSize">FreeListSize</dfn>);</td></tr>
+<tr><th id="28">28</th><td></td></tr>
+<tr><th id="29">29</th><td><i class="doc">/// Recycler - This class manages a linked-list of deallocated nodes</i></td></tr>
+<tr><th id="30">30</th><td><i class="doc">/// and facilitates reusing deallocated memory in place of allocating</i></td></tr>
+<tr><th id="31">31</th><td><i class="doc">/// new memory.</i></td></tr>
+<tr><th id="32">32</th><td><i class="doc">///</i></td></tr>
+<tr><th id="33">33</th><td><b>template</b> &lt;<b>class</b> T, <span class='typedef' title='size_t' data-type='unsigned long' data-ref="size_t" data-ref-filename="size_t">size_t</span> Size = <b>sizeof</b>(T), <span class='typedef' title='size_t' data-type='unsigned long' data-ref="size_t" data-ref-filename="size_t">size_t</span> Align = <b>alignof</b>(T)&gt;</td></tr>
+<tr><th id="34">34</th><td><b>class</b> <dfn class="type def" id="llvm::Recycler" title='llvm::Recycler' data-ref="llvm::Recycler" data-ref-filename="llvm..Recycler">Recycler</dfn> {</td></tr>
+<tr><th id="35">35</th><td>  <b>struct</b> <dfn class="type def" id="llvm::Recycler::FreeNode" title='llvm::Recycler::FreeNode' data-ref="llvm::Recycler::FreeNode" data-ref-filename="llvm..Recycler..FreeNode">FreeNode</dfn> {</td></tr>
+<tr><th id="36">36</th><td>    <a class="type" href="#llvm::Recycler::FreeNode" title='llvm::Recycler::FreeNode' data-ref="llvm::Recycler::FreeNode" data-ref-filename="llvm..Recycler..FreeNode">FreeNode</a> *<dfn class="decl field" id="llvm::Recycler::FreeNode::Next" title='llvm::Recycler::FreeNode::Next' data-ref="llvm::Recycler::FreeNode::Next" data-ref-filename="llvm..Recycler..FreeNode..Next">Next</dfn>;</td></tr>
+<tr><th id="37">37</th><td>  };</td></tr>
+<tr><th id="38">38</th><td></td></tr>
+<tr><th id="39">39</th><td>  <i class="doc">/// List of nodes that have deleted contents and are not in active use.</i></td></tr>
+<tr><th id="40">40</th><td>  <a class="type" href="#llvm::Recycler::FreeNode" title='llvm::Recycler::FreeNode' data-ref="llvm::Recycler::FreeNode" data-ref-filename="llvm..Recycler..FreeNode">FreeNode</a> *<dfn class="decl field" id="llvm::Recycler::FreeList" title='llvm::Recycler::FreeList' data-ref="llvm::Recycler::FreeList" data-ref-filename="llvm..Recycler..FreeList">FreeList</dfn> = <b>nullptr</b>;</td></tr>
+<tr><th id="41">41</th><td></td></tr>
+<tr><th id="42">42</th><td>  <a class="type" href="#llvm::Recycler::FreeNode" title='llvm::Recycler::FreeNode' data-ref="llvm::Recycler::FreeNode" data-ref-filename="llvm..Recycler..FreeNode">FreeNode</a> *<dfn class="decl def fn" id="_ZN4llvm8Recycler7pop_valEv" title='llvm::Recycler::pop_val' data-ref="_ZN4llvm8Recycler7pop_valEv" data-ref-filename="_ZN4llvm8Recycler7pop_valEv">pop_val</dfn>() {</td></tr>
+<tr><th id="43">43</th><td>    <em>auto</em> *<dfn class="local col1 decl" id="1391Val" title='Val' data-type='auto *' data-ref="1391Val" data-ref-filename="1391Val">Val</dfn> = <a class="member field" href="#llvm::Recycler::FreeList" title='llvm::Recycler::FreeList' data-ref="llvm::Recycler::FreeList" data-ref-filename="llvm..Recycler..FreeList">FreeList</a>;</td></tr>
+<tr><th id="44">44</th><td>    <a class="macro" href="Compiler.h.html#437" title="" data-ref="_M/__asan_unpoison_memory_region">__asan_unpoison_memory_region</a>(Val, Size);</td></tr>
+<tr><th id="45">45</th><td>    <a class="member field" href="#llvm::Recycler::FreeList" title='llvm::Recycler::FreeList' data-ref="llvm::Recycler::FreeList" data-ref-filename="llvm..Recycler..FreeList">FreeList</a> = <a class="member field" href="#llvm::Recycler::FreeList" title='llvm::Recycler::FreeList' data-ref="llvm::Recycler::FreeList" data-ref-filename="llvm..Recycler..FreeList">FreeList</a>-&gt;Next;</td></tr>
+<tr><th id="46">46</th><td>    <a class="macro" href="Compiler.h.html#424" title="" data-ref="_M/__msan_allocated_memory">__msan_allocated_memory</a>(Val, Size);</td></tr>
+<tr><th id="47">47</th><td>    <b>return</b> <a class="local col1 ref" href="#1391Val" title='Val' data-ref="1391Val" data-ref-filename="1391Val">Val</a>;</td></tr>
+<tr><th id="48">48</th><td>  }</td></tr>
+<tr><th id="49">49</th><td></td></tr>
+<tr><th id="50">50</th><td>  <em>void</em> <dfn class="decl def fn" id="_ZN4llvm8Recycler4pushEPNS0_8FreeNodeE" title='llvm::Recycler::push' data-ref="_ZN4llvm8Recycler4pushEPNS0_8FreeNodeE" data-ref-filename="_ZN4llvm8Recycler4pushEPNS0_8FreeNodeE">push</dfn>(<a class="type" href="#llvm::Recycler::FreeNode" title='llvm::Recycler::FreeNode' data-ref="llvm::Recycler::FreeNode" data-ref-filename="llvm..Recycler..FreeNode">FreeNode</a> *<dfn class="local col2 decl" id="1392N" title='N' data-type='llvm::Recycler::FreeNode *' data-ref="1392N" data-ref-filename="1392N">N</dfn>) {</td></tr>
+<tr><th id="51">51</th><td>    <a class="local col2 ref" href="#1392N" title='N' data-ref="1392N" data-ref-filename="1392N">N</a>-&gt;Next = <a class="member field" href="#llvm::Recycler::FreeList" title='llvm::Recycler::FreeList' data-ref="llvm::Recycler::FreeList" data-ref-filename="llvm..Recycler..FreeList">FreeList</a>;</td></tr>
+<tr><th id="52">52</th><td>    <a class="member field" href="#llvm::Recycler::FreeList" title='llvm::Recycler::FreeList' data-ref="llvm::Recycler::FreeList" data-ref-filename="llvm..Recycler..FreeList">FreeList</a> = <a class="local col2 ref" href="#1392N" title='N' data-ref="1392N" data-ref-filename="1392N">N</a>;</td></tr>
+<tr><th id="53">53</th><td>    <a class="macro" href="Compiler.h.html#436" title="" data-ref="_M/__asan_poison_memory_region">__asan_poison_memory_region</a>(N, Size);</td></tr>
+<tr><th id="54">54</th><td>  }</td></tr>
+<tr><th id="55">55</th><td></td></tr>
+<tr><th id="56">56</th><td><b>public</b>:</td></tr>
+<tr><th id="57">57</th><td>  <dfn class="decl def fn" id="_ZN4llvm8RecyclerD1Ev" title='llvm::Recycler::~Recycler&lt;T, Size, Align&gt;' data-ref="_ZN4llvm8RecyclerD1Ev" data-ref-filename="_ZN4llvm8RecyclerD1Ev">~Recycler</dfn>() {</td></tr>
+<tr><th id="58">58</th><td>    <i>// If this fails, either the callee has lost track of some allocation,</i></td></tr>
+<tr><th id="59">59</th><td><i>    // or the callee isn't tracking allocations and should just call</i></td></tr>
+<tr><th id="60">60</th><td><i>    // clear() before deleting the Recycler.</i></td></tr>
+<tr><th id="61">61</th><td>    <a class="macro" href="../../../../../include/assert.h.html#50" title="(static_cast&lt;void&gt; (0))" data-ref="_M/assert">assert</a>(!FreeList &amp;&amp; <q>"Non-empty recycler deleted!"</q>);</td></tr>
+<tr><th id="62">62</th><td>  }</td></tr>
+<tr><th id="63">63</th><td></td></tr>
+<tr><th id="64">64</th><td>  <i class="doc">/// clear - Release all the tracked allocations to the allocator. The</i></td></tr>
+<tr><th id="65">65</th><td><i class="doc">  /// recycler must be free of any tracked allocations before being</i></td></tr>
+<tr><th id="66">66</th><td><i class="doc">  /// deleted; calling clear is one way to ensure this.</i></td></tr>
+<tr><th id="67">67</th><td>  <b>template</b>&lt;<b>class</b> AllocatorType&gt;</td></tr>
+<tr><th id="68">68</th><td>  <em>void</em> <dfn class="decl def fn" id="_ZN4llvm8Recycler5clearERTL0__" title='llvm::Recycler::clear' data-ref="_ZN4llvm8Recycler5clearERTL0__" data-ref-filename="_ZN4llvm8Recycler5clearERTL0__">clear</dfn>(AllocatorType &amp;<dfn class="local col3 decl" id="1393Allocator" title='Allocator' data-type='AllocatorType &amp;' data-ref="1393Allocator" data-ref-filename="1393Allocator">Allocator</dfn>) {</td></tr>
+<tr><th id="69">69</th><td>    <b>while</b> (<a class="member field" href="#llvm::Recycler::FreeList" title='llvm::Recycler::FreeList' data-ref="llvm::Recycler::FreeList" data-ref-filename="llvm..Recycler..FreeList">FreeList</a>) {</td></tr>
+<tr><th id="70">70</th><td>      T *<dfn class="local col4 decl" id="1394t" title='t' data-type='T *' data-ref="1394t" data-ref-filename="1394t">t</dfn> = <b>reinterpret_cast</b>&lt;T *&gt;(<a class="member fn" href="#_ZN4llvm8Recycler7pop_valEv" title='llvm::Recycler::pop_val' data-ref="_ZN4llvm8Recycler7pop_valEv" data-ref-filename="_ZN4llvm8Recycler7pop_valEv">pop_val</a>());</td></tr>
+<tr><th id="71">71</th><td>      <a class="local col3 ref" href="#1393Allocator" title='Allocator' data-ref="1393Allocator" data-ref-filename="1393Allocator">Allocator</a>.Deallocate(<a class="local col4 ref" href="#1394t" title='t' data-ref="1394t" data-ref-filename="1394t">t</a>);</td></tr>
+<tr><th id="72">72</th><td>    }</td></tr>
+<tr><th id="73">73</th><td>  }</td></tr>
+<tr><th id="74">74</th><td></td></tr>
+<tr><th id="75">75</th><td>  <i class="doc">/// Special case for BumpPtrAllocator which has an empty Deallocate()</i></td></tr>
+<tr><th id="76">76</th><td><i class="doc">  /// function.</i></td></tr>
+<tr><th id="77">77</th><td><i class="doc">  ///</i></td></tr>
+<tr><th id="78">78</th><td><i class="doc">  /// There is no need to traverse the free list, pulling all the objects into</i></td></tr>
+<tr><th id="79">79</th><td><i class="doc">  /// cache.</i></td></tr>
+<tr><th id="80">80</th><td>  <em>void</em> <dfn class="decl def fn" id="_ZN4llvm8Recycler5clearERNS_20BumpPtrAllocatorImplINS_15MallocAllocatorELm4096ELm4096ELm128EEE" title='llvm::Recycler::clear' data-ref="_ZN4llvm8Recycler5clearERNS_20BumpPtrAllocatorImplINS_15MallocAllocatorELm4096ELm4096ELm128EEE" data-ref-filename="_ZN4llvm8Recycler5clearERNS_20BumpPtrAllocatorImplINS_15MallocAllocatorELm4096ELm4096ELm128EEE">clear</dfn>(<a class="typedef" href="Allocator.h.html#llvm::BumpPtrAllocator" title='llvm::BumpPtrAllocator' data-type='BumpPtrAllocatorImpl&lt;&gt;' data-ref="llvm::BumpPtrAllocator" data-ref-filename="llvm..BumpPtrAllocator">BumpPtrAllocator</a> &amp;) { <a class="member field" href="#llvm::Recycler::FreeList" title='llvm::Recycler::FreeList' data-ref="llvm::Recycler::FreeList" data-ref-filename="llvm..Recycler..FreeList">FreeList</a> = <b>nullptr</b>; }</td></tr>
+<tr><th id="81">81</th><td></td></tr>
+<tr><th id="82">82</th><td>  <b>template</b>&lt;<b>class</b> SubClass, <b>class</b> AllocatorType&gt;</td></tr>
+<tr><th id="83">83</th><td>  SubClass *<dfn class="decl def fn" id="_ZN4llvm8Recycler8AllocateERTL0_0_" title='llvm::Recycler::Allocate' data-ref="_ZN4llvm8Recycler8AllocateERTL0_0_" data-ref-filename="_ZN4llvm8Recycler8AllocateERTL0_0_">Allocate</dfn>(AllocatorType &amp;<dfn class="local col5 decl" id="1395Allocator" title='Allocator' data-type='AllocatorType &amp;' data-ref="1395Allocator" data-ref-filename="1395Allocator">Allocator</dfn>) {</td></tr>
+<tr><th id="84">84</th><td>    <b>static_assert</b>(<b>alignof</b>(SubClass) &lt;= <a class="tu member" href="#llvm::Recycler::Align" title='llvm::Recycler::Align' data-use='r' data-ref="llvm::Recycler::Align" data-ref-filename="llvm..Recycler..Align">Align</a>,</td></tr>
+<tr><th id="85">85</th><td>                  <q>"Recycler allocation alignment is less than object align!"</q>);</td></tr>
+<tr><th id="86">86</th><td>    <b>static_assert</b>(<b>sizeof</b>(SubClass) &lt;= <a class="tu member" href="#llvm::Recycler::Size" title='llvm::Recycler::Size' data-use='r' data-ref="llvm::Recycler::Size" data-ref-filename="llvm..Recycler..Size">Size</a>,</td></tr>
+<tr><th id="87">87</th><td>                  <q>"Recycler allocation size is less than object size!"</q>);</td></tr>
+<tr><th id="88">88</th><td>    <b>return</b> <a class="member field" href="#llvm::Recycler::FreeList" title='llvm::Recycler::FreeList' data-ref="llvm::Recycler::FreeList" data-ref-filename="llvm..Recycler..FreeList">FreeList</a> ? <b>reinterpret_cast</b>&lt;SubClass *&gt;(<a class="member fn" href="#_ZN4llvm8Recycler7pop_valEv" title='llvm::Recycler::pop_val' data-ref="_ZN4llvm8Recycler7pop_valEv" data-ref-filename="_ZN4llvm8Recycler7pop_valEv">pop_val</a>())</td></tr>
+<tr><th id="89">89</th><td>                    : <b>static_cast</b>&lt;SubClass *&gt;(<a class="local col5 ref" href="#1395Allocator" title='Allocator' data-ref="1395Allocator" data-ref-filename="1395Allocator">Allocator</a>.Allocate(<a class="tu member" href="#llvm::Recycler::Size" title='llvm::Recycler::Size' data-ref="llvm::Recycler::Size" data-ref-filename="llvm..Recycler..Size">Size</a>, <a class="tu member" href="#llvm::Recycler::Align" title='llvm::Recycler::Align' data-ref="llvm::Recycler::Align" data-ref-filename="llvm..Recycler..Align">Align</a>));</td></tr>
+<tr><th id="90">90</th><td>  }</td></tr>
+<tr><th id="91">91</th><td></td></tr>
+<tr><th id="92">92</th><td>  <b>template</b>&lt;<b>class</b> AllocatorType&gt;</td></tr>
+<tr><th id="93">93</th><td>  T *<dfn class="decl def fn" id="_ZN4llvm8Recycler8AllocateERTL0__" title='llvm::Recycler::Allocate' data-ref="_ZN4llvm8Recycler8AllocateERTL0__" data-ref-filename="_ZN4llvm8Recycler8AllocateERTL0__">Allocate</dfn>(AllocatorType &amp;<dfn class="local col6 decl" id="1396Allocator" title='Allocator' data-type='AllocatorType &amp;' data-ref="1396Allocator" data-ref-filename="1396Allocator">Allocator</dfn>) {</td></tr>
+<tr><th id="94">94</th><td>    <b>return</b> Allocate&lt;T&gt;(<a class="local col6 ref" href="#1396Allocator" title='Allocator' data-ref="1396Allocator" data-ref-filename="1396Allocator">Allocator</a>);</td></tr>
+<tr><th id="95">95</th><td>  }</td></tr>
+<tr><th id="96">96</th><td></td></tr>
+<tr><th id="97">97</th><td>  <b>template</b>&lt;<b>class</b> SubClass, <b>class</b> AllocatorType&gt;</td></tr>
+<tr><th id="98">98</th><td>  <em>void</em> <dfn class="decl def fn" id="_ZN4llvm8Recycler10DeallocateERTL0_0_PTL0__" title='llvm::Recycler::Deallocate' data-ref="_ZN4llvm8Recycler10DeallocateERTL0_0_PTL0__" data-ref-filename="_ZN4llvm8Recycler10DeallocateERTL0_0_PTL0__">Deallocate</dfn>(AllocatorType &amp; <i>/*Allocator*/</i>, SubClass* <dfn class="local col7 decl" id="1397Element" title='Element' data-type='SubClass *' data-ref="1397Element" data-ref-filename="1397Element">Element</dfn>) {</td></tr>
+<tr><th id="99">99</th><td>    <a class="member fn" href="#_ZN4llvm8Recycler4pushEPNS0_8FreeNodeE" title='llvm::Recycler::push' data-ref="_ZN4llvm8Recycler4pushEPNS0_8FreeNodeE" data-ref-filename="_ZN4llvm8Recycler4pushEPNS0_8FreeNodeE">push</a>(<b>reinterpret_cast</b>&lt;<a class="type" href="#llvm::Recycler::FreeNode" title='llvm::Recycler::FreeNode' data-ref="llvm::Recycler::FreeNode" data-ref-filename="llvm..Recycler..FreeNode">FreeNode</a> *&gt;(<a class="local col7 ref" href="#1397Element" title='Element' data-ref="1397Element" data-ref-filename="1397Element">Element</a>));</td></tr>
+<tr><th id="100">100</th><td>  }</td></tr>
+<tr><th id="101">101</th><td></td></tr>
+<tr><th id="102">102</th><td>  <em>void</em> <a class="decl fn" href="#_ZN4llvm8Recycler10PrintStatsEv" title='llvm::Recycler::PrintStats' data-ref="_ZN4llvm8Recycler10PrintStatsEv" data-ref-filename="_ZN4llvm8Recycler10PrintStatsEv">PrintStats</a>();</td></tr>
+<tr><th id="103">103</th><td>};</td></tr>
+<tr><th id="104">104</th><td></td></tr>
+<tr><th id="105">105</th><td><b>template</b> &lt;<b>class</b> T, <span class='typedef' title='size_t' data-type='unsigned long' data-ref="size_t" data-ref-filename="size_t">size_t</span> Size, <span class='typedef' title='size_t' data-type='unsigned long' data-ref="size_t" data-ref-filename="size_t">size_t</span> Align&gt;</td></tr>
+<tr><th id="106">106</th><td><em>void</em> <a class="type" href="#llvm::Recycler" title='llvm::Recycler' data-ref="llvm::Recycler" data-ref-filename="llvm..Recycler">Recycler</a>&lt;T, <a class="tu ref" href="#Size" title='Size' data-ref="Size" data-ref-filename="Size">Size</a>, <a class="tu ref" href="#Align" title='Align' data-ref="Align" data-ref-filename="Align">Align</a>&gt;::<dfn class="decl def fn" id="_ZN4llvm8Recycler10PrintStatsEv" title='llvm::Recycler::PrintStats' data-ref="_ZN4llvm8Recycler10PrintStatsEv" data-ref-filename="_ZN4llvm8Recycler10PrintStatsEv">PrintStats</dfn>() {</td></tr>
+<tr><th id="107">107</th><td>  <span class='typedef' title='size_t' data-type='unsigned long' data-ref="size_t" data-ref-filename="size_t">size_t</span> <dfn class="local col8 decl" id="1398S" title='S' data-type='size_t' data-ref="1398S" data-ref-filename="1398S">S</dfn> = <var>0</var>;</td></tr>
+<tr><th id="108">108</th><td>  <b>for</b> (<em>auto</em> *<dfn class="local col9 decl" id="1399I" title='I' data-type='auto *' data-ref="1399I" data-ref-filename="1399I">I</dfn> = <a class="member field" href="#llvm::Recycler::FreeList" title='llvm::Recycler::FreeList' data-ref="llvm::Recycler::FreeList" data-ref-filename="llvm..Recycler..FreeList">FreeList</a>; <a class="local col9 ref" href="#1399I" title='I' data-ref="1399I" data-ref-filename="1399I">I</a>; <a class="local col9 ref" href="#1399I" title='I' data-ref="1399I" data-ref-filename="1399I">I</a> = <a class="local col9 ref" href="#1399I" title='I' data-ref="1399I" data-ref-filename="1399I">I</a>-&gt;Next)</td></tr>
+<tr><th id="109">109</th><td>    ++<a class="local col8 ref" href="#1398S" title='S' data-ref="1398S" data-ref-filename="1398S">S</a>;</td></tr>
+<tr><th id="110">110</th><td>  <a class="ref fn" href="#_ZN4llvm18PrintRecyclerStatsEmmm" title='llvm::PrintRecyclerStats' data-ref="_ZN4llvm18PrintRecyclerStatsEmmm" data-ref-filename="_ZN4llvm18PrintRecyclerStatsEmmm">PrintRecyclerStats</a>(<a class="tu ref" href="#Size" title='Size' data-use='r' data-ref="Size" data-ref-filename="Size">Size</a>, <a class="tu ref" href="#Align" title='Align' data-use='r' data-ref="Align" data-ref-filename="Align">Align</a>, <a class="local col8 ref" href="#1398S" title='S' data-ref="1398S" data-ref-filename="1398S">S</a>);</td></tr>
+<tr><th id="111">111</th><td>}</td></tr>
+<tr><th id="112">112</th><td></td></tr>
+<tr><th id="113">113</th><td>}</td></tr>
+<tr><th id="114">114</th><td></td></tr>
+<tr><th id="115">115</th><td><u>#<span data-ppcond="14">endif</span></u></td></tr>
+<tr><th id="116">116</th><td></td></tr>
+</table><hr/><p id='footer'>
+Generated while processing <a href='../../../../clang/lib/CodeGen/CodeGenAction.cpp.html'>llvm/clang/lib/CodeGen/CodeGenAction.cpp</a><br/>Generated on <em>2021-Jul-01</em> from project llvm revision <em>12</em>

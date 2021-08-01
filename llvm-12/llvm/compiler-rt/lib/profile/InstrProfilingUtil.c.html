@@ -1,0 +1,348 @@
+<!doctype html>
+<html>
+<head>
+<meta name="viewport" content="width=device-width, initial-scale=1.0"><title>InstrProfilingUtil.c source code [llvm/compiler-rt/lib/profile/InstrProfilingUtil.c] - Woboq Code Browser</title>
+<link rel="stylesheet" href="../../../.././data/qtcreator.css" title="QtCreator"/>
+<link rel="alternate stylesheet" href="../../../.././data/kdevelop.css" title="KDevelop"/>
+<script type="text/javascript" src="../../../.././data/jquery/jquery.min.js"></script>
+<script type="text/javascript" src="../../../.././data/jquery/jquery-ui.min.js"></script>
+<script>var file = 'llvm/compiler-rt/lib/profile/InstrProfilingUtil.c'; var root_path = '../../../..'; var data_path = '../../../.././data'; var ecma_script_api_version = 2;</script>
+<script src='../../../.././data/codebrowser.js'></script>
+</head>
+<body><div id='header'><h1 id='breadcrumb'><span>Browse the source code of </span><a href='../../..'>llvm</a>/<a href='../..'>compiler-rt</a>/<a href='..'>lib</a>/<a href='./'>profile</a>/<a href='InstrProfilingUtil.c.html'>InstrProfilingUtil.c</a></h1></div>
+<hr/><div id='content'><table class="code">
+<tr><th id="1">1</th><td><i>/*===- InstrProfilingUtil.c - Support library for PGO instrumentation -----===*\</i></td></tr>
+<tr><th id="2">2</th><td><i>|*</i></td></tr>
+<tr><th id="3">3</th><td><i>|* Part of the LLVM Project, under the Apache License v2.0 with LLVM Exceptions.</i></td></tr>
+<tr><th id="4">4</th><td><i>|* See <a href="https://llvm.org/LICENSE.txt">https://llvm.org/LICENSE.txt</a> for license information.</i></td></tr>
+<tr><th id="5">5</th><td><i>|* SPDX-License-Identifier: Apache-2.0 WITH LLVM-exception</i></td></tr>
+<tr><th id="6">6</th><td><i>|*</i></td></tr>
+<tr><th id="7">7</th><td><i>\*===----------------------------------------------------------------------===*/</i></td></tr>
+<tr><th id="8">8</th><td></td></tr>
+<tr><th id="9">9</th><td><u>#<span data-ppcond="9">ifdef</span> <span class="macro" data-ref="_M/_WIN32">_WIN32</span></u></td></tr>
+<tr><th id="10">10</th><td><u>#include &lt;direct.h&gt;</u></td></tr>
+<tr><th id="11">11</th><td><u>#include &lt;process.h&gt;</u></td></tr>
+<tr><th id="12">12</th><td><u>#include &lt;windows.h&gt;</u></td></tr>
+<tr><th id="13">13</th><td><u>#include "WindowsMMap.h"</u></td></tr>
+<tr><th id="14">14</th><td><u>#<span data-ppcond="9">else</span></u></td></tr>
+<tr><th id="15">15</th><td><u>#include <a href="../../../../include/sys/file.h.html">&lt;sys/file.h&gt;</a></u></td></tr>
+<tr><th id="16">16</th><td><u>#include <a href="../../../../include/sys/stat.h.html">&lt;sys/stat.h&gt;</a></u></td></tr>
+<tr><th id="17">17</th><td><u>#include <a href="../../../../include/sys/types.h.html">&lt;sys/types.h&gt;</a></u></td></tr>
+<tr><th id="18">18</th><td><u>#include <a href="../../../../include/unistd.h.html">&lt;unistd.h&gt;</a></u></td></tr>
+<tr><th id="19">19</th><td><u>#include <a href="../../../../include/fcntl.h.html">&lt;fcntl.h&gt;</a></u></td></tr>
+<tr><th id="20">20</th><td><u>#include <a href="../../../../include/errno.h.html">&lt;errno.h&gt;</a></u></td></tr>
+<tr><th id="21">21</th><td><u>#<span data-ppcond="9">endif</span></u></td></tr>
+<tr><th id="22">22</th><td></td></tr>
+<tr><th id="23">23</th><td><u>#<span data-ppcond="23">ifdef</span> <span class="macro" data-ref="_M/COMPILER_RT_HAS_UNAME">COMPILER_RT_HAS_UNAME</span></u></td></tr>
+<tr><th id="24">24</th><td><u>#include <a href="../../../../include/sys/utsname.h.html">&lt;sys/utsname.h&gt;</a></u></td></tr>
+<tr><th id="25">25</th><td><u>#<span data-ppcond="23">endif</span></u></td></tr>
+<tr><th id="26">26</th><td></td></tr>
+<tr><th id="27">27</th><td><u>#include <a href="../../../../include/stdlib.h.html">&lt;stdlib.h&gt;</a></u></td></tr>
+<tr><th id="28">28</th><td><u>#include <a href="../../../../include/string.h.html">&lt;string.h&gt;</a></u></td></tr>
+<tr><th id="29">29</th><td></td></tr>
+<tr><th id="30">30</th><td><u>#<span data-ppcond="30">if</span> defined(<span class="macro" data-ref="_M/__linux__">__linux__</span>)</u></td></tr>
+<tr><th id="31">31</th><td><u>#include <a href="../../../../include/signal.h.html">&lt;signal.h&gt;</a></u></td></tr>
+<tr><th id="32">32</th><td><u>#include <a href="../../../../include/sys/prctl.h.html">&lt;sys/prctl.h&gt;</a></u></td></tr>
+<tr><th id="33">33</th><td><u>#<span data-ppcond="30">endif</span></u></td></tr>
+<tr><th id="34">34</th><td></td></tr>
+<tr><th id="35">35</th><td><u>#include <a href="InstrProfiling.h.html">"InstrProfiling.h"</a></u></td></tr>
+<tr><th id="36">36</th><td><u>#include <a href="InstrProfilingUtil.h.html">"InstrProfilingUtil.h"</a></u></td></tr>
+<tr><th id="37">37</th><td></td></tr>
+<tr><th id="38">38</th><td><a class="macro" href="InstrProfilingPort.h.html#34" title="__attribute__((weak))" data-ref="_M/COMPILER_RT_WEAK">COMPILER_RT_WEAK</a> <em>unsigned</em> <dfn class="decl def" id="lprofDirMode" title='lprofDirMode' data-ref="lprofDirMode" data-ref-filename="lprofDirMode">lprofDirMode</dfn> = <var>0755</var>;</td></tr>
+<tr><th id="39">39</th><td></td></tr>
+<tr><th id="40">40</th><td><a class="macro" href="InstrProfilingPort.h.html#33" title="__attribute__((visibility(&quot;hidden&quot;)))" data-ref="_M/COMPILER_RT_VISIBILITY">COMPILER_RT_VISIBILITY</a></td></tr>
+<tr><th id="41">41</th><td><em>void</em> <dfn class="decl def fn" id="__llvm_profile_recursive_mkdir" title='__llvm_profile_recursive_mkdir' data-ref="__llvm_profile_recursive_mkdir" data-ref-filename="__llvm_profile_recursive_mkdir">__llvm_profile_recursive_mkdir</dfn>(<em>char</em> *<dfn class="local col2 decl" id="2path" title='path' data-type='char *' data-ref="2path" data-ref-filename="2path">path</dfn>) {</td></tr>
+<tr><th id="42">42</th><td>  <em>int</em> <dfn class="local col3 decl" id="3i" title='i' data-type='int' data-ref="3i" data-ref-filename="3i">i</dfn>;</td></tr>
+<tr><th id="43">43</th><td>  <em>int</em> <dfn class="local col4 decl" id="4start" title='start' data-type='int' data-ref="4start" data-ref-filename="4start">start</dfn> = <var>1</var>;</td></tr>
+<tr><th id="44">44</th><td></td></tr>
+<tr><th id="45">45</th><td><u>#<span data-ppcond="45">if</span> defined(<span class="macro" data-ref="_M/__ANDROID__">__ANDROID__</span>) &amp;&amp; defined(<span class="macro" data-ref="_M/__ANDROID_API__">__ANDROID_API__</span>) &amp;&amp;                        \</u></td></tr>
+<tr><th id="46">46</th><td><u>    defined(<span class="macro" data-ref="_M/__ANDROID_API_FUTURE__">__ANDROID_API_FUTURE__</span>) &amp;&amp;                                         \</u></td></tr>
+<tr><th id="47">47</th><td><u>    __ANDROID_API__ == __ANDROID_API_FUTURE__</u></td></tr>
+<tr><th id="48">48</th><td>  <i>// Avoid spammy selinux denial messages in Android by not attempting to</i></td></tr>
+<tr><th id="49">49</th><td><i>  // create directories in GCOV_PREFIX.  These denials occur when creating (or</i></td></tr>
+<tr><th id="50">50</th><td><i>  // even attempting to stat()) top-level directories like "/data".</i></td></tr>
+<tr><th id="51">51</th><td><i>  //</i></td></tr>
+<tr><th id="52">52</th><td><i>  // Do so by ignoring ${GCOV_PREFIX} when invoking mkdir().</i></td></tr>
+<tr><th id="53">53</th><td>  <em>const</em> <em>char</em> *gcov_prefix = getenv(<q>"GCOV_PREFIX"</q>);</td></tr>
+<tr><th id="54">54</th><td>  <b>if</b> (gcov_prefix != NULL) {</td></tr>
+<tr><th id="55">55</th><td>    <em>const</em> <em>int</em> gcov_prefix_len = strlen(gcov_prefix);</td></tr>
+<tr><th id="56">56</th><td>    <b>if</b> (strncmp(path, gcov_prefix, gcov_prefix_len) == <var>0</var>)</td></tr>
+<tr><th id="57">57</th><td>      start = gcov_prefix_len;</td></tr>
+<tr><th id="58">58</th><td>  }</td></tr>
+<tr><th id="59">59</th><td><u>#<span data-ppcond="45">endif</span></u></td></tr>
+<tr><th id="60">60</th><td></td></tr>
+<tr><th id="61">61</th><td>  <b>for</b> (<a class="local col3 ref" href="#3i" title='i' data-ref="3i" data-ref-filename="3i">i</a> = <a class="local col4 ref" href="#4start" title='start' data-ref="4start" data-ref-filename="4start">start</a>; <a class="local col2 ref" href="#2path" title='path' data-ref="2path" data-ref-filename="2path">path</a>[<a class="local col3 ref" href="#3i" title='i' data-ref="3i" data-ref-filename="3i">i</a>] != <kbd>'\0'</kbd>; ++<a class="local col3 ref" href="#3i" title='i' data-ref="3i" data-ref-filename="3i">i</a>) {</td></tr>
+<tr><th id="62">62</th><td>    <em>char</em> <dfn class="local col5 decl" id="5save" title='save' data-type='char' data-ref="5save" data-ref-filename="5save">save</dfn> = <a class="local col2 ref" href="#2path" title='path' data-ref="2path" data-ref-filename="2path">path</a>[<a class="local col3 ref" href="#3i" title='i' data-ref="3i" data-ref-filename="3i">i</a>];</td></tr>
+<tr><th id="63">63</th><td>    <b>if</b> (!<a class="macro" href="InstrProfilingPort.h.html#104" title="((path[i]) == &apos;/&apos;)" data-ref="_M/IS_DIR_SEPARATOR">IS_DIR_SEPARATOR</a>(<a class="local col2 ref" href="#2path" title='path' data-ref="2path" data-ref-filename="2path">path</a>[<a class="local col3 ref" href="#3i" title='i' data-ref="3i" data-ref-filename="3i">i</a>]))</td></tr>
+<tr><th id="64">64</th><td>      <b>continue</b>;</td></tr>
+<tr><th id="65">65</th><td>    <a class="local col2 ref" href="#2path" title='path' data-ref="2path" data-ref-filename="2path">path</a>[<a class="local col3 ref" href="#3i" title='i' data-ref="3i" data-ref-filename="3i">i</a>] = <kbd>'\0'</kbd>;</td></tr>
+<tr><th id="66">66</th><td><u>#<span data-ppcond="66">ifdef</span> <span class="macro" data-ref="_M/_WIN32">_WIN32</span></u></td></tr>
+<tr><th id="67">67</th><td>    _mkdir(path);</td></tr>
+<tr><th id="68">68</th><td><u>#<span data-ppcond="66">else</span></u></td></tr>
+<tr><th id="69">69</th><td>    <i>/* Some of these will fail, ignore it. */</i></td></tr>
+<tr><th id="70">70</th><td>    <a class="ref fn" href="../../../../include/sys/stat.h.html#mkdir" title='mkdir' data-ref="mkdir" data-ref-filename="mkdir">mkdir</a>(<a class="local col2 ref" href="#2path" title='path' data-ref="2path" data-ref-filename="2path">path</a>, <a class="ref fn" href="#__llvm_profile_get_dir_mode" title='__llvm_profile_get_dir_mode' data-ref="__llvm_profile_get_dir_mode" data-ref-filename="__llvm_profile_get_dir_mode">__llvm_profile_get_dir_mode</a>());</td></tr>
+<tr><th id="71">71</th><td><u>#<span data-ppcond="66">endif</span></u></td></tr>
+<tr><th id="72">72</th><td>    <a class="local col2 ref" href="#2path" title='path' data-ref="2path" data-ref-filename="2path">path</a>[<a class="local col3 ref" href="#3i" title='i' data-ref="3i" data-ref-filename="3i">i</a>] = <a class="local col5 ref" href="#5save" title='save' data-ref="5save" data-ref-filename="5save">save</a>;</td></tr>
+<tr><th id="73">73</th><td>  }</td></tr>
+<tr><th id="74">74</th><td>}</td></tr>
+<tr><th id="75">75</th><td></td></tr>
+<tr><th id="76">76</th><td><a class="macro" href="InstrProfilingPort.h.html#33" title="__attribute__((visibility(&quot;hidden&quot;)))" data-ref="_M/COMPILER_RT_VISIBILITY">COMPILER_RT_VISIBILITY</a></td></tr>
+<tr><th id="77">77</th><td><em>void</em> <dfn class="decl def fn" id="__llvm_profile_set_dir_mode" title='__llvm_profile_set_dir_mode' data-ref="__llvm_profile_set_dir_mode" data-ref-filename="__llvm_profile_set_dir_mode">__llvm_profile_set_dir_mode</dfn>(<em>unsigned</em> <dfn class="local col6 decl" id="6Mode" title='Mode' data-type='unsigned int' data-ref="6Mode" data-ref-filename="6Mode">Mode</dfn>) { <a class="ref" href="#lprofDirMode" title='lprofDirMode' data-ref="lprofDirMode" data-ref-filename="lprofDirMode">lprofDirMode</a> = <a class="local col6 ref" href="#6Mode" title='Mode' data-ref="6Mode" data-ref-filename="6Mode">Mode</a>; }</td></tr>
+<tr><th id="78">78</th><td></td></tr>
+<tr><th id="79">79</th><td><a class="macro" href="InstrProfilingPort.h.html#33" title="__attribute__((visibility(&quot;hidden&quot;)))" data-ref="_M/COMPILER_RT_VISIBILITY">COMPILER_RT_VISIBILITY</a></td></tr>
+<tr><th id="80">80</th><td><em>unsigned</em> <dfn class="decl def fn" id="__llvm_profile_get_dir_mode" title='__llvm_profile_get_dir_mode' data-ref="__llvm_profile_get_dir_mode" data-ref-filename="__llvm_profile_get_dir_mode">__llvm_profile_get_dir_mode</dfn>(<em>void</em>) { <b>return</b> <a class="ref" href="#lprofDirMode" title='lprofDirMode' data-ref="lprofDirMode" data-ref-filename="lprofDirMode">lprofDirMode</a>; }</td></tr>
+<tr><th id="81">81</th><td></td></tr>
+<tr><th id="82">82</th><td><u>#<span data-ppcond="82">if</span> <span class="macro" title="1" data-ref="_M/COMPILER_RT_HAS_ATOMICS">COMPILER_RT_HAS_ATOMICS</span> != 1</u></td></tr>
+<tr><th id="83">83</th><td>COMPILER_RT_VISIBILITY</td></tr>
+<tr><th id="84">84</th><td>uint32_t lprofBoolCmpXchg(<em>void</em> **Ptr, <em>void</em> *OldV, <em>void</em> *NewV) {</td></tr>
+<tr><th id="85">85</th><td>  <em>void</em> *R = *Ptr;</td></tr>
+<tr><th id="86">86</th><td>  <b>if</b> (R == OldV) {</td></tr>
+<tr><th id="87">87</th><td>    *Ptr = NewV;</td></tr>
+<tr><th id="88">88</th><td>    <b>return</b> <var>1</var>;</td></tr>
+<tr><th id="89">89</th><td>  }</td></tr>
+<tr><th id="90">90</th><td>  <b>return</b> <var>0</var>;</td></tr>
+<tr><th id="91">91</th><td>}</td></tr>
+<tr><th id="92">92</th><td>COMPILER_RT_VISIBILITY</td></tr>
+<tr><th id="93">93</th><td><em>void</em> *lprofPtrFetchAdd(<em>void</em> **Mem, <em>long</em> ByteIncr) {</td></tr>
+<tr><th id="94">94</th><td>  <em>void</em> *Old = *Mem;</td></tr>
+<tr><th id="95">95</th><td>  *((<em>char</em> **)Mem) += ByteIncr;</td></tr>
+<tr><th id="96">96</th><td>  <b>return</b> Old;</td></tr>
+<tr><th id="97">97</th><td>}</td></tr>
+<tr><th id="98">98</th><td></td></tr>
+<tr><th id="99">99</th><td><u>#<span data-ppcond="82">endif</span></u></td></tr>
+<tr><th id="100">100</th><td></td></tr>
+<tr><th id="101">101</th><td><u>#<span data-ppcond="101">ifdef</span> <span class="macro" data-ref="_M/_WIN32">_WIN32</span></u></td></tr>
+<tr><th id="102">102</th><td>COMPILER_RT_VISIBILITY <em>int</em> lprofGetHostName(<em>char</em> *Name, <em>int</em> Len) {</td></tr>
+<tr><th id="103">103</th><td>  WCHAR Buffer[COMPILER_RT_MAX_HOSTLEN];</td></tr>
+<tr><th id="104">104</th><td>  DWORD BufferSize = <b>sizeof</b>(Buffer);</td></tr>
+<tr><th id="105">105</th><td>  BOOL Result =</td></tr>
+<tr><th id="106">106</th><td>      GetComputerNameExW(ComputerNameDnsFullyQualified, Buffer, &amp;BufferSize);</td></tr>
+<tr><th id="107">107</th><td>  <b>if</b> (!Result)</td></tr>
+<tr><th id="108">108</th><td>    <b>return</b> -<var>1</var>;</td></tr>
+<tr><th id="109">109</th><td>  <b>if</b> (WideCharToMultiByte(CP_UTF8, <var>0</var>, Buffer, -<var>1</var>, Name, Len, NULL, NULL) == <var>0</var>)</td></tr>
+<tr><th id="110">110</th><td>    <b>return</b> -<var>1</var>;</td></tr>
+<tr><th id="111">111</th><td>  <b>return</b> <var>0</var>;</td></tr>
+<tr><th id="112">112</th><td>}</td></tr>
+<tr><th id="113">113</th><td><u>#<span data-ppcond="101">elif</span> defined(<span class="macro" data-ref="_M/COMPILER_RT_HAS_UNAME">COMPILER_RT_HAS_UNAME</span>)</u></td></tr>
+<tr><th id="114">114</th><td><a class="macro" href="InstrProfilingPort.h.html#33" title="__attribute__((visibility(&quot;hidden&quot;)))" data-ref="_M/COMPILER_RT_VISIBILITY">COMPILER_RT_VISIBILITY</a> <em>int</em> <dfn class="decl def fn" id="lprofGetHostName" title='lprofGetHostName' data-ref="lprofGetHostName" data-ref-filename="lprofGetHostName">lprofGetHostName</dfn>(<em>char</em> *<dfn class="local col7 decl" id="7Name" title='Name' data-type='char *' data-ref="7Name" data-ref-filename="7Name">Name</dfn>, <em>int</em> <dfn class="local col8 decl" id="8Len" title='Len' data-type='int' data-ref="8Len" data-ref-filename="8Len">Len</dfn>) {</td></tr>
+<tr><th id="115">115</th><td>  <b>struct</b> <a class="type" href="../../../../include/sys/utsname.h.html#utsname" title='utsname' data-ref="utsname" data-ref-filename="utsname">utsname</a> <dfn class="local col9 decl" id="9N" title='N' data-type='struct utsname' data-ref="9N" data-ref-filename="9N">N</dfn>;</td></tr>
+<tr><th id="116">116</th><td>  <em>int</em> <dfn class="local col0 decl" id="10R" title='R' data-type='int' data-ref="10R" data-ref-filename="10R">R</dfn> = <a class="ref fn" href="../../../../include/sys/utsname.h.html#uname" title='uname' data-ref="uname" data-ref-filename="uname">uname</a>(&amp;<a class="local col9 ref" href="#9N" title='N' data-ref="9N" data-ref-filename="9N">N</a>);</td></tr>
+<tr><th id="117">117</th><td>  <b>if</b> (<a class="local col0 ref" href="#10R" title='R' data-ref="10R" data-ref-filename="10R">R</a> &gt;= <var>0</var>) {</td></tr>
+<tr><th id="118">118</th><td>    <a class="ref fn" href="../../../../include/string.h.html#strncpy" title='strncpy' data-ref="strncpy" data-ref-filename="strncpy">strncpy</a>(<a class="local col7 ref" href="#7Name" title='Name' data-ref="7Name" data-ref-filename="7Name">Name</a>, <a class="local col9 ref" href="#9N" title='N' data-ref="9N" data-ref-filename="9N">N</a>.<a class="ref field" href="../../../../include/sys/utsname.h.html#utsname::nodename" title='utsname::nodename' data-ref="utsname::nodename" data-ref-filename="utsname..nodename">nodename</a>, <a class="local col8 ref" href="#8Len" title='Len' data-ref="8Len" data-ref-filename="8Len">Len</a>);</td></tr>
+<tr><th id="119">119</th><td>    <b>return</b> <var>0</var>;</td></tr>
+<tr><th id="120">120</th><td>  }</td></tr>
+<tr><th id="121">121</th><td>  <b>return</b> <a class="local col0 ref" href="#10R" title='R' data-ref="10R" data-ref-filename="10R">R</a>;</td></tr>
+<tr><th id="122">122</th><td>}</td></tr>
+<tr><th id="123">123</th><td><u>#<span data-ppcond="101">endif</span></u></td></tr>
+<tr><th id="124">124</th><td></td></tr>
+<tr><th id="125">125</th><td><a class="macro" href="InstrProfilingPort.h.html#33" title="__attribute__((visibility(&quot;hidden&quot;)))" data-ref="_M/COMPILER_RT_VISIBILITY">COMPILER_RT_VISIBILITY</a> <em>int</em> <dfn class="decl def fn" id="lprofLockFd" title='lprofLockFd' data-ref="lprofLockFd" data-ref-filename="lprofLockFd">lprofLockFd</dfn>(<em>int</em> <dfn class="local col1 decl" id="11fd" title='fd' data-type='int' data-ref="11fd" data-ref-filename="11fd">fd</dfn>) {</td></tr>
+<tr><th id="126">126</th><td><u>#<span data-ppcond="126">ifdef</span> <span class="macro" data-ref="_M/COMPILER_RT_HAS_FCNTL_LCK">COMPILER_RT_HAS_FCNTL_LCK</span></u></td></tr>
+<tr><th id="127">127</th><td>  <b>struct</b> <a class="type" href="../../../../include/bits/fcntl.h.html#flock" title='flock' data-ref="flock" data-ref-filename="flock">flock</a> <dfn class="local col2 decl" id="12s_flock" title='s_flock' data-type='struct flock' data-ref="12s_flock" data-ref-filename="12s_flock">s_flock</dfn>;</td></tr>
+<tr><th id="128">128</th><td></td></tr>
+<tr><th id="129">129</th><td>  <a class="local col2 ref" href="#12s_flock" title='s_flock' data-ref="12s_flock" data-ref-filename="12s_flock">s_flock</a>.<a class="ref field" href="../../../../include/bits/fcntl.h.html#flock::l_whence" title='flock::l_whence' data-ref="flock::l_whence" data-ref-filename="flock..l_whence">l_whence</a> = <a class="macro" href="../../../../include/stdio.h.html#109" title="0" data-ref="_M/SEEK_SET">SEEK_SET</a>;</td></tr>
+<tr><th id="130">130</th><td>  <a class="local col2 ref" href="#12s_flock" title='s_flock' data-ref="12s_flock" data-ref-filename="12s_flock">s_flock</a>.<a class="ref field" href="../../../../include/bits/fcntl.h.html#flock::l_start" title='flock::l_start' data-ref="flock::l_start" data-ref-filename="flock..l_start">l_start</a> = <var>0</var>;</td></tr>
+<tr><th id="131">131</th><td>  <a class="local col2 ref" href="#12s_flock" title='s_flock' data-ref="12s_flock" data-ref-filename="12s_flock">s_flock</a>.<a class="ref field" href="../../../../include/bits/fcntl.h.html#flock::l_len" title='flock::l_len' data-ref="flock::l_len" data-ref-filename="flock..l_len">l_len</a> = <var>0</var>; <i>/* Until EOF.  */</i></td></tr>
+<tr><th id="132">132</th><td>  <a class="local col2 ref" href="#12s_flock" title='s_flock' data-ref="12s_flock" data-ref-filename="12s_flock">s_flock</a>.<a class="ref field" href="../../../../include/bits/fcntl.h.html#flock::l_pid" title='flock::l_pid' data-ref="flock::l_pid" data-ref-filename="flock..l_pid">l_pid</a> = <a class="ref fn" href="../../../../include/unistd.h.html#getpid" title='getpid' data-ref="getpid" data-ref-filename="getpid">getpid</a>();</td></tr>
+<tr><th id="133">133</th><td>  <a class="local col2 ref" href="#12s_flock" title='s_flock' data-ref="12s_flock" data-ref-filename="12s_flock">s_flock</a>.<a class="ref field" href="../../../../include/bits/fcntl.h.html#flock::l_type" title='flock::l_type' data-ref="flock::l_type" data-ref-filename="flock..l_type">l_type</a> = <a class="macro" href="../../../../include/bits/fcntl-linux.h.html#224" title="1" data-ref="_M/F_WRLCK">F_WRLCK</a>;</td></tr>
+<tr><th id="134">134</th><td></td></tr>
+<tr><th id="135">135</th><td>  <b>while</b> (<a class="ref fn" href="../../../../include/fcntl.h.html#fcntl" title='fcntl' data-ref="fcntl" data-ref-filename="fcntl">fcntl</a>(<a class="local col1 ref" href="#11fd" title='fd' data-ref="11fd" data-ref-filename="11fd">fd</a>, <a class="macro" href="../../../../include/bits/fcntl-linux.h.html#107" title="7" data-ref="_M/F_SETLKW">F_SETLKW</a>, &amp;<a class="local col2 ref" href="#12s_flock" title='s_flock' data-ref="12s_flock" data-ref-filename="12s_flock">s_flock</a>) == -<var>1</var>) {</td></tr>
+<tr><th id="136">136</th><td>    <b>if</b> (<a class="macro" href="../../../../include/errno.h.html#38" title="(*__errno_location ())" data-ref="_M/errno">errno</a> != <a class="macro" href="../../../../include/asm-generic/errno-base.h.html#8" title="4" data-ref="_M/EINTR">EINTR</a>) {</td></tr>
+<tr><th id="137">137</th><td>      <b>if</b> (<a class="macro" href="../../../../include/errno.h.html#38" title="(*__errno_location ())" data-ref="_M/errno">errno</a> == <a class="macro" href="../../../../include/asm-generic/errno.h.html#9" title="37" data-ref="_M/ENOLCK">ENOLCK</a>) {</td></tr>
+<tr><th id="138">138</th><td>        <b>return</b> -<var>1</var>;</td></tr>
+<tr><th id="139">139</th><td>      }</td></tr>
+<tr><th id="140">140</th><td>      <b>break</b>;</td></tr>
+<tr><th id="141">141</th><td>    }</td></tr>
+<tr><th id="142">142</th><td>  }</td></tr>
+<tr><th id="143">143</th><td>  <b>return</b> <var>0</var>;</td></tr>
+<tr><th id="144">144</th><td><u>#<span data-ppcond="126">else</span></u></td></tr>
+<tr><th id="145">145</th><td>  flock(fd, LOCK_EX);</td></tr>
+<tr><th id="146">146</th><td>  <b>return</b> <var>0</var>;</td></tr>
+<tr><th id="147">147</th><td><u>#<span data-ppcond="126">endif</span></u></td></tr>
+<tr><th id="148">148</th><td>}</td></tr>
+<tr><th id="149">149</th><td></td></tr>
+<tr><th id="150">150</th><td><a class="macro" href="InstrProfilingPort.h.html#33" title="__attribute__((visibility(&quot;hidden&quot;)))" data-ref="_M/COMPILER_RT_VISIBILITY">COMPILER_RT_VISIBILITY</a> <em>int</em> <dfn class="decl def fn" id="lprofUnlockFd" title='lprofUnlockFd' data-ref="lprofUnlockFd" data-ref-filename="lprofUnlockFd">lprofUnlockFd</dfn>(<em>int</em> <dfn class="local col3 decl" id="13fd" title='fd' data-type='int' data-ref="13fd" data-ref-filename="13fd">fd</dfn>) {</td></tr>
+<tr><th id="151">151</th><td><u>#<span data-ppcond="151">ifdef</span> <span class="macro" data-ref="_M/COMPILER_RT_HAS_FCNTL_LCK">COMPILER_RT_HAS_FCNTL_LCK</span></u></td></tr>
+<tr><th id="152">152</th><td>  <b>struct</b> <a class="type" href="../../../../include/bits/fcntl.h.html#flock" title='flock' data-ref="flock" data-ref-filename="flock">flock</a> <dfn class="local col4 decl" id="14s_flock" title='s_flock' data-type='struct flock' data-ref="14s_flock" data-ref-filename="14s_flock">s_flock</dfn>;</td></tr>
+<tr><th id="153">153</th><td></td></tr>
+<tr><th id="154">154</th><td>  <a class="local col4 ref" href="#14s_flock" title='s_flock' data-ref="14s_flock" data-ref-filename="14s_flock">s_flock</a>.<a class="ref field" href="../../../../include/bits/fcntl.h.html#flock::l_whence" title='flock::l_whence' data-ref="flock::l_whence" data-ref-filename="flock..l_whence">l_whence</a> = <a class="macro" href="../../../../include/stdio.h.html#109" title="0" data-ref="_M/SEEK_SET">SEEK_SET</a>;</td></tr>
+<tr><th id="155">155</th><td>  <a class="local col4 ref" href="#14s_flock" title='s_flock' data-ref="14s_flock" data-ref-filename="14s_flock">s_flock</a>.<a class="ref field" href="../../../../include/bits/fcntl.h.html#flock::l_start" title='flock::l_start' data-ref="flock::l_start" data-ref-filename="flock..l_start">l_start</a> = <var>0</var>;</td></tr>
+<tr><th id="156">156</th><td>  <a class="local col4 ref" href="#14s_flock" title='s_flock' data-ref="14s_flock" data-ref-filename="14s_flock">s_flock</a>.<a class="ref field" href="../../../../include/bits/fcntl.h.html#flock::l_len" title='flock::l_len' data-ref="flock::l_len" data-ref-filename="flock..l_len">l_len</a> = <var>0</var>; <i>/* Until EOF.  */</i></td></tr>
+<tr><th id="157">157</th><td>  <a class="local col4 ref" href="#14s_flock" title='s_flock' data-ref="14s_flock" data-ref-filename="14s_flock">s_flock</a>.<a class="ref field" href="../../../../include/bits/fcntl.h.html#flock::l_pid" title='flock::l_pid' data-ref="flock::l_pid" data-ref-filename="flock..l_pid">l_pid</a> = <a class="ref fn" href="../../../../include/unistd.h.html#getpid" title='getpid' data-ref="getpid" data-ref-filename="getpid">getpid</a>();</td></tr>
+<tr><th id="158">158</th><td>  <a class="local col4 ref" href="#14s_flock" title='s_flock' data-ref="14s_flock" data-ref-filename="14s_flock">s_flock</a>.<a class="ref field" href="../../../../include/bits/fcntl.h.html#flock::l_type" title='flock::l_type' data-ref="flock::l_type" data-ref-filename="flock..l_type">l_type</a> = <a class="macro" href="../../../../include/bits/fcntl-linux.h.html#225" title="2" data-ref="_M/F_UNLCK">F_UNLCK</a>;</td></tr>
+<tr><th id="159">159</th><td></td></tr>
+<tr><th id="160">160</th><td>  <b>while</b> (<a class="ref fn" href="../../../../include/fcntl.h.html#fcntl" title='fcntl' data-ref="fcntl" data-ref-filename="fcntl">fcntl</a>(<a class="local col3 ref" href="#13fd" title='fd' data-ref="13fd" data-ref-filename="13fd">fd</a>, <a class="macro" href="../../../../include/bits/fcntl-linux.h.html#107" title="7" data-ref="_M/F_SETLKW">F_SETLKW</a>, &amp;<a class="local col4 ref" href="#14s_flock" title='s_flock' data-ref="14s_flock" data-ref-filename="14s_flock">s_flock</a>) == -<var>1</var>) {</td></tr>
+<tr><th id="161">161</th><td>    <b>if</b> (<a class="macro" href="../../../../include/errno.h.html#38" title="(*__errno_location ())" data-ref="_M/errno">errno</a> != <a class="macro" href="../../../../include/asm-generic/errno-base.h.html#8" title="4" data-ref="_M/EINTR">EINTR</a>) {</td></tr>
+<tr><th id="162">162</th><td>      <b>if</b> (<a class="macro" href="../../../../include/errno.h.html#38" title="(*__errno_location ())" data-ref="_M/errno">errno</a> == <a class="macro" href="../../../../include/asm-generic/errno.h.html#9" title="37" data-ref="_M/ENOLCK">ENOLCK</a>) {</td></tr>
+<tr><th id="163">163</th><td>        <b>return</b> -<var>1</var>;</td></tr>
+<tr><th id="164">164</th><td>      }</td></tr>
+<tr><th id="165">165</th><td>      <b>break</b>;</td></tr>
+<tr><th id="166">166</th><td>    }</td></tr>
+<tr><th id="167">167</th><td>  }</td></tr>
+<tr><th id="168">168</th><td>  <b>return</b> <var>0</var>;</td></tr>
+<tr><th id="169">169</th><td><u>#<span data-ppcond="151">else</span></u></td></tr>
+<tr><th id="170">170</th><td>  flock(fd, LOCK_UN);</td></tr>
+<tr><th id="171">171</th><td>  <b>return</b> <var>0</var>;</td></tr>
+<tr><th id="172">172</th><td><u>#<span data-ppcond="151">endif</span></u></td></tr>
+<tr><th id="173">173</th><td>}</td></tr>
+<tr><th id="174">174</th><td></td></tr>
+<tr><th id="175">175</th><td><a class="macro" href="InstrProfilingPort.h.html#33" title="__attribute__((visibility(&quot;hidden&quot;)))" data-ref="_M/COMPILER_RT_VISIBILITY">COMPILER_RT_VISIBILITY</a> <em>int</em> <dfn class="decl def fn" id="lprofLockFileHandle" title='lprofLockFileHandle' data-ref="lprofLockFileHandle" data-ref-filename="lprofLockFileHandle">lprofLockFileHandle</dfn>(<a class="typedef" href="../../../../include/bits/types/FILE.h.html#FILE" title='FILE' data-type='struct _IO_FILE' data-ref="FILE" data-ref-filename="FILE">FILE</a> *<dfn class="local col5 decl" id="15F" title='F' data-type='FILE *' data-ref="15F" data-ref-filename="15F">F</dfn>) {</td></tr>
+<tr><th id="176">176</th><td>  <em>int</em> <dfn class="local col6 decl" id="16fd" title='fd' data-type='int' data-ref="16fd" data-ref-filename="16fd">fd</dfn>;</td></tr>
+<tr><th id="177">177</th><td><u>#<span data-ppcond="177">if</span> defined(<span class="macro" data-ref="_M/_WIN32">_WIN32</span>)</u></td></tr>
+<tr><th id="178">178</th><td>  fd = _fileno(F);</td></tr>
+<tr><th id="179">179</th><td><u>#<span data-ppcond="177">else</span></u></td></tr>
+<tr><th id="180">180</th><td>  <a class="local col6 ref" href="#16fd" title='fd' data-ref="16fd" data-ref-filename="16fd">fd</a> = <a class="ref fn" href="../../../../include/stdio.h.html#fileno" title='fileno' data-ref="fileno" data-ref-filename="fileno">fileno</a>(<a class="local col5 ref" href="#15F" title='F' data-ref="15F" data-ref-filename="15F">F</a>);</td></tr>
+<tr><th id="181">181</th><td><u>#<span data-ppcond="177">endif</span></u></td></tr>
+<tr><th id="182">182</th><td>  <b>return</b> <a class="ref fn" href="#lprofLockFd" title='lprofLockFd' data-ref="lprofLockFd" data-ref-filename="lprofLockFd">lprofLockFd</a>(<a class="local col6 ref" href="#16fd" title='fd' data-ref="16fd" data-ref-filename="16fd">fd</a>);</td></tr>
+<tr><th id="183">183</th><td>}</td></tr>
+<tr><th id="184">184</th><td></td></tr>
+<tr><th id="185">185</th><td><a class="macro" href="InstrProfilingPort.h.html#33" title="__attribute__((visibility(&quot;hidden&quot;)))" data-ref="_M/COMPILER_RT_VISIBILITY">COMPILER_RT_VISIBILITY</a> <em>int</em> <dfn class="decl def fn" id="lprofUnlockFileHandle" title='lprofUnlockFileHandle' data-ref="lprofUnlockFileHandle" data-ref-filename="lprofUnlockFileHandle">lprofUnlockFileHandle</dfn>(<a class="typedef" href="../../../../include/bits/types/FILE.h.html#FILE" title='FILE' data-type='struct _IO_FILE' data-ref="FILE" data-ref-filename="FILE">FILE</a> *<dfn class="local col7 decl" id="17F" title='F' data-type='FILE *' data-ref="17F" data-ref-filename="17F">F</dfn>) {</td></tr>
+<tr><th id="186">186</th><td>  <em>int</em> <dfn class="local col8 decl" id="18fd" title='fd' data-type='int' data-ref="18fd" data-ref-filename="18fd">fd</dfn>;</td></tr>
+<tr><th id="187">187</th><td><u>#<span data-ppcond="187">if</span> defined(<span class="macro" data-ref="_M/_WIN32">_WIN32</span>)</u></td></tr>
+<tr><th id="188">188</th><td>  fd = _fileno(F);</td></tr>
+<tr><th id="189">189</th><td><u>#<span data-ppcond="187">else</span></u></td></tr>
+<tr><th id="190">190</th><td>  <a class="local col8 ref" href="#18fd" title='fd' data-ref="18fd" data-ref-filename="18fd">fd</a> = <a class="ref fn" href="../../../../include/stdio.h.html#fileno" title='fileno' data-ref="fileno" data-ref-filename="fileno">fileno</a>(<a class="local col7 ref" href="#17F" title='F' data-ref="17F" data-ref-filename="17F">F</a>);</td></tr>
+<tr><th id="191">191</th><td><u>#<span data-ppcond="187">endif</span></u></td></tr>
+<tr><th id="192">192</th><td>  <b>return</b> <a class="ref fn" href="#lprofUnlockFd" title='lprofUnlockFd' data-ref="lprofUnlockFd" data-ref-filename="lprofUnlockFd">lprofUnlockFd</a>(<a class="local col8 ref" href="#18fd" title='fd' data-ref="18fd" data-ref-filename="18fd">fd</a>);</td></tr>
+<tr><th id="193">193</th><td>}</td></tr>
+<tr><th id="194">194</th><td></td></tr>
+<tr><th id="195">195</th><td><a class="macro" href="InstrProfilingPort.h.html#33" title="__attribute__((visibility(&quot;hidden&quot;)))" data-ref="_M/COMPILER_RT_VISIBILITY">COMPILER_RT_VISIBILITY</a> <a class="typedef" href="../../../../include/bits/types/FILE.h.html#FILE" title='FILE' data-type='struct _IO_FILE' data-ref="FILE" data-ref-filename="FILE">FILE</a> *<dfn class="decl def fn" id="lprofOpenFileEx" title='lprofOpenFileEx' data-ref="lprofOpenFileEx" data-ref-filename="lprofOpenFileEx">lprofOpenFileEx</dfn>(<em>const</em> <em>char</em> *<dfn class="local col9 decl" id="19ProfileName" title='ProfileName' data-type='const char *' data-ref="19ProfileName" data-ref-filename="19ProfileName">ProfileName</dfn>) {</td></tr>
+<tr><th id="196">196</th><td>  <a class="typedef" href="../../../../include/bits/types/FILE.h.html#FILE" title='FILE' data-type='struct _IO_FILE' data-ref="FILE" data-ref-filename="FILE">FILE</a> *<dfn class="local col0 decl" id="20f" title='f' data-type='FILE *' data-ref="20f" data-ref-filename="20f">f</dfn>;</td></tr>
+<tr><th id="197">197</th><td>  <em>int</em> <dfn class="local col1 decl" id="21fd" title='fd' data-type='int' data-ref="21fd" data-ref-filename="21fd">fd</dfn>;</td></tr>
+<tr><th id="198">198</th><td><u>#<span data-ppcond="198">ifdef</span> <span class="macro" data-ref="_M/COMPILER_RT_HAS_FCNTL_LCK">COMPILER_RT_HAS_FCNTL_LCK</span></u></td></tr>
+<tr><th id="199">199</th><td>  <a class="local col1 ref" href="#21fd" title='fd' data-ref="21fd" data-ref-filename="21fd">fd</a> = <a class="ref fn" href="../../../../include/fcntl.h.html#open" title='open' data-ref="open" data-ref-filename="open">open</a>(<a class="local col9 ref" href="#19ProfileName" title='ProfileName' data-ref="19ProfileName" data-ref-filename="19ProfileName">ProfileName</a>, <a class="macro" href="../../../../include/bits/fcntl-linux.h.html#45" title="02" data-ref="_M/O_RDWR">O_RDWR</a> | <a class="macro" href="../../../../include/bits/fcntl-linux.h.html#47" title="0100" data-ref="_M/O_CREAT">O_CREAT</a>, <var>0666</var>);</td></tr>
+<tr><th id="200">200</th><td>  <b>if</b> (<a class="local col1 ref" href="#21fd" title='fd' data-ref="21fd" data-ref-filename="21fd">fd</a> &lt; <var>0</var>)</td></tr>
+<tr><th id="201">201</th><td>    <b>return</b> <span class="macro" title="((void*)0)" data-ref="_M/NULL">NULL</span>;</td></tr>
+<tr><th id="202">202</th><td></td></tr>
+<tr><th id="203">203</th><td>  <b>if</b> (<a class="ref fn" href="#lprofLockFd" title='lprofLockFd' data-ref="lprofLockFd" data-ref-filename="lprofLockFd">lprofLockFd</a>(<a class="local col1 ref" href="#21fd" title='fd' data-ref="21fd" data-ref-filename="21fd">fd</a>) != <var>0</var>)</td></tr>
+<tr><th id="204">204</th><td>    <a class="macro" href="InstrProfilingPort.h.html#124" title="fprintf(stderr, &quot;LLVM Profile Warning: &quot; &quot;Data may be corrupted during profile merging : %s\n&quot;, &quot;Fail to obtain file lock due to system limit.&quot;);" data-ref="_M/PROF_WARN">PROF_WARN</a>(<q>"Data may be corrupted during profile merging : %s\n"</q>,</td></tr>
+<tr><th id="205">205</th><td>              <q>"Fail to obtain file lock due to system limit."</q>);</td></tr>
+<tr><th id="206">206</th><td></td></tr>
+<tr><th id="207">207</th><td>  <a class="local col0 ref" href="#20f" title='f' data-ref="20f" data-ref-filename="20f">f</a> = <a class="ref fn" href="../../../../include/stdio.h.html#fdopen" title='fdopen' data-ref="fdopen" data-ref-filename="fdopen">fdopen</a>(<a class="local col1 ref" href="#21fd" title='fd' data-ref="21fd" data-ref-filename="21fd">fd</a>, <q>"r+b"</q>);</td></tr>
+<tr><th id="208">208</th><td><u>#<span data-ppcond="198">elif</span> defined(_WIN32)</u></td></tr>
+<tr><th id="209">209</th><td>  <i>// FIXME: Use the wide variants to handle Unicode filenames.</i></td></tr>
+<tr><th id="210">210</th><td>  HANDLE h = CreateFileA(ProfileName, GENERIC_READ | GENERIC_WRITE,</td></tr>
+<tr><th id="211">211</th><td>                         FILE_SHARE_READ | FILE_SHARE_WRITE, <var>0</var>, OPEN_ALWAYS,</td></tr>
+<tr><th id="212">212</th><td>                         FILE_ATTRIBUTE_NORMAL, <var>0</var>);</td></tr>
+<tr><th id="213">213</th><td>  <b>if</b> (h == INVALID_HANDLE_VALUE)</td></tr>
+<tr><th id="214">214</th><td>    <b>return</b> NULL;</td></tr>
+<tr><th id="215">215</th><td></td></tr>
+<tr><th id="216">216</th><td>  fd = _open_osfhandle((intptr_t)h, <var>0</var>);</td></tr>
+<tr><th id="217">217</th><td>  <b>if</b> (fd == -<var>1</var>) {</td></tr>
+<tr><th id="218">218</th><td>    CloseHandle(h);</td></tr>
+<tr><th id="219">219</th><td>    <b>return</b> NULL;</td></tr>
+<tr><th id="220">220</th><td>  }</td></tr>
+<tr><th id="221">221</th><td></td></tr>
+<tr><th id="222">222</th><td>  <b>if</b> (lprofLockFd(fd) != <var>0</var>)</td></tr>
+<tr><th id="223">223</th><td>    PROF_WARN(<q>"Data may be corrupted during profile merging : %s\n"</q>,</td></tr>
+<tr><th id="224">224</th><td>              <q>"Fail to obtain file lock due to system limit."</q>);</td></tr>
+<tr><th id="225">225</th><td></td></tr>
+<tr><th id="226">226</th><td>  f = _fdopen(fd, <q>"r+b"</q>);</td></tr>
+<tr><th id="227">227</th><td>  <b>if</b> (f == <var>0</var>) {</td></tr>
+<tr><th id="228">228</th><td>    CloseHandle(h);</td></tr>
+<tr><th id="229">229</th><td>    <b>return</b> NULL;</td></tr>
+<tr><th id="230">230</th><td>  }</td></tr>
+<tr><th id="231">231</th><td><u>#else</u></td></tr>
+<tr><th id="232">232</th><td>  <i>/* Worst case no locking applied.  */</i></td></tr>
+<tr><th id="233">233</th><td>  PROF_WARN(<q>"Concurrent file access is not supported : %s\n"</q>,</td></tr>
+<tr><th id="234">234</th><td>            <q>"lack file locking"</q>);</td></tr>
+<tr><th id="235">235</th><td>  fd = open(ProfileName, O_RDWR | O_CREAT, <var>0666</var>);</td></tr>
+<tr><th id="236">236</th><td>  <b>if</b> (fd &lt; <var>0</var>)</td></tr>
+<tr><th id="237">237</th><td>    <b>return</b> NULL;</td></tr>
+<tr><th id="238">238</th><td>  f = fdopen(fd, <q>"r+b"</q>);</td></tr>
+<tr><th id="239">239</th><td><u>#<span data-ppcond="198">endif</span></u></td></tr>
+<tr><th id="240">240</th><td></td></tr>
+<tr><th id="241">241</th><td>  <b>return</b> <a class="local col0 ref" href="#20f" title='f' data-ref="20f" data-ref-filename="20f">f</a>;</td></tr>
+<tr><th id="242">242</th><td>}</td></tr>
+<tr><th id="243">243</th><td></td></tr>
+<tr><th id="244">244</th><td><a class="macro" href="InstrProfilingPort.h.html#33" title="__attribute__((visibility(&quot;hidden&quot;)))" data-ref="_M/COMPILER_RT_VISIBILITY">COMPILER_RT_VISIBILITY</a> <em>const</em> <em>char</em> *<dfn class="decl def fn" id="lprofGetPathPrefix" title='lprofGetPathPrefix' data-ref="lprofGetPathPrefix" data-ref-filename="lprofGetPathPrefix">lprofGetPathPrefix</dfn>(<em>int</em> *<dfn class="local col2 decl" id="22PrefixStrip" title='PrefixStrip' data-type='int *' data-ref="22PrefixStrip" data-ref-filename="22PrefixStrip">PrefixStrip</dfn>,</td></tr>
+<tr><th id="245">245</th><td>                                                      <span class='typedef' title='size_t' data-type='unsigned int' data-ref="size_t" data-ref-filename="size_t">size_t</span> *<dfn class="local col3 decl" id="23PrefixLen" title='PrefixLen' data-type='size_t *' data-ref="23PrefixLen" data-ref-filename="23PrefixLen">PrefixLen</dfn>) {</td></tr>
+<tr><th id="246">246</th><td>  <em>const</em> <em>char</em> *<dfn class="local col4 decl" id="24Prefix" title='Prefix' data-type='const char *' data-ref="24Prefix" data-ref-filename="24Prefix">Prefix</dfn> = <a class="ref fn" href="../../../../include/stdlib.h.html#getenv" title='getenv' data-ref="getenv" data-ref-filename="getenv">getenv</a>(<q>"GCOV_PREFIX"</q>);</td></tr>
+<tr><th id="247">247</th><td>  <em>const</em> <em>char</em> *<dfn class="local col5 decl" id="25PrefixStripStr" title='PrefixStripStr' data-type='const char *' data-ref="25PrefixStripStr" data-ref-filename="25PrefixStripStr">PrefixStripStr</dfn> = <a class="ref fn" href="../../../../include/stdlib.h.html#getenv" title='getenv' data-ref="getenv" data-ref-filename="getenv">getenv</a>(<q>"GCOV_PREFIX_STRIP"</q>);</td></tr>
+<tr><th id="248">248</th><td></td></tr>
+<tr><th id="249">249</th><td>  *<a class="local col3 ref" href="#23PrefixLen" title='PrefixLen' data-ref="23PrefixLen" data-ref-filename="23PrefixLen">PrefixLen</a> = <var>0</var>;</td></tr>
+<tr><th id="250">250</th><td>  *<a class="local col2 ref" href="#22PrefixStrip" title='PrefixStrip' data-ref="22PrefixStrip" data-ref-filename="22PrefixStrip">PrefixStrip</a> = <var>0</var>;</td></tr>
+<tr><th id="251">251</th><td>  <b>if</b> (<a class="local col4 ref" href="#24Prefix" title='Prefix' data-ref="24Prefix" data-ref-filename="24Prefix">Prefix</a> == <span class="macro" title="((void*)0)" data-ref="_M/NULL">NULL</span> || <a class="local col4 ref" href="#24Prefix" title='Prefix' data-ref="24Prefix" data-ref-filename="24Prefix">Prefix</a>[<var>0</var>] == <kbd>'\0'</kbd>)</td></tr>
+<tr><th id="252">252</th><td>    <b>return</b> <span class="macro" title="((void*)0)" data-ref="_M/NULL">NULL</span>;</td></tr>
+<tr><th id="253">253</th><td></td></tr>
+<tr><th id="254">254</th><td>  <b>if</b> (<a class="local col5 ref" href="#25PrefixStripStr" title='PrefixStripStr' data-ref="25PrefixStripStr" data-ref-filename="25PrefixStripStr">PrefixStripStr</a>) {</td></tr>
+<tr><th id="255">255</th><td>    *<a class="local col2 ref" href="#22PrefixStrip" title='PrefixStrip' data-ref="22PrefixStrip" data-ref-filename="22PrefixStrip">PrefixStrip</a> = <a class="ref fn" href="../../../../include/stdlib.h.html#atoi" title='atoi' data-ref="atoi" data-ref-filename="atoi">atoi</a>(<a class="local col5 ref" href="#25PrefixStripStr" title='PrefixStripStr' data-ref="25PrefixStripStr" data-ref-filename="25PrefixStripStr">PrefixStripStr</a>);</td></tr>
+<tr><th id="256">256</th><td></td></tr>
+<tr><th id="257">257</th><td>    <i>/* Negative GCOV_PREFIX_STRIP values are ignored */</i></td></tr>
+<tr><th id="258">258</th><td>    <b>if</b> (*<a class="local col2 ref" href="#22PrefixStrip" title='PrefixStrip' data-ref="22PrefixStrip" data-ref-filename="22PrefixStrip">PrefixStrip</a> &lt; <var>0</var>)</td></tr>
+<tr><th id="259">259</th><td>      *<a class="local col2 ref" href="#22PrefixStrip" title='PrefixStrip' data-ref="22PrefixStrip" data-ref-filename="22PrefixStrip">PrefixStrip</a> = <var>0</var>;</td></tr>
+<tr><th id="260">260</th><td>  } <b>else</b> {</td></tr>
+<tr><th id="261">261</th><td>    *<a class="local col2 ref" href="#22PrefixStrip" title='PrefixStrip' data-ref="22PrefixStrip" data-ref-filename="22PrefixStrip">PrefixStrip</a> = <var>0</var>;</td></tr>
+<tr><th id="262">262</th><td>  }</td></tr>
+<tr><th id="263">263</th><td>  *<a class="local col3 ref" href="#23PrefixLen" title='PrefixLen' data-ref="23PrefixLen" data-ref-filename="23PrefixLen">PrefixLen</a> = <a class="ref fn" href="../../../../include/string.h.html#strlen" title='strlen' data-ref="strlen" data-ref-filename="strlen">strlen</a>(<a class="local col4 ref" href="#24Prefix" title='Prefix' data-ref="24Prefix" data-ref-filename="24Prefix">Prefix</a>);</td></tr>
+<tr><th id="264">264</th><td></td></tr>
+<tr><th id="265">265</th><td>  <b>return</b> <a class="local col4 ref" href="#24Prefix" title='Prefix' data-ref="24Prefix" data-ref-filename="24Prefix">Prefix</a>;</td></tr>
+<tr><th id="266">266</th><td>}</td></tr>
+<tr><th id="267">267</th><td></td></tr>
+<tr><th id="268">268</th><td><a class="macro" href="InstrProfilingPort.h.html#33" title="__attribute__((visibility(&quot;hidden&quot;)))" data-ref="_M/COMPILER_RT_VISIBILITY">COMPILER_RT_VISIBILITY</a> <em>void</em></td></tr>
+<tr><th id="269">269</th><td><dfn class="decl def fn" id="lprofApplyPathPrefix" title='lprofApplyPathPrefix' data-ref="lprofApplyPathPrefix" data-ref-filename="lprofApplyPathPrefix">lprofApplyPathPrefix</dfn>(<em>char</em> *<dfn class="local col6 decl" id="26Dest" title='Dest' data-type='char *' data-ref="26Dest" data-ref-filename="26Dest">Dest</dfn>, <em>const</em> <em>char</em> *<dfn class="local col7 decl" id="27PathStr" title='PathStr' data-type='const char *' data-ref="27PathStr" data-ref-filename="27PathStr">PathStr</dfn>, <em>const</em> <em>char</em> *<dfn class="local col8 decl" id="28Prefix" title='Prefix' data-type='const char *' data-ref="28Prefix" data-ref-filename="28Prefix">Prefix</dfn>,</td></tr>
+<tr><th id="270">270</th><td>                     <span class='typedef' title='size_t' data-type='unsigned int' data-ref="size_t" data-ref-filename="size_t">size_t</span> <dfn class="local col9 decl" id="29PrefixLen" title='PrefixLen' data-type='size_t' data-ref="29PrefixLen" data-ref-filename="29PrefixLen">PrefixLen</dfn>, <em>int</em> <dfn class="local col0 decl" id="30PrefixStrip" title='PrefixStrip' data-type='int' data-ref="30PrefixStrip" data-ref-filename="30PrefixStrip">PrefixStrip</dfn>) {</td></tr>
+<tr><th id="271">271</th><td></td></tr>
+<tr><th id="272">272</th><td>  <em>const</em> <em>char</em> *<dfn class="local col1 decl" id="31Ptr" title='Ptr' data-type='const char *' data-ref="31Ptr" data-ref-filename="31Ptr">Ptr</dfn>;</td></tr>
+<tr><th id="273">273</th><td>  <em>int</em> <dfn class="local col2 decl" id="32Level" title='Level' data-type='int' data-ref="32Level" data-ref-filename="32Level">Level</dfn>;</td></tr>
+<tr><th id="274">274</th><td>  <em>const</em> <em>char</em> *<dfn class="local col3 decl" id="33StrippedPathStr" title='StrippedPathStr' data-type='const char *' data-ref="33StrippedPathStr" data-ref-filename="33StrippedPathStr">StrippedPathStr</dfn> = <a class="local col7 ref" href="#27PathStr" title='PathStr' data-ref="27PathStr" data-ref-filename="27PathStr">PathStr</a>;</td></tr>
+<tr><th id="275">275</th><td></td></tr>
+<tr><th id="276">276</th><td>  <b>for</b> (<a class="local col2 ref" href="#32Level" title='Level' data-ref="32Level" data-ref-filename="32Level">Level</a> = <var>0</var>, <a class="local col1 ref" href="#31Ptr" title='Ptr' data-ref="31Ptr" data-ref-filename="31Ptr">Ptr</a> = <a class="local col7 ref" href="#27PathStr" title='PathStr' data-ref="27PathStr" data-ref-filename="27PathStr">PathStr</a> + <var>1</var>; <a class="local col2 ref" href="#32Level" title='Level' data-ref="32Level" data-ref-filename="32Level">Level</a> &lt; <a class="local col0 ref" href="#30PrefixStrip" title='PrefixStrip' data-ref="30PrefixStrip" data-ref-filename="30PrefixStrip">PrefixStrip</a>; ++<a class="local col1 ref" href="#31Ptr" title='Ptr' data-ref="31Ptr" data-ref-filename="31Ptr">Ptr</a>) {</td></tr>
+<tr><th id="277">277</th><td>    <b>if</b> (*<a class="local col1 ref" href="#31Ptr" title='Ptr' data-ref="31Ptr" data-ref-filename="31Ptr">Ptr</a> == <kbd>'\0'</kbd>)</td></tr>
+<tr><th id="278">278</th><td>      <b>break</b>;</td></tr>
+<tr><th id="279">279</th><td></td></tr>
+<tr><th id="280">280</th><td>    <b>if</b> (!<a class="macro" href="InstrProfilingPort.h.html#104" title="((*Ptr) == &apos;/&apos;)" data-ref="_M/IS_DIR_SEPARATOR">IS_DIR_SEPARATOR</a>(*<a class="local col1 ref" href="#31Ptr" title='Ptr' data-ref="31Ptr" data-ref-filename="31Ptr">Ptr</a>))</td></tr>
+<tr><th id="281">281</th><td>      <b>continue</b>;</td></tr>
+<tr><th id="282">282</th><td></td></tr>
+<tr><th id="283">283</th><td>    <a class="local col3 ref" href="#33StrippedPathStr" title='StrippedPathStr' data-ref="33StrippedPathStr" data-ref-filename="33StrippedPathStr">StrippedPathStr</a> = <a class="local col1 ref" href="#31Ptr" title='Ptr' data-ref="31Ptr" data-ref-filename="31Ptr">Ptr</a>;</td></tr>
+<tr><th id="284">284</th><td>    ++<a class="local col2 ref" href="#32Level" title='Level' data-ref="32Level" data-ref-filename="32Level">Level</a>;</td></tr>
+<tr><th id="285">285</th><td>  }</td></tr>
+<tr><th id="286">286</th><td></td></tr>
+<tr><th id="287">287</th><td>  <a class="ref fn" href="../../../../include/string.h.html#memcpy" title='memcpy' data-ref="memcpy" data-ref-filename="memcpy">memcpy</a>(<a class="local col6 ref" href="#26Dest" title='Dest' data-ref="26Dest" data-ref-filename="26Dest">Dest</a>, <a class="local col8 ref" href="#28Prefix" title='Prefix' data-ref="28Prefix" data-ref-filename="28Prefix">Prefix</a>, <a class="local col9 ref" href="#29PrefixLen" title='PrefixLen' data-ref="29PrefixLen" data-ref-filename="29PrefixLen">PrefixLen</a>);</td></tr>
+<tr><th id="288">288</th><td></td></tr>
+<tr><th id="289">289</th><td>  <b>if</b> (!<a class="macro" href="InstrProfilingPort.h.html#104" title="((Prefix[PrefixLen - 1]) == &apos;/&apos;)" data-ref="_M/IS_DIR_SEPARATOR">IS_DIR_SEPARATOR</a>(<a class="local col8 ref" href="#28Prefix" title='Prefix' data-ref="28Prefix" data-ref-filename="28Prefix">Prefix</a>[<a class="local col9 ref" href="#29PrefixLen" title='PrefixLen' data-ref="29PrefixLen" data-ref-filename="29PrefixLen">PrefixLen</a> - <var>1</var>]))</td></tr>
+<tr><th id="290">290</th><td>    <a class="local col6 ref" href="#26Dest" title='Dest' data-ref="26Dest" data-ref-filename="26Dest">Dest</a>[<a class="local col9 ref" href="#29PrefixLen" title='PrefixLen' data-ref="29PrefixLen" data-ref-filename="29PrefixLen">PrefixLen</a>++] = <a class="macro" href="InstrProfilingPort.h.html#100" title="&apos;/&apos;" data-ref="_M/DIR_SEPARATOR">DIR_SEPARATOR</a>;</td></tr>
+<tr><th id="291">291</th><td></td></tr>
+<tr><th id="292">292</th><td>  <a class="ref fn" href="../../../../include/string.h.html#memcpy" title='memcpy' data-ref="memcpy" data-ref-filename="memcpy">memcpy</a>(<a class="local col6 ref" href="#26Dest" title='Dest' data-ref="26Dest" data-ref-filename="26Dest">Dest</a> + <a class="local col9 ref" href="#29PrefixLen" title='PrefixLen' data-ref="29PrefixLen" data-ref-filename="29PrefixLen">PrefixLen</a>, <a class="local col3 ref" href="#33StrippedPathStr" title='StrippedPathStr' data-ref="33StrippedPathStr" data-ref-filename="33StrippedPathStr">StrippedPathStr</a>, <a class="ref fn" href="../../../../include/string.h.html#strlen" title='strlen' data-ref="strlen" data-ref-filename="strlen">strlen</a>(<a class="local col3 ref" href="#33StrippedPathStr" title='StrippedPathStr' data-ref="33StrippedPathStr" data-ref-filename="33StrippedPathStr">StrippedPathStr</a>) + <var>1</var>);</td></tr>
+<tr><th id="293">293</th><td>}</td></tr>
+<tr><th id="294">294</th><td></td></tr>
+<tr><th id="295">295</th><td><a class="macro" href="InstrProfilingPort.h.html#33" title="__attribute__((visibility(&quot;hidden&quot;)))" data-ref="_M/COMPILER_RT_VISIBILITY">COMPILER_RT_VISIBILITY</a> <em>const</em> <em>char</em> *</td></tr>
+<tr><th id="296">296</th><td><dfn class="decl def fn" id="lprofFindFirstDirSeparator" title='lprofFindFirstDirSeparator' data-ref="lprofFindFirstDirSeparator" data-ref-filename="lprofFindFirstDirSeparator">lprofFindFirstDirSeparator</dfn>(<em>const</em> <em>char</em> *<dfn class="local col4 decl" id="34Path" title='Path' data-type='const char *' data-ref="34Path" data-ref-filename="34Path">Path</dfn>) {</td></tr>
+<tr><th id="297">297</th><td>  <em>const</em> <em>char</em> *<dfn class="local col5 decl" id="35Sep" title='Sep' data-type='const char *' data-ref="35Sep" data-ref-filename="35Sep">Sep</dfn> = <a class="ref fn" href="../../../../include/string.h.html#strchr" title='strchr' data-ref="strchr" data-ref-filename="strchr">strchr</a>(<a class="local col4 ref" href="#34Path" title='Path' data-ref="34Path" data-ref-filename="34Path">Path</a>, <a class="macro" href="InstrProfilingPort.h.html#100" title="&apos;/&apos;" data-ref="_M/DIR_SEPARATOR">DIR_SEPARATOR</a>);</td></tr>
+<tr><th id="298">298</th><td><u>#<span data-ppcond="298">if</span> defined(<span class="macro" data-ref="_M/DIR_SEPARATOR_2">DIR_SEPARATOR_2</span>)</u></td></tr>
+<tr><th id="299">299</th><td>  <em>const</em> <em>char</em> *Sep2 = strchr(Path, DIR_SEPARATOR_2);</td></tr>
+<tr><th id="300">300</th><td>  <b>if</b> (Sep2 &amp;&amp; (!Sep || Sep2 &lt; Sep))</td></tr>
+<tr><th id="301">301</th><td>    Sep = Sep2;</td></tr>
+<tr><th id="302">302</th><td><u>#<span data-ppcond="298">endif</span></u></td></tr>
+<tr><th id="303">303</th><td>  <b>return</b> <a class="local col5 ref" href="#35Sep" title='Sep' data-ref="35Sep" data-ref-filename="35Sep">Sep</a>;</td></tr>
+<tr><th id="304">304</th><td>}</td></tr>
+<tr><th id="305">305</th><td></td></tr>
+<tr><th id="306">306</th><td><a class="macro" href="InstrProfilingPort.h.html#33" title="__attribute__((visibility(&quot;hidden&quot;)))" data-ref="_M/COMPILER_RT_VISIBILITY">COMPILER_RT_VISIBILITY</a> <em>const</em> <em>char</em> *<dfn class="decl def fn" id="lprofFindLastDirSeparator" title='lprofFindLastDirSeparator' data-ref="lprofFindLastDirSeparator" data-ref-filename="lprofFindLastDirSeparator">lprofFindLastDirSeparator</dfn>(<em>const</em> <em>char</em> *<dfn class="local col6 decl" id="36Path" title='Path' data-type='const char *' data-ref="36Path" data-ref-filename="36Path">Path</dfn>) {</td></tr>
+<tr><th id="307">307</th><td>  <em>const</em> <em>char</em> *<dfn class="local col7 decl" id="37Sep" title='Sep' data-type='const char *' data-ref="37Sep" data-ref-filename="37Sep">Sep</dfn> = <a class="ref fn" href="../../../../include/string.h.html#strrchr" title='strrchr' data-ref="strrchr" data-ref-filename="strrchr">strrchr</a>(<a class="local col6 ref" href="#36Path" title='Path' data-ref="36Path" data-ref-filename="36Path">Path</a>, <a class="macro" href="InstrProfilingPort.h.html#100" title="&apos;/&apos;" data-ref="_M/DIR_SEPARATOR">DIR_SEPARATOR</a>);</td></tr>
+<tr><th id="308">308</th><td><u>#<span data-ppcond="308">if</span> defined(<span class="macro" data-ref="_M/DIR_SEPARATOR_2">DIR_SEPARATOR_2</span>)</u></td></tr>
+<tr><th id="309">309</th><td>  <em>const</em> <em>char</em> *Sep2 = strrchr(Path, DIR_SEPARATOR_2);</td></tr>
+<tr><th id="310">310</th><td>  <b>if</b> (Sep2 &amp;&amp; (!Sep || Sep2 &gt; Sep))</td></tr>
+<tr><th id="311">311</th><td>    Sep = Sep2;</td></tr>
+<tr><th id="312">312</th><td><u>#<span data-ppcond="308">endif</span></u></td></tr>
+<tr><th id="313">313</th><td>  <b>return</b> <a class="local col7 ref" href="#37Sep" title='Sep' data-ref="37Sep" data-ref-filename="37Sep">Sep</a>;</td></tr>
+<tr><th id="314">314</th><td>}</td></tr>
+<tr><th id="315">315</th><td></td></tr>
+<tr><th id="316">316</th><td><a class="macro" href="InstrProfilingPort.h.html#33" title="__attribute__((visibility(&quot;hidden&quot;)))" data-ref="_M/COMPILER_RT_VISIBILITY">COMPILER_RT_VISIBILITY</a> <em>int</em> <dfn class="decl def fn" id="lprofSuspendSigKill" title='lprofSuspendSigKill' data-ref="lprofSuspendSigKill" data-ref-filename="lprofSuspendSigKill">lprofSuspendSigKill</dfn>() {</td></tr>
+<tr><th id="317">317</th><td><u>#<span data-ppcond="317">if</span> defined(<span class="macro" data-ref="_M/__linux__">__linux__</span>)</u></td></tr>
+<tr><th id="318">318</th><td>  <em>int</em> <dfn class="local col8 decl" id="38PDeachSig" title='PDeachSig' data-type='int' data-ref="38PDeachSig" data-ref-filename="38PDeachSig">PDeachSig</dfn> = <var>0</var>;</td></tr>
+<tr><th id="319">319</th><td>  <i>/* Temporarily suspend getting SIGKILL upon exit of the parent process. */</i></td></tr>
+<tr><th id="320">320</th><td>  <b>if</b> (<a class="ref fn" href="../../../../include/sys/prctl.h.html#prctl" title='prctl' data-ref="prctl" data-ref-filename="prctl">prctl</a>(<a class="macro" href="../../../../include/linux/prctl.h.html#10" title="2" data-ref="_M/PR_GET_PDEATHSIG">PR_GET_PDEATHSIG</a>, &amp;<a class="local col8 ref" href="#38PDeachSig" title='PDeachSig' data-ref="38PDeachSig" data-ref-filename="38PDeachSig">PDeachSig</a>) == <var>0</var> &amp;&amp; <a class="local col8 ref" href="#38PDeachSig" title='PDeachSig' data-ref="38PDeachSig" data-ref-filename="38PDeachSig">PDeachSig</a> == <a class="macro" href="../../../../include/bits/signum-generic.h.html#59" title="9" data-ref="_M/SIGKILL">SIGKILL</a>)</td></tr>
+<tr><th id="321">321</th><td>    <a class="ref fn" href="../../../../include/sys/prctl.h.html#prctl" title='prctl' data-ref="prctl" data-ref-filename="prctl">prctl</a>(<a class="macro" href="../../../../include/linux/prctl.h.html#9" title="1" data-ref="_M/PR_SET_PDEATHSIG">PR_SET_PDEATHSIG</a>, <var>0</var>);</td></tr>
+<tr><th id="322">322</th><td>  <b>return</b> (<a class="local col8 ref" href="#38PDeachSig" title='PDeachSig' data-ref="38PDeachSig" data-ref-filename="38PDeachSig">PDeachSig</a> == <a class="macro" href="../../../../include/bits/signum-generic.h.html#59" title="9" data-ref="_M/SIGKILL">SIGKILL</a>);</td></tr>
+<tr><th id="323">323</th><td><u>#<span data-ppcond="317">else</span></u></td></tr>
+<tr><th id="324">324</th><td>  <b>return</b> <var>0</var>;</td></tr>
+<tr><th id="325">325</th><td><u>#<span data-ppcond="317">endif</span></u></td></tr>
+<tr><th id="326">326</th><td>}</td></tr>
+<tr><th id="327">327</th><td></td></tr>
+<tr><th id="328">328</th><td><a class="macro" href="InstrProfilingPort.h.html#33" title="__attribute__((visibility(&quot;hidden&quot;)))" data-ref="_M/COMPILER_RT_VISIBILITY">COMPILER_RT_VISIBILITY</a> <em>void</em> <dfn class="decl def fn" id="lprofRestoreSigKill" title='lprofRestoreSigKill' data-ref="lprofRestoreSigKill" data-ref-filename="lprofRestoreSigKill">lprofRestoreSigKill</dfn>() {</td></tr>
+<tr><th id="329">329</th><td><u>#<span data-ppcond="329">if</span> defined(<span class="macro" data-ref="_M/__linux__">__linux__</span>)</u></td></tr>
+<tr><th id="330">330</th><td>  <a class="ref fn" href="../../../../include/sys/prctl.h.html#prctl" title='prctl' data-ref="prctl" data-ref-filename="prctl">prctl</a>(<a class="macro" href="../../../../include/linux/prctl.h.html#9" title="1" data-ref="_M/PR_SET_PDEATHSIG">PR_SET_PDEATHSIG</a>, <a class="macro" href="../../../../include/bits/signum-generic.h.html#59" title="9" data-ref="_M/SIGKILL">SIGKILL</a>);</td></tr>
+<tr><th id="331">331</th><td><u>#<span data-ppcond="329">endif</span></u></td></tr>
+<tr><th id="332">332</th><td>}</td></tr>
+<tr><th id="333">333</th><td></td></tr>
+</table><hr/><p id='footer'>
+Generated on <em>2021-Jul-01</em> from project llvm revision <em>12</em>

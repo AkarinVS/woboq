@@ -1,0 +1,5 @@
+<dec f='llvm/llvm/include/llvm/Demangle/ItaniumDemangle.h' l='1643' type='const llvm::itanium_demangle::Node *'/>
+<use f='llvm/llvm/include/llvm/Demangle/ItaniumDemangle.h' l='1649' u='w' c='_ZN4llvm16itanium_demangle10MemberExprC1EPKNS0_4NodeENS0_10StringViewES4_'/>
+<use f='llvm/llvm/include/llvm/Demangle/ItaniumDemangle.h' l='1651' c='_ZNK4llvm16itanium_demangle10MemberExpr5matchET_'/>
+<use f='llvm/llvm/include/llvm/Demangle/ItaniumDemangle.h' l='1654' u='r' c='_ZNK4llvm16itanium_demangle10MemberExpr9printLeftERNS0_12OutputStreamE'/>
+<offset>128</offset>

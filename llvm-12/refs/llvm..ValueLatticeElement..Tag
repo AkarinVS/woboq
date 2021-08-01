@@ -1,0 +1,32 @@
+<dec f='llvm/llvm/include/llvm/Analysis/ValueLattice.h' l='79' type='llvm::ValueLatticeElement::ValueLatticeElementTy'/>
+<use f='llvm/llvm/include/llvm/Analysis/ValueLattice.h' l='93' u='r' c='_ZN4llvm19ValueLatticeElement7destroyEv'/>
+<use f='llvm/llvm/include/llvm/Analysis/ValueLattice.h' l='146' u='w' c='_ZN4llvm19ValueLatticeElementC1Ev'/>
+<use f='llvm/llvm/include/llvm/Analysis/ValueLattice.h' l='151' u='w' c='_ZN4llvm19ValueLatticeElementC1ERKS0_'/>
+<use f='llvm/llvm/include/llvm/Analysis/ValueLattice.h' l='151' u='r' c='_ZN4llvm19ValueLatticeElementC1ERKS0_'/>
+<use f='llvm/llvm/include/llvm/Analysis/ValueLattice.h' l='152' u='r' c='_ZN4llvm19ValueLatticeElementC1ERKS0_'/>
+<use f='llvm/llvm/include/llvm/Analysis/ValueLattice.h' l='170' u='w' c='_ZN4llvm19ValueLatticeElementC1EOS0_'/>
+<use f='llvm/llvm/include/llvm/Analysis/ValueLattice.h' l='170' u='r' c='_ZN4llvm19ValueLatticeElementC1EOS0_'/>
+<use f='llvm/llvm/include/llvm/Analysis/ValueLattice.h' l='171' u='r' c='_ZN4llvm19ValueLatticeElementC1EOS0_'/>
+<use f='llvm/llvm/include/llvm/Analysis/ValueLattice.h' l='186' u='w' c='_ZN4llvm19ValueLatticeElementC1EOS0_'/>
+<use f='llvm/llvm/include/llvm/Analysis/ValueLattice.h' l='238' u='r' c='_ZNK4llvm19ValueLatticeElement7isUndefEv'/>
+<use f='llvm/llvm/include/llvm/Analysis/ValueLattice.h' l='239' u='r' c='_ZNK4llvm19ValueLatticeElement9isUnknownEv'/>
+<use f='llvm/llvm/include/llvm/Analysis/ValueLattice.h' l='240' u='r' c='_ZNK4llvm19ValueLatticeElement16isUnknownOrUndefEv'/>
+<use f='llvm/llvm/include/llvm/Analysis/ValueLattice.h' l='240' u='r' c='_ZNK4llvm19ValueLatticeElement16isUnknownOrUndefEv'/>
+<use f='llvm/llvm/include/llvm/Analysis/ValueLattice.h' l='241' u='r' c='_ZNK4llvm19ValueLatticeElement10isConstantEv'/>
+<use f='llvm/llvm/include/llvm/Analysis/ValueLattice.h' l='242' u='r' c='_ZNK4llvm19ValueLatticeElement13isNotConstantEv'/>
+<use f='llvm/llvm/include/llvm/Analysis/ValueLattice.h' l='244' u='r' c='_ZNK4llvm19ValueLatticeElement29isConstantRangeIncludingUndefEv'/>
+<use f='llvm/llvm/include/llvm/Analysis/ValueLattice.h' l='251' u='r' c='_ZNK4llvm19ValueLatticeElement15isConstantRangeEb'/>
+<use f='llvm/llvm/include/llvm/Analysis/ValueLattice.h' l='251' u='r' c='_ZNK4llvm19ValueLatticeElement15isConstantRangeEb'/>
+<use f='llvm/llvm/include/llvm/Analysis/ValueLattice.h' l='254' u='r' c='_ZNK4llvm19ValueLatticeElement13isOverdefinedEv'/>
+<use f='llvm/llvm/include/llvm/Analysis/ValueLattice.h' l='289' u='w' c='_ZN4llvm19ValueLatticeElement15markOverdefinedEv'/>
+<use f='llvm/llvm/include/llvm/Analysis/ValueLattice.h' l='298' u='w' c='_ZN4llvm19ValueLatticeElement9markUndefEv'/>
+<use f='llvm/llvm/include/llvm/Analysis/ValueLattice.h' l='317' u='w' c='_ZN4llvm19ValueLatticeElement12markConstantEPNS_8ConstantEb'/>
+<use f='llvm/llvm/include/llvm/Analysis/ValueLattice.h' l='337' u='w' c='_ZN4llvm19ValueLatticeElement15markNotConstantEPNS_8ConstantE'/>
+<use f='llvm/llvm/include/llvm/Analysis/ValueLattice.h' l='355' u='r' c='_ZN4llvm19ValueLatticeElement17markConstantRangeENS_13ConstantRangeENS0_12MergeOptionsE'/>
+<use f='llvm/llvm/include/llvm/Analysis/ValueLattice.h' l='361' u='w' c='_ZN4llvm19ValueLatticeElement17markConstantRangeENS_13ConstantRangeENS0_12MergeOptionsE'/>
+<use f='llvm/llvm/include/llvm/Analysis/ValueLattice.h' l='363' u='r' c='_ZN4llvm19ValueLatticeElement17markConstantRangeENS_13ConstantRangeENS0_12MergeOptionsE'/>
+<use f='llvm/llvm/include/llvm/Analysis/ValueLattice.h' l='379' u='w' c='_ZN4llvm19ValueLatticeElement17markConstantRangeENS_13ConstantRangeENS0_12MergeOptionsE'/>
+<use f='llvm/llvm/include/llvm/Analysis/ValueLattice.h' l='429' u='r' c='_ZN4llvm19ValueLatticeElement7mergeInERKS0_NS0_12MergeOptionsE'/>
+<use f='llvm/llvm/include/llvm/Analysis/ValueLattice.h' l='432' u='w' c='_ZN4llvm19ValueLatticeElement7mergeInERKS0_NS0_12MergeOptionsE'/>
+<use f='llvm/llvm/include/llvm/Analysis/ValueLattice.h' l='433' u='r' c='_ZN4llvm19ValueLatticeElement7mergeInERKS0_NS0_12MergeOptionsE'/>
+<offset>0</offset>

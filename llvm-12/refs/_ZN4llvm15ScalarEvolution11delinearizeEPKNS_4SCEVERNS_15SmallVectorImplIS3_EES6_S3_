@@ -1,0 +1,116 @@
+<dec f='llvm/llvm/include/llvm/Analysis/ScalarEvolution.h' l='1141' type='void llvm::ScalarEvolution::delinearize(const llvm::SCEV * Expr, SmallVectorImpl&lt;const llvm::SCEV *&gt; &amp; Subscripts, SmallVectorImpl&lt;const llvm::SCEV *&gt; &amp; Sizes, const llvm::SCEV * ElementSize)'/>
+<doc f='llvm/llvm/include/llvm/Analysis/ScalarEvolution.h' l='1077'>/// Split this SCEVAddRecExpr into two vectors of SCEVs representing the
+  /// subscripts and sizes of an array access.
+  ///
+  /// The delinearization is a 3 step process: the first two steps compute the
+  /// sizes of each subscript and the third step computes the access functions
+  /// for the delinearized array:
+  ///
+  /// 1. Find the terms in the step functions
+  /// 2. Compute the array size
+  /// 3. Compute the access function: divide the SCEV by the array size
+  ///    starting with the innermost dimensions found in step 2. The Quotient
+  ///    is the SCEV to be divided in the next step of the recursion. The
+  ///    Remainder is the subscript of the innermost dimension. Loop over all
+  ///    array dimensions computed in step 2.
+  ///
+  /// To compute a uniform array size for several memory accesses to the same
+  /// object, one can collect in step 1 all the step terms for all the memory
+  /// accesses, and compute in step 2 a unique array shape. This guarantees
+  /// that the array shape will be the same across all memory accesses.
+  ///
+  /// FIXME: We could derive the result of steps 1 and 2 from a description of
+  /// the array shape given in metadata.
+  ///
+  /// Example:
+  ///
+  /// A[][n][m]
+  ///
+  /// for i
+  ///   for j
+  ///     for k
+  ///       A[j+k][2i][5i] =
+  ///
+  /// The initial SCEV:
+  ///
+  /// A[{{{0,+,2*m+5}_i, +, n*m}_j, +, n*m}_k]
+  ///
+  /// 1. Find the different terms in the step functions:
+  /// -&gt; [2*m, 5, n*m, n*m]
+  ///
+  /// 2. Compute the array size: sort and unique them
+  /// -&gt; [n*m, 2*m, 5]
+  /// find the GCD of all the terms = 1
+  /// divide by the GCD and erase constant terms
+  /// -&gt; [n*m, 2*m]
+  /// GCD = m
+  /// divide by GCD -&gt; [n, 2]
+  /// remove constant terms
+  /// -&gt; [n]
+  /// size of the array is A[unknown][n][m]
+  ///
+  /// 3. Compute the access function
+  /// a. Divide {{{0,+,2*m+5}_i, +, n*m}_j, +, n*m}_k by the innermost size m
+  /// Quotient: {{{0,+,2}_i, +, n}_j, +, n}_k
+  /// Remainder: {{{0,+,5}_i, +, 0}_j, +, 0}_k
+  /// The remainder is the subscript of the innermost array dimension: [5i].
+  ///
+  /// b. Divide Quotient: {{{0,+,2}_i, +, n}_j, +, n}_k by next outer size n
+  /// Quotient: {{{0,+,0}_i, +, 1}_j, +, 1}_k
+  /// Remainder: {{{0,+,2}_i, +, 0}_j, +, 0}_k
+  /// The Remainder is the subscript of the next array dimension: [2i].
+  ///
+  /// The subscript of the outermost dimension is the Quotient: [j+k].
+  ///
+  /// Overall, we have: A[][n][m], and the access function: A[j+k][2i][5i].</doc>
+<use f='llvm/llvm/lib/Analysis/Delinearization.cpp' l='89' u='c' c='_ZN12_GLOBAL__N_120printDelinearizationERN4llvm11raw_ostreamEPNS0_8FunctionEPNS0_8LoopInfoEPNS0_15ScalarEvolutionE'/>
+<use f='llvm/llvm/lib/Analysis/LoopCacheAnalysis.cpp' l='349' u='c' c='_ZN4llvm16IndexedReference11delinearizeERKNS_8LoopInfoE'/>
+<def f='llvm/llvm/lib/Analysis/ScalarEvolution.cpp' l='11869' ll='11903' type='void llvm::ScalarEvolution::delinearize(const llvm::SCEV * Expr, SmallVectorImpl&lt;const llvm::SCEV *&gt; &amp; Subscripts, SmallVectorImpl&lt;const llvm::SCEV *&gt; &amp; Sizes, const llvm::SCEV * ElementSize)'/>
+<doc f='llvm/llvm/lib/Analysis/ScalarEvolution.cpp' l='11821'>/// Splits the SCEV into two vectors of SCEVs representing the subscripts and
+/// sizes of an array access. Returns the remainder of the delinearization that
+/// is the offset start of the array.  The SCEV-&gt;delinearize algorithm computes
+/// the multiples of SCEV coefficients: that is a pattern matching of sub
+/// expressions in the stride and base of a SCEV corresponding to the
+/// computation of a GCD (greatest common divisor) of base and stride.  When
+/// SCEV-&gt;delinearize fails, it returns the SCEV unchanged.
+///
+/// For example: when analyzing the memory access A[i][j][k] in this loop nest
+///
+///  void foo(long n, long m, long o, double A[n][m][o]) {
+///
+///    for (long i = 0; i &lt; n; i++)
+///      for (long j = 0; j &lt; m; j++)
+///        for (long k = 0; k &lt; o; k++)
+///          A[i][j][k] = 1.0;
+///  }
+///
+/// the delinearization input is the following AddRec SCEV:
+///
+///  AddRec: {{{%A,+,(8 * %m * %o)}&lt;%for.i&gt;,+,(8 * %o)}&lt;%for.j&gt;,+,8}&lt;%for.k&gt;
+///
+/// From this SCEV, we are able to say that the base offset of the access is %A
+/// because it appears as an offset that does not divide any of the strides in
+/// the loops:
+///
+///  CHECK: Base offset: %A
+///
+/// and then SCEV-&gt;delinearize determines the size of some of the dimensions of
+/// the array as these are the multiples by which the strides are happening:
+///
+///  CHECK: ArrayDecl[UnknownSize][%m][%o] with elements of sizeof(double) bytes.
+///
+/// Note that the outermost dimension remains of UnknownSize because there are
+/// no strides that would help identifying the size of the last dimension: when
+/// the array has been statically allocated, one could compute the size of that
+/// dimension by dividing the overall size of the array by the size of the known
+/// dimensions: %m * %o * 8.
+///
+/// Finally delinearize provides the access functions for the array reference
+/// that does correspond to A[i][j][k] of the above C testcase:
+///
+///  CHECK: ArrayRef[{0,+,1}&lt;%for.i&gt;][{0,+,1}&lt;%for.j&gt;][{0,+,1}&lt;%for.k&gt;]
+///
+/// The testcases are checking the output of a function pass:
+/// DelinearizationPass that walks through all loads and stores of a function
+/// asking for the SCEV of the memory access with respect to all enclosing
+/// loops, calling SCEV-&gt;delinearize on that and printing the results.</doc>

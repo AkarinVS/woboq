@@ -1,0 +1,132 @@
+<def f='llvm/llvm/lib/CodeGen/SelectionDAG/SelectionDAGBuilder.h' l='294' ll='379'/>
+<use f='llvm/llvm/lib/CodeGen/SelectionDAG/SelectionDAGBuilder.h' l='415'/>
+<use f='llvm/llvm/lib/CodeGen/SelectionDAG/SelectionDAGBuilder.h' l='661' c='_ZN4llvm19SelectionDAGBuilder23visitSPDescriptorParentERNS0_24StackProtectorDescriptorEPNS_17MachineBasicBlockE'/>
+<use f='llvm/llvm/lib/CodeGen/SelectionDAG/SelectionDAGBuilder.h' l='663' c='_ZN4llvm19SelectionDAGBuilder24visitSPDescriptorFailureERNS0_24StackProtectorDescriptorE'/>
+<use f='llvm/llvm/lib/CodeGen/SelectionDAG/SelectionDAGBuilder.cpp' l='2537' c='_ZN4llvm19SelectionDAGBuilder23visitSPDescriptorParentERNS0_24StackProtectorDescriptorEPNS_17MachineBasicBlockE'/>
+<use f='llvm/llvm/lib/CodeGen/SelectionDAG/SelectionDAGBuilder.cpp' l='2631' c='_ZN4llvm19SelectionDAGBuilder24visitSPDescriptorFailureERNS0_24StackProtectorDescriptorE'/>
+<size>24</size>
+<doc f='llvm/llvm/lib/CodeGen/SelectionDAG/SelectionDAGBuilder.h' l='183'>/// A class which encapsulates all of the information needed to generate a
+  /// stack protector check and signals to isel via its state being initialized
+  /// that a stack protector needs to be generated.
+  ///
+  /// *NOTE* The following is a high level documentation of SelectionDAG Stack
+  /// Protector Generation. The reason that it is placed here is for a lack of
+  /// other good places to stick it.
+  ///
+  /// High Level Overview of SelectionDAG Stack Protector Generation:
+  ///
+  /// Previously, generation of stack protectors was done exclusively in the
+  /// pre-SelectionDAG Codegen LLVM IR Pass &quot;Stack Protector&quot;. This necessitated
+  /// splitting basic blocks at the IR level to create the success/failure basic
+  /// blocks in the tail of the basic block in question. As a result of this,
+  /// calls that would have qualified for the sibling call optimization were no
+  /// longer eligible for optimization since said calls were no longer right in
+  /// the &quot;tail position&quot; (i.e. the immediate predecessor of a ReturnInst
+  /// instruction).
+  ///
+  /// Then it was noticed that since the sibling call optimization causes the
+  /// callee to reuse the caller&apos;s stack, if we could delay the generation of
+  /// the stack protector check until later in CodeGen after the sibling call
+  /// decision was made, we get both the tail call optimization and the stack
+  /// protector check!
+  ///
+  /// A few goals in solving this problem were:
+  ///
+  ///   1. Preserve the architecture independence of stack protector generation.
+  ///
+  ///   2. Preserve the normal IR level stack protector check for platforms like
+  ///      OpenBSD for which we support platform-specific stack protector
+  ///      generation.
+  ///
+  /// The main problem that guided the present solution is that one can not
+  /// solve this problem in an architecture independent manner at the IR level
+  /// only. This is because:
+  ///
+  ///   1. The decision on whether or not to perform a sibling call on certain
+  ///      platforms (for instance i386) requires lower level information
+  ///      related to available registers that can not be known at the IR level.
+  ///
+  ///   2. Even if the previous point were not true, the decision on whether to
+  ///      perform a tail call is done in LowerCallTo in SelectionDAG which
+  ///      occurs after the Stack Protector Pass. As a result, one would need to
+  ///      put the relevant callinst into the stack protector check success
+  ///      basic block (where the return inst is placed) and then move it back
+  ///      later at SelectionDAG/MI time before the stack protector check if the
+  ///      tail call optimization failed. The MI level option was nixed
+  ///      immediately since it would require platform-specific pattern
+  ///      matching. The SelectionDAG level option was nixed because
+  ///      SelectionDAG only processes one IR level basic block at a time
+  ///      implying one could not create a DAG Combine to move the callinst.
+  ///
+  /// To get around this problem a few things were realized:
+  ///
+  ///   1. While one can not handle multiple IR level basic blocks at the
+  ///      SelectionDAG Level, one can generate multiple machine basic blocks
+  ///      for one IR level basic block. This is how we handle bit tests and
+  ///      switches.
+  ///
+  ///   2. At the MI level, tail calls are represented via a special return
+  ///      MIInst called &quot;tcreturn&quot;. Thus if we know the basic block in which we
+  ///      wish to insert the stack protector check, we get the correct behavior
+  ///      by always inserting the stack protector check right before the return
+  ///      statement. This is a &quot;magical transformation&quot; since no matter where
+  ///      the stack protector check intrinsic is, we always insert the stack
+  ///      protector check code at the end of the BB.
+  ///
+  /// Given the aforementioned constraints, the following solution was devised:
+  ///
+  ///   1. On platforms that do not support SelectionDAG stack protector check
+  ///      generation, allow for the normal IR level stack protector check
+  ///      generation to continue.
+  ///
+  ///   2. On platforms that do support SelectionDAG stack protector check
+  ///      generation:
+  ///
+  ///     a. Use the IR level stack protector pass to decide if a stack
+  ///        protector is required/which BB we insert the stack protector check
+  ///        in by reusing the logic already therein. If we wish to generate a
+  ///        stack protector check in a basic block, we place a special IR
+  ///        intrinsic called llvm.stackprotectorcheck right before the BB&apos;s
+  ///        returninst or if there is a callinst that could potentially be
+  ///        sibling call optimized, before the call inst.
+  ///
+  ///     b. Then when a BB with said intrinsic is processed, we codegen the BB
+  ///        normally via SelectBasicBlock. In said process, when we visit the
+  ///        stack protector check, we do not actually emit anything into the
+  ///        BB. Instead, we just initialize the stack protector descriptor
+  ///        class (which involves stashing information/creating the success
+  ///        mbbb and the failure mbb if we have not created one for this
+  ///        function yet) and export the guard variable that we are going to
+  ///        compare.
+  ///
+  ///     c. After we finish selecting the basic block, in FinishBasicBlock if
+  ///        the StackProtectorDescriptor attached to the SelectionDAGBuilder is
+  ///        initialized, we produce the validation code with one of these
+  ///        techniques:
+  ///          1) with a call to a guard check function
+  ///          2) with inlined instrumentation
+  ///
+  ///        1) We insert a call to the check function before the terminator.
+  ///
+  ///        2) We first find a splice point in the parent basic block
+  ///        before the terminator and then splice the terminator of said basic
+  ///        block into the success basic block. Then we code-gen a new tail for
+  ///        the parent basic block consisting of the two loads, the comparison,
+  ///        and finally two branches to the success/failure basic blocks. We
+  ///        conclude by code-gening the failure basic block if we have not
+  ///        code-gened it already (all stack protector checks we generate in
+  ///        the same function, use the same failure basic block).</doc>
+<fun r='_ZN4llvm19SelectionDAGBuilder24StackProtectorDescriptorC1Ev'/>
+<fun r='_ZNK4llvm19SelectionDAGBuilder24StackProtectorDescriptor24shouldEmitStackProtectorEv'/>
+<fun r='_ZNK4llvm19SelectionDAGBuilder24StackProtectorDescriptor42shouldEmitFunctionBasedCheckStackProtectorEv'/>
+<fun r='_ZN4llvm19SelectionDAGBuilder24StackProtectorDescriptor10initializeEPKNS_10BasicBlockEPNS_17MachineBasicBlockEb'/>
+<fun r='_ZN4llvm19SelectionDAGBuilder24StackProtectorDescriptor15resetPerBBStateEv'/>
+<fun r='_ZN4llvm19SelectionDAGBuilder24StackProtectorDescriptor21resetPerFunctionStateEv'/>
+<fun r='_ZN4llvm19SelectionDAGBuilder24StackProtectorDescriptor12getParentMBBEv'/>
+<fun r='_ZN4llvm19SelectionDAGBuilder24StackProtectorDescriptor13getSuccessMBBEv'/>
+<fun r='_ZN4llvm19SelectionDAGBuilder24StackProtectorDescriptor13getFailureMBBEv'/>
+<mbr r='llvm::SelectionDAGBuilder::StackProtectorDescriptor::ParentMBB' o='0' t='llvm::MachineBasicBlock *'/>
+<mbr r='llvm::SelectionDAGBuilder::StackProtectorDescriptor::SuccessMBB' o='64' t='llvm::MachineBasicBlock *'/>
+<mbr r='llvm::SelectionDAGBuilder::StackProtectorDescriptor::FailureMBB' o='128' t='llvm::MachineBasicBlock *'/>
+<fun r='_ZN4llvm19SelectionDAGBuilder24StackProtectorDescriptor15AddSuccessorMBBEPKNS_10BasicBlockEPNS_17MachineBasicBlockEbS6_'/>
+<fun r='_ZN4llvm19SelectionDAGBuilder24StackProtectorDescriptor15AddSuccessorMBBEPKNS_10BasicBlockEPNS_17MachineBasicBlockEbS6_'/>

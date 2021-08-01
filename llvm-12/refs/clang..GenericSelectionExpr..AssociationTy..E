@@ -1,0 +1,3 @@
+<dec f='llvm/clang/include/clang/AST/Expr.h' l='5596' type='clang::GenericSelectionExpr::AssociationTy::ExprPtrTy'/>
+<use f='llvm/clang/include/clang/AST/Expr.h' l='5600' u='w' c='_ZN5clang20GenericSelectionExpr13AssociationTyC1ENSt11conditionalIXT_EPKNS_4ExprEPS3_E4typeENS2_IXT_EPKNS_14TypeSourceInfoEPS9_E4typeEb'/>
+<use f='llvm/clang/include/clang/AST/Expr.h' l='5603' u='r' c='_ZNK5clang20GenericSelectionExpr13AssociationTy18getAssociationExprEv'/>

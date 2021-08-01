@@ -1,0 +1,158 @@
+<!doctype html>
+<html>
+<head>
+<meta name="viewport" content="width=device-width, initial-scale=1.0"><title>Macros.h source code [llvm/clang/lib/Format/Macros.h] - Woboq Code Browser</title>
+<meta name="woboq:interestingDefinitions" content="clang::format::MacroExpander "/>
+<link rel="stylesheet" href="../../../.././data/qtcreator.css" title="QtCreator"/>
+<link rel="alternate stylesheet" href="../../../.././data/kdevelop.css" title="KDevelop"/>
+<script type="text/javascript" src="../../../.././data/jquery/jquery.min.js"></script>
+<script type="text/javascript" src="../../../.././data/jquery/jquery-ui.min.js"></script>
+<script>var file = 'llvm/clang/lib/Format/Macros.h'; var root_path = '../../../..'; var data_path = '../../../.././data'; var ecma_script_api_version = 2;</script>
+<script src='../../../.././data/codebrowser.js'></script>
+</head>
+<body><div id='header'><h1 id='breadcrumb'><span>Browse the source code of </span><a href='../../..'>llvm</a>/<a href='../..'>clang</a>/<a href='..'>lib</a>/<a href='./'>Format</a>/<a href='Macros.h.html'>Macros.h</a></h1></div>
+<hr/><div id='content'><table class="code">
+<tr><th id="1">1</th><td><i>//===--- MacroExpander.h - Format C++ code ----------------------*- C++ -*-===//</i></td></tr>
+<tr><th id="2">2</th><td><i>//</i></td></tr>
+<tr><th id="3">3</th><td><i>//                     The LLVM Compiler Infrastructure</i></td></tr>
+<tr><th id="4">4</th><td><i>//</i></td></tr>
+<tr><th id="5">5</th><td><i>// This file is distributed under the University of Illinois Open Source</i></td></tr>
+<tr><th id="6">6</th><td><i>// License. See LICENSE.TXT for details.</i></td></tr>
+<tr><th id="7">7</th><td><i>//</i></td></tr>
+<tr><th id="8">8</th><td><i>//===----------------------------------------------------------------------===//</i></td></tr>
+<tr><th id="9">9</th><td><i>///</i></td></tr>
+<tr><th id="10">10</th><td><i>/// \file</i></td></tr>
+<tr><th id="11">11</th><td><i>/// This file contains the main building blocks of macro support in</i></td></tr>
+<tr><th id="12">12</th><td><i>/// clang-format.</i></td></tr>
+<tr><th id="13">13</th><td><i>///</i></td></tr>
+<tr><th id="14">14</th><td><i>/// In order to not violate the requirement that clang-format can format files</i></td></tr>
+<tr><th id="15">15</th><td><i>/// in isolation, clang-format's macro support uses expansions users provide</i></td></tr>
+<tr><th id="16">16</th><td><i>/// as part of clang-format's style configuration.</i></td></tr>
+<tr><th id="17">17</th><td><i>///</i></td></tr>
+<tr><th id="18">18</th><td><i>/// Macro definitions are of the form "MACRO(p1, p2)=p1 + p2", but only support</i></td></tr>
+<tr><th id="19">19</th><td><i>/// one level of expansion (\see MacroExpander for a full description of what</i></td></tr>
+<tr><th id="20">20</th><td><i>/// is supported).</i></td></tr>
+<tr><th id="21">21</th><td><i>///</i></td></tr>
+<tr><th id="22">22</th><td><i>/// As part of parsing, clang-format uses the MacroExpander to expand the</i></td></tr>
+<tr><th id="23">23</th><td><i>/// spelled token streams into expanded token streams when it encounters a</i></td></tr>
+<tr><th id="24">24</th><td><i>/// macro call. The UnwrappedLineParser continues to parse UnwrappedLines</i></td></tr>
+<tr><th id="25">25</th><td><i>/// from the expanded token stream.</i></td></tr>
+<tr><th id="26">26</th><td><i>/// After the expanded unwrapped lines are parsed, the MacroUnexpander matches</i></td></tr>
+<tr><th id="27">27</th><td><i>/// the spelled token stream into unwrapped lines that best resemble the</i></td></tr>
+<tr><th id="28">28</th><td><i>/// structure of the expanded unwrapped lines.</i></td></tr>
+<tr><th id="29">29</th><td><i>///</i></td></tr>
+<tr><th id="30">30</th><td><i>/// When formatting, clang-format formats the expanded unwrapped lines first,</i></td></tr>
+<tr><th id="31">31</th><td><i>/// determining the token types. Next, it formats the spelled unwrapped lines,</i></td></tr>
+<tr><th id="32">32</th><td><i>/// keeping the token types fixed, while allowing other formatting decisions</i></td></tr>
+<tr><th id="33">33</th><td><i>/// to change.</i></td></tr>
+<tr><th id="34">34</th><td><i>///</i></td></tr>
+<tr><th id="35">35</th><td><i>//===----------------------------------------------------------------------===//</i></td></tr>
+<tr><th id="36">36</th><td></td></tr>
+<tr><th id="37">37</th><td><u>#<span data-ppcond="37">ifndef</span> <span class="macro" data-ref="_M/CLANG_LIB_FORMAT_MACROS_H">CLANG_LIB_FORMAT_MACROS_H</span></u></td></tr>
+<tr><th id="38">38</th><td><u>#define <dfn class="macro" id="_M/CLANG_LIB_FORMAT_MACROS_H" data-ref="_M/CLANG_LIB_FORMAT_MACROS_H">CLANG_LIB_FORMAT_MACROS_H</dfn></u></td></tr>
+<tr><th id="39">39</th><td></td></tr>
+<tr><th id="40">40</th><td><u>#include &lt;string&gt;</u></td></tr>
+<tr><th id="41">41</th><td><u>#include &lt;unordered_map&gt;</u></td></tr>
+<tr><th id="42">42</th><td><u>#include &lt;vector&gt;</u></td></tr>
+<tr><th id="43">43</th><td></td></tr>
+<tr><th id="44">44</th><td><u>#include <a href="Encoding.h.html">"Encoding.h"</a></u></td></tr>
+<tr><th id="45">45</th><td><u>#include <a href="FormatToken.h.html">"FormatToken.h"</a></u></td></tr>
+<tr><th id="46">46</th><td><u>#include <a href="../../../llvm/include/llvm/ADT/ArrayRef.h.html">"llvm/ADT/ArrayRef.h"</a></u></td></tr>
+<tr><th id="47">47</th><td><u>#include <a href="../../../llvm/include/llvm/ADT/SmallVector.h.html">"llvm/ADT/SmallVector.h"</a></u></td></tr>
+<tr><th id="48">48</th><td><u>#include <a href="../../../llvm/include/llvm/ADT/StringRef.h.html">"llvm/ADT/StringRef.h"</a></u></td></tr>
+<tr><th id="49">49</th><td></td></tr>
+<tr><th id="50">50</th><td><b>namespace</b> <span class="namespace">llvm</span> {</td></tr>
+<tr><th id="51">51</th><td><b>class</b> <a class="type" href="../../../llvm/include/llvm/Support/MemoryBuffer.h.html#llvm::MemoryBuffer" title='llvm::MemoryBuffer' data-ref="llvm::MemoryBuffer" data-ref-filename="llvm..MemoryBuffer" id="llvm::MemoryBuffer">MemoryBuffer</a>;</td></tr>
+<tr><th id="52">52</th><td>} <i>// namespace llvm</i></td></tr>
+<tr><th id="53">53</th><td></td></tr>
+<tr><th id="54">54</th><td><b>namespace</b> <span class="namespace">clang</span> {</td></tr>
+<tr><th id="55">55</th><td><b>class</b> <a class="type" href="../../include/clang/Basic/IdentifierTable.h.html#clang::IdentifierTable" title='clang::IdentifierTable' data-ref="clang::IdentifierTable" data-ref-filename="clang..IdentifierTable" id="clang::IdentifierTable">IdentifierTable</a>;</td></tr>
+<tr><th id="56">56</th><td><b>class</b> <a class="type" href="../../include/clang/Basic/SourceManager.h.html#clang::SourceManager" title='clang::SourceManager' data-ref="clang::SourceManager" data-ref-filename="clang..SourceManager" id="clang::SourceManager">SourceManager</a>;</td></tr>
+<tr><th id="57">57</th><td></td></tr>
+<tr><th id="58">58</th><td><b>namespace</b> <span class="namespace">format</span> {</td></tr>
+<tr><th id="59">59</th><td><b>struct</b> <a class="type" href="../../include/clang/Format/Format.h.html#clang::format::FormatStyle" title='clang::format::FormatStyle' data-ref="clang::format::FormatStyle" data-ref-filename="clang..format..FormatStyle" id="clang::format::FormatStyle">FormatStyle</a>;</td></tr>
+<tr><th id="60">60</th><td></td></tr>
+<tr><th id="61">61</th><td><i class="doc">/// Takes a set of macro definitions as strings and allows expanding calls to</i></td></tr>
+<tr><th id="62">62</th><td><i class="doc">/// those macros.</i></td></tr>
+<tr><th id="63">63</th><td><i class="doc">///</i></td></tr>
+<tr><th id="64">64</th><td><i class="doc">/// For example:</i></td></tr>
+<tr><th id="65">65</th><td><i class="doc">/// Definition: A(x, y)=x + y</i></td></tr>
+<tr><th id="66">66</th><td><i class="doc">/// Call      : A(int a = 1, 2)</i></td></tr>
+<tr><th id="67">67</th><td><i class="doc">/// Expansion : int a = 1 + 2</i></td></tr>
+<tr><th id="68">68</th><td><i class="doc">///</i></td></tr>
+<tr><th id="69">69</th><td><i class="doc">/// Expansion does not check arity of the definition.</i></td></tr>
+<tr><th id="70">70</th><td><i class="doc">/// If fewer arguments than expected are provided, the remaining parameters</i></td></tr>
+<tr><th id="71">71</th><td><i class="doc">/// are considered empty:</i></td></tr>
+<tr><th id="72">72</th><td><i class="doc">/// Call     : A(a)</i></td></tr>
+<tr><th id="73">73</th><td><i class="doc">/// Expansion: a +</i></td></tr>
+<tr><th id="74">74</th><td><i class="doc">/// If more arguments than expected are provided, they will be discarded.</i></td></tr>
+<tr><th id="75">75</th><td><i class="doc">///</i></td></tr>
+<tr><th id="76">76</th><td><i class="doc">/// The expander does not support:</i></td></tr>
+<tr><th id="77">77</th><td><i class="doc">/// - recursive expansion</i></td></tr>
+<tr><th id="78">78</th><td><i class="doc">/// - stringification</i></td></tr>
+<tr><th id="79">79</th><td><i class="doc">/// - concatenation</i></td></tr>
+<tr><th id="80">80</th><td><i class="doc">/// - variadic macros</i></td></tr>
+<tr><th id="81">81</th><td><i class="doc">///</i></td></tr>
+<tr><th id="82">82</th><td><i class="doc">/// Furthermore, only a single expansion of each macro argument is supported,</i></td></tr>
+<tr><th id="83">83</th><td><i class="doc">/// so that we cannot get conflicting formatting decisions from different</i></td></tr>
+<tr><th id="84">84</th><td><i class="doc">/// expansions.</i></td></tr>
+<tr><th id="85">85</th><td><i class="doc">/// Definition: A(x)=x+x</i></td></tr>
+<tr><th id="86">86</th><td><i class="doc">/// Call      : A(id)</i></td></tr>
+<tr><th id="87">87</th><td><i class="doc">/// Expansion : id+x</i></td></tr>
+<tr><th id="88">88</th><td><i class="doc">///</i></td></tr>
+<tr><th id="89">89</th><td><b>class</b> <dfn class="type def" id="clang::format::MacroExpander" title='clang::format::MacroExpander' data-ref="clang::format::MacroExpander" data-ref-filename="clang..format..MacroExpander">MacroExpander</dfn> {</td></tr>
+<tr><th id="90">90</th><td><b>public</b>:</td></tr>
+<tr><th id="91">91</th><td>  <b>using</b> <dfn class="typedef" id="clang::format::MacroExpander::ArgsList" title='clang::format::MacroExpander::ArgsList' data-type='llvm::ArrayRef&lt;llvm::SmallVector&lt;FormatToken *, 8&gt; &gt;' data-ref="clang::format::MacroExpander::ArgsList" data-ref-filename="clang..format..MacroExpander..ArgsList">ArgsList</dfn> = <span class="namespace">llvm::</span><a class="type" href="../../include/clang/Basic/LLVM.h.html#llvm::ArrayRef" title='llvm::ArrayRef' data-ref="llvm::ArrayRef" data-ref-filename="llvm..ArrayRef">ArrayRef</a>&lt;<span class="namespace">llvm::</span><a class="type" href="../../include/clang/Basic/LLVM.h.html#llvm::SmallVector" title='llvm::SmallVector' data-ref="llvm::SmallVector" data-ref-filename="llvm..SmallVector">SmallVector</a>&lt;<a class="type" href="FormatToken.h.html#clang::format::FormatToken" title='clang::format::FormatToken' data-ref="clang::format::FormatToken" data-ref-filename="clang..format..FormatToken">FormatToken</a> *, <var>8</var>&gt;&gt;;</td></tr>
+<tr><th id="92">92</th><td></td></tr>
+<tr><th id="93">93</th><td>  <i class="doc">/// Construct a macro expander from a set of macro definitions.</i></td></tr>
+<tr><th id="94">94</th><td><i class="doc">  /// Macro definitions must be encoded as UTF-8.</i></td></tr>
+<tr><th id="95">95</th><td><i class="doc">  ///</i></td></tr>
+<tr><th id="96">96</th><td><i class="doc">  /// Each entry in<span class="command"> \p</span> <span class="arg">Macros</span> must conform to the following simple</i></td></tr>
+<tr><th id="97">97</th><td><i class="doc">  /// macro-definition language:</i></td></tr>
+<tr><th id="98">98</th><td><i class="doc">  /// &lt;definition&gt; ::= &lt;id&gt; &lt;expansion&gt; | &lt;id&gt; "(" &lt;params&gt; ")" &lt;expansion&gt;</i></td></tr>
+<tr><th id="99">99</th><td><i class="doc">  /// &lt;params&gt;     ::= &lt;id-list&gt; | ""</i></td></tr>
+<tr><th id="100">100</th><td><i class="doc">  /// &lt;id-list&gt;    ::= &lt;id&gt; | &lt;id&gt; "," &lt;params&gt;</i></td></tr>
+<tr><th id="101">101</th><td><i class="doc">  /// &lt;expansion&gt;  ::= "=" &lt;tail&gt; | &lt;eof&gt;</i></td></tr>
+<tr><th id="102">102</th><td><i class="doc">  /// &lt;tail&gt;       ::= &lt;tok&gt; &lt;tail&gt; | &lt;eof&gt;</i></td></tr>
+<tr><th id="103">103</th><td><i class="doc">  ///</i></td></tr>
+<tr><th id="104">104</th><td><i class="doc">  /// Macros that cannot be parsed will be silently discarded.</i></td></tr>
+<tr><th id="105">105</th><td><i class="doc">  ///</i></td></tr>
+<tr><th id="106">106</th><td>  <a class="decl fn" href="MacroExpander.cpp.html#_ZN5clang6format13MacroExpanderC1ERKSt6vectorINSt7__cxx1112basic_stringIcSt11char_traitsIcESaIcEEESaIS8_EERNS_13SourceManagerERKNS0_11FormatStyleERN4l12473603" title='clang::format::MacroExpander::MacroExpander' data-ref="_ZN5clang6format13MacroExpanderC1ERKSt6vectorINSt7__cxx1112basic_stringIcSt11char_traitsIcESaIcEEESaIS8_EERNS_13SourceManagerERKNS0_11FormatStyleERN4l12473603" data-ref-filename="_ZN5clang6format13MacroExpanderC1ERKSt6vectorINSt7__cxx1112basic_stringIcSt11char_traitsIcESaIcEEESaIS8_EERNS_13SourceManagerERKNS0_11FormatStyleERN4l12473603" id="_ZN5clang6format13MacroExpanderC1ERKSt6vectorINSt7__cxx1112basic_stringIcSt11char_traitsIcESaIcEEESaIS8_EERNS_13SourceManagerERKNS0_11FormatStyleERN4l12473603">MacroExpander</a>(<em>const</em> <span class="namespace">std::</span><span class='type' title='std::vector' data-ref="std::vector" data-ref-filename="std..vector">vector</span>&lt;<span class="namespace">std::</span><span class='typedef' title='std::string' data-type='basic_string&lt;char&gt;' data-ref="std::string" data-ref-filename="std..string">string</span>&gt; &amp;<dfn class="local col1 decl" id="1Macros" title='Macros' data-type='const std::vector&lt;std::string&gt; &amp;' data-ref="1Macros" data-ref-filename="1Macros">Macros</dfn>,</td></tr>
+<tr><th id="107">107</th><td>                <span class="namespace">clang::</span><a class="type" href="../../include/clang/Basic/SourceManager.h.html#clang::SourceManager" title='clang::SourceManager' data-ref="clang::SourceManager" data-ref-filename="clang..SourceManager">SourceManager</a> &amp;<dfn class="local col2 decl" id="2SourceMgr" title='SourceMgr' data-type='clang::SourceManager &amp;' data-ref="2SourceMgr" data-ref-filename="2SourceMgr">SourceMgr</dfn>, <em>const</em> <a class="type" href="../../include/clang/Format/Format.h.html#clang::format::FormatStyle" title='clang::format::FormatStyle' data-ref="clang::format::FormatStyle" data-ref-filename="clang..format..FormatStyle">FormatStyle</a> &amp;<dfn class="local col3 decl" id="3Style" title='Style' data-type='const clang::format::FormatStyle &amp;' data-ref="3Style" data-ref-filename="3Style">Style</dfn>,</td></tr>
+<tr><th id="108">108</th><td>                <span class="namespace">llvm::</span><a class="type" href="../../../llvm/include/llvm/Support/Allocator.h.html#llvm::SpecificBumpPtrAllocator" title='llvm::SpecificBumpPtrAllocator' data-ref="llvm::SpecificBumpPtrAllocator" data-ref-filename="llvm..SpecificBumpPtrAllocator">SpecificBumpPtrAllocator</a>&lt;<a class="type" href="FormatToken.h.html#clang::format::FormatToken" title='clang::format::FormatToken' data-ref="clang::format::FormatToken" data-ref-filename="clang..format..FormatToken">FormatToken</a>&gt; &amp;<dfn class="local col4 decl" id="4Allocator" title='Allocator' data-type='llvm::SpecificBumpPtrAllocator&lt;FormatToken&gt; &amp;' data-ref="4Allocator" data-ref-filename="4Allocator">Allocator</dfn>,</td></tr>
+<tr><th id="109">109</th><td>                <a class="type" href="../../include/clang/Basic/IdentifierTable.h.html#clang::IdentifierTable" title='clang::IdentifierTable' data-ref="clang::IdentifierTable" data-ref-filename="clang..IdentifierTable">IdentifierTable</a> &amp;<dfn class="local col5 decl" id="5IdentTable" title='IdentTable' data-type='clang::IdentifierTable &amp;' data-ref="5IdentTable" data-ref-filename="5IdentTable">IdentTable</dfn>);</td></tr>
+<tr><th id="110">110</th><td>  <a class="decl fn" href="MacroExpander.cpp.html#_ZN5clang6format13MacroExpanderD1Ev" title='clang::format::MacroExpander::~MacroExpander' data-ref="_ZN5clang6format13MacroExpanderD1Ev" data-ref-filename="_ZN5clang6format13MacroExpanderD1Ev" id="_ZN5clang6format13MacroExpanderD1Ev">~MacroExpander</a>();</td></tr>
+<tr><th id="111">111</th><td></td></tr>
+<tr><th id="112">112</th><td>  <i class="doc">/// Returns whether a macro<span class="command"> \p</span> <span class="arg">Name</span> is defined.</i></td></tr>
+<tr><th id="113">113</th><td>  <em>bool</em> <a class="decl fn" href="MacroExpander.cpp.html#_ZNK5clang6format13MacroExpander7definedEN4llvm9StringRefE" title='clang::format::MacroExpander::defined' data-ref="_ZNK5clang6format13MacroExpander7definedEN4llvm9StringRefE" data-ref-filename="_ZNK5clang6format13MacroExpander7definedEN4llvm9StringRefE" id="_ZNK5clang6format13MacroExpander7definedEN4llvm9StringRefE">defined</a>(<span class="namespace">llvm::</span><a class="type" href="../../../llvm/include/llvm/ADT/StringRef.h.html#llvm::StringRef" title='llvm::StringRef' data-ref="llvm::StringRef" data-ref-filename="llvm..StringRef">StringRef</a> <dfn class="local col6 decl" id="6Name" title='Name' data-type='llvm::StringRef' data-ref="6Name" data-ref-filename="6Name">Name</dfn>) <em>const</em>;</td></tr>
+<tr><th id="114">114</th><td></td></tr>
+<tr><th id="115">115</th><td>  <i class="doc">/// Returns whether the macro has no arguments and should not consume</i></td></tr>
+<tr><th id="116">116</th><td><i class="doc">  /// subsequent parentheses.</i></td></tr>
+<tr><th id="117">117</th><td>  <em>bool</em> <a class="decl fn" href="MacroExpander.cpp.html#_ZNK5clang6format13MacroExpander10objectLikeEN4llvm9StringRefE" title='clang::format::MacroExpander::objectLike' data-ref="_ZNK5clang6format13MacroExpander10objectLikeEN4llvm9StringRefE" data-ref-filename="_ZNK5clang6format13MacroExpander10objectLikeEN4llvm9StringRefE" id="_ZNK5clang6format13MacroExpander10objectLikeEN4llvm9StringRefE">objectLike</a>(<span class="namespace">llvm::</span><a class="type" href="../../../llvm/include/llvm/ADT/StringRef.h.html#llvm::StringRef" title='llvm::StringRef' data-ref="llvm::StringRef" data-ref-filename="llvm..StringRef">StringRef</a> <dfn class="local col7 decl" id="7Name" title='Name' data-type='llvm::StringRef' data-ref="7Name" data-ref-filename="7Name">Name</dfn>) <em>const</em>;</td></tr>
+<tr><th id="118">118</th><td></td></tr>
+<tr><th id="119">119</th><td>  <i class="doc">/// Returns the expanded stream of format tokens for<span class="command"> \p</span> <span class="arg">ID,</span> where</i></td></tr>
+<tr><th id="120">120</th><td><i class="doc">  /// each element in<span class="command"> \p</span> <span class="arg">Args</span> is a positional argument to the macro call.</i></td></tr>
+<tr><th id="121">121</th><td>  <span class="namespace">llvm::</span><a class="type" href="../../include/clang/Basic/LLVM.h.html#llvm::SmallVector" title='llvm::SmallVector' data-ref="llvm::SmallVector" data-ref-filename="llvm..SmallVector">SmallVector</a>&lt;<a class="type" href="FormatToken.h.html#clang::format::FormatToken" title='clang::format::FormatToken' data-ref="clang::format::FormatToken" data-ref-filename="clang..format..FormatToken">FormatToken</a> *, <var>8</var>&gt; <a class="decl fn" href="MacroExpander.cpp.html#_ZNK5clang6format13MacroExpander6expandEPNS0_11FormatTokenEN4llvm8ArrayRefINS4_11SmallVectorIS3_Lj8EEEEE" title='clang::format::MacroExpander::expand' data-ref="_ZNK5clang6format13MacroExpander6expandEPNS0_11FormatTokenEN4llvm8ArrayRefINS4_11SmallVectorIS3_Lj8EEEEE" data-ref-filename="_ZNK5clang6format13MacroExpander6expandEPNS0_11FormatTokenEN4llvm8ArrayRefINS4_11SmallVectorIS3_Lj8EEEEE" id="_ZNK5clang6format13MacroExpander6expandEPNS0_11FormatTokenEN4llvm8ArrayRefINS4_11SmallVectorIS3_Lj8EEEEE">expand</a>(<a class="type" href="FormatToken.h.html#clang::format::FormatToken" title='clang::format::FormatToken' data-ref="clang::format::FormatToken" data-ref-filename="clang..format..FormatToken">FormatToken</a> *<dfn class="local col8 decl" id="8ID" title='ID' data-type='clang::format::FormatToken *' data-ref="8ID" data-ref-filename="8ID">ID</dfn>,</td></tr>
+<tr><th id="122">122</th><td>                                             <a class="typedef" href="#clang::format::MacroExpander::ArgsList" title='clang::format::MacroExpander::ArgsList' data-type='llvm::ArrayRef&lt;llvm::SmallVector&lt;FormatToken *, 8&gt; &gt;' data-ref="clang::format::MacroExpander::ArgsList" data-ref-filename="clang..format..MacroExpander..ArgsList">ArgsList</a> <dfn class="local col9 decl" id="9Args" title='Args' data-type='clang::format::MacroExpander::ArgsList' data-ref="9Args" data-ref-filename="9Args">Args</dfn>) <em>const</em>;</td></tr>
+<tr><th id="123">123</th><td></td></tr>
+<tr><th id="124">124</th><td><b>private</b>:</td></tr>
+<tr><th id="125">125</th><td>  <b>struct</b> <a class="type" href="MacroExpander.cpp.html#clang::format::MacroExpander::Definition" title='clang::format::MacroExpander::Definition' data-ref="clang::format::MacroExpander::Definition" data-ref-filename="clang..format..MacroExpander..Definition" id="clang::format::MacroExpander::Definition">Definition</a>;</td></tr>
+<tr><th id="126">126</th><td>  <b>class</b> <a class="type" href="MacroExpander.cpp.html#clang::format::MacroExpander::DefinitionParser" title='clang::format::MacroExpander::DefinitionParser' data-ref="clang::format::MacroExpander::DefinitionParser" data-ref-filename="clang..format..MacroExpander..DefinitionParser" id="clang::format::MacroExpander::DefinitionParser">DefinitionParser</a>;</td></tr>
+<tr><th id="127">127</th><td></td></tr>
+<tr><th id="128">128</th><td>  <em>void</em> <a class="decl fn" href="MacroExpander.cpp.html#_ZN5clang6format13MacroExpander15parseDefinitionERKNSt7__cxx1112basic_stringIcSt11char_traitsIcESaIcEEE" title='clang::format::MacroExpander::parseDefinition' data-ref="_ZN5clang6format13MacroExpander15parseDefinitionERKNSt7__cxx1112basic_stringIcSt11char_traitsIcESaIcEEE" data-ref-filename="_ZN5clang6format13MacroExpander15parseDefinitionERKNSt7__cxx1112basic_stringIcSt11char_traitsIcESaIcEEE" id="_ZN5clang6format13MacroExpander15parseDefinitionERKNSt7__cxx1112basic_stringIcSt11char_traitsIcESaIcEEE">parseDefinition</a>(<em>const</em> <span class="namespace">std::</span><span class='typedef' title='std::string' data-type='basic_string&lt;char&gt;' data-ref="std::string" data-ref-filename="std..string">string</span> &amp;<dfn class="local col0 decl" id="10Macro" title='Macro' data-type='const std::string &amp;' data-ref="10Macro" data-ref-filename="10Macro">Macro</dfn>);</td></tr>
+<tr><th id="129">129</th><td></td></tr>
+<tr><th id="130">130</th><td>  <span class="namespace">clang::</span><a class="type" href="../../include/clang/Basic/SourceManager.h.html#clang::SourceManager" title='clang::SourceManager' data-ref="clang::SourceManager" data-ref-filename="clang..SourceManager">SourceManager</a> &amp;<dfn class="decl field" id="clang::format::MacroExpander::SourceMgr" title='clang::format::MacroExpander::SourceMgr' data-ref="clang::format::MacroExpander::SourceMgr" data-ref-filename="clang..format..MacroExpander..SourceMgr">SourceMgr</dfn>;</td></tr>
+<tr><th id="131">131</th><td>  <em>const</em> <a class="type" href="../../include/clang/Format/Format.h.html#clang::format::FormatStyle" title='clang::format::FormatStyle' data-ref="clang::format::FormatStyle" data-ref-filename="clang..format..FormatStyle">FormatStyle</a> &amp;<dfn class="decl field" id="clang::format::MacroExpander::Style" title='clang::format::MacroExpander::Style' data-ref="clang::format::MacroExpander::Style" data-ref-filename="clang..format..MacroExpander..Style">Style</dfn>;</td></tr>
+<tr><th id="132">132</th><td>  <span class="namespace">llvm::</span><a class="type" href="../../../llvm/include/llvm/Support/Allocator.h.html#llvm::SpecificBumpPtrAllocator" title='llvm::SpecificBumpPtrAllocator' data-ref="llvm::SpecificBumpPtrAllocator" data-ref-filename="llvm..SpecificBumpPtrAllocator">SpecificBumpPtrAllocator</a>&lt;<a class="type" href="FormatToken.h.html#clang::format::FormatToken" title='clang::format::FormatToken' data-ref="clang::format::FormatToken" data-ref-filename="clang..format..FormatToken">FormatToken</a>&gt; &amp;<dfn class="decl field" id="clang::format::MacroExpander::Allocator" title='clang::format::MacroExpander::Allocator' data-ref="clang::format::MacroExpander::Allocator" data-ref-filename="clang..format..MacroExpander..Allocator">Allocator</dfn>;</td></tr>
+<tr><th id="133">133</th><td>  <a class="type" href="../../include/clang/Basic/IdentifierTable.h.html#clang::IdentifierTable" title='clang::IdentifierTable' data-ref="clang::IdentifierTable" data-ref-filename="clang..IdentifierTable">IdentifierTable</a> &amp;<dfn class="decl field" id="clang::format::MacroExpander::IdentTable" title='clang::format::MacroExpander::IdentTable' data-ref="clang::format::MacroExpander::IdentTable" data-ref-filename="clang..format..MacroExpander..IdentTable">IdentTable</dfn>;</td></tr>
+<tr><th id="134">134</th><td>  <span class="namespace">std::</span><span class='type' title='std::vector' data-ref="std::vector" data-ref-filename="std..vector">vector</span>&lt;<span class="namespace">std::</span><span class='type' title='std::unique_ptr' data-ref="std::unique_ptr" data-ref-filename="std..unique_ptr">unique_ptr</span>&lt;<span class="namespace">llvm::</span><a class="type" href="../../../llvm/include/llvm/Support/MemoryBuffer.h.html#llvm::MemoryBuffer" title='llvm::MemoryBuffer' data-ref="llvm::MemoryBuffer" data-ref-filename="llvm..MemoryBuffer">MemoryBuffer</a>&gt;&gt; <dfn class="decl field" id="clang::format::MacroExpander::Buffers" title='clang::format::MacroExpander::Buffers' data-ref="clang::format::MacroExpander::Buffers" data-ref-filename="clang..format..MacroExpander..Buffers">Buffers</dfn>;</td></tr>
+<tr><th id="135">135</th><td>  <span class="namespace">llvm::</span><a class="type" href="../../../llvm/include/llvm/ADT/StringMap.h.html#llvm::StringMap" title='llvm::StringMap' data-ref="llvm::StringMap" data-ref-filename="llvm..StringMap">StringMap</a>&lt;<a class="type" href="MacroExpander.cpp.html#clang::format::MacroExpander::Definition" title='clang::format::MacroExpander::Definition' data-ref="clang::format::MacroExpander::Definition" data-ref-filename="clang..format..MacroExpander..Definition">Definition</a>&gt; <dfn class="decl field" id="clang::format::MacroExpander::Definitions" title='clang::format::MacroExpander::Definitions' data-ref="clang::format::MacroExpander::Definitions" data-ref-filename="clang..format..MacroExpander..Definitions">Definitions</dfn>;</td></tr>
+<tr><th id="136">136</th><td>};</td></tr>
+<tr><th id="137">137</th><td></td></tr>
+<tr><th id="138">138</th><td>} <i>// namespace format</i></td></tr>
+<tr><th id="139">139</th><td>} <i>// namespace clang</i></td></tr>
+<tr><th id="140">140</th><td></td></tr>
+<tr><th id="141">141</th><td><u>#<span data-ppcond="37">endif</span></u></td></tr>
+<tr><th id="142">142</th><td></td></tr>
+</table><hr/><p id='footer'>
+Generated while processing <a href='MacroExpander.cpp.html'>llvm/clang/lib/Format/MacroExpander.cpp</a><br/>Generated on <em>2021-Jul-01</em> from project llvm revision <em>12</em>

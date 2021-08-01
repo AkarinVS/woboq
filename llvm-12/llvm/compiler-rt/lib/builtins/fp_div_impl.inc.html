@@ -1,0 +1,435 @@
+<!doctype html>
+<html>
+<head>
+<meta name="viewport" content="width=device-width, initial-scale=1.0"><title>fp_div_impl.inc source code [llvm/compiler-rt/lib/builtins/fp_div_impl.inc] - Woboq Code Browser</title>
+<link rel="stylesheet" href="../../../.././data/qtcreator.css" title="QtCreator"/>
+<link rel="alternate stylesheet" href="../../../.././data/kdevelop.css" title="KDevelop"/>
+<script type="text/javascript" src="../../../.././data/jquery/jquery.min.js"></script>
+<script type="text/javascript" src="../../../.././data/jquery/jquery-ui.min.js"></script>
+<script>var file = 'llvm/compiler-rt/lib/builtins/fp_div_impl.inc'; var root_path = '../../../..'; var data_path = '../../../.././data'; var ecma_script_api_version = 2;</script>
+<script src='../../../.././data/codebrowser.js'></script>
+</head>
+<body><div id='header'><h1 id='breadcrumb'><span>Browse the source code of </span><a href='../../..'>llvm</a>/<a href='../..'>compiler-rt</a>/<a href='..'>lib</a>/<a href='./'>builtins</a>/<a href='fp_div_impl.inc.html'>fp_div_impl.inc</a></h1></div>
+<hr/><div id='content'><table class="code">
+<tr><th id="1">1</th><td><i>//===-- fp_div_impl.inc - Floating point division -----------------*- C -*-===//</i></td></tr>
+<tr><th id="2">2</th><td><i>//</i></td></tr>
+<tr><th id="3">3</th><td><i>// Part of the LLVM Project, under the Apache License v2.0 with LLVM Exceptions.</i></td></tr>
+<tr><th id="4">4</th><td><i>// See <a href="https://llvm.org/LICENSE.txt">https://llvm.org/LICENSE.txt</a> for license information.</i></td></tr>
+<tr><th id="5">5</th><td><i>// SPDX-License-Identifier: Apache-2.0 WITH LLVM-exception</i></td></tr>
+<tr><th id="6">6</th><td><i>//</i></td></tr>
+<tr><th id="7">7</th><td><i>//===----------------------------------------------------------------------===//</i></td></tr>
+<tr><th id="8">8</th><td><i>//</i></td></tr>
+<tr><th id="9">9</th><td><i>// This file implements soft-float division with the IEEE-754 default</i></td></tr>
+<tr><th id="10">10</th><td><i>// rounding (to nearest, ties to even).</i></td></tr>
+<tr><th id="11">11</th><td><i>//</i></td></tr>
+<tr><th id="12">12</th><td><i>//===----------------------------------------------------------------------===//</i></td></tr>
+<tr><th id="13">13</th><td></td></tr>
+<tr><th id="14">14</th><td><u>#include <a href="fp_lib.h.html">"fp_lib.h"</a></u></td></tr>
+<tr><th id="15">15</th><td></td></tr>
+<tr><th id="16">16</th><td><i>// The __divXf3__ function implements Newton-Raphson floating point division.</i></td></tr>
+<tr><th id="17">17</th><td><i>// It uses 3 iterations for float32, 4 for float64 and 5 for float128,</i></td></tr>
+<tr><th id="18">18</th><td><i>// respectively. Due to number of significant bits being roughly doubled</i></td></tr>
+<tr><th id="19">19</th><td><i>// every iteration, the two modes are supported: N full-width iterations (as</i></td></tr>
+<tr><th id="20">20</th><td><i>// it is done for float32 by default) and (N-1) half-width iteration plus one</i></td></tr>
+<tr><th id="21">21</th><td><i>// final full-width iteration. It is expected that half-width integer</i></td></tr>
+<tr><th id="22">22</th><td><i>// operations (w.r.t rep_t size) can be performed faster for some hardware but</i></td></tr>
+<tr><th id="23">23</th><td><i>// they require error estimations to be computed separately due to larger</i></td></tr>
+<tr><th id="24">24</th><td><i>// computational errors caused by truncating intermediate results.</i></td></tr>
+<tr><th id="25">25</th><td><i></i></td></tr>
+<tr><th id="26">26</th><td><i>// Half the bit-size of rep_t</i></td></tr>
+<tr><th id="27">27</th><td><u>#define <dfn class="macro" id="_M/HW" data-ref="_M/HW">HW</dfn> (typeWidth / 2)</u></td></tr>
+<tr><th id="28">28</th><td><i>// rep_t-sized bitmask with lower half of bits set to ones</i></td></tr>
+<tr><th id="29">29</th><td><u>#define <dfn class="macro" id="_M/loMask" data-ref="_M/loMask">loMask</dfn> (REP_C(-1) &gt;&gt; HW)</u></td></tr>
+<tr><th id="30">30</th><td></td></tr>
+<tr><th id="31">31</th><td><u>#<span data-ppcond="31">if</span> <a class="macro" href="divdf3.c.html#17" title="1" data-ref="_M/NUMBER_OF_FULL_ITERATIONS">NUMBER_OF_FULL_ITERATIONS</a> &lt; 1</u></td></tr>
+<tr><th id="32">32</th><td><u>#error At least one full iteration is required</u></td></tr>
+<tr><th id="33">33</th><td><u>#<span data-ppcond="31">endif</span></u></td></tr>
+<tr><th id="34">34</th><td></td></tr>
+<tr><th id="35">35</th><td><em>static</em> <b>__inline</b> <a class="typedef" href="fp_lib.h.html#fp_t" title='fp_t' data-type='double' data-ref="fp_t" data-ref-filename="fp_t">fp_t</a> <dfn class="decl def fn" id="__divXf3__" title='__divXf3__' data-ref="__divXf3__" data-ref-filename="__divXf3__">__divXf3__</dfn>(<a class="typedef" href="fp_lib.h.html#fp_t" title='fp_t' data-type='double' data-ref="fp_t" data-ref-filename="fp_t">fp_t</a> <dfn class="local col1 decl" id="1a" title='a' data-type='fp_t' data-ref="1a" data-ref-filename="1a">a</dfn>, <a class="typedef" href="fp_lib.h.html#fp_t" title='fp_t' data-type='double' data-ref="fp_t" data-ref-filename="fp_t">fp_t</a> <dfn class="local col2 decl" id="2b" title='b' data-type='fp_t' data-ref="2b" data-ref-filename="2b">b</dfn>) {</td></tr>
+<tr><th id="36">36</th><td></td></tr>
+<tr><th id="37">37</th><td>  <em>const</em> <em>unsigned</em> <em>int</em> <dfn class="local col3 decl" id="3aExponent" title='aExponent' data-type='const unsigned int' data-ref="3aExponent" data-ref-filename="3aExponent">aExponent</dfn> = <a class="ref fn" href="fp_lib.h.html#toRep" title='toRep' data-ref="toRep" data-ref-filename="toRep">toRep</a>(<a class="local col1 ref" href="#1a" title='a' data-ref="1a" data-ref-filename="1a">a</a>) &gt;&gt; <a class="macro" href="fp_lib.h.html#70" title="52" data-ref="_M/significandBits">significandBits</a> &amp; <a class="macro" href="fp_lib.h.html#212" title="((1 &lt;&lt; ((sizeof(rep_t) * 8) - 52 - 1)) - 1)" data-ref="_M/maxExponent">maxExponent</a>;</td></tr>
+<tr><th id="38">38</th><td>  <em>const</em> <em>unsigned</em> <em>int</em> <dfn class="local col4 decl" id="4bExponent" title='bExponent' data-type='const unsigned int' data-ref="4bExponent" data-ref-filename="4bExponent">bExponent</dfn> = <a class="ref fn" href="fp_lib.h.html#toRep" title='toRep' data-ref="toRep" data-ref-filename="toRep">toRep</a>(<a class="local col2 ref" href="#2b" title='b' data-ref="2b" data-ref-filename="2b">b</a>) &gt;&gt; <a class="macro" href="fp_lib.h.html#70" title="52" data-ref="_M/significandBits">significandBits</a> &amp; <a class="macro" href="fp_lib.h.html#212" title="((1 &lt;&lt; ((sizeof(rep_t) * 8) - 52 - 1)) - 1)" data-ref="_M/maxExponent">maxExponent</a>;</td></tr>
+<tr><th id="39">39</th><td>  <em>const</em> <a class="typedef" href="fp_lib.h.html#rep_t" title='rep_t' data-type='uint64_t' data-ref="rep_t" data-ref-filename="rep_t">rep_t</a> <dfn class="local col5 decl" id="5quotientSign" title='quotientSign' data-type='const rep_t' data-ref="5quotientSign" data-ref-filename="5quotientSign">quotientSign</dfn> = (<a class="ref fn" href="fp_lib.h.html#toRep" title='toRep' data-ref="toRep" data-ref-filename="toRep">toRep</a>(<a class="local col1 ref" href="#1a" title='a' data-ref="1a" data-ref-filename="1a">a</a>) ^ <a class="ref fn" href="fp_lib.h.html#toRep" title='toRep' data-ref="toRep" data-ref-filename="toRep">toRep</a>(<a class="local col2 ref" href="#2b" title='b' data-ref="2b" data-ref-filename="2b">b</a>)) &amp; <a class="macro" href="fp_lib.h.html#217" title="(1ULL &lt;&lt; (52 + ((sizeof(rep_t) * 8) - 52 - 1)))" data-ref="_M/signBit">signBit</a>;</td></tr>
+<tr><th id="40">40</th><td></td></tr>
+<tr><th id="41">41</th><td>  <a class="typedef" href="fp_lib.h.html#rep_t" title='rep_t' data-type='uint64_t' data-ref="rep_t" data-ref-filename="rep_t">rep_t</a> <dfn class="local col6 decl" id="6aSignificand" title='aSignificand' data-type='rep_t' data-ref="6aSignificand" data-ref-filename="6aSignificand">aSignificand</dfn> = <a class="ref fn" href="fp_lib.h.html#toRep" title='toRep' data-ref="toRep" data-ref-filename="toRep">toRep</a>(<a class="local col1 ref" href="#1a" title='a' data-ref="1a" data-ref-filename="1a">a</a>) &amp; <a class="macro" href="fp_lib.h.html#216" title="((1ULL &lt;&lt; 52) - 1U)" data-ref="_M/significandMask">significandMask</a>;</td></tr>
+<tr><th id="42">42</th><td>  <a class="typedef" href="fp_lib.h.html#rep_t" title='rep_t' data-type='uint64_t' data-ref="rep_t" data-ref-filename="rep_t">rep_t</a> <dfn class="local col7 decl" id="7bSignificand" title='bSignificand' data-type='rep_t' data-ref="7bSignificand" data-ref-filename="7bSignificand">bSignificand</dfn> = <a class="ref fn" href="fp_lib.h.html#toRep" title='toRep' data-ref="toRep" data-ref-filename="toRep">toRep</a>(<a class="local col2 ref" href="#2b" title='b' data-ref="2b" data-ref-filename="2b">b</a>) &amp; <a class="macro" href="fp_lib.h.html#216" title="((1ULL &lt;&lt; 52) - 1U)" data-ref="_M/significandMask">significandMask</a>;</td></tr>
+<tr><th id="43">43</th><td>  <em>int</em> <dfn class="local col8 decl" id="8scale" title='scale' data-type='int' data-ref="8scale" data-ref-filename="8scale">scale</dfn> = <var>0</var>;</td></tr>
+<tr><th id="44">44</th><td></td></tr>
+<tr><th id="45">45</th><td>  <i>// Detect if a or b is zero, denormal, infinity, or NaN.</i></td></tr>
+<tr><th id="46">46</th><td>  <b>if</b> (<a class="local col3 ref" href="#3aExponent" title='aExponent' data-ref="3aExponent" data-ref-filename="3aExponent">aExponent</a> - <var>1U</var> &gt;= <a class="macro" href="fp_lib.h.html#212" title="((1 &lt;&lt; ((sizeof(rep_t) * 8) - 52 - 1)) - 1)" data-ref="_M/maxExponent">maxExponent</a> - <var>1U</var> ||</td></tr>
+<tr><th id="47">47</th><td>      <a class="local col4 ref" href="#4bExponent" title='bExponent' data-ref="4bExponent" data-ref-filename="4bExponent">bExponent</a> - <var>1U</var> &gt;= <a class="macro" href="fp_lib.h.html#212" title="((1 &lt;&lt; ((sizeof(rep_t) * 8) - 52 - 1)) - 1)" data-ref="_M/maxExponent">maxExponent</a> - <var>1U</var>) {</td></tr>
+<tr><th id="48">48</th><td></td></tr>
+<tr><th id="49">49</th><td>    <em>const</em> <a class="typedef" href="fp_lib.h.html#rep_t" title='rep_t' data-type='uint64_t' data-ref="rep_t" data-ref-filename="rep_t">rep_t</a> <dfn class="local col9 decl" id="9aAbs" title='aAbs' data-type='const rep_t' data-ref="9aAbs" data-ref-filename="9aAbs">aAbs</dfn> = <a class="ref fn" href="fp_lib.h.html#toRep" title='toRep' data-ref="toRep" data-ref-filename="toRep">toRep</a>(<a class="local col1 ref" href="#1a" title='a' data-ref="1a" data-ref-filename="1a">a</a>) &amp; <a class="macro" href="fp_lib.h.html#218" title="((1ULL &lt;&lt; (52 + ((sizeof(rep_t) * 8) - 52 - 1))) - 1U)" data-ref="_M/absMask">absMask</a>;</td></tr>
+<tr><th id="50">50</th><td>    <em>const</em> <a class="typedef" href="fp_lib.h.html#rep_t" title='rep_t' data-type='uint64_t' data-ref="rep_t" data-ref-filename="rep_t">rep_t</a> <dfn class="local col0 decl" id="10bAbs" title='bAbs' data-type='const rep_t' data-ref="10bAbs" data-ref-filename="10bAbs">bAbs</dfn> = <a class="ref fn" href="fp_lib.h.html#toRep" title='toRep' data-ref="toRep" data-ref-filename="toRep">toRep</a>(<a class="local col2 ref" href="#2b" title='b' data-ref="2b" data-ref-filename="2b">b</a>) &amp; <a class="macro" href="fp_lib.h.html#218" title="((1ULL &lt;&lt; (52 + ((sizeof(rep_t) * 8) - 52 - 1))) - 1U)" data-ref="_M/absMask">absMask</a>;</td></tr>
+<tr><th id="51">51</th><td></td></tr>
+<tr><th id="52">52</th><td>    <i>// NaN / anything = qNaN</i></td></tr>
+<tr><th id="53">53</th><td>    <b>if</b> (<a class="local col9 ref" href="#9aAbs" title='aAbs' data-ref="9aAbs" data-ref-filename="9aAbs">aAbs</a> &gt; <a class="macro" href="fp_lib.h.html#221" title="(((1ULL &lt;&lt; (52 + ((sizeof(rep_t) * 8) - 52 - 1))) - 1U) ^ ((1ULL &lt;&lt; 52) - 1U))" data-ref="_M/infRep">infRep</a>)</td></tr>
+<tr><th id="54">54</th><td>      <b>return</b> <a class="ref fn" href="fp_lib.h.html#fromRep" title='fromRep' data-ref="fromRep" data-ref-filename="fromRep">fromRep</a>(<a class="ref fn" href="fp_lib.h.html#toRep" title='toRep' data-ref="toRep" data-ref-filename="toRep">toRep</a>(<a class="local col1 ref" href="#1a" title='a' data-ref="1a" data-ref-filename="1a">a</a>) | <a class="macro" href="fp_lib.h.html#222" title="((1ULL &lt;&lt; 52) &gt;&gt; 1)" data-ref="_M/quietBit">quietBit</a>);</td></tr>
+<tr><th id="55">55</th><td>    <i>// anything / NaN = qNaN</i></td></tr>
+<tr><th id="56">56</th><td>    <b>if</b> (<a class="local col0 ref" href="#10bAbs" title='bAbs' data-ref="10bAbs" data-ref-filename="10bAbs">bAbs</a> &gt; <a class="macro" href="fp_lib.h.html#221" title="(((1ULL &lt;&lt; (52 + ((sizeof(rep_t) * 8) - 52 - 1))) - 1U) ^ ((1ULL &lt;&lt; 52) - 1U))" data-ref="_M/infRep">infRep</a>)</td></tr>
+<tr><th id="57">57</th><td>      <b>return</b> <a class="ref fn" href="fp_lib.h.html#fromRep" title='fromRep' data-ref="fromRep" data-ref-filename="fromRep">fromRep</a>(<a class="ref fn" href="fp_lib.h.html#toRep" title='toRep' data-ref="toRep" data-ref-filename="toRep">toRep</a>(<a class="local col2 ref" href="#2b" title='b' data-ref="2b" data-ref-filename="2b">b</a>) | <a class="macro" href="fp_lib.h.html#222" title="((1ULL &lt;&lt; 52) &gt;&gt; 1)" data-ref="_M/quietBit">quietBit</a>);</td></tr>
+<tr><th id="58">58</th><td></td></tr>
+<tr><th id="59">59</th><td>    <b>if</b> (<a class="local col9 ref" href="#9aAbs" title='aAbs' data-ref="9aAbs" data-ref-filename="9aAbs">aAbs</a> == <a class="macro" href="fp_lib.h.html#221" title="(((1ULL &lt;&lt; (52 + ((sizeof(rep_t) * 8) - 52 - 1))) - 1U) ^ ((1ULL &lt;&lt; 52) - 1U))" data-ref="_M/infRep">infRep</a>) {</td></tr>
+<tr><th id="60">60</th><td>      <i>// infinity / infinity = NaN</i></td></tr>
+<tr><th id="61">61</th><td>      <b>if</b> (<a class="local col0 ref" href="#10bAbs" title='bAbs' data-ref="10bAbs" data-ref-filename="10bAbs">bAbs</a> == <a class="macro" href="fp_lib.h.html#221" title="(((1ULL &lt;&lt; (52 + ((sizeof(rep_t) * 8) - 52 - 1))) - 1U) ^ ((1ULL &lt;&lt; 52) - 1U))" data-ref="_M/infRep">infRep</a>)</td></tr>
+<tr><th id="62">62</th><td>        <b>return</b> <a class="ref fn" href="fp_lib.h.html#fromRep" title='fromRep' data-ref="fromRep" data-ref-filename="fromRep">fromRep</a>(<a class="macro" href="fp_lib.h.html#223" title="((((1ULL &lt;&lt; (52 + ((sizeof(rep_t) * 8) - 52 - 1))) - 1U) ^ ((1ULL &lt;&lt; 52) - 1U)) | ((1ULL &lt;&lt; 52) &gt;&gt; 1))" data-ref="_M/qnanRep">qnanRep</a>);</td></tr>
+<tr><th id="63">63</th><td>      <i>// infinity / anything else = +/- infinity</i></td></tr>
+<tr><th id="64">64</th><td>      <b>else</b></td></tr>
+<tr><th id="65">65</th><td>        <b>return</b> <a class="ref fn" href="fp_lib.h.html#fromRep" title='fromRep' data-ref="fromRep" data-ref-filename="fromRep">fromRep</a>(<a class="local col9 ref" href="#9aAbs" title='aAbs' data-ref="9aAbs" data-ref-filename="9aAbs">aAbs</a> | <a class="local col5 ref" href="#5quotientSign" title='quotientSign' data-ref="5quotientSign" data-ref-filename="5quotientSign">quotientSign</a>);</td></tr>
+<tr><th id="66">66</th><td>    }</td></tr>
+<tr><th id="67">67</th><td></td></tr>
+<tr><th id="68">68</th><td>    <i>// anything else / infinity = +/- 0</i></td></tr>
+<tr><th id="69">69</th><td>    <b>if</b> (<a class="local col0 ref" href="#10bAbs" title='bAbs' data-ref="10bAbs" data-ref-filename="10bAbs">bAbs</a> == <a class="macro" href="fp_lib.h.html#221" title="(((1ULL &lt;&lt; (52 + ((sizeof(rep_t) * 8) - 52 - 1))) - 1U) ^ ((1ULL &lt;&lt; 52) - 1U))" data-ref="_M/infRep">infRep</a>)</td></tr>
+<tr><th id="70">70</th><td>      <b>return</b> <a class="ref fn" href="fp_lib.h.html#fromRep" title='fromRep' data-ref="fromRep" data-ref-filename="fromRep">fromRep</a>(<a class="local col5 ref" href="#5quotientSign" title='quotientSign' data-ref="5quotientSign" data-ref-filename="5quotientSign">quotientSign</a>);</td></tr>
+<tr><th id="71">71</th><td></td></tr>
+<tr><th id="72">72</th><td>    <b>if</b> (!<a class="local col9 ref" href="#9aAbs" title='aAbs' data-ref="9aAbs" data-ref-filename="9aAbs">aAbs</a>) {</td></tr>
+<tr><th id="73">73</th><td>      <i>// zero / zero = NaN</i></td></tr>
+<tr><th id="74">74</th><td>      <b>if</b> (!<a class="local col0 ref" href="#10bAbs" title='bAbs' data-ref="10bAbs" data-ref-filename="10bAbs">bAbs</a>)</td></tr>
+<tr><th id="75">75</th><td>        <b>return</b> <a class="ref fn" href="fp_lib.h.html#fromRep" title='fromRep' data-ref="fromRep" data-ref-filename="fromRep">fromRep</a>(<a class="macro" href="fp_lib.h.html#223" title="((((1ULL &lt;&lt; (52 + ((sizeof(rep_t) * 8) - 52 - 1))) - 1U) ^ ((1ULL &lt;&lt; 52) - 1U)) | ((1ULL &lt;&lt; 52) &gt;&gt; 1))" data-ref="_M/qnanRep">qnanRep</a>);</td></tr>
+<tr><th id="76">76</th><td>      <i>// zero / anything else = +/- zero</i></td></tr>
+<tr><th id="77">77</th><td>      <b>else</b></td></tr>
+<tr><th id="78">78</th><td>        <b>return</b> <a class="ref fn" href="fp_lib.h.html#fromRep" title='fromRep' data-ref="fromRep" data-ref-filename="fromRep">fromRep</a>(<a class="local col5 ref" href="#5quotientSign" title='quotientSign' data-ref="5quotientSign" data-ref-filename="5quotientSign">quotientSign</a>);</td></tr>
+<tr><th id="79">79</th><td>    }</td></tr>
+<tr><th id="80">80</th><td>    <i>// anything else / zero = +/- infinity</i></td></tr>
+<tr><th id="81">81</th><td>    <b>if</b> (!<a class="local col0 ref" href="#10bAbs" title='bAbs' data-ref="10bAbs" data-ref-filename="10bAbs">bAbs</a>)</td></tr>
+<tr><th id="82">82</th><td>      <b>return</b> <a class="ref fn" href="fp_lib.h.html#fromRep" title='fromRep' data-ref="fromRep" data-ref-filename="fromRep">fromRep</a>(<a class="macro" href="fp_lib.h.html#221" title="(((1ULL &lt;&lt; (52 + ((sizeof(rep_t) * 8) - 52 - 1))) - 1U) ^ ((1ULL &lt;&lt; 52) - 1U))" data-ref="_M/infRep">infRep</a> | <a class="local col5 ref" href="#5quotientSign" title='quotientSign' data-ref="5quotientSign" data-ref-filename="5quotientSign">quotientSign</a>);</td></tr>
+<tr><th id="83">83</th><td></td></tr>
+<tr><th id="84">84</th><td>    <i>// One or both of a or b is denormal.  The other (if applicable) is a</i></td></tr>
+<tr><th id="85">85</th><td><i>    // normal number.  Renormalize one or both of a and b, and set scale to</i></td></tr>
+<tr><th id="86">86</th><td><i>    // include the necessary exponent adjustment.</i></td></tr>
+<tr><th id="87">87</th><td>    <b>if</b> (<a class="local col9 ref" href="#9aAbs" title='aAbs' data-ref="9aAbs" data-ref-filename="9aAbs">aAbs</a> &lt; <a class="macro" href="fp_lib.h.html#215" title="(1ULL &lt;&lt; 52)" data-ref="_M/implicitBit">implicitBit</a>)</td></tr>
+<tr><th id="88">88</th><td>      <a class="local col8 ref" href="#8scale" title='scale' data-ref="8scale" data-ref-filename="8scale">scale</a> += <a class="ref fn" href="fp_lib.h.html#normalize" title='normalize' data-ref="normalize" data-ref-filename="normalize">normalize</a>(&amp;<a class="local col6 ref" href="#6aSignificand" title='aSignificand' data-ref="6aSignificand" data-ref-filename="6aSignificand">aSignificand</a>);</td></tr>
+<tr><th id="89">89</th><td>    <b>if</b> (<a class="local col0 ref" href="#10bAbs" title='bAbs' data-ref="10bAbs" data-ref-filename="10bAbs">bAbs</a> &lt; <a class="macro" href="fp_lib.h.html#215" title="(1ULL &lt;&lt; 52)" data-ref="_M/implicitBit">implicitBit</a>)</td></tr>
+<tr><th id="90">90</th><td>      <a class="local col8 ref" href="#8scale" title='scale' data-ref="8scale" data-ref-filename="8scale">scale</a> -= <a class="ref fn" href="fp_lib.h.html#normalize" title='normalize' data-ref="normalize" data-ref-filename="normalize">normalize</a>(&amp;<a class="local col7 ref" href="#7bSignificand" title='bSignificand' data-ref="7bSignificand" data-ref-filename="7bSignificand">bSignificand</a>);</td></tr>
+<tr><th id="91">91</th><td>  }</td></tr>
+<tr><th id="92">92</th><td></td></tr>
+<tr><th id="93">93</th><td>  <i>// Set the implicit significand bit.  If we fell through from the</i></td></tr>
+<tr><th id="94">94</th><td><i>  // denormal path it was already set by normalize( ), but setting it twice</i></td></tr>
+<tr><th id="95">95</th><td><i>  // won't hurt anything.</i></td></tr>
+<tr><th id="96">96</th><td>  <a class="local col6 ref" href="#6aSignificand" title='aSignificand' data-ref="6aSignificand" data-ref-filename="6aSignificand">aSignificand</a> |= <a class="macro" href="fp_lib.h.html#215" title="(1ULL &lt;&lt; 52)" data-ref="_M/implicitBit">implicitBit</a>;</td></tr>
+<tr><th id="97">97</th><td>  <a class="local col7 ref" href="#7bSignificand" title='bSignificand' data-ref="7bSignificand" data-ref-filename="7bSignificand">bSignificand</a> |= <a class="macro" href="fp_lib.h.html#215" title="(1ULL &lt;&lt; 52)" data-ref="_M/implicitBit">implicitBit</a>;</td></tr>
+<tr><th id="98">98</th><td></td></tr>
+<tr><th id="99">99</th><td>  <em>int</em> <dfn class="local col1 decl" id="11writtenExponent" title='writtenExponent' data-type='int' data-ref="11writtenExponent" data-ref-filename="11writtenExponent">writtenExponent</dfn> = (<a class="local col3 ref" href="#3aExponent" title='aExponent' data-ref="3aExponent" data-ref-filename="3aExponent">aExponent</a> - <a class="local col4 ref" href="#4bExponent" title='bExponent' data-ref="4bExponent" data-ref-filename="4bExponent">bExponent</a> + <a class="local col8 ref" href="#8scale" title='scale' data-ref="8scale" data-ref-filename="8scale">scale</a>) + <a class="macro" href="fp_lib.h.html#213" title="(((1 &lt;&lt; ((sizeof(rep_t) * 8) - 52 - 1)) - 1) &gt;&gt; 1)" data-ref="_M/exponentBias">exponentBias</a>;</td></tr>
+<tr><th id="100">100</th><td></td></tr>
+<tr><th id="101">101</th><td>  <em>const</em> <a class="typedef" href="fp_lib.h.html#rep_t" title='rep_t' data-type='uint64_t' data-ref="rep_t" data-ref-filename="rep_t">rep_t</a> <dfn class="local col2 decl" id="12b_UQ1" title='b_UQ1' data-type='const rep_t' data-ref="12b_UQ1" data-ref-filename="12b_UQ1">b_UQ1</dfn> = <a class="local col7 ref" href="#7bSignificand" title='bSignificand' data-ref="7bSignificand" data-ref-filename="7bSignificand">bSignificand</a> &lt;&lt; (<a class="macro" href="fp_lib.h.html#210" title="(sizeof(rep_t) * 8)" data-ref="_M/typeWidth">typeWidth</a> - <a class="macro" href="fp_lib.h.html#70" title="52" data-ref="_M/significandBits">significandBits</a> - <var>1</var>);</td></tr>
+<tr><th id="102">102</th><td></td></tr>
+<tr><th id="103">103</th><td>  <i>// Align the significand of b as a UQ1.(n-1) fixed-point number in the range</i></td></tr>
+<tr><th id="104">104</th><td><i>  // [1.0, 2.0) and get a UQ0.n approximate reciprocal using a small minimax</i></td></tr>
+<tr><th id="105">105</th><td><i>  // polynomial approximation: x0 = 3/4 + 1/sqrt(2) - b/2.</i></td></tr>
+<tr><th id="106">106</th><td><i>  // The max error for this approximation is achieved at endpoints, so</i></td></tr>
+<tr><th id="107">107</th><td><i>  //   abs(x0(b) - 1/b) &lt;= abs(x0(1) - 1/1) = 3/4 - 1/sqrt(2) = 0.04289...,</i></td></tr>
+<tr><th id="108">108</th><td><i>  // which is about 4.5 bits.</i></td></tr>
+<tr><th id="109">109</th><td><i>  // The initial approximation is between x0(1.0) = 0.9571... and x0(2.0) = 0.4571...</i></td></tr>
+<tr><th id="110">110</th><td><i></i></td></tr>
+<tr><th id="111">111</th><td><i>  // Then, refine the reciprocal estimate using a quadratically converging</i></td></tr>
+<tr><th id="112">112</th><td><i>  // Newton-Raphson iteration:</i></td></tr>
+<tr><th id="113">113</th><td><i>  //     x_{n+1} = x_n * (2 - x_n * b)</i></td></tr>
+<tr><th id="114">114</th><td><i>  //</i></td></tr>
+<tr><th id="115">115</th><td><i>  // Let b be the original divisor considered "in infinite precision" and</i></td></tr>
+<tr><th id="116">116</th><td><i>  // obtained from IEEE754 representation of function argument (with the</i></td></tr>
+<tr><th id="117">117</th><td><i>  // implicit bit set). Corresponds to rep_t-sized b_UQ1 represented in</i></td></tr>
+<tr><th id="118">118</th><td><i>  // UQ1.(W-1).</i></td></tr>
+<tr><th id="119">119</th><td><i>  //</i></td></tr>
+<tr><th id="120">120</th><td><i>  // Let b_hw be an infinitely precise number obtained from the highest (HW-1)</i></td></tr>
+<tr><th id="121">121</th><td><i>  // bits of divisor significand (with the implicit bit set). Corresponds to</i></td></tr>
+<tr><th id="122">122</th><td><i>  // half_rep_t-sized b_UQ1_hw represented in UQ1.(HW-1) that is a **truncated**</i></td></tr>
+<tr><th id="123">123</th><td><i>  // version of b_UQ1.</i></td></tr>
+<tr><th id="124">124</th><td><i>  //</i></td></tr>
+<tr><th id="125">125</th><td><i>  // Let e_n := x_n - 1/b_hw</i></td></tr>
+<tr><th id="126">126</th><td><i>  //     E_n := x_n - 1/b</i></td></tr>
+<tr><th id="127">127</th><td><i>  // abs(E_n) &lt;= abs(e_n) + (1/b_hw - 1/b)</i></td></tr>
+<tr><th id="128">128</th><td><i>  //           = abs(e_n) + (b - b_hw) / (b*b_hw)</i></td></tr>
+<tr><th id="129">129</th><td><i>  //          &lt;= abs(e_n) + 2 * 2^-HW</i></td></tr>
+<tr><th id="130">130</th><td><i></i></td></tr>
+<tr><th id="131">131</th><td><i>  // rep_t-sized iterations may be slower than the corresponding half-width</i></td></tr>
+<tr><th id="132">132</th><td><i>  // variant depending on the handware and whether single/double/quad precision</i></td></tr>
+<tr><th id="133">133</th><td><i>  // is selected.</i></td></tr>
+<tr><th id="134">134</th><td><i>  // NB: Using half-width iterations increases computation errors due to</i></td></tr>
+<tr><th id="135">135</th><td><i>  // rounding, so error estimations have to be computed taking the selected</i></td></tr>
+<tr><th id="136">136</th><td><i>  // mode into account!</i></td></tr>
+<tr><th id="137">137</th><td><u>#<span data-ppcond="137">if</span> <a class="macro" href="divdf3.c.html#16" title="3" data-ref="_M/NUMBER_OF_HALF_ITERATIONS">NUMBER_OF_HALF_ITERATIONS</a> &gt; 0</u></td></tr>
+<tr><th id="138">138</th><td>  <i>// Starting with (n-1) half-width iterations</i></td></tr>
+<tr><th id="139">139</th><td>  <em>const</em> <a class="typedef" href="fp_lib.h.html#half_rep_t" title='half_rep_t' data-type='uint32_t' data-ref="half_rep_t" data-ref-filename="half_rep_t">half_rep_t</a> <dfn class="local col3 decl" id="13b_UQ1_hw" title='b_UQ1_hw' data-type='const half_rep_t' data-ref="13b_UQ1_hw" data-ref-filename="13b_UQ1_hw">b_UQ1_hw</dfn> = <a class="local col7 ref" href="#7bSignificand" title='bSignificand' data-ref="7bSignificand" data-ref-filename="7bSignificand">bSignificand</a> &gt;&gt; (<a class="macro" href="fp_lib.h.html#70" title="52" data-ref="_M/significandBits">significandBits</a> + <var>1</var> - <a class="macro" href="#27" title="((sizeof(rep_t) * 8) / 2)" data-ref="_M/HW">HW</a>);</td></tr>
+<tr><th id="140">140</th><td></td></tr>
+<tr><th id="141">141</th><td>  <i>// C is (3/4 + 1/sqrt(2)) - 1 truncated to W0 fractional bits as UQ0.HW</i></td></tr>
+<tr><th id="142">142</th><td><i>  // with W0 being either 16 or 32 and W0 &lt;= HW.</i></td></tr>
+<tr><th id="143">143</th><td><i>  // That is, C is the aforementioned 3/4 + 1/sqrt(2) constant (from which</i></td></tr>
+<tr><th id="144">144</th><td><i>  // b/2 is subtracted to obtain x0) wrapped to [0, 1) range.</i></td></tr>
+<tr><th id="145">145</th><td><u>#<span data-ppcond="145">if</span> defined(<span class="macro" data-ref="_M/SINGLE_PRECISION">SINGLE_PRECISION</span>)</u></td></tr>
+<tr><th id="146">146</th><td>  <i>// Use 16-bit initial estimation in case we are using half-width iterations</i></td></tr>
+<tr><th id="147">147</th><td><i>  // for float32 division. This is expected to be useful for some 16-bit</i></td></tr>
+<tr><th id="148">148</th><td><i>  // targets. Not used by default as it requires performing more work during</i></td></tr>
+<tr><th id="149">149</th><td><i>  // rounding and would hardly help on regular 32- or 64-bit targets.</i></td></tr>
+<tr><th id="150">150</th><td>  <em>const</em> half_rep_t C_hw = HALF_REP_C(<var>0x7504</var>);</td></tr>
+<tr><th id="151">151</th><td><u>#<span data-ppcond="145">else</span></u></td></tr>
+<tr><th id="152">152</th><td>  <i>// HW is at least 32. Shifting into the highest bits if needed.</i></td></tr>
+<tr><th id="153">153</th><td>  <em>const</em> <a class="typedef" href="fp_lib.h.html#half_rep_t" title='half_rep_t' data-type='uint32_t' data-ref="half_rep_t" data-ref-filename="half_rep_t">half_rep_t</a> <dfn class="local col4 decl" id="14C_hw" title='C_hw' data-type='const half_rep_t' data-ref="14C_hw" data-ref-filename="14C_hw">C_hw</dfn> = <a class="macro" href="fp_lib.h.html#68" title="UINT32_C" data-ref="_M/HALF_REP_C">HALF_REP_C</a>(<var>0x7504F333</var>) &lt;&lt; (<a class="macro" href="#27" title="((sizeof(rep_t) * 8) / 2)" data-ref="_M/HW">HW</a> - <var>32</var>);</td></tr>
+<tr><th id="154">154</th><td><u>#<span data-ppcond="145">endif</span></u></td></tr>
+<tr><th id="155">155</th><td></td></tr>
+<tr><th id="156">156</th><td>  <i>// b &gt;= 1, thus an upper bound for 3/4 + 1/sqrt(2) - b/2 is about 0.9572,</i></td></tr>
+<tr><th id="157">157</th><td><i>  // so x0 fits to UQ0.HW without wrapping.</i></td></tr>
+<tr><th id="158">158</th><td>  <a class="typedef" href="fp_lib.h.html#half_rep_t" title='half_rep_t' data-type='uint32_t' data-ref="half_rep_t" data-ref-filename="half_rep_t">half_rep_t</a> <dfn class="local col5 decl" id="15x_UQ0_hw" title='x_UQ0_hw' data-type='half_rep_t' data-ref="15x_UQ0_hw" data-ref-filename="15x_UQ0_hw">x_UQ0_hw</dfn> = <a class="local col4 ref" href="#14C_hw" title='C_hw' data-ref="14C_hw" data-ref-filename="14C_hw">C_hw</a> - (<a class="local col3 ref" href="#13b_UQ1_hw" title='b_UQ1_hw' data-ref="13b_UQ1_hw" data-ref-filename="13b_UQ1_hw">b_UQ1_hw</a> <i>/* exact b_hw/2 as UQ0.HW */</i>);</td></tr>
+<tr><th id="159">159</th><td>  <i>// An e_0 error is comprised of errors due to</i></td></tr>
+<tr><th id="160">160</th><td><i>  // * x0 being an inherently imprecise first approximation of 1/b_hw</i></td></tr>
+<tr><th id="161">161</th><td><i>  // * C_hw being some (irrational) number **truncated** to W0 bits</i></td></tr>
+<tr><th id="162">162</th><td><i>  // Please note that e_0 is calculated against the infinitely precise</i></td></tr>
+<tr><th id="163">163</th><td><i>  // reciprocal of b_hw (that is, **truncated** version of b).</i></td></tr>
+<tr><th id="164">164</th><td><i>  //</i></td></tr>
+<tr><th id="165">165</th><td><i>  // e_0 &lt;= 3/4 - 1/sqrt(2) + 2^-W0</i></td></tr>
+<tr><th id="166">166</th><td><i></i></td></tr>
+<tr><th id="167">167</th><td><i>  // By construction, 1 &lt;= b &lt; 2</i></td></tr>
+<tr><th id="168">168</th><td><i>  // f(x)  = x * (2 - b*x) = 2*x - b*x^2</i></td></tr>
+<tr><th id="169">169</th><td><i>  // f'(x) = 2 * (1 - b*x)</i></td></tr>
+<tr><th id="170">170</th><td><i>  //</i></td></tr>
+<tr><th id="171">171</th><td><i>  // On the [0, 1] interval, f(0)   = 0,</i></td></tr>
+<tr><th id="172">172</th><td><i>  // then it increses until  f(1/b) = 1 / b, maximum on (0, 1),</i></td></tr>
+<tr><th id="173">173</th><td><i>  // then it decreses to     f(1)   = 2 - b</i></td></tr>
+<tr><th id="174">174</th><td><i>  //</i></td></tr>
+<tr><th id="175">175</th><td><i>  // Let g(x) = x - f(x) = b*x^2 - x.</i></td></tr>
+<tr><th id="176">176</th><td><i>  // On (0, 1/b), g(x) &lt; 0 &lt;=&gt; f(x) &gt; x</i></td></tr>
+<tr><th id="177">177</th><td><i>  // On (1/b, 1], g(x) &gt; 0 &lt;=&gt; f(x) &lt; x</i></td></tr>
+<tr><th id="178">178</th><td><i>  //</i></td></tr>
+<tr><th id="179">179</th><td><i>  // For half-width iterations, b_hw is used instead of b.</i></td></tr>
+<tr><th id="180">180</th><td>  <a class="macro" href="int_util.h.html#45" title="{ half_rep_t corr_UQ1_hw = 0 - ((rep_t)x_UQ0_hw * b_UQ1_hw &gt;&gt; ((sizeof(rep_t) * 8) / 2)); x_UQ0_hw = (rep_t)x_UQ0_hw * corr_UQ1_hw &gt;&gt; (((sizeof(rep_t) * 8) / 2) - 1); } { half_rep_t corr_UQ1_hw = 0 - ((rep_t)x_UQ0_hw * b_UQ1_hw &gt;&gt; ((sizeof(rep_t) * 8) / 2)); x_UQ0_hw = (rep_t)x_UQ0_hw * corr_UQ1_hw &gt;&gt; (((sizeof(rep_t) * 8) / 2) - 1); } { half_rep_t corr_UQ1_hw = 0 - ((rep_t)x_UQ0_hw * b_UQ1_hw &gt;&gt; ((sizeof(rep_t) * 8) / 2)); x_UQ0_hw = (rep_t)x_UQ0_hw * corr_UQ1_hw &gt;&gt; (((sizeof(rep_t) * 8) / 2) - 1); }" data-ref="_M/REPEAT_N_TIMES">REPEAT_N_TIMES</a>(<a class="macro" href="divdf3.c.html#16" title="3" data-ref="_M/NUMBER_OF_HALF_ITERATIONS">NUMBER_OF_HALF_ITERATIONS</a>, {</td></tr>
+<tr><th id="181">181</th><td>    <i>// corr_UQ1_hw can be **larger** than 2 - b_hw*x by at most 1*Ulp</i></td></tr>
+<tr><th id="182">182</th><td><i>    // of corr_UQ1_hw.</i></td></tr>
+<tr><th id="183">183</th><td><i>    // "0.0 - (...)" is equivalent to "2.0 - (...)" in UQ1.(HW-1).</i></td></tr>
+<tr><th id="184">184</th><td><i>    // On the other hand, corr_UQ1_hw should not overflow from 2.0 to 0.0 provided</i></td></tr>
+<tr><th id="185">185</th><td><i>    // no overflow occurred earlier: ((rep_t)x_UQ0_hw * b_UQ1_hw &gt;&gt; HW) is</i></td></tr>
+<tr><th id="186">186</th><td><i>    // expected to be strictly positive because b_UQ1_hw has its highest bit set</i></td></tr>
+<tr><th id="187">187</th><td><i>    // and x_UQ0_hw should be rather large (it converges to 1/2 &lt; 1/b_hw &lt;= 1).</i></td></tr>
+<tr><th id="188">188</th><td>    <a class="typedef" href="fp_lib.h.html#half_rep_t" title='half_rep_t' data-type='uint32_t' data-ref="half_rep_t" data-ref-filename="half_rep_t">half_rep_t</a> <dfn class="local col6 decl" id="16corr_UQ1_hw" title='corr_UQ1_hw' data-type='half_rep_t' data-ref="16corr_UQ1_hw" data-ref-filename="16corr_UQ1_hw"><dfn class="local col7 decl" id="17corr_UQ1_hw" title='corr_UQ1_hw' data-type='half_rep_t' data-ref="17corr_UQ1_hw" data-ref-filename="17corr_UQ1_hw"><dfn class="local col8 decl" id="18corr_UQ1_hw" title='corr_UQ1_hw' data-type='half_rep_t' data-ref="18corr_UQ1_hw" data-ref-filename="18corr_UQ1_hw">corr_UQ1_hw</dfn></dfn></dfn> = <var>0</var> - ((<a class="typedef" href="fp_lib.h.html#rep_t" title='rep_t' data-type='uint64_t' data-ref="rep_t" data-ref-filename="rep_t">rep_t</a>)<a class="local col5 ref" href="#15x_UQ0_hw" title='x_UQ0_hw' data-ref="15x_UQ0_hw" data-ref-filename="15x_UQ0_hw">x_UQ0_hw</a> * <a class="local col3 ref" href="#13b_UQ1_hw" title='b_UQ1_hw' data-ref="13b_UQ1_hw" data-ref-filename="13b_UQ1_hw">b_UQ1_hw</a> &gt;&gt; <a class="macro" href="#27" title="((sizeof(rep_t) * 8) / 2)" data-ref="_M/HW">HW</a>);</td></tr>
+<tr><th id="189">189</th><td></td></tr>
+<tr><th id="190">190</th><td>    <i>// Now, we should multiply UQ0.HW and UQ1.(HW-1) numbers, naturally</i></td></tr>
+<tr><th id="191">191</th><td><i>    // obtaining an UQ1.(HW-1) number and proving its highest bit could be</i></td></tr>
+<tr><th id="192">192</th><td><i>    // considered to be 0 to be able to represent it in UQ0.HW.</i></td></tr>
+<tr><th id="193">193</th><td><i>    // From the above analysis of f(x), if corr_UQ1_hw would be represented</i></td></tr>
+<tr><th id="194">194</th><td><i>    // without any intermediate loss of precision (that is, in twice_rep_t)</i></td></tr>
+<tr><th id="195">195</th><td><i>    // x_UQ0_hw could be at most [1.]000... if b_hw is exactly 1.0 and strictly</i></td></tr>
+<tr><th id="196">196</th><td><i>    // less otherwise. On the other hand, to obtain [1.]000..., one have to pass</i></td></tr>
+<tr><th id="197">197</th><td><i>    // 1/b_hw == 1.0 to f(x), so this cannot occur at all without overflow (due</i></td></tr>
+<tr><th id="198">198</th><td><i>    // to 1.0 being not representable as UQ0.HW).</i></td></tr>
+<tr><th id="199">199</th><td><i>    // The fact corr_UQ1_hw was virtually round up (due to result of</i></td></tr>
+<tr><th id="200">200</th><td><i>    // multiplication being **first** truncated, then negated - to improve</i></td></tr>
+<tr><th id="201">201</th><td><i>    // error estimations) can increase x_UQ0_hw by up to 2*Ulp of x_UQ0_hw.</i></td></tr>
+<tr><th id="202">202</th><td>    <a class="local col5 ref" href="#15x_UQ0_hw" title='x_UQ0_hw' data-ref="15x_UQ0_hw" data-ref-filename="15x_UQ0_hw">x_UQ0_hw</a> = (<a class="typedef" href="fp_lib.h.html#rep_t" title='rep_t' data-type='uint64_t' data-ref="rep_t" data-ref-filename="rep_t">rep_t</a>)<a class="local col5 ref" href="#15x_UQ0_hw" title='x_UQ0_hw' data-ref="15x_UQ0_hw" data-ref-filename="15x_UQ0_hw">x_UQ0_hw</a> * <a class="local col6 ref" href="#180" title='corr_UQ1_hw' data-ref="16corr_UQ1_hw" data-ref-filename="16corr_UQ1_hw"><a class="local col7 ref" href="#180" title='corr_UQ1_hw' data-ref="17corr_UQ1_hw" data-ref-filename="17corr_UQ1_hw"><a class="local col8 ref" href="#180" title='corr_UQ1_hw' data-ref="18corr_UQ1_hw" data-ref-filename="18corr_UQ1_hw">corr_UQ1_hw</a></a></a> &gt;&gt; (<a class="macro" href="#27" title="((sizeof(rep_t) * 8) / 2)" data-ref="_M/HW">HW</a> - <var>1</var>);</td></tr>
+<tr><th id="203">203</th><td>    <i>// Now, either no overflow occurred or x_UQ0_hw is 0 or 1 in its half_rep_t</i></td></tr>
+<tr><th id="204">204</th><td><i>    // representation. In the latter case, x_UQ0_hw will be either 0 or 1 after</i></td></tr>
+<tr><th id="205">205</th><td><i>    // any number of iterations, so just subtract 2 from the reciprocal</i></td></tr>
+<tr><th id="206">206</th><td><i>    // approximation after last iteration.</i></td></tr>
+<tr><th id="207">207</th><td><i></i></td></tr>
+<tr><th id="208">208</th><td><i>    // In infinite precision, with 0 &lt;= eps1, eps2 &lt;= U = 2^-HW:</i></td></tr>
+<tr><th id="209">209</th><td><i>    // corr_UQ1_hw = 2 - (1/b_hw + e_n) * b_hw + 2*eps1</i></td></tr>
+<tr><th id="210">210</th><td><i>    //             = 1 - e_n * b_hw + 2*eps1</i></td></tr>
+<tr><th id="211">211</th><td><i>    // x_UQ0_hw = (1/b_hw + e_n) * (1 - e_n*b_hw + 2*eps1) - eps2</i></td></tr>
+<tr><th id="212">212</th><td><i>    //          = 1/b_hw - e_n + 2*eps1/b_hw + e_n - e_n^2*b_hw + 2*e_n*eps1 - eps2</i></td></tr>
+<tr><th id="213">213</th><td><i>    //          = 1/b_hw + 2*eps1/b_hw - e_n^2*b_hw + 2*e_n*eps1 - eps2</i></td></tr>
+<tr><th id="214">214</th><td><i>    // e_{n+1} = -e_n^2*b_hw + 2*eps1/b_hw + 2*e_n*eps1 - eps2</i></td></tr>
+<tr><th id="215">215</th><td><i>    //         = 2*e_n*eps1 - (e_n^2*b_hw + eps2) + 2*eps1/b_hw</i></td></tr>
+<tr><th id="216">216</th><td><i>    //                        \------ &gt;0 -------/   \-- &gt;0 ---/</i></td></tr>
+<tr><th id="217">217</th><td><i>    // abs(e_{n+1}) &lt;= 2*abs(e_n)*U + max(2*e_n^2 + U, 2 * U)</i></td></tr>
+<tr><th id="218">218</th><td>  })</td></tr>
+<tr><th id="219">219</th><td>  <i>// For initial half-width iterations, U = 2^-HW</i></td></tr>
+<tr><th id="220">220</th><td><i>  // Let  abs(e_n)     &lt;= u_n * U,</i></td></tr>
+<tr><th id="221">221</th><td><i>  // then abs(e_{n+1}) &lt;= 2 * u_n * U^2 + max(2 * u_n^2 * U^2 + U, 2 * U)</i></td></tr>
+<tr><th id="222">222</th><td><i>  // u_{n+1} &lt;= 2 * u_n * U + max(2 * u_n^2 * U + 1, 2)</i></td></tr>
+<tr><th id="223">223</th><td><i></i></td></tr>
+<tr><th id="224">224</th><td><i>  // Account for possible overflow (see above). For an overflow to occur for the</i></td></tr>
+<tr><th id="225">225</th><td><i>  // first time, for "ideal" corr_UQ1_hw (that is, without intermediate</i></td></tr>
+<tr><th id="226">226</th><td><i>  // truncation), the result of x_UQ0_hw * corr_UQ1_hw should be either maximum</i></td></tr>
+<tr><th id="227">227</th><td><i>  // value representable in UQ0.HW or less by 1. This means that 1/b_hw have to</i></td></tr>
+<tr><th id="228">228</th><td><i>  // be not below that value (see g(x) above), so it is safe to decrement just</i></td></tr>
+<tr><th id="229">229</th><td><i>  // once after the final iteration. On the other hand, an effective value of</i></td></tr>
+<tr><th id="230">230</th><td><i>  // divisor changes after this point (from b_hw to b), so adjust here.</i></td></tr>
+<tr><th id="231">231</th><td>  <a class="local col5 ref" href="#15x_UQ0_hw" title='x_UQ0_hw' data-ref="15x_UQ0_hw" data-ref-filename="15x_UQ0_hw">x_UQ0_hw</a> -= <var>1U</var>;</td></tr>
+<tr><th id="232">232</th><td>  <a class="typedef" href="fp_lib.h.html#rep_t" title='rep_t' data-type='uint64_t' data-ref="rep_t" data-ref-filename="rep_t">rep_t</a> <dfn class="local col9 decl" id="19x_UQ0" title='x_UQ0' data-type='rep_t' data-ref="19x_UQ0" data-ref-filename="19x_UQ0">x_UQ0</dfn> = (<a class="typedef" href="fp_lib.h.html#rep_t" title='rep_t' data-type='uint64_t' data-ref="rep_t" data-ref-filename="rep_t">rep_t</a>)<a class="local col5 ref" href="#15x_UQ0_hw" title='x_UQ0_hw' data-ref="15x_UQ0_hw" data-ref-filename="15x_UQ0_hw">x_UQ0_hw</a> &lt;&lt; <a class="macro" href="#27" title="((sizeof(rep_t) * 8) / 2)" data-ref="_M/HW">HW</a>;</td></tr>
+<tr><th id="233">233</th><td>  <a class="local col9 ref" href="#19x_UQ0" title='x_UQ0' data-ref="19x_UQ0" data-ref-filename="19x_UQ0">x_UQ0</a> -= <var>1U</var>;</td></tr>
+<tr><th id="234">234</th><td></td></tr>
+<tr><th id="235">235</th><td><u>#<span data-ppcond="137">else</span></u></td></tr>
+<tr><th id="236">236</th><td>  <i>// C is (3/4 + 1/sqrt(2)) - 1 truncated to 32 fractional bits as UQ0.n</i></td></tr>
+<tr><th id="237">237</th><td>  <em>const</em> rep_t C = REP_C(<var>0x7504F333</var>) &lt;&lt; (typeWidth - <var>32</var>);</td></tr>
+<tr><th id="238">238</th><td>  rep_t x_UQ0 = C - b_UQ1;</td></tr>
+<tr><th id="239">239</th><td>  <i>// E_0 &lt;= 3/4 - 1/sqrt(2) + 2 * 2^-32</i></td></tr>
+<tr><th id="240">240</th><td><u>#<span data-ppcond="137">endif</span></u></td></tr>
+<tr><th id="241">241</th><td></td></tr>
+<tr><th id="242">242</th><td>  <i>// Error estimations for full-precision iterations are calculated just</i></td></tr>
+<tr><th id="243">243</th><td><i>  // as above, but with U := 2^-W and taking extra decrementing into account.</i></td></tr>
+<tr><th id="244">244</th><td><i>  // We need at least one such iteration.</i></td></tr>
+<tr><th id="245">245</th><td></td></tr>
+<tr><th id="246">246</th><td><u>#<span data-ppcond="246">ifdef</span> <span class="macro" data-ref="_M/USE_NATIVE_FULL_ITERATIONS">USE_NATIVE_FULL_ITERATIONS</span></u></td></tr>
+<tr><th id="247">247</th><td>  REPEAT_N_TIMES(NUMBER_OF_FULL_ITERATIONS, {</td></tr>
+<tr><th id="248">248</th><td>    rep_t corr_UQ1 = <var>0</var> - ((twice_rep_t)x_UQ0 * b_UQ1 &gt;&gt; typeWidth);</td></tr>
+<tr><th id="249">249</th><td>    x_UQ0 = (twice_rep_t)x_UQ0 * corr_UQ1 &gt;&gt; (typeWidth - <var>1</var>);</td></tr>
+<tr><th id="250">250</th><td>  })</td></tr>
+<tr><th id="251">251</th><td><u>#<span data-ppcond="246">else</span></u></td></tr>
+<tr><th id="252">252</th><td><u>#<span data-ppcond="252">if</span> <a class="macro" href="divdf3.c.html#17" title="1" data-ref="_M/NUMBER_OF_FULL_ITERATIONS">NUMBER_OF_FULL_ITERATIONS</a> != 1</u></td></tr>
+<tr><th id="253">253</th><td><u>#error Only a single emulated full iteration is supported</u></td></tr>
+<tr><th id="254">254</th><td><u>#<span data-ppcond="252">endif</span></u></td></tr>
+<tr><th id="255">255</th><td><u>#<span data-ppcond="255">if</span> !(<a class="macro" href="divdf3.c.html#16" title="3" data-ref="_M/NUMBER_OF_HALF_ITERATIONS">NUMBER_OF_HALF_ITERATIONS</a> &gt; 0)</u></td></tr>
+<tr><th id="256">256</th><td>  <i>// Cannot normally reach here: only one full-width iteration is requested and</i></td></tr>
+<tr><th id="257">257</th><td><i>  // the total number of iterations should be at least 3 even for float32.</i></td></tr>
+<tr><th id="258">258</th><td><u>#error Check NUMBER_OF_HALF_ITERATIONS, NUMBER_OF_FULL_ITERATIONS and USE_NATIVE_FULL_ITERATIONS.</u></td></tr>
+<tr><th id="259">259</th><td><u>#<span data-ppcond="255">endif</span></u></td></tr>
+<tr><th id="260">260</th><td>  <i>// Simulating operations on a twice_rep_t to perform a single final full-width</i></td></tr>
+<tr><th id="261">261</th><td><i>  // iteration. Using ad-hoc multiplication implementations to take advantage</i></td></tr>
+<tr><th id="262">262</th><td><i>  // of particular structure of operands.</i></td></tr>
+<tr><th id="263">263</th><td>  <a class="typedef" href="fp_lib.h.html#rep_t" title='rep_t' data-type='uint64_t' data-ref="rep_t" data-ref-filename="rep_t">rep_t</a> <dfn class="local col0 decl" id="20blo" title='blo' data-type='rep_t' data-ref="20blo" data-ref-filename="20blo">blo</dfn> = <a class="local col2 ref" href="#12b_UQ1" title='b_UQ1' data-ref="12b_UQ1" data-ref-filename="12b_UQ1">b_UQ1</a> &amp; <a class="macro" href="#29" title="(-1ULL &gt;&gt; ((sizeof(rep_t) * 8) / 2))" data-ref="_M/loMask">loMask</a>;</td></tr>
+<tr><th id="264">264</th><td>  <i>// x_UQ0 = x_UQ0_hw * 2^HW - 1</i></td></tr>
+<tr><th id="265">265</th><td><i>  // x_UQ0 * b_UQ1 = (x_UQ0_hw * 2^HW) * (b_UQ1_hw * 2^HW + blo) - b_UQ1</i></td></tr>
+<tr><th id="266">266</th><td><i>  //</i></td></tr>
+<tr><th id="267">267</th><td><i>  //   &lt;--- higher half ---&gt;&lt;--- lower half ---&gt;</i></td></tr>
+<tr><th id="268">268</th><td><i>  //   [x_UQ0_hw * b_UQ1_hw]</i></td></tr>
+<tr><th id="269">269</th><td><i>  // +            [  x_UQ0_hw *  blo  ]</i></td></tr>
+<tr><th id="270">270</th><td><i>  // -                      [      b_UQ1       ]</i></td></tr>
+<tr><th id="271">271</th><td><i>  // = [      result       ][.... discarded ...]</i></td></tr>
+<tr><th id="272">272</th><td>  <a class="typedef" href="fp_lib.h.html#rep_t" title='rep_t' data-type='uint64_t' data-ref="rep_t" data-ref-filename="rep_t">rep_t</a> <dfn class="local col1 decl" id="21corr_UQ1" title='corr_UQ1' data-type='rep_t' data-ref="21corr_UQ1" data-ref-filename="21corr_UQ1">corr_UQ1</dfn> = <var>0U</var> - (   (<a class="typedef" href="fp_lib.h.html#rep_t" title='rep_t' data-type='uint64_t' data-ref="rep_t" data-ref-filename="rep_t">rep_t</a>)<a class="local col5 ref" href="#15x_UQ0_hw" title='x_UQ0_hw' data-ref="15x_UQ0_hw" data-ref-filename="15x_UQ0_hw">x_UQ0_hw</a> * <a class="local col3 ref" href="#13b_UQ1_hw" title='b_UQ1_hw' data-ref="13b_UQ1_hw" data-ref-filename="13b_UQ1_hw">b_UQ1_hw</a></td></tr>
+<tr><th id="273">273</th><td>                         + ((<a class="typedef" href="fp_lib.h.html#rep_t" title='rep_t' data-type='uint64_t' data-ref="rep_t" data-ref-filename="rep_t">rep_t</a>)<a class="local col5 ref" href="#15x_UQ0_hw" title='x_UQ0_hw' data-ref="15x_UQ0_hw" data-ref-filename="15x_UQ0_hw">x_UQ0_hw</a> * <a class="local col0 ref" href="#20blo" title='blo' data-ref="20blo" data-ref-filename="20blo">blo</a> &gt;&gt; <a class="macro" href="#27" title="((sizeof(rep_t) * 8) / 2)" data-ref="_M/HW">HW</a>)</td></tr>
+<tr><th id="274">274</th><td>                         - <a class="macro" href="fp_lib.h.html#69" title="UINT64_C" data-ref="_M/REP_C">REP_C</a>(<var>1</var>)); <i>// account for *possible* carry</i></td></tr>
+<tr><th id="275">275</th><td>  <a class="typedef" href="fp_lib.h.html#rep_t" title='rep_t' data-type='uint64_t' data-ref="rep_t" data-ref-filename="rep_t">rep_t</a> <dfn class="local col2 decl" id="22lo_corr" title='lo_corr' data-type='rep_t' data-ref="22lo_corr" data-ref-filename="22lo_corr">lo_corr</dfn> = <a class="local col1 ref" href="#21corr_UQ1" title='corr_UQ1' data-ref="21corr_UQ1" data-ref-filename="21corr_UQ1">corr_UQ1</a> &amp; <a class="macro" href="#29" title="(-1ULL &gt;&gt; ((sizeof(rep_t) * 8) / 2))" data-ref="_M/loMask">loMask</a>;</td></tr>
+<tr><th id="276">276</th><td>  <a class="typedef" href="fp_lib.h.html#rep_t" title='rep_t' data-type='uint64_t' data-ref="rep_t" data-ref-filename="rep_t">rep_t</a> <dfn class="local col3 decl" id="23hi_corr" title='hi_corr' data-type='rep_t' data-ref="23hi_corr" data-ref-filename="23hi_corr">hi_corr</dfn> = <a class="local col1 ref" href="#21corr_UQ1" title='corr_UQ1' data-ref="21corr_UQ1" data-ref-filename="21corr_UQ1">corr_UQ1</a> &gt;&gt; <a class="macro" href="#27" title="((sizeof(rep_t) * 8) / 2)" data-ref="_M/HW">HW</a>;</td></tr>
+<tr><th id="277">277</th><td>  <i>// x_UQ0 * corr_UQ1 = (x_UQ0_hw * 2^HW) * (hi_corr * 2^HW + lo_corr) - corr_UQ1</i></td></tr>
+<tr><th id="278">278</th><td>  <a class="local col9 ref" href="#19x_UQ0" title='x_UQ0' data-ref="19x_UQ0" data-ref-filename="19x_UQ0">x_UQ0</a> =   ((<a class="typedef" href="fp_lib.h.html#rep_t" title='rep_t' data-type='uint64_t' data-ref="rep_t" data-ref-filename="rep_t">rep_t</a>)<a class="local col5 ref" href="#15x_UQ0_hw" title='x_UQ0_hw' data-ref="15x_UQ0_hw" data-ref-filename="15x_UQ0_hw">x_UQ0_hw</a> * <a class="local col3 ref" href="#23hi_corr" title='hi_corr' data-ref="23hi_corr" data-ref-filename="23hi_corr">hi_corr</a> &lt;&lt; <var>1</var>)</td></tr>
+<tr><th id="279">279</th><td>          + ((<a class="typedef" href="fp_lib.h.html#rep_t" title='rep_t' data-type='uint64_t' data-ref="rep_t" data-ref-filename="rep_t">rep_t</a>)<a class="local col5 ref" href="#15x_UQ0_hw" title='x_UQ0_hw' data-ref="15x_UQ0_hw" data-ref-filename="15x_UQ0_hw">x_UQ0_hw</a> * <a class="local col2 ref" href="#22lo_corr" title='lo_corr' data-ref="22lo_corr" data-ref-filename="22lo_corr">lo_corr</a> &gt;&gt; (<a class="macro" href="#27" title="((sizeof(rep_t) * 8) / 2)" data-ref="_M/HW">HW</a> - <var>1</var>))</td></tr>
+<tr><th id="280">280</th><td>          - <a class="macro" href="fp_lib.h.html#69" title="UINT64_C" data-ref="_M/REP_C">REP_C</a>(<var>2</var>); <i>// 1 to account for the highest bit of corr_UQ1 can be 1</i></td></tr>
+<tr><th id="281">281</th><td>                      <i>// 1 to account for possible carry</i></td></tr>
+<tr><th id="282">282</th><td><i>  // Just like the case of half-width iterations but with possibility</i></td></tr>
+<tr><th id="283">283</th><td><i>  // of overflowing by one extra Ulp of x_UQ0.</i></td></tr>
+<tr><th id="284">284</th><td>  <a class="local col9 ref" href="#19x_UQ0" title='x_UQ0' data-ref="19x_UQ0" data-ref-filename="19x_UQ0">x_UQ0</a> -= <var>1U</var>;</td></tr>
+<tr><th id="285">285</th><td>  <i>// ... and then traditional fixup by 2 should work</i></td></tr>
+<tr><th id="286">286</th><td><i></i></td></tr>
+<tr><th id="287">287</th><td><i>  // On error estimation:</i></td></tr>
+<tr><th id="288">288</th><td><i>  // abs(E_{N-1}) &lt;=   (u_{N-1} + 2 /* due to conversion e_n -&gt; E_n */) * 2^-HW</i></td></tr>
+<tr><th id="289">289</th><td><i>  //                 + (2^-HW + 2^-W))</i></td></tr>
+<tr><th id="290">290</th><td><i>  // abs(E_{N-1}) &lt;= (u_{N-1} + 3.01) * 2^-HW</i></td></tr>
+<tr><th id="291">291</th><td><i></i></td></tr>
+<tr><th id="292">292</th><td><i>  // Then like for the half-width iterations:</i></td></tr>
+<tr><th id="293">293</th><td><i>  // With 0 &lt;= eps1, eps2 &lt; 2^-W</i></td></tr>
+<tr><th id="294">294</th><td><i>  // E_N  = 4 * E_{N-1} * eps1 - (E_{N-1}^2 * b + 4 * eps2) + 4 * eps1 / b</i></td></tr>
+<tr><th id="295">295</th><td><i>  // abs(E_N) &lt;= 2^-W * [ 4 * abs(E_{N-1}) + max(2 * abs(E_{N-1})^2 * 2^W + 4, 8)) ]</i></td></tr>
+<tr><th id="296">296</th><td><i>  // abs(E_N) &lt;= 2^-W * [ 4 * (u_{N-1} + 3.01) * 2^-HW + max(4 + 2 * (u_{N-1} + 3.01)^2, 8) ]</i></td></tr>
+<tr><th id="297">297</th><td><u>#<span data-ppcond="246">endif</span></u></td></tr>
+<tr><th id="298">298</th><td></td></tr>
+<tr><th id="299">299</th><td>  <i>// Finally, account for possible overflow, as explained above.</i></td></tr>
+<tr><th id="300">300</th><td>  <a class="local col9 ref" href="#19x_UQ0" title='x_UQ0' data-ref="19x_UQ0" data-ref-filename="19x_UQ0">x_UQ0</a> -= <var>2U</var>;</td></tr>
+<tr><th id="301">301</th><td></td></tr>
+<tr><th id="302">302</th><td>  <i>// u_n for different precisions (with N-1 half-width iterations):</i></td></tr>
+<tr><th id="303">303</th><td><i>  // W0 is the precision of C</i></td></tr>
+<tr><th id="304">304</th><td><i>  //   u_0 = (3/4 - 1/sqrt(2) + 2^-W0) * 2^HW</i></td></tr>
+<tr><th id="305">305</th><td><i></i></td></tr>
+<tr><th id="306">306</th><td><i>  // Estimated with bc:</i></td></tr>
+<tr><th id="307">307</th><td><i>  //   define half1(un) { return 2.0 * (un + un^2) / 2.0^hw + 1.0; }</i></td></tr>
+<tr><th id="308">308</th><td><i>  //   define half2(un) { return 2.0 * un / 2.0^hw + 2.0; }</i></td></tr>
+<tr><th id="309">309</th><td><i>  //   define full1(un) { return 4.0 * (un + 3.01) / 2.0^hw + 2.0 * (un + 3.01)^2 + 4.0; }</i></td></tr>
+<tr><th id="310">310</th><td><i>  //   define full2(un) { return 4.0 * (un + 3.01) / 2.0^hw + 8.0; }</i></td></tr>
+<tr><th id="311">311</th><td><i></i></td></tr>
+<tr><th id="312">312</th><td><i>  //             | f32 (0 + 3) | f32 (2 + 1)  | f64 (3 + 1)  | f128 (4 + 1)</i></td></tr>
+<tr><th id="313">313</th><td><i>  // u_0         | &lt; 184224974 | &lt; 2812.1     | &lt; 184224974  | &lt; 791240234244348797</i></td></tr>
+<tr><th id="314">314</th><td><i>  // u_1         | &lt; 15804007  | &lt; 242.7      | &lt; 15804007   | &lt; 67877681371350440</i></td></tr>
+<tr><th id="315">315</th><td><i>  // u_2         | &lt; 116308    | &lt; 2.81       | &lt; 116308     | &lt; 499533100252317</i></td></tr>
+<tr><th id="316">316</th><td><i>  // u_3         | &lt; 7.31      |              | &lt; 7.31       | &lt; 27054456580</i></td></tr>
+<tr><th id="317">317</th><td><i>  // u_4         |             |              |              | &lt; 80.4</i></td></tr>
+<tr><th id="318">318</th><td><i>  // Final (U_N) | same as u_3 | &lt; 72         | &lt; 218        | &lt; 13920</i></td></tr>
+<tr><th id="319">319</th><td><i></i></td></tr>
+<tr><th id="320">320</th><td><i>  // Add 2 to U_N due to final decrement.</i></td></tr>
+<tr><th id="321">321</th><td></td></tr>
+<tr><th id="322">322</th><td><u>#<span data-ppcond="322">if</span> defined(<span class="macro" data-ref="_M/SINGLE_PRECISION">SINGLE_PRECISION</span>) &amp;&amp; <a class="macro" href="divdf3.c.html#16" title="3" data-ref="_M/NUMBER_OF_HALF_ITERATIONS">NUMBER_OF_HALF_ITERATIONS</a> == 2 &amp;&amp; <a class="macro" href="divdf3.c.html#17" title="1" data-ref="_M/NUMBER_OF_FULL_ITERATIONS">NUMBER_OF_FULL_ITERATIONS</a> == 1</u></td></tr>
+<tr><th id="323">323</th><td><u>#define RECIPROCAL_PRECISION REP_C(74)</u></td></tr>
+<tr><th id="324">324</th><td><u>#<span data-ppcond="322">elif</span> defined(<span class="macro" data-ref="_M/SINGLE_PRECISION">SINGLE_PRECISION</span>) &amp;&amp; <a class="macro" href="divdf3.c.html#16" title="3" data-ref="_M/NUMBER_OF_HALF_ITERATIONS">NUMBER_OF_HALF_ITERATIONS</a> == 0 &amp;&amp; <a class="macro" href="divdf3.c.html#17" title="1" data-ref="_M/NUMBER_OF_FULL_ITERATIONS">NUMBER_OF_FULL_ITERATIONS</a> == 3</u></td></tr>
+<tr><th id="325">325</th><td><u>#define RECIPROCAL_PRECISION REP_C(10)</u></td></tr>
+<tr><th id="326">326</th><td><u>#<span data-ppcond="322">elif</span> defined(<a class="macro" href="divdf3.c.html#14" data-ref="_M/DOUBLE_PRECISION">DOUBLE_PRECISION</a>) &amp;&amp; <a class="macro" href="divdf3.c.html#16" title="3" data-ref="_M/NUMBER_OF_HALF_ITERATIONS">NUMBER_OF_HALF_ITERATIONS</a> == 3 &amp;&amp; <a class="macro" href="divdf3.c.html#17" title="1" data-ref="_M/NUMBER_OF_FULL_ITERATIONS">NUMBER_OF_FULL_ITERATIONS</a> == 1</u></td></tr>
+<tr><th id="327">327</th><td><u>#define <dfn class="macro" id="_M/RECIPROCAL_PRECISION" data-ref="_M/RECIPROCAL_PRECISION">RECIPROCAL_PRECISION</dfn> REP_C(220)</u></td></tr>
+<tr><th id="328">328</th><td><u>#<span data-ppcond="322">elif</span> defined(QUAD_PRECISION) &amp;&amp; NUMBER_OF_HALF_ITERATIONS == 4 &amp;&amp; NUMBER_OF_FULL_ITERATIONS == 1</u></td></tr>
+<tr><th id="329">329</th><td><u>#define RECIPROCAL_PRECISION REP_C(13922)</u></td></tr>
+<tr><th id="330">330</th><td><u>#else</u></td></tr>
+<tr><th id="331">331</th><td><u>#error Invalid number of iterations</u></td></tr>
+<tr><th id="332">332</th><td><u>#<span data-ppcond="322">endif</span></u></td></tr>
+<tr><th id="333">333</th><td></td></tr>
+<tr><th id="334">334</th><td>  <i>// Suppose 1/b - P * 2^-W &lt; x &lt; 1/b + P * 2^-W</i></td></tr>
+<tr><th id="335">335</th><td>  <a class="local col9 ref" href="#19x_UQ0" title='x_UQ0' data-ref="19x_UQ0" data-ref-filename="19x_UQ0">x_UQ0</a> -= <a class="macro" href="#327" title="220ULL" data-ref="_M/RECIPROCAL_PRECISION">RECIPROCAL_PRECISION</a>;</td></tr>
+<tr><th id="336">336</th><td>  <i>// Now 1/b - (2*P) * 2^-W &lt; x &lt; 1/b</i></td></tr>
+<tr><th id="337">337</th><td><i>  // FIXME Is x_UQ0 still &gt;= 0.5?</i></td></tr>
+<tr><th id="338">338</th><td></td></tr>
+<tr><th id="339">339</th><td>  <a class="typedef" href="fp_lib.h.html#rep_t" title='rep_t' data-type='uint64_t' data-ref="rep_t" data-ref-filename="rep_t">rep_t</a> <dfn class="local col4 decl" id="24quotient_UQ1" title='quotient_UQ1' data-type='rep_t' data-ref="24quotient_UQ1" data-ref-filename="24quotient_UQ1">quotient_UQ1</dfn>, <dfn class="local col5 decl" id="25dummy" title='dummy' data-type='rep_t' data-ref="25dummy" data-ref-filename="25dummy">dummy</dfn>;</td></tr>
+<tr><th id="340">340</th><td>  <a class="ref fn" href="fp_lib.h.html#wideMultiply" title='wideMultiply' data-ref="wideMultiply" data-ref-filename="wideMultiply">wideMultiply</a>(<a class="local col9 ref" href="#19x_UQ0" title='x_UQ0' data-ref="19x_UQ0" data-ref-filename="19x_UQ0">x_UQ0</a>, <a class="local col6 ref" href="#6aSignificand" title='aSignificand' data-ref="6aSignificand" data-ref-filename="6aSignificand">aSignificand</a> &lt;&lt; <var>1</var>, &amp;<a class="local col4 ref" href="#24quotient_UQ1" title='quotient_UQ1' data-ref="24quotient_UQ1" data-ref-filename="24quotient_UQ1">quotient_UQ1</a>, &amp;<a class="local col5 ref" href="#25dummy" title='dummy' data-ref="25dummy" data-ref-filename="25dummy">dummy</a>);</td></tr>
+<tr><th id="341">341</th><td>  <i>// Now, a/b - 4*P * 2^-W &lt; q &lt; a/b for q=&lt;quotient_UQ1:dummy&gt; in UQ1.(SB+1+W).</i></td></tr>
+<tr><th id="342">342</th><td><i></i></td></tr>
+<tr><th id="343">343</th><td><i>  // quotient_UQ1 is in [0.5, 2.0) as UQ1.(SB+1),</i></td></tr>
+<tr><th id="344">344</th><td><i>  // adjust it to be in [1.0, 2.0) as UQ1.SB.</i></td></tr>
+<tr><th id="345">345</th><td>  <a class="typedef" href="fp_lib.h.html#rep_t" title='rep_t' data-type='uint64_t' data-ref="rep_t" data-ref-filename="rep_t">rep_t</a> <dfn class="local col6 decl" id="26residualLo" title='residualLo' data-type='rep_t' data-ref="26residualLo" data-ref-filename="26residualLo">residualLo</dfn>;</td></tr>
+<tr><th id="346">346</th><td>  <b>if</b> (<a class="local col4 ref" href="#24quotient_UQ1" title='quotient_UQ1' data-ref="24quotient_UQ1" data-ref-filename="24quotient_UQ1">quotient_UQ1</a> &lt; (<a class="macro" href="fp_lib.h.html#215" title="(1ULL &lt;&lt; 52)" data-ref="_M/implicitBit">implicitBit</a> &lt;&lt; <var>1</var>)) {</td></tr>
+<tr><th id="347">347</th><td>    <i>// Highest bit is 0, so just reinterpret quotient_UQ1 as UQ1.SB,</i></td></tr>
+<tr><th id="348">348</th><td><i>    // effectively doubling its value as well as its error estimation.</i></td></tr>
+<tr><th id="349">349</th><td>    <a class="local col6 ref" href="#26residualLo" title='residualLo' data-ref="26residualLo" data-ref-filename="26residualLo">residualLo</a> = (<a class="local col6 ref" href="#6aSignificand" title='aSignificand' data-ref="6aSignificand" data-ref-filename="6aSignificand">aSignificand</a> &lt;&lt; (<a class="macro" href="fp_lib.h.html#70" title="52" data-ref="_M/significandBits">significandBits</a> + <var>1</var>)) - <a class="local col4 ref" href="#24quotient_UQ1" title='quotient_UQ1' data-ref="24quotient_UQ1" data-ref-filename="24quotient_UQ1">quotient_UQ1</a> * <a class="local col7 ref" href="#7bSignificand" title='bSignificand' data-ref="7bSignificand" data-ref-filename="7bSignificand">bSignificand</a>;</td></tr>
+<tr><th id="350">350</th><td>    <a class="local col1 ref" href="#11writtenExponent" title='writtenExponent' data-ref="11writtenExponent" data-ref-filename="11writtenExponent">writtenExponent</a> -= <var>1</var>;</td></tr>
+<tr><th id="351">351</th><td>    <a class="local col6 ref" href="#6aSignificand" title='aSignificand' data-ref="6aSignificand" data-ref-filename="6aSignificand">aSignificand</a> &lt;&lt;= <var>1</var>;</td></tr>
+<tr><th id="352">352</th><td>  } <b>else</b> {</td></tr>
+<tr><th id="353">353</th><td>    <i>// Highest bit is 1 (the UQ1.(SB+1) value is in [1, 2)), convert it</i></td></tr>
+<tr><th id="354">354</th><td><i>    // to UQ1.SB by right shifting by 1. Least significant bit is omitted.</i></td></tr>
+<tr><th id="355">355</th><td>    <a class="local col4 ref" href="#24quotient_UQ1" title='quotient_UQ1' data-ref="24quotient_UQ1" data-ref-filename="24quotient_UQ1">quotient_UQ1</a> &gt;&gt;= <var>1</var>;</td></tr>
+<tr><th id="356">356</th><td>    <a class="local col6 ref" href="#26residualLo" title='residualLo' data-ref="26residualLo" data-ref-filename="26residualLo">residualLo</a> = (<a class="local col6 ref" href="#6aSignificand" title='aSignificand' data-ref="6aSignificand" data-ref-filename="6aSignificand">aSignificand</a> &lt;&lt; <a class="macro" href="fp_lib.h.html#70" title="52" data-ref="_M/significandBits">significandBits</a>) - <a class="local col4 ref" href="#24quotient_UQ1" title='quotient_UQ1' data-ref="24quotient_UQ1" data-ref-filename="24quotient_UQ1">quotient_UQ1</a> * <a class="local col7 ref" href="#7bSignificand" title='bSignificand' data-ref="7bSignificand" data-ref-filename="7bSignificand">bSignificand</a>;</td></tr>
+<tr><th id="357">357</th><td>  }</td></tr>
+<tr><th id="358">358</th><td>  <i>// NB: residualLo is calculated above for the normal result case.</i></td></tr>
+<tr><th id="359">359</th><td><i>  //     It is re-computed on denormal path that is expected to be not so</i></td></tr>
+<tr><th id="360">360</th><td><i>  //     performance-sensitive.</i></td></tr>
+<tr><th id="361">361</th><td><i></i></td></tr>
+<tr><th id="362">362</th><td><i>  // Now, q cannot be greater than a/b and can differ by at most 8*P * 2^-W + 2^-SB</i></td></tr>
+<tr><th id="363">363</th><td><i>  // Each NextAfter() increments the floating point value by at least 2^-SB</i></td></tr>
+<tr><th id="364">364</th><td><i>  // (more, if exponent was incremented).</i></td></tr>
+<tr><th id="365">365</th><td><i>  // Different cases (&lt;---&gt; is of 2^-SB length, * = a/b that is shown as a midpoint):</i></td></tr>
+<tr><th id="366">366</th><td><i>  //   q</i></td></tr>
+<tr><th id="367">367</th><td><i>  //   |   | * |   |   |       |       |</i></td></tr>
+<tr><th id="368">368</th><td><i>  //       &lt;---&gt;      2^t</i></td></tr>
+<tr><th id="369">369</th><td><i>  //   |   |   |   |   |   *   |       |</i></td></tr>
+<tr><th id="370">370</th><td><i>  //               q</i></td></tr>
+<tr><th id="371">371</th><td><i>  // To require at most one NextAfter(), an error should be less than 1.5 * 2^-SB.</i></td></tr>
+<tr><th id="372">372</th><td><i>  //   (8*P) * 2^-W + 2^-SB &lt; 1.5 * 2^-SB</i></td></tr>
+<tr><th id="373">373</th><td><i>  //   (8*P) * 2^-W         &lt; 0.5 * 2^-SB</i></td></tr>
+<tr><th id="374">374</th><td><i>  //   P &lt; 2^(W-4-SB)</i></td></tr>
+<tr><th id="375">375</th><td><i>  // Generally, for at most R NextAfter() to be enough,</i></td></tr>
+<tr><th id="376">376</th><td><i>  //   P &lt; (2*R - 1) * 2^(W-4-SB)</i></td></tr>
+<tr><th id="377">377</th><td><i>  // For f32 (0+3): 10 &lt; 32 (OK)</i></td></tr>
+<tr><th id="378">378</th><td><i>  // For f32 (2+1): 32 &lt; 74 &lt; 32 * 3, so two NextAfter() are required</i></td></tr>
+<tr><th id="379">379</th><td><i>  // For f64: 220 &lt; 256 (OK)</i></td></tr>
+<tr><th id="380">380</th><td><i>  // For f128: 4096 * 3 &lt; 13922 &lt; 4096 * 5 (three NextAfter() are required)</i></td></tr>
+<tr><th id="381">381</th><td><i></i></td></tr>
+<tr><th id="382">382</th><td><i>  // If we have overflowed the exponent, return infinity</i></td></tr>
+<tr><th id="383">383</th><td>  <b>if</b> (<a class="local col1 ref" href="#11writtenExponent" title='writtenExponent' data-ref="11writtenExponent" data-ref-filename="11writtenExponent">writtenExponent</a> &gt;= <a class="macro" href="fp_lib.h.html#212" title="((1 &lt;&lt; ((sizeof(rep_t) * 8) - 52 - 1)) - 1)" data-ref="_M/maxExponent">maxExponent</a>)</td></tr>
+<tr><th id="384">384</th><td>    <b>return</b> <a class="ref fn" href="fp_lib.h.html#fromRep" title='fromRep' data-ref="fromRep" data-ref-filename="fromRep">fromRep</a>(<a class="macro" href="fp_lib.h.html#221" title="(((1ULL &lt;&lt; (52 + ((sizeof(rep_t) * 8) - 52 - 1))) - 1U) ^ ((1ULL &lt;&lt; 52) - 1U))" data-ref="_M/infRep">infRep</a> | <a class="local col5 ref" href="#5quotientSign" title='quotientSign' data-ref="5quotientSign" data-ref-filename="5quotientSign">quotientSign</a>);</td></tr>
+<tr><th id="385">385</th><td></td></tr>
+<tr><th id="386">386</th><td>  <i>// Now, quotient_UQ1_SB &lt;= the correctly-rounded result</i></td></tr>
+<tr><th id="387">387</th><td><i>  // and may need taking NextAfter() up to 3 times (see error estimates above)</i></td></tr>
+<tr><th id="388">388</th><td><i>  // r = a - b * q</i></td></tr>
+<tr><th id="389">389</th><td>  <a class="typedef" href="fp_lib.h.html#rep_t" title='rep_t' data-type='uint64_t' data-ref="rep_t" data-ref-filename="rep_t">rep_t</a> <dfn class="local col7 decl" id="27absResult" title='absResult' data-type='rep_t' data-ref="27absResult" data-ref-filename="27absResult">absResult</dfn>;</td></tr>
+<tr><th id="390">390</th><td>  <b>if</b> (<a class="local col1 ref" href="#11writtenExponent" title='writtenExponent' data-ref="11writtenExponent" data-ref-filename="11writtenExponent">writtenExponent</a> &gt; <var>0</var>) {</td></tr>
+<tr><th id="391">391</th><td>    <i>// Clear the implicit bit</i></td></tr>
+<tr><th id="392">392</th><td>    <a class="local col7 ref" href="#27absResult" title='absResult' data-ref="27absResult" data-ref-filename="27absResult">absResult</a> = <a class="local col4 ref" href="#24quotient_UQ1" title='quotient_UQ1' data-ref="24quotient_UQ1" data-ref-filename="24quotient_UQ1">quotient_UQ1</a> &amp; <a class="macro" href="fp_lib.h.html#216" title="((1ULL &lt;&lt; 52) - 1U)" data-ref="_M/significandMask">significandMask</a>;</td></tr>
+<tr><th id="393">393</th><td>    <i>// Insert the exponent</i></td></tr>
+<tr><th id="394">394</th><td>    <a class="local col7 ref" href="#27absResult" title='absResult' data-ref="27absResult" data-ref-filename="27absResult">absResult</a> |= (<a class="typedef" href="fp_lib.h.html#rep_t" title='rep_t' data-type='uint64_t' data-ref="rep_t" data-ref-filename="rep_t">rep_t</a>)<a class="local col1 ref" href="#11writtenExponent" title='writtenExponent' data-ref="11writtenExponent" data-ref-filename="11writtenExponent">writtenExponent</a> &lt;&lt; <a class="macro" href="fp_lib.h.html#70" title="52" data-ref="_M/significandBits">significandBits</a>;</td></tr>
+<tr><th id="395">395</th><td>    <a class="local col6 ref" href="#26residualLo" title='residualLo' data-ref="26residualLo" data-ref-filename="26residualLo">residualLo</a> &lt;&lt;= <var>1</var>;</td></tr>
+<tr><th id="396">396</th><td>  } <b>else</b> {</td></tr>
+<tr><th id="397">397</th><td>    <i>// Prevent shift amount from being negative</i></td></tr>
+<tr><th id="398">398</th><td>    <b>if</b> (<a class="macro" href="fp_lib.h.html#70" title="52" data-ref="_M/significandBits">significandBits</a> + <a class="local col1 ref" href="#11writtenExponent" title='writtenExponent' data-ref="11writtenExponent" data-ref-filename="11writtenExponent">writtenExponent</a> &lt; <var>0</var>)</td></tr>
+<tr><th id="399">399</th><td>      <b>return</b> <a class="ref fn" href="fp_lib.h.html#fromRep" title='fromRep' data-ref="fromRep" data-ref-filename="fromRep">fromRep</a>(<a class="local col5 ref" href="#5quotientSign" title='quotientSign' data-ref="5quotientSign" data-ref-filename="5quotientSign">quotientSign</a>);</td></tr>
+<tr><th id="400">400</th><td></td></tr>
+<tr><th id="401">401</th><td>    <a class="local col7 ref" href="#27absResult" title='absResult' data-ref="27absResult" data-ref-filename="27absResult">absResult</a> = <a class="local col4 ref" href="#24quotient_UQ1" title='quotient_UQ1' data-ref="24quotient_UQ1" data-ref-filename="24quotient_UQ1">quotient_UQ1</a> &gt;&gt; (-<a class="local col1 ref" href="#11writtenExponent" title='writtenExponent' data-ref="11writtenExponent" data-ref-filename="11writtenExponent">writtenExponent</a> + <var>1</var>);</td></tr>
+<tr><th id="402">402</th><td></td></tr>
+<tr><th id="403">403</th><td>    <i>// multiplied by two to prevent shift amount to be negative</i></td></tr>
+<tr><th id="404">404</th><td>    <a class="local col6 ref" href="#26residualLo" title='residualLo' data-ref="26residualLo" data-ref-filename="26residualLo">residualLo</a> = (<a class="local col6 ref" href="#6aSignificand" title='aSignificand' data-ref="6aSignificand" data-ref-filename="6aSignificand">aSignificand</a> &lt;&lt; (<a class="macro" href="fp_lib.h.html#70" title="52" data-ref="_M/significandBits">significandBits</a> + <a class="local col1 ref" href="#11writtenExponent" title='writtenExponent' data-ref="11writtenExponent" data-ref-filename="11writtenExponent">writtenExponent</a>)) - (<a class="local col7 ref" href="#27absResult" title='absResult' data-ref="27absResult" data-ref-filename="27absResult">absResult</a> * <a class="local col7 ref" href="#7bSignificand" title='bSignificand' data-ref="7bSignificand" data-ref-filename="7bSignificand">bSignificand</a> &lt;&lt; <var>1</var>);</td></tr>
+<tr><th id="405">405</th><td>  }</td></tr>
+<tr><th id="406">406</th><td></td></tr>
+<tr><th id="407">407</th><td>  <i>// Round</i></td></tr>
+<tr><th id="408">408</th><td>  <a class="local col6 ref" href="#26residualLo" title='residualLo' data-ref="26residualLo" data-ref-filename="26residualLo">residualLo</a> += <a class="local col7 ref" href="#27absResult" title='absResult' data-ref="27absResult" data-ref-filename="27absResult">absResult</a> &amp; <var>1</var>; <i>// tie to even</i></td></tr>
+<tr><th id="409">409</th><td>  <i>// The above line conditionally turns the below LT comparison into LTE</i></td></tr>
+<tr><th id="410">410</th><td>  <a class="local col7 ref" href="#27absResult" title='absResult' data-ref="27absResult" data-ref-filename="27absResult">absResult</a> += <a class="local col6 ref" href="#26residualLo" title='residualLo' data-ref="26residualLo" data-ref-filename="26residualLo">residualLo</a> &gt; <a class="local col7 ref" href="#7bSignificand" title='bSignificand' data-ref="7bSignificand" data-ref-filename="7bSignificand">bSignificand</a>;</td></tr>
+<tr><th id="411">411</th><td><u>#<span data-ppcond="411">if</span> defined(<span class="macro" data-ref="_M/QUAD_PRECISION">QUAD_PRECISION</span>) || (defined(<span class="macro" data-ref="_M/SINGLE_PRECISION">SINGLE_PRECISION</span>) &amp;&amp; <a class="macro" href="divdf3.c.html#16" title="3" data-ref="_M/NUMBER_OF_HALF_ITERATIONS">NUMBER_OF_HALF_ITERATIONS</a> &gt; 0)</u></td></tr>
+<tr><th id="412">412</th><td>  <i>// Do not round Infinity to NaN</i></td></tr>
+<tr><th id="413">413</th><td>  absResult += absResult &lt; infRep &amp;&amp; residualLo &gt; (<var>2</var> + <var>1</var>) * bSignificand;</td></tr>
+<tr><th id="414">414</th><td><u>#<span data-ppcond="411">endif</span></u></td></tr>
+<tr><th id="415">415</th><td><u>#<span data-ppcond="415">if</span> defined(<span class="macro" data-ref="_M/QUAD_PRECISION">QUAD_PRECISION</span>)</u></td></tr>
+<tr><th id="416">416</th><td>  absResult += absResult &lt; infRep &amp;&amp; residualLo &gt; (<var>4</var> + <var>1</var>) * bSignificand;</td></tr>
+<tr><th id="417">417</th><td><u>#<span data-ppcond="415">endif</span></u></td></tr>
+<tr><th id="418">418</th><td>  <b>return</b> <a class="ref fn" href="fp_lib.h.html#fromRep" title='fromRep' data-ref="fromRep" data-ref-filename="fromRep">fromRep</a>(<a class="local col7 ref" href="#27absResult" title='absResult' data-ref="27absResult" data-ref-filename="27absResult">absResult</a> | <a class="local col5 ref" href="#5quotientSign" title='quotientSign' data-ref="5quotientSign" data-ref-filename="5quotientSign">quotientSign</a>);</td></tr>
+<tr><th id="419">419</th><td>}</td></tr>
+<tr><th id="420">420</th><td></td></tr>
+</table><hr/><p id='footer'>
+Generated while processing <a href='divdf3.c.html'>llvm/compiler-rt/lib/builtins/divdf3.c</a><br/>Generated on <em>2021-Jul-01</em> from project llvm revision <em>12</em>

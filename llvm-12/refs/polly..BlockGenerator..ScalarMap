@@ -1,0 +1,122 @@
+<use f='llvm/polly/include/polly/CodeGen/BlockGenerators.h' l='95' u='m' c='_ZN5polly14BlockGenerator15freeScalarAllocEPNS_13ScopArrayInfoE'/>
+<dec f='llvm/polly/include/polly/CodeGen/BlockGenerators.h' l='260' type='polly::BlockGenerator::AllocaMapTy &amp;'/>
+<use f='llvm/polly/lib/CodeGen/BlockGenerators.cpp' l='61' u='w' c='_ZN5polly14BlockGeneratorC1ERN4llvm9IRBuilderINS1_14ConstantFolderENS_10IRInserterEEERNS1_8LoopInfoERNS1_15ScalarEvolutionERNS1_13DominatorTreeERNS1_83226427'/>
+<use f='llvm/polly/lib/CodeGen/BlockGenerators.cpp' l='478' u='m' c='_ZN5polly14BlockGenerator17getOrCreateAllocaEPKNS_13ScopArrayInfoE'/>
+<offset>448</offset>
+<doc f='llvm/polly/include/polly/CodeGen/BlockGenerators.h' l='143'>/// Map to resolve scalar dependences for PHI operands and scalars.
+  ///
+  /// When translating code that contains scalar dependences as they result from
+  /// inter-block scalar dependences (including the use of data carrying PHI
+  /// nodes), we do not directly regenerate in-register SSA code, but instead
+  /// allocate some stack memory through which these scalar values are passed.
+  /// Only a later pass of -mem2reg will then (re)introduce in-register
+  /// computations.
+  ///
+  /// To keep track of the memory location(s) used to store the data computed by
+  /// a given SSA instruction, we use the map &apos;ScalarMap&apos;. ScalarMap maps a
+  /// given ScopArrayInfo to the junk of stack allocated memory, that is
+  /// used for code generation.
+  ///
+  /// Up to two different ScopArrayInfo objects are associated with each
+  /// llvm::Value:
+  ///
+  /// MemoryType::Value objects are used for normal scalar dependences that go
+  /// from a scalar definition to its use. Such dependences are lowered by
+  /// directly writing the value an instruction computes into the corresponding
+  /// chunk of memory and reading it back from this chunk of memory right before
+  /// every use of this original scalar value. The memory allocations for
+  /// MemoryType::Value objects end with &apos;.s2a&apos;.
+  ///
+  /// MemoryType::PHI (and MemoryType::ExitPHI) objects are used to model PHI
+  /// nodes. For each PHI nodes we introduce, besides the Array of type
+  /// MemoryType::Value, a second chunk of memory into which we write at the end
+  /// of each basic block preceding the PHI instruction the value passed
+  /// through this basic block. At the place where the PHI node is executed, we
+  /// replace the PHI node with a load from the corresponding MemoryType::PHI
+  /// memory location. The memory allocations for MemoryType::PHI end with
+  /// &apos;.phiops&apos;.
+  ///
+  /// Example:
+  ///
+  ///                              Input C Code
+  ///                              ============
+  ///
+  ///                 S1:      x1 = ...
+  ///                          for (i=0...N) {
+  ///                 S2:           x2 = phi(x1, add)
+  ///                 S3:           add = x2 + 42;
+  ///                          }
+  ///                 S4:      print(x1)
+  ///                          print(x2)
+  ///                          print(add)
+  ///
+  ///
+  ///        Unmodified IR                         IR After expansion
+  ///        =============                         ==================
+  ///
+  /// S1:   x1 = ...                     S1:    x1 = ...
+  ///                                           x1.s2a = s1
+  ///                                           x2.phiops = s1
+  ///        |                                    |
+  ///        |   &lt;--&lt;--&lt;--&lt;--&lt;                    |   &lt;--&lt;--&lt;--&lt;--&lt;
+  ///        | /              \                   | /              \     .
+  ///        V V               \                  V V               \    .
+  /// S2:  x2 = phi (x1, add)   |        S2:    x2 = x2.phiops       |
+  ///                           |               x2.s2a = x2          |
+  ///                           |                                    |
+  /// S3:  add = x2 + 42        |        S3:    add = x2 + 42        |
+  ///                           |               add.s2a = add        |
+  ///                           |               x2.phiops = add      |
+  ///        | \               /                  | \               /
+  ///        |  \             /                   |  \             /
+  ///        |   &gt;--&gt;--&gt;--&gt;--&gt;                    |   &gt;--&gt;--&gt;--&gt;--&gt;
+  ///        V                                    V
+  ///
+  ///                                    S4:    x1 = x1.s2a
+  /// S4:  ... = x1                             ... = x1
+  ///                                           x2 = x2.s2a
+  ///      ... = x2                             ... = x2
+  ///                                           add = add.s2a
+  ///      ... = add                            ... = add
+  ///
+  ///      ScalarMap = { x1:Value -&gt; x1.s2a, x2:Value -&gt; x2.s2a,
+  ///                    add:Value -&gt; add.s2a, x2:PHI -&gt; x2.phiops }
+  ///
+  ///  ??? Why does a PHI-node require two memory chunks ???
+  ///
+  ///  One may wonder why a PHI node requires two memory chunks and not just
+  ///  all data is stored in a single location. The following example tries
+  ///  to store all data in .s2a and drops the .phiops location:
+  ///
+  ///      S1:    x1 = ...
+  ///             x1.s2a = s1
+  ///             x2.s2a = s1             // use .s2a instead of .phiops
+  ///               |
+  ///               |   &lt;--&lt;--&lt;--&lt;--&lt;
+  ///               | /              \    .
+  ///               V V               \   .
+  ///      S2:    x2 = x2.s2a          |  // value is same as above, but read
+  ///                                  |  // from .s2a
+  ///                                  |
+  ///             x2.s2a = x2          |  // store into .s2a as normal
+  ///                                  |
+  ///      S3:    add = x2 + 42        |
+  ///             add.s2a = add        |
+  ///             x2.s2a = add         |  // use s2a instead of .phiops
+  ///               | \               /   // !!! This is wrong, as x2.s2a now
+  ///               |   &gt;--&gt;--&gt;--&gt;--&gt;     // contains add instead of x2.
+  ///               V
+  ///
+  ///      S4:    x1 = x1.s2a
+  ///             ... = x1
+  ///             x2 = x2.s2a             // !!! We now read &apos;add&apos; instead of
+  ///             ... = x2                // &apos;x2&apos;
+  ///             add = add.s2a
+  ///             ... = add
+  ///
+  ///  As visible in the example, the SSA value of the PHI node may still be
+  ///  needed _after_ the basic block, which could conceptually branch to the
+  ///  PHI node, has been run and has overwritten the PHI&apos;s old value. Hence, a
+  ///  single memory location is not enough to code-generate a PHI node.
+  ///
+  /// Memory locations used for the special PHI node modeling.</doc>

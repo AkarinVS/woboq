@@ -1,0 +1,761 @@
+<!doctype html>
+<html>
+<head>
+<meta name="viewport" content="width=device-width, initial-scale=1.0"><title>LoopInfoImpl.h source code [llvm/llvm/include/llvm/Analysis/LoopInfoImpl.h] - Woboq Code Browser</title>
+<meta name="woboq:interestingDefinitions" content="llvm::PopulateLoopsDFS "/>
+<link rel="stylesheet" href="../../../../.././data/qtcreator.css" title="QtCreator"/>
+<link rel="alternate stylesheet" href="../../../../.././data/kdevelop.css" title="KDevelop"/>
+<script type="text/javascript" src="../../../../.././data/jquery/jquery.min.js"></script>
+<script type="text/javascript" src="../../../../.././data/jquery/jquery-ui.min.js"></script>
+<script>var file = 'llvm/llvm/include/llvm/Analysis/LoopInfoImpl.h'; var root_path = '../../../../..'; var data_path = '../../../../.././data'; var ecma_script_api_version = 2;</script>
+<script src='../../../../.././data/codebrowser.js'></script>
+</head>
+<body><div id='header'><h1 id='breadcrumb'><span>Browse the source code of </span><a href='../../../..'>llvm</a>/<a href='../../..'>llvm</a>/<a href='../..'>include</a>/<a href='..'>llvm</a>/<a href='./'>Analysis</a>/<a href='LoopInfoImpl.h.html'>LoopInfoImpl.h</a></h1></div>
+<hr/><div id='content'><table class="code">
+<tr><th id="1">1</th><td><i>//===- llvm/Analysis/LoopInfoImpl.h - Natural Loop Calculator ---*- C++ -*-===//</i></td></tr>
+<tr><th id="2">2</th><td><i>//</i></td></tr>
+<tr><th id="3">3</th><td><i>// Part of the LLVM Project, under the Apache License v2.0 with LLVM Exceptions.</i></td></tr>
+<tr><th id="4">4</th><td><i>// See <a href="https://llvm.org/LICENSE.txt">https://llvm.org/LICENSE.txt</a> for license information.</i></td></tr>
+<tr><th id="5">5</th><td><i>// SPDX-License-Identifier: Apache-2.0 WITH LLVM-exception</i></td></tr>
+<tr><th id="6">6</th><td><i>//</i></td></tr>
+<tr><th id="7">7</th><td><i>//===----------------------------------------------------------------------===//</i></td></tr>
+<tr><th id="8">8</th><td><i>//</i></td></tr>
+<tr><th id="9">9</th><td><i>// This is the generic implementation of LoopInfo used for both Loops and</i></td></tr>
+<tr><th id="10">10</th><td><i>// MachineLoops.</i></td></tr>
+<tr><th id="11">11</th><td><i>//</i></td></tr>
+<tr><th id="12">12</th><td><i>//===----------------------------------------------------------------------===//</i></td></tr>
+<tr><th id="13">13</th><td></td></tr>
+<tr><th id="14">14</th><td><u>#<span data-ppcond="14">ifndef</span> <span class="macro" data-ref="_M/LLVM_ANALYSIS_LOOPINFOIMPL_H">LLVM_ANALYSIS_LOOPINFOIMPL_H</span></u></td></tr>
+<tr><th id="15">15</th><td><u>#define <dfn class="macro" id="_M/LLVM_ANALYSIS_LOOPINFOIMPL_H" data-ref="_M/LLVM_ANALYSIS_LOOPINFOIMPL_H">LLVM_ANALYSIS_LOOPINFOIMPL_H</dfn></u></td></tr>
+<tr><th id="16">16</th><td></td></tr>
+<tr><th id="17">17</th><td><u>#include <a href="../ADT/DepthFirstIterator.h.html">"llvm/ADT/DepthFirstIterator.h"</a></u></td></tr>
+<tr><th id="18">18</th><td><u>#include <a href="../ADT/PostOrderIterator.h.html">"llvm/ADT/PostOrderIterator.h"</a></u></td></tr>
+<tr><th id="19">19</th><td><u>#include <a href="../ADT/STLExtras.h.html">"llvm/ADT/STLExtras.h"</a></u></td></tr>
+<tr><th id="20">20</th><td><u>#include <a href="LoopInfo.h.html">"llvm/Analysis/LoopInfo.h"</a></u></td></tr>
+<tr><th id="21">21</th><td><u>#include <a href="../IR/Dominators.h.html">"llvm/IR/Dominators.h"</a></u></td></tr>
+<tr><th id="22">22</th><td></td></tr>
+<tr><th id="23">23</th><td><b>namespace</b> <span class="namespace">llvm</span> {</td></tr>
+<tr><th id="24">24</th><td></td></tr>
+<tr><th id="25">25</th><td><i>//===----------------------------------------------------------------------===//</i></td></tr>
+<tr><th id="26">26</th><td><i>// APIs for simple analysis of the loop. See header notes.</i></td></tr>
+<tr><th id="27">27</th><td><i></i></td></tr>
+<tr><th id="28">28</th><td><i>/// getExitingBlocks - Return all blocks inside the loop that have successors</i></td></tr>
+<tr><th id="29">29</th><td><i>/// outside of the loop.  These are the blocks _inside of the current loop_</i></td></tr>
+<tr><th id="30">30</th><td><i>/// which branch out.  The returned list is always unique.</i></td></tr>
+<tr><th id="31">31</th><td><i>///</i></td></tr>
+<tr><th id="32">32</th><td><b>template</b> &lt;<b>class</b> BlockT, <b>class</b> LoopT&gt;</td></tr>
+<tr><th id="33">33</th><td><em>void</em> <a class="type" href="LoopInfo.h.html#llvm::LoopBase" title='llvm::LoopBase' data-ref="llvm::LoopBase" data-ref-filename="llvm..LoopBase">LoopBase</a>&lt;BlockT, LoopT&gt;::<dfn class="decl def fn" id="_ZNK4llvm8LoopBase16getExitingBlocksERNS_15SmallVectorImplIPT_EE" title='llvm::LoopBase::getExitingBlocks' data-ref="_ZNK4llvm8LoopBase16getExitingBlocksERNS_15SmallVectorImplIPT_EE" data-ref-filename="_ZNK4llvm8LoopBase16getExitingBlocksERNS_15SmallVectorImplIPT_EE">getExitingBlocks</dfn>(</td></tr>
+<tr><th id="34">34</th><td>    <a class="type" href="../ADT/APInt.h.html#llvm::SmallVectorImpl" title='llvm::SmallVectorImpl' data-ref="llvm::SmallVectorImpl" data-ref-filename="llvm..SmallVectorImpl">SmallVectorImpl</a>&lt;BlockT *&gt; &amp;<dfn class="local col1 decl" id="1ExitingBlocks" title='ExitingBlocks' data-type='SmallVectorImpl&lt;BlockT *&gt; &amp;' data-ref="1ExitingBlocks" data-ref-filename="1ExitingBlocks">ExitingBlocks</dfn>) <em>const</em> {</td></tr>
+<tr><th id="35">35</th><td>  <a class="macro" href="../../../../../include/assert.h.html#50" title="(static_cast&lt;void&gt; (0))" data-ref="_M/assert">assert</a>(!isInvalid() &amp;&amp; <q>"Loop not in a valid state!"</q>);</td></tr>
+<tr><th id="36">36</th><td>  <b>for</b> (<em>const</em> <em>auto</em> <dfn class="local col2 decl" id="2BB" title='BB' data-type='const auto' data-ref="2BB" data-ref-filename="2BB">BB</dfn> : <a class="member fn" href="LoopInfo.h.html#_ZNK4llvm8LoopBase6blocksEv" title='llvm::LoopBase::blocks' data-ref="_ZNK4llvm8LoopBase6blocksEv" data-ref-filename="_ZNK4llvm8LoopBase6blocksEv">blocks</a>())</td></tr>
+<tr><th id="37">37</th><td>    <b>for</b> (<em>auto</em> *<dfn class="local col3 decl" id="3Succ" title='Succ' data-type='auto *' data-ref="3Succ" data-ref-filename="3Succ">Succ</dfn> : children&lt;BlockT *&gt;(<a class="local col2 ref" href="#2BB" title='BB' data-ref="2BB" data-ref-filename="2BB">BB</a>))</td></tr>
+<tr><th id="38">38</th><td>      <b>if</b> (!contains(<a class="local col3 ref" href="#3Succ" title='Succ' data-ref="3Succ" data-ref-filename="3Succ">Succ</a>)) {</td></tr>
+<tr><th id="39">39</th><td>        <i>// Not in current loop? It must be an exit block.</i></td></tr>
+<tr><th id="40">40</th><td>        <a class="local col1 ref" href="#1ExitingBlocks" title='ExitingBlocks' data-ref="1ExitingBlocks" data-ref-filename="1ExitingBlocks">ExitingBlocks</a>.push_back(<a class="local col2 ref" href="#2BB" title='BB' data-ref="2BB" data-ref-filename="2BB">BB</a>);</td></tr>
+<tr><th id="41">41</th><td>        <b>break</b>;</td></tr>
+<tr><th id="42">42</th><td>      }</td></tr>
+<tr><th id="43">43</th><td>}</td></tr>
+<tr><th id="44">44</th><td></td></tr>
+<tr><th id="45">45</th><td><i class="doc">/// getExitingBlock - If getExitingBlocks would return exactly one block,</i></td></tr>
+<tr><th id="46">46</th><td><i class="doc">/// return that block. Otherwise return null.</i></td></tr>
+<tr><th id="47">47</th><td><b>template</b> &lt;<b>class</b> BlockT, <b>class</b> LoopT&gt;</td></tr>
+<tr><th id="48">48</th><td>BlockT *<a class="type" href="LoopInfo.h.html#llvm::LoopBase" title='llvm::LoopBase' data-ref="llvm::LoopBase" data-ref-filename="llvm..LoopBase">LoopBase</a>&lt;BlockT, LoopT&gt;::<dfn class="decl def fn" id="_ZNK4llvm8LoopBase15getExitingBlockEv" title='llvm::LoopBase::getExitingBlock' data-ref="_ZNK4llvm8LoopBase15getExitingBlockEv" data-ref-filename="_ZNK4llvm8LoopBase15getExitingBlockEv">getExitingBlock</dfn>() <em>const</em> {</td></tr>
+<tr><th id="49">49</th><td>  <a class="macro" href="../../../../../include/assert.h.html#50" title="(static_cast&lt;void&gt; (0))" data-ref="_M/assert">assert</a>(!isInvalid() &amp;&amp; <q>"Loop not in a valid state!"</q>);</td></tr>
+<tr><th id="50">50</th><td>  <a class="type" href="../ADT/SmallVector.h.html#llvm::SmallVector" title='llvm::SmallVector' data-ref="llvm::SmallVector" data-ref-filename="llvm..SmallVector">SmallVector</a>&lt;BlockT *, <var>8</var>&gt; <dfn class="local col4 decl" id="4ExitingBlocks" title='ExitingBlocks' data-type='SmallVector&lt;BlockT *, 8&gt;' data-ref="4ExitingBlocks" data-ref-filename="4ExitingBlocks">ExitingBlocks</dfn>;</td></tr>
+<tr><th id="51">51</th><td>  <a class="member fn" href="#_ZNK4llvm8LoopBase16getExitingBlocksERNS_15SmallVectorImplIPT_EE" title='llvm::LoopBase::getExitingBlocks' data-ref="_ZNK4llvm8LoopBase16getExitingBlocksERNS_15SmallVectorImplIPT_EE" data-ref-filename="_ZNK4llvm8LoopBase16getExitingBlocksERNS_15SmallVectorImplIPT_EE">getExitingBlocks</a>(<span class='refarg'><a class="local col4 ref" href="#4ExitingBlocks" title='ExitingBlocks' data-ref="4ExitingBlocks" data-ref-filename="4ExitingBlocks">ExitingBlocks</a></span>);</td></tr>
+<tr><th id="52">52</th><td>  <b>if</b> (<a class="local col4 ref" href="#4ExitingBlocks" title='ExitingBlocks' data-ref="4ExitingBlocks" data-ref-filename="4ExitingBlocks">ExitingBlocks</a>.size() == <var>1</var>)</td></tr>
+<tr><th id="53">53</th><td>    <b>return</b> <a class="local col4 ref" href="#4ExitingBlocks" title='ExitingBlocks' data-ref="4ExitingBlocks" data-ref-filename="4ExitingBlocks">ExitingBlocks</a>[<var>0</var>];</td></tr>
+<tr><th id="54">54</th><td>  <b>return</b> <b>nullptr</b>;</td></tr>
+<tr><th id="55">55</th><td>}</td></tr>
+<tr><th id="56">56</th><td></td></tr>
+<tr><th id="57">57</th><td><i class="doc">/// getExitBlocks - Return all of the successor blocks of this loop.  These</i></td></tr>
+<tr><th id="58">58</th><td><i class="doc">/// are the blocks _outside of the current loop_ which are branched to.</i></td></tr>
+<tr><th id="59">59</th><td><i class="doc">///</i></td></tr>
+<tr><th id="60">60</th><td><b>template</b> &lt;<b>class</b> BlockT, <b>class</b> LoopT&gt;</td></tr>
+<tr><th id="61">61</th><td><em>void</em> <a class="type" href="LoopInfo.h.html#llvm::LoopBase" title='llvm::LoopBase' data-ref="llvm::LoopBase" data-ref-filename="llvm..LoopBase">LoopBase</a>&lt;BlockT, LoopT&gt;::<dfn class="decl def fn" id="_ZNK4llvm8LoopBase13getExitBlocksERNS_15SmallVectorImplIPT_EE" title='llvm::LoopBase::getExitBlocks' data-ref="_ZNK4llvm8LoopBase13getExitBlocksERNS_15SmallVectorImplIPT_EE" data-ref-filename="_ZNK4llvm8LoopBase13getExitBlocksERNS_15SmallVectorImplIPT_EE">getExitBlocks</dfn>(</td></tr>
+<tr><th id="62">62</th><td>    <a class="type" href="../ADT/APInt.h.html#llvm::SmallVectorImpl" title='llvm::SmallVectorImpl' data-ref="llvm::SmallVectorImpl" data-ref-filename="llvm..SmallVectorImpl">SmallVectorImpl</a>&lt;BlockT *&gt; &amp;<dfn class="local col5 decl" id="5ExitBlocks" title='ExitBlocks' data-type='SmallVectorImpl&lt;BlockT *&gt; &amp;' data-ref="5ExitBlocks" data-ref-filename="5ExitBlocks">ExitBlocks</dfn>) <em>const</em> {</td></tr>
+<tr><th id="63">63</th><td>  <a class="macro" href="../../../../../include/assert.h.html#50" title="(static_cast&lt;void&gt; (0))" data-ref="_M/assert">assert</a>(!isInvalid() &amp;&amp; <q>"Loop not in a valid state!"</q>);</td></tr>
+<tr><th id="64">64</th><td>  <b>for</b> (<em>const</em> <em>auto</em> <dfn class="local col6 decl" id="6BB" title='BB' data-type='const auto' data-ref="6BB" data-ref-filename="6BB">BB</dfn> : <a class="member fn" href="LoopInfo.h.html#_ZNK4llvm8LoopBase6blocksEv" title='llvm::LoopBase::blocks' data-ref="_ZNK4llvm8LoopBase6blocksEv" data-ref-filename="_ZNK4llvm8LoopBase6blocksEv">blocks</a>())</td></tr>
+<tr><th id="65">65</th><td>    <b>for</b> (<em>auto</em> *<dfn class="local col7 decl" id="7Succ" title='Succ' data-type='auto *' data-ref="7Succ" data-ref-filename="7Succ">Succ</dfn> : children&lt;BlockT *&gt;(<a class="local col6 ref" href="#6BB" title='BB' data-ref="6BB" data-ref-filename="6BB">BB</a>))</td></tr>
+<tr><th id="66">66</th><td>      <b>if</b> (!contains(<a class="local col7 ref" href="#7Succ" title='Succ' data-ref="7Succ" data-ref-filename="7Succ">Succ</a>))</td></tr>
+<tr><th id="67">67</th><td>        <i>// Not in current loop? It must be an exit block.</i></td></tr>
+<tr><th id="68">68</th><td>        <a class="local col5 ref" href="#5ExitBlocks" title='ExitBlocks' data-ref="5ExitBlocks" data-ref-filename="5ExitBlocks">ExitBlocks</a>.push_back(<a class="local col7 ref" href="#7Succ" title='Succ' data-ref="7Succ" data-ref-filename="7Succ">Succ</a>);</td></tr>
+<tr><th id="69">69</th><td>}</td></tr>
+<tr><th id="70">70</th><td></td></tr>
+<tr><th id="71">71</th><td><b>template</b> &lt;<b>class</b> BlockT, <b>class</b> LoopT&gt;</td></tr>
+<tr><th id="72">72</th><td><em>bool</em> <a class="type" href="LoopInfo.h.html#llvm::LoopBase" title='llvm::LoopBase' data-ref="llvm::LoopBase" data-ref-filename="llvm..LoopBase">LoopBase</a>&lt;BlockT, LoopT&gt;::<dfn class="decl def fn" id="_ZNK4llvm8LoopBase15hasNoExitBlocksEv" title='llvm::LoopBase::hasNoExitBlocks' data-ref="_ZNK4llvm8LoopBase15hasNoExitBlocksEv" data-ref-filename="_ZNK4llvm8LoopBase15hasNoExitBlocksEv">hasNoExitBlocks</dfn>() <em>const</em> {</td></tr>
+<tr><th id="73">73</th><td>  <a class="type" href="../ADT/SmallVector.h.html#llvm::SmallVector" title='llvm::SmallVector' data-ref="llvm::SmallVector" data-ref-filename="llvm..SmallVector">SmallVector</a>&lt;BlockT *, <var>8</var>&gt; <dfn class="local col8 decl" id="8ExitBlocks" title='ExitBlocks' data-type='SmallVector&lt;BlockT *, 8&gt;' data-ref="8ExitBlocks" data-ref-filename="8ExitBlocks">ExitBlocks</dfn>;</td></tr>
+<tr><th id="74">74</th><td>  <a class="member fn" href="#_ZNK4llvm8LoopBase13getExitBlocksERNS_15SmallVectorImplIPT_EE" title='llvm::LoopBase::getExitBlocks' data-ref="_ZNK4llvm8LoopBase13getExitBlocksERNS_15SmallVectorImplIPT_EE" data-ref-filename="_ZNK4llvm8LoopBase13getExitBlocksERNS_15SmallVectorImplIPT_EE">getExitBlocks</a>(<span class='refarg'><a class="local col8 ref" href="#8ExitBlocks" title='ExitBlocks' data-ref="8ExitBlocks" data-ref-filename="8ExitBlocks">ExitBlocks</a></span>);</td></tr>
+<tr><th id="75">75</th><td>  <b>return</b> <a class="local col8 ref" href="#8ExitBlocks" title='ExitBlocks' data-ref="8ExitBlocks" data-ref-filename="8ExitBlocks">ExitBlocks</a>.empty();</td></tr>
+<tr><th id="76">76</th><td>}</td></tr>
+<tr><th id="77">77</th><td></td></tr>
+<tr><th id="78">78</th><td><i class="doc">/// getExitBlock - If getExitBlocks would return exactly one block,</i></td></tr>
+<tr><th id="79">79</th><td><i class="doc">/// return that block. Otherwise return null.</i></td></tr>
+<tr><th id="80">80</th><td><b>template</b> &lt;<b>class</b> BlockT, <b>class</b> LoopT&gt;</td></tr>
+<tr><th id="81">81</th><td>BlockT *<a class="type" href="LoopInfo.h.html#llvm::LoopBase" title='llvm::LoopBase' data-ref="llvm::LoopBase" data-ref-filename="llvm..LoopBase">LoopBase</a>&lt;BlockT, LoopT&gt;::<dfn class="decl def fn" id="_ZNK4llvm8LoopBase12getExitBlockEv" title='llvm::LoopBase::getExitBlock' data-ref="_ZNK4llvm8LoopBase12getExitBlockEv" data-ref-filename="_ZNK4llvm8LoopBase12getExitBlockEv">getExitBlock</dfn>() <em>const</em> {</td></tr>
+<tr><th id="82">82</th><td>  <a class="macro" href="../../../../../include/assert.h.html#50" title="(static_cast&lt;void&gt; (0))" data-ref="_M/assert">assert</a>(!isInvalid() &amp;&amp; <q>"Loop not in a valid state!"</q>);</td></tr>
+<tr><th id="83">83</th><td>  <a class="type" href="../ADT/SmallVector.h.html#llvm::SmallVector" title='llvm::SmallVector' data-ref="llvm::SmallVector" data-ref-filename="llvm..SmallVector">SmallVector</a>&lt;BlockT *, <var>8</var>&gt; <dfn class="local col9 decl" id="9ExitBlocks" title='ExitBlocks' data-type='SmallVector&lt;BlockT *, 8&gt;' data-ref="9ExitBlocks" data-ref-filename="9ExitBlocks">ExitBlocks</dfn>;</td></tr>
+<tr><th id="84">84</th><td>  <a class="member fn" href="#_ZNK4llvm8LoopBase13getExitBlocksERNS_15SmallVectorImplIPT_EE" title='llvm::LoopBase::getExitBlocks' data-ref="_ZNK4llvm8LoopBase13getExitBlocksERNS_15SmallVectorImplIPT_EE" data-ref-filename="_ZNK4llvm8LoopBase13getExitBlocksERNS_15SmallVectorImplIPT_EE">getExitBlocks</a>(<span class='refarg'><a class="local col9 ref" href="#9ExitBlocks" title='ExitBlocks' data-ref="9ExitBlocks" data-ref-filename="9ExitBlocks">ExitBlocks</a></span>);</td></tr>
+<tr><th id="85">85</th><td>  <b>if</b> (<a class="local col9 ref" href="#9ExitBlocks" title='ExitBlocks' data-ref="9ExitBlocks" data-ref-filename="9ExitBlocks">ExitBlocks</a>.size() == <var>1</var>)</td></tr>
+<tr><th id="86">86</th><td>    <b>return</b> <a class="local col9 ref" href="#9ExitBlocks" title='ExitBlocks' data-ref="9ExitBlocks" data-ref-filename="9ExitBlocks">ExitBlocks</a>[<var>0</var>];</td></tr>
+<tr><th id="87">87</th><td>  <b>return</b> <b>nullptr</b>;</td></tr>
+<tr><th id="88">88</th><td>}</td></tr>
+<tr><th id="89">89</th><td></td></tr>
+<tr><th id="90">90</th><td><b>template</b> &lt;<b>class</b> BlockT, <b>class</b> LoopT&gt;</td></tr>
+<tr><th id="91">91</th><td><em>bool</em> <a class="type" href="LoopInfo.h.html#llvm::LoopBase" title='llvm::LoopBase' data-ref="llvm::LoopBase" data-ref-filename="llvm..LoopBase">LoopBase</a>&lt;BlockT, LoopT&gt;::<dfn class="decl def fn" id="_ZNK4llvm8LoopBase17hasDedicatedExitsEv" title='llvm::LoopBase::hasDedicatedExits' data-ref="_ZNK4llvm8LoopBase17hasDedicatedExitsEv" data-ref-filename="_ZNK4llvm8LoopBase17hasDedicatedExitsEv">hasDedicatedExits</dfn>() <em>const</em> {</td></tr>
+<tr><th id="92">92</th><td>  <i>// Each predecessor of each exit block of a normal loop is contained</i></td></tr>
+<tr><th id="93">93</th><td><i>  // within the loop.</i></td></tr>
+<tr><th id="94">94</th><td>  <a class="type" href="../ADT/SmallVector.h.html#llvm::SmallVector" title='llvm::SmallVector' data-ref="llvm::SmallVector" data-ref-filename="llvm..SmallVector">SmallVector</a>&lt;BlockT *, <var>4</var>&gt; <dfn class="local col0 decl" id="10UniqueExitBlocks" title='UniqueExitBlocks' data-type='SmallVector&lt;BlockT *, 4&gt;' data-ref="10UniqueExitBlocks" data-ref-filename="10UniqueExitBlocks">UniqueExitBlocks</dfn>;</td></tr>
+<tr><th id="95">95</th><td>  <a class="member fn" href="#_ZNK4llvm8LoopBase19getUniqueExitBlocksERNS_15SmallVectorImplIPT_EE" title='llvm::LoopBase::getUniqueExitBlocks' data-ref="_ZNK4llvm8LoopBase19getUniqueExitBlocksERNS_15SmallVectorImplIPT_EE" data-ref-filename="_ZNK4llvm8LoopBase19getUniqueExitBlocksERNS_15SmallVectorImplIPT_EE">getUniqueExitBlocks</a>(<span class='refarg'><a class="local col0 ref" href="#10UniqueExitBlocks" title='UniqueExitBlocks' data-ref="10UniqueExitBlocks" data-ref-filename="10UniqueExitBlocks">UniqueExitBlocks</a></span>);</td></tr>
+<tr><th id="96">96</th><td>  <b>for</b> (BlockT *<dfn class="local col1 decl" id="11EB" title='EB' data-type='BlockT *' data-ref="11EB" data-ref-filename="11EB">EB</dfn> : <a class="local col0 ref" href="#10UniqueExitBlocks" title='UniqueExitBlocks' data-ref="10UniqueExitBlocks" data-ref-filename="10UniqueExitBlocks">UniqueExitBlocks</a>)</td></tr>
+<tr><th id="97">97</th><td>    <b>for</b> (BlockT *<dfn class="local col2 decl" id="12Predecessor" title='Predecessor' data-type='BlockT *' data-ref="12Predecessor" data-ref-filename="12Predecessor">Predecessor</dfn> : children&lt;<a class="type" href="../ADT/GraphTraits.h.html#llvm::Inverse" title='llvm::Inverse' data-ref="llvm::Inverse" data-ref-filename="llvm..Inverse">Inverse</a>&lt;BlockT *&gt;&gt;(<a class="local col1 ref" href="#11EB" title='EB' data-ref="11EB" data-ref-filename="11EB">EB</a>))</td></tr>
+<tr><th id="98">98</th><td>      <b>if</b> (!contains(<a class="local col2 ref" href="#12Predecessor" title='Predecessor' data-ref="12Predecessor" data-ref-filename="12Predecessor">Predecessor</a>))</td></tr>
+<tr><th id="99">99</th><td>        <b>return</b> <b>false</b>;</td></tr>
+<tr><th id="100">100</th><td>  <i>// All the requirements are met.</i></td></tr>
+<tr><th id="101">101</th><td>  <b>return</b> <b>true</b>;</td></tr>
+<tr><th id="102">102</th><td>}</td></tr>
+<tr><th id="103">103</th><td></td></tr>
+<tr><th id="104">104</th><td><i>// Helper function to get unique loop exits. Pred is a predicate pointing to</i></td></tr>
+<tr><th id="105">105</th><td><i>// BasicBlocks in a loop which should be considered to find loop exits.</i></td></tr>
+<tr><th id="106">106</th><td><b>template</b> &lt;<b>class</b> BlockT, <b>class</b> LoopT, <b>typename</b> PredicateT&gt;</td></tr>
+<tr><th id="107">107</th><td><em>void</em> <dfn class="decl def fn" id="_ZN4llvm25getUniqueExitBlocksHelperEPKT0_RNS_15SmallVectorImplIPT_EET1_" title='llvm::getUniqueExitBlocksHelper' data-ref="_ZN4llvm25getUniqueExitBlocksHelperEPKT0_RNS_15SmallVectorImplIPT_EET1_" data-ref-filename="_ZN4llvm25getUniqueExitBlocksHelperEPKT0_RNS_15SmallVectorImplIPT_EET1_">getUniqueExitBlocksHelper</dfn>(<em>const</em> LoopT *<dfn class="local col3 decl" id="13L" title='L' data-type='const LoopT *' data-ref="13L" data-ref-filename="13L">L</dfn>,</td></tr>
+<tr><th id="108">108</th><td>                               <a class="type" href="../ADT/APInt.h.html#llvm::SmallVectorImpl" title='llvm::SmallVectorImpl' data-ref="llvm::SmallVectorImpl" data-ref-filename="llvm..SmallVectorImpl">SmallVectorImpl</a>&lt;BlockT *&gt; &amp;<dfn class="local col4 decl" id="14ExitBlocks" title='ExitBlocks' data-type='SmallVectorImpl&lt;BlockT *&gt; &amp;' data-ref="14ExitBlocks" data-ref-filename="14ExitBlocks">ExitBlocks</dfn>,</td></tr>
+<tr><th id="109">109</th><td>                               PredicateT <dfn class="local col5 decl" id="15Pred" title='Pred' data-type='PredicateT' data-ref="15Pred" data-ref-filename="15Pred">Pred</dfn>) {</td></tr>
+<tr><th id="110">110</th><td>  <a class="macro" href="../../../../../include/assert.h.html#50" title="(static_cast&lt;void&gt; (0))" data-ref="_M/assert">assert</a>(!L-&gt;isInvalid() &amp;&amp; <q>"Loop not in a valid state!"</q>);</td></tr>
+<tr><th id="111">111</th><td>  <a class="type" href="../ADT/SmallPtrSet.h.html#llvm::SmallPtrSet" title='llvm::SmallPtrSet' data-ref="llvm::SmallPtrSet" data-ref-filename="llvm..SmallPtrSet">SmallPtrSet</a>&lt;BlockT *, <var>32</var>&gt; <dfn class="local col6 decl" id="16Visited" title='Visited' data-type='SmallPtrSet&lt;BlockT *, 32&gt;' data-ref="16Visited" data-ref-filename="16Visited">Visited</dfn>;</td></tr>
+<tr><th id="112">112</th><td>  <em>auto</em> <dfn class="local col7 decl" id="17Filtered" title='Filtered' data-type='auto' data-ref="17Filtered" data-ref-filename="17Filtered">Filtered</dfn> = make_filter_range(<a class="local col3 ref" href="#13L" title='L' data-ref="13L" data-ref-filename="13L">L</a>-&gt;blocks(), <a class="local col5 ref" href="#15Pred" title='Pred' data-ref="15Pred" data-ref-filename="15Pred">Pred</a>);</td></tr>
+<tr><th id="113">113</th><td>  <b>for</b> (BlockT *<dfn class="local col8 decl" id="18BB" title='BB' data-type='BlockT *' data-ref="18BB" data-ref-filename="18BB">BB</dfn> : <a class="local col7 ref" href="#17Filtered" title='Filtered' data-ref="17Filtered" data-ref-filename="17Filtered">Filtered</a>)</td></tr>
+<tr><th id="114">114</th><td>    <b>for</b> (BlockT *<dfn class="local col9 decl" id="19Successor" title='Successor' data-type='BlockT *' data-ref="19Successor" data-ref-filename="19Successor">Successor</dfn> : children&lt;BlockT *&gt;(<a class="local col8 ref" href="#18BB" title='BB' data-ref="18BB" data-ref-filename="18BB">BB</a>))</td></tr>
+<tr><th id="115">115</th><td>      <b>if</b> (!<a class="local col3 ref" href="#13L" title='L' data-ref="13L" data-ref-filename="13L">L</a>-&gt;contains(<a class="local col9 ref" href="#19Successor" title='Successor' data-ref="19Successor" data-ref-filename="19Successor">Successor</a>))</td></tr>
+<tr><th id="116">116</th><td>        <b>if</b> (<a class="local col6 ref" href="#16Visited" title='Visited' data-ref="16Visited" data-ref-filename="16Visited">Visited</a>.insert(<a class="local col9 ref" href="#19Successor" title='Successor' data-ref="19Successor" data-ref-filename="19Successor">Successor</a>).second)</td></tr>
+<tr><th id="117">117</th><td>          <a class="local col4 ref" href="#14ExitBlocks" title='ExitBlocks' data-ref="14ExitBlocks" data-ref-filename="14ExitBlocks">ExitBlocks</a>.push_back(<a class="local col9 ref" href="#19Successor" title='Successor' data-ref="19Successor" data-ref-filename="19Successor">Successor</a>);</td></tr>
+<tr><th id="118">118</th><td>}</td></tr>
+<tr><th id="119">119</th><td></td></tr>
+<tr><th id="120">120</th><td><b>template</b> &lt;<b>class</b> BlockT, <b>class</b> LoopT&gt;</td></tr>
+<tr><th id="121">121</th><td><em>void</em> <a class="type" href="LoopInfo.h.html#llvm::LoopBase" title='llvm::LoopBase' data-ref="llvm::LoopBase" data-ref-filename="llvm..LoopBase">LoopBase</a>&lt;BlockT, LoopT&gt;::<dfn class="decl def fn" id="_ZNK4llvm8LoopBase19getUniqueExitBlocksERNS_15SmallVectorImplIPT_EE" title='llvm::LoopBase::getUniqueExitBlocks' data-ref="_ZNK4llvm8LoopBase19getUniqueExitBlocksERNS_15SmallVectorImplIPT_EE" data-ref-filename="_ZNK4llvm8LoopBase19getUniqueExitBlocksERNS_15SmallVectorImplIPT_EE">getUniqueExitBlocks</dfn>(</td></tr>
+<tr><th id="122">122</th><td>    <a class="type" href="../ADT/APInt.h.html#llvm::SmallVectorImpl" title='llvm::SmallVectorImpl' data-ref="llvm::SmallVectorImpl" data-ref-filename="llvm..SmallVectorImpl">SmallVectorImpl</a>&lt;BlockT *&gt; &amp;<dfn class="local col0 decl" id="20ExitBlocks" title='ExitBlocks' data-type='SmallVectorImpl&lt;BlockT *&gt; &amp;' data-ref="20ExitBlocks" data-ref-filename="20ExitBlocks">ExitBlocks</dfn>) <em>const</em> {</td></tr>
+<tr><th id="123">123</th><td>  getUniqueExitBlocksHelper(<b>this</b>, <a class="local col0 ref" href="#20ExitBlocks" title='ExitBlocks' data-ref="20ExitBlocks" data-ref-filename="20ExitBlocks">ExitBlocks</a>,</td></tr>
+<tr><th id="124">124</th><td>                            [](<em>const</em> BlockT *<dfn class="local col1 decl" id="21BB" title='BB' data-type='const BlockT *' data-ref="21BB" data-ref-filename="21BB">BB</dfn>) { <b>return</b> <b>true</b>; });</td></tr>
+<tr><th id="125">125</th><td>}</td></tr>
+<tr><th id="126">126</th><td></td></tr>
+<tr><th id="127">127</th><td><b>template</b> &lt;<b>class</b> BlockT, <b>class</b> LoopT&gt;</td></tr>
+<tr><th id="128">128</th><td><em>void</em> <a class="type" href="LoopInfo.h.html#llvm::LoopBase" title='llvm::LoopBase' data-ref="llvm::LoopBase" data-ref-filename="llvm..LoopBase">LoopBase</a>&lt;BlockT, LoopT&gt;::<dfn class="decl def fn" id="_ZNK4llvm8LoopBase27getUniqueNonLatchExitBlocksERNS_15SmallVectorImplIPT_EE" title='llvm::LoopBase::getUniqueNonLatchExitBlocks' data-ref="_ZNK4llvm8LoopBase27getUniqueNonLatchExitBlocksERNS_15SmallVectorImplIPT_EE" data-ref-filename="_ZNK4llvm8LoopBase27getUniqueNonLatchExitBlocksERNS_15SmallVectorImplIPT_EE">getUniqueNonLatchExitBlocks</dfn>(</td></tr>
+<tr><th id="129">129</th><td>    <a class="type" href="../ADT/APInt.h.html#llvm::SmallVectorImpl" title='llvm::SmallVectorImpl' data-ref="llvm::SmallVectorImpl" data-ref-filename="llvm..SmallVectorImpl">SmallVectorImpl</a>&lt;BlockT *&gt; &amp;<dfn class="local col2 decl" id="22ExitBlocks" title='ExitBlocks' data-type='SmallVectorImpl&lt;BlockT *&gt; &amp;' data-ref="22ExitBlocks" data-ref-filename="22ExitBlocks">ExitBlocks</dfn>) <em>const</em> {</td></tr>
+<tr><th id="130">130</th><td>  <em>const</em> BlockT *<dfn class="local col3 decl" id="23Latch" title='Latch' data-type='const BlockT *' data-ref="23Latch" data-ref-filename="23Latch">Latch</dfn> = <a class="member fn" href="#_ZNK4llvm8LoopBase12getLoopLatchEv" title='llvm::LoopBase::getLoopLatch' data-ref="_ZNK4llvm8LoopBase12getLoopLatchEv" data-ref-filename="_ZNK4llvm8LoopBase12getLoopLatchEv">getLoopLatch</a>();</td></tr>
+<tr><th id="131">131</th><td>  <a class="macro" href="../../../../../include/assert.h.html#50" title="(static_cast&lt;void&gt; (0))" data-ref="_M/assert">assert</a>(Latch &amp;&amp; <q>"Latch block must exists"</q>);</td></tr>
+<tr><th id="132">132</th><td>  getUniqueExitBlocksHelper(<b>this</b>, <a class="local col2 ref" href="#22ExitBlocks" title='ExitBlocks' data-ref="22ExitBlocks" data-ref-filename="22ExitBlocks">ExitBlocks</a>,</td></tr>
+<tr><th id="133">133</th><td>                            [<a class="local col3 ref" href="#23Latch" title='Latch' data-ref="23Latch" data-ref-filename="23Latch">Latch</a>](<em>const</em> BlockT *<dfn class="local col4 decl" id="24BB" title='BB' data-type='const BlockT *' data-ref="24BB" data-ref-filename="24BB">BB</dfn>) { <b>return</b> <a class="local col4 ref" href="#24BB" title='BB' data-ref="24BB" data-ref-filename="24BB">BB</a> != <a class="local col3 ref" href="#23Latch" title='Latch' data-ref="23Latch" data-ref-filename="23Latch">Latch</a>; });</td></tr>
+<tr><th id="134">134</th><td>}</td></tr>
+<tr><th id="135">135</th><td></td></tr>
+<tr><th id="136">136</th><td><b>template</b> &lt;<b>class</b> BlockT, <b>class</b> LoopT&gt;</td></tr>
+<tr><th id="137">137</th><td>BlockT *<a class="type" href="LoopInfo.h.html#llvm::LoopBase" title='llvm::LoopBase' data-ref="llvm::LoopBase" data-ref-filename="llvm..LoopBase">LoopBase</a>&lt;BlockT, LoopT&gt;::<dfn class="decl def fn" id="_ZNK4llvm8LoopBase18getUniqueExitBlockEv" title='llvm::LoopBase::getUniqueExitBlock' data-ref="_ZNK4llvm8LoopBase18getUniqueExitBlockEv" data-ref-filename="_ZNK4llvm8LoopBase18getUniqueExitBlockEv">getUniqueExitBlock</dfn>() <em>const</em> {</td></tr>
+<tr><th id="138">138</th><td>  <a class="type" href="../ADT/SmallVector.h.html#llvm::SmallVector" title='llvm::SmallVector' data-ref="llvm::SmallVector" data-ref-filename="llvm..SmallVector">SmallVector</a>&lt;BlockT *, <var>8</var>&gt; <dfn class="local col5 decl" id="25UniqueExitBlocks" title='UniqueExitBlocks' data-type='SmallVector&lt;BlockT *, 8&gt;' data-ref="25UniqueExitBlocks" data-ref-filename="25UniqueExitBlocks">UniqueExitBlocks</dfn>;</td></tr>
+<tr><th id="139">139</th><td>  <a class="member fn" href="#_ZNK4llvm8LoopBase19getUniqueExitBlocksERNS_15SmallVectorImplIPT_EE" title='llvm::LoopBase::getUniqueExitBlocks' data-ref="_ZNK4llvm8LoopBase19getUniqueExitBlocksERNS_15SmallVectorImplIPT_EE" data-ref-filename="_ZNK4llvm8LoopBase19getUniqueExitBlocksERNS_15SmallVectorImplIPT_EE">getUniqueExitBlocks</a>(<span class='refarg'><a class="local col5 ref" href="#25UniqueExitBlocks" title='UniqueExitBlocks' data-ref="25UniqueExitBlocks" data-ref-filename="25UniqueExitBlocks">UniqueExitBlocks</a></span>);</td></tr>
+<tr><th id="140">140</th><td>  <b>if</b> (<a class="local col5 ref" href="#25UniqueExitBlocks" title='UniqueExitBlocks' data-ref="25UniqueExitBlocks" data-ref-filename="25UniqueExitBlocks">UniqueExitBlocks</a>.size() == <var>1</var>)</td></tr>
+<tr><th id="141">141</th><td>    <b>return</b> <a class="local col5 ref" href="#25UniqueExitBlocks" title='UniqueExitBlocks' data-ref="25UniqueExitBlocks" data-ref-filename="25UniqueExitBlocks">UniqueExitBlocks</a>[<var>0</var>];</td></tr>
+<tr><th id="142">142</th><td>  <b>return</b> <b>nullptr</b>;</td></tr>
+<tr><th id="143">143</th><td>}</td></tr>
+<tr><th id="144">144</th><td></td></tr>
+<tr><th id="145">145</th><td><i class="doc">/// getExitEdges - Return all pairs of (_inside_block_,_outside_block_).</i></td></tr>
+<tr><th id="146">146</th><td><b>template</b> &lt;<b>class</b> BlockT, <b>class</b> LoopT&gt;</td></tr>
+<tr><th id="147">147</th><td><em>void</em> <a class="type" href="LoopInfo.h.html#llvm::LoopBase" title='llvm::LoopBase' data-ref="llvm::LoopBase" data-ref-filename="llvm..LoopBase">LoopBase</a>&lt;BlockT, LoopT&gt;::<dfn class="decl def fn" id="_ZNK4llvm8LoopBase12getExitEdgesERNS_15SmallVectorImplISt4pairIPT_S4_EEE" title='llvm::LoopBase::getExitEdges' data-ref="_ZNK4llvm8LoopBase12getExitEdgesERNS_15SmallVectorImplISt4pairIPT_S4_EEE" data-ref-filename="_ZNK4llvm8LoopBase12getExitEdgesERNS_15SmallVectorImplISt4pairIPT_S4_EEE">getExitEdges</dfn>(</td></tr>
+<tr><th id="148">148</th><td>    <a class="type" href="../ADT/APInt.h.html#llvm::SmallVectorImpl" title='llvm::SmallVectorImpl' data-ref="llvm::SmallVectorImpl" data-ref-filename="llvm..SmallVectorImpl">SmallVectorImpl</a>&lt;<a class="typedef" href="LoopInfo.h.html#llvm::LoopBase::Edge" title='llvm::LoopBase::Edge' data-type='std::pair&lt;BlockT *, BlockT *&gt;' data-ref="llvm::LoopBase::Edge" data-ref-filename="llvm..LoopBase..Edge">Edge</a>&gt; &amp;<dfn class="local col6 decl" id="26ExitEdges" title='ExitEdges' data-type='SmallVectorImpl&lt;llvm::LoopBase::Edge&gt; &amp;' data-ref="26ExitEdges" data-ref-filename="26ExitEdges">ExitEdges</dfn>) <em>const</em> {</td></tr>
+<tr><th id="149">149</th><td>  <a class="macro" href="../../../../../include/assert.h.html#50" title="(static_cast&lt;void&gt; (0))" data-ref="_M/assert">assert</a>(!isInvalid() &amp;&amp; <q>"Loop not in a valid state!"</q>);</td></tr>
+<tr><th id="150">150</th><td>  <b>for</b> (<em>const</em> <em>auto</em> <dfn class="local col7 decl" id="27BB" title='BB' data-type='const auto' data-ref="27BB" data-ref-filename="27BB">BB</dfn> : <a class="member fn" href="LoopInfo.h.html#_ZNK4llvm8LoopBase6blocksEv" title='llvm::LoopBase::blocks' data-ref="_ZNK4llvm8LoopBase6blocksEv" data-ref-filename="_ZNK4llvm8LoopBase6blocksEv">blocks</a>())</td></tr>
+<tr><th id="151">151</th><td>    <b>for</b> (<em>auto</em> *<dfn class="local col8 decl" id="28Succ" title='Succ' data-type='auto *' data-ref="28Succ" data-ref-filename="28Succ">Succ</dfn> : children&lt;BlockT *&gt;(<a class="local col7 ref" href="#27BB" title='BB' data-ref="27BB" data-ref-filename="27BB">BB</a>))</td></tr>
+<tr><th id="152">152</th><td>      <b>if</b> (!contains(<a class="local col8 ref" href="#28Succ" title='Succ' data-ref="28Succ" data-ref-filename="28Succ">Succ</a>))</td></tr>
+<tr><th id="153">153</th><td>        <i>// Not in current loop? It must be an exit block.</i></td></tr>
+<tr><th id="154">154</th><td>        <a class="local col6 ref" href="#26ExitEdges" title='ExitEdges' data-ref="26ExitEdges" data-ref-filename="26ExitEdges">ExitEdges</a>.emplace_back(<a class="local col7 ref" href="#27BB" title='BB' data-ref="27BB" data-ref-filename="27BB">BB</a>, <a class="local col8 ref" href="#28Succ" title='Succ' data-ref="28Succ" data-ref-filename="28Succ">Succ</a>);</td></tr>
+<tr><th id="155">155</th><td>}</td></tr>
+<tr><th id="156">156</th><td></td></tr>
+<tr><th id="157">157</th><td><i class="doc">/// getLoopPreheader - If there is a preheader for this loop, return it.  A</i></td></tr>
+<tr><th id="158">158</th><td><i class="doc">/// loop has a preheader if there is only one edge to the header of the loop</i></td></tr>
+<tr><th id="159">159</th><td><i class="doc">/// from outside of the loop and it is legal to hoist instructions into the</i></td></tr>
+<tr><th id="160">160</th><td><i class="doc">/// predecessor. If this is the case, the block branching to the header of the</i></td></tr>
+<tr><th id="161">161</th><td><i class="doc">/// loop is the preheader node.</i></td></tr>
+<tr><th id="162">162</th><td><i class="doc">///</i></td></tr>
+<tr><th id="163">163</th><td><i class="doc">/// This method returns null if there is no preheader for the loop.</i></td></tr>
+<tr><th id="164">164</th><td><i class="doc">///</i></td></tr>
+<tr><th id="165">165</th><td><b>template</b> &lt;<b>class</b> BlockT, <b>class</b> LoopT&gt;</td></tr>
+<tr><th id="166">166</th><td>BlockT *<a class="type" href="LoopInfo.h.html#llvm::LoopBase" title='llvm::LoopBase' data-ref="llvm::LoopBase" data-ref-filename="llvm..LoopBase">LoopBase</a>&lt;BlockT, LoopT&gt;::<dfn class="decl def fn" id="_ZNK4llvm8LoopBase16getLoopPreheaderEv" title='llvm::LoopBase::getLoopPreheader' data-ref="_ZNK4llvm8LoopBase16getLoopPreheaderEv" data-ref-filename="_ZNK4llvm8LoopBase16getLoopPreheaderEv">getLoopPreheader</dfn>() <em>const</em> {</td></tr>
+<tr><th id="167">167</th><td>  <a class="macro" href="../../../../../include/assert.h.html#50" title="(static_cast&lt;void&gt; (0))" data-ref="_M/assert">assert</a>(!isInvalid() &amp;&amp; <q>"Loop not in a valid state!"</q>);</td></tr>
+<tr><th id="168">168</th><td>  <i>// Keep track of nodes outside the loop branching to the header...</i></td></tr>
+<tr><th id="169">169</th><td>  BlockT *<dfn class="local col9 decl" id="29Out" title='Out' data-type='BlockT *' data-ref="29Out" data-ref-filename="29Out">Out</dfn> = <a class="member fn" href="#_ZNK4llvm8LoopBase18getLoopPredecessorEv" title='llvm::LoopBase::getLoopPredecessor' data-ref="_ZNK4llvm8LoopBase18getLoopPredecessorEv" data-ref-filename="_ZNK4llvm8LoopBase18getLoopPredecessorEv">getLoopPredecessor</a>();</td></tr>
+<tr><th id="170">170</th><td>  <b>if</b> (!<a class="local col9 ref" href="#29Out" title='Out' data-ref="29Out" data-ref-filename="29Out">Out</a>)</td></tr>
+<tr><th id="171">171</th><td>    <b>return</b> <b>nullptr</b>;</td></tr>
+<tr><th id="172">172</th><td></td></tr>
+<tr><th id="173">173</th><td>  <i>// Make sure we are allowed to hoist instructions into the predecessor.</i></td></tr>
+<tr><th id="174">174</th><td>  <b>if</b> (!<a class="local col9 ref" href="#29Out" title='Out' data-ref="29Out" data-ref-filename="29Out">Out</a>-&gt;isLegalToHoistInto())</td></tr>
+<tr><th id="175">175</th><td>    <b>return</b> <b>nullptr</b>;</td></tr>
+<tr><th id="176">176</th><td></td></tr>
+<tr><th id="177">177</th><td>  <i>// Make sure there is only one exit out of the preheader.</i></td></tr>
+<tr><th id="178">178</th><td>  <b>typedef</b> <a class="type" href="../ADT/GraphTraits.h.html#llvm::GraphTraits" title='llvm::GraphTraits' data-ref="llvm::GraphTraits" data-ref-filename="llvm..GraphTraits">GraphTraits</a>&lt;BlockT *&gt; <dfn class="local col0 typedef" id="30BlockTraits" title='BlockTraits' data-type='GraphTraits&lt;BlockT *&gt;' data-ref="30BlockTraits" data-ref-filename="30BlockTraits">BlockTraits</dfn>;</td></tr>
+<tr><th id="179">179</th><td>  <b>typename</b> <a class="local col0 typedef" href="#30BlockTraits" title='BlockTraits' data-type='GraphTraits&lt;BlockT *&gt;' data-ref="30BlockTraits" data-ref-filename="30BlockTraits">BlockTraits</a>::ChildIteratorType <dfn class="local col1 decl" id="31SI" title='SI' data-type='typename BlockTraits::ChildIteratorType' data-ref="31SI" data-ref-filename="31SI">SI</dfn> = <a class="local col0 typedef" href="#30BlockTraits" title='BlockTraits' data-type='GraphTraits&lt;BlockT *&gt;' data-ref="30BlockTraits" data-ref-filename="30BlockTraits">BlockTraits</a>::child_begin(<a class="local col9 ref" href="#29Out" title='Out' data-ref="29Out" data-ref-filename="29Out">Out</a>);</td></tr>
+<tr><th id="180">180</th><td>  ++<a class="local col1 ref" href="#31SI" title='SI' data-ref="31SI" data-ref-filename="31SI">SI</a>;</td></tr>
+<tr><th id="181">181</th><td>  <b>if</b> (<a class="local col1 ref" href="#31SI" title='SI' data-ref="31SI" data-ref-filename="31SI">SI</a> != <a class="local col0 typedef" href="#30BlockTraits" title='BlockTraits' data-type='GraphTraits&lt;BlockT *&gt;' data-ref="30BlockTraits" data-ref-filename="30BlockTraits">BlockTraits</a>::child_end(<a class="local col9 ref" href="#29Out" title='Out' data-ref="29Out" data-ref-filename="29Out">Out</a>))</td></tr>
+<tr><th id="182">182</th><td>    <b>return</b> <b>nullptr</b>; <i>// Multiple exits from the block, must not be a preheader.</i></td></tr>
+<tr><th id="183">183</th><td></td></tr>
+<tr><th id="184">184</th><td>  <i>// The predecessor has exactly one successor, so it is a preheader.</i></td></tr>
+<tr><th id="185">185</th><td>  <b>return</b> <a class="local col9 ref" href="#29Out" title='Out' data-ref="29Out" data-ref-filename="29Out">Out</a>;</td></tr>
+<tr><th id="186">186</th><td>}</td></tr>
+<tr><th id="187">187</th><td></td></tr>
+<tr><th id="188">188</th><td><i class="doc">/// getLoopPredecessor - If the given loop's header has exactly one unique</i></td></tr>
+<tr><th id="189">189</th><td><i class="doc">/// predecessor outside the loop, return it. Otherwise return null.</i></td></tr>
+<tr><th id="190">190</th><td><i class="doc">/// This is less strict that the loop "preheader" concept, which requires</i></td></tr>
+<tr><th id="191">191</th><td><i class="doc">/// the predecessor to have exactly one successor.</i></td></tr>
+<tr><th id="192">192</th><td><i class="doc">///</i></td></tr>
+<tr><th id="193">193</th><td><b>template</b> &lt;<b>class</b> BlockT, <b>class</b> LoopT&gt;</td></tr>
+<tr><th id="194">194</th><td>BlockT *<a class="type" href="LoopInfo.h.html#llvm::LoopBase" title='llvm::LoopBase' data-ref="llvm::LoopBase" data-ref-filename="llvm..LoopBase">LoopBase</a>&lt;BlockT, LoopT&gt;::<dfn class="decl def fn" id="_ZNK4llvm8LoopBase18getLoopPredecessorEv" title='llvm::LoopBase::getLoopPredecessor' data-ref="_ZNK4llvm8LoopBase18getLoopPredecessorEv" data-ref-filename="_ZNK4llvm8LoopBase18getLoopPredecessorEv">getLoopPredecessor</dfn>() <em>const</em> {</td></tr>
+<tr><th id="195">195</th><td>  <a class="macro" href="../../../../../include/assert.h.html#50" title="(static_cast&lt;void&gt; (0))" data-ref="_M/assert">assert</a>(!isInvalid() &amp;&amp; <q>"Loop not in a valid state!"</q>);</td></tr>
+<tr><th id="196">196</th><td>  <i>// Keep track of nodes outside the loop branching to the header...</i></td></tr>
+<tr><th id="197">197</th><td>  BlockT *<dfn class="local col2 decl" id="32Out" title='Out' data-type='BlockT *' data-ref="32Out" data-ref-filename="32Out">Out</dfn> = <b>nullptr</b>;</td></tr>
+<tr><th id="198">198</th><td></td></tr>
+<tr><th id="199">199</th><td>  <i>// Loop over the predecessors of the header node...</i></td></tr>
+<tr><th id="200">200</th><td>  BlockT *<dfn class="local col3 decl" id="33Header" title='Header' data-type='BlockT *' data-ref="33Header" data-ref-filename="33Header">Header</dfn> = <a class="member fn" href="LoopInfo.h.html#_ZNK4llvm8LoopBase9getHeaderEv" title='llvm::LoopBase::getHeader' data-ref="_ZNK4llvm8LoopBase9getHeaderEv" data-ref-filename="_ZNK4llvm8LoopBase9getHeaderEv">getHeader</a>();</td></tr>
+<tr><th id="201">201</th><td>  <b>for</b> (<em>const</em> <em>auto</em> <dfn class="local col4 decl" id="34Pred" title='Pred' data-type='const auto' data-ref="34Pred" data-ref-filename="34Pred">Pred</dfn> : children&lt;<a class="type" href="../ADT/GraphTraits.h.html#llvm::Inverse" title='llvm::Inverse' data-ref="llvm::Inverse" data-ref-filename="llvm..Inverse">Inverse</a>&lt;BlockT *&gt;&gt;(<a class="local col3 ref" href="#33Header" title='Header' data-ref="33Header" data-ref-filename="33Header">Header</a>)) {</td></tr>
+<tr><th id="202">202</th><td>    <b>if</b> (!contains(<a class="local col4 ref" href="#34Pred" title='Pred' data-ref="34Pred" data-ref-filename="34Pred">Pred</a>)) { <i>// If the block is not in the loop...</i></td></tr>
+<tr><th id="203">203</th><td>      <b>if</b> (<a class="local col2 ref" href="#32Out" title='Out' data-ref="32Out" data-ref-filename="32Out">Out</a> &amp;&amp; <a class="local col2 ref" href="#32Out" title='Out' data-ref="32Out" data-ref-filename="32Out">Out</a> != <a class="local col4 ref" href="#34Pred" title='Pred' data-ref="34Pred" data-ref-filename="34Pred">Pred</a>)</td></tr>
+<tr><th id="204">204</th><td>        <b>return</b> <b>nullptr</b>; <i>// Multiple predecessors outside the loop</i></td></tr>
+<tr><th id="205">205</th><td>      <a class="local col2 ref" href="#32Out" title='Out' data-ref="32Out" data-ref-filename="32Out">Out</a> = <a class="local col4 ref" href="#34Pred" title='Pred' data-ref="34Pred" data-ref-filename="34Pred">Pred</a>;</td></tr>
+<tr><th id="206">206</th><td>    }</td></tr>
+<tr><th id="207">207</th><td>  }</td></tr>
+<tr><th id="208">208</th><td></td></tr>
+<tr><th id="209">209</th><td>  <b>return</b> <a class="local col2 ref" href="#32Out" title='Out' data-ref="32Out" data-ref-filename="32Out">Out</a>;</td></tr>
+<tr><th id="210">210</th><td>}</td></tr>
+<tr><th id="211">211</th><td></td></tr>
+<tr><th id="212">212</th><td><i class="doc">/// getLoopLatch - If there is a single latch block for this loop, return it.</i></td></tr>
+<tr><th id="213">213</th><td><i class="doc">/// A latch block is a block that contains a branch back to the header.</i></td></tr>
+<tr><th id="214">214</th><td><b>template</b> &lt;<b>class</b> BlockT, <b>class</b> LoopT&gt;</td></tr>
+<tr><th id="215">215</th><td>BlockT *<a class="type" href="LoopInfo.h.html#llvm::LoopBase" title='llvm::LoopBase' data-ref="llvm::LoopBase" data-ref-filename="llvm..LoopBase">LoopBase</a>&lt;BlockT, LoopT&gt;::<dfn class="decl def fn" id="_ZNK4llvm8LoopBase12getLoopLatchEv" title='llvm::LoopBase::getLoopLatch' data-ref="_ZNK4llvm8LoopBase12getLoopLatchEv" data-ref-filename="_ZNK4llvm8LoopBase12getLoopLatchEv">getLoopLatch</dfn>() <em>const</em> {</td></tr>
+<tr><th id="216">216</th><td>  <a class="macro" href="../../../../../include/assert.h.html#50" title="(static_cast&lt;void&gt; (0))" data-ref="_M/assert">assert</a>(!isInvalid() &amp;&amp; <q>"Loop not in a valid state!"</q>);</td></tr>
+<tr><th id="217">217</th><td>  BlockT *<dfn class="local col5 decl" id="35Header" title='Header' data-type='BlockT *' data-ref="35Header" data-ref-filename="35Header">Header</dfn> = <a class="member fn" href="LoopInfo.h.html#_ZNK4llvm8LoopBase9getHeaderEv" title='llvm::LoopBase::getHeader' data-ref="_ZNK4llvm8LoopBase9getHeaderEv" data-ref-filename="_ZNK4llvm8LoopBase9getHeaderEv">getHeader</a>();</td></tr>
+<tr><th id="218">218</th><td>  BlockT *<dfn class="local col6 decl" id="36Latch" title='Latch' data-type='BlockT *' data-ref="36Latch" data-ref-filename="36Latch">Latch</dfn> = <b>nullptr</b>;</td></tr>
+<tr><th id="219">219</th><td>  <b>for</b> (<em>const</em> <em>auto</em> <dfn class="local col7 decl" id="37Pred" title='Pred' data-type='const auto' data-ref="37Pred" data-ref-filename="37Pred">Pred</dfn> : children&lt;<a class="type" href="../ADT/GraphTraits.h.html#llvm::Inverse" title='llvm::Inverse' data-ref="llvm::Inverse" data-ref-filename="llvm..Inverse">Inverse</a>&lt;BlockT *&gt;&gt;(<a class="local col5 ref" href="#35Header" title='Header' data-ref="35Header" data-ref-filename="35Header">Header</a>)) {</td></tr>
+<tr><th id="220">220</th><td>    <b>if</b> (contains(<a class="local col7 ref" href="#37Pred" title='Pred' data-ref="37Pred" data-ref-filename="37Pred">Pred</a>)) {</td></tr>
+<tr><th id="221">221</th><td>      <b>if</b> (<a class="local col6 ref" href="#36Latch" title='Latch' data-ref="36Latch" data-ref-filename="36Latch">Latch</a>)</td></tr>
+<tr><th id="222">222</th><td>        <b>return</b> <b>nullptr</b>;</td></tr>
+<tr><th id="223">223</th><td>      <a class="local col6 ref" href="#36Latch" title='Latch' data-ref="36Latch" data-ref-filename="36Latch">Latch</a> = <a class="local col7 ref" href="#37Pred" title='Pred' data-ref="37Pred" data-ref-filename="37Pred">Pred</a>;</td></tr>
+<tr><th id="224">224</th><td>    }</td></tr>
+<tr><th id="225">225</th><td>  }</td></tr>
+<tr><th id="226">226</th><td></td></tr>
+<tr><th id="227">227</th><td>  <b>return</b> <a class="local col6 ref" href="#36Latch" title='Latch' data-ref="36Latch" data-ref-filename="36Latch">Latch</a>;</td></tr>
+<tr><th id="228">228</th><td>}</td></tr>
+<tr><th id="229">229</th><td></td></tr>
+<tr><th id="230">230</th><td><i>//===----------------------------------------------------------------------===//</i></td></tr>
+<tr><th id="231">231</th><td><i>// APIs for updating loop information after changing the CFG</i></td></tr>
+<tr><th id="232">232</th><td><i>//</i></td></tr>
+<tr><th id="233">233</th><td><i></i></td></tr>
+<tr><th id="234">234</th><td><i>/// addBasicBlockToLoop - This method is used by other analyses to update loop</i></td></tr>
+<tr><th id="235">235</th><td><i>/// information.  NewBB is set to be a new member of the current loop.</i></td></tr>
+<tr><th id="236">236</th><td><i>/// Because of this, it is added as a member of all parent loops, and is added</i></td></tr>
+<tr><th id="237">237</th><td><i>/// to the specified LoopInfo object as being in the current basic block.  It</i></td></tr>
+<tr><th id="238">238</th><td><i>/// is not valid to replace the loop header with this method.</i></td></tr>
+<tr><th id="239">239</th><td><i>///</i></td></tr>
+<tr><th id="240">240</th><td><b>template</b> &lt;<b>class</b> BlockT, <b>class</b> LoopT&gt;</td></tr>
+<tr><th id="241">241</th><td><em>void</em> <a class="type" href="LoopInfo.h.html#llvm::LoopBase" title='llvm::LoopBase' data-ref="llvm::LoopBase" data-ref-filename="llvm..LoopBase">LoopBase</a>&lt;BlockT, LoopT&gt;::<dfn class="decl def fn" id="_ZN4llvm8LoopBase19addBasicBlockToLoopEPT_RNS_12LoopInfoBaseIS1_T0_EE" title='llvm::LoopBase::addBasicBlockToLoop' data-ref="_ZN4llvm8LoopBase19addBasicBlockToLoopEPT_RNS_12LoopInfoBaseIS1_T0_EE" data-ref-filename="_ZN4llvm8LoopBase19addBasicBlockToLoopEPT_RNS_12LoopInfoBaseIS1_T0_EE">addBasicBlockToLoop</dfn>(</td></tr>
+<tr><th id="242">242</th><td>    BlockT *<dfn class="local col8 decl" id="38NewBB" title='NewBB' data-type='BlockT *' data-ref="38NewBB" data-ref-filename="38NewBB">NewBB</dfn>, <a class="type" href="LoopInfo.h.html#llvm::LoopInfoBase" title='llvm::LoopInfoBase' data-ref="llvm::LoopInfoBase" data-ref-filename="llvm..LoopInfoBase">LoopInfoBase</a>&lt;BlockT, LoopT&gt; &amp;<dfn class="local col9 decl" id="39LIB" title='LIB' data-type='LoopInfoBase&lt;BlockT, LoopT&gt; &amp;' data-ref="39LIB" data-ref-filename="39LIB">LIB</dfn>) {</td></tr>
+<tr><th id="243">243</th><td>  <a class="macro" href="../../../../../include/assert.h.html#50" title="(static_cast&lt;void&gt; (0))" data-ref="_M/assert">assert</a>(!isInvalid() &amp;&amp; <q>"Loop not in a valid state!"</q>);</td></tr>
+<tr><th id="244">244</th><td><u>#<span data-ppcond="244">ifndef</span> <span class="macro" data-ref="_M/NDEBUG">NDEBUG</span></u></td></tr>
+<tr><th id="245">245</th><td>  <b>if</b> (!Blocks.empty()) {</td></tr>
+<tr><th id="246">246</th><td>    <em>auto</em> SameHeader = LIB[getHeader()];</td></tr>
+<tr><th id="247">247</th><td>    assert(contains(SameHeader) &amp;&amp; getHeader() == SameHeader-&gt;getHeader() &amp;&amp;</td></tr>
+<tr><th id="248">248</th><td>           <q>"Incorrect LI specified for this loop!"</q>);</td></tr>
+<tr><th id="249">249</th><td>  }</td></tr>
+<tr><th id="250">250</th><td><u>#<span data-ppcond="244">endif</span></u></td></tr>
+<tr><th id="251">251</th><td>  <a class="macro" href="../../../../../include/assert.h.html#50" title="(static_cast&lt;void&gt; (0))" data-ref="_M/assert">assert</a>(NewBB &amp;&amp; <q>"Cannot add a null basic block to the loop!"</q>);</td></tr>
+<tr><th id="252">252</th><td>  <a class="macro" href="../../../../../include/assert.h.html#50" title="(static_cast&lt;void&gt; (0))" data-ref="_M/assert">assert</a>(!LIB[NewBB] &amp;&amp; <q>"BasicBlock already in the loop!"</q>);</td></tr>
+<tr><th id="253">253</th><td></td></tr>
+<tr><th id="254">254</th><td>  LoopT *<dfn class="local col0 decl" id="40L" title='L' data-type='LoopT *' data-ref="40L" data-ref-filename="40L">L</dfn> = <b>static_cast</b>&lt;LoopT *&gt;(<b>this</b>);</td></tr>
+<tr><th id="255">255</th><td></td></tr>
+<tr><th id="256">256</th><td>  <i>// Add the loop mapping to the LoopInfo object...</i></td></tr>
+<tr><th id="257">257</th><td>  <a class="local col9 ref" href="#39LIB" title='LIB' data-ref="39LIB" data-ref-filename="39LIB">LIB</a>.BBMap[<a class="local col8 ref" href="#38NewBB" title='NewBB' data-ref="38NewBB" data-ref-filename="38NewBB">NewBB</a>] = <a class="local col0 ref" href="#40L" title='L' data-ref="40L" data-ref-filename="40L">L</a>;</td></tr>
+<tr><th id="258">258</th><td></td></tr>
+<tr><th id="259">259</th><td>  <i>// Add the basic block to this loop and all parent loops...</i></td></tr>
+<tr><th id="260">260</th><td>  <b>while</b> (<a class="local col0 ref" href="#40L" title='L' data-ref="40L" data-ref-filename="40L">L</a>) {</td></tr>
+<tr><th id="261">261</th><td>    <a class="local col0 ref" href="#40L" title='L' data-ref="40L" data-ref-filename="40L">L</a>-&gt;addBlockEntry(<a class="local col8 ref" href="#38NewBB" title='NewBB' data-ref="38NewBB" data-ref-filename="38NewBB">NewBB</a>);</td></tr>
+<tr><th id="262">262</th><td>    <a class="local col0 ref" href="#40L" title='L' data-ref="40L" data-ref-filename="40L">L</a> = <a class="local col0 ref" href="#40L" title='L' data-ref="40L" data-ref-filename="40L">L</a>-&gt;getParentLoop();</td></tr>
+<tr><th id="263">263</th><td>  }</td></tr>
+<tr><th id="264">264</th><td>}</td></tr>
+<tr><th id="265">265</th><td></td></tr>
+<tr><th id="266">266</th><td><i class="doc">/// replaceChildLoopWith - This is used when splitting loops up.  It replaces</i></td></tr>
+<tr><th id="267">267</th><td><i class="doc">/// the OldChild entry in our children list with NewChild, and updates the</i></td></tr>
+<tr><th id="268">268</th><td><i class="doc">/// parent pointer of OldChild to be null and the NewChild to be this loop.</i></td></tr>
+<tr><th id="269">269</th><td><i class="doc">/// This updates the loop depth of the new child.</i></td></tr>
+<tr><th id="270">270</th><td><b>template</b> &lt;<b>class</b> BlockT, <b>class</b> LoopT&gt;</td></tr>
+<tr><th id="271">271</th><td><em>void</em> <a class="type" href="LoopInfo.h.html#llvm::LoopBase" title='llvm::LoopBase' data-ref="llvm::LoopBase" data-ref-filename="llvm..LoopBase">LoopBase</a>&lt;BlockT, LoopT&gt;::<dfn class="decl def fn" id="_ZN4llvm8LoopBase20replaceChildLoopWithEPT0_S2_" title='llvm::LoopBase::replaceChildLoopWith' data-ref="_ZN4llvm8LoopBase20replaceChildLoopWithEPT0_S2_" data-ref-filename="_ZN4llvm8LoopBase20replaceChildLoopWithEPT0_S2_">replaceChildLoopWith</dfn>(LoopT *<dfn class="local col1 decl" id="41OldChild" title='OldChild' data-type='LoopT *' data-ref="41OldChild" data-ref-filename="41OldChild">OldChild</dfn>,</td></tr>
+<tr><th id="272">272</th><td>                                                   LoopT *<dfn class="local col2 decl" id="42NewChild" title='NewChild' data-type='LoopT *' data-ref="42NewChild" data-ref-filename="42NewChild">NewChild</dfn>) {</td></tr>
+<tr><th id="273">273</th><td>  <a class="macro" href="../../../../../include/assert.h.html#50" title="(static_cast&lt;void&gt; (0))" data-ref="_M/assert">assert</a>(!isInvalid() &amp;&amp; <q>"Loop not in a valid state!"</q>);</td></tr>
+<tr><th id="274">274</th><td>  <a class="macro" href="../../../../../include/assert.h.html#50" title="(static_cast&lt;void&gt; (0))" data-ref="_M/assert">assert</a>(OldChild-&gt;ParentLoop == <b>this</b> &amp;&amp; <q>"This loop is already broken!"</q>);</td></tr>
+<tr><th id="275">275</th><td>  <a class="macro" href="../../../../../include/assert.h.html#50" title="(static_cast&lt;void&gt; (0))" data-ref="_M/assert">assert</a>(!NewChild-&gt;ParentLoop &amp;&amp; <q>"NewChild already has a parent!"</q>);</td></tr>
+<tr><th id="276">276</th><td>  <b>typename</b> <span class="namespace">std::</span><span class='type' title='std::vector' data-ref="std::vector" data-ref-filename="std..vector">vector</span>&lt;LoopT *&gt;::iterator <dfn class="local col3 decl" id="43I" title='I' data-type='typename std::vector&lt;LoopT *&gt;::iterator' data-ref="43I" data-ref-filename="43I">I</dfn> = find(<a class="member field" href="LoopInfo.h.html#llvm::LoopBase::SubLoops" title='llvm::LoopBase::SubLoops' data-ref="llvm::LoopBase::SubLoops" data-ref-filename="llvm..LoopBase..SubLoops">SubLoops</a>, <a class="local col1 ref" href="#41OldChild" title='OldChild' data-ref="41OldChild" data-ref-filename="41OldChild">OldChild</a>);</td></tr>
+<tr><th id="277">277</th><td>  <a class="macro" href="../../../../../include/assert.h.html#50" title="(static_cast&lt;void&gt; (0))" data-ref="_M/assert">assert</a>(I != SubLoops.end() &amp;&amp; <q>"OldChild not in loop!"</q>);</td></tr>
+<tr><th id="278">278</th><td>  *<a class="local col3 ref" href="#43I" title='I' data-ref="43I" data-ref-filename="43I">I</a> = <a class="local col2 ref" href="#42NewChild" title='NewChild' data-ref="42NewChild" data-ref-filename="42NewChild">NewChild</a>;</td></tr>
+<tr><th id="279">279</th><td>  <a class="local col1 ref" href="#41OldChild" title='OldChild' data-ref="41OldChild" data-ref-filename="41OldChild">OldChild</a>-&gt;ParentLoop = <b>nullptr</b>;</td></tr>
+<tr><th id="280">280</th><td>  <a class="local col2 ref" href="#42NewChild" title='NewChild' data-ref="42NewChild" data-ref-filename="42NewChild">NewChild</a>-&gt;ParentLoop = <b>static_cast</b>&lt;LoopT *&gt;(<b>this</b>);</td></tr>
+<tr><th id="281">281</th><td>}</td></tr>
+<tr><th id="282">282</th><td></td></tr>
+<tr><th id="283">283</th><td><i class="doc">/// verifyLoop - Verify loop structure</i></td></tr>
+<tr><th id="284">284</th><td><b>template</b> &lt;<b>class</b> BlockT, <b>class</b> LoopT&gt;</td></tr>
+<tr><th id="285">285</th><td><em>void</em> <a class="type" href="LoopInfo.h.html#llvm::LoopBase" title='llvm::LoopBase' data-ref="llvm::LoopBase" data-ref-filename="llvm..LoopBase">LoopBase</a>&lt;BlockT, LoopT&gt;::<dfn class="decl def fn" id="_ZNK4llvm8LoopBase10verifyLoopEv" title='llvm::LoopBase::verifyLoop' data-ref="_ZNK4llvm8LoopBase10verifyLoopEv" data-ref-filename="_ZNK4llvm8LoopBase10verifyLoopEv">verifyLoop</dfn>() <em>const</em> {</td></tr>
+<tr><th id="286">286</th><td>  <a class="macro" href="../../../../../include/assert.h.html#50" title="(static_cast&lt;void&gt; (0))" data-ref="_M/assert">assert</a>(!isInvalid() &amp;&amp; <q>"Loop not in a valid state!"</q>);</td></tr>
+<tr><th id="287">287</th><td><u>#<span data-ppcond="287">ifndef</span> <span class="macro" data-ref="_M/NDEBUG">NDEBUG</span></u></td></tr>
+<tr><th id="288">288</th><td>  assert(!Blocks.empty() &amp;&amp; <q>"Loop header is missing"</q>);</td></tr>
+<tr><th id="289">289</th><td></td></tr>
+<tr><th id="290">290</th><td>  <i>// Setup for using a depth-first iterator to visit every block in the loop.</i></td></tr>
+<tr><th id="291">291</th><td>  SmallVector&lt;BlockT *, <var>8</var>&gt; ExitBBs;</td></tr>
+<tr><th id="292">292</th><td>  getExitBlocks(ExitBBs);</td></tr>
+<tr><th id="293">293</th><td>  df_iterator_default_set&lt;BlockT *&gt; VisitSet;</td></tr>
+<tr><th id="294">294</th><td>  VisitSet.insert(ExitBBs.begin(), ExitBBs.end());</td></tr>
+<tr><th id="295">295</th><td>  df_ext_iterator&lt;BlockT *, df_iterator_default_set&lt;BlockT *&gt;&gt;</td></tr>
+<tr><th id="296">296</th><td>      BI = df_ext_begin(getHeader(), VisitSet),</td></tr>
+<tr><th id="297">297</th><td>      BE = df_ext_end(getHeader(), VisitSet);</td></tr>
+<tr><th id="298">298</th><td></td></tr>
+<tr><th id="299">299</th><td>  <i>// Keep track of the BBs visited.</i></td></tr>
+<tr><th id="300">300</th><td>  SmallPtrSet&lt;BlockT *, <var>8</var>&gt; VisitedBBs;</td></tr>
+<tr><th id="301">301</th><td></td></tr>
+<tr><th id="302">302</th><td>  <i>// Check the individual blocks.</i></td></tr>
+<tr><th id="303">303</th><td>  <b>for</b> (; BI != BE; ++BI) {</td></tr>
+<tr><th id="304">304</th><td>    BlockT *BB = *BI;</td></tr>
+<tr><th id="305">305</th><td></td></tr>
+<tr><th id="306">306</th><td>    assert(std::any_of(GraphTraits&lt;BlockT *&gt;::child_begin(BB),</td></tr>
+<tr><th id="307">307</th><td>                       GraphTraits&lt;BlockT *&gt;::child_end(BB),</td></tr>
+<tr><th id="308">308</th><td>                       [&amp;](BlockT *B) { <b>return</b> contains(B); }) &amp;&amp;</td></tr>
+<tr><th id="309">309</th><td>           <q>"Loop block has no in-loop successors!"</q>);</td></tr>
+<tr><th id="310">310</th><td></td></tr>
+<tr><th id="311">311</th><td>    assert(std::any_of(GraphTraits&lt;Inverse&lt;BlockT *&gt;&gt;::child_begin(BB),</td></tr>
+<tr><th id="312">312</th><td>                       GraphTraits&lt;Inverse&lt;BlockT *&gt;&gt;::child_end(BB),</td></tr>
+<tr><th id="313">313</th><td>                       [&amp;](BlockT *B) { <b>return</b> contains(B); }) &amp;&amp;</td></tr>
+<tr><th id="314">314</th><td>           <q>"Loop block has no in-loop predecessors!"</q>);</td></tr>
+<tr><th id="315">315</th><td></td></tr>
+<tr><th id="316">316</th><td>    SmallVector&lt;BlockT *, <var>2</var>&gt; OutsideLoopPreds;</td></tr>
+<tr><th id="317">317</th><td>    std::for_each(GraphTraits&lt;Inverse&lt;BlockT *&gt;&gt;::child_begin(BB),</td></tr>
+<tr><th id="318">318</th><td>                  GraphTraits&lt;Inverse&lt;BlockT *&gt;&gt;::child_end(BB),</td></tr>
+<tr><th id="319">319</th><td>                  [&amp;](BlockT *B) {</td></tr>
+<tr><th id="320">320</th><td>                    <b>if</b> (!contains(B))</td></tr>
+<tr><th id="321">321</th><td>                      OutsideLoopPreds.push_back(B);</td></tr>
+<tr><th id="322">322</th><td>                  });</td></tr>
+<tr><th id="323">323</th><td></td></tr>
+<tr><th id="324">324</th><td>    <b>if</b> (BB == getHeader()) {</td></tr>
+<tr><th id="325">325</th><td>      assert(!OutsideLoopPreds.empty() &amp;&amp; <q>"Loop is unreachable!"</q>);</td></tr>
+<tr><th id="326">326</th><td>    } <b>else</b> <b>if</b> (!OutsideLoopPreds.empty()) {</td></tr>
+<tr><th id="327">327</th><td>      <i>// A non-header loop shouldn't be reachable from outside the loop,</i></td></tr>
+<tr><th id="328">328</th><td><i>      // though it is permitted if the predecessor is not itself actually</i></td></tr>
+<tr><th id="329">329</th><td><i>      // reachable.</i></td></tr>
+<tr><th id="330">330</th><td>      BlockT *EntryBB = &amp;BB-&gt;getParent()-&gt;front();</td></tr>
+<tr><th id="331">331</th><td>      <b>for</b> (BlockT *CB : depth_first(EntryBB))</td></tr>
+<tr><th id="332">332</th><td>        <b>for</b> (<em>unsigned</em> i = <var>0</var>, e = OutsideLoopPreds.size(); i != e; ++i)</td></tr>
+<tr><th id="333">333</th><td>          assert(CB != OutsideLoopPreds[i] &amp;&amp;</td></tr>
+<tr><th id="334">334</th><td>                 <q>"Loop has multiple entry points!"</q>);</td></tr>
+<tr><th id="335">335</th><td>    }</td></tr>
+<tr><th id="336">336</th><td>    assert(BB != &amp;getHeader()-&gt;getParent()-&gt;front() &amp;&amp;</td></tr>
+<tr><th id="337">337</th><td>           <q>"Loop contains function entry block!"</q>);</td></tr>
+<tr><th id="338">338</th><td></td></tr>
+<tr><th id="339">339</th><td>    VisitedBBs.insert(BB);</td></tr>
+<tr><th id="340">340</th><td>  }</td></tr>
+<tr><th id="341">341</th><td></td></tr>
+<tr><th id="342">342</th><td>  <b>if</b> (VisitedBBs.size() != getNumBlocks()) {</td></tr>
+<tr><th id="343">343</th><td>    dbgs() &lt;&lt; <q>"The following blocks are unreachable in the loop: "</q>;</td></tr>
+<tr><th id="344">344</th><td>    <b>for</b> (<em>auto</em> BB : Blocks) {</td></tr>
+<tr><th id="345">345</th><td>      <b>if</b> (!VisitedBBs.count(BB)) {</td></tr>
+<tr><th id="346">346</th><td>        dbgs() &lt;&lt; *BB &lt;&lt; <q>"\n"</q>;</td></tr>
+<tr><th id="347">347</th><td>      }</td></tr>
+<tr><th id="348">348</th><td>    }</td></tr>
+<tr><th id="349">349</th><td>    assert(<b>false</b> &amp;&amp; <q>"Unreachable block in loop"</q>);</td></tr>
+<tr><th id="350">350</th><td>  }</td></tr>
+<tr><th id="351">351</th><td></td></tr>
+<tr><th id="352">352</th><td>  <i>// Check the subloops.</i></td></tr>
+<tr><th id="353">353</th><td>  <b>for</b> (iterator I = begin(), E = end(); I != E; ++I)</td></tr>
+<tr><th id="354">354</th><td>    <i>// Each block in each subloop should be contained within this loop.</i></td></tr>
+<tr><th id="355">355</th><td>    <b>for</b> (block_iterator BI = (*I)-&gt;block_begin(), BE = (*I)-&gt;block_end();</td></tr>
+<tr><th id="356">356</th><td>         BI != BE; ++BI) {</td></tr>
+<tr><th id="357">357</th><td>      assert(contains(*BI) &amp;&amp;</td></tr>
+<tr><th id="358">358</th><td>             <q>"Loop does not contain all the blocks of a subloop!"</q>);</td></tr>
+<tr><th id="359">359</th><td>    }</td></tr>
+<tr><th id="360">360</th><td></td></tr>
+<tr><th id="361">361</th><td>  <i>// Check the parent loop pointer.</i></td></tr>
+<tr><th id="362">362</th><td>  <b>if</b> (ParentLoop) {</td></tr>
+<tr><th id="363">363</th><td>    assert(is_contained(*ParentLoop, <b>this</b>) &amp;&amp;</td></tr>
+<tr><th id="364">364</th><td>           <q>"Loop is not a subloop of its parent!"</q>);</td></tr>
+<tr><th id="365">365</th><td>  }</td></tr>
+<tr><th id="366">366</th><td><u>#<span data-ppcond="287">endif</span></u></td></tr>
+<tr><th id="367">367</th><td>}</td></tr>
+<tr><th id="368">368</th><td></td></tr>
+<tr><th id="369">369</th><td><i class="doc">/// verifyLoop - Verify loop structure of this loop and all nested loops.</i></td></tr>
+<tr><th id="370">370</th><td><b>template</b> &lt;<b>class</b> BlockT, <b>class</b> LoopT&gt;</td></tr>
+<tr><th id="371">371</th><td><em>void</em> <a class="type" href="LoopInfo.h.html#llvm::LoopBase" title='llvm::LoopBase' data-ref="llvm::LoopBase" data-ref-filename="llvm..LoopBase">LoopBase</a>&lt;BlockT, LoopT&gt;::<dfn class="decl def fn" id="_ZNK4llvm8LoopBase14verifyLoopNestEPNS_8DenseSetIPKT0_NS_12DenseMapInfoIS4_EEEE" title='llvm::LoopBase::verifyLoopNest' data-ref="_ZNK4llvm8LoopBase14verifyLoopNestEPNS_8DenseSetIPKT0_NS_12DenseMapInfoIS4_EEEE" data-ref-filename="_ZNK4llvm8LoopBase14verifyLoopNestEPNS_8DenseSetIPKT0_NS_12DenseMapInfoIS4_EEEE">verifyLoopNest</dfn>(</td></tr>
+<tr><th id="372">372</th><td>    <a class="type" href="../ADT/DenseSet.h.html#llvm::DenseSet" title='llvm::DenseSet' data-ref="llvm::DenseSet" data-ref-filename="llvm..DenseSet">DenseSet</a>&lt;<em>const</em> LoopT *&gt; *<dfn class="local col4 decl" id="44Loops" title='Loops' data-type='DenseSet&lt;const LoopT *&gt; *' data-ref="44Loops" data-ref-filename="44Loops">Loops</dfn>) <em>const</em> {</td></tr>
+<tr><th id="373">373</th><td>  <a class="macro" href="../../../../../include/assert.h.html#50" title="(static_cast&lt;void&gt; (0))" data-ref="_M/assert">assert</a>(!isInvalid() &amp;&amp; <q>"Loop not in a valid state!"</q>);</td></tr>
+<tr><th id="374">374</th><td>  <a class="local col4 ref" href="#44Loops" title='Loops' data-ref="44Loops" data-ref-filename="44Loops">Loops</a>-&gt;insert(<b>static_cast</b>&lt;<em>const</em> LoopT *&gt;(<b>this</b>));</td></tr>
+<tr><th id="375">375</th><td>  <i>// Verify this loop.</i></td></tr>
+<tr><th id="376">376</th><td>  <a class="member fn" href="#_ZNK4llvm8LoopBase10verifyLoopEv" title='llvm::LoopBase::verifyLoop' data-ref="_ZNK4llvm8LoopBase10verifyLoopEv" data-ref-filename="_ZNK4llvm8LoopBase10verifyLoopEv">verifyLoop</a>();</td></tr>
+<tr><th id="377">377</th><td>  <i>// Verify the subloops.</i></td></tr>
+<tr><th id="378">378</th><td>  <b>for</b> (<a class="typedef" href="LoopInfo.h.html#llvm::LoopBase::iterator" title='llvm::LoopBase::iterator' data-type='typename std::vector&lt;LoopT *&gt;::const_iterator' data-ref="llvm::LoopBase::iterator" data-ref-filename="llvm..LoopBase..iterator">iterator</a> <dfn class="local col5 decl" id="45I" title='I' data-type='llvm::LoopBase::iterator' data-ref="45I" data-ref-filename="45I">I</dfn> = <a class="member fn" href="LoopInfo.h.html#_ZNK4llvm8LoopBase5beginEv" title='llvm::LoopBase::begin' data-ref="_ZNK4llvm8LoopBase5beginEv" data-ref-filename="_ZNK4llvm8LoopBase5beginEv">begin</a>(), <dfn class="local col6 decl" id="46E" title='E' data-type='llvm::LoopBase::iterator' data-ref="46E" data-ref-filename="46E">E</dfn> = <a class="member fn" href="LoopInfo.h.html#_ZNK4llvm8LoopBase3endEv" title='llvm::LoopBase::end' data-ref="_ZNK4llvm8LoopBase3endEv" data-ref-filename="_ZNK4llvm8LoopBase3endEv">end</a>(); <a class="local col5 ref" href="#45I" title='I' data-ref="45I" data-ref-filename="45I">I</a> != <a class="local col6 ref" href="#46E" title='E' data-ref="46E" data-ref-filename="46E">E</a>; ++<a class="local col5 ref" href="#45I" title='I' data-ref="45I" data-ref-filename="45I">I</a>)</td></tr>
+<tr><th id="379">379</th><td>    (*<a class="local col5 ref" href="#45I" title='I' data-ref="45I" data-ref-filename="45I">I</a>)-&gt;verifyLoopNest(<a class="local col4 ref" href="#44Loops" title='Loops' data-ref="44Loops" data-ref-filename="44Loops">Loops</a>);</td></tr>
+<tr><th id="380">380</th><td>}</td></tr>
+<tr><th id="381">381</th><td></td></tr>
+<tr><th id="382">382</th><td><b>template</b> &lt;<b>class</b> BlockT, <b>class</b> LoopT&gt;</td></tr>
+<tr><th id="383">383</th><td><em>void</em> <a class="type" href="LoopInfo.h.html#llvm::LoopBase" title='llvm::LoopBase' data-ref="llvm::LoopBase" data-ref-filename="llvm..LoopBase">LoopBase</a>&lt;BlockT, LoopT&gt;::<dfn class="decl def fn" id="_ZNK4llvm8LoopBase5printERNS_11raw_ostreamEjb" title='llvm::LoopBase::print' data-ref="_ZNK4llvm8LoopBase5printERNS_11raw_ostreamEjb" data-ref-filename="_ZNK4llvm8LoopBase5printERNS_11raw_ostreamEjb">print</dfn>(<a class="type" href="../Support/raw_ostream.h.html#llvm::raw_ostream" title='llvm::raw_ostream' data-ref="llvm::raw_ostream" data-ref-filename="llvm..raw_ostream">raw_ostream</a> &amp;<dfn class="local col7 decl" id="47OS" title='OS' data-type='llvm::raw_ostream &amp;' data-ref="47OS" data-ref-filename="47OS">OS</dfn>, <em>unsigned</em> <dfn class="local col8 decl" id="48Depth" title='Depth' data-type='unsigned int' data-ref="48Depth" data-ref-filename="48Depth">Depth</dfn>,</td></tr>
+<tr><th id="384">384</th><td>                                    <em>bool</em> <dfn class="local col9 decl" id="49Verbose" title='Verbose' data-type='bool' data-ref="49Verbose" data-ref-filename="49Verbose">Verbose</dfn>) <em>const</em> {</td></tr>
+<tr><th id="385">385</th><td>  <a class="local col7 ref" href="#47OS" title='OS' data-ref="47OS" data-ref-filename="47OS">OS</a>.<a class="ref fn" href="../Support/raw_ostream.h.html#_ZN4llvm11raw_ostream6indentEj" title='llvm::raw_ostream::indent' data-ref="_ZN4llvm11raw_ostream6indentEj" data-ref-filename="_ZN4llvm11raw_ostream6indentEj">indent</a>(<a class="local col8 ref" href="#48Depth" title='Depth' data-ref="48Depth" data-ref-filename="48Depth">Depth</a> * <var>2</var>);</td></tr>
+<tr><th id="386">386</th><td>  <b>if</b> (<b>static_cast</b>&lt;<em>const</em> LoopT *&gt;(<b>this</b>)-&gt;isAnnotatedParallel())</td></tr>
+<tr><th id="387">387</th><td>    <a class="local col7 ref" href="#47OS" title='OS' data-ref="47OS" data-ref-filename="47OS">OS</a> <a class="ref fn" href="../Support/raw_ostream.h.html#_ZN4llvm11raw_ostreamlsEPKc" title='llvm::raw_ostream::operator&lt;&lt;' data-ref="_ZN4llvm11raw_ostreamlsEPKc" data-ref-filename="_ZN4llvm11raw_ostreamlsEPKc">&lt;&lt;</a> <q>"Parallel "</q>;</td></tr>
+<tr><th id="388">388</th><td>  <a class="local col7 ref" href="#47OS" title='OS' data-ref="47OS" data-ref-filename="47OS">OS</a> <a class="ref fn" href="../Support/raw_ostream.h.html#_ZN4llvm11raw_ostreamlsEPKc" title='llvm::raw_ostream::operator&lt;&lt;' data-ref="_ZN4llvm11raw_ostreamlsEPKc" data-ref-filename="_ZN4llvm11raw_ostreamlsEPKc">&lt;&lt;</a> <q>"Loop at depth "</q> &lt;&lt; <a class="member fn" href="LoopInfo.h.html#_ZNK4llvm8LoopBase12getLoopDepthEv" title='llvm::LoopBase::getLoopDepth' data-ref="_ZNK4llvm8LoopBase12getLoopDepthEv" data-ref-filename="_ZNK4llvm8LoopBase12getLoopDepthEv">getLoopDepth</a>() &lt;&lt; <q>" containing: "</q>;</td></tr>
+<tr><th id="389">389</th><td></td></tr>
+<tr><th id="390">390</th><td>  BlockT *<dfn class="local col0 decl" id="50H" title='H' data-type='BlockT *' data-ref="50H" data-ref-filename="50H">H</dfn> = <a class="member fn" href="LoopInfo.h.html#_ZNK4llvm8LoopBase9getHeaderEv" title='llvm::LoopBase::getHeader' data-ref="_ZNK4llvm8LoopBase9getHeaderEv" data-ref-filename="_ZNK4llvm8LoopBase9getHeaderEv">getHeader</a>();</td></tr>
+<tr><th id="391">391</th><td>  <b>for</b> (<em>unsigned</em> <dfn class="local col1 decl" id="51i" title='i' data-type='unsigned int' data-ref="51i" data-ref-filename="51i">i</dfn> = <var>0</var>; <a class="local col1 ref" href="#51i" title='i' data-ref="51i" data-ref-filename="51i">i</a> &lt; <a class="member fn" href="LoopInfo.h.html#_ZNK4llvm8LoopBase9getBlocksEv" title='llvm::LoopBase::getBlocks' data-ref="_ZNK4llvm8LoopBase9getBlocksEv" data-ref-filename="_ZNK4llvm8LoopBase9getBlocksEv">getBlocks</a>().size(); ++<a class="local col1 ref" href="#51i" title='i' data-ref="51i" data-ref-filename="51i">i</a>) {</td></tr>
+<tr><th id="392">392</th><td>    BlockT *<dfn class="local col2 decl" id="52BB" title='BB' data-type='BlockT *' data-ref="52BB" data-ref-filename="52BB">BB</dfn> = <a class="member fn" href="LoopInfo.h.html#_ZNK4llvm8LoopBase9getBlocksEv" title='llvm::LoopBase::getBlocks' data-ref="_ZNK4llvm8LoopBase9getBlocksEv" data-ref-filename="_ZNK4llvm8LoopBase9getBlocksEv">getBlocks</a>()[<a class="local col1 ref" href="#51i" title='i' data-ref="51i" data-ref-filename="51i">i</a>];</td></tr>
+<tr><th id="393">393</th><td>    <b>if</b> (!<a class="local col9 ref" href="#49Verbose" title='Verbose' data-ref="49Verbose" data-ref-filename="49Verbose">Verbose</a>) {</td></tr>
+<tr><th id="394">394</th><td>      <b>if</b> (<a class="local col1 ref" href="#51i" title='i' data-ref="51i" data-ref-filename="51i">i</a>)</td></tr>
+<tr><th id="395">395</th><td>        <a class="local col7 ref" href="#47OS" title='OS' data-ref="47OS" data-ref-filename="47OS">OS</a> <a class="ref fn" href="../Support/raw_ostream.h.html#_ZN4llvm11raw_ostreamlsEPKc" title='llvm::raw_ostream::operator&lt;&lt;' data-ref="_ZN4llvm11raw_ostreamlsEPKc" data-ref-filename="_ZN4llvm11raw_ostreamlsEPKc">&lt;&lt;</a> <q>","</q>;</td></tr>
+<tr><th id="396">396</th><td>      <a class="local col2 ref" href="#52BB" title='BB' data-ref="52BB" data-ref-filename="52BB">BB</a>-&gt;printAsOperand(<a class="local col7 ref" href="#47OS" title='OS' data-ref="47OS" data-ref-filename="47OS">OS</a>, <b>false</b>);</td></tr>
+<tr><th id="397">397</th><td>    } <b>else</b></td></tr>
+<tr><th id="398">398</th><td>      <a class="local col7 ref" href="#47OS" title='OS' data-ref="47OS" data-ref-filename="47OS">OS</a> <a class="ref fn" href="../Support/raw_ostream.h.html#_ZN4llvm11raw_ostreamlsEPKc" title='llvm::raw_ostream::operator&lt;&lt;' data-ref="_ZN4llvm11raw_ostreamlsEPKc" data-ref-filename="_ZN4llvm11raw_ostreamlsEPKc">&lt;&lt;</a> <q>"\n"</q>;</td></tr>
+<tr><th id="399">399</th><td></td></tr>
+<tr><th id="400">400</th><td>    <b>if</b> (<a class="local col2 ref" href="#52BB" title='BB' data-ref="52BB" data-ref-filename="52BB">BB</a> == <a class="local col0 ref" href="#50H" title='H' data-ref="50H" data-ref-filename="50H">H</a>)</td></tr>
+<tr><th id="401">401</th><td>      <a class="local col7 ref" href="#47OS" title='OS' data-ref="47OS" data-ref-filename="47OS">OS</a> <a class="ref fn" href="../Support/raw_ostream.h.html#_ZN4llvm11raw_ostreamlsEPKc" title='llvm::raw_ostream::operator&lt;&lt;' data-ref="_ZN4llvm11raw_ostreamlsEPKc" data-ref-filename="_ZN4llvm11raw_ostreamlsEPKc">&lt;&lt;</a> <q>"&lt;header&gt;"</q>;</td></tr>
+<tr><th id="402">402</th><td>    <b>if</b> (<a class="member fn" href="LoopInfo.h.html#_ZNK4llvm8LoopBase11isLoopLatchEPKT_" title='llvm::LoopBase::isLoopLatch' data-ref="_ZNK4llvm8LoopBase11isLoopLatchEPKT_" data-ref-filename="_ZNK4llvm8LoopBase11isLoopLatchEPKT_">isLoopLatch</a>(<a class="local col2 ref" href="#52BB" title='BB' data-ref="52BB" data-ref-filename="52BB">BB</a>))</td></tr>
+<tr><th id="403">403</th><td>      <a class="local col7 ref" href="#47OS" title='OS' data-ref="47OS" data-ref-filename="47OS">OS</a> <a class="ref fn" href="../Support/raw_ostream.h.html#_ZN4llvm11raw_ostreamlsEPKc" title='llvm::raw_ostream::operator&lt;&lt;' data-ref="_ZN4llvm11raw_ostreamlsEPKc" data-ref-filename="_ZN4llvm11raw_ostreamlsEPKc">&lt;&lt;</a> <q>"&lt;latch&gt;"</q>;</td></tr>
+<tr><th id="404">404</th><td>    <b>if</b> (<a class="member fn" href="LoopInfo.h.html#_ZNK4llvm8LoopBase13isLoopExitingEPKT_" title='llvm::LoopBase::isLoopExiting' data-ref="_ZNK4llvm8LoopBase13isLoopExitingEPKT_" data-ref-filename="_ZNK4llvm8LoopBase13isLoopExitingEPKT_">isLoopExiting</a>(<a class="local col2 ref" href="#52BB" title='BB' data-ref="52BB" data-ref-filename="52BB">BB</a>))</td></tr>
+<tr><th id="405">405</th><td>      <a class="local col7 ref" href="#47OS" title='OS' data-ref="47OS" data-ref-filename="47OS">OS</a> <a class="ref fn" href="../Support/raw_ostream.h.html#_ZN4llvm11raw_ostreamlsEPKc" title='llvm::raw_ostream::operator&lt;&lt;' data-ref="_ZN4llvm11raw_ostreamlsEPKc" data-ref-filename="_ZN4llvm11raw_ostreamlsEPKc">&lt;&lt;</a> <q>"&lt;exiting&gt;"</q>;</td></tr>
+<tr><th id="406">406</th><td>    <b>if</b> (<a class="local col9 ref" href="#49Verbose" title='Verbose' data-ref="49Verbose" data-ref-filename="49Verbose">Verbose</a>)</td></tr>
+<tr><th id="407">407</th><td>      <a class="local col2 ref" href="#52BB" title='BB' data-ref="52BB" data-ref-filename="52BB">BB</a>-&gt;print(<a class="local col7 ref" href="#47OS" title='OS' data-ref="47OS" data-ref-filename="47OS">OS</a>);</td></tr>
+<tr><th id="408">408</th><td>  }</td></tr>
+<tr><th id="409">409</th><td>  <a class="local col7 ref" href="#47OS" title='OS' data-ref="47OS" data-ref-filename="47OS">OS</a> <a class="ref fn" href="../Support/raw_ostream.h.html#_ZN4llvm11raw_ostreamlsEPKc" title='llvm::raw_ostream::operator&lt;&lt;' data-ref="_ZN4llvm11raw_ostreamlsEPKc" data-ref-filename="_ZN4llvm11raw_ostreamlsEPKc">&lt;&lt;</a> <q>"\n"</q>;</td></tr>
+<tr><th id="410">410</th><td></td></tr>
+<tr><th id="411">411</th><td>  <b>for</b> (<a class="typedef" href="LoopInfo.h.html#llvm::LoopBase::iterator" title='llvm::LoopBase::iterator' data-type='typename std::vector&lt;LoopT *&gt;::const_iterator' data-ref="llvm::LoopBase::iterator" data-ref-filename="llvm..LoopBase..iterator">iterator</a> <dfn class="local col3 decl" id="53I" title='I' data-type='llvm::LoopBase::iterator' data-ref="53I" data-ref-filename="53I">I</dfn> = <a class="member fn" href="LoopInfo.h.html#_ZNK4llvm8LoopBase5beginEv" title='llvm::LoopBase::begin' data-ref="_ZNK4llvm8LoopBase5beginEv" data-ref-filename="_ZNK4llvm8LoopBase5beginEv">begin</a>(), <dfn class="local col4 decl" id="54E" title='E' data-type='llvm::LoopBase::iterator' data-ref="54E" data-ref-filename="54E">E</dfn> = <a class="member fn" href="LoopInfo.h.html#_ZNK4llvm8LoopBase3endEv" title='llvm::LoopBase::end' data-ref="_ZNK4llvm8LoopBase3endEv" data-ref-filename="_ZNK4llvm8LoopBase3endEv">end</a>(); <a class="local col3 ref" href="#53I" title='I' data-ref="53I" data-ref-filename="53I">I</a> != <a class="local col4 ref" href="#54E" title='E' data-ref="54E" data-ref-filename="54E">E</a>; ++<a class="local col3 ref" href="#53I" title='I' data-ref="53I" data-ref-filename="53I">I</a>)</td></tr>
+<tr><th id="412">412</th><td>    (*<a class="local col3 ref" href="#53I" title='I' data-ref="53I" data-ref-filename="53I">I</a>)-&gt;print(<a class="local col7 ref" href="#47OS" title='OS' data-ref="47OS" data-ref-filename="47OS">OS</a>, <a class="local col8 ref" href="#48Depth" title='Depth' data-ref="48Depth" data-ref-filename="48Depth">Depth</a> + <var>2</var>);</td></tr>
+<tr><th id="413">413</th><td>}</td></tr>
+<tr><th id="414">414</th><td></td></tr>
+<tr><th id="415">415</th><td><i>//===----------------------------------------------------------------------===//</i></td></tr>
+<tr><th id="416">416</th><td><i>/// Stable LoopInfo Analysis - Build a loop tree using stable iterators so the</i></td></tr>
+<tr><th id="417">417</th><td><i>/// result does / not depend on use list (block predecessor) order.</i></td></tr>
+<tr><th id="418">418</th><td><i>///</i></td></tr>
+<tr><th id="419">419</th><td><i></i></td></tr>
+<tr><th id="420">420</th><td><i>/// Discover a subloop with the specified backedges such that: All blocks within</i></td></tr>
+<tr><th id="421">421</th><td><i>/// this loop are mapped to this loop or a subloop. And all subloops within this</i></td></tr>
+<tr><th id="422">422</th><td><i>/// loop have their parent loop set to this loop or a subloop.</i></td></tr>
+<tr><th id="423">423</th><td><b>template</b> &lt;<b>class</b> BlockT, <b>class</b> LoopT&gt;</td></tr>
+<tr><th id="424">424</th><td><em>static</em> <em>void</em> <dfn class="decl def fn" id="_ZN4llvmL21discoverAndMapSubloopEPT0_NS_8ArrayRefIPT_EEPNS_12LoopInfoBaseIS3_S0_EERKNS_17DominatorTreeBaseIS3_Lb0EEE" title='llvm::discoverAndMapSubloop' data-ref="_ZN4llvmL21discoverAndMapSubloopEPT0_NS_8ArrayRefIPT_EEPNS_12LoopInfoBaseIS3_S0_EERKNS_17DominatorTreeBaseIS3_Lb0EEE" data-ref-filename="_ZN4llvmL21discoverAndMapSubloopEPT0_NS_8ArrayRefIPT_EEPNS_12LoopInfoBaseIS3_S0_EERKNS_17DominatorTreeBaseIS3_Lb0EEE">discoverAndMapSubloop</dfn>(LoopT *<dfn class="local col5 decl" id="55L" title='L' data-type='LoopT *' data-ref="55L" data-ref-filename="55L">L</dfn>, <a class="type" href="../ADT/APInt.h.html#llvm::ArrayRef" title='llvm::ArrayRef' data-ref="llvm::ArrayRef" data-ref-filename="llvm..ArrayRef">ArrayRef</a>&lt;BlockT *&gt; <dfn class="local col6 decl" id="56Backedges" title='Backedges' data-type='ArrayRef&lt;BlockT *&gt;' data-ref="56Backedges" data-ref-filename="56Backedges">Backedges</dfn>,</td></tr>
+<tr><th id="425">425</th><td>                                  <a class="type" href="LoopInfo.h.html#llvm::LoopInfoBase" title='llvm::LoopInfoBase' data-ref="llvm::LoopInfoBase" data-ref-filename="llvm..LoopInfoBase">LoopInfoBase</a>&lt;BlockT, LoopT&gt; *<dfn class="local col7 decl" id="57LI" title='LI' data-type='LoopInfoBase&lt;BlockT, LoopT&gt; *' data-ref="57LI" data-ref-filename="57LI">LI</dfn>,</td></tr>
+<tr><th id="426">426</th><td>                                  <em>const</em> <a class="type" href="../Support/GenericDomTree.h.html#llvm::DomTreeBase" title='llvm::DomTreeBase' data-ref="llvm::DomTreeBase" data-ref-filename="llvm..DomTreeBase">DomTreeBase</a>&lt;BlockT&gt; &amp;<dfn class="local col8 decl" id="58DomTree" title='DomTree' data-type='const DomTreeBase&lt;BlockT&gt; &amp;' data-ref="58DomTree" data-ref-filename="58DomTree">DomTree</dfn>) {</td></tr>
+<tr><th id="427">427</th><td>  <b>typedef</b> <a class="type" href="../ADT/GraphTraits.h.html#llvm::GraphTraits" title='llvm::GraphTraits' data-ref="llvm::GraphTraits" data-ref-filename="llvm..GraphTraits">GraphTraits</a>&lt;<a class="type" href="../ADT/GraphTraits.h.html#llvm::Inverse" title='llvm::Inverse' data-ref="llvm::Inverse" data-ref-filename="llvm..Inverse">Inverse</a>&lt;BlockT *&gt;&gt; <dfn class="local col9 typedef" id="59InvBlockTraits" title='InvBlockTraits' data-type='GraphTraits&lt;Inverse&lt;BlockT *&gt; &gt;' data-ref="59InvBlockTraits" data-ref-filename="59InvBlockTraits">InvBlockTraits</dfn>;</td></tr>
+<tr><th id="428">428</th><td></td></tr>
+<tr><th id="429">429</th><td>  <em>unsigned</em> <dfn class="local col0 decl" id="60NumBlocks" title='NumBlocks' data-type='unsigned int' data-ref="60NumBlocks" data-ref-filename="60NumBlocks">NumBlocks</dfn> = <var>0</var>;</td></tr>
+<tr><th id="430">430</th><td>  <em>unsigned</em> <dfn class="local col1 decl" id="61NumSubloops" title='NumSubloops' data-type='unsigned int' data-ref="61NumSubloops" data-ref-filename="61NumSubloops">NumSubloops</dfn> = <var>0</var>;</td></tr>
+<tr><th id="431">431</th><td></td></tr>
+<tr><th id="432">432</th><td>  <i>// Perform a backward CFG traversal using a worklist.</i></td></tr>
+<tr><th id="433">433</th><td>  <span class="namespace">std::</span><span class='type' title='std::vector' data-ref="std::vector" data-ref-filename="std..vector">vector</span>&lt;BlockT *&gt; <dfn class="local col2 decl" id="62ReverseCFGWorklist" title='ReverseCFGWorklist' data-type='std::vector&lt;BlockT *&gt;' data-ref="62ReverseCFGWorklist" data-ref-filename="62ReverseCFGWorklist">ReverseCFGWorklist</dfn>(<a class="local col6 ref" href="#56Backedges" title='Backedges' data-ref="56Backedges" data-ref-filename="56Backedges">Backedges</a>.begin(), <a class="local col6 ref" href="#56Backedges" title='Backedges' data-ref="56Backedges" data-ref-filename="56Backedges">Backedges</a>.end());</td></tr>
+<tr><th id="434">434</th><td>  <b>while</b> (!<a class="local col2 ref" href="#62ReverseCFGWorklist" title='ReverseCFGWorklist' data-ref="62ReverseCFGWorklist" data-ref-filename="62ReverseCFGWorklist">ReverseCFGWorklist</a>.empty()) {</td></tr>
+<tr><th id="435">435</th><td>    BlockT *<dfn class="local col3 decl" id="63PredBB" title='PredBB' data-type='BlockT *' data-ref="63PredBB" data-ref-filename="63PredBB">PredBB</dfn> = <a class="local col2 ref" href="#62ReverseCFGWorklist" title='ReverseCFGWorklist' data-ref="62ReverseCFGWorklist" data-ref-filename="62ReverseCFGWorklist">ReverseCFGWorklist</a>.back();</td></tr>
+<tr><th id="436">436</th><td>    <a class="local col2 ref" href="#62ReverseCFGWorklist" title='ReverseCFGWorklist' data-ref="62ReverseCFGWorklist" data-ref-filename="62ReverseCFGWorklist">ReverseCFGWorklist</a>.pop_back();</td></tr>
+<tr><th id="437">437</th><td></td></tr>
+<tr><th id="438">438</th><td>    LoopT *<dfn class="local col4 decl" id="64Subloop" title='Subloop' data-type='LoopT *' data-ref="64Subloop" data-ref-filename="64Subloop">Subloop</dfn> = <a class="local col7 ref" href="#57LI" title='LI' data-ref="57LI" data-ref-filename="57LI">LI</a>-&gt;getLoopFor(<a class="local col3 ref" href="#63PredBB" title='PredBB' data-ref="63PredBB" data-ref-filename="63PredBB">PredBB</a>);</td></tr>
+<tr><th id="439">439</th><td>    <b>if</b> (!<a class="local col4 ref" href="#64Subloop" title='Subloop' data-ref="64Subloop" data-ref-filename="64Subloop">Subloop</a>) {</td></tr>
+<tr><th id="440">440</th><td>      <b>if</b> (!<a class="local col8 ref" href="#58DomTree" title='DomTree' data-ref="58DomTree" data-ref-filename="58DomTree">DomTree</a>.isReachableFromEntry(<a class="local col3 ref" href="#63PredBB" title='PredBB' data-ref="63PredBB" data-ref-filename="63PredBB">PredBB</a>))</td></tr>
+<tr><th id="441">441</th><td>        <b>continue</b>;</td></tr>
+<tr><th id="442">442</th><td></td></tr>
+<tr><th id="443">443</th><td>      <i>// This is an undiscovered block. Map it to the current loop.</i></td></tr>
+<tr><th id="444">444</th><td>      <a class="local col7 ref" href="#57LI" title='LI' data-ref="57LI" data-ref-filename="57LI">LI</a>-&gt;changeLoopFor(<a class="local col3 ref" href="#63PredBB" title='PredBB' data-ref="63PredBB" data-ref-filename="63PredBB">PredBB</a>, <a class="local col5 ref" href="#55L" title='L' data-ref="55L" data-ref-filename="55L">L</a>);</td></tr>
+<tr><th id="445">445</th><td>      ++<a class="local col0 ref" href="#60NumBlocks" title='NumBlocks' data-ref="60NumBlocks" data-ref-filename="60NumBlocks">NumBlocks</a>;</td></tr>
+<tr><th id="446">446</th><td>      <b>if</b> (<a class="local col3 ref" href="#63PredBB" title='PredBB' data-ref="63PredBB" data-ref-filename="63PredBB">PredBB</a> == <a class="local col5 ref" href="#55L" title='L' data-ref="55L" data-ref-filename="55L">L</a>-&gt;getHeader())</td></tr>
+<tr><th id="447">447</th><td>        <b>continue</b>;</td></tr>
+<tr><th id="448">448</th><td>      <i>// Push all block predecessors on the worklist.</i></td></tr>
+<tr><th id="449">449</th><td>      <a class="local col2 ref" href="#62ReverseCFGWorklist" title='ReverseCFGWorklist' data-ref="62ReverseCFGWorklist" data-ref-filename="62ReverseCFGWorklist">ReverseCFGWorklist</a>.insert(<a class="local col2 ref" href="#62ReverseCFGWorklist" title='ReverseCFGWorklist' data-ref="62ReverseCFGWorklist" data-ref-filename="62ReverseCFGWorklist">ReverseCFGWorklist</a>.end(),</td></tr>
+<tr><th id="450">450</th><td>                                <a class="local col9 typedef" href="#59InvBlockTraits" title='InvBlockTraits' data-type='GraphTraits&lt;Inverse&lt;BlockT *&gt; &gt;' data-ref="59InvBlockTraits" data-ref-filename="59InvBlockTraits">InvBlockTraits</a>::child_begin(<a class="local col3 ref" href="#63PredBB" title='PredBB' data-ref="63PredBB" data-ref-filename="63PredBB">PredBB</a>),</td></tr>
+<tr><th id="451">451</th><td>                                <a class="local col9 typedef" href="#59InvBlockTraits" title='InvBlockTraits' data-type='GraphTraits&lt;Inverse&lt;BlockT *&gt; &gt;' data-ref="59InvBlockTraits" data-ref-filename="59InvBlockTraits">InvBlockTraits</a>::child_end(<a class="local col3 ref" href="#63PredBB" title='PredBB' data-ref="63PredBB" data-ref-filename="63PredBB">PredBB</a>));</td></tr>
+<tr><th id="452">452</th><td>    } <b>else</b> {</td></tr>
+<tr><th id="453">453</th><td>      <i>// This is a discovered block. Find its outermost discovered loop.</i></td></tr>
+<tr><th id="454">454</th><td>      <b>while</b> (LoopT *<dfn class="local col5 decl" id="65Parent" title='Parent' data-type='LoopT *' data-ref="65Parent" data-ref-filename="65Parent"><a class="local col5 ref" href="#65Parent" title='Parent' data-ref="65Parent" data-ref-filename="65Parent">Parent</a></dfn> = <a class="local col4 ref" href="#64Subloop" title='Subloop' data-ref="64Subloop" data-ref-filename="64Subloop">Subloop</a>-&gt;getParentLoop())</td></tr>
+<tr><th id="455">455</th><td>        <a class="local col4 ref" href="#64Subloop" title='Subloop' data-ref="64Subloop" data-ref-filename="64Subloop">Subloop</a> = <a class="local col5 ref" href="#65Parent" title='Parent' data-ref="65Parent" data-ref-filename="65Parent">Parent</a>;</td></tr>
+<tr><th id="456">456</th><td></td></tr>
+<tr><th id="457">457</th><td>      <i>// If it is already discovered to be a subloop of this loop, continue.</i></td></tr>
+<tr><th id="458">458</th><td>      <b>if</b> (<a class="local col4 ref" href="#64Subloop" title='Subloop' data-ref="64Subloop" data-ref-filename="64Subloop">Subloop</a> == <a class="local col5 ref" href="#55L" title='L' data-ref="55L" data-ref-filename="55L">L</a>)</td></tr>
+<tr><th id="459">459</th><td>        <b>continue</b>;</td></tr>
+<tr><th id="460">460</th><td></td></tr>
+<tr><th id="461">461</th><td>      <i>// Discover a subloop of this loop.</i></td></tr>
+<tr><th id="462">462</th><td>      <a class="local col4 ref" href="#64Subloop" title='Subloop' data-ref="64Subloop" data-ref-filename="64Subloop">Subloop</a>-&gt;setParentLoop(<a class="local col5 ref" href="#55L" title='L' data-ref="55L" data-ref-filename="55L">L</a>);</td></tr>
+<tr><th id="463">463</th><td>      ++<a class="local col1 ref" href="#61NumSubloops" title='NumSubloops' data-ref="61NumSubloops" data-ref-filename="61NumSubloops">NumSubloops</a>;</td></tr>
+<tr><th id="464">464</th><td>      <a class="local col0 ref" href="#60NumBlocks" title='NumBlocks' data-ref="60NumBlocks" data-ref-filename="60NumBlocks">NumBlocks</a> += <a class="local col4 ref" href="#64Subloop" title='Subloop' data-ref="64Subloop" data-ref-filename="64Subloop">Subloop</a>-&gt;getBlocksVector().capacity();</td></tr>
+<tr><th id="465">465</th><td>      <a class="local col3 ref" href="#63PredBB" title='PredBB' data-ref="63PredBB" data-ref-filename="63PredBB">PredBB</a> = <a class="local col4 ref" href="#64Subloop" title='Subloop' data-ref="64Subloop" data-ref-filename="64Subloop">Subloop</a>-&gt;getHeader();</td></tr>
+<tr><th id="466">466</th><td>      <i>// Continue traversal along predecessors that are not loop-back edges from</i></td></tr>
+<tr><th id="467">467</th><td><i>      // within this subloop tree itself. Note that a predecessor may directly</i></td></tr>
+<tr><th id="468">468</th><td><i>      // reach another subloop that is not yet discovered to be a subloop of</i></td></tr>
+<tr><th id="469">469</th><td><i>      // this loop, which we must traverse.</i></td></tr>
+<tr><th id="470">470</th><td>      <b>for</b> (<em>const</em> <em>auto</em> <dfn class="local col6 decl" id="66Pred" title='Pred' data-type='const auto' data-ref="66Pred" data-ref-filename="66Pred">Pred</dfn> : children&lt;<a class="type" href="../ADT/GraphTraits.h.html#llvm::Inverse" title='llvm::Inverse' data-ref="llvm::Inverse" data-ref-filename="llvm..Inverse">Inverse</a>&lt;BlockT *&gt;&gt;(<a class="local col3 ref" href="#63PredBB" title='PredBB' data-ref="63PredBB" data-ref-filename="63PredBB">PredBB</a>)) {</td></tr>
+<tr><th id="471">471</th><td>        <b>if</b> (<a class="local col7 ref" href="#57LI" title='LI' data-ref="57LI" data-ref-filename="57LI">LI</a>-&gt;getLoopFor(<a class="local col6 ref" href="#66Pred" title='Pred' data-ref="66Pred" data-ref-filename="66Pred">Pred</a>) != <a class="local col4 ref" href="#64Subloop" title='Subloop' data-ref="64Subloop" data-ref-filename="64Subloop">Subloop</a>)</td></tr>
+<tr><th id="472">472</th><td>          <a class="local col2 ref" href="#62ReverseCFGWorklist" title='ReverseCFGWorklist' data-ref="62ReverseCFGWorklist" data-ref-filename="62ReverseCFGWorklist">ReverseCFGWorklist</a>.push_back(<a class="local col6 ref" href="#66Pred" title='Pred' data-ref="66Pred" data-ref-filename="66Pred">Pred</a>);</td></tr>
+<tr><th id="473">473</th><td>      }</td></tr>
+<tr><th id="474">474</th><td>    }</td></tr>
+<tr><th id="475">475</th><td>  }</td></tr>
+<tr><th id="476">476</th><td>  <a class="local col5 ref" href="#55L" title='L' data-ref="55L" data-ref-filename="55L">L</a>-&gt;getSubLoopsVector().reserve(<a class="local col1 ref" href="#61NumSubloops" title='NumSubloops' data-ref="61NumSubloops" data-ref-filename="61NumSubloops">NumSubloops</a>);</td></tr>
+<tr><th id="477">477</th><td>  <a class="local col5 ref" href="#55L" title='L' data-ref="55L" data-ref-filename="55L">L</a>-&gt;reserveBlocks(<a class="local col0 ref" href="#60NumBlocks" title='NumBlocks' data-ref="60NumBlocks" data-ref-filename="60NumBlocks">NumBlocks</a>);</td></tr>
+<tr><th id="478">478</th><td>}</td></tr>
+<tr><th id="479">479</th><td></td></tr>
+<tr><th id="480">480</th><td><i class="doc">/// Populate all loop data in a stable order during a single forward DFS.</i></td></tr>
+<tr><th id="481">481</th><td><b>template</b> &lt;<b>class</b> BlockT, <b>class</b> LoopT&gt; <b>class</b> <dfn class="type def" id="llvm::PopulateLoopsDFS" title='llvm::PopulateLoopsDFS' data-ref="llvm::PopulateLoopsDFS" data-ref-filename="llvm..PopulateLoopsDFS">PopulateLoopsDFS</dfn> {</td></tr>
+<tr><th id="482">482</th><td>  <b>typedef</b> <a class="type" href="../ADT/GraphTraits.h.html#llvm::GraphTraits" title='llvm::GraphTraits' data-ref="llvm::GraphTraits" data-ref-filename="llvm..GraphTraits">GraphTraits</a>&lt;BlockT *&gt; <dfn class="typedef" id="llvm::PopulateLoopsDFS::BlockTraits" title='llvm::PopulateLoopsDFS::BlockTraits' data-type='GraphTraits&lt;BlockT *&gt;' data-ref="llvm::PopulateLoopsDFS::BlockTraits" data-ref-filename="llvm..PopulateLoopsDFS..BlockTraits">BlockTraits</dfn>;</td></tr>
+<tr><th id="483">483</th><td>  <b>typedef</b> <b>typename</b> <a class="typedef" href="#llvm::PopulateLoopsDFS::BlockTraits" title='llvm::PopulateLoopsDFS::BlockTraits' data-type='GraphTraits&lt;BlockT *&gt;' data-ref="llvm::PopulateLoopsDFS::BlockTraits" data-ref-filename="llvm..PopulateLoopsDFS..BlockTraits">BlockTraits</a>::ChildIteratorType <dfn class="typedef" id="llvm::PopulateLoopsDFS::SuccIterTy" title='llvm::PopulateLoopsDFS::SuccIterTy' data-type='typename BlockTraits::ChildIteratorType' data-ref="llvm::PopulateLoopsDFS::SuccIterTy" data-ref-filename="llvm..PopulateLoopsDFS..SuccIterTy">SuccIterTy</dfn>;</td></tr>
+<tr><th id="484">484</th><td></td></tr>
+<tr><th id="485">485</th><td>  <a class="type" href="LoopInfo.h.html#llvm::LoopInfoBase" title='llvm::LoopInfoBase' data-ref="llvm::LoopInfoBase" data-ref-filename="llvm..LoopInfoBase">LoopInfoBase</a>&lt;BlockT, LoopT&gt; *<dfn class="decl field" id="llvm::PopulateLoopsDFS::LI" title='llvm::PopulateLoopsDFS::LI' data-ref="llvm::PopulateLoopsDFS::LI" data-ref-filename="llvm..PopulateLoopsDFS..LI">LI</dfn>;</td></tr>
+<tr><th id="486">486</th><td></td></tr>
+<tr><th id="487">487</th><td><b>public</b>:</td></tr>
+<tr><th id="488">488</th><td>  <dfn class="decl def fn" id="_ZN4llvm16PopulateLoopsDFSC1EPNS_12LoopInfoBaseIT_T0_EE" title='llvm::PopulateLoopsDFS::PopulateLoopsDFS&lt;BlockT, LoopT&gt;' data-ref="_ZN4llvm16PopulateLoopsDFSC1EPNS_12LoopInfoBaseIT_T0_EE" data-ref-filename="_ZN4llvm16PopulateLoopsDFSC1EPNS_12LoopInfoBaseIT_T0_EE">PopulateLoopsDFS</dfn>(<a class="type" href="LoopInfo.h.html#llvm::LoopInfoBase" title='llvm::LoopInfoBase' data-ref="llvm::LoopInfoBase" data-ref-filename="llvm..LoopInfoBase">LoopInfoBase</a>&lt;BlockT, LoopT&gt; *<dfn class="local col7 decl" id="67li" title='li' data-type='LoopInfoBase&lt;BlockT, LoopT&gt; *' data-ref="67li" data-ref-filename="67li">li</dfn>) : <a class="member field" href="#llvm::PopulateLoopsDFS::LI" title='llvm::PopulateLoopsDFS::LI' data-ref="llvm::PopulateLoopsDFS::LI" data-ref-filename="llvm..PopulateLoopsDFS..LI">LI</a>(<a class="local col7 ref" href="#67li" title='li' data-ref="67li" data-ref-filename="67li">li</a>) {}</td></tr>
+<tr><th id="489">489</th><td></td></tr>
+<tr><th id="490">490</th><td>  <em>void</em> <a class="decl fn" href="#_ZN4llvm16PopulateLoopsDFS8traverseEPT_" title='llvm::PopulateLoopsDFS::traverse' data-ref="_ZN4llvm16PopulateLoopsDFS8traverseEPT_" data-ref-filename="_ZN4llvm16PopulateLoopsDFS8traverseEPT_">traverse</a>(BlockT *<dfn class="local col8 decl" id="68EntryBlock" title='EntryBlock' data-type='BlockT *' data-ref="68EntryBlock" data-ref-filename="68EntryBlock">EntryBlock</dfn>);</td></tr>
+<tr><th id="491">491</th><td></td></tr>
+<tr><th id="492">492</th><td><b>protected</b>:</td></tr>
+<tr><th id="493">493</th><td>  <em>void</em> <a class="decl fn" href="#_ZN4llvm16PopulateLoopsDFS14insertIntoLoopEPT_" title='llvm::PopulateLoopsDFS::insertIntoLoop' data-ref="_ZN4llvm16PopulateLoopsDFS14insertIntoLoopEPT_" data-ref-filename="_ZN4llvm16PopulateLoopsDFS14insertIntoLoopEPT_">insertIntoLoop</a>(BlockT *<dfn class="local col9 decl" id="69Block" title='Block' data-type='BlockT *' data-ref="69Block" data-ref-filename="69Block">Block</dfn>);</td></tr>
+<tr><th id="494">494</th><td>};</td></tr>
+<tr><th id="495">495</th><td></td></tr>
+<tr><th id="496">496</th><td><i class="doc">/// Top-level driver for the forward DFS within the loop.</i></td></tr>
+<tr><th id="497">497</th><td><b>template</b> &lt;<b>class</b> BlockT, <b>class</b> LoopT&gt;</td></tr>
+<tr><th id="498">498</th><td><em>void</em> <a class="type" href="#llvm::PopulateLoopsDFS" title='llvm::PopulateLoopsDFS' data-ref="llvm::PopulateLoopsDFS" data-ref-filename="llvm..PopulateLoopsDFS">PopulateLoopsDFS</a>&lt;BlockT, LoopT&gt;::<dfn class="decl def fn" id="_ZN4llvm16PopulateLoopsDFS8traverseEPT_" title='llvm::PopulateLoopsDFS::traverse' data-ref="_ZN4llvm16PopulateLoopsDFS8traverseEPT_" data-ref-filename="_ZN4llvm16PopulateLoopsDFS8traverseEPT_">traverse</dfn>(BlockT *<dfn class="local col0 decl" id="70EntryBlock" title='EntryBlock' data-type='BlockT *' data-ref="70EntryBlock" data-ref-filename="70EntryBlock">EntryBlock</dfn>) {</td></tr>
+<tr><th id="499">499</th><td>  <b>for</b> (BlockT *<dfn class="local col1 decl" id="71BB" title='BB' data-type='BlockT *' data-ref="71BB" data-ref-filename="71BB">BB</dfn> : post_order(<a class="local col0 ref" href="#70EntryBlock" title='EntryBlock' data-ref="70EntryBlock" data-ref-filename="70EntryBlock">EntryBlock</a>))</td></tr>
+<tr><th id="500">500</th><td>    <a class="member fn" href="#_ZN4llvm16PopulateLoopsDFS14insertIntoLoopEPT_" title='llvm::PopulateLoopsDFS::insertIntoLoop' data-ref="_ZN4llvm16PopulateLoopsDFS14insertIntoLoopEPT_" data-ref-filename="_ZN4llvm16PopulateLoopsDFS14insertIntoLoopEPT_">insertIntoLoop</a>(<a class="local col1 ref" href="#71BB" title='BB' data-ref="71BB" data-ref-filename="71BB">BB</a>);</td></tr>
+<tr><th id="501">501</th><td>}</td></tr>
+<tr><th id="502">502</th><td></td></tr>
+<tr><th id="503">503</th><td><i class="doc">/// Add a single Block to its ancestor loops in PostOrder. If the block is a</i></td></tr>
+<tr><th id="504">504</th><td><i class="doc">/// subloop header, add the subloop to its parent in PostOrder, then reverse the</i></td></tr>
+<tr><th id="505">505</th><td><i class="doc">/// Block and Subloop vectors of the now complete subloop to achieve RPO.</i></td></tr>
+<tr><th id="506">506</th><td><b>template</b> &lt;<b>class</b> BlockT, <b>class</b> LoopT&gt;</td></tr>
+<tr><th id="507">507</th><td><em>void</em> <a class="type" href="#llvm::PopulateLoopsDFS" title='llvm::PopulateLoopsDFS' data-ref="llvm::PopulateLoopsDFS" data-ref-filename="llvm..PopulateLoopsDFS">PopulateLoopsDFS</a>&lt;BlockT, LoopT&gt;::<dfn class="decl def fn" id="_ZN4llvm16PopulateLoopsDFS14insertIntoLoopEPT_" title='llvm::PopulateLoopsDFS::insertIntoLoop' data-ref="_ZN4llvm16PopulateLoopsDFS14insertIntoLoopEPT_" data-ref-filename="_ZN4llvm16PopulateLoopsDFS14insertIntoLoopEPT_">insertIntoLoop</dfn>(BlockT *<dfn class="local col2 decl" id="72Block" title='Block' data-type='BlockT *' data-ref="72Block" data-ref-filename="72Block">Block</dfn>) {</td></tr>
+<tr><th id="508">508</th><td>  LoopT *<dfn class="local col3 decl" id="73Subloop" title='Subloop' data-type='LoopT *' data-ref="73Subloop" data-ref-filename="73Subloop">Subloop</dfn> = <a class="member field" href="#llvm::PopulateLoopsDFS::LI" title='llvm::PopulateLoopsDFS::LI' data-ref="llvm::PopulateLoopsDFS::LI" data-ref-filename="llvm..PopulateLoopsDFS..LI">LI</a>-&gt;getLoopFor(<a class="local col2 ref" href="#72Block" title='Block' data-ref="72Block" data-ref-filename="72Block">Block</a>);</td></tr>
+<tr><th id="509">509</th><td>  <b>if</b> (<a class="local col3 ref" href="#73Subloop" title='Subloop' data-ref="73Subloop" data-ref-filename="73Subloop">Subloop</a> &amp;&amp; <a class="local col2 ref" href="#72Block" title='Block' data-ref="72Block" data-ref-filename="72Block">Block</a> == <a class="local col3 ref" href="#73Subloop" title='Subloop' data-ref="73Subloop" data-ref-filename="73Subloop">Subloop</a>-&gt;getHeader()) {</td></tr>
+<tr><th id="510">510</th><td>    <i>// We reach this point once per subloop after processing all the blocks in</i></td></tr>
+<tr><th id="511">511</th><td><i>    // the subloop.</i></td></tr>
+<tr><th id="512">512</th><td>    <b>if</b> (!<a class="local col3 ref" href="#73Subloop" title='Subloop' data-ref="73Subloop" data-ref-filename="73Subloop">Subloop</a>-&gt;isOutermost())</td></tr>
+<tr><th id="513">513</th><td>      <a class="local col3 ref" href="#73Subloop" title='Subloop' data-ref="73Subloop" data-ref-filename="73Subloop">Subloop</a>-&gt;getParentLoop()-&gt;getSubLoopsVector().push_back(<a class="local col3 ref" href="#73Subloop" title='Subloop' data-ref="73Subloop" data-ref-filename="73Subloop">Subloop</a>);</td></tr>
+<tr><th id="514">514</th><td>    <b>else</b></td></tr>
+<tr><th id="515">515</th><td>      <a class="member field" href="#llvm::PopulateLoopsDFS::LI" title='llvm::PopulateLoopsDFS::LI' data-ref="llvm::PopulateLoopsDFS::LI" data-ref-filename="llvm..PopulateLoopsDFS..LI">LI</a>-&gt;addTopLevelLoop(<a class="local col3 ref" href="#73Subloop" title='Subloop' data-ref="73Subloop" data-ref-filename="73Subloop">Subloop</a>);</td></tr>
+<tr><th id="516">516</th><td></td></tr>
+<tr><th id="517">517</th><td>    <i>// For convenience, Blocks and Subloops are inserted in postorder. Reverse</i></td></tr>
+<tr><th id="518">518</th><td><i>    // the lists, except for the loop header, which is always at the beginning.</i></td></tr>
+<tr><th id="519">519</th><td>    <a class="local col3 ref" href="#73Subloop" title='Subloop' data-ref="73Subloop" data-ref-filename="73Subloop">Subloop</a>-&gt;reverseBlock(<var>1</var>);</td></tr>
+<tr><th id="520">520</th><td>    <span class="namespace">std::</span>reverse(<a class="local col3 ref" href="#73Subloop" title='Subloop' data-ref="73Subloop" data-ref-filename="73Subloop">Subloop</a>-&gt;getSubLoopsVector().begin(),</td></tr>
+<tr><th id="521">521</th><td>                 <a class="local col3 ref" href="#73Subloop" title='Subloop' data-ref="73Subloop" data-ref-filename="73Subloop">Subloop</a>-&gt;getSubLoopsVector().end());</td></tr>
+<tr><th id="522">522</th><td></td></tr>
+<tr><th id="523">523</th><td>    <a class="local col3 ref" href="#73Subloop" title='Subloop' data-ref="73Subloop" data-ref-filename="73Subloop">Subloop</a> = <a class="local col3 ref" href="#73Subloop" title='Subloop' data-ref="73Subloop" data-ref-filename="73Subloop">Subloop</a>-&gt;getParentLoop();</td></tr>
+<tr><th id="524">524</th><td>  }</td></tr>
+<tr><th id="525">525</th><td>  <b>for</b> (; <a class="local col3 ref" href="#73Subloop" title='Subloop' data-ref="73Subloop" data-ref-filename="73Subloop">Subloop</a>; <a class="local col3 ref" href="#73Subloop" title='Subloop' data-ref="73Subloop" data-ref-filename="73Subloop">Subloop</a> = <a class="local col3 ref" href="#73Subloop" title='Subloop' data-ref="73Subloop" data-ref-filename="73Subloop">Subloop</a>-&gt;getParentLoop())</td></tr>
+<tr><th id="526">526</th><td>    <a class="local col3 ref" href="#73Subloop" title='Subloop' data-ref="73Subloop" data-ref-filename="73Subloop">Subloop</a>-&gt;addBlockEntry(<a class="local col2 ref" href="#72Block" title='Block' data-ref="72Block" data-ref-filename="72Block">Block</a>);</td></tr>
+<tr><th id="527">527</th><td>}</td></tr>
+<tr><th id="528">528</th><td></td></tr>
+<tr><th id="529">529</th><td><i class="doc">/// Analyze LoopInfo discovers loops during a postorder DominatorTree traversal</i></td></tr>
+<tr><th id="530">530</th><td><i class="doc">/// interleaved with backward CFG traversals within each subloop</i></td></tr>
+<tr><th id="531">531</th><td><i class="doc">/// (discoverAndMapSubloop). The backward traversal skips inner subloops, so</i></td></tr>
+<tr><th id="532">532</th><td><i class="doc">/// this part of the algorithm is linear in the number of CFG edges. Subloop and</i></td></tr>
+<tr><th id="533">533</th><td><i class="doc">/// Block vectors are then populated during a single forward CFG traversal</i></td></tr>
+<tr><th id="534">534</th><td><i class="doc">/// (PopulateLoopDFS).</i></td></tr>
+<tr><th id="535">535</th><td><i class="doc">///</i></td></tr>
+<tr><th id="536">536</th><td><i class="doc">/// During the two CFG traversals each block is seen three times:</i></td></tr>
+<tr><th id="537">537</th><td><i class="doc">/// 1) Discovered and mapped by a reverse CFG traversal.</i></td></tr>
+<tr><th id="538">538</th><td><i class="doc">/// 2) Visited during a forward DFS CFG traversal.</i></td></tr>
+<tr><th id="539">539</th><td><i class="doc">/// 3) Reverse-inserted in the loop in postorder following forward DFS.</i></td></tr>
+<tr><th id="540">540</th><td><i class="doc">///</i></td></tr>
+<tr><th id="541">541</th><td><i class="doc">/// The Block vectors are inclusive, so step 3 requires loop-depth number of</i></td></tr>
+<tr><th id="542">542</th><td><i class="doc">/// insertions per block.</i></td></tr>
+<tr><th id="543">543</th><td><b>template</b> &lt;<b>class</b> BlockT, <b>class</b> LoopT&gt;</td></tr>
+<tr><th id="544">544</th><td><em>void</em> <a class="type" href="LoopInfo.h.html#llvm::LoopInfoBase" title='llvm::LoopInfoBase' data-ref="llvm::LoopInfoBase" data-ref-filename="llvm..LoopInfoBase">LoopInfoBase</a>&lt;BlockT, LoopT&gt;::<dfn class="decl def fn" id="_ZN4llvm12LoopInfoBase7analyzeERKNS_17DominatorTreeBaseIT_Lb0EEE" title='llvm::LoopInfoBase::analyze' data-ref="_ZN4llvm12LoopInfoBase7analyzeERKNS_17DominatorTreeBaseIT_Lb0EEE" data-ref-filename="_ZN4llvm12LoopInfoBase7analyzeERKNS_17DominatorTreeBaseIT_Lb0EEE">analyze</dfn>(<em>const</em> <a class="type" href="../Support/GenericDomTree.h.html#llvm::DomTreeBase" title='llvm::DomTreeBase' data-ref="llvm::DomTreeBase" data-ref-filename="llvm..DomTreeBase">DomTreeBase</a>&lt;BlockT&gt; &amp;<dfn class="local col4 decl" id="74DomTree" title='DomTree' data-type='const DomTreeBase&lt;BlockT&gt; &amp;' data-ref="74DomTree" data-ref-filename="74DomTree">DomTree</dfn>) {</td></tr>
+<tr><th id="545">545</th><td>  <i>// Postorder traversal of the dominator tree.</i></td></tr>
+<tr><th id="546">546</th><td>  <em>const</em> <a class="type" href="../Support/GenericDomTree.h.html#llvm::DomTreeNodeBase" title='llvm::DomTreeNodeBase' data-ref="llvm::DomTreeNodeBase" data-ref-filename="llvm..DomTreeNodeBase">DomTreeNodeBase</a>&lt;BlockT&gt; *<dfn class="local col5 decl" id="75DomRoot" title='DomRoot' data-type='const DomTreeNodeBase&lt;BlockT&gt; *' data-ref="75DomRoot" data-ref-filename="75DomRoot">DomRoot</dfn> = <a class="local col4 ref" href="#74DomTree" title='DomTree' data-ref="74DomTree" data-ref-filename="74DomTree">DomTree</a>.getRootNode();</td></tr>
+<tr><th id="547">547</th><td>  <b>for</b> (<em>auto</em> <dfn class="local col6 decl" id="76DomNode" title='DomNode' data-type='auto' data-ref="76DomNode" data-ref-filename="76DomNode">DomNode</dfn> : post_order(<a class="local col5 ref" href="#75DomRoot" title='DomRoot' data-ref="75DomRoot" data-ref-filename="75DomRoot">DomRoot</a>)) {</td></tr>
+<tr><th id="548">548</th><td></td></tr>
+<tr><th id="549">549</th><td>    BlockT *<dfn class="local col7 decl" id="77Header" title='Header' data-type='BlockT *' data-ref="77Header" data-ref-filename="77Header">Header</dfn> = <a class="local col6 ref" href="#76DomNode" title='DomNode' data-ref="76DomNode" data-ref-filename="76DomNode">DomNode</a>-&gt;getBlock();</td></tr>
+<tr><th id="550">550</th><td>    <a class="type" href="../ADT/SmallVector.h.html#llvm::SmallVector" title='llvm::SmallVector' data-ref="llvm::SmallVector" data-ref-filename="llvm..SmallVector">SmallVector</a>&lt;BlockT *, <var>4</var>&gt; <dfn class="local col8 decl" id="78Backedges" title='Backedges' data-type='SmallVector&lt;BlockT *, 4&gt;' data-ref="78Backedges" data-ref-filename="78Backedges">Backedges</dfn>;</td></tr>
+<tr><th id="551">551</th><td></td></tr>
+<tr><th id="552">552</th><td>    <i>// Check each predecessor of the potential loop header.</i></td></tr>
+<tr><th id="553">553</th><td>    <b>for</b> (<em>const</em> <em>auto</em> <dfn class="local col9 decl" id="79Backedge" title='Backedge' data-type='const auto' data-ref="79Backedge" data-ref-filename="79Backedge">Backedge</dfn> : children&lt;<a class="type" href="../ADT/GraphTraits.h.html#llvm::Inverse" title='llvm::Inverse' data-ref="llvm::Inverse" data-ref-filename="llvm..Inverse">Inverse</a>&lt;BlockT *&gt;&gt;(<a class="local col7 ref" href="#77Header" title='Header' data-ref="77Header" data-ref-filename="77Header">Header</a>)) {</td></tr>
+<tr><th id="554">554</th><td>      <i>// If Header dominates predBB, this is a new loop. Collect the backedges.</i></td></tr>
+<tr><th id="555">555</th><td>      <b>if</b> (<a class="local col4 ref" href="#74DomTree" title='DomTree' data-ref="74DomTree" data-ref-filename="74DomTree">DomTree</a>.dominates(<a class="local col7 ref" href="#77Header" title='Header' data-ref="77Header" data-ref-filename="77Header">Header</a>, <a class="local col9 ref" href="#79Backedge" title='Backedge' data-ref="79Backedge" data-ref-filename="79Backedge">Backedge</a>) &amp;&amp;</td></tr>
+<tr><th id="556">556</th><td>          <a class="local col4 ref" href="#74DomTree" title='DomTree' data-ref="74DomTree" data-ref-filename="74DomTree">DomTree</a>.isReachableFromEntry(<a class="local col9 ref" href="#79Backedge" title='Backedge' data-ref="79Backedge" data-ref-filename="79Backedge">Backedge</a>)) {</td></tr>
+<tr><th id="557">557</th><td>        <a class="local col8 ref" href="#78Backedges" title='Backedges' data-ref="78Backedges" data-ref-filename="78Backedges">Backedges</a>.push_back(<a class="local col9 ref" href="#79Backedge" title='Backedge' data-ref="79Backedge" data-ref-filename="79Backedge">Backedge</a>);</td></tr>
+<tr><th id="558">558</th><td>      }</td></tr>
+<tr><th id="559">559</th><td>    }</td></tr>
+<tr><th id="560">560</th><td>    <i>// Perform a backward CFG traversal to discover and map blocks in this loop.</i></td></tr>
+<tr><th id="561">561</th><td>    <b>if</b> (!<a class="local col8 ref" href="#78Backedges" title='Backedges' data-ref="78Backedges" data-ref-filename="78Backedges">Backedges</a>.empty()) {</td></tr>
+<tr><th id="562">562</th><td>      LoopT *<dfn class="local col0 decl" id="80L" title='L' data-type='LoopT *' data-ref="80L" data-ref-filename="80L">L</dfn> = AllocateLoop(<a class="local col7 ref" href="#77Header" title='Header' data-ref="77Header" data-ref-filename="77Header">Header</a>);</td></tr>
+<tr><th id="563">563</th><td>      discoverAndMapSubloop(<a class="local col0 ref" href="#80L" title='L' data-ref="80L" data-ref-filename="80L">L</a>, <a class="type" href="../ADT/APInt.h.html#llvm::ArrayRef" title='llvm::ArrayRef' data-ref="llvm::ArrayRef" data-ref-filename="llvm..ArrayRef">ArrayRef</a>&lt;BlockT *&gt;(<a class="local col8 ref" href="#78Backedges" title='Backedges' data-ref="78Backedges" data-ref-filename="78Backedges">Backedges</a>), <b>this</b>, <a class="local col4 ref" href="#74DomTree" title='DomTree' data-ref="74DomTree" data-ref-filename="74DomTree">DomTree</a>);</td></tr>
+<tr><th id="564">564</th><td>    }</td></tr>
+<tr><th id="565">565</th><td>  }</td></tr>
+<tr><th id="566">566</th><td>  <i>// Perform a single forward CFG traversal to populate block and subloop</i></td></tr>
+<tr><th id="567">567</th><td><i>  // vectors for all loops.</i></td></tr>
+<tr><th id="568">568</th><td>  <a class="type" href="#llvm::PopulateLoopsDFS" title='llvm::PopulateLoopsDFS' data-ref="llvm::PopulateLoopsDFS" data-ref-filename="llvm..PopulateLoopsDFS">PopulateLoopsDFS</a>&lt;BlockT, LoopT&gt; <dfn class="local col1 decl" id="81DFS" title='DFS' data-type='PopulateLoopsDFS&lt;BlockT, LoopT&gt;' data-ref="81DFS" data-ref-filename="81DFS">DFS</dfn>(<b>this</b>);</td></tr>
+<tr><th id="569">569</th><td>  <a class="local col1 ref" href="#81DFS" title='DFS' data-ref="81DFS" data-ref-filename="81DFS">DFS</a>.traverse(<a class="local col5 ref" href="#75DomRoot" title='DomRoot' data-ref="75DomRoot" data-ref-filename="75DomRoot">DomRoot</a>-&gt;getBlock());</td></tr>
+<tr><th id="570">570</th><td>}</td></tr>
+<tr><th id="571">571</th><td></td></tr>
+<tr><th id="572">572</th><td><b>template</b> &lt;<b>class</b> BlockT, <b>class</b> LoopT&gt;</td></tr>
+<tr><th id="573">573</th><td><a class="type" href="../ADT/SmallVector.h.html#llvm::SmallVector" title='llvm::SmallVector' data-ref="llvm::SmallVector" data-ref-filename="llvm..SmallVector">SmallVector</a>&lt;LoopT *, <var>4</var>&gt; <a class="type" href="LoopInfo.h.html#llvm::LoopInfoBase" title='llvm::LoopInfoBase' data-ref="llvm::LoopInfoBase" data-ref-filename="llvm..LoopInfoBase">LoopInfoBase</a>&lt;BlockT, LoopT&gt;::<dfn class="decl def fn" id="_ZN4llvm12LoopInfoBase18getLoopsInPreorderEv" title='llvm::LoopInfoBase::getLoopsInPreorder' data-ref="_ZN4llvm12LoopInfoBase18getLoopsInPreorderEv" data-ref-filename="_ZN4llvm12LoopInfoBase18getLoopsInPreorderEv">getLoopsInPreorder</dfn>() {</td></tr>
+<tr><th id="574">574</th><td>  <a class="type" href="../ADT/SmallVector.h.html#llvm::SmallVector" title='llvm::SmallVector' data-ref="llvm::SmallVector" data-ref-filename="llvm..SmallVector">SmallVector</a>&lt;LoopT *, <var>4</var>&gt; <dfn class="local col2 decl" id="82PreOrderLoops" title='PreOrderLoops' data-type='SmallVector&lt;LoopT *, 4&gt;' data-ref="82PreOrderLoops" data-ref-filename="82PreOrderLoops">PreOrderLoops</dfn>, <dfn class="local col3 decl" id="83PreOrderWorklist" title='PreOrderWorklist' data-type='SmallVector&lt;LoopT *, 4&gt;' data-ref="83PreOrderWorklist" data-ref-filename="83PreOrderWorklist">PreOrderWorklist</dfn>;</td></tr>
+<tr><th id="575">575</th><td>  <i>// The outer-most loop actually goes into the result in the same relative</i></td></tr>
+<tr><th id="576">576</th><td><i>  // order as we walk it. But LoopInfo stores the top level loops in reverse</i></td></tr>
+<tr><th id="577">577</th><td><i>  // program order so for here we reverse it to get forward program order.</i></td></tr>
+<tr><th id="578">578</th><td><i>  // FIXME: If we change the order of LoopInfo we will want to remove the</i></td></tr>
+<tr><th id="579">579</th><td><i>  // reverse here.</i></td></tr>
+<tr><th id="580">580</th><td>  <b>for</b> (LoopT *<dfn class="local col4 decl" id="84RootL" title='RootL' data-type='LoopT *' data-ref="84RootL" data-ref-filename="84RootL">RootL</dfn> : reverse(*<b>this</b>)) {</td></tr>
+<tr><th id="581">581</th><td>    <em>auto</em> <dfn class="local col5 decl" id="85PreOrderLoopsInRootL" title='PreOrderLoopsInRootL' data-type='auto' data-ref="85PreOrderLoopsInRootL" data-ref-filename="85PreOrderLoopsInRootL">PreOrderLoopsInRootL</dfn> = <a class="local col4 ref" href="#84RootL" title='RootL' data-ref="84RootL" data-ref-filename="84RootL">RootL</a>-&gt;getLoopsInPreorder();</td></tr>
+<tr><th id="582">582</th><td>    <a class="local col2 ref" href="#82PreOrderLoops" title='PreOrderLoops' data-ref="82PreOrderLoops" data-ref-filename="82PreOrderLoops">PreOrderLoops</a>.append(<a class="local col5 ref" href="#85PreOrderLoopsInRootL" title='PreOrderLoopsInRootL' data-ref="85PreOrderLoopsInRootL" data-ref-filename="85PreOrderLoopsInRootL">PreOrderLoopsInRootL</a>.begin(),</td></tr>
+<tr><th id="583">583</th><td>                         <a class="local col5 ref" href="#85PreOrderLoopsInRootL" title='PreOrderLoopsInRootL' data-ref="85PreOrderLoopsInRootL" data-ref-filename="85PreOrderLoopsInRootL">PreOrderLoopsInRootL</a>.end());</td></tr>
+<tr><th id="584">584</th><td>  }</td></tr>
+<tr><th id="585">585</th><td></td></tr>
+<tr><th id="586">586</th><td>  <b>return</b> <a class="local col2 ref" href="#82PreOrderLoops" title='PreOrderLoops' data-ref="82PreOrderLoops" data-ref-filename="82PreOrderLoops">PreOrderLoops</a>;</td></tr>
+<tr><th id="587">587</th><td>}</td></tr>
+<tr><th id="588">588</th><td></td></tr>
+<tr><th id="589">589</th><td><b>template</b> &lt;<b>class</b> BlockT, <b>class</b> LoopT&gt;</td></tr>
+<tr><th id="590">590</th><td><a class="type" href="../ADT/SmallVector.h.html#llvm::SmallVector" title='llvm::SmallVector' data-ref="llvm::SmallVector" data-ref-filename="llvm..SmallVector">SmallVector</a>&lt;LoopT *, <var>4</var>&gt;</td></tr>
+<tr><th id="591">591</th><td><a class="type" href="LoopInfo.h.html#llvm::LoopInfoBase" title='llvm::LoopInfoBase' data-ref="llvm::LoopInfoBase" data-ref-filename="llvm..LoopInfoBase">LoopInfoBase</a>&lt;BlockT, LoopT&gt;::<dfn class="decl def fn" id="_ZN4llvm12LoopInfoBase32getLoopsInReverseSiblingPreorderEv" title='llvm::LoopInfoBase::getLoopsInReverseSiblingPreorder' data-ref="_ZN4llvm12LoopInfoBase32getLoopsInReverseSiblingPreorderEv" data-ref-filename="_ZN4llvm12LoopInfoBase32getLoopsInReverseSiblingPreorderEv">getLoopsInReverseSiblingPreorder</dfn>() {</td></tr>
+<tr><th id="592">592</th><td>  <a class="type" href="../ADT/SmallVector.h.html#llvm::SmallVector" title='llvm::SmallVector' data-ref="llvm::SmallVector" data-ref-filename="llvm..SmallVector">SmallVector</a>&lt;LoopT *, <var>4</var>&gt; <dfn class="local col6 decl" id="86PreOrderLoops" title='PreOrderLoops' data-type='SmallVector&lt;LoopT *, 4&gt;' data-ref="86PreOrderLoops" data-ref-filename="86PreOrderLoops">PreOrderLoops</dfn>, <dfn class="local col7 decl" id="87PreOrderWorklist" title='PreOrderWorklist' data-type='SmallVector&lt;LoopT *, 4&gt;' data-ref="87PreOrderWorklist" data-ref-filename="87PreOrderWorklist">PreOrderWorklist</dfn>;</td></tr>
+<tr><th id="593">593</th><td>  <i>// The outer-most loop actually goes into the result in the same relative</i></td></tr>
+<tr><th id="594">594</th><td><i>  // order as we walk it. LoopInfo stores the top level loops in reverse</i></td></tr>
+<tr><th id="595">595</th><td><i>  // program order so we walk in order here.</i></td></tr>
+<tr><th id="596">596</th><td><i>  // FIXME: If we change the order of LoopInfo we will want to add a reverse</i></td></tr>
+<tr><th id="597">597</th><td><i>  // here.</i></td></tr>
+<tr><th id="598">598</th><td>  <b>for</b> (LoopT *<dfn class="local col8 decl" id="88RootL" title='RootL' data-type='LoopT *' data-ref="88RootL" data-ref-filename="88RootL">RootL</dfn> : *<b>this</b>) {</td></tr>
+<tr><th id="599">599</th><td>    <a class="macro" href="../../../../../include/assert.h.html#50" title="(static_cast&lt;void&gt; (0))" data-ref="_M/assert">assert</a>(PreOrderWorklist.empty() &amp;&amp;</td></tr>
+<tr><th id="600">600</th><td>           <q>"Must start with an empty preorder walk worklist."</q>);</td></tr>
+<tr><th id="601">601</th><td>    <a class="local col7 ref" href="#87PreOrderWorklist" title='PreOrderWorklist' data-ref="87PreOrderWorklist" data-ref-filename="87PreOrderWorklist">PreOrderWorklist</a>.push_back(<a class="local col8 ref" href="#88RootL" title='RootL' data-ref="88RootL" data-ref-filename="88RootL">RootL</a>);</td></tr>
+<tr><th id="602">602</th><td>    <b>do</b> {</td></tr>
+<tr><th id="603">603</th><td>      LoopT *<dfn class="local col9 decl" id="89L" title='L' data-type='LoopT *' data-ref="89L" data-ref-filename="89L">L</dfn> = <a class="local col7 ref" href="#87PreOrderWorklist" title='PreOrderWorklist' data-ref="87PreOrderWorklist" data-ref-filename="87PreOrderWorklist">PreOrderWorklist</a>.pop_back_val();</td></tr>
+<tr><th id="604">604</th><td>      <i>// Sub-loops are stored in forward program order, but will process the</i></td></tr>
+<tr><th id="605">605</th><td><i>      // worklist backwards so we can just append them in order.</i></td></tr>
+<tr><th id="606">606</th><td>      <a class="local col7 ref" href="#87PreOrderWorklist" title='PreOrderWorklist' data-ref="87PreOrderWorklist" data-ref-filename="87PreOrderWorklist">PreOrderWorklist</a>.append(<a class="local col9 ref" href="#89L" title='L' data-ref="89L" data-ref-filename="89L">L</a>-&gt;begin(), <a class="local col9 ref" href="#89L" title='L' data-ref="89L" data-ref-filename="89L">L</a>-&gt;end());</td></tr>
+<tr><th id="607">607</th><td>      <a class="local col6 ref" href="#86PreOrderLoops" title='PreOrderLoops' data-ref="86PreOrderLoops" data-ref-filename="86PreOrderLoops">PreOrderLoops</a>.push_back(<a class="local col9 ref" href="#89L" title='L' data-ref="89L" data-ref-filename="89L">L</a>);</td></tr>
+<tr><th id="608">608</th><td>    } <b>while</b> (!<a class="local col7 ref" href="#87PreOrderWorklist" title='PreOrderWorklist' data-ref="87PreOrderWorklist" data-ref-filename="87PreOrderWorklist">PreOrderWorklist</a>.empty());</td></tr>
+<tr><th id="609">609</th><td>  }</td></tr>
+<tr><th id="610">610</th><td></td></tr>
+<tr><th id="611">611</th><td>  <b>return</b> <a class="local col6 ref" href="#86PreOrderLoops" title='PreOrderLoops' data-ref="86PreOrderLoops" data-ref-filename="86PreOrderLoops">PreOrderLoops</a>;</td></tr>
+<tr><th id="612">612</th><td>}</td></tr>
+<tr><th id="613">613</th><td></td></tr>
+<tr><th id="614">614</th><td><i>// Debugging</i></td></tr>
+<tr><th id="615">615</th><td><b>template</b> &lt;<b>class</b> BlockT, <b>class</b> LoopT&gt;</td></tr>
+<tr><th id="616">616</th><td><em>void</em> <a class="type" href="LoopInfo.h.html#llvm::LoopInfoBase" title='llvm::LoopInfoBase' data-ref="llvm::LoopInfoBase" data-ref-filename="llvm..LoopInfoBase">LoopInfoBase</a>&lt;BlockT, LoopT&gt;::<dfn class="decl def fn" id="_ZNK4llvm12LoopInfoBase5printERNS_11raw_ostreamE" title='llvm::LoopInfoBase::print' data-ref="_ZNK4llvm12LoopInfoBase5printERNS_11raw_ostreamE" data-ref-filename="_ZNK4llvm12LoopInfoBase5printERNS_11raw_ostreamE">print</dfn>(<a class="type" href="../Support/raw_ostream.h.html#llvm::raw_ostream" title='llvm::raw_ostream' data-ref="llvm::raw_ostream" data-ref-filename="llvm..raw_ostream">raw_ostream</a> &amp;<dfn class="local col0 decl" id="90OS" title='OS' data-type='llvm::raw_ostream &amp;' data-ref="90OS" data-ref-filename="90OS">OS</dfn>) <em>const</em> {</td></tr>
+<tr><th id="617">617</th><td>  <b>for</b> (<em>unsigned</em> <dfn class="local col1 decl" id="91i" title='i' data-type='unsigned int' data-ref="91i" data-ref-filename="91i">i</dfn> = <var>0</var>; <a class="local col1 ref" href="#91i" title='i' data-ref="91i" data-ref-filename="91i">i</a> &lt; <a class="member field" href="LoopInfo.h.html#llvm::LoopInfoBase::TopLevelLoops" title='llvm::LoopInfoBase::TopLevelLoops' data-ref="llvm::LoopInfoBase::TopLevelLoops" data-ref-filename="llvm..LoopInfoBase..TopLevelLoops">TopLevelLoops</a>.size(); ++<a class="local col1 ref" href="#91i" title='i' data-ref="91i" data-ref-filename="91i">i</a>)</td></tr>
+<tr><th id="618">618</th><td>    <a class="member field" href="LoopInfo.h.html#llvm::LoopInfoBase::TopLevelLoops" title='llvm::LoopInfoBase::TopLevelLoops' data-ref="llvm::LoopInfoBase::TopLevelLoops" data-ref-filename="llvm..LoopInfoBase..TopLevelLoops">TopLevelLoops</a>[<a class="local col1 ref" href="#91i" title='i' data-ref="91i" data-ref-filename="91i">i</a>]-&gt;print(<a class="local col0 ref" href="#90OS" title='OS' data-ref="90OS" data-ref-filename="90OS">OS</a>);</td></tr>
+<tr><th id="619">619</th><td><u>#<span data-ppcond="619">if</span> 0</u></td></tr>
+<tr><th id="620">620</th><td>  <b>for</b> (DenseMap&lt;BasicBlock*, LoopT*&gt;::const_iterator I = BBMap.begin(),</td></tr>
+<tr><th id="621">621</th><td>         E = BBMap.end(); I != E; ++I)</td></tr>
+<tr><th id="622">622</th><td>    OS &lt;&lt; <q>"BB '"</q> &lt;&lt; I-&gt;first-&gt;getName() &lt;&lt; <q>"' level = "</q></td></tr>
+<tr><th id="623">623</th><td>       &lt;&lt; I-&gt;second-&gt;getLoopDepth() &lt;&lt; <q>"\n"</q>;</td></tr>
+<tr><th id="624">624</th><td><u>#<span data-ppcond="619">endif</span></u></td></tr>
+<tr><th id="625">625</th><td>}</td></tr>
+<tr><th id="626">626</th><td></td></tr>
+<tr><th id="627">627</th><td><b>template</b> &lt;<b>typename</b> T&gt;</td></tr>
+<tr><th id="628">628</th><td><em>bool</em> <dfn class="decl def fn" id="_ZN4llvm14compareVectorsERSt6vectorIT_SaIS1_EES4_" title='llvm::compareVectors' data-ref="_ZN4llvm14compareVectorsERSt6vectorIT_SaIS1_EES4_" data-ref-filename="_ZN4llvm14compareVectorsERSt6vectorIT_SaIS1_EES4_">compareVectors</dfn>(<span class="namespace">std::</span><span class='type' title='std::vector' data-ref="std::vector" data-ref-filename="std..vector">vector</span>&lt;T&gt; &amp;<dfn class="local col2 decl" id="92BB1" title='BB1' data-type='std::vector&lt;T&gt; &amp;' data-ref="92BB1" data-ref-filename="92BB1">BB1</dfn>, <span class="namespace">std::</span><span class='type' title='std::vector' data-ref="std::vector" data-ref-filename="std..vector">vector</span>&lt;T&gt; &amp;<dfn class="local col3 decl" id="93BB2" title='BB2' data-type='std::vector&lt;T&gt; &amp;' data-ref="93BB2" data-ref-filename="93BB2">BB2</dfn>) {</td></tr>
+<tr><th id="629">629</th><td>  <span class="namespace">llvm::</span>sort(<a class="local col2 ref" href="#92BB1" title='BB1' data-ref="92BB1" data-ref-filename="92BB1">BB1</a>);</td></tr>
+<tr><th id="630">630</th><td>  <span class="namespace">llvm::</span>sort(<a class="local col3 ref" href="#93BB2" title='BB2' data-ref="93BB2" data-ref-filename="93BB2">BB2</a>);</td></tr>
+<tr><th id="631">631</th><td>  <b>return</b> <a class="local col2 ref" href="#92BB1" title='BB1' data-ref="92BB1" data-ref-filename="92BB1">BB1</a> == <a class="local col3 ref" href="#93BB2" title='BB2' data-ref="93BB2" data-ref-filename="93BB2">BB2</a>;</td></tr>
+<tr><th id="632">632</th><td>}</td></tr>
+<tr><th id="633">633</th><td></td></tr>
+<tr><th id="634">634</th><td><b>template</b> &lt;<b>class</b> BlockT, <b>class</b> LoopT&gt;</td></tr>
+<tr><th id="635">635</th><td><em>void</em> <dfn class="decl def fn" id="_ZN4llvm25addInnerLoopsToHeadersMapERNS_8DenseMapIPT_PKT0_NS_12DenseMapInfoIS2_EENS_6detail12DenseMapPairIS2_S5_EEEERKNS_12LoopInfoBaseIS1_S3_EERS4_" title='llvm::addInnerLoopsToHeadersMap' data-ref="_ZN4llvm25addInnerLoopsToHeadersMapERNS_8DenseMapIPT_PKT0_NS_12DenseMapInfoIS2_EENS_6detail12DenseMapPairIS2_S5_EEEERKNS_12LoopInfoBaseIS1_S3_EERS4_" data-ref-filename="_ZN4llvm25addInnerLoopsToHeadersMapERNS_8DenseMapIPT_PKT0_NS_12DenseMapInfoIS2_EENS_6detail12DenseMapPairIS2_S5_EEEERKNS_12LoopInfoBaseIS1_S3_EERS4_">addInnerLoopsToHeadersMap</dfn>(<a class="type" href="../ADT/DenseMap.h.html#llvm::DenseMap" title='llvm::DenseMap' data-ref="llvm::DenseMap" data-ref-filename="llvm..DenseMap">DenseMap</a>&lt;BlockT *, <em>const</em> LoopT *&gt; &amp;<dfn class="local col4 decl" id="94LoopHeaders" title='LoopHeaders' data-type='DenseMap&lt;BlockT *, const LoopT *&gt; &amp;' data-ref="94LoopHeaders" data-ref-filename="94LoopHeaders">LoopHeaders</dfn>,</td></tr>
+<tr><th id="636">636</th><td>                               <em>const</em> <a class="type" href="LoopInfo.h.html#llvm::LoopInfoBase" title='llvm::LoopInfoBase' data-ref="llvm::LoopInfoBase" data-ref-filename="llvm..LoopInfoBase">LoopInfoBase</a>&lt;BlockT, LoopT&gt; &amp;<dfn class="local col5 decl" id="95LI" title='LI' data-type='const LoopInfoBase&lt;BlockT, LoopT&gt; &amp;' data-ref="95LI" data-ref-filename="95LI">LI</dfn>,</td></tr>
+<tr><th id="637">637</th><td>                               <em>const</em> LoopT &amp;<dfn class="local col6 decl" id="96L" title='L' data-type='const LoopT &amp;' data-ref="96L" data-ref-filename="96L">L</dfn>) {</td></tr>
+<tr><th id="638">638</th><td>  <a class="local col4 ref" href="#94LoopHeaders" title='LoopHeaders' data-ref="94LoopHeaders" data-ref-filename="94LoopHeaders">LoopHeaders</a>[<a class="local col6 ref" href="#96L" title='L' data-ref="96L" data-ref-filename="96L">L</a>.getHeader()] = &amp;<a class="local col6 ref" href="#96L" title='L' data-ref="96L" data-ref-filename="96L">L</a>;</td></tr>
+<tr><th id="639">639</th><td>  <b>for</b> (LoopT *<dfn class="local col7 decl" id="97SL" title='SL' data-type='LoopT *' data-ref="97SL" data-ref-filename="97SL">SL</dfn> : <a class="local col6 ref" href="#96L" title='L' data-ref="96L" data-ref-filename="96L">L</a>)</td></tr>
+<tr><th id="640">640</th><td>    addInnerLoopsToHeadersMap(<a class="local col4 ref" href="#94LoopHeaders" title='LoopHeaders' data-ref="94LoopHeaders" data-ref-filename="94LoopHeaders">LoopHeaders</a>, <a class="local col5 ref" href="#95LI" title='LI' data-ref="95LI" data-ref-filename="95LI">LI</a>, *<a class="local col7 ref" href="#97SL" title='SL' data-ref="97SL" data-ref-filename="97SL">SL</a>);</td></tr>
+<tr><th id="641">641</th><td>}</td></tr>
+<tr><th id="642">642</th><td></td></tr>
+<tr><th id="643">643</th><td><u>#<span data-ppcond="643">ifndef</span> <span class="macro" data-ref="_M/NDEBUG">NDEBUG</span></u></td></tr>
+<tr><th id="644">644</th><td><b>template</b> &lt;<b>class</b> BlockT, <b>class</b> LoopT&gt;</td></tr>
+<tr><th id="645">645</th><td><em>static</em> <em>void</em> compareLoops(<em>const</em> LoopT *L, <em>const</em> LoopT *OtherL,</td></tr>
+<tr><th id="646">646</th><td>                         DenseMap&lt;BlockT *, <em>const</em> LoopT *&gt; &amp;OtherLoopHeaders) {</td></tr>
+<tr><th id="647">647</th><td>  BlockT *H = L-&gt;getHeader();</td></tr>
+<tr><th id="648">648</th><td>  BlockT *OtherH = OtherL-&gt;getHeader();</td></tr>
+<tr><th id="649">649</th><td>  assert(H == OtherH &amp;&amp;</td></tr>
+<tr><th id="650">650</th><td>         <q>"Mismatched headers even though found in the same map entry!"</q>);</td></tr>
+<tr><th id="651">651</th><td></td></tr>
+<tr><th id="652">652</th><td>  assert(L-&gt;getLoopDepth() == OtherL-&gt;getLoopDepth() &amp;&amp;</td></tr>
+<tr><th id="653">653</th><td>         <q>"Mismatched loop depth!"</q>);</td></tr>
+<tr><th id="654">654</th><td>  <em>const</em> LoopT *ParentL = L, *OtherParentL = OtherL;</td></tr>
+<tr><th id="655">655</th><td>  <b>do</b> {</td></tr>
+<tr><th id="656">656</th><td>    assert(ParentL-&gt;getHeader() == OtherParentL-&gt;getHeader() &amp;&amp;</td></tr>
+<tr><th id="657">657</th><td>           <q>"Mismatched parent loop headers!"</q>);</td></tr>
+<tr><th id="658">658</th><td>    ParentL = ParentL-&gt;getParentLoop();</td></tr>
+<tr><th id="659">659</th><td>    OtherParentL = OtherParentL-&gt;getParentLoop();</td></tr>
+<tr><th id="660">660</th><td>  } <b>while</b> (ParentL);</td></tr>
+<tr><th id="661">661</th><td></td></tr>
+<tr><th id="662">662</th><td>  <b>for</b> (<em>const</em> LoopT *SubL : *L) {</td></tr>
+<tr><th id="663">663</th><td>    BlockT *SubH = SubL-&gt;getHeader();</td></tr>
+<tr><th id="664">664</th><td>    <em>const</em> LoopT *OtherSubL = OtherLoopHeaders.lookup(SubH);</td></tr>
+<tr><th id="665">665</th><td>    assert(OtherSubL &amp;&amp; <q>"Inner loop is missing in computed loop info!"</q>);</td></tr>
+<tr><th id="666">666</th><td>    OtherLoopHeaders.erase(SubH);</td></tr>
+<tr><th id="667">667</th><td>    compareLoops(SubL, OtherSubL, OtherLoopHeaders);</td></tr>
+<tr><th id="668">668</th><td>  }</td></tr>
+<tr><th id="669">669</th><td></td></tr>
+<tr><th id="670">670</th><td>  std::vector&lt;BlockT *&gt; BBs = L-&gt;getBlocks();</td></tr>
+<tr><th id="671">671</th><td>  std::vector&lt;BlockT *&gt; OtherBBs = OtherL-&gt;getBlocks();</td></tr>
+<tr><th id="672">672</th><td>  assert(compareVectors(BBs, OtherBBs) &amp;&amp;</td></tr>
+<tr><th id="673">673</th><td>         <q>"Mismatched basic blocks in the loops!"</q>);</td></tr>
+<tr><th id="674">674</th><td></td></tr>
+<tr><th id="675">675</th><td>  <em>const</em> SmallPtrSetImpl&lt;<em>const</em> BlockT *&gt; &amp;BlocksSet = L-&gt;getBlocksSet();</td></tr>
+<tr><th id="676">676</th><td>  <em>const</em> SmallPtrSetImpl&lt;<em>const</em> BlockT *&gt; &amp;OtherBlocksSet =</td></tr>
+<tr><th id="677">677</th><td>      OtherL-&gt;getBlocksSet();</td></tr>
+<tr><th id="678">678</th><td>  assert(BlocksSet.size() == OtherBlocksSet.size() &amp;&amp;</td></tr>
+<tr><th id="679">679</th><td>         llvm::all_of(BlocksSet,</td></tr>
+<tr><th id="680">680</th><td>                      [&amp;OtherBlocksSet](<em>const</em> BlockT *BB) {</td></tr>
+<tr><th id="681">681</th><td>                        <b>return</b> OtherBlocksSet.count(BB);</td></tr>
+<tr><th id="682">682</th><td>                      }) &amp;&amp;</td></tr>
+<tr><th id="683">683</th><td>         <q>"Mismatched basic blocks in BlocksSets!"</q>);</td></tr>
+<tr><th id="684">684</th><td>}</td></tr>
+<tr><th id="685">685</th><td><u>#<span data-ppcond="643">endif</span></u></td></tr>
+<tr><th id="686">686</th><td></td></tr>
+<tr><th id="687">687</th><td><b>template</b> &lt;<b>class</b> BlockT, <b>class</b> LoopT&gt;</td></tr>
+<tr><th id="688">688</th><td><em>void</em> <a class="type" href="LoopInfo.h.html#llvm::LoopInfoBase" title='llvm::LoopInfoBase' data-ref="llvm::LoopInfoBase" data-ref-filename="llvm..LoopInfoBase">LoopInfoBase</a>&lt;BlockT, LoopT&gt;::<dfn class="decl def fn" id="_ZNK4llvm12LoopInfoBase6verifyERKNS_17DominatorTreeBaseIT_Lb0EEE" title='llvm::LoopInfoBase::verify' data-ref="_ZNK4llvm12LoopInfoBase6verifyERKNS_17DominatorTreeBaseIT_Lb0EEE" data-ref-filename="_ZNK4llvm12LoopInfoBase6verifyERKNS_17DominatorTreeBaseIT_Lb0EEE">verify</dfn>(</td></tr>
+<tr><th id="689">689</th><td>    <em>const</em> <a class="type" href="../Support/GenericDomTree.h.html#llvm::DomTreeBase" title='llvm::DomTreeBase' data-ref="llvm::DomTreeBase" data-ref-filename="llvm..DomTreeBase">DomTreeBase</a>&lt;BlockT&gt; &amp;<dfn class="local col8 decl" id="98DomTree" title='DomTree' data-type='const DomTreeBase&lt;BlockT&gt; &amp;' data-ref="98DomTree" data-ref-filename="98DomTree">DomTree</dfn>) <em>const</em> {</td></tr>
+<tr><th id="690">690</th><td>  <a class="type" href="../ADT/DenseSet.h.html#llvm::DenseSet" title='llvm::DenseSet' data-ref="llvm::DenseSet" data-ref-filename="llvm..DenseSet">DenseSet</a>&lt;<em>const</em> LoopT *&gt; <dfn class="local col9 decl" id="99Loops" title='Loops' data-type='DenseSet&lt;const LoopT *&gt;' data-ref="99Loops" data-ref-filename="99Loops">Loops</dfn>;</td></tr>
+<tr><th id="691">691</th><td>  <b>for</b> (<a class="typedef" href="LoopInfo.h.html#llvm::LoopInfoBase::iterator" title='llvm::LoopInfoBase::iterator' data-type='typename std::vector&lt;LoopT *&gt;::const_iterator' data-ref="llvm::LoopInfoBase::iterator" data-ref-filename="llvm..LoopInfoBase..iterator">iterator</a> <dfn class="local col0 decl" id="100I" title='I' data-type='llvm::LoopInfoBase::iterator' data-ref="100I" data-ref-filename="100I">I</dfn> = <a class="member fn" href="LoopInfo.h.html#_ZNK4llvm12LoopInfoBase5beginEv" title='llvm::LoopInfoBase::begin' data-ref="_ZNK4llvm12LoopInfoBase5beginEv" data-ref-filename="_ZNK4llvm12LoopInfoBase5beginEv">begin</a>(), <dfn class="local col1 decl" id="101E" title='E' data-type='llvm::LoopInfoBase::iterator' data-ref="101E" data-ref-filename="101E">E</dfn> = <a class="member fn" href="LoopInfo.h.html#_ZNK4llvm12LoopInfoBase3endEv" title='llvm::LoopInfoBase::end' data-ref="_ZNK4llvm12LoopInfoBase3endEv" data-ref-filename="_ZNK4llvm12LoopInfoBase3endEv">end</a>(); <a class="local col0 ref" href="#100I" title='I' data-ref="100I" data-ref-filename="100I">I</a> != <a class="local col1 ref" href="#101E" title='E' data-ref="101E" data-ref-filename="101E">E</a>; ++<a class="local col0 ref" href="#100I" title='I' data-ref="100I" data-ref-filename="100I">I</a>) {</td></tr>
+<tr><th id="692">692</th><td>    <a class="macro" href="../../../../../include/assert.h.html#50" title="(static_cast&lt;void&gt; (0))" data-ref="_M/assert">assert</a>((*I)-&gt;isOutermost() &amp;&amp; <q>"Top-level loop has a parent!"</q>);</td></tr>
+<tr><th id="693">693</th><td>    (*<a class="local col0 ref" href="#100I" title='I' data-ref="100I" data-ref-filename="100I">I</a>)-&gt;verifyLoopNest(&amp;<a class="local col9 ref" href="#99Loops" title='Loops' data-ref="99Loops" data-ref-filename="99Loops">Loops</a>);</td></tr>
+<tr><th id="694">694</th><td>  }</td></tr>
+<tr><th id="695">695</th><td></td></tr>
+<tr><th id="696">696</th><td><i>// Verify that blocks are mapped to valid loops.</i></td></tr>
+<tr><th id="697">697</th><td><u>#<span data-ppcond="697">ifndef</span> <span class="macro" data-ref="_M/NDEBUG">NDEBUG</span></u></td></tr>
+<tr><th id="698">698</th><td>  <b>for</b> (<em>auto</em> &amp;Entry : BBMap) {</td></tr>
+<tr><th id="699">699</th><td>    <em>const</em> BlockT *BB = Entry.first;</td></tr>
+<tr><th id="700">700</th><td>    LoopT *L = Entry.second;</td></tr>
+<tr><th id="701">701</th><td>    assert(Loops.count(L) &amp;&amp; <q>"orphaned loop"</q>);</td></tr>
+<tr><th id="702">702</th><td>    assert(L-&gt;contains(BB) &amp;&amp; <q>"orphaned block"</q>);</td></tr>
+<tr><th id="703">703</th><td>    <b>for</b> (LoopT *ChildLoop : *L)</td></tr>
+<tr><th id="704">704</th><td>      assert(!ChildLoop-&gt;contains(BB) &amp;&amp;</td></tr>
+<tr><th id="705">705</th><td>             <q>"BBMap should point to the innermost loop containing BB"</q>);</td></tr>
+<tr><th id="706">706</th><td>  }</td></tr>
+<tr><th id="707">707</th><td></td></tr>
+<tr><th id="708">708</th><td>  <i>// Recompute LoopInfo to verify loops structure.</i></td></tr>
+<tr><th id="709">709</th><td>  LoopInfoBase&lt;BlockT, LoopT&gt; OtherLI;</td></tr>
+<tr><th id="710">710</th><td>  OtherLI.analyze(DomTree);</td></tr>
+<tr><th id="711">711</th><td></td></tr>
+<tr><th id="712">712</th><td>  <i>// Build a map we can use to move from our LI to the computed one. This</i></td></tr>
+<tr><th id="713">713</th><td><i>  // allows us to ignore the particular order in any layer of the loop forest</i></td></tr>
+<tr><th id="714">714</th><td><i>  // while still comparing the structure.</i></td></tr>
+<tr><th id="715">715</th><td>  DenseMap&lt;BlockT *, <em>const</em> LoopT *&gt; OtherLoopHeaders;</td></tr>
+<tr><th id="716">716</th><td>  <b>for</b> (LoopT *L : OtherLI)</td></tr>
+<tr><th id="717">717</th><td>    addInnerLoopsToHeadersMap(OtherLoopHeaders, OtherLI, *L);</td></tr>
+<tr><th id="718">718</th><td></td></tr>
+<tr><th id="719">719</th><td>  <i>// Walk the top level loops and ensure there is a corresponding top-level</i></td></tr>
+<tr><th id="720">720</th><td><i>  // loop in the computed version and then recursively compare those loop</i></td></tr>
+<tr><th id="721">721</th><td><i>  // nests.</i></td></tr>
+<tr><th id="722">722</th><td>  <b>for</b> (LoopT *L : *<b>this</b>) {</td></tr>
+<tr><th id="723">723</th><td>    BlockT *Header = L-&gt;getHeader();</td></tr>
+<tr><th id="724">724</th><td>    <em>const</em> LoopT *OtherL = OtherLoopHeaders.lookup(Header);</td></tr>
+<tr><th id="725">725</th><td>    assert(OtherL &amp;&amp; <q>"Top level loop is missing in computed loop info!"</q>);</td></tr>
+<tr><th id="726">726</th><td>    <i>// Now that we've matched this loop, erase its header from the map.</i></td></tr>
+<tr><th id="727">727</th><td>    OtherLoopHeaders.erase(Header);</td></tr>
+<tr><th id="728">728</th><td>    <i>// And recursively compare these loops.</i></td></tr>
+<tr><th id="729">729</th><td>    compareLoops(L, OtherL, OtherLoopHeaders);</td></tr>
+<tr><th id="730">730</th><td>  }</td></tr>
+<tr><th id="731">731</th><td></td></tr>
+<tr><th id="732">732</th><td>  <i>// Any remaining entries in the map are loops which were found when computing</i></td></tr>
+<tr><th id="733">733</th><td><i>  // a fresh LoopInfo but not present in the current one.</i></td></tr>
+<tr><th id="734">734</th><td>  <b>if</b> (!OtherLoopHeaders.empty()) {</td></tr>
+<tr><th id="735">735</th><td>    <b>for</b> (<em>const</em> <em>auto</em> &amp;HeaderAndLoop : OtherLoopHeaders)</td></tr>
+<tr><th id="736">736</th><td>      dbgs() &lt;&lt; <q>"Found new loop: "</q> &lt;&lt; *HeaderAndLoop.second &lt;&lt; <q>"\n"</q>;</td></tr>
+<tr><th id="737">737</th><td>    llvm_unreachable(<q>"Found new loops when recomputing LoopInfo!"</q>);</td></tr>
+<tr><th id="738">738</th><td>  }</td></tr>
+<tr><th id="739">739</th><td><u>#<span data-ppcond="697">endif</span></u></td></tr>
+<tr><th id="740">740</th><td>}</td></tr>
+<tr><th id="741">741</th><td></td></tr>
+<tr><th id="742">742</th><td>} <i>// End llvm namespace</i></td></tr>
+<tr><th id="743">743</th><td></td></tr>
+<tr><th id="744">744</th><td><u>#<span data-ppcond="14">endif</span></u></td></tr>
+<tr><th id="745">745</th><td></td></tr>
+</table><hr/><p id='footer'>
+Generated while processing <a href='../../../lib/Analysis/LoopInfo.cpp.html'>llvm/llvm/lib/Analysis/LoopInfo.cpp</a><br/>Generated on <em>2021-Jul-01</em> from project llvm revision <em>12</em>

@@ -1,0 +1,178 @@
+<!doctype html>
+<html>
+<head>
+<meta name="viewport" content="width=device-width, initial-scale=1.0"><title>regexec.c source code [llvm/llvm/lib/Support/regexec.c] - Woboq Code Browser</title>
+<link rel="stylesheet" href="../../../.././data/qtcreator.css" title="QtCreator"/>
+<link rel="alternate stylesheet" href="../../../.././data/kdevelop.css" title="KDevelop"/>
+<script type="text/javascript" src="../../../.././data/jquery/jquery.min.js"></script>
+<script type="text/javascript" src="../../../.././data/jquery/jquery-ui.min.js"></script>
+<script>var file = 'llvm/llvm/lib/Support/regexec.c'; var root_path = '../../../..'; var data_path = '../../../.././data'; var ecma_script_api_version = 2;</script>
+<script src='../../../.././data/codebrowser.js'></script>
+</head>
+<body><div id='header'><h1 id='breadcrumb'><span>Browse the source code of </span><a href='../../..'>llvm</a>/<a href='../..'>llvm</a>/<a href='..'>lib</a>/<a href='./'>Support</a>/<a href='regexec.c.html'>regexec.c</a></h1></div>
+<hr/><div id='content'><table class="code">
+<tr><th id="1">1</th><td><i>/*-</i></td></tr>
+<tr><th id="2">2</th><td><i> * This code is derived from OpenBSD's libc/regex, original license follows:</i></td></tr>
+<tr><th id="3">3</th><td><i> *</i></td></tr>
+<tr><th id="4">4</th><td><i> * Copyright (c) 1992, 1993, 1994 Henry Spencer.</i></td></tr>
+<tr><th id="5">5</th><td><i> * Copyright (c) 1992, 1993, 1994</i></td></tr>
+<tr><th id="6">6</th><td><i> *	The Regents of the University of California.  All rights reserved.</i></td></tr>
+<tr><th id="7">7</th><td><i> *</i></td></tr>
+<tr><th id="8">8</th><td><i> * This code is derived from software contributed to Berkeley by</i></td></tr>
+<tr><th id="9">9</th><td><i> * Henry Spencer.</i></td></tr>
+<tr><th id="10">10</th><td><i> *</i></td></tr>
+<tr><th id="11">11</th><td><i> * Redistribution and use in source and binary forms, with or without</i></td></tr>
+<tr><th id="12">12</th><td><i> * modification, are permitted provided that the following conditions</i></td></tr>
+<tr><th id="13">13</th><td><i> * are met:</i></td></tr>
+<tr><th id="14">14</th><td><i> * 1. Redistributions of source code must retain the above copyright</i></td></tr>
+<tr><th id="15">15</th><td><i> *    notice, this list of conditions and the following disclaimer.</i></td></tr>
+<tr><th id="16">16</th><td><i> * 2. Redistributions in binary form must reproduce the above copyright</i></td></tr>
+<tr><th id="17">17</th><td><i> *    notice, this list of conditions and the following disclaimer in the</i></td></tr>
+<tr><th id="18">18</th><td><i> *    documentation and/or other materials provided with the distribution.</i></td></tr>
+<tr><th id="19">19</th><td><i> * 3. Neither the name of the University nor the names of its contributors</i></td></tr>
+<tr><th id="20">20</th><td><i> *    may be used to endorse or promote products derived from this software</i></td></tr>
+<tr><th id="21">21</th><td><i> *    without specific prior written permission.</i></td></tr>
+<tr><th id="22">22</th><td><i> *</i></td></tr>
+<tr><th id="23">23</th><td><i> * THIS SOFTWARE IS PROVIDED BY THE REGENTS AND CONTRIBUTORS ``AS IS'' AND</i></td></tr>
+<tr><th id="24">24</th><td><i> * ANY EXPRESS OR IMPLIED WARRANTIES, INCLUDING, BUT NOT LIMITED TO, THE</i></td></tr>
+<tr><th id="25">25</th><td><i> * IMPLIED WARRANTIES OF MERCHANTABILITY AND FITNESS FOR A PARTICULAR PURPOSE</i></td></tr>
+<tr><th id="26">26</th><td><i> * ARE DISCLAIMED.  IN NO EVENT SHALL THE REGENTS OR CONTRIBUTORS BE LIABLE</i></td></tr>
+<tr><th id="27">27</th><td><i> * FOR ANY DIRECT, INDIRECT, INCIDENTAL, SPECIAL, EXEMPLARY, OR CONSEQUENTIAL</i></td></tr>
+<tr><th id="28">28</th><td><i> * DAMAGES (INCLUDING, BUT NOT LIMITED TO, PROCUREMENT OF SUBSTITUTE GOODS</i></td></tr>
+<tr><th id="29">29</th><td><i> * OR SERVICES; LOSS OF USE, DATA, OR PROFITS; OR BUSINESS INTERRUPTION)</i></td></tr>
+<tr><th id="30">30</th><td><i> * HOWEVER CAUSED AND ON ANY THEORY OF LIABILITY, WHETHER IN CONTRACT, STRICT</i></td></tr>
+<tr><th id="31">31</th><td><i> * LIABILITY, OR TORT (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY</i></td></tr>
+<tr><th id="32">32</th><td><i> * OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF</i></td></tr>
+<tr><th id="33">33</th><td><i> * SUCH DAMAGE.</i></td></tr>
+<tr><th id="34">34</th><td><i> *</i></td></tr>
+<tr><th id="35">35</th><td><i> *	@(#)regexec.c	8.3 (Berkeley) 3/20/94</i></td></tr>
+<tr><th id="36">36</th><td><i> */</i></td></tr>
+<tr><th id="37">37</th><td></td></tr>
+<tr><th id="38">38</th><td><i>/*</i></td></tr>
+<tr><th id="39">39</th><td><i> * the outer shell of llvm_regexec()</i></td></tr>
+<tr><th id="40">40</th><td><i> *</i></td></tr>
+<tr><th id="41">41</th><td><i> * This file includes engine.inc *twice*, after muchos fiddling with the</i></td></tr>
+<tr><th id="42">42</th><td><i> * macros that code uses.  This lets the same code operate on two different</i></td></tr>
+<tr><th id="43">43</th><td><i> * representations for state sets.</i></td></tr>
+<tr><th id="44">44</th><td><i> */</i></td></tr>
+<tr><th id="45">45</th><td><u>#include <a href="../../../../include/sys/types.h.html">&lt;sys/types.h&gt;</a></u></td></tr>
+<tr><th id="46">46</th><td><u>#include <a href="../../../../include/stdio.h.html">&lt;stdio.h&gt;</a></u></td></tr>
+<tr><th id="47">47</th><td><u>#include <a href="../../../../include/stdlib.h.html">&lt;stdlib.h&gt;</a></u></td></tr>
+<tr><th id="48">48</th><td><u>#include <a href="../../../../include/string.h.html">&lt;string.h&gt;</a></u></td></tr>
+<tr><th id="49">49</th><td><u>#include &lt;limits.h&gt;</u></td></tr>
+<tr><th id="50">50</th><td><u>#include <a href="../../../../include/ctype.h.html">&lt;ctype.h&gt;</a></u></td></tr>
+<tr><th id="51">51</th><td><u>#include <a href="regex_impl.h.html">"regex_impl.h"</a></u></td></tr>
+<tr><th id="52">52</th><td></td></tr>
+<tr><th id="53">53</th><td><u>#include <a href="regutils.h.html">"regutils.h"</a></u></td></tr>
+<tr><th id="54">54</th><td><u>#include <a href="regex2.h.html">"regex2.h"</a></u></td></tr>
+<tr><th id="55">55</th><td></td></tr>
+<tr><th id="56">56</th><td><i>/* macros for manipulating states, small version */</i></td></tr>
+<tr><th id="57">57</th><td><i>/* FIXME: 'states' is assumed as 'long' on small version. */</i></td></tr>
+<tr><th id="58">58</th><td><u>#define	<dfn class="macro" id="_M/states1" data-ref="_M/states1">states1</dfn>	long		/* for later use in llvm_regexec() decision */</u></td></tr>
+<tr><th id="59">59</th><td><u>#define	<dfn class="macro" id="_M/states" data-ref="_M/states">states</dfn>	states1</u></td></tr>
+<tr><th id="60">60</th><td><u>#define	<dfn class="macro" id="_M/CLEAR" data-ref="_M/CLEAR">CLEAR</dfn>(v)	((v) = 0)</u></td></tr>
+<tr><th id="61">61</th><td><u>#define	<dfn class="macro" id="_M/SET0" data-ref="_M/SET0">SET0</dfn>(v, n)	((v) &amp;= ~((unsigned long)1 &lt;&lt; (n)))</u></td></tr>
+<tr><th id="62">62</th><td><u>#define	<dfn class="macro" id="_M/SET1" data-ref="_M/SET1">SET1</dfn>(v, n)	((v) |= (unsigned long)1 &lt;&lt; (n))</u></td></tr>
+<tr><th id="63">63</th><td><u>#define	<dfn class="macro" id="_M/ISSET" data-ref="_M/ISSET">ISSET</dfn>(v, n)	(((v) &amp; ((unsigned long)1 &lt;&lt; (n))) != 0)</u></td></tr>
+<tr><th id="64">64</th><td><u>#define	<dfn class="macro" id="_M/ASSIGN" data-ref="_M/ASSIGN">ASSIGN</dfn>(d, s)	((d) = (s))</u></td></tr>
+<tr><th id="65">65</th><td><u>#define	<dfn class="macro" id="_M/EQ" data-ref="_M/EQ">EQ</dfn>(a, b)	((a) == (b))</u></td></tr>
+<tr><th id="66">66</th><td><u>#define	<dfn class="macro" id="_M/STATEVARS" data-ref="_M/STATEVARS">STATEVARS</dfn>	long dummy	/* dummy version */</u></td></tr>
+<tr><th id="67">67</th><td><u>#define	<dfn class="macro" id="_M/STATESETUP" data-ref="_M/STATESETUP">STATESETUP</dfn>(m, n)	/* nothing */</u></td></tr>
+<tr><th id="68">68</th><td><u>#define	<dfn class="macro" id="_M/STATETEARDOWN" data-ref="_M/STATETEARDOWN">STATETEARDOWN</dfn>(m)	/* nothing */</u></td></tr>
+<tr><th id="69">69</th><td><u>#define	<dfn class="macro" id="_M/SETUP" data-ref="_M/SETUP">SETUP</dfn>(v)	((v) = 0)</u></td></tr>
+<tr><th id="70">70</th><td><u>#define	<dfn class="macro" id="_M/onestate" data-ref="_M/onestate">onestate</dfn>	long</u></td></tr>
+<tr><th id="71">71</th><td><u>#define	<dfn class="macro" id="_M/INIT" data-ref="_M/INIT">INIT</dfn>(o, n)	((o) = (unsigned long)1 &lt;&lt; (n))</u></td></tr>
+<tr><th id="72">72</th><td><u>#define	<dfn class="macro" id="_M/INC" data-ref="_M/INC">INC</dfn>(o)		((o) = (unsigned long)(o) &lt;&lt; 1)</u></td></tr>
+<tr><th id="73">73</th><td><u>#define	<dfn class="macro" id="_M/ISSTATEIN" data-ref="_M/ISSTATEIN">ISSTATEIN</dfn>(v, o)	(((v) &amp; (o)) != 0)</u></td></tr>
+<tr><th id="74">74</th><td><i>/* some abbreviations; note that some of these know variable names! */</i></td></tr>
+<tr><th id="75">75</th><td><i>/* do "if I'm here, I can also be there" etc without branches */</i></td></tr>
+<tr><th id="76">76</th><td><u>#define	<dfn class="macro" id="_M/FWD" data-ref="_M/FWD">FWD</dfn>(dst, src, n)	((dst) |= ((unsigned long)(src)&amp;(here)) &lt;&lt; (n))</u></td></tr>
+<tr><th id="77">77</th><td><u>#define	<dfn class="macro" id="_M/BACK" data-ref="_M/BACK">BACK</dfn>(dst, src, n)	((dst) |= ((unsigned long)(src)&amp;(here)) &gt;&gt; (n))</u></td></tr>
+<tr><th id="78">78</th><td><u>#define	<dfn class="macro" id="_M/ISSETBACK" data-ref="_M/ISSETBACK">ISSETBACK</dfn>(v, n)		(((v) &amp; ((unsigned long)here &gt;&gt; (n))) != 0)</u></td></tr>
+<tr><th id="79">79</th><td><i>/* function names */</i></td></tr>
+<tr><th id="80">80</th><td><u>#define <dfn class="macro" id="_M/SNAMES" data-ref="_M/SNAMES">SNAMES</dfn>			/* engine.inc looks after details */</u></td></tr>
+<tr><th id="81">81</th><td></td></tr>
+<tr><th id="82">82</th><td><u>#include <a href="regengine.inc.html">"regengine.inc"</a></u></td></tr>
+<tr><th id="83">83</th><td></td></tr>
+<tr><th id="84">84</th><td><i>/* now undo things */</i></td></tr>
+<tr><th id="85">85</th><td><u>#undef	<a class="macro" href="#59" data-ref="_M/states">states</a></u></td></tr>
+<tr><th id="86">86</th><td><u>#undef	<a class="macro" href="#60" data-ref="_M/CLEAR">CLEAR</a></u></td></tr>
+<tr><th id="87">87</th><td><u>#undef	<a class="macro" href="#61" data-ref="_M/SET0">SET0</a></u></td></tr>
+<tr><th id="88">88</th><td><u>#undef	<a class="macro" href="#62" data-ref="_M/SET1">SET1</a></u></td></tr>
+<tr><th id="89">89</th><td><u>#undef	<a class="macro" href="#63" data-ref="_M/ISSET">ISSET</a></u></td></tr>
+<tr><th id="90">90</th><td><u>#undef	<a class="macro" href="#64" data-ref="_M/ASSIGN">ASSIGN</a></u></td></tr>
+<tr><th id="91">91</th><td><u>#undef	<a class="macro" href="#65" data-ref="_M/EQ">EQ</a></u></td></tr>
+<tr><th id="92">92</th><td><u>#undef	<a class="macro" href="#66" data-ref="_M/STATEVARS">STATEVARS</a></u></td></tr>
+<tr><th id="93">93</th><td><u>#undef	<a class="macro" href="#67" data-ref="_M/STATESETUP">STATESETUP</a></u></td></tr>
+<tr><th id="94">94</th><td><u>#undef	<a class="macro" href="#68" data-ref="_M/STATETEARDOWN">STATETEARDOWN</a></u></td></tr>
+<tr><th id="95">95</th><td><u>#undef	<a class="macro" href="#69" data-ref="_M/SETUP">SETUP</a></u></td></tr>
+<tr><th id="96">96</th><td><u>#undef	<a class="macro" href="#70" data-ref="_M/onestate">onestate</a></u></td></tr>
+<tr><th id="97">97</th><td><u>#undef	<a class="macro" href="#71" data-ref="_M/INIT">INIT</a></u></td></tr>
+<tr><th id="98">98</th><td><u>#undef	<a class="macro" href="#72" data-ref="_M/INC">INC</a></u></td></tr>
+<tr><th id="99">99</th><td><u>#undef	<a class="macro" href="#73" data-ref="_M/ISSTATEIN">ISSTATEIN</a></u></td></tr>
+<tr><th id="100">100</th><td><u>#undef	<a class="macro" href="#76" data-ref="_M/FWD">FWD</a></u></td></tr>
+<tr><th id="101">101</th><td><u>#undef	<a class="macro" href="#77" data-ref="_M/BACK">BACK</a></u></td></tr>
+<tr><th id="102">102</th><td><u>#undef	<a class="macro" href="#78" data-ref="_M/ISSETBACK">ISSETBACK</a></u></td></tr>
+<tr><th id="103">103</th><td><u>#undef	<a class="macro" href="#80" data-ref="_M/SNAMES">SNAMES</a></u></td></tr>
+<tr><th id="104">104</th><td></td></tr>
+<tr><th id="105">105</th><td><i>/* macros for manipulating states, large version */</i></td></tr>
+<tr><th id="106">106</th><td><u>#define	<dfn class="macro" id="_M/states" data-ref="_M/states">states</dfn>	char *</u></td></tr>
+<tr><th id="107">107</th><td><u>#define	<dfn class="macro" id="_M/CLEAR" data-ref="_M/CLEAR">CLEAR</dfn>(v)	memset(v, 0, m-&gt;g-&gt;nstates)</u></td></tr>
+<tr><th id="108">108</th><td><u>#define	<dfn class="macro" id="_M/SET0" data-ref="_M/SET0">SET0</dfn>(v, n)	((v)[n] = 0)</u></td></tr>
+<tr><th id="109">109</th><td><u>#define	<dfn class="macro" id="_M/SET1" data-ref="_M/SET1">SET1</dfn>(v, n)	((v)[n] = 1)</u></td></tr>
+<tr><th id="110">110</th><td><u>#define	<dfn class="macro" id="_M/ISSET" data-ref="_M/ISSET">ISSET</dfn>(v, n)	((v)[n])</u></td></tr>
+<tr><th id="111">111</th><td><u>#define	<dfn class="macro" id="_M/ASSIGN" data-ref="_M/ASSIGN">ASSIGN</dfn>(d, s)	memmove(d, s, m-&gt;g-&gt;nstates)</u></td></tr>
+<tr><th id="112">112</th><td><u>#define	<dfn class="macro" id="_M/EQ" data-ref="_M/EQ">EQ</dfn>(a, b)	(memcmp(a, b, m-&gt;g-&gt;nstates) == 0)</u></td></tr>
+<tr><th id="113">113</th><td><u>#define	<dfn class="macro" id="_M/STATEVARS" data-ref="_M/STATEVARS">STATEVARS</dfn>	long vn; char *space</u></td></tr>
+<tr><th id="114">114</th><td><u>#define	<dfn class="macro" id="_M/STATESETUP" data-ref="_M/STATESETUP">STATESETUP</dfn>(m, nv)	{ (m)-&gt;space = malloc((nv)*(m)-&gt;g-&gt;nstates); \</u></td></tr>
+<tr><th id="115">115</th><td><u>				if ((m)-&gt;space == NULL) return(REG_ESPACE); \</u></td></tr>
+<tr><th id="116">116</th><td><u>				(m)-&gt;vn = 0; }</u></td></tr>
+<tr><th id="117">117</th><td><u>#define	<dfn class="macro" id="_M/STATETEARDOWN" data-ref="_M/STATETEARDOWN">STATETEARDOWN</dfn>(m)	{ free((m)-&gt;space); }</u></td></tr>
+<tr><th id="118">118</th><td><u>#define	<dfn class="macro" id="_M/SETUP" data-ref="_M/SETUP">SETUP</dfn>(v)	((v) = &amp;m-&gt;space[m-&gt;vn++ * m-&gt;g-&gt;nstates])</u></td></tr>
+<tr><th id="119">119</th><td><u>#define	<dfn class="macro" id="_M/onestate" data-ref="_M/onestate">onestate</dfn>	long</u></td></tr>
+<tr><th id="120">120</th><td><u>#define	<dfn class="macro" id="_M/INIT" data-ref="_M/INIT">INIT</dfn>(o, n)	((o) = (n))</u></td></tr>
+<tr><th id="121">121</th><td><u>#define	<dfn class="macro" id="_M/INC" data-ref="_M/INC">INC</dfn>(o)	((o)++)</u></td></tr>
+<tr><th id="122">122</th><td><u>#define	<dfn class="macro" id="_M/ISSTATEIN" data-ref="_M/ISSTATEIN">ISSTATEIN</dfn>(v, o)	((v)[o])</u></td></tr>
+<tr><th id="123">123</th><td><i>/* some abbreviations; note that some of these know variable names! */</i></td></tr>
+<tr><th id="124">124</th><td><i>/* do "if I'm here, I can also be there" etc without branches */</i></td></tr>
+<tr><th id="125">125</th><td><u>#define	<dfn class="macro" id="_M/FWD" data-ref="_M/FWD">FWD</dfn>(dst, src, n)	((dst)[here+(n)] |= (src)[here])</u></td></tr>
+<tr><th id="126">126</th><td><u>#define	<dfn class="macro" id="_M/BACK" data-ref="_M/BACK">BACK</dfn>(dst, src, n)	((dst)[here-(n)] |= (src)[here])</u></td></tr>
+<tr><th id="127">127</th><td><u>#define	<dfn class="macro" id="_M/ISSETBACK" data-ref="_M/ISSETBACK">ISSETBACK</dfn>(v, n)	((v)[here - (n)])</u></td></tr>
+<tr><th id="128">128</th><td><i>/* function names */</i></td></tr>
+<tr><th id="129">129</th><td><u>#define	<dfn class="macro" id="_M/LNAMES" data-ref="_M/LNAMES">LNAMES</dfn>			/* flag */</u></td></tr>
+<tr><th id="130">130</th><td></td></tr>
+<tr><th id="131">131</th><td><u>#include <a href="regengine.inc.html">"regengine.inc"</a></u></td></tr>
+<tr><th id="132">132</th><td></td></tr>
+<tr><th id="133">133</th><td><i>/*</i></td></tr>
+<tr><th id="134">134</th><td><i> - llvm_regexec - interface for matching</i></td></tr>
+<tr><th id="135">135</th><td><i> *</i></td></tr>
+<tr><th id="136">136</th><td><i> * We put this here so we can exploit knowledge of the state representation</i></td></tr>
+<tr><th id="137">137</th><td><i> * when choosing which matcher to call.  Also, by this point the matchers</i></td></tr>
+<tr><th id="138">138</th><td><i> * have been prototyped.</i></td></tr>
+<tr><th id="139">139</th><td><i> */</i></td></tr>
+<tr><th id="140">140</th><td><em>int</em>				<i>/* 0 success, REG_NOMATCH failure */</i></td></tr>
+<tr><th id="141">141</th><td><dfn class="decl def fn" id="llvm_regexec" title='llvm_regexec' data-ref="llvm_regexec" data-ref-filename="llvm_regexec">llvm_regexec</dfn>(<em>const</em> <a class="typedef" href="regex_impl.h.html#llvm_regex_t" title='llvm_regex_t' data-type='struct llvm_regex' data-ref="llvm_regex_t" data-ref-filename="llvm_regex_t">llvm_regex_t</a> *<dfn class="local col7 decl" id="187preg" title='preg' data-type='const llvm_regex_t *' data-ref="187preg" data-ref-filename="187preg">preg</dfn>, <em>const</em> <em>char</em> *<dfn class="local col8 decl" id="188string" title='string' data-type='const char *' data-ref="188string" data-ref-filename="188string">string</dfn>, <span class='typedef' title='size_t' data-type='unsigned long' data-ref="size_t" data-ref-filename="size_t">size_t</span> <dfn class="local col9 decl" id="189nmatch" title='nmatch' data-type='size_t' data-ref="189nmatch" data-ref-filename="189nmatch">nmatch</dfn>,</td></tr>
+<tr><th id="142">142</th><td>             <a class="typedef" href="regex_impl.h.html#llvm_regmatch_t" title='llvm_regmatch_t' data-type='struct llvm_regmatch_t' data-ref="llvm_regmatch_t" data-ref-filename="llvm_regmatch_t">llvm_regmatch_t</a> <dfn class="local col0 decl" id="190pmatch" title='pmatch' data-type='llvm_regmatch_t *' data-ref="190pmatch" data-ref-filename="190pmatch">pmatch</dfn>[], <em>int</em> <dfn class="local col1 decl" id="191eflags" title='eflags' data-type='int' data-ref="191eflags" data-ref-filename="191eflags">eflags</dfn>)</td></tr>
+<tr><th id="143">143</th><td>{</td></tr>
+<tr><th id="144">144</th><td>	<b>struct</b> <a class="type" href="regex2.h.html#re_guts" title='re_guts' data-ref="re_guts" data-ref-filename="re_guts">re_guts</a> *<dfn class="local col2 decl" id="192g" title='g' data-type='struct re_guts *' data-ref="192g" data-ref-filename="192g">g</dfn> = <a class="local col7 ref" href="#187preg" title='preg' data-ref="187preg" data-ref-filename="187preg">preg</a>-&gt;<a class="ref field" href="regex_impl.h.html#llvm_regex::re_g" title='llvm_regex::re_g' data-ref="llvm_regex::re_g" data-ref-filename="llvm_regex..re_g">re_g</a>;</td></tr>
+<tr><th id="145">145</th><td><u>#<span data-ppcond="145">ifdef</span> <span class="macro" data-ref="_M/REDEBUG">REDEBUG</span></u></td></tr>
+<tr><th id="146">146</th><td><u>#	define	GOODFLAGS(f)	(f)</u></td></tr>
+<tr><th id="147">147</th><td><u>#<span data-ppcond="145">else</span></u></td></tr>
+<tr><th id="148">148</th><td><u>#	define	<dfn class="macro" id="_M/GOODFLAGS" data-ref="_M/GOODFLAGS">GOODFLAGS</dfn>(f)	((f)&amp;(REG_NOTBOL|REG_NOTEOL|REG_STARTEND))</u></td></tr>
+<tr><th id="149">149</th><td><u>#<span data-ppcond="145">endif</span></u></td></tr>
+<tr><th id="150">150</th><td></td></tr>
+<tr><th id="151">151</th><td>	<b>if</b> (<a class="local col7 ref" href="#187preg" title='preg' data-ref="187preg" data-ref-filename="187preg">preg</a>-&gt;<a class="ref field" href="regex_impl.h.html#llvm_regex::re_magic" title='llvm_regex::re_magic' data-ref="llvm_regex::re_magic" data-ref-filename="llvm_regex..re_magic">re_magic</a> != <a class="macro" href="regex2.h.html#47" title="(((&apos;r&apos;^0200)&lt;&lt;8) | &apos;e&apos;)" data-ref="_M/MAGIC1">MAGIC1</a> || <a class="local col2 ref" href="#192g" title='g' data-ref="192g" data-ref-filename="192g">g</a>-&gt;<a class="ref field" href="regex2.h.html#re_guts::magic" title='re_guts::magic' data-ref="re_guts::magic" data-ref-filename="re_guts..magic">magic</a> != <a class="macro" href="regex2.h.html#134" title="(((&apos;R&apos;^0200)&lt;&lt;8)|&apos;E&apos;)" data-ref="_M/MAGIC2">MAGIC2</a>)</td></tr>
+<tr><th id="152">152</th><td>		<b>return</b>(<a class="macro" href="regex_impl.h.html#67" title="2" data-ref="_M/REG_BADPAT">REG_BADPAT</a>);</td></tr>
+<tr><th id="153">153</th><td>	<a class="macro" href="../../../../include/assert.h.html#50" title="((void) (0))" data-ref="_M/assert">assert</a>(!(g-&gt;iflags&amp;REGEX_BAD));</td></tr>
+<tr><th id="154">154</th><td>	<b>if</b> (<a class="local col2 ref" href="#192g" title='g' data-ref="192g" data-ref-filename="192g">g</a>-&gt;<a class="ref field" href="regex2.h.html#re_guts::iflags" title='re_guts::iflags' data-ref="re_guts::iflags" data-ref-filename="re_guts..iflags">iflags</a>&amp;<a class="macro" href="regex2.h.html#147" title="04" data-ref="_M/REGEX_BAD">REGEX_BAD</a>)		<i>/* backstop for no-debug case */</i></td></tr>
+<tr><th id="155">155</th><td>		<b>return</b>(<a class="macro" href="regex_impl.h.html#67" title="2" data-ref="_M/REG_BADPAT">REG_BADPAT</a>);</td></tr>
+<tr><th id="156">156</th><td>	<a class="local col1 ref" href="#191eflags" title='eflags' data-ref="191eflags" data-ref-filename="191eflags">eflags</a> = <a class="macro" href="#148" title="((eflags)&amp;(00001|00002|00004))" data-ref="_M/GOODFLAGS">GOODFLAGS</a>(<a class="local col1 ref" href="#191eflags" title='eflags' data-ref="191eflags" data-ref-filename="191eflags">eflags</a>);</td></tr>
+<tr><th id="157">157</th><td></td></tr>
+<tr><th id="158">158</th><td>	<b>if</b> (<a class="local col2 ref" href="#192g" title='g' data-ref="192g" data-ref-filename="192g">g</a>-&gt;<a class="ref field" href="regex2.h.html#re_guts::nstates" title='re_guts::nstates' data-ref="re_guts::nstates" data-ref-filename="re_guts..nstates">nstates</a> &lt;= (<em>long</em>)(<span class="macro" title="8" data-ref="_M/CHAR_BIT">CHAR_BIT</span>*<b>sizeof</b>(<a class="macro" href="#58" title="long" data-ref="_M/states1">states1</a>)) &amp;&amp; !(<a class="local col1 ref" href="#191eflags" title='eflags' data-ref="191eflags" data-ref-filename="191eflags">eflags</a>&amp;<a class="macro" href="regex_impl.h.html#90" title="01000" data-ref="_M/REG_LARGE">REG_LARGE</a>))</td></tr>
+<tr><th id="159">159</th><td>		<b>return</b>(<a class="ref fn" href="regengine.inc.html#131" title='smatcher' data-ref="smatcher" data-ref-filename="smatcher">smatcher</a>(<a class="local col2 ref" href="#192g" title='g' data-ref="192g" data-ref-filename="192g">g</a>, <a class="local col8 ref" href="#188string" title='string' data-ref="188string" data-ref-filename="188string">string</a>, <a class="local col9 ref" href="#189nmatch" title='nmatch' data-ref="189nmatch" data-ref-filename="189nmatch">nmatch</a>, <a class="local col0 ref" href="#190pmatch" title='pmatch' data-ref="190pmatch" data-ref-filename="190pmatch">pmatch</a>, <a class="local col1 ref" href="#191eflags" title='eflags' data-ref="191eflags" data-ref-filename="191eflags">eflags</a>));</td></tr>
+<tr><th id="160">160</th><td>	<b>else</b></td></tr>
+<tr><th id="161">161</th><td>		<b>return</b>(<a class="ref fn" href="regengine.inc.html#131" title='lmatcher' data-ref="lmatcher" data-ref-filename="lmatcher">lmatcher</a>(<a class="local col2 ref" href="#192g" title='g' data-ref="192g" data-ref-filename="192g">g</a>, <a class="local col8 ref" href="#188string" title='string' data-ref="188string" data-ref-filename="188string">string</a>, <a class="local col9 ref" href="#189nmatch" title='nmatch' data-ref="189nmatch" data-ref-filename="189nmatch">nmatch</a>, <a class="local col0 ref" href="#190pmatch" title='pmatch' data-ref="190pmatch" data-ref-filename="190pmatch">pmatch</a>, <a class="local col1 ref" href="#191eflags" title='eflags' data-ref="191eflags" data-ref-filename="191eflags">eflags</a>));</td></tr>
+<tr><th id="162">162</th><td>}</td></tr>
+<tr><th id="163">163</th><td></td></tr>
+</table><hr/><p id='footer'>
+Generated on <em>2021-Jul-01</em> from project llvm revision <em>12</em>

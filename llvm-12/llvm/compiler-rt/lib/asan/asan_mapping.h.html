@@ -1,0 +1,437 @@
+<!doctype html>
+<html>
+<head>
+<meta name="viewport" content="width=device-width, initial-scale=1.0"><title>asan_mapping.h source code [llvm/compiler-rt/lib/asan/asan_mapping.h] - Woboq Code Browser</title>
+<link rel="stylesheet" href="../../../.././data/qtcreator.css" title="QtCreator"/>
+<link rel="alternate stylesheet" href="../../../.././data/kdevelop.css" title="KDevelop"/>
+<script type="text/javascript" src="../../../.././data/jquery/jquery.min.js"></script>
+<script type="text/javascript" src="../../../.././data/jquery/jquery-ui.min.js"></script>
+<script>var file = 'llvm/compiler-rt/lib/asan/asan_mapping.h'; var root_path = '../../../..'; var data_path = '../../../.././data'; var ecma_script_api_version = 2;</script>
+<script src='../../../.././data/codebrowser.js'></script>
+</head>
+<body><div id='header'><h1 id='breadcrumb'><span>Browse the source code of </span><a href='../../..'>llvm</a>/<a href='../..'>compiler-rt</a>/<a href='..'>lib</a>/<a href='./'>asan</a>/<a href='asan_mapping.h.html'>asan_mapping.h</a></h1></div>
+<hr/><div id='content'><table class="code">
+<tr><th id="1">1</th><td><i>//===-- asan_mapping.h ------------------------------------------*- C++ -*-===//</i></td></tr>
+<tr><th id="2">2</th><td><i>//</i></td></tr>
+<tr><th id="3">3</th><td><i>// Part of the LLVM Project, under the Apache License v2.0 with LLVM Exceptions.</i></td></tr>
+<tr><th id="4">4</th><td><i>// See <a href="https://llvm.org/LICENSE.txt">https://llvm.org/LICENSE.txt</a> for license information.</i></td></tr>
+<tr><th id="5">5</th><td><i>// SPDX-License-Identifier: Apache-2.0 WITH LLVM-exception</i></td></tr>
+<tr><th id="6">6</th><td><i>//</i></td></tr>
+<tr><th id="7">7</th><td><i>//===----------------------------------------------------------------------===//</i></td></tr>
+<tr><th id="8">8</th><td><i>//</i></td></tr>
+<tr><th id="9">9</th><td><i>// This file is a part of AddressSanitizer, an address sanity checker.</i></td></tr>
+<tr><th id="10">10</th><td><i>//</i></td></tr>
+<tr><th id="11">11</th><td><i>// Defines ASan memory mapping.</i></td></tr>
+<tr><th id="12">12</th><td><i>//===----------------------------------------------------------------------===//</i></td></tr>
+<tr><th id="13">13</th><td><u>#<span data-ppcond="13">ifndef</span> <span class="macro" data-ref="_M/ASAN_MAPPING_H">ASAN_MAPPING_H</span></u></td></tr>
+<tr><th id="14">14</th><td><u>#define <dfn class="macro" id="_M/ASAN_MAPPING_H" data-ref="_M/ASAN_MAPPING_H">ASAN_MAPPING_H</dfn></u></td></tr>
+<tr><th id="15">15</th><td></td></tr>
+<tr><th id="16">16</th><td><u>#include <a href="asan_internal.h.html">"asan_internal.h"</a></u></td></tr>
+<tr><th id="17">17</th><td></td></tr>
+<tr><th id="18">18</th><td><i>// The full explanation of the memory mapping could be found here:</i></td></tr>
+<tr><th id="19">19</th><td><i>// <a href="https://github.com/google/sanitizers/wiki/AddressSanitizerAlgorithm">https://github.com/google/sanitizers/wiki/AddressSanitizerAlgorithm</a></i></td></tr>
+<tr><th id="20">20</th><td><i>//</i></td></tr>
+<tr><th id="21">21</th><td><i>// Typical shadow mapping on Linux/x86_64 with SHADOW_OFFSET == 0x00007fff8000:</i></td></tr>
+<tr><th id="22">22</th><td><i>// || `[0x10007fff8000, 0x7fffffffffff]` || HighMem    ||</i></td></tr>
+<tr><th id="23">23</th><td><i>// || `[0x02008fff7000, 0x10007fff7fff]` || HighShadow ||</i></td></tr>
+<tr><th id="24">24</th><td><i>// || `[0x00008fff7000, 0x02008fff6fff]` || ShadowGap  ||</i></td></tr>
+<tr><th id="25">25</th><td><i>// || `[0x00007fff8000, 0x00008fff6fff]` || LowShadow  ||</i></td></tr>
+<tr><th id="26">26</th><td><i>// || `[0x000000000000, 0x00007fff7fff]` || LowMem     ||</i></td></tr>
+<tr><th id="27">27</th><td><i>//</i></td></tr>
+<tr><th id="28">28</th><td><i>// When SHADOW_OFFSET is zero (-pie):</i></td></tr>
+<tr><th id="29">29</th><td><i>// || `[0x100000000000, 0x7fffffffffff]` || HighMem    ||</i></td></tr>
+<tr><th id="30">30</th><td><i>// || `[0x020000000000, 0x0fffffffffff]` || HighShadow ||</i></td></tr>
+<tr><th id="31">31</th><td><i>// || `[0x000000040000, 0x01ffffffffff]` || ShadowGap  ||</i></td></tr>
+<tr><th id="32">32</th><td><i>//</i></td></tr>
+<tr><th id="33">33</th><td><i>// Special case when something is already mapped between</i></td></tr>
+<tr><th id="34">34</th><td><i>// 0x003000000000 and 0x005000000000 (e.g. when prelink is installed):</i></td></tr>
+<tr><th id="35">35</th><td><i>// || `[0x10007fff8000, 0x7fffffffffff]` || HighMem    ||</i></td></tr>
+<tr><th id="36">36</th><td><i>// || `[0x02008fff7000, 0x10007fff7fff]` || HighShadow ||</i></td></tr>
+<tr><th id="37">37</th><td><i>// || `[0x005000000000, 0x02008fff6fff]` || ShadowGap3 ||</i></td></tr>
+<tr><th id="38">38</th><td><i>// || `[0x003000000000, 0x004fffffffff]` || MidMem     ||</i></td></tr>
+<tr><th id="39">39</th><td><i>// || `[0x000a7fff8000, 0x002fffffffff]` || ShadowGap2 ||</i></td></tr>
+<tr><th id="40">40</th><td><i>// || `[0x00067fff8000, 0x000a7fff7fff]` || MidShadow  ||</i></td></tr>
+<tr><th id="41">41</th><td><i>// || `[0x00008fff7000, 0x00067fff7fff]` || ShadowGap  ||</i></td></tr>
+<tr><th id="42">42</th><td><i>// || `[0x00007fff8000, 0x00008fff6fff]` || LowShadow  ||</i></td></tr>
+<tr><th id="43">43</th><td><i>// || `[0x000000000000, 0x00007fff7fff]` || LowMem     ||</i></td></tr>
+<tr><th id="44">44</th><td><i>//</i></td></tr>
+<tr><th id="45">45</th><td><i>// Default Linux/i386 mapping on x86_64 machine:</i></td></tr>
+<tr><th id="46">46</th><td><i>// || `[0x40000000, 0xffffffff]` || HighMem    ||</i></td></tr>
+<tr><th id="47">47</th><td><i>// || `[0x28000000, 0x3fffffff]` || HighShadow ||</i></td></tr>
+<tr><th id="48">48</th><td><i>// || `[0x24000000, 0x27ffffff]` || ShadowGap  ||</i></td></tr>
+<tr><th id="49">49</th><td><i>// || `[0x20000000, 0x23ffffff]` || LowShadow  ||</i></td></tr>
+<tr><th id="50">50</th><td><i>// || `[0x00000000, 0x1fffffff]` || LowMem     ||</i></td></tr>
+<tr><th id="51">51</th><td><i>//</i></td></tr>
+<tr><th id="52">52</th><td><i>// Default Linux/i386 mapping on i386 machine</i></td></tr>
+<tr><th id="53">53</th><td><i>// (addresses starting with 0xc0000000 are reserved</i></td></tr>
+<tr><th id="54">54</th><td><i>// for kernel and thus not sanitized):</i></td></tr>
+<tr><th id="55">55</th><td><i>// || `[0x38000000, 0xbfffffff]` || HighMem    ||</i></td></tr>
+<tr><th id="56">56</th><td><i>// || `[0x27000000, 0x37ffffff]` || HighShadow ||</i></td></tr>
+<tr><th id="57">57</th><td><i>// || `[0x24000000, 0x26ffffff]` || ShadowGap  ||</i></td></tr>
+<tr><th id="58">58</th><td><i>// || `[0x20000000, 0x23ffffff]` || LowShadow  ||</i></td></tr>
+<tr><th id="59">59</th><td><i>// || `[0x00000000, 0x1fffffff]` || LowMem     ||</i></td></tr>
+<tr><th id="60">60</th><td><i>//</i></td></tr>
+<tr><th id="61">61</th><td><i>// Default Linux/MIPS32 mapping:</i></td></tr>
+<tr><th id="62">62</th><td><i>// || `[0x2aaa0000, 0xffffffff]` || HighMem    ||</i></td></tr>
+<tr><th id="63">63</th><td><i>// || `[0x0fff4000, 0x2aa9ffff]` || HighShadow ||</i></td></tr>
+<tr><th id="64">64</th><td><i>// || `[0x0bff4000, 0x0fff3fff]` || ShadowGap  ||</i></td></tr>
+<tr><th id="65">65</th><td><i>// || `[0x0aaa0000, 0x0bff3fff]` || LowShadow  ||</i></td></tr>
+<tr><th id="66">66</th><td><i>// || `[0x00000000, 0x0aa9ffff]` || LowMem     ||</i></td></tr>
+<tr><th id="67">67</th><td><i>//</i></td></tr>
+<tr><th id="68">68</th><td><i>// Default Linux/MIPS64 mapping:</i></td></tr>
+<tr><th id="69">69</th><td><i>// || `[0x4000000000, 0xffffffffff]` || HighMem    ||</i></td></tr>
+<tr><th id="70">70</th><td><i>// || `[0x2800000000, 0x3fffffffff]` || HighShadow ||</i></td></tr>
+<tr><th id="71">71</th><td><i>// || `[0x2400000000, 0x27ffffffff]` || ShadowGap  ||</i></td></tr>
+<tr><th id="72">72</th><td><i>// || `[0x2000000000, 0x23ffffffff]` || LowShadow  ||</i></td></tr>
+<tr><th id="73">73</th><td><i>// || `[0x0000000000, 0x1fffffffff]` || LowMem     ||</i></td></tr>
+<tr><th id="74">74</th><td><i>//</i></td></tr>
+<tr><th id="75">75</th><td><i>// Default Linux/AArch64 (39-bit VMA) mapping:</i></td></tr>
+<tr><th id="76">76</th><td><i>// || `[0x2000000000, 0x7fffffffff]` || highmem    ||</i></td></tr>
+<tr><th id="77">77</th><td><i>// || `[0x1400000000, 0x1fffffffff]` || highshadow ||</i></td></tr>
+<tr><th id="78">78</th><td><i>// || `[0x1200000000, 0x13ffffffff]` || shadowgap  ||</i></td></tr>
+<tr><th id="79">79</th><td><i>// || `[0x1000000000, 0x11ffffffff]` || lowshadow  ||</i></td></tr>
+<tr><th id="80">80</th><td><i>// || `[0x0000000000, 0x0fffffffff]` || lowmem     ||</i></td></tr>
+<tr><th id="81">81</th><td><i>//</i></td></tr>
+<tr><th id="82">82</th><td><i>// RISC-V has only 38 bits for task size</i></td></tr>
+<tr><th id="83">83</th><td><i>// Low mem size is set with kRiscv64_ShadowOffset64 in</i></td></tr>
+<tr><th id="84">84</th><td><i>// compiler-rt/lib/asan/asan_allocator.h and in</i></td></tr>
+<tr><th id="85">85</th><td><i>// llvm/lib/Transforms/Instrumentation/AddressSanitizer.cpp with</i></td></tr>
+<tr><th id="86">86</th><td><i>// kRiscv64_ShadowOffset64, High mem top border is set with</i></td></tr>
+<tr><th id="87">87</th><td><i>// GetMaxVirtualAddress() in</i></td></tr>
+<tr><th id="88">88</th><td><i>// compiler-rt/lib/sanitizer_common/sanitizer_linux.cpp</i></td></tr>
+<tr><th id="89">89</th><td><i>// Default Linux/RISCV64 Sv39/Sv48 mapping:</i></td></tr>
+<tr><th id="90">90</th><td><i>// || `[0x000820000000, 0x003fffffffff]` || HighMem    ||</i></td></tr>
+<tr><th id="91">91</th><td><i>// || `[0x000124000000, 0x00081fffffff]` || HighShadow ||</i></td></tr>
+<tr><th id="92">92</th><td><i>// || `[0x000024000000, 0x000123ffffff]` || ShadowGap  ||</i></td></tr>
+<tr><th id="93">93</th><td><i>// || `[0x000020000000, 0x000023ffffff]` || LowShadow  ||</i></td></tr>
+<tr><th id="94">94</th><td><i>// || `[0x000000000000, 0x00001fffffff]` || LowMem     ||</i></td></tr>
+<tr><th id="95">95</th><td><i>//</i></td></tr>
+<tr><th id="96">96</th><td><i>// Default Linux/AArch64 (42-bit VMA) mapping:</i></td></tr>
+<tr><th id="97">97</th><td><i>// || `[0x10000000000, 0x3ffffffffff]` || highmem    ||</i></td></tr>
+<tr><th id="98">98</th><td><i>// || `[0x0a000000000, 0x0ffffffffff]` || highshadow ||</i></td></tr>
+<tr><th id="99">99</th><td><i>// || `[0x09000000000, 0x09fffffffff]` || shadowgap  ||</i></td></tr>
+<tr><th id="100">100</th><td><i>// || `[0x08000000000, 0x08fffffffff]` || lowshadow  ||</i></td></tr>
+<tr><th id="101">101</th><td><i>// || `[0x00000000000, 0x07fffffffff]` || lowmem     ||</i></td></tr>
+<tr><th id="102">102</th><td><i>//</i></td></tr>
+<tr><th id="103">103</th><td><i>// Default Linux/S390 mapping:</i></td></tr>
+<tr><th id="104">104</th><td><i>// || `[0x30000000, 0x7fffffff]` || HighMem    ||</i></td></tr>
+<tr><th id="105">105</th><td><i>// || `[0x26000000, 0x2fffffff]` || HighShadow ||</i></td></tr>
+<tr><th id="106">106</th><td><i>// || `[0x24000000, 0x25ffffff]` || ShadowGap  ||</i></td></tr>
+<tr><th id="107">107</th><td><i>// || `[0x20000000, 0x23ffffff]` || LowShadow  ||</i></td></tr>
+<tr><th id="108">108</th><td><i>// || `[0x00000000, 0x1fffffff]` || LowMem     ||</i></td></tr>
+<tr><th id="109">109</th><td><i>//</i></td></tr>
+<tr><th id="110">110</th><td><i>// Default Linux/SystemZ mapping:</i></td></tr>
+<tr><th id="111">111</th><td><i>// || `[0x14000000000000, 0x1fffffffffffff]` || HighMem    ||</i></td></tr>
+<tr><th id="112">112</th><td><i>// || `[0x12800000000000, 0x13ffffffffffff]` || HighShadow ||</i></td></tr>
+<tr><th id="113">113</th><td><i>// || `[0x12000000000000, 0x127fffffffffff]` || ShadowGap  ||</i></td></tr>
+<tr><th id="114">114</th><td><i>// || `[0x10000000000000, 0x11ffffffffffff]` || LowShadow  ||</i></td></tr>
+<tr><th id="115">115</th><td><i>// || `[0x00000000000000, 0x0fffffffffffff]` || LowMem     ||</i></td></tr>
+<tr><th id="116">116</th><td><i>//</i></td></tr>
+<tr><th id="117">117</th><td><i>// Default Linux/SPARC64 (52-bit VMA) mapping:</i></td></tr>
+<tr><th id="118">118</th><td><i>// || `[0x8000000000000, 0xfffffffffffff]` || HighMem    ||</i></td></tr>
+<tr><th id="119">119</th><td><i>// || `[0x1080000000000, 0x207ffffffffff]` || HighShadow ||</i></td></tr>
+<tr><th id="120">120</th><td><i>// || `[0x0090000000000, 0x107ffffffffff]` || ShadowGap  ||</i></td></tr>
+<tr><th id="121">121</th><td><i>// || `[0x0080000000000, 0x008ffffffffff]` || LowShadow  ||</i></td></tr>
+<tr><th id="122">122</th><td><i>// || `[0x0000000000000, 0x007ffffffffff]` || LowMem     ||</i></td></tr>
+<tr><th id="123">123</th><td><i>//</i></td></tr>
+<tr><th id="124">124</th><td><i>// Shadow mapping on FreeBSD/x86-64 with SHADOW_OFFSET == 0x400000000000:</i></td></tr>
+<tr><th id="125">125</th><td><i>// || `[0x500000000000, 0x7fffffffffff]` || HighMem    ||</i></td></tr>
+<tr><th id="126">126</th><td><i>// || `[0x4a0000000000, 0x4fffffffffff]` || HighShadow ||</i></td></tr>
+<tr><th id="127">127</th><td><i>// || `[0x480000000000, 0x49ffffffffff]` || ShadowGap  ||</i></td></tr>
+<tr><th id="128">128</th><td><i>// || `[0x400000000000, 0x47ffffffffff]` || LowShadow  ||</i></td></tr>
+<tr><th id="129">129</th><td><i>// || `[0x000000000000, 0x3fffffffffff]` || LowMem     ||</i></td></tr>
+<tr><th id="130">130</th><td><i>//</i></td></tr>
+<tr><th id="131">131</th><td><i>// Shadow mapping on FreeBSD/i386 with SHADOW_OFFSET == 0x40000000:</i></td></tr>
+<tr><th id="132">132</th><td><i>// || `[0x60000000, 0xffffffff]` || HighMem    ||</i></td></tr>
+<tr><th id="133">133</th><td><i>// || `[0x4c000000, 0x5fffffff]` || HighShadow ||</i></td></tr>
+<tr><th id="134">134</th><td><i>// || `[0x48000000, 0x4bffffff]` || ShadowGap  ||</i></td></tr>
+<tr><th id="135">135</th><td><i>// || `[0x40000000, 0x47ffffff]` || LowShadow  ||</i></td></tr>
+<tr><th id="136">136</th><td><i>// || `[0x00000000, 0x3fffffff]` || LowMem     ||</i></td></tr>
+<tr><th id="137">137</th><td><i>//</i></td></tr>
+<tr><th id="138">138</th><td><i>// Shadow mapping on NetBSD/x86-64 with SHADOW_OFFSET == 0x400000000000:</i></td></tr>
+<tr><th id="139">139</th><td><i>// || `[0x4feffffffe01, 0x7f7ffffff000]` || HighMem    ||</i></td></tr>
+<tr><th id="140">140</th><td><i>// || `[0x49fdffffffc0, 0x4feffffffe00]` || HighShadow ||</i></td></tr>
+<tr><th id="141">141</th><td><i>// || `[0x480000000000, 0x49fdffffffbf]` || ShadowGap  ||</i></td></tr>
+<tr><th id="142">142</th><td><i>// || `[0x400000000000, 0x47ffffffffff]` || LowShadow  ||</i></td></tr>
+<tr><th id="143">143</th><td><i>// || `[0x000000000000, 0x3fffffffffff]` || LowMem     ||</i></td></tr>
+<tr><th id="144">144</th><td><i>//</i></td></tr>
+<tr><th id="145">145</th><td><i>// Shadow mapping on NetBSD/i386 with SHADOW_OFFSET == 0x40000000:</i></td></tr>
+<tr><th id="146">146</th><td><i>// || `[0x60000000, 0xfffff000]` || HighMem    ||</i></td></tr>
+<tr><th id="147">147</th><td><i>// || `[0x4c000000, 0x5fffffff]` || HighShadow ||</i></td></tr>
+<tr><th id="148">148</th><td><i>// || `[0x48000000, 0x4bffffff]` || ShadowGap  ||</i></td></tr>
+<tr><th id="149">149</th><td><i>// || `[0x40000000, 0x47ffffff]` || LowShadow  ||</i></td></tr>
+<tr><th id="150">150</th><td><i>// || `[0x00000000, 0x3fffffff]` || LowMem     ||</i></td></tr>
+<tr><th id="151">151</th><td><i>//</i></td></tr>
+<tr><th id="152">152</th><td><i>// Default Windows/i386 mapping:</i></td></tr>
+<tr><th id="153">153</th><td><i>// (the exact location of HighShadow/HighMem may vary depending</i></td></tr>
+<tr><th id="154">154</th><td><i>//  on WoW64, /LARGEADDRESSAWARE, etc).</i></td></tr>
+<tr><th id="155">155</th><td><i>// || `[0x50000000, 0xffffffff]` || HighMem    ||</i></td></tr>
+<tr><th id="156">156</th><td><i>// || `[0x3a000000, 0x4fffffff]` || HighShadow ||</i></td></tr>
+<tr><th id="157">157</th><td><i>// || `[0x36000000, 0x39ffffff]` || ShadowGap  ||</i></td></tr>
+<tr><th id="158">158</th><td><i>// || `[0x30000000, 0x35ffffff]` || LowShadow  ||</i></td></tr>
+<tr><th id="159">159</th><td><i>// || `[0x00000000, 0x2fffffff]` || LowMem     ||</i></td></tr>
+<tr><th id="160">160</th><td><i>//</i></td></tr>
+<tr><th id="161">161</th><td><i>// Shadow mapping on Myriad2 (for shadow scale 5):</i></td></tr>
+<tr><th id="162">162</th><td><i>// || `[0x9ff80000, 0x9fffffff]` || ShadowGap  ||</i></td></tr>
+<tr><th id="163">163</th><td><i>// || `[0x9f000000, 0x9ff7ffff]` || LowShadow  ||</i></td></tr>
+<tr><th id="164">164</th><td><i>// || `[0x80000000, 0x9effffff]` || LowMem     ||</i></td></tr>
+<tr><th id="165">165</th><td><i>// || `[0x00000000, 0x7fffffff]` || Ignored    ||</i></td></tr>
+<tr><th id="166">166</th><td></td></tr>
+<tr><th id="167">167</th><td><u>#<span data-ppcond="167">if</span> defined(<span class="macro" data-ref="_M/ASAN_SHADOW_SCALE">ASAN_SHADOW_SCALE</span>)</u></td></tr>
+<tr><th id="168">168</th><td><em>static</em> <em>const</em> u64 kDefaultShadowScale = ASAN_SHADOW_SCALE;</td></tr>
+<tr><th id="169">169</th><td><u>#<span data-ppcond="167">else</span></u></td></tr>
+<tr><th id="170">170</th><td><em>static</em> <em>const</em> <a class="typedef" href="../sanitizer_common/sanitizer_internal_defs.h.html#__sanitizer::u64" title='__sanitizer::u64' data-type='unsigned long long' data-ref="__sanitizer::u64" data-ref-filename="__sanitizer..u64">u64</a> <dfn class="decl def" id="kDefaultShadowScale" title='kDefaultShadowScale' data-ref="kDefaultShadowScale" data-ref-filename="kDefaultShadowScale">kDefaultShadowScale</dfn> = <a class="macro" href="../sanitizer_common/sanitizer_platform.h.html#226" title="0" data-ref="_M/SANITIZER_MYRIAD2">SANITIZER_MYRIAD2</a> ? <var>5</var> : <var>3</var>;</td></tr>
+<tr><th id="171">171</th><td><u>#<span data-ppcond="167">endif</span></u></td></tr>
+<tr><th id="172">172</th><td><em>static</em> <em>const</em> <a class="typedef" href="../sanitizer_common/sanitizer_internal_defs.h.html#__sanitizer::u64" title='__sanitizer::u64' data-type='unsigned long long' data-ref="__sanitizer::u64" data-ref-filename="__sanitizer..u64">u64</a> <dfn class="decl def" id="kDefaultShadowSentinel" title='kDefaultShadowSentinel' data-ref="kDefaultShadowSentinel" data-ref-filename="kDefaultShadowSentinel">kDefaultShadowSentinel</dfn> = ~(<a class="typedef" href="../sanitizer_common/sanitizer_internal_defs.h.html#__sanitizer::uptr" title='__sanitizer::uptr' data-type='unsigned long' data-ref="__sanitizer::uptr" data-ref-filename="__sanitizer..uptr">uptr</a>)<var>0</var>;</td></tr>
+<tr><th id="173">173</th><td><em>static</em> <em>const</em> <a class="typedef" href="../sanitizer_common/sanitizer_internal_defs.h.html#__sanitizer::u64" title='__sanitizer::u64' data-type='unsigned long long' data-ref="__sanitizer::u64" data-ref-filename="__sanitizer..u64">u64</a> <dfn class="decl def" id="kDefaultShadowOffset32" title='kDefaultShadowOffset32' data-ref="kDefaultShadowOffset32" data-ref-filename="kDefaultShadowOffset32">kDefaultShadowOffset32</dfn> = <var>1ULL</var> &lt;&lt; <var>29</var>;  <i>// 0x20000000</i></td></tr>
+<tr><th id="174">174</th><td><em>static</em> <em>const</em> <a class="typedef" href="../sanitizer_common/sanitizer_internal_defs.h.html#__sanitizer::u64" title='__sanitizer::u64' data-type='unsigned long long' data-ref="__sanitizer::u64" data-ref-filename="__sanitizer..u64">u64</a> <dfn class="decl def" id="kDefaultShadowOffset64" title='kDefaultShadowOffset64' data-ref="kDefaultShadowOffset64" data-ref-filename="kDefaultShadowOffset64">kDefaultShadowOffset64</dfn> = <var>1ULL</var> &lt;&lt; <var>44</var>;</td></tr>
+<tr><th id="175">175</th><td><em>static</em> <em>const</em> <a class="typedef" href="../sanitizer_common/sanitizer_internal_defs.h.html#__sanitizer::u64" title='__sanitizer::u64' data-type='unsigned long long' data-ref="__sanitizer::u64" data-ref-filename="__sanitizer..u64">u64</a> <dfn class="decl def" id="kDefaultShort64bitShadowOffset" title='kDefaultShort64bitShadowOffset' data-ref="kDefaultShort64bitShadowOffset" data-ref-filename="kDefaultShort64bitShadowOffset">kDefaultShort64bitShadowOffset</dfn> =</td></tr>
+<tr><th id="176">176</th><td>    <var>0x7FFFFFFF</var> &amp; (~<var>0xFFFULL</var> &lt;&lt; <a class="ref" href="#kDefaultShadowScale" title='kDefaultShadowScale' data-ref="kDefaultShadowScale" data-ref-filename="kDefaultShadowScale">kDefaultShadowScale</a>);  <i>// &lt; 2G.</i></td></tr>
+<tr><th id="177">177</th><td><em>static</em> <em>const</em> <a class="typedef" href="../sanitizer_common/sanitizer_internal_defs.h.html#__sanitizer::u64" title='__sanitizer::u64' data-type='unsigned long long' data-ref="__sanitizer::u64" data-ref-filename="__sanitizer..u64">u64</a> <dfn class="decl def" id="kAArch64_ShadowOffset64" title='kAArch64_ShadowOffset64' data-ref="kAArch64_ShadowOffset64" data-ref-filename="kAArch64_ShadowOffset64">kAArch64_ShadowOffset64</dfn> = <var>1ULL</var> &lt;&lt; <var>36</var>;</td></tr>
+<tr><th id="178">178</th><td><em>static</em> <em>const</em> <a class="typedef" href="../sanitizer_common/sanitizer_internal_defs.h.html#__sanitizer::u64" title='__sanitizer::u64' data-type='unsigned long long' data-ref="__sanitizer::u64" data-ref-filename="__sanitizer..u64">u64</a> <dfn class="decl def" id="kRiscv64_ShadowOffset64" title='kRiscv64_ShadowOffset64' data-ref="kRiscv64_ShadowOffset64" data-ref-filename="kRiscv64_ShadowOffset64">kRiscv64_ShadowOffset64</dfn> = <var>0x20000000</var>;</td></tr>
+<tr><th id="179">179</th><td><em>static</em> <em>const</em> <a class="typedef" href="../sanitizer_common/sanitizer_internal_defs.h.html#__sanitizer::u64" title='__sanitizer::u64' data-type='unsigned long long' data-ref="__sanitizer::u64" data-ref-filename="__sanitizer..u64">u64</a> <dfn class="decl def" id="kMIPS32_ShadowOffset32" title='kMIPS32_ShadowOffset32' data-ref="kMIPS32_ShadowOffset32" data-ref-filename="kMIPS32_ShadowOffset32">kMIPS32_ShadowOffset32</dfn> = <var>0x0aaa0000</var>;</td></tr>
+<tr><th id="180">180</th><td><em>static</em> <em>const</em> <a class="typedef" href="../sanitizer_common/sanitizer_internal_defs.h.html#__sanitizer::u64" title='__sanitizer::u64' data-type='unsigned long long' data-ref="__sanitizer::u64" data-ref-filename="__sanitizer..u64">u64</a> <dfn class="decl def" id="kMIPS64_ShadowOffset64" title='kMIPS64_ShadowOffset64' data-ref="kMIPS64_ShadowOffset64" data-ref-filename="kMIPS64_ShadowOffset64">kMIPS64_ShadowOffset64</dfn> = <var>1ULL</var> &lt;&lt; <var>37</var>;</td></tr>
+<tr><th id="181">181</th><td><em>static</em> <em>const</em> <a class="typedef" href="../sanitizer_common/sanitizer_internal_defs.h.html#__sanitizer::u64" title='__sanitizer::u64' data-type='unsigned long long' data-ref="__sanitizer::u64" data-ref-filename="__sanitizer..u64">u64</a> <dfn class="decl def" id="kPPC64_ShadowOffset64" title='kPPC64_ShadowOffset64' data-ref="kPPC64_ShadowOffset64" data-ref-filename="kPPC64_ShadowOffset64">kPPC64_ShadowOffset64</dfn> = <var>1ULL</var> &lt;&lt; <var>44</var>;</td></tr>
+<tr><th id="182">182</th><td><em>static</em> <em>const</em> <a class="typedef" href="../sanitizer_common/sanitizer_internal_defs.h.html#__sanitizer::u64" title='__sanitizer::u64' data-type='unsigned long long' data-ref="__sanitizer::u64" data-ref-filename="__sanitizer..u64">u64</a> <dfn class="decl def" id="kSystemZ_ShadowOffset64" title='kSystemZ_ShadowOffset64' data-ref="kSystemZ_ShadowOffset64" data-ref-filename="kSystemZ_ShadowOffset64">kSystemZ_ShadowOffset64</dfn> = <var>1ULL</var> &lt;&lt; <var>52</var>;</td></tr>
+<tr><th id="183">183</th><td><em>static</em> <em>const</em> <a class="typedef" href="../sanitizer_common/sanitizer_internal_defs.h.html#__sanitizer::u64" title='__sanitizer::u64' data-type='unsigned long long' data-ref="__sanitizer::u64" data-ref-filename="__sanitizer..u64">u64</a> <dfn class="decl def" id="kSPARC64_ShadowOffset64" title='kSPARC64_ShadowOffset64' data-ref="kSPARC64_ShadowOffset64" data-ref-filename="kSPARC64_ShadowOffset64">kSPARC64_ShadowOffset64</dfn> = <var>1ULL</var> &lt;&lt; <var>43</var>;  <i>// 0x80000000000</i></td></tr>
+<tr><th id="184">184</th><td><em>static</em> <em>const</em> <a class="typedef" href="../sanitizer_common/sanitizer_internal_defs.h.html#__sanitizer::u64" title='__sanitizer::u64' data-type='unsigned long long' data-ref="__sanitizer::u64" data-ref-filename="__sanitizer..u64">u64</a> <dfn class="decl def" id="kFreeBSD_ShadowOffset32" title='kFreeBSD_ShadowOffset32' data-ref="kFreeBSD_ShadowOffset32" data-ref-filename="kFreeBSD_ShadowOffset32">kFreeBSD_ShadowOffset32</dfn> = <var>1ULL</var> &lt;&lt; <var>30</var>;  <i>// 0x40000000</i></td></tr>
+<tr><th id="185">185</th><td><em>static</em> <em>const</em> <a class="typedef" href="../sanitizer_common/sanitizer_internal_defs.h.html#__sanitizer::u64" title='__sanitizer::u64' data-type='unsigned long long' data-ref="__sanitizer::u64" data-ref-filename="__sanitizer..u64">u64</a> <dfn class="decl def" id="kFreeBSD_ShadowOffset64" title='kFreeBSD_ShadowOffset64' data-ref="kFreeBSD_ShadowOffset64" data-ref-filename="kFreeBSD_ShadowOffset64">kFreeBSD_ShadowOffset64</dfn> = <var>1ULL</var> &lt;&lt; <var>46</var>;  <i>// 0x400000000000</i></td></tr>
+<tr><th id="186">186</th><td><em>static</em> <em>const</em> <a class="typedef" href="../sanitizer_common/sanitizer_internal_defs.h.html#__sanitizer::u64" title='__sanitizer::u64' data-type='unsigned long long' data-ref="__sanitizer::u64" data-ref-filename="__sanitizer..u64">u64</a> <dfn class="decl def" id="kNetBSD_ShadowOffset32" title='kNetBSD_ShadowOffset32' data-ref="kNetBSD_ShadowOffset32" data-ref-filename="kNetBSD_ShadowOffset32">kNetBSD_ShadowOffset32</dfn> = <var>1ULL</var> &lt;&lt; <var>30</var>;  <i>// 0x40000000</i></td></tr>
+<tr><th id="187">187</th><td><em>static</em> <em>const</em> <a class="typedef" href="../sanitizer_common/sanitizer_internal_defs.h.html#__sanitizer::u64" title='__sanitizer::u64' data-type='unsigned long long' data-ref="__sanitizer::u64" data-ref-filename="__sanitizer..u64">u64</a> <dfn class="decl def" id="kNetBSD_ShadowOffset64" title='kNetBSD_ShadowOffset64' data-ref="kNetBSD_ShadowOffset64" data-ref-filename="kNetBSD_ShadowOffset64">kNetBSD_ShadowOffset64</dfn> = <var>1ULL</var> &lt;&lt; <var>46</var>;  <i>// 0x400000000000</i></td></tr>
+<tr><th id="188">188</th><td><em>static</em> <em>const</em> <a class="typedef" href="../sanitizer_common/sanitizer_internal_defs.h.html#__sanitizer::u64" title='__sanitizer::u64' data-type='unsigned long long' data-ref="__sanitizer::u64" data-ref-filename="__sanitizer..u64">u64</a> <dfn class="decl def" id="kWindowsShadowOffset32" title='kWindowsShadowOffset32' data-ref="kWindowsShadowOffset32" data-ref-filename="kWindowsShadowOffset32">kWindowsShadowOffset32</dfn> = <var>3ULL</var> &lt;&lt; <var>28</var>;  <i>// 0x30000000</i></td></tr>
+<tr><th id="189">189</th><td></td></tr>
+<tr><th id="190">190</th><td><em>static</em> <em>const</em> <a class="typedef" href="../sanitizer_common/sanitizer_internal_defs.h.html#__sanitizer::u64" title='__sanitizer::u64' data-type='unsigned long long' data-ref="__sanitizer::u64" data-ref-filename="__sanitizer..u64">u64</a> <dfn class="decl def" id="kMyriadMemoryOffset32" title='kMyriadMemoryOffset32' data-ref="kMyriadMemoryOffset32" data-ref-filename="kMyriadMemoryOffset32">kMyriadMemoryOffset32</dfn> = <var>0x80000000ULL</var>;</td></tr>
+<tr><th id="191">191</th><td><em>static</em> <em>const</em> <a class="typedef" href="../sanitizer_common/sanitizer_internal_defs.h.html#__sanitizer::u64" title='__sanitizer::u64' data-type='unsigned long long' data-ref="__sanitizer::u64" data-ref-filename="__sanitizer..u64">u64</a> <dfn class="decl def" id="kMyriadMemorySize32" title='kMyriadMemorySize32' data-ref="kMyriadMemorySize32" data-ref-filename="kMyriadMemorySize32">kMyriadMemorySize32</dfn> = <var>0x20000000ULL</var>;</td></tr>
+<tr><th id="192">192</th><td><em>static</em> <em>const</em> <a class="typedef" href="../sanitizer_common/sanitizer_internal_defs.h.html#__sanitizer::u64" title='__sanitizer::u64' data-type='unsigned long long' data-ref="__sanitizer::u64" data-ref-filename="__sanitizer..u64">u64</a> <dfn class="decl def" id="kMyriadMemoryEnd32" title='kMyriadMemoryEnd32' data-ref="kMyriadMemoryEnd32" data-ref-filename="kMyriadMemoryEnd32">kMyriadMemoryEnd32</dfn> =</td></tr>
+<tr><th id="193">193</th><td>    <a class="ref" href="#kMyriadMemoryOffset32" title='kMyriadMemoryOffset32' data-ref="kMyriadMemoryOffset32" data-ref-filename="kMyriadMemoryOffset32">kMyriadMemoryOffset32</a> + <a class="ref" href="#kMyriadMemorySize32" title='kMyriadMemorySize32' data-ref="kMyriadMemorySize32" data-ref-filename="kMyriadMemorySize32">kMyriadMemorySize32</a> - <var>1</var>;</td></tr>
+<tr><th id="194">194</th><td><em>static</em> <em>const</em> <a class="typedef" href="../sanitizer_common/sanitizer_internal_defs.h.html#__sanitizer::u64" title='__sanitizer::u64' data-type='unsigned long long' data-ref="__sanitizer::u64" data-ref-filename="__sanitizer..u64">u64</a> <dfn class="decl def" id="kMyriadShadowOffset32" title='kMyriadShadowOffset32' data-ref="kMyriadShadowOffset32" data-ref-filename="kMyriadShadowOffset32">kMyriadShadowOffset32</dfn> =</td></tr>
+<tr><th id="195">195</th><td>    (<a class="ref" href="#kMyriadMemoryOffset32" title='kMyriadMemoryOffset32' data-ref="kMyriadMemoryOffset32" data-ref-filename="kMyriadMemoryOffset32">kMyriadMemoryOffset32</a> + <a class="ref" href="#kMyriadMemorySize32" title='kMyriadMemorySize32' data-ref="kMyriadMemorySize32" data-ref-filename="kMyriadMemorySize32">kMyriadMemorySize32</a> -</td></tr>
+<tr><th id="196">196</th><td>     (<a class="ref" href="#kMyriadMemorySize32" title='kMyriadMemorySize32' data-ref="kMyriadMemorySize32" data-ref-filename="kMyriadMemorySize32">kMyriadMemorySize32</a> &gt;&gt; <a class="ref" href="#kDefaultShadowScale" title='kDefaultShadowScale' data-ref="kDefaultShadowScale" data-ref-filename="kDefaultShadowScale">kDefaultShadowScale</a>));</td></tr>
+<tr><th id="197">197</th><td><em>static</em> <em>const</em> <a class="typedef" href="../sanitizer_common/sanitizer_internal_defs.h.html#__sanitizer::u64" title='__sanitizer::u64' data-type='unsigned long long' data-ref="__sanitizer::u64" data-ref-filename="__sanitizer..u64">u64</a> <dfn class="decl def" id="kMyriadCacheBitMask32" title='kMyriadCacheBitMask32' data-ref="kMyriadCacheBitMask32" data-ref-filename="kMyriadCacheBitMask32">kMyriadCacheBitMask32</dfn> = <var>0x40000000ULL</var>;</td></tr>
+<tr><th id="198">198</th><td></td></tr>
+<tr><th id="199">199</th><td><u>#define <dfn class="macro" id="_M/SHADOW_SCALE" data-ref="_M/SHADOW_SCALE">SHADOW_SCALE</dfn> <a class="ref" href="#kDefaultShadowScale" title='kDefaultShadowScale' data-ref="kDefaultShadowScale" data-ref-filename="kDefaultShadowScale">kDefaultShadowScale</a></u></td></tr>
+<tr><th id="200">200</th><td></td></tr>
+<tr><th id="201">201</th><td><u>#<span data-ppcond="201">if</span> <a class="macro" href="../sanitizer_common/sanitizer_platform.h.html#111" title="0" data-ref="_M/SANITIZER_FUCHSIA">SANITIZER_FUCHSIA</a></u></td></tr>
+<tr><th id="202">202</th><td><u>#  define SHADOW_OFFSET (0)</u></td></tr>
+<tr><th id="203">203</th><td><u>#<span data-ppcond="201">elif</span> <a class="macro" href="../sanitizer_common/sanitizer_platform.h.html#125" title="64" data-ref="_M/SANITIZER_WORDSIZE">SANITIZER_WORDSIZE</a> == 32</u></td></tr>
+<tr><th id="204">204</th><td><u>#  if SANITIZER_ANDROID</u></td></tr>
+<tr><th id="205">205</th><td><u>#    define SHADOW_OFFSET __asan_shadow_memory_dynamic_address</u></td></tr>
+<tr><th id="206">206</th><td><u>#  elif defined(__mips__)</u></td></tr>
+<tr><th id="207">207</th><td><u>#    define SHADOW_OFFSET kMIPS32_ShadowOffset32</u></td></tr>
+<tr><th id="208">208</th><td><u>#  elif SANITIZER_FREEBSD</u></td></tr>
+<tr><th id="209">209</th><td><u>#    define SHADOW_OFFSET kFreeBSD_ShadowOffset32</u></td></tr>
+<tr><th id="210">210</th><td><u>#  elif SANITIZER_NETBSD</u></td></tr>
+<tr><th id="211">211</th><td><u>#    define SHADOW_OFFSET kNetBSD_ShadowOffset32</u></td></tr>
+<tr><th id="212">212</th><td><u>#  elif SANITIZER_WINDOWS</u></td></tr>
+<tr><th id="213">213</th><td><u>#    define SHADOW_OFFSET kWindowsShadowOffset32</u></td></tr>
+<tr><th id="214">214</th><td><u>#  elif SANITIZER_IOS</u></td></tr>
+<tr><th id="215">215</th><td><u>#    define SHADOW_OFFSET __asan_shadow_memory_dynamic_address</u></td></tr>
+<tr><th id="216">216</th><td><u>#  elif SANITIZER_MYRIAD2</u></td></tr>
+<tr><th id="217">217</th><td><u>#    define SHADOW_OFFSET kMyriadShadowOffset32</u></td></tr>
+<tr><th id="218">218</th><td><u>#  else</u></td></tr>
+<tr><th id="219">219</th><td><u>#    define SHADOW_OFFSET kDefaultShadowOffset32</u></td></tr>
+<tr><th id="220">220</th><td><u>#  endif</u></td></tr>
+<tr><th id="221">221</th><td><u>#<span data-ppcond="201">else</span></u></td></tr>
+<tr><th id="222">222</th><td><u>#  <span data-ppcond="222">if</span> <a class="macro" href="../sanitizer_common/sanitizer_platform.h.html#74" title="0" data-ref="_M/SANITIZER_IOS">SANITIZER_IOS</a></u></td></tr>
+<tr><th id="223">223</th><td><u>#    define SHADOW_OFFSET __asan_shadow_memory_dynamic_address</u></td></tr>
+<tr><th id="224">224</th><td><u>#  <span data-ppcond="222">elif</span> <a class="macro" href="../sanitizer_common/sanitizer_platform.h.html#73" title="0" data-ref="_M/SANITIZER_MAC">SANITIZER_MAC</a> &amp;&amp; defined(<span class="macro" data-ref="_M/__aarch64__">__aarch64__</span>)</u></td></tr>
+<tr><th id="225">225</th><td><u>#    define SHADOW_OFFSET __asan_shadow_memory_dynamic_address</u></td></tr>
+<tr><th id="226">226</th><td><u>#<span data-ppcond="222">elif</span> <a class="macro" href="../sanitizer_common/sanitizer_platform.h.html#232" title="0" data-ref="_M/SANITIZER_RISCV64">SANITIZER_RISCV64</a></u></td></tr>
+<tr><th id="227">227</th><td><u>#define SHADOW_OFFSET kRiscv64_ShadowOffset64</u></td></tr>
+<tr><th id="228">228</th><td><u>#  <span data-ppcond="222">elif</span> defined(<span class="macro" data-ref="_M/__aarch64__">__aarch64__</span>)</u></td></tr>
+<tr><th id="229">229</th><td><u>#    define SHADOW_OFFSET kAArch64_ShadowOffset64</u></td></tr>
+<tr><th id="230">230</th><td><u>#  <span data-ppcond="222">elif</span> defined(<span class="macro" data-ref="_M/__powerpc64__">__powerpc64__</span>)</u></td></tr>
+<tr><th id="231">231</th><td><u>#    define SHADOW_OFFSET kPPC64_ShadowOffset64</u></td></tr>
+<tr><th id="232">232</th><td><u>#  <span data-ppcond="222">elif</span> defined(<span class="macro" data-ref="_M/__s390x__">__s390x__</span>)</u></td></tr>
+<tr><th id="233">233</th><td><u>#    define SHADOW_OFFSET kSystemZ_ShadowOffset64</u></td></tr>
+<tr><th id="234">234</th><td><u>#  <span data-ppcond="222">elif</span> <a class="macro" href="../sanitizer_common/sanitizer_platform.h.html#44" title="0" data-ref="_M/SANITIZER_FREEBSD">SANITIZER_FREEBSD</a></u></td></tr>
+<tr><th id="235">235</th><td><u>#    define SHADOW_OFFSET kFreeBSD_ShadowOffset64</u></td></tr>
+<tr><th id="236">236</th><td><u>#  <span data-ppcond="222">elif</span> <a class="macro" href="../sanitizer_common/sanitizer_platform.h.html#50" title="0" data-ref="_M/SANITIZER_NETBSD">SANITIZER_NETBSD</a></u></td></tr>
+<tr><th id="237">237</th><td><u>#    define SHADOW_OFFSET kNetBSD_ShadowOffset64</u></td></tr>
+<tr><th id="238">238</th><td><u>#  <span data-ppcond="222">elif</span> <a class="macro" href="../sanitizer_common/sanitizer_platform.h.html#73" title="0" data-ref="_M/SANITIZER_MAC">SANITIZER_MAC</a></u></td></tr>
+<tr><th id="239">239</th><td><u>#   define SHADOW_OFFSET kDefaultShadowOffset64</u></td></tr>
+<tr><th id="240">240</th><td><u>#  <span data-ppcond="222">elif</span> defined(<span class="macro" data-ref="_M/__mips64">__mips64</span>)</u></td></tr>
+<tr><th id="241">241</th><td><u>#   define SHADOW_OFFSET kMIPS64_ShadowOffset64</u></td></tr>
+<tr><th id="242">242</th><td><u>#<span data-ppcond="222">elif</span> defined(<span class="macro" data-ref="_M/__sparc__">__sparc__</span>)</u></td></tr>
+<tr><th id="243">243</th><td><u>#define SHADOW_OFFSET kSPARC64_ShadowOffset64</u></td></tr>
+<tr><th id="244">244</th><td><u>#  <span data-ppcond="222">elif</span> <a class="macro" href="../sanitizer_common/sanitizer_platform.h.html#99" title="0" data-ref="_M/SANITIZER_WINDOWS64">SANITIZER_WINDOWS64</a></u></td></tr>
+<tr><th id="245">245</th><td><u>#   define SHADOW_OFFSET __asan_shadow_memory_dynamic_address</u></td></tr>
+<tr><th id="246">246</th><td><u>#  <span data-ppcond="222">else</span></u></td></tr>
+<tr><th id="247">247</th><td><u>#   define <dfn class="macro" id="_M/SHADOW_OFFSET" data-ref="_M/SHADOW_OFFSET">SHADOW_OFFSET</dfn> <a class="ref" href="#kDefaultShort64bitShadowOffset" title='kDefaultShort64bitShadowOffset' data-ref="kDefaultShort64bitShadowOffset" data-ref-filename="kDefaultShort64bitShadowOffset">kDefaultShort64bitShadowOffset</a></u></td></tr>
+<tr><th id="248">248</th><td><u>#  <span data-ppcond="222">endif</span></u></td></tr>
+<tr><th id="249">249</th><td><u>#<span data-ppcond="201">endif</span></u></td></tr>
+<tr><th id="250">250</th><td></td></tr>
+<tr><th id="251">251</th><td><u>#<span data-ppcond="251">if</span> <a class="macro" href="../sanitizer_common/sanitizer_platform.h.html#105" title="0" data-ref="_M/SANITIZER_ANDROID">SANITIZER_ANDROID</a> &amp;&amp; defined(<span class="macro" data-ref="_M/__arm__">__arm__</span>)</u></td></tr>
+<tr><th id="252">252</th><td><u># define ASAN_PREMAP_SHADOW 1</u></td></tr>
+<tr><th id="253">253</th><td><u>#<span data-ppcond="251">else</span></u></td></tr>
+<tr><th id="254">254</th><td><u># define <dfn class="macro" id="_M/ASAN_PREMAP_SHADOW" data-ref="_M/ASAN_PREMAP_SHADOW">ASAN_PREMAP_SHADOW</dfn> 0</u></td></tr>
+<tr><th id="255">255</th><td><u>#<span data-ppcond="251">endif</span></u></td></tr>
+<tr><th id="256">256</th><td></td></tr>
+<tr><th id="257">257</th><td><u>#define <dfn class="macro" id="_M/SHADOW_GRANULARITY" data-ref="_M/SHADOW_GRANULARITY">SHADOW_GRANULARITY</dfn> (1ULL &lt;&lt; SHADOW_SCALE)</u></td></tr>
+<tr><th id="258">258</th><td></td></tr>
+<tr><th id="259">259</th><td><u>#define <dfn class="macro" id="_M/DO_ASAN_MAPPING_PROFILE" data-ref="_M/DO_ASAN_MAPPING_PROFILE">DO_ASAN_MAPPING_PROFILE</dfn> 0  // Set to 1 to profile the functions below.</u></td></tr>
+<tr><th id="260">260</th><td></td></tr>
+<tr><th id="261">261</th><td><u>#<span data-ppcond="261">if</span> <a class="macro" href="#259" title="0" data-ref="_M/DO_ASAN_MAPPING_PROFILE">DO_ASAN_MAPPING_PROFILE</a></u></td></tr>
+<tr><th id="262">262</th><td><u># define PROFILE_ASAN_MAPPING() AsanMappingProfile[__LINE__]++;</u></td></tr>
+<tr><th id="263">263</th><td><u>#<span data-ppcond="261">else</span></u></td></tr>
+<tr><th id="264">264</th><td><u># define <dfn class="macro" id="_M/PROFILE_ASAN_MAPPING" data-ref="_M/PROFILE_ASAN_MAPPING">PROFILE_ASAN_MAPPING</dfn>()</u></td></tr>
+<tr><th id="265">265</th><td><u>#<span data-ppcond="261">endif</span></u></td></tr>
+<tr><th id="266">266</th><td></td></tr>
+<tr><th id="267">267</th><td><i>// If 1, all shadow boundaries are constants.</i></td></tr>
+<tr><th id="268">268</th><td><i>// Don't set to 1 other than for testing.</i></td></tr>
+<tr><th id="269">269</th><td><u>#define <dfn class="macro" id="_M/ASAN_FIXED_MAPPING" data-ref="_M/ASAN_FIXED_MAPPING">ASAN_FIXED_MAPPING</dfn> 0</u></td></tr>
+<tr><th id="270">270</th><td></td></tr>
+<tr><th id="271">271</th><td><b>namespace</b> <span class="namespace">__asan</span> {</td></tr>
+<tr><th id="272">272</th><td></td></tr>
+<tr><th id="273">273</th><td><b>extern</b> <a class="typedef" href="../sanitizer_common/sanitizer_internal_defs.h.html#__sanitizer::uptr" title='__sanitizer::uptr' data-type='unsigned long' data-ref="__sanitizer::uptr" data-ref-filename="__sanitizer..uptr">uptr</a> <dfn class="decl" id="__asan::AsanMappingProfile" title='__asan::AsanMappingProfile' data-ref="__asan::AsanMappingProfile" data-ref-filename="__asan..AsanMappingProfile">AsanMappingProfile</dfn>[];</td></tr>
+<tr><th id="274">274</th><td></td></tr>
+<tr><th id="275">275</th><td><u>#<span data-ppcond="275">if</span> <a class="macro" href="#269" title="0" data-ref="_M/ASAN_FIXED_MAPPING">ASAN_FIXED_MAPPING</a></u></td></tr>
+<tr><th id="276">276</th><td><i>// Fixed mapping for 64-bit Linux. Mostly used for performance comparison</i></td></tr>
+<tr><th id="277">277</th><td><i>// with non-fixed mapping. As of r175253 (Feb 2013) the performance</i></td></tr>
+<tr><th id="278">278</th><td><i>// difference between fixed and non-fixed mapping is below the noise level.</i></td></tr>
+<tr><th id="279">279</th><td><em>static</em> uptr kHighMemEnd = <var>0x7fffffffffffULL</var>;</td></tr>
+<tr><th id="280">280</th><td><em>static</em> uptr kMidMemBeg =    <var>0x3000000000ULL</var>;</td></tr>
+<tr><th id="281">281</th><td><em>static</em> uptr kMidMemEnd =    <var>0x4fffffffffULL</var>;</td></tr>
+<tr><th id="282">282</th><td><u>#<span data-ppcond="275">else</span></u></td></tr>
+<tr><th id="283">283</th><td><b>extern</b> <a class="typedef" href="../sanitizer_common/sanitizer_internal_defs.h.html#__sanitizer::uptr" title='__sanitizer::uptr' data-type='unsigned long' data-ref="__sanitizer::uptr" data-ref-filename="__sanitizer..uptr">uptr</a> <dfn class="decl" id="__asan::kHighMemEnd" title='__asan::kHighMemEnd' data-ref="__asan::kHighMemEnd" data-ref-filename="__asan..kHighMemEnd">kHighMemEnd</dfn>, <dfn class="decl" id="__asan::kMidMemBeg" title='__asan::kMidMemBeg' data-ref="__asan::kMidMemBeg" data-ref-filename="__asan..kMidMemBeg">kMidMemBeg</dfn>, <dfn class="decl" id="__asan::kMidMemEnd" title='__asan::kMidMemEnd' data-ref="__asan::kMidMemEnd" data-ref-filename="__asan..kMidMemEnd">kMidMemEnd</dfn>;  <i>// Initialized in __asan_init.</i></td></tr>
+<tr><th id="284">284</th><td><u>#<span data-ppcond="275">endif</span></u></td></tr>
+<tr><th id="285">285</th><td></td></tr>
+<tr><th id="286">286</th><td>}  <i>// namespace __asan</i></td></tr>
+<tr><th id="287">287</th><td></td></tr>
+<tr><th id="288">288</th><td><u>#<span data-ppcond="288">if</span> <a class="macro" href="../sanitizer_common/sanitizer_platform.h.html#226" title="0" data-ref="_M/SANITIZER_MYRIAD2">SANITIZER_MYRIAD2</a></u></td></tr>
+<tr><th id="289">289</th><td><u>#include "asan_mapping_myriad.h"</u></td></tr>
+<tr><th id="290">290</th><td><u>#<span data-ppcond="288">elif</span> defined(<span class="macro" data-ref="_M/__sparc__">__sparc__</span>) &amp;&amp; <a class="macro" href="../sanitizer_common/sanitizer_platform.h.html#125" title="64" data-ref="_M/SANITIZER_WORDSIZE">SANITIZER_WORDSIZE</a> == 64</u></td></tr>
+<tr><th id="291">291</th><td><u>#include "asan_mapping_sparc64.h"</u></td></tr>
+<tr><th id="292">292</th><td><u>#<span data-ppcond="288">else</span></u></td></tr>
+<tr><th id="293">293</th><td><u>#define <dfn class="macro" id="_M/MEM_TO_SHADOW" data-ref="_M/MEM_TO_SHADOW">MEM_TO_SHADOW</dfn>(mem) (((mem) &gt;&gt; SHADOW_SCALE) + (SHADOW_OFFSET))</u></td></tr>
+<tr><th id="294">294</th><td></td></tr>
+<tr><th id="295">295</th><td><u>#define <dfn class="macro" id="_M/kLowMemBeg" data-ref="_M/kLowMemBeg">kLowMemBeg</dfn>      0</u></td></tr>
+<tr><th id="296">296</th><td><u>#define <dfn class="macro" id="_M/kLowMemEnd" data-ref="_M/kLowMemEnd">kLowMemEnd</dfn>      (SHADOW_OFFSET ? SHADOW_OFFSET - 1 : 0)</u></td></tr>
+<tr><th id="297">297</th><td></td></tr>
+<tr><th id="298">298</th><td><u>#define <dfn class="macro" id="_M/kLowShadowBeg" data-ref="_M/kLowShadowBeg">kLowShadowBeg</dfn>   SHADOW_OFFSET</u></td></tr>
+<tr><th id="299">299</th><td><u>#define <dfn class="macro" id="_M/kLowShadowEnd" data-ref="_M/kLowShadowEnd">kLowShadowEnd</dfn>   MEM_TO_SHADOW(kLowMemEnd)</u></td></tr>
+<tr><th id="300">300</th><td></td></tr>
+<tr><th id="301">301</th><td><u>#define <dfn class="macro" id="_M/kHighMemBeg" data-ref="_M/kHighMemBeg">kHighMemBeg</dfn>     (MEM_TO_SHADOW(<a class="ref" href="#__asan::kHighMemEnd" title='__asan::kHighMemEnd' data-ref="__asan::kHighMemEnd" data-ref-filename="__asan..kHighMemEnd">kHighMemEnd</a>) + 1)</u></td></tr>
+<tr><th id="302">302</th><td></td></tr>
+<tr><th id="303">303</th><td><u>#define <dfn class="macro" id="_M/kHighShadowBeg" data-ref="_M/kHighShadowBeg">kHighShadowBeg</dfn>  MEM_TO_SHADOW(kHighMemBeg)</u></td></tr>
+<tr><th id="304">304</th><td><u>#define <dfn class="macro" id="_M/kHighShadowEnd" data-ref="_M/kHighShadowEnd">kHighShadowEnd</dfn>  MEM_TO_SHADOW(<a class="ref" href="#__asan::kHighMemEnd" title='__asan::kHighMemEnd' data-ref="__asan::kHighMemEnd" data-ref-filename="__asan..kHighMemEnd">kHighMemEnd</a>)</u></td></tr>
+<tr><th id="305">305</th><td></td></tr>
+<tr><th id="306">306</th><td><u># define <dfn class="macro" id="_M/kMidShadowBeg" data-ref="_M/kMidShadowBeg">kMidShadowBeg</dfn> MEM_TO_SHADOW(<a class="ref" href="#__asan::kMidMemBeg" title='__asan::kMidMemBeg' data-ref="__asan::kMidMemBeg" data-ref-filename="__asan..kMidMemBeg">kMidMemBeg</a>)</u></td></tr>
+<tr><th id="307">307</th><td><u># define <dfn class="macro" id="_M/kMidShadowEnd" data-ref="_M/kMidShadowEnd">kMidShadowEnd</dfn> MEM_TO_SHADOW(<a class="ref" href="#__asan::kMidMemEnd" title='__asan::kMidMemEnd' data-ref="__asan::kMidMemEnd" data-ref-filename="__asan..kMidMemEnd">kMidMemEnd</a>)</u></td></tr>
+<tr><th id="308">308</th><td></td></tr>
+<tr><th id="309">309</th><td><i>// With the zero shadow base we can not actually map pages starting from 0.</i></td></tr>
+<tr><th id="310">310</th><td><i>// This constant is somewhat arbitrary.</i></td></tr>
+<tr><th id="311">311</th><td><u>#define <dfn class="macro" id="_M/kZeroBaseShadowStart" data-ref="_M/kZeroBaseShadowStart">kZeroBaseShadowStart</dfn> 0</u></td></tr>
+<tr><th id="312">312</th><td><u>#define <dfn class="macro" id="_M/kZeroBaseMaxShadowStart" data-ref="_M/kZeroBaseMaxShadowStart">kZeroBaseMaxShadowStart</dfn> (1 &lt;&lt; 18)</u></td></tr>
+<tr><th id="313">313</th><td></td></tr>
+<tr><th id="314">314</th><td><u>#define <dfn class="macro" id="_M/kShadowGapBeg" data-ref="_M/kShadowGapBeg">kShadowGapBeg</dfn>   (kLowShadowEnd ? kLowShadowEnd + 1 \</u></td></tr>
+<tr><th id="315">315</th><td><u>                                       : kZeroBaseShadowStart)</u></td></tr>
+<tr><th id="316">316</th><td><u>#define <dfn class="macro" id="_M/kShadowGapEnd" data-ref="_M/kShadowGapEnd">kShadowGapEnd</dfn>   ((<a class="ref" href="#__asan::kMidMemBeg" title='__asan::kMidMemBeg' data-ref="__asan::kMidMemBeg" data-ref-filename="__asan..kMidMemBeg">kMidMemBeg</a> ? kMidShadowBeg : kHighShadowBeg) - 1)</u></td></tr>
+<tr><th id="317">317</th><td></td></tr>
+<tr><th id="318">318</th><td><u>#define <dfn class="macro" id="_M/kShadowGap2Beg" data-ref="_M/kShadowGap2Beg">kShadowGap2Beg</dfn> (<a class="ref" href="#__asan::kMidMemBeg" title='__asan::kMidMemBeg' data-ref="__asan::kMidMemBeg" data-ref-filename="__asan..kMidMemBeg">kMidMemBeg</a> ? kMidShadowEnd + 1 : 0)</u></td></tr>
+<tr><th id="319">319</th><td><u>#define <dfn class="macro" id="_M/kShadowGap2End" data-ref="_M/kShadowGap2End">kShadowGap2End</dfn> (<a class="ref" href="#__asan::kMidMemBeg" title='__asan::kMidMemBeg' data-ref="__asan::kMidMemBeg" data-ref-filename="__asan..kMidMemBeg">kMidMemBeg</a> ? <a class="ref" href="#__asan::kMidMemBeg" title='__asan::kMidMemBeg' data-ref="__asan::kMidMemBeg" data-ref-filename="__asan..kMidMemBeg">kMidMemBeg</a> - 1 : 0)</u></td></tr>
+<tr><th id="320">320</th><td></td></tr>
+<tr><th id="321">321</th><td><u>#define <dfn class="macro" id="_M/kShadowGap3Beg" data-ref="_M/kShadowGap3Beg">kShadowGap3Beg</dfn> (<a class="ref" href="#__asan::kMidMemBeg" title='__asan::kMidMemBeg' data-ref="__asan::kMidMemBeg" data-ref-filename="__asan..kMidMemBeg">kMidMemBeg</a> ? <a class="ref" href="#__asan::kMidMemEnd" title='__asan::kMidMemEnd' data-ref="__asan::kMidMemEnd" data-ref-filename="__asan..kMidMemEnd">kMidMemEnd</a> + 1 : 0)</u></td></tr>
+<tr><th id="322">322</th><td><u>#define <dfn class="macro" id="_M/kShadowGap3End" data-ref="_M/kShadowGap3End">kShadowGap3End</dfn> (<a class="ref" href="#__asan::kMidMemBeg" title='__asan::kMidMemBeg' data-ref="__asan::kMidMemBeg" data-ref-filename="__asan..kMidMemBeg">kMidMemBeg</a> ? kHighShadowBeg - 1 : 0)</u></td></tr>
+<tr><th id="323">323</th><td></td></tr>
+<tr><th id="324">324</th><td><b>namespace</b> <span class="namespace">__asan</span> {</td></tr>
+<tr><th id="325">325</th><td></td></tr>
+<tr><th id="326">326</th><td><em>static</em> <b>inline</b> <em>bool</em> <dfn class="decl def fn" id="__asan::AddrIsInLowMem" title='__asan::AddrIsInLowMem' data-ref="__asan::AddrIsInLowMem" data-ref-filename="__asan..AddrIsInLowMem">AddrIsInLowMem</dfn>(<a class="typedef" href="../sanitizer_common/sanitizer_internal_defs.h.html#__sanitizer::uptr" title='__sanitizer::uptr' data-type='unsigned long' data-ref="__sanitizer::uptr" data-ref-filename="__sanitizer..uptr">uptr</a> <dfn class="local col9 decl" id="719a" title='a' data-type='__sanitizer::uptr' data-ref="719a" data-ref-filename="719a">a</dfn>) {</td></tr>
+<tr><th id="327">327</th><td>  <a class="macro" href="#264" title="" data-ref="_M/PROFILE_ASAN_MAPPING">PROFILE_ASAN_MAPPING</a>();</td></tr>
+<tr><th id="328">328</th><td>  <b>return</b> <a class="local col9 ref" href="#719a" title='a' data-ref="719a" data-ref-filename="719a">a</a> &lt;= <a class="macro" href="#296" title="(kDefaultShort64bitShadowOffset ? kDefaultShort64bitShadowOffset - 1 : 0)" data-ref="_M/kLowMemEnd">kLowMemEnd</a>;</td></tr>
+<tr><th id="329">329</th><td>}</td></tr>
+<tr><th id="330">330</th><td></td></tr>
+<tr><th id="331">331</th><td><em>static</em> <b>inline</b> <em>bool</em> <dfn class="decl def fn" id="__asan::AddrIsInLowShadow" title='__asan::AddrIsInLowShadow' data-ref="__asan::AddrIsInLowShadow" data-ref-filename="__asan..AddrIsInLowShadow">AddrIsInLowShadow</dfn>(<a class="typedef" href="../sanitizer_common/sanitizer_internal_defs.h.html#__sanitizer::uptr" title='__sanitizer::uptr' data-type='unsigned long' data-ref="__sanitizer::uptr" data-ref-filename="__sanitizer..uptr">uptr</a> <dfn class="local col0 decl" id="720a" title='a' data-type='__sanitizer::uptr' data-ref="720a" data-ref-filename="720a">a</dfn>) {</td></tr>
+<tr><th id="332">332</th><td>  <a class="macro" href="#264" title="" data-ref="_M/PROFILE_ASAN_MAPPING">PROFILE_ASAN_MAPPING</a>();</td></tr>
+<tr><th id="333">333</th><td>  <b>return</b> <a class="local col0 ref" href="#720a" title='a' data-ref="720a" data-ref-filename="720a">a</a> &gt;= <a class="macro" href="#298" title="kDefaultShort64bitShadowOffset" data-ref="_M/kLowShadowBeg">kLowShadowBeg</a> &amp;&amp; <a class="local col0 ref" href="#720a" title='a' data-ref="720a" data-ref-filename="720a">a</a> &lt;= <a class="macro" href="#299" title="((((kDefaultShort64bitShadowOffset ? kDefaultShort64bitShadowOffset - 1 : 0)) &gt;&gt; kDefaultShadowScale) + (kDefaultShort64bitShadowOffset))" data-ref="_M/kLowShadowEnd">kLowShadowEnd</a>;</td></tr>
+<tr><th id="334">334</th><td>}</td></tr>
+<tr><th id="335">335</th><td></td></tr>
+<tr><th id="336">336</th><td><em>static</em> <b>inline</b> <em>bool</em> <dfn class="decl def fn" id="__asan::AddrIsInMidMem" title='__asan::AddrIsInMidMem' data-ref="__asan::AddrIsInMidMem" data-ref-filename="__asan..AddrIsInMidMem">AddrIsInMidMem</dfn>(<a class="typedef" href="../sanitizer_common/sanitizer_internal_defs.h.html#__sanitizer::uptr" title='__sanitizer::uptr' data-type='unsigned long' data-ref="__sanitizer::uptr" data-ref-filename="__sanitizer..uptr">uptr</a> <dfn class="local col1 decl" id="721a" title='a' data-type='__sanitizer::uptr' data-ref="721a" data-ref-filename="721a">a</dfn>) {</td></tr>
+<tr><th id="337">337</th><td>  <a class="macro" href="#264" title="" data-ref="_M/PROFILE_ASAN_MAPPING">PROFILE_ASAN_MAPPING</a>();</td></tr>
+<tr><th id="338">338</th><td>  <b>return</b> <a class="ref" href="#__asan::kMidMemBeg" title='__asan::kMidMemBeg' data-ref="__asan::kMidMemBeg" data-ref-filename="__asan..kMidMemBeg">kMidMemBeg</a> &amp;&amp; <a class="local col1 ref" href="#721a" title='a' data-ref="721a" data-ref-filename="721a">a</a> &gt;= <a class="ref" href="#__asan::kMidMemBeg" title='__asan::kMidMemBeg' data-ref="__asan::kMidMemBeg" data-ref-filename="__asan..kMidMemBeg">kMidMemBeg</a> &amp;&amp; <a class="local col1 ref" href="#721a" title='a' data-ref="721a" data-ref-filename="721a">a</a> &lt;= <a class="ref" href="#__asan::kMidMemEnd" title='__asan::kMidMemEnd' data-ref="__asan::kMidMemEnd" data-ref-filename="__asan..kMidMemEnd">kMidMemEnd</a>;</td></tr>
+<tr><th id="339">339</th><td>}</td></tr>
+<tr><th id="340">340</th><td></td></tr>
+<tr><th id="341">341</th><td><em>static</em> <b>inline</b> <em>bool</em> <dfn class="decl def fn" id="__asan::AddrIsInMidShadow" title='__asan::AddrIsInMidShadow' data-ref="__asan::AddrIsInMidShadow" data-ref-filename="__asan..AddrIsInMidShadow">AddrIsInMidShadow</dfn>(<a class="typedef" href="../sanitizer_common/sanitizer_internal_defs.h.html#__sanitizer::uptr" title='__sanitizer::uptr' data-type='unsigned long' data-ref="__sanitizer::uptr" data-ref-filename="__sanitizer..uptr">uptr</a> <dfn class="local col2 decl" id="722a" title='a' data-type='__sanitizer::uptr' data-ref="722a" data-ref-filename="722a">a</dfn>) {</td></tr>
+<tr><th id="342">342</th><td>  <a class="macro" href="#264" title="" data-ref="_M/PROFILE_ASAN_MAPPING">PROFILE_ASAN_MAPPING</a>();</td></tr>
+<tr><th id="343">343</th><td>  <b>return</b> <a class="ref" href="#__asan::kMidMemBeg" title='__asan::kMidMemBeg' data-ref="__asan::kMidMemBeg" data-ref-filename="__asan..kMidMemBeg">kMidMemBeg</a> &amp;&amp; <a class="local col2 ref" href="#722a" title='a' data-ref="722a" data-ref-filename="722a">a</a> &gt;= <a class="macro" href="#306" title="(((kMidMemBeg) &gt;&gt; kDefaultShadowScale) + (kDefaultShort64bitShadowOffset))" data-ref="_M/kMidShadowBeg">kMidShadowBeg</a> &amp;&amp; <a class="local col2 ref" href="#722a" title='a' data-ref="722a" data-ref-filename="722a">a</a> &lt;= <a class="macro" href="#307" title="(((kMidMemEnd) &gt;&gt; kDefaultShadowScale) + (kDefaultShort64bitShadowOffset))" data-ref="_M/kMidShadowEnd">kMidShadowEnd</a>;</td></tr>
+<tr><th id="344">344</th><td>}</td></tr>
+<tr><th id="345">345</th><td></td></tr>
+<tr><th id="346">346</th><td><em>static</em> <b>inline</b> <em>bool</em> <dfn class="decl def fn" id="__asan::AddrIsInHighMem" title='__asan::AddrIsInHighMem' data-ref="__asan::AddrIsInHighMem" data-ref-filename="__asan..AddrIsInHighMem">AddrIsInHighMem</dfn>(<a class="typedef" href="../sanitizer_common/sanitizer_internal_defs.h.html#__sanitizer::uptr" title='__sanitizer::uptr' data-type='unsigned long' data-ref="__sanitizer::uptr" data-ref-filename="__sanitizer..uptr">uptr</a> <dfn class="local col3 decl" id="723a" title='a' data-type='__sanitizer::uptr' data-ref="723a" data-ref-filename="723a">a</dfn>) {</td></tr>
+<tr><th id="347">347</th><td>  <a class="macro" href="#264" title="" data-ref="_M/PROFILE_ASAN_MAPPING">PROFILE_ASAN_MAPPING</a>();</td></tr>
+<tr><th id="348">348</th><td>  <b>return</b> <a class="macro" href="#301" title="((((kHighMemEnd) &gt;&gt; kDefaultShadowScale) + (kDefaultShort64bitShadowOffset)) + 1)" data-ref="_M/kHighMemBeg">kHighMemBeg</a> &amp;&amp; <a class="local col3 ref" href="#723a" title='a' data-ref="723a" data-ref-filename="723a">a</a> &gt;= <a class="macro" href="#301" title="((((kHighMemEnd) &gt;&gt; kDefaultShadowScale) + (kDefaultShort64bitShadowOffset)) + 1)" data-ref="_M/kHighMemBeg">kHighMemBeg</a> &amp;&amp; <a class="local col3 ref" href="#723a" title='a' data-ref="723a" data-ref-filename="723a">a</a> &lt;= <a class="ref" href="#__asan::kHighMemEnd" title='__asan::kHighMemEnd' data-ref="__asan::kHighMemEnd" data-ref-filename="__asan..kHighMemEnd">kHighMemEnd</a>;</td></tr>
+<tr><th id="349">349</th><td>}</td></tr>
+<tr><th id="350">350</th><td></td></tr>
+<tr><th id="351">351</th><td><em>static</em> <b>inline</b> <em>bool</em> <dfn class="decl def fn" id="__asan::AddrIsInHighShadow" title='__asan::AddrIsInHighShadow' data-ref="__asan::AddrIsInHighShadow" data-ref-filename="__asan..AddrIsInHighShadow">AddrIsInHighShadow</dfn>(<a class="typedef" href="../sanitizer_common/sanitizer_internal_defs.h.html#__sanitizer::uptr" title='__sanitizer::uptr' data-type='unsigned long' data-ref="__sanitizer::uptr" data-ref-filename="__sanitizer..uptr">uptr</a> <dfn class="local col4 decl" id="724a" title='a' data-type='__sanitizer::uptr' data-ref="724a" data-ref-filename="724a">a</dfn>) {</td></tr>
+<tr><th id="352">352</th><td>  <a class="macro" href="#264" title="" data-ref="_M/PROFILE_ASAN_MAPPING">PROFILE_ASAN_MAPPING</a>();</td></tr>
+<tr><th id="353">353</th><td>  <b>return</b> <a class="macro" href="#301" title="((((kHighMemEnd) &gt;&gt; kDefaultShadowScale) + (kDefaultShort64bitShadowOffset)) + 1)" data-ref="_M/kHighMemBeg">kHighMemBeg</a> &amp;&amp; <a class="local col4 ref" href="#724a" title='a' data-ref="724a" data-ref-filename="724a">a</a> &gt;= <a class="macro" href="#303" title="(((((((kHighMemEnd) &gt;&gt; kDefaultShadowScale) + (kDefaultShort64bitShadowOffset)) + 1)) &gt;&gt; kDefaultShadowScale) + (kDefaultShort64bitShadowOffset))" data-ref="_M/kHighShadowBeg">kHighShadowBeg</a> &amp;&amp; <a class="local col4 ref" href="#724a" title='a' data-ref="724a" data-ref-filename="724a">a</a> &lt;= <a class="macro" href="#304" title="(((kHighMemEnd) &gt;&gt; kDefaultShadowScale) + (kDefaultShort64bitShadowOffset))" data-ref="_M/kHighShadowEnd">kHighShadowEnd</a>;</td></tr>
+<tr><th id="354">354</th><td>}</td></tr>
+<tr><th id="355">355</th><td></td></tr>
+<tr><th id="356">356</th><td><em>static</em> <b>inline</b> <em>bool</em> <dfn class="decl def fn" id="__asan::AddrIsInShadowGap" title='__asan::AddrIsInShadowGap' data-ref="__asan::AddrIsInShadowGap" data-ref-filename="__asan..AddrIsInShadowGap">AddrIsInShadowGap</dfn>(<a class="typedef" href="../sanitizer_common/sanitizer_internal_defs.h.html#__sanitizer::uptr" title='__sanitizer::uptr' data-type='unsigned long' data-ref="__sanitizer::uptr" data-ref-filename="__sanitizer..uptr">uptr</a> <dfn class="local col5 decl" id="725a" title='a' data-type='__sanitizer::uptr' data-ref="725a" data-ref-filename="725a">a</dfn>) {</td></tr>
+<tr><th id="357">357</th><td>  <a class="macro" href="#264" title="" data-ref="_M/PROFILE_ASAN_MAPPING">PROFILE_ASAN_MAPPING</a>();</td></tr>
+<tr><th id="358">358</th><td>  <b>if</b> (<a class="ref" href="#__asan::kMidMemBeg" title='__asan::kMidMemBeg' data-ref="__asan::kMidMemBeg" data-ref-filename="__asan..kMidMemBeg">kMidMemBeg</a>) {</td></tr>
+<tr><th id="359">359</th><td>    <b>if</b> (<a class="local col5 ref" href="#725a" title='a' data-ref="725a" data-ref-filename="725a">a</a> &lt;= <a class="macro" href="#316" title="((kMidMemBeg ? (((kMidMemBeg) &gt;&gt; kDefaultShadowScale) + (kDefaultShort64bitShadowOffset)) : (((((((kHighMemEnd) &gt;&gt; kDefaultShadowScale) + (kDefaultShort64bitShadowOffset)) + 1)) &gt;&gt; kDefaultShadowScale) + (kDefaultShort64bitShadowOffset))) - 1)" data-ref="_M/kShadowGapEnd">kShadowGapEnd</a>)</td></tr>
+<tr><th id="360">360</th><td>      <b>return</b> <a class="macro" href="#247" title="kDefaultShort64bitShadowOffset" data-ref="_M/SHADOW_OFFSET">SHADOW_OFFSET</a> == <var>0</var> || <a class="local col5 ref" href="#725a" title='a' data-ref="725a" data-ref-filename="725a">a</a> &gt;= <a class="macro" href="#314" title="(((((kDefaultShort64bitShadowOffset ? kDefaultShort64bitShadowOffset - 1 : 0)) &gt;&gt; kDefaultShadowScale) + (kDefaultShort64bitShadowOffset)) ? ((((kDefaultShort64bitShadowOffset ? kDefaultShort64bitShadowOffset - 1 : 0)) &gt;&gt; kDefaultShadowScale) + (kDefaultShort64bitShadowOffset)) + 1 : 0)" data-ref="_M/kShadowGapBeg">kShadowGapBeg</a>;</td></tr>
+<tr><th id="361">361</th><td>    <b>return</b> (<a class="local col5 ref" href="#725a" title='a' data-ref="725a" data-ref-filename="725a">a</a> &gt;= <a class="macro" href="#318" title="(kMidMemBeg ? (((kMidMemEnd) &gt;&gt; kDefaultShadowScale) + (kDefaultShort64bitShadowOffset)) + 1 : 0)" data-ref="_M/kShadowGap2Beg">kShadowGap2Beg</a> &amp;&amp; <a class="local col5 ref" href="#725a" title='a' data-ref="725a" data-ref-filename="725a">a</a> &lt;= <a class="macro" href="#319" title="(kMidMemBeg ? kMidMemBeg - 1 : 0)" data-ref="_M/kShadowGap2End">kShadowGap2End</a>) ||</td></tr>
+<tr><th id="362">362</th><td>           (<a class="local col5 ref" href="#725a" title='a' data-ref="725a" data-ref-filename="725a">a</a> &gt;= <a class="macro" href="#321" title="(kMidMemBeg ? kMidMemEnd + 1 : 0)" data-ref="_M/kShadowGap3Beg">kShadowGap3Beg</a> &amp;&amp; <a class="local col5 ref" href="#725a" title='a' data-ref="725a" data-ref-filename="725a">a</a> &lt;= <a class="macro" href="#322" title="(kMidMemBeg ? (((((((kHighMemEnd) &gt;&gt; kDefaultShadowScale) + (kDefaultShort64bitShadowOffset)) + 1)) &gt;&gt; kDefaultShadowScale) + (kDefaultShort64bitShadowOffset)) - 1 : 0)" data-ref="_M/kShadowGap3End">kShadowGap3End</a>);</td></tr>
+<tr><th id="363">363</th><td>  }</td></tr>
+<tr><th id="364">364</th><td>  <i>// In zero-based shadow mode we treat addresses near zero as addresses</i></td></tr>
+<tr><th id="365">365</th><td><i>  // in shadow gap as well.</i></td></tr>
+<tr><th id="366">366</th><td>  <b>if</b> (<a class="macro" href="#247" title="kDefaultShort64bitShadowOffset" data-ref="_M/SHADOW_OFFSET">SHADOW_OFFSET</a> == <var>0</var>)</td></tr>
+<tr><th id="367">367</th><td>    <b>return</b> <a class="local col5 ref" href="#725a" title='a' data-ref="725a" data-ref-filename="725a">a</a> &lt;= <a class="macro" href="#316" title="((kMidMemBeg ? (((kMidMemBeg) &gt;&gt; kDefaultShadowScale) + (kDefaultShort64bitShadowOffset)) : (((((((kHighMemEnd) &gt;&gt; kDefaultShadowScale) + (kDefaultShort64bitShadowOffset)) + 1)) &gt;&gt; kDefaultShadowScale) + (kDefaultShort64bitShadowOffset))) - 1)" data-ref="_M/kShadowGapEnd">kShadowGapEnd</a>;</td></tr>
+<tr><th id="368">368</th><td>  <b>return</b> <a class="local col5 ref" href="#725a" title='a' data-ref="725a" data-ref-filename="725a">a</a> &gt;= <a class="macro" href="#314" title="(((((kDefaultShort64bitShadowOffset ? kDefaultShort64bitShadowOffset - 1 : 0)) &gt;&gt; kDefaultShadowScale) + (kDefaultShort64bitShadowOffset)) ? ((((kDefaultShort64bitShadowOffset ? kDefaultShort64bitShadowOffset - 1 : 0)) &gt;&gt; kDefaultShadowScale) + (kDefaultShort64bitShadowOffset)) + 1 : 0)" data-ref="_M/kShadowGapBeg">kShadowGapBeg</a> &amp;&amp; <a class="local col5 ref" href="#725a" title='a' data-ref="725a" data-ref-filename="725a">a</a> &lt;= <a class="macro" href="#316" title="((kMidMemBeg ? (((kMidMemBeg) &gt;&gt; kDefaultShadowScale) + (kDefaultShort64bitShadowOffset)) : (((((((kHighMemEnd) &gt;&gt; kDefaultShadowScale) + (kDefaultShort64bitShadowOffset)) + 1)) &gt;&gt; kDefaultShadowScale) + (kDefaultShort64bitShadowOffset))) - 1)" data-ref="_M/kShadowGapEnd">kShadowGapEnd</a>;</td></tr>
+<tr><th id="369">369</th><td>}</td></tr>
+<tr><th id="370">370</th><td></td></tr>
+<tr><th id="371">371</th><td>}  <i>// namespace __asan</i></td></tr>
+<tr><th id="372">372</th><td></td></tr>
+<tr><th id="373">373</th><td><u>#<span data-ppcond="288">endif</span>  // SANITIZER_MYRIAD2</u></td></tr>
+<tr><th id="374">374</th><td></td></tr>
+<tr><th id="375">375</th><td><b>namespace</b> <span class="namespace">__asan</span> {</td></tr>
+<tr><th id="376">376</th><td></td></tr>
+<tr><th id="377">377</th><td><em>static</em> <b>inline</b> <a class="typedef" href="../sanitizer_common/sanitizer_internal_defs.h.html#__sanitizer::uptr" title='__sanitizer::uptr' data-type='unsigned long' data-ref="__sanitizer::uptr" data-ref-filename="__sanitizer..uptr">uptr</a> <dfn class="decl def fn" id="__asan::MemToShadowSize" title='__asan::MemToShadowSize' data-ref="__asan::MemToShadowSize" data-ref-filename="__asan..MemToShadowSize">MemToShadowSize</dfn>(<a class="typedef" href="../sanitizer_common/sanitizer_internal_defs.h.html#__sanitizer::uptr" title='__sanitizer::uptr' data-type='unsigned long' data-ref="__sanitizer::uptr" data-ref-filename="__sanitizer..uptr">uptr</a> <dfn class="local col6 decl" id="726size" title='size' data-type='__sanitizer::uptr' data-ref="726size" data-ref-filename="726size">size</dfn>) { <b>return</b> <a class="local col6 ref" href="#726size" title='size' data-ref="726size" data-ref-filename="726size">size</a> &gt;&gt; <a class="macro" href="#199" title="kDefaultShadowScale" data-ref="_M/SHADOW_SCALE">SHADOW_SCALE</a>; }</td></tr>
+<tr><th id="378">378</th><td></td></tr>
+<tr><th id="379">379</th><td><em>static</em> <b>inline</b> <em>bool</em> <dfn class="decl def fn" id="__asan::AddrIsInMem" title='__asan::AddrIsInMem' data-ref="__asan::AddrIsInMem" data-ref-filename="__asan..AddrIsInMem">AddrIsInMem</dfn>(<a class="typedef" href="../sanitizer_common/sanitizer_internal_defs.h.html#__sanitizer::uptr" title='__sanitizer::uptr' data-type='unsigned long' data-ref="__sanitizer::uptr" data-ref-filename="__sanitizer..uptr">uptr</a> <dfn class="local col7 decl" id="727a" title='a' data-type='__sanitizer::uptr' data-ref="727a" data-ref-filename="727a">a</dfn>) {</td></tr>
+<tr><th id="380">380</th><td>  <a class="macro" href="#264" title="" data-ref="_M/PROFILE_ASAN_MAPPING">PROFILE_ASAN_MAPPING</a>();</td></tr>
+<tr><th id="381">381</th><td>  <b>return</b> <a class="ref fn" href="#__asan::AddrIsInLowMem" title='__asan::AddrIsInLowMem' data-ref="__asan::AddrIsInLowMem" data-ref-filename="__asan..AddrIsInLowMem">AddrIsInLowMem</a>(<a class="local col7 ref" href="#727a" title='a' data-ref="727a" data-ref-filename="727a">a</a>) || <a class="ref fn" href="#__asan::AddrIsInMidMem" title='__asan::AddrIsInMidMem' data-ref="__asan::AddrIsInMidMem" data-ref-filename="__asan..AddrIsInMidMem">AddrIsInMidMem</a>(<a class="local col7 ref" href="#727a" title='a' data-ref="727a" data-ref-filename="727a">a</a>) || <a class="ref fn" href="#__asan::AddrIsInHighMem" title='__asan::AddrIsInHighMem' data-ref="__asan::AddrIsInHighMem" data-ref-filename="__asan..AddrIsInHighMem">AddrIsInHighMem</a>(<a class="local col7 ref" href="#727a" title='a' data-ref="727a" data-ref-filename="727a">a</a>) ||</td></tr>
+<tr><th id="382">382</th><td>      (<a class="ref fn" href="asan_flags.h.html#__asan::flags" title='__asan::flags' data-ref="__asan::flags" data-ref-filename="__asan..flags">flags</a>()-&gt;<a class="ref field" href="asan_flags.inc.html#90" title='__asan::Flags::protect_shadow_gap' data-ref="__asan::Flags::protect_shadow_gap" data-ref-filename="__asan..Flags..protect_shadow_gap">protect_shadow_gap</a> == <var>0</var> &amp;&amp; <a class="ref fn" href="#__asan::AddrIsInShadowGap" title='__asan::AddrIsInShadowGap' data-ref="__asan::AddrIsInShadowGap" data-ref-filename="__asan..AddrIsInShadowGap">AddrIsInShadowGap</a>(<a class="local col7 ref" href="#727a" title='a' data-ref="727a" data-ref-filename="727a">a</a>));</td></tr>
+<tr><th id="383">383</th><td>}</td></tr>
+<tr><th id="384">384</th><td></td></tr>
+<tr><th id="385">385</th><td><em>static</em> <b>inline</b> <a class="typedef" href="../sanitizer_common/sanitizer_internal_defs.h.html#__sanitizer::uptr" title='__sanitizer::uptr' data-type='unsigned long' data-ref="__sanitizer::uptr" data-ref-filename="__sanitizer..uptr">uptr</a> <dfn class="decl def fn" id="__asan::MemToShadow" title='__asan::MemToShadow' data-ref="__asan::MemToShadow" data-ref-filename="__asan..MemToShadow">MemToShadow</dfn>(<a class="typedef" href="../sanitizer_common/sanitizer_internal_defs.h.html#__sanitizer::uptr" title='__sanitizer::uptr' data-type='unsigned long' data-ref="__sanitizer::uptr" data-ref-filename="__sanitizer..uptr">uptr</a> <dfn class="local col8 decl" id="728p" title='p' data-type='__sanitizer::uptr' data-ref="728p" data-ref-filename="728p">p</dfn>) {</td></tr>
+<tr><th id="386">386</th><td>  <a class="macro" href="#264" title="" data-ref="_M/PROFILE_ASAN_MAPPING">PROFILE_ASAN_MAPPING</a>();</td></tr>
+<tr><th id="387">387</th><td>  <a class="macro" href="../sanitizer_common/sanitizer_internal_defs.h.html#299" title="do { __sanitizer::u64 v1 = (__sanitizer::u64)((AddrIsInMem(p))); __sanitizer::u64 v2 = (__sanitizer::u64)(0); if (__builtin_expect(!!(!(v1 != v2)), 0)) __sanitizer::CheckFailed(&quot;/fast/tmp/llvm-proj-12/compiler-rt/lib/asan/asan_mapping.h&quot;, 387, &quot;(&quot; &quot;(AddrIsInMem(p))&quot; &quot;) &quot; &quot;!=&quot; &quot; (&quot; &quot;0&quot; &quot;)&quot;, v1, v2); } while (false)" data-ref="_M/CHECK">CHECK</a>(<a class="ref fn" href="#__asan::AddrIsInMem" title='__asan::AddrIsInMem' data-ref="__asan::AddrIsInMem" data-ref-filename="__asan..AddrIsInMem">AddrIsInMem</a>(<a class="local col8 ref" href="#728p" title='p' data-ref="728p" data-ref-filename="728p">p</a>));</td></tr>
+<tr><th id="388">388</th><td>  <b>return</b> <a class="macro" href="#293" title="(((p) &gt;&gt; kDefaultShadowScale) + (kDefaultShort64bitShadowOffset))" data-ref="_M/MEM_TO_SHADOW">MEM_TO_SHADOW</a>(<a class="local col8 ref" href="#728p" title='p' data-ref="728p" data-ref-filename="728p">p</a>);</td></tr>
+<tr><th id="389">389</th><td>}</td></tr>
+<tr><th id="390">390</th><td></td></tr>
+<tr><th id="391">391</th><td><em>static</em> <b>inline</b> <em>bool</em> <dfn class="decl def fn" id="__asan::AddrIsInShadow" title='__asan::AddrIsInShadow' data-ref="__asan::AddrIsInShadow" data-ref-filename="__asan..AddrIsInShadow">AddrIsInShadow</dfn>(<a class="typedef" href="../sanitizer_common/sanitizer_internal_defs.h.html#__sanitizer::uptr" title='__sanitizer::uptr' data-type='unsigned long' data-ref="__sanitizer::uptr" data-ref-filename="__sanitizer..uptr">uptr</a> <dfn class="local col9 decl" id="729a" title='a' data-type='__sanitizer::uptr' data-ref="729a" data-ref-filename="729a">a</dfn>) {</td></tr>
+<tr><th id="392">392</th><td>  <a class="macro" href="#264" title="" data-ref="_M/PROFILE_ASAN_MAPPING">PROFILE_ASAN_MAPPING</a>();</td></tr>
+<tr><th id="393">393</th><td>  <b>return</b> <a class="ref fn" href="#__asan::AddrIsInLowShadow" title='__asan::AddrIsInLowShadow' data-ref="__asan::AddrIsInLowShadow" data-ref-filename="__asan..AddrIsInLowShadow">AddrIsInLowShadow</a>(<a class="local col9 ref" href="#729a" title='a' data-ref="729a" data-ref-filename="729a">a</a>) || <a class="ref fn" href="#__asan::AddrIsInMidShadow" title='__asan::AddrIsInMidShadow' data-ref="__asan::AddrIsInMidShadow" data-ref-filename="__asan..AddrIsInMidShadow">AddrIsInMidShadow</a>(<a class="local col9 ref" href="#729a" title='a' data-ref="729a" data-ref-filename="729a">a</a>) || <a class="ref fn" href="#__asan::AddrIsInHighShadow" title='__asan::AddrIsInHighShadow' data-ref="__asan::AddrIsInHighShadow" data-ref-filename="__asan..AddrIsInHighShadow">AddrIsInHighShadow</a>(<a class="local col9 ref" href="#729a" title='a' data-ref="729a" data-ref-filename="729a">a</a>);</td></tr>
+<tr><th id="394">394</th><td>}</td></tr>
+<tr><th id="395">395</th><td></td></tr>
+<tr><th id="396">396</th><td><em>static</em> <b>inline</b> <em>bool</em> <dfn class="decl def fn" id="__asan::AddrIsAlignedByGranularity" title='__asan::AddrIsAlignedByGranularity' data-ref="__asan::AddrIsAlignedByGranularity" data-ref-filename="__asan..AddrIsAlignedByGranularity">AddrIsAlignedByGranularity</dfn>(<a class="typedef" href="../sanitizer_common/sanitizer_internal_defs.h.html#__sanitizer::uptr" title='__sanitizer::uptr' data-type='unsigned long' data-ref="__sanitizer::uptr" data-ref-filename="__sanitizer..uptr">uptr</a> <dfn class="local col0 decl" id="730a" title='a' data-type='__sanitizer::uptr' data-ref="730a" data-ref-filename="730a">a</dfn>) {</td></tr>
+<tr><th id="397">397</th><td>  <a class="macro" href="#264" title="" data-ref="_M/PROFILE_ASAN_MAPPING">PROFILE_ASAN_MAPPING</a>();</td></tr>
+<tr><th id="398">398</th><td>  <b>return</b> (<a class="local col0 ref" href="#730a" title='a' data-ref="730a" data-ref-filename="730a">a</a> &amp; (<a class="macro" href="#257" title="(1ULL &lt;&lt; kDefaultShadowScale)" data-ref="_M/SHADOW_GRANULARITY">SHADOW_GRANULARITY</a> - <var>1</var>)) == <var>0</var>;</td></tr>
+<tr><th id="399">399</th><td>}</td></tr>
+<tr><th id="400">400</th><td></td></tr>
+<tr><th id="401">401</th><td><em>static</em> <b>inline</b> <em>bool</em> <dfn class="decl def fn" id="__asan::AddressIsPoisoned" title='__asan::AddressIsPoisoned' data-ref="__asan::AddressIsPoisoned" data-ref-filename="__asan..AddressIsPoisoned">AddressIsPoisoned</dfn>(<a class="typedef" href="../sanitizer_common/sanitizer_internal_defs.h.html#__sanitizer::uptr" title='__sanitizer::uptr' data-type='unsigned long' data-ref="__sanitizer::uptr" data-ref-filename="__sanitizer..uptr">uptr</a> <dfn class="local col1 decl" id="731a" title='a' data-type='__sanitizer::uptr' data-ref="731a" data-ref-filename="731a">a</dfn>) {</td></tr>
+<tr><th id="402">402</th><td>  <a class="macro" href="#264" title="" data-ref="_M/PROFILE_ASAN_MAPPING">PROFILE_ASAN_MAPPING</a>();</td></tr>
+<tr><th id="403">403</th><td>  <b>if</b> (<a class="macro" href="../sanitizer_common/sanitizer_platform.h.html#226" title="0" data-ref="_M/SANITIZER_MYRIAD2">SANITIZER_MYRIAD2</a> &amp;&amp; !<a class="ref fn" href="#__asan::AddrIsInMem" title='__asan::AddrIsInMem' data-ref="__asan::AddrIsInMem" data-ref-filename="__asan..AddrIsInMem">AddrIsInMem</a>(<a class="local col1 ref" href="#731a" title='a' data-ref="731a" data-ref-filename="731a">a</a>) &amp;&amp; !<a class="ref fn" href="#__asan::AddrIsInShadow" title='__asan::AddrIsInShadow' data-ref="__asan::AddrIsInShadow" data-ref-filename="__asan..AddrIsInShadow">AddrIsInShadow</a>(<a class="local col1 ref" href="#731a" title='a' data-ref="731a" data-ref-filename="731a">a</a>))</td></tr>
+<tr><th id="404">404</th><td>    <b>return</b> <b>false</b>;</td></tr>
+<tr><th id="405">405</th><td>  <em>const</em> <a class="typedef" href="../sanitizer_common/sanitizer_internal_defs.h.html#__sanitizer::uptr" title='__sanitizer::uptr' data-type='unsigned long' data-ref="__sanitizer::uptr" data-ref-filename="__sanitizer..uptr">uptr</a> <dfn class="local col2 decl" id="732kAccessSize" title='kAccessSize' data-type='const __sanitizer::uptr' data-ref="732kAccessSize" data-ref-filename="732kAccessSize">kAccessSize</dfn> = <var>1</var>;</td></tr>
+<tr><th id="406">406</th><td>  <a class="typedef" href="../sanitizer_common/sanitizer_internal_defs.h.html#__sanitizer::u8" title='__sanitizer::u8' data-type='unsigned char' data-ref="__sanitizer::u8" data-ref-filename="__sanitizer..u8">u8</a> *<dfn class="local col3 decl" id="733shadow_address" title='shadow_address' data-type='__sanitizer::u8 *' data-ref="733shadow_address" data-ref-filename="733shadow_address">shadow_address</dfn> = (<a class="typedef" href="../sanitizer_common/sanitizer_internal_defs.h.html#__sanitizer::u8" title='__sanitizer::u8' data-type='unsigned char' data-ref="__sanitizer::u8" data-ref-filename="__sanitizer..u8">u8</a>*)<a class="macro" href="#293" title="(((a) &gt;&gt; kDefaultShadowScale) + (kDefaultShort64bitShadowOffset))" data-ref="_M/MEM_TO_SHADOW">MEM_TO_SHADOW</a>(<a class="local col1 ref" href="#731a" title='a' data-ref="731a" data-ref-filename="731a">a</a>);</td></tr>
+<tr><th id="407">407</th><td>  <a class="typedef" href="../sanitizer_common/sanitizer_internal_defs.h.html#__sanitizer::s8" title='__sanitizer::s8' data-type='signed char' data-ref="__sanitizer::s8" data-ref-filename="__sanitizer..s8">s8</a> <dfn class="local col4 decl" id="734shadow_value" title='shadow_value' data-type='__sanitizer::s8' data-ref="734shadow_value" data-ref-filename="734shadow_value">shadow_value</dfn> = *<a class="local col3 ref" href="#733shadow_address" title='shadow_address' data-ref="733shadow_address" data-ref-filename="733shadow_address">shadow_address</a>;</td></tr>
+<tr><th id="408">408</th><td>  <b>if</b> (<a class="local col4 ref" href="#734shadow_value" title='shadow_value' data-ref="734shadow_value" data-ref-filename="734shadow_value">shadow_value</a>) {</td></tr>
+<tr><th id="409">409</th><td>    <a class="typedef" href="../sanitizer_common/sanitizer_internal_defs.h.html#__sanitizer::u8" title='__sanitizer::u8' data-type='unsigned char' data-ref="__sanitizer::u8" data-ref-filename="__sanitizer..u8">u8</a> <dfn class="local col5 decl" id="735last_accessed_byte" title='last_accessed_byte' data-type='__sanitizer::u8' data-ref="735last_accessed_byte" data-ref-filename="735last_accessed_byte">last_accessed_byte</dfn> = (<a class="local col1 ref" href="#731a" title='a' data-ref="731a" data-ref-filename="731a">a</a> &amp; (<a class="macro" href="#257" title="(1ULL &lt;&lt; kDefaultShadowScale)" data-ref="_M/SHADOW_GRANULARITY">SHADOW_GRANULARITY</a> - <var>1</var>))</td></tr>
+<tr><th id="410">410</th><td>                                 + <a class="local col2 ref" href="#732kAccessSize" title='kAccessSize' data-ref="732kAccessSize" data-ref-filename="732kAccessSize">kAccessSize</a> - <var>1</var>;</td></tr>
+<tr><th id="411">411</th><td>    <b>return</b> (<a class="local col5 ref" href="#735last_accessed_byte" title='last_accessed_byte' data-ref="735last_accessed_byte" data-ref-filename="735last_accessed_byte">last_accessed_byte</a> &gt;= <a class="local col4 ref" href="#734shadow_value" title='shadow_value' data-ref="734shadow_value" data-ref-filename="734shadow_value">shadow_value</a>);</td></tr>
+<tr><th id="412">412</th><td>  }</td></tr>
+<tr><th id="413">413</th><td>  <b>return</b> <b>false</b>;</td></tr>
+<tr><th id="414">414</th><td>}</td></tr>
+<tr><th id="415">415</th><td></td></tr>
+<tr><th id="416">416</th><td><i>// Must be after all calls to PROFILE_ASAN_MAPPING().</i></td></tr>
+<tr><th id="417">417</th><td><em>static</em> <em>const</em> <a class="typedef" href="../sanitizer_common/sanitizer_internal_defs.h.html#__sanitizer::uptr" title='__sanitizer::uptr' data-type='unsigned long' data-ref="__sanitizer::uptr" data-ref-filename="__sanitizer..uptr">uptr</a> <dfn class="decl def" id="__asan::kAsanMappingProfileSize" title='__asan::kAsanMappingProfileSize' data-ref="__asan::kAsanMappingProfileSize" data-ref-filename="__asan..kAsanMappingProfileSize">kAsanMappingProfileSize</dfn> = <span class="macro" title="417" data-ref="_M/__LINE__">__LINE__</span>;</td></tr>
+<tr><th id="418">418</th><td></td></tr>
+<tr><th id="419">419</th><td>}  <i>// namespace __asan</i></td></tr>
+<tr><th id="420">420</th><td></td></tr>
+<tr><th id="421">421</th><td><u>#<span data-ppcond="13">endif</span>  // ASAN_MAPPING_H</u></td></tr>
+<tr><th id="422">422</th><td></td></tr>
+</table><hr/><p id='footer'>
+Generated while processing <a href='asan_activation.cpp.html'>llvm/compiler-rt/lib/asan/asan_activation.cpp</a><br/>Generated on <em>2021-Jul-01</em> from project llvm revision <em>12</em>

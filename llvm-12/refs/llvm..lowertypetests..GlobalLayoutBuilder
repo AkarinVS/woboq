@@ -1,0 +1,57 @@
+<def f='llvm/llvm/include/llvm/Transforms/IPO/LowerTypeTests.h' l='126' ll='141'/>
+<size>48</size>
+<doc f='llvm/llvm/include/llvm/Transforms/IPO/LowerTypeTests.h' l='80'>/// This class implements a layout algorithm for globals referenced by bit sets
+/// that tries to keep members of small bit sets together. This can
+/// significantly reduce bit set sizes in many cases.
+///
+/// It works by assembling fragments of layout from sets of referenced globals.
+/// Each set of referenced globals causes the algorithm to create a new
+/// fragment, which is assembled by appending each referenced global in the set
+/// into the fragment. If a referenced global has already been referenced by an
+/// fragment created earlier, we instead delete that fragment and append its
+/// contents into the fragment we are assembling.
+///
+/// By starting with the smallest fragments, we minimize the size of the
+/// fragments that are copied into larger fragments. This is most intuitively
+/// thought about when considering the case where the globals are virtual tables
+/// and the bit sets represent their derived classes: in a single inheritance
+/// hierarchy, the optimum layout would involve a depth-first search of the
+/// class hierarchy (and in fact the computed layout ends up looking a lot like
+/// a DFS), but a naive DFS would not work well in the presence of multiple
+/// inheritance. This aspect of the algorithm ends up fitting smaller
+/// hierarchies inside larger ones where that would be beneficial.
+///
+/// For example, consider this class hierarchy:
+///
+/// A       B
+///   \   / | \
+///     C   D   E
+///
+/// We have five bit sets: bsA (A, C), bsB (B, C, D, E), bsC (C), bsD (D) and
+/// bsE (E). If we laid out our objects by DFS traversing B followed by A, our
+/// layout would be {B, C, D, E, A}. This is optimal for bsB as it needs to
+/// cover the only 4 objects in its hierarchy, but not for bsA as it needs to
+/// cover 5 objects, i.e. the entire layout. Our algorithm proceeds as follows:
+///
+/// Add bsC, fragments {{C}}
+/// Add bsD, fragments {{C}, {D}}
+/// Add bsE, fragments {{C}, {D}, {E}}
+/// Add bsA, fragments {{A, C}, {D}, {E}}
+/// Add bsB, fragments {{B, A, C, D, E}}
+///
+/// This layout is optimal for bsA, as it now only needs to cover two (i.e. 3
+/// fewer) objects, at the cost of bsB needing to cover 1 more object.
+///
+/// The bit set lowering pass assigns an object index to each object that needs
+/// to be laid out, and calls addFragment for each bit set passing the object
+/// indices of its referenced globals. It then assembles a layout from the
+/// computed layout in the Fragments field.</doc>
+<mbr r='llvm::lowertypetests::GlobalLayoutBuilder::Fragments' o='0' t='std::vector&lt;std::vector&lt;uint64_t&gt; &gt;'/>
+<mbr r='llvm::lowertypetests::GlobalLayoutBuilder::FragmentMap' o='192' t='std::vector&lt;uint64_t&gt;'/>
+<fun r='_ZN4llvm14lowertypetests19GlobalLayoutBuilderC1Em'/>
+<fun r='_ZN4llvm14lowertypetests19GlobalLayoutBuilder11addFragmentERKSt3setImSt4lessImESaImEE'/>
+<use f='llvm/llvm/lib/Transforms/IPO/LowerTypeTests.cpp' l='1661' c='_ZN12_GLOBAL__N_120LowerTypeTestsModule27buildBitSetsFromDisjointSetEN4llvm8ArrayRefIPNS1_8MetadataEEENS2_IPNS_16GlobalTypeMemberEEENS2_IPNS_17ICallBranchFunnelEEE'/>
+<size>48</size>
+<fun r='_ZN4llvm14lowertypetests19GlobalLayoutBuilder11addFragmentERKSt3setImSt4lessImESaImEE'/>
+<use f='llvm/llvm/unittests/Transforms/IPO/LowerTypeTests.cpp' l='97' c='_ZN39LowerTypeTests_GlobalLayoutBuilder_Test8TestBodyEv'/>
+<size>48</size>

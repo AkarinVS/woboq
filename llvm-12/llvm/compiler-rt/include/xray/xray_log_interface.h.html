@@ -1,0 +1,373 @@
+<!doctype html>
+<html>
+<head>
+<meta name="viewport" content="width=device-width, initial-scale=1.0"><title>xray_log_interface.h source code [llvm/compiler-rt/include/xray/xray_log_interface.h] - Woboq Code Browser</title>
+<link rel="stylesheet" href="../../../.././data/qtcreator.css" title="QtCreator"/>
+<link rel="alternate stylesheet" href="../../../.././data/kdevelop.css" title="KDevelop"/>
+<script type="text/javascript" src="../../../.././data/jquery/jquery.min.js"></script>
+<script type="text/javascript" src="../../../.././data/jquery/jquery-ui.min.js"></script>
+<script>var file = 'llvm/compiler-rt/include/xray/xray_log_interface.h'; var root_path = '../../../..'; var data_path = '../../../.././data'; var ecma_script_api_version = 2;</script>
+<script src='../../../.././data/codebrowser.js'></script>
+</head>
+<body><div id='header'><h1 id='breadcrumb'><span>Browse the source code of </span><a href='../../..'>llvm</a>/<a href='../..'>compiler-rt</a>/<a href='..'>include</a>/<a href='./'>xray</a>/<a href='xray_log_interface.h.html'>xray_log_interface.h</a></h1></div>
+<hr/><div id='content'><table class="code">
+<tr><th id="1">1</th><td><i>//===-- xray_log_interface.h ----------------------------------------------===//</i></td></tr>
+<tr><th id="2">2</th><td><i>//</i></td></tr>
+<tr><th id="3">3</th><td><i>// Part of the LLVM Project, under the Apache License v2.0 with LLVM Exceptions.</i></td></tr>
+<tr><th id="4">4</th><td><i>// See <a href="https://llvm.org/LICENSE.txt">https://llvm.org/LICENSE.txt</a> for license information.</i></td></tr>
+<tr><th id="5">5</th><td><i>// SPDX-License-Identifier: Apache-2.0 WITH LLVM-exception</i></td></tr>
+<tr><th id="6">6</th><td><i>//</i></td></tr>
+<tr><th id="7">7</th><td><i>//===----------------------------------------------------------------------===//</i></td></tr>
+<tr><th id="8">8</th><td><i>//</i></td></tr>
+<tr><th id="9">9</th><td><i>// This file is a part of XRay, a function call tracing system.</i></td></tr>
+<tr><th id="10">10</th><td><i>//</i></td></tr>
+<tr><th id="11">11</th><td><i>// APIs for installing a new logging implementation.</i></td></tr>
+<tr><th id="12">12</th><td><i>//</i></td></tr>
+<tr><th id="13">13</th><td><i>//===----------------------------------------------------------------------===//</i></td></tr>
+<tr><th id="14">14</th><td><i>///</i></td></tr>
+<tr><th id="15">15</th><td><i>/// XRay allows users to implement their own logging handlers and install them</i></td></tr>
+<tr><th id="16">16</th><td><i>/// to replace the default runtime-controllable implementation that comes with</i></td></tr>
+<tr><th id="17">17</th><td><i>/// compiler-rt/xray. The "flight data recorder" (FDR) mode implementation uses</i></td></tr>
+<tr><th id="18">18</th><td><i>/// this API to install itself in an XRay-enabled binary. See</i></td></tr>
+<tr><th id="19">19</th><td><i>/// compiler-rt/lib/xray_fdr_logging.{h,cc} for details of that implementation.</i></td></tr>
+<tr><th id="20">20</th><td><i>///</i></td></tr>
+<tr><th id="21">21</th><td><i>/// The high-level usage pattern for these APIs look like the following:</i></td></tr>
+<tr><th id="22">22</th><td><i>///</i></td></tr>
+<tr><th id="23">23</th><td><i>///   // We choose the mode which we'd like to install, and check whether this</i></td></tr>
+<tr><th id="24">24</th><td><i>///   // has succeeded. Each mode will have their own set of flags they will</i></td></tr>
+<tr><th id="25">25</th><td><i>///   // support, outside of the global XRay configuration options that are</i></td></tr>
+<tr><th id="26">26</th><td><i>///   // defined in the XRAY_OPTIONS environment variable.</i></td></tr>
+<tr><th id="27">27</th><td><i>///   auto select_status = __xray_log_select_mode("xray-fdr");</i></td></tr>
+<tr><th id="28">28</th><td><i>///   if (select_status != XRayLogRegisterStatus::XRAY_REGISTRATION_OK) {</i></td></tr>
+<tr><th id="29">29</th><td><i>///     // This failed, we should not proceed with attempting to initialise</i></td></tr>
+<tr><th id="30">30</th><td><i>///     // the currently selected mode.</i></td></tr>
+<tr><th id="31">31</th><td><i>///     return;</i></td></tr>
+<tr><th id="32">32</th><td><i>///   }</i></td></tr>
+<tr><th id="33">33</th><td><i>///</i></td></tr>
+<tr><th id="34">34</th><td><i>///   // Once that's done, we can now attempt to configure the implementation.</i></td></tr>
+<tr><th id="35">35</th><td><i>///   // To do this, we provide the string flags configuration for the mode.</i></td></tr>
+<tr><th id="36">36</th><td><i>///   auto config_status = __xray_log_init_mode(</i></td></tr>
+<tr><th id="37">37</th><td><i>///       "xray-fdr", "verbosity=1 some_flag=1 another_flag=2");</i></td></tr>
+<tr><th id="38">38</th><td><i>///   if (config_status != XRayLogInitStatus::XRAY_LOG_INITIALIZED) {</i></td></tr>
+<tr><th id="39">39</th><td><i>///     // deal with the error here, if there is one.</i></td></tr>
+<tr><th id="40">40</th><td><i>///   }</i></td></tr>
+<tr><th id="41">41</th><td><i>///</i></td></tr>
+<tr><th id="42">42</th><td><i>///   // When the log implementation has had the chance to initialize, we can</i></td></tr>
+<tr><th id="43">43</th><td><i>///   // now patch the instrumentation points. Note that we could have patched</i></td></tr>
+<tr><th id="44">44</th><td><i>///   // the instrumentation points first, but there's no strict ordering to</i></td></tr>
+<tr><th id="45">45</th><td><i>///   // these operations.</i></td></tr>
+<tr><th id="46">46</th><td><i>///   auto patch_status = __xray_patch();</i></td></tr>
+<tr><th id="47">47</th><td><i>///   if (patch_status != XRayPatchingStatus::SUCCESS) {</i></td></tr>
+<tr><th id="48">48</th><td><i>///     // deal with the error here, if it is an error.</i></td></tr>
+<tr><th id="49">49</th><td><i>///   }</i></td></tr>
+<tr><th id="50">50</th><td><i>///</i></td></tr>
+<tr><th id="51">51</th><td><i>///   // If we want to stop the implementation, we can then finalize it (before</i></td></tr>
+<tr><th id="52">52</th><td><i>///   // optionally flushing the log).</i></td></tr>
+<tr><th id="53">53</th><td><i>///   auto fin_status = __xray_log_finalize();</i></td></tr>
+<tr><th id="54">54</th><td><i>///   if (fin_status != XRayLogInitStatus::XRAY_LOG_FINALIZED) {</i></td></tr>
+<tr><th id="55">55</th><td><i>///     // deal with the error here, if it is an error.</i></td></tr>
+<tr><th id="56">56</th><td><i>///   }</i></td></tr>
+<tr><th id="57">57</th><td><i>///</i></td></tr>
+<tr><th id="58">58</th><td><i>///   // We can optionally wait before flushing the log to give other threads a</i></td></tr>
+<tr><th id="59">59</th><td><i>///   // chance to see that the implementation is already finalized. Also, at</i></td></tr>
+<tr><th id="60">60</th><td><i>///   // this point we can optionally unpatch the instrumentation points to</i></td></tr>
+<tr><th id="61">61</th><td><i>///   // reduce overheads at runtime.</i></td></tr>
+<tr><th id="62">62</th><td><i>///   auto unpatch_status = __xray_unpatch();</i></td></tr>
+<tr><th id="63">63</th><td><i>///   if (unpatch_status != XRayPatchingStatus::SUCCESS) {</i></td></tr>
+<tr><th id="64">64</th><td><i>///     // deal with the error here, if it is an error.</i></td></tr>
+<tr><th id="65">65</th><td><i>///   }</i></td></tr>
+<tr><th id="66">66</th><td><i>///</i></td></tr>
+<tr><th id="67">67</th><td><i>///   // If there are logs or data to be flushed somewhere, we can do so only</i></td></tr>
+<tr><th id="68">68</th><td><i>///   // after we've finalized the log. Some implementations may not actually</i></td></tr>
+<tr><th id="69">69</th><td><i>///   // have anything to log (it might keep the data in memory, or periodically</i></td></tr>
+<tr><th id="70">70</th><td><i>///   // be logging the data anyway).</i></td></tr>
+<tr><th id="71">71</th><td><i>///   auto flush_status = __xray_log_flushLog();</i></td></tr>
+<tr><th id="72">72</th><td><i>///   if (flush_status != XRayLogFlushStatus::XRAY_LOG_FLUSHED) {</i></td></tr>
+<tr><th id="73">73</th><td><i>///     // deal with the error here, if it is an error.</i></td></tr>
+<tr><th id="74">74</th><td><i>///   }</i></td></tr>
+<tr><th id="75">75</th><td><i>///</i></td></tr>
+<tr><th id="76">76</th><td><i>///   // Alternatively, we can go through the buffers ourselves without</i></td></tr>
+<tr><th id="77">77</th><td><i>///   // relying on the implementations' flushing semantics (if the</i></td></tr>
+<tr><th id="78">78</th><td><i>///   // implementation supports exporting this data directly).</i></td></tr>
+<tr><th id="79">79</th><td><i>///   auto MyBufferProcessor = +[](const char* mode, XRayBuffer buffer) {</i></td></tr>
+<tr><th id="80">80</th><td><i>///     // Check the "mode" to see if it's something we know how to handle...</i></td></tr>
+<tr><th id="81">81</th><td><i>///     // and/or do something with an XRayBuffer instance.</i></td></tr>
+<tr><th id="82">82</th><td><i>///   };</i></td></tr>
+<tr><th id="83">83</th><td><i>///   auto process_status = __xray_log_process_buffers(MyBufferProcessor);</i></td></tr>
+<tr><th id="84">84</th><td><i>///   if (process_status != XRayLogFlushStatus::XRAY_LOG_FLUSHED) {</i></td></tr>
+<tr><th id="85">85</th><td><i>///     // deal with the error here, if it is an error.</i></td></tr>
+<tr><th id="86">86</th><td><i>///   }</i></td></tr>
+<tr><th id="87">87</th><td><i>///</i></td></tr>
+<tr><th id="88">88</th><td><i>/// NOTE: Before calling __xray_patch() again, consider re-initializing the</i></td></tr>
+<tr><th id="89">89</th><td><i>/// implementation first. Some implementations might stay in an "off" state when</i></td></tr>
+<tr><th id="90">90</th><td><i>/// they are finalized, while some might be in an invalid/unknown state.</i></td></tr>
+<tr><th id="91">91</th><td><i>///</i></td></tr>
+<tr><th id="92">92</th><td><u>#<span data-ppcond="92">ifndef</span> <span class="macro" data-ref="_M/XRAY_XRAY_LOG_INTERFACE_H">XRAY_XRAY_LOG_INTERFACE_H</span></u></td></tr>
+<tr><th id="93">93</th><td><u>#define <dfn class="macro" id="_M/XRAY_XRAY_LOG_INTERFACE_H" data-ref="_M/XRAY_XRAY_LOG_INTERFACE_H">XRAY_XRAY_LOG_INTERFACE_H</dfn></u></td></tr>
+<tr><th id="94">94</th><td></td></tr>
+<tr><th id="95">95</th><td><u>#include <a href="xray_interface.h.html">"xray/xray_interface.h"</a></u></td></tr>
+<tr><th id="96">96</th><td><u>#include &lt;stddef.h&gt;</u></td></tr>
+<tr><th id="97">97</th><td></td></tr>
+<tr><th id="98">98</th><td><b>extern</b> <q>"C"</q> {</td></tr>
+<tr><th id="99">99</th><td></td></tr>
+<tr><th id="100">100</th><td><i class="doc">/// This enum defines the valid states in which the logging implementation can</i></td></tr>
+<tr><th id="101">101</th><td><i class="doc">/// be at.</i></td></tr>
+<tr><th id="102">102</th><td><b>enum</b> <dfn class="type def" id="XRayLogInitStatus" title='XRayLogInitStatus' data-ref="XRayLogInitStatus" data-ref-filename="XRayLogInitStatus">XRayLogInitStatus</dfn> {</td></tr>
+<tr><th id="103">103</th><td>  <i class="doc">/// The default state is uninitialized, and in case there were errors in the</i></td></tr>
+<tr><th id="104">104</th><td><i class="doc">  /// initialization, the implementation MUST return XRAY_LOG_UNINITIALIZED.</i></td></tr>
+<tr><th id="105">105</th><td>  <dfn class="enum" id="XRAY_LOG_UNINITIALIZED" title='XRAY_LOG_UNINITIALIZED' data-ref="XRAY_LOG_UNINITIALIZED" data-ref-filename="XRAY_LOG_UNINITIALIZED">XRAY_LOG_UNINITIALIZED</dfn> = <var>0</var>,</td></tr>
+<tr><th id="106">106</th><td></td></tr>
+<tr><th id="107">107</th><td>  <i class="doc">/// Some implementations support multi-stage init (or asynchronous init), and</i></td></tr>
+<tr><th id="108">108</th><td><i class="doc">  /// may return XRAY_LOG_INITIALIZING to signal callers of the API that</i></td></tr>
+<tr><th id="109">109</th><td><i class="doc">  /// there's an ongoing initialization routine running. This allows</i></td></tr>
+<tr><th id="110">110</th><td><i class="doc">  /// implementations to support concurrent threads attempting to initialize,</i></td></tr>
+<tr><th id="111">111</th><td><i class="doc">  /// while only signalling success in one.</i></td></tr>
+<tr><th id="112">112</th><td>  <dfn class="enum" id="XRAY_LOG_INITIALIZING" title='XRAY_LOG_INITIALIZING' data-ref="XRAY_LOG_INITIALIZING" data-ref-filename="XRAY_LOG_INITIALIZING">XRAY_LOG_INITIALIZING</dfn> = <var>1</var>,</td></tr>
+<tr><th id="113">113</th><td></td></tr>
+<tr><th id="114">114</th><td>  <i class="doc">/// When an implementation is done initializing, it MUST return</i></td></tr>
+<tr><th id="115">115</th><td><i class="doc">  /// XRAY_LOG_INITIALIZED. When users call `__xray_patch()`, they are</i></td></tr>
+<tr><th id="116">116</th><td><i class="doc">  /// guaranteed that the implementation installed with</i></td></tr>
+<tr><th id="117">117</th><td><i class="doc">  /// `__xray_set_log_impl(...)` has been initialized.</i></td></tr>
+<tr><th id="118">118</th><td>  <dfn class="enum" id="XRAY_LOG_INITIALIZED" title='XRAY_LOG_INITIALIZED' data-ref="XRAY_LOG_INITIALIZED" data-ref-filename="XRAY_LOG_INITIALIZED">XRAY_LOG_INITIALIZED</dfn> = <var>2</var>,</td></tr>
+<tr><th id="119">119</th><td></td></tr>
+<tr><th id="120">120</th><td>  <i class="doc">/// Some implementations might support multi-stage finalization (or</i></td></tr>
+<tr><th id="121">121</th><td><i class="doc">  /// asynchronous finalization), and may return XRAY_LOG_FINALIZING to signal</i></td></tr>
+<tr><th id="122">122</th><td><i class="doc">  /// callers of the API that there's an ongoing finalization routine running.</i></td></tr>
+<tr><th id="123">123</th><td><i class="doc">  /// This allows implementations to support concurrent threads attempting to</i></td></tr>
+<tr><th id="124">124</th><td><i class="doc">  /// finalize, while only signalling success/completion in one.</i></td></tr>
+<tr><th id="125">125</th><td>  <dfn class="enum" id="XRAY_LOG_FINALIZING" title='XRAY_LOG_FINALIZING' data-ref="XRAY_LOG_FINALIZING" data-ref-filename="XRAY_LOG_FINALIZING">XRAY_LOG_FINALIZING</dfn> = <var>3</var>,</td></tr>
+<tr><th id="126">126</th><td></td></tr>
+<tr><th id="127">127</th><td>  <i class="doc">/// When an implementation is done finalizing, it MUST return</i></td></tr>
+<tr><th id="128">128</th><td><i class="doc">  /// XRAY_LOG_FINALIZED. It is up to the implementation to determine what the</i></td></tr>
+<tr><th id="129">129</th><td><i class="doc">  /// semantics of a finalized implementation is. Some implementations might</i></td></tr>
+<tr><th id="130">130</th><td><i class="doc">  /// allow re-initialization once the log is finalized, while some might always</i></td></tr>
+<tr><th id="131">131</th><td><i class="doc">  /// be on (and that finalization is a no-op).</i></td></tr>
+<tr><th id="132">132</th><td>  <dfn class="enum" id="XRAY_LOG_FINALIZED" title='XRAY_LOG_FINALIZED' data-ref="XRAY_LOG_FINALIZED" data-ref-filename="XRAY_LOG_FINALIZED">XRAY_LOG_FINALIZED</dfn> = <var>4</var>,</td></tr>
+<tr><th id="133">133</th><td>};</td></tr>
+<tr><th id="134">134</th><td></td></tr>
+<tr><th id="135">135</th><td><i class="doc">/// This enum allows an implementation to signal log flushing operations via</i></td></tr>
+<tr><th id="136">136</th><td><i class="doc">/// `__xray_log_flushLog()`, and the state of flushing the log.</i></td></tr>
+<tr><th id="137">137</th><td><b>enum</b> <dfn class="type def" id="XRayLogFlushStatus" title='XRayLogFlushStatus' data-ref="XRayLogFlushStatus" data-ref-filename="XRayLogFlushStatus">XRayLogFlushStatus</dfn> {</td></tr>
+<tr><th id="138">138</th><td>  <dfn class="enum" id="XRAY_LOG_NOT_FLUSHING" title='XRAY_LOG_NOT_FLUSHING' data-ref="XRAY_LOG_NOT_FLUSHING" data-ref-filename="XRAY_LOG_NOT_FLUSHING">XRAY_LOG_NOT_FLUSHING</dfn> = <var>0</var>,</td></tr>
+<tr><th id="139">139</th><td>  <dfn class="enum" id="XRAY_LOG_FLUSHING" title='XRAY_LOG_FLUSHING' data-ref="XRAY_LOG_FLUSHING" data-ref-filename="XRAY_LOG_FLUSHING">XRAY_LOG_FLUSHING</dfn> = <var>1</var>,</td></tr>
+<tr><th id="140">140</th><td>  <dfn class="enum" id="XRAY_LOG_FLUSHED" title='XRAY_LOG_FLUSHED' data-ref="XRAY_LOG_FLUSHED" data-ref-filename="XRAY_LOG_FLUSHED">XRAY_LOG_FLUSHED</dfn> = <var>2</var>,</td></tr>
+<tr><th id="141">141</th><td>};</td></tr>
+<tr><th id="142">142</th><td></td></tr>
+<tr><th id="143">143</th><td><i class="doc">/// This enum indicates the installation state of a logging implementation, when</i></td></tr>
+<tr><th id="144">144</th><td><i class="doc">/// associating a mode to a particular logging implementation through</i></td></tr>
+<tr><th id="145">145</th><td><i class="doc">/// `__xray_log_register_impl(...)` or through `__xray_log_select_mode(...`.</i></td></tr>
+<tr><th id="146">146</th><td><b>enum</b> <dfn class="type def" id="XRayLogRegisterStatus" title='XRayLogRegisterStatus' data-ref="XRayLogRegisterStatus" data-ref-filename="XRayLogRegisterStatus">XRayLogRegisterStatus</dfn> {</td></tr>
+<tr><th id="147">147</th><td>  <dfn class="enum" id="XRAY_REGISTRATION_OK" title='XRAY_REGISTRATION_OK' data-ref="XRAY_REGISTRATION_OK" data-ref-filename="XRAY_REGISTRATION_OK">XRAY_REGISTRATION_OK</dfn> = <var>0</var>,</td></tr>
+<tr><th id="148">148</th><td>  <dfn class="enum" id="XRAY_DUPLICATE_MODE" title='XRAY_DUPLICATE_MODE' data-ref="XRAY_DUPLICATE_MODE" data-ref-filename="XRAY_DUPLICATE_MODE">XRAY_DUPLICATE_MODE</dfn> = <var>1</var>,</td></tr>
+<tr><th id="149">149</th><td>  <dfn class="enum" id="XRAY_MODE_NOT_FOUND" title='XRAY_MODE_NOT_FOUND' data-ref="XRAY_MODE_NOT_FOUND" data-ref-filename="XRAY_MODE_NOT_FOUND">XRAY_MODE_NOT_FOUND</dfn> = <var>2</var>,</td></tr>
+<tr><th id="150">150</th><td>  <dfn class="enum" id="XRAY_INCOMPLETE_IMPL" title='XRAY_INCOMPLETE_IMPL' data-ref="XRAY_INCOMPLETE_IMPL" data-ref-filename="XRAY_INCOMPLETE_IMPL">XRAY_INCOMPLETE_IMPL</dfn> = <var>3</var>,</td></tr>
+<tr><th id="151">151</th><td>};</td></tr>
+<tr><th id="152">152</th><td></td></tr>
+<tr><th id="153">153</th><td><i class="doc">/// A valid XRay logging implementation MUST provide all of the function</i></td></tr>
+<tr><th id="154">154</th><td><i class="doc">/// pointers in XRayLogImpl when being installed through `__xray_set_log_impl`.</i></td></tr>
+<tr><th id="155">155</th><td><i class="doc">/// To be precise, ALL the functions pointers MUST NOT be nullptr.</i></td></tr>
+<tr><th id="156">156</th><td><b>struct</b> <dfn class="type def" id="XRayLogImpl" title='XRayLogImpl' data-ref="XRayLogImpl" data-ref-filename="XRayLogImpl">XRayLogImpl</dfn> {</td></tr>
+<tr><th id="157">157</th><td>  <i class="doc">/// The log initialization routine provided by the implementation, always</i></td></tr>
+<tr><th id="158">158</th><td><i class="doc">  /// provided with the following parameters:</i></td></tr>
+<tr><th id="159">159</th><td><i class="doc">  ///</i></td></tr>
+<tr><th id="160">160</th><td><i class="doc">  ///   - buffer size (unused)</i></td></tr>
+<tr><th id="161">161</th><td><i class="doc">  ///   - maximum number of buffers (unused)</i></td></tr>
+<tr><th id="162">162</th><td><i class="doc">  ///   - a pointer to an argument struct that the implementation MUST handle</i></td></tr>
+<tr><th id="163">163</th><td><i class="doc">  ///   - the size of the argument struct</i></td></tr>
+<tr><th id="164">164</th><td><i class="doc">  ///</i></td></tr>
+<tr><th id="165">165</th><td><i class="doc">  /// See XRayLogInitStatus for details on what the implementation MUST return</i></td></tr>
+<tr><th id="166">166</th><td><i class="doc">  /// when called.</i></td></tr>
+<tr><th id="167">167</th><td><i class="doc">  ///</i></td></tr>
+<tr><th id="168">168</th><td><i class="doc">  /// If the implementation needs to install handlers aside from the 0-argument</i></td></tr>
+<tr><th id="169">169</th><td><i class="doc">  /// function call handler, it MUST do so in this initialization handler.</i></td></tr>
+<tr><th id="170">170</th><td><i class="doc">  ///</i></td></tr>
+<tr><th id="171">171</th><td><i class="doc">  /// See xray_interface.h for available handler installation routines.</i></td></tr>
+<tr><th id="172">172</th><td>  <a class="type" href="#XRayLogInitStatus" title='XRayLogInitStatus' data-ref="XRayLogInitStatus" data-ref-filename="XRayLogInitStatus">XRayLogInitStatus</a> (*<dfn class="decl field" id="XRayLogImpl::log_init" title='XRayLogImpl::log_init' data-ref="XRayLogImpl::log_init" data-ref-filename="XRayLogImpl..log_init">log_init</dfn>)(<span class='typedef' title='size_t' data-type='unsigned long' data-ref="size_t" data-ref-filename="size_t">size_t</span>, <span class='typedef' title='size_t' data-type='unsigned long' data-ref="size_t" data-ref-filename="size_t">size_t</span>, <em>void</em> *, <span class='typedef' title='size_t' data-type='unsigned long' data-ref="size_t" data-ref-filename="size_t">size_t</span>);</td></tr>
+<tr><th id="173">173</th><td></td></tr>
+<tr><th id="174">174</th><td>  <i class="doc">/// The log finalization routine provided by the implementation.</i></td></tr>
+<tr><th id="175">175</th><td><i class="doc">  ///</i></td></tr>
+<tr><th id="176">176</th><td><i class="doc">  /// See XRayLogInitStatus for details on what the implementation MUST return</i></td></tr>
+<tr><th id="177">177</th><td><i class="doc">  /// when called.</i></td></tr>
+<tr><th id="178">178</th><td>  <a class="type" href="#XRayLogInitStatus" title='XRayLogInitStatus' data-ref="XRayLogInitStatus" data-ref-filename="XRayLogInitStatus">XRayLogInitStatus</a> (*<dfn class="decl field" id="XRayLogImpl::log_finalize" title='XRayLogImpl::log_finalize' data-ref="XRayLogImpl::log_finalize" data-ref-filename="XRayLogImpl..log_finalize">log_finalize</dfn>)();</td></tr>
+<tr><th id="179">179</th><td></td></tr>
+<tr><th id="180">180</th><td>  <i class="doc">/// The 0-argument function call handler. XRay logging implementations MUST</i></td></tr>
+<tr><th id="181">181</th><td><i class="doc">  /// always have a handler for function entry and exit events. In case the</i></td></tr>
+<tr><th id="182">182</th><td><i class="doc">  /// implementation wants to support arg1 (or other future extensions to XRay</i></td></tr>
+<tr><th id="183">183</th><td><i class="doc">  /// logging) those MUST be installed by the installed 'log_init' handler.</i></td></tr>
+<tr><th id="184">184</th><td><i class="doc">  ///</i></td></tr>
+<tr><th id="185">185</th><td><i class="doc">  /// Because we didn't want to change the ABI of this struct, the arg1 handler</i></td></tr>
+<tr><th id="186">186</th><td><i class="doc">  /// may be silently overwritten during initialization as well.</i></td></tr>
+<tr><th id="187">187</th><td>  <em>void</em> (*<dfn class="decl field" id="XRayLogImpl::handle_arg0" title='XRayLogImpl::handle_arg0' data-ref="XRayLogImpl::handle_arg0" data-ref-filename="XRayLogImpl..handle_arg0">handle_arg0</dfn>)(<a class="typedef" href="../../../../include/bits/stdint-intn.h.html#int32_t" title='int32_t' data-type='__int32_t' data-ref="int32_t" data-ref-filename="int32_t">int32_t</a>, <a class="type" href="xray_interface.h.html#XRayEntryType" title='XRayEntryType' data-ref="XRayEntryType" data-ref-filename="XRayEntryType">XRayEntryType</a>);</td></tr>
+<tr><th id="188">188</th><td></td></tr>
+<tr><th id="189">189</th><td>  <i class="doc">/// The log implementation provided routine for when __xray_log_flushLog() is</i></td></tr>
+<tr><th id="190">190</th><td><i class="doc">  /// called.</i></td></tr>
+<tr><th id="191">191</th><td><i class="doc">  ///</i></td></tr>
+<tr><th id="192">192</th><td><i class="doc">  /// See XRayLogFlushStatus for details on what the implementation MUST return</i></td></tr>
+<tr><th id="193">193</th><td><i class="doc">  /// when called.</i></td></tr>
+<tr><th id="194">194</th><td>  <a class="type" href="#XRayLogFlushStatus" title='XRayLogFlushStatus' data-ref="XRayLogFlushStatus" data-ref-filename="XRayLogFlushStatus">XRayLogFlushStatus</a> (*<dfn class="decl field" id="XRayLogImpl::flush_log" title='XRayLogImpl::flush_log' data-ref="XRayLogImpl::flush_log" data-ref-filename="XRayLogImpl..flush_log">flush_log</dfn>)();</td></tr>
+<tr><th id="195">195</th><td>};</td></tr>
+<tr><th id="196">196</th><td></td></tr>
+<tr><th id="197">197</th><td><i class="doc">/// DEPRECATED: Use the mode registration workflow instead with</i></td></tr>
+<tr><th id="198">198</th><td><i class="doc">/// __xray_log_register_mode(...) and __xray_log_select_mode(...). See the</i></td></tr>
+<tr><th id="199">199</th><td><i class="doc">/// documentation for those function.</i></td></tr>
+<tr><th id="200">200</th><td><i class="doc">///</i></td></tr>
+<tr><th id="201">201</th><td><i class="doc">/// This function installs a new logging implementation that XRay will use. In</i></td></tr>
+<tr><th id="202">202</th><td><i class="doc">/// case there are any nullptr members in Impl, XRay will *uninstall any</i></td></tr>
+<tr><th id="203">203</th><td><i class="doc">/// existing implementations*. It does NOT patch the instrumentation points.</i></td></tr>
+<tr><th id="204">204</th><td><i class="doc">///</i></td></tr>
+<tr><th id="205">205</th><td><i class="doc">/// NOTE: This function does NOT attempt to finalize the currently installed</i></td></tr>
+<tr><th id="206">206</th><td><i class="doc">/// implementation. Use with caution.</i></td></tr>
+<tr><th id="207">207</th><td><i class="doc">///</i></td></tr>
+<tr><th id="208">208</th><td><i class="doc">/// It is guaranteed safe to call this function in the following states:</i></td></tr>
+<tr><th id="209">209</th><td><i class="doc">///</i></td></tr>
+<tr><th id="210">210</th><td><i class="doc">///   - When the implementation is UNINITIALIZED.</i></td></tr>
+<tr><th id="211">211</th><td><i class="doc">///   - When the implementation is FINALIZED.</i></td></tr>
+<tr><th id="212">212</th><td><i class="doc">///   - When there is no current implementation installed.</i></td></tr>
+<tr><th id="213">213</th><td><i class="doc">///</i></td></tr>
+<tr><th id="214">214</th><td><i class="doc">/// It is logging implementation defined what happens when this function is</i></td></tr>
+<tr><th id="215">215</th><td><i class="doc">/// called while in any other states.</i></td></tr>
+<tr><th id="216">216</th><td><em>void</em> <dfn class="decl fn" id="__xray_set_log_impl" title='__xray_set_log_impl' data-ref="__xray_set_log_impl" data-ref-filename="__xray_set_log_impl">__xray_set_log_impl</dfn>(<a class="type" href="#XRayLogImpl" title='XRayLogImpl' data-ref="XRayLogImpl" data-ref-filename="XRayLogImpl">XRayLogImpl</a> <dfn class="local col0 decl" id="10Impl" title='Impl' data-type='XRayLogImpl' data-ref="10Impl" data-ref-filename="10Impl">Impl</dfn>);</td></tr>
+<tr><th id="217">217</th><td></td></tr>
+<tr><th id="218">218</th><td><i class="doc">/// This function registers a logging implementation against a "mode"</i></td></tr>
+<tr><th id="219">219</th><td><i class="doc">/// identifier. This allows multiple modes to be registered, and chosen at</i></td></tr>
+<tr><th id="220">220</th><td><i class="doc">/// runtime using the same mode identifier through</i></td></tr>
+<tr><th id="221">221</th><td><i class="doc">/// `__xray_log_select_mode(...)`.</i></td></tr>
+<tr><th id="222">222</th><td><i class="doc">///</i></td></tr>
+<tr><th id="223">223</th><td><i class="doc">/// We treat the Mode identifier as a null-terminated byte string, as the</i></td></tr>
+<tr><th id="224">224</th><td><i class="doc">/// identifier used when retrieving the log impl.</i></td></tr>
+<tr><th id="225">225</th><td><i class="doc">///</i></td></tr>
+<tr><th id="226">226</th><td><i class="doc">/// Returns:</i></td></tr>
+<tr><th id="227">227</th><td><i class="doc">///   - XRAY_REGISTRATION_OK on success.</i></td></tr>
+<tr><th id="228">228</th><td><i class="doc">///   - XRAY_DUPLICATE_MODE when an implementation is already associated with</i></td></tr>
+<tr><th id="229">229</th><td><i class="doc">///     the provided Mode; does not update the already-registered</i></td></tr>
+<tr><th id="230">230</th><td><i class="doc">///     implementation.</i></td></tr>
+<tr><th id="231">231</th><td><a class="type" href="#XRayLogRegisterStatus" title='XRayLogRegisterStatus' data-ref="XRayLogRegisterStatus" data-ref-filename="XRayLogRegisterStatus">XRayLogRegisterStatus</a> <dfn class="decl fn" id="__xray_log_register_mode" title='__xray_log_register_mode' data-ref="__xray_log_register_mode" data-ref-filename="__xray_log_register_mode">__xray_log_register_mode</dfn>(<em>const</em> <em>char</em> *<dfn class="local col1 decl" id="11Mode" title='Mode' data-type='const char *' data-ref="11Mode" data-ref-filename="11Mode">Mode</dfn>,</td></tr>
+<tr><th id="232">232</th><td>                                               <a class="type" href="#XRayLogImpl" title='XRayLogImpl' data-ref="XRayLogImpl" data-ref-filename="XRayLogImpl">XRayLogImpl</a> <dfn class="local col2 decl" id="12Impl" title='Impl' data-type='XRayLogImpl' data-ref="12Impl" data-ref-filename="12Impl">Impl</dfn>);</td></tr>
+<tr><th id="233">233</th><td></td></tr>
+<tr><th id="234">234</th><td><i class="doc">/// This function selects the implementation associated with Mode that has been</i></td></tr>
+<tr><th id="235">235</th><td><i class="doc">/// registered through __xray_log_register_mode(...) and installs that</i></td></tr>
+<tr><th id="236">236</th><td><i class="doc">/// implementation (as if through calling __xray_set_log_impl(...)). The same</i></td></tr>
+<tr><th id="237">237</th><td><i class="doc">/// caveats apply to __xray_log_select_mode(...) as with</i></td></tr>
+<tr><th id="238">238</th><td><i class="doc">/// __xray_log_set_log_impl(...).</i></td></tr>
+<tr><th id="239">239</th><td><i class="doc">///</i></td></tr>
+<tr><th id="240">240</th><td><i class="doc">/// Returns:</i></td></tr>
+<tr><th id="241">241</th><td><i class="doc">///   - XRAY_REGISTRATION_OK on success.</i></td></tr>
+<tr><th id="242">242</th><td><i class="doc">///   - XRAY_MODE_NOT_FOUND if there is no implementation associated with Mode;</i></td></tr>
+<tr><th id="243">243</th><td><i class="doc">///     does not update the currently installed implementation.</i></td></tr>
+<tr><th id="244">244</th><td><a class="type" href="#XRayLogRegisterStatus" title='XRayLogRegisterStatus' data-ref="XRayLogRegisterStatus" data-ref-filename="XRayLogRegisterStatus">XRayLogRegisterStatus</a> <dfn class="decl fn" id="__xray_log_select_mode" title='__xray_log_select_mode' data-ref="__xray_log_select_mode" data-ref-filename="__xray_log_select_mode">__xray_log_select_mode</dfn>(<em>const</em> <em>char</em> *<dfn class="local col3 decl" id="13Mode" title='Mode' data-type='const char *' data-ref="13Mode" data-ref-filename="13Mode">Mode</dfn>);</td></tr>
+<tr><th id="245">245</th><td></td></tr>
+<tr><th id="246">246</th><td><i class="doc">/// Returns an identifier for the currently selected XRay mode chosen through</i></td></tr>
+<tr><th id="247">247</th><td><i class="doc">/// the __xray_log_select_mode(...) function call. Returns nullptr if there is</i></td></tr>
+<tr><th id="248">248</th><td><i class="doc">/// no currently installed mode.</i></td></tr>
+<tr><th id="249">249</th><td><em>const</em> <em>char</em> *<dfn class="decl fn" id="__xray_log_get_current_mode" title='__xray_log_get_current_mode' data-ref="__xray_log_get_current_mode" data-ref-filename="__xray_log_get_current_mode">__xray_log_get_current_mode</dfn>();</td></tr>
+<tr><th id="250">250</th><td></td></tr>
+<tr><th id="251">251</th><td><i class="doc">/// This function removes the currently installed implementation. It will also</i></td></tr>
+<tr><th id="252">252</th><td><i class="doc">/// uninstall any handlers that have been previously installed. It does NOT</i></td></tr>
+<tr><th id="253">253</th><td><i class="doc">/// unpatch the instrumentation points.</i></td></tr>
+<tr><th id="254">254</th><td><i class="doc">///</i></td></tr>
+<tr><th id="255">255</th><td><i class="doc">/// NOTE: This function does NOT attempt to finalize the currently installed</i></td></tr>
+<tr><th id="256">256</th><td><i class="doc">/// implementation. Use with caution.</i></td></tr>
+<tr><th id="257">257</th><td><i class="doc">///</i></td></tr>
+<tr><th id="258">258</th><td><i class="doc">/// It is guaranteed safe to call this function in the following states:</i></td></tr>
+<tr><th id="259">259</th><td><i class="doc">///</i></td></tr>
+<tr><th id="260">260</th><td><i class="doc">///   - When the implementation is UNINITIALIZED.</i></td></tr>
+<tr><th id="261">261</th><td><i class="doc">///   - When the implementation is FINALIZED.</i></td></tr>
+<tr><th id="262">262</th><td><i class="doc">///   - When there is no current implementation installed.</i></td></tr>
+<tr><th id="263">263</th><td><i class="doc">///</i></td></tr>
+<tr><th id="264">264</th><td><i class="doc">/// It is logging implementation defined what happens when this function is</i></td></tr>
+<tr><th id="265">265</th><td><i class="doc">/// called while in any other states.</i></td></tr>
+<tr><th id="266">266</th><td><em>void</em> <dfn class="decl fn" id="__xray_remove_log_impl" title='__xray_remove_log_impl' data-ref="__xray_remove_log_impl" data-ref-filename="__xray_remove_log_impl">__xray_remove_log_impl</dfn>();</td></tr>
+<tr><th id="267">267</th><td></td></tr>
+<tr><th id="268">268</th><td><i class="doc">/// DEPRECATED: Use __xray_log_init_mode() instead, and provide all the options</i></td></tr>
+<tr><th id="269">269</th><td><i class="doc">/// in string form.</i></td></tr>
+<tr><th id="270">270</th><td><i class="doc">/// Invokes the installed implementation initialization routine. See</i></td></tr>
+<tr><th id="271">271</th><td><i class="doc">/// XRayLogInitStatus for what the return values mean.</i></td></tr>
+<tr><th id="272">272</th><td><a class="type" href="#XRayLogInitStatus" title='XRayLogInitStatus' data-ref="XRayLogInitStatus" data-ref-filename="XRayLogInitStatus">XRayLogInitStatus</a> <dfn class="decl fn" id="__xray_log_init" title='__xray_log_init' data-ref="__xray_log_init" data-ref-filename="__xray_log_init">__xray_log_init</dfn>(<span class='typedef' title='size_t' data-type='unsigned long' data-ref="size_t" data-ref-filename="size_t">size_t</span> <dfn class="local col4 decl" id="14BufferSize" title='BufferSize' data-type='size_t' data-ref="14BufferSize" data-ref-filename="14BufferSize">BufferSize</dfn>, <span class='typedef' title='size_t' data-type='unsigned long' data-ref="size_t" data-ref-filename="size_t">size_t</span> <dfn class="local col5 decl" id="15MaxBuffers" title='MaxBuffers' data-type='size_t' data-ref="15MaxBuffers" data-ref-filename="15MaxBuffers">MaxBuffers</dfn>,</td></tr>
+<tr><th id="273">273</th><td>                                  <em>void</em> *<dfn class="local col6 decl" id="16Args" title='Args' data-type='void *' data-ref="16Args" data-ref-filename="16Args">Args</dfn>, <span class='typedef' title='size_t' data-type='unsigned long' data-ref="size_t" data-ref-filename="size_t">size_t</span> <dfn class="local col7 decl" id="17ArgsSize" title='ArgsSize' data-type='size_t' data-ref="17ArgsSize" data-ref-filename="17ArgsSize">ArgsSize</dfn>);</td></tr>
+<tr><th id="274">274</th><td></td></tr>
+<tr><th id="275">275</th><td><i class="doc">/// Invokes the installed initialization routine, which *must* support the</i></td></tr>
+<tr><th id="276">276</th><td><i class="doc">/// string based form.</i></td></tr>
+<tr><th id="277">277</th><td><i class="doc">///</i></td></tr>
+<tr><th id="278">278</th><td><i class="doc">/// NOTE: When this API is used, we still invoke the installed initialization</i></td></tr>
+<tr><th id="279">279</th><td><i class="doc">/// routine, but we will call it with the following convention to signal that we</i></td></tr>
+<tr><th id="280">280</th><td><i class="doc">/// are using the string form:</i></td></tr>
+<tr><th id="281">281</th><td><i class="doc">///</i></td></tr>
+<tr><th id="282">282</th><td><i class="doc">/// - BufferSize = 0</i></td></tr>
+<tr><th id="283">283</th><td><i class="doc">/// - MaxBuffers = 0</i></td></tr>
+<tr><th id="284">284</th><td><i class="doc">/// - ArgsSize = 0</i></td></tr>
+<tr><th id="285">285</th><td><i class="doc">/// - Args will be the pointer to the character buffer representing the</i></td></tr>
+<tr><th id="286">286</th><td><i class="doc">///   configuration.</i></td></tr>
+<tr><th id="287">287</th><td><i class="doc">///</i></td></tr>
+<tr><th id="288">288</th><td><i class="doc">/// FIXME: Updating the XRayLogImpl struct is an ABI breaking change. When we</i></td></tr>
+<tr><th id="289">289</th><td><i class="doc">/// are ready to make a breaking change, we should clean this up appropriately.</i></td></tr>
+<tr><th id="290">290</th><td><a class="type" href="#XRayLogInitStatus" title='XRayLogInitStatus' data-ref="XRayLogInitStatus" data-ref-filename="XRayLogInitStatus">XRayLogInitStatus</a> <dfn class="decl fn" id="__xray_log_init_mode" title='__xray_log_init_mode' data-ref="__xray_log_init_mode" data-ref-filename="__xray_log_init_mode">__xray_log_init_mode</dfn>(<em>const</em> <em>char</em> *<dfn class="local col8 decl" id="18Mode" title='Mode' data-type='const char *' data-ref="18Mode" data-ref-filename="18Mode">Mode</dfn>, <em>const</em> <em>char</em> *<dfn class="local col9 decl" id="19Config" title='Config' data-type='const char *' data-ref="19Config" data-ref-filename="19Config">Config</dfn>);</td></tr>
+<tr><th id="291">291</th><td></td></tr>
+<tr><th id="292">292</th><td><i class="doc">/// Like __xray_log_init_mode(...) this version allows for providing</i></td></tr>
+<tr><th id="293">293</th><td><i class="doc">/// configurations that might have non-null-terminated strings. This will</i></td></tr>
+<tr><th id="294">294</th><td><i class="doc">/// operate similarly to __xray_log_init_mode, with the exception that</i></td></tr>
+<tr><th id="295">295</th><td><i class="doc">/// |ArgsSize| will be what |ConfigSize| is.</i></td></tr>
+<tr><th id="296">296</th><td><a class="type" href="#XRayLogInitStatus" title='XRayLogInitStatus' data-ref="XRayLogInitStatus" data-ref-filename="XRayLogInitStatus">XRayLogInitStatus</a> <dfn class="decl fn" id="__xray_log_init_mode_bin" title='__xray_log_init_mode_bin' data-ref="__xray_log_init_mode_bin" data-ref-filename="__xray_log_init_mode_bin">__xray_log_init_mode_bin</dfn>(<em>const</em> <em>char</em> *<dfn class="local col0 decl" id="20Mode" title='Mode' data-type='const char *' data-ref="20Mode" data-ref-filename="20Mode">Mode</dfn>, <em>const</em> <em>char</em> *<dfn class="local col1 decl" id="21Config" title='Config' data-type='const char *' data-ref="21Config" data-ref-filename="21Config">Config</dfn>,</td></tr>
+<tr><th id="297">297</th><td>                                           <span class='typedef' title='size_t' data-type='unsigned long' data-ref="size_t" data-ref-filename="size_t">size_t</span> <dfn class="local col2 decl" id="22ConfigSize" title='ConfigSize' data-type='size_t' data-ref="22ConfigSize" data-ref-filename="22ConfigSize">ConfigSize</dfn>);</td></tr>
+<tr><th id="298">298</th><td></td></tr>
+<tr><th id="299">299</th><td><i class="doc">/// Invokes the installed implementation finalization routine. See</i></td></tr>
+<tr><th id="300">300</th><td><i class="doc">/// XRayLogInitStatus for what the return values mean.</i></td></tr>
+<tr><th id="301">301</th><td><a class="type" href="#XRayLogInitStatus" title='XRayLogInitStatus' data-ref="XRayLogInitStatus" data-ref-filename="XRayLogInitStatus">XRayLogInitStatus</a> <dfn class="decl fn" id="__xray_log_finalize" title='__xray_log_finalize' data-ref="__xray_log_finalize" data-ref-filename="__xray_log_finalize">__xray_log_finalize</dfn>();</td></tr>
+<tr><th id="302">302</th><td></td></tr>
+<tr><th id="303">303</th><td><i class="doc">/// Invokes the install implementation log flushing routine. See</i></td></tr>
+<tr><th id="304">304</th><td><i class="doc">/// XRayLogFlushStatus for what the return values mean.</i></td></tr>
+<tr><th id="305">305</th><td><a class="type" href="#XRayLogFlushStatus" title='XRayLogFlushStatus' data-ref="XRayLogFlushStatus" data-ref-filename="XRayLogFlushStatus">XRayLogFlushStatus</a> <dfn class="decl fn" id="__xray_log_flushLog" title='__xray_log_flushLog' data-ref="__xray_log_flushLog" data-ref-filename="__xray_log_flushLog">__xray_log_flushLog</dfn>();</td></tr>
+<tr><th id="306">306</th><td></td></tr>
+<tr><th id="307">307</th><td><i class="doc">/// An XRayBuffer represents a section of memory which can be treated by log</i></td></tr>
+<tr><th id="308">308</th><td><i class="doc">/// processing functions as bytes stored in the logging implementation's</i></td></tr>
+<tr><th id="309">309</th><td><i class="doc">/// buffers.</i></td></tr>
+<tr><th id="310">310</th><td><b>struct</b> <dfn class="type def" id="XRayBuffer" title='XRayBuffer' data-ref="XRayBuffer" data-ref-filename="XRayBuffer">XRayBuffer</dfn> {</td></tr>
+<tr><th id="311">311</th><td>  <em>const</em> <em>void</em> *<dfn class="decl field" id="XRayBuffer::Data" title='XRayBuffer::Data' data-ref="XRayBuffer::Data" data-ref-filename="XRayBuffer..Data">Data</dfn>;</td></tr>
+<tr><th id="312">312</th><td>  <span class='typedef' title='size_t' data-type='unsigned long' data-ref="size_t" data-ref-filename="size_t">size_t</span> <dfn class="decl field" id="XRayBuffer::Size" title='XRayBuffer::Size' data-ref="XRayBuffer::Size" data-ref-filename="XRayBuffer..Size">Size</dfn>;</td></tr>
+<tr><th id="313">313</th><td>};</td></tr>
+<tr><th id="314">314</th><td></td></tr>
+<tr><th id="315">315</th><td><i class="doc">/// Registers an iterator function which takes an XRayBuffer argument, then</i></td></tr>
+<tr><th id="316">316</th><td><i class="doc">/// returns another XRayBuffer function representing the next buffer. When the</i></td></tr>
+<tr><th id="317">317</th><td><i class="doc">/// Iterator function returns an empty XRayBuffer (Data = nullptr, Size = 0),</i></td></tr>
+<tr><th id="318">318</th><td><i class="doc">/// this signifies the end of the buffers.</i></td></tr>
+<tr><th id="319">319</th><td><i class="doc">///</i></td></tr>
+<tr><th id="320">320</th><td><i class="doc">/// The first invocation of this Iterator function will always take an empty</i></td></tr>
+<tr><th id="321">321</th><td><i class="doc">/// XRayBuffer (Data = nullptr, Size = 0).</i></td></tr>
+<tr><th id="322">322</th><td><em>void</em> <dfn class="decl fn" id="__xray_log_set_buffer_iterator" title='__xray_log_set_buffer_iterator' data-ref="__xray_log_set_buffer_iterator" data-ref-filename="__xray_log_set_buffer_iterator">__xray_log_set_buffer_iterator</dfn>(<a class="type" href="#XRayBuffer" title='XRayBuffer' data-ref="XRayBuffer" data-ref-filename="XRayBuffer">XRayBuffer</a> (*<dfn class="local col3 decl" id="23Iterator" title='Iterator' data-type='XRayBuffer (*)(XRayBuffer)' data-ref="23Iterator" data-ref-filename="23Iterator">Iterator</dfn>)(<a class="type" href="#XRayBuffer" title='XRayBuffer' data-ref="XRayBuffer" data-ref-filename="XRayBuffer">XRayBuffer</a>));</td></tr>
+<tr><th id="323">323</th><td></td></tr>
+<tr><th id="324">324</th><td><i class="doc">/// Removes the currently registered buffer iterator function.</i></td></tr>
+<tr><th id="325">325</th><td><em>void</em> <dfn class="decl fn" id="__xray_log_remove_buffer_iterator" title='__xray_log_remove_buffer_iterator' data-ref="__xray_log_remove_buffer_iterator" data-ref-filename="__xray_log_remove_buffer_iterator">__xray_log_remove_buffer_iterator</dfn>();</td></tr>
+<tr><th id="326">326</th><td></td></tr>
+<tr><th id="327">327</th><td><i class="doc">/// Invokes the provided handler to process data maintained by the logging</i></td></tr>
+<tr><th id="328">328</th><td><i class="doc">/// handler. This API will be provided raw access to the data available in</i></td></tr>
+<tr><th id="329">329</th><td><i class="doc">/// memory from the logging implementation. The callback function must:</i></td></tr>
+<tr><th id="330">330</th><td><i class="doc">///</i></td></tr>
+<tr><th id="331">331</th><td><i class="doc">/// 1) Not modify the data, to avoid running into undefined behaviour.</i></td></tr>
+<tr><th id="332">332</th><td><i class="doc">///</i></td></tr>
+<tr><th id="333">333</th><td><i class="doc">/// 2) Either know the data layout, or treat the data as raw bytes for later</i></td></tr>
+<tr><th id="334">334</th><td><i class="doc">///    interpretation.</i></td></tr>
+<tr><th id="335">335</th><td><i class="doc">///</i></td></tr>
+<tr><th id="336">336</th><td><i class="doc">/// This API is best used in place of the `__xray_log_flushLog()` implementation</i></td></tr>
+<tr><th id="337">337</th><td><i class="doc">/// above to enable the caller to provide an alternative means of extracting the</i></td></tr>
+<tr><th id="338">338</th><td><i class="doc">/// data from the XRay implementation.</i></td></tr>
+<tr><th id="339">339</th><td><i class="doc">///</i></td></tr>
+<tr><th id="340">340</th><td><i class="doc">/// Implementations MUST then provide:</i></td></tr>
+<tr><th id="341">341</th><td><i class="doc">///</i></td></tr>
+<tr><th id="342">342</th><td><i class="doc">/// 1) A function that will return an XRayBuffer. Functions that return an</i></td></tr>
+<tr><th id="343">343</th><td><i class="doc">///    "empty" XRayBuffer signifies that there are no more buffers to be</i></td></tr>
+<tr><th id="344">344</th><td><i class="doc">///    processed. This function should be registered through the</i></td></tr>
+<tr><th id="345">345</th><td><i class="doc">///    `__xray_log_set_buffer_iterator(...)` function.</i></td></tr>
+<tr><th id="346">346</th><td><i class="doc">///</i></td></tr>
+<tr><th id="347">347</th><td><i class="doc">/// 2) Its own means of converting data it holds in memory into an XRayBuffer</i></td></tr>
+<tr><th id="348">348</th><td><i class="doc">///    structure.</i></td></tr>
+<tr><th id="349">349</th><td><i class="doc">///</i></td></tr>
+<tr><th id="350">350</th><td><i class="doc">/// See XRayLogFlushStatus for what the return values mean.</i></td></tr>
+<tr><th id="351">351</th><td><i class="doc">///</i></td></tr>
+<tr><th id="352">352</th><td><a class="type" href="#XRayLogFlushStatus" title='XRayLogFlushStatus' data-ref="XRayLogFlushStatus" data-ref-filename="XRayLogFlushStatus">XRayLogFlushStatus</a> <dfn class="decl fn" id="__xray_log_process_buffers" title='__xray_log_process_buffers' data-ref="__xray_log_process_buffers" data-ref-filename="__xray_log_process_buffers">__xray_log_process_buffers</dfn>(<em>void</em> (*<dfn class="local col4 decl" id="24Processor" title='Processor' data-type='void (*)(const char *, XRayBuffer)' data-ref="24Processor" data-ref-filename="24Processor">Processor</dfn>)(<em>const</em> <em>char</em> *,</td></tr>
+<tr><th id="353">353</th><td>                                                                <a class="type" href="#XRayBuffer" title='XRayBuffer' data-ref="XRayBuffer" data-ref-filename="XRayBuffer">XRayBuffer</a>));</td></tr>
+<tr><th id="354">354</th><td></td></tr>
+<tr><th id="355">355</th><td>} <i>// extern "C"</i></td></tr>
+<tr><th id="356">356</th><td></td></tr>
+<tr><th id="357">357</th><td><u>#<span data-ppcond="92">endif</span> // XRAY_XRAY_LOG_INTERFACE_H</u></td></tr>
+<tr><th id="358">358</th><td></td></tr>
+</table><hr/><p id='footer'>
+Generated while processing <a href='../../lib/xray/xray_basic_logging.cpp.html'>llvm/compiler-rt/lib/xray/xray_basic_logging.cpp</a><br/>Generated on <em>2021-Jul-01</em> from project llvm revision <em>12</em>

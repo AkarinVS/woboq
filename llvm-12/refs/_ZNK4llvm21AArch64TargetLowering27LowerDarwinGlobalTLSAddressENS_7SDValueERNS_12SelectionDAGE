@@ -1,0 +1,31 @@
+<dec f='llvm/llvm/lib/Target/AArch64/AArch64ISelLowering.h' l='871' type='llvm::SDValue llvm::AArch64TargetLowering::LowerDarwinGlobalTLSAddress(llvm::SDValue Op, llvm::SelectionDAG &amp; DAG) const'/>
+<def f='llvm/llvm/lib/Target/AArch64/AArch64ISelLowering.cpp' l='5945' ll='5993' type='llvm::SDValue llvm::AArch64TargetLowering::LowerDarwinGlobalTLSAddress(llvm::SDValue Op, llvm::SelectionDAG &amp; DAG) const'/>
+<use f='llvm/llvm/lib/Target/AArch64/AArch64ISelLowering.cpp' l='6272' u='c' c='_ZNK4llvm21AArch64TargetLowering21LowerGlobalTLSAddressENS_7SDValueERNS_12SelectionDAGE'/>
+<doc f='llvm/llvm/lib/Target/AArch64/AArch64ISelLowering.cpp' l='5917'>/// Convert a TLS address reference into the correct sequence of loads
+/// and calls to compute the variable&apos;s address (for Darwin, currently) and
+/// return an SDValue containing the final node.
+
+/// Darwin only has one TLS scheme which must be capable of dealing with the
+/// fully general situation, in the worst case. This means:
+///     + &quot;extern __thread&quot; declaration.
+///     + Defined in a possibly unknown dynamic library.
+///
+/// The general system is that each __thread variable has a [3 x i64] descriptor
+/// which contains information used by the runtime to calculate the address. The
+/// only part of this the compiler needs to know about is the first xword, which
+/// contains a function pointer that must be called with the address of the
+/// entire descriptor in &quot;x0&quot;.
+///
+/// Since this descriptor may be in a different unit, in general even the
+/// descriptor must be accessed via an indirect load. The &quot;ideal&quot; code sequence
+/// is:
+///     adrp x0, _var@TLVPPAGE
+///     ldr x0, [x0, _var@TLVPPAGEOFF]   ; x0 now contains address of descriptor
+///     ldr x1, [x0]                     ; x1 contains 1st entry of descriptor,
+///                                      ; the function pointer
+///     blr x1                           ; Uses descriptor address in x0
+///     ; Address of _var is now in x0.
+///
+/// If the address of _var&apos;s descriptor *is* known to the linker, then it can
+/// change the first &quot;ldr&quot; instruction to an appropriate &quot;add x0, x0, #imm&quot; for
+/// a slight efficiency gain.</doc>

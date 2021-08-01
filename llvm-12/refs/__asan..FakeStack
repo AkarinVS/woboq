@@ -1,0 +1,96 @@
+<def f='llvm/compiler-rt/lib/asan/asan_fake_stack.h' l='56' ll='168'/>
+<use f='llvm/compiler-rt/lib/asan/asan_fake_stack.h' l='65' c='__asan::FakeStack::Create'/>
+<use f='llvm/compiler-rt/lib/asan/asan_fake_stack.h' l='170' c='__asan::GetTLSFakeStack'/>
+<use f='llvm/compiler-rt/lib/asan/asan_fake_stack.h' l='171' c='__asan::SetTLSFakeStack'/>
+<use f='llvm/compiler-rt/lib/asan/asan_thread.h' l='98' c='__asan::AsanThread::DeleteFakeStack'/>
+<use f='llvm/compiler-rt/lib/asan/asan_thread.h' l='104' c='__asan::AsanThread::StartSwitchFiber'/>
+<use f='llvm/compiler-rt/lib/asan/asan_thread.h' l='105' c='__asan::AsanThread::FinishSwitchFiber'/>
+<use f='llvm/compiler-rt/lib/asan/asan_thread.h' l='113' c='__asan::AsanThread::fake_stack'/>
+<use f='llvm/compiler-rt/lib/asan/asan_thread.h' l='143' c='__asan::AsanThread::AsyncSignalSafeLazyInitFakeStack'/>
+<use f='llvm/compiler-rt/lib/asan/asan_thread.h' l='167'/>
+<size>104</size>
+<doc f='llvm/compiler-rt/lib/asan/asan_fake_stack.h' l='29'>// For each thread we create a fake stack and place stack objects on this fake
+// stack instead of the real stack. The fake stack is not really a stack but
+// a fast malloc-like allocator so that when a function exits the fake stack
+// is not popped but remains there for quite some time until gets used again.
+// So, we poison the objects on the fake stack when function returns.
+// It helps us find use-after-return bugs.
+//
+// The FakeStack objects is allocated by a single mmap call and has no other
+// pointers. The size of the fake stack depends on the actual thread stack size
+// and thus can not be a constant.
+// stack_size is a power of two greater or equal to the thread&apos;s stack size;
+// we store it as its logarithm (stack_size_log).
+// FakeStack has kNumberOfSizeClasses (11) size classes, each size class
+// is a power of two, starting from 64 bytes. Each size class occupies
+// stack_size bytes and thus can allocate
+// NumberOfFrames=(stack_size/BytesInSizeClass) fake frames (also a power of 2).
+// For each size class we have NumberOfFrames allocation flags,
+// each flag indicates whether the given frame is currently allocated.
+// All flags for size classes 0 .. 10 are stored in a single contiguous region
+// followed by another contiguous region which contains the actual memory for
+// size classes. The addresses are computed by GetFlags and GetFrame without
+// any memory accesses solely based on &apos;this&apos; and stack_size_log.
+// Allocate() flips the appropriate allocation flag atomically, thus achieving
+// async-signal safety.
+// This allocator does not have quarantine per se, but it tries to allocate the
+// frames in round robin fashion to maximize the delay between a deallocation
+// and the next allocation.</doc>
+<smbr r='__asan::FakeStack::kMinStackFrameSizeLog' t='const __sanitizer::uptr'/>
+<smbr r='__asan::FakeStack::kMaxStackFrameSizeLog' t='const __sanitizer::uptr'/>
+<smbr r='__asan::FakeStack::kNumberOfSizeClasses' t='const __sanitizer::uptr'/>
+<fun r='__asan::FakeStack::Create'/>
+<fun r='__asan::FakeStack::Destroy'/>
+<fun r='__asan::FakeStack::SizeRequiredForFlags'/>
+<fun r='__asan::FakeStack::SizeRequiredForFrames'/>
+<fun r='__asan::FakeStack::RequiredSize'/>
+<fun r='__asan::FakeStack::FlagsOffset'/>
+<fun r='__asan::FakeStack::NumberOfFrames'/>
+<fun r='__asan::FakeStack::ModuloNumberOfFrames'/>
+<fun r='__asan::FakeStack::GetFlags'/>
+<fun r='__asan::FakeStack::GetFrame'/>
+<fun r='__asan::FakeStack::Allocate'/>
+<fun r='__asan::FakeStack::Deallocate'/>
+<fun r='__asan::FakeStack::PoisonAll'/>
+<fun r='__asan::FakeStack::AddrIsInFakeStack'/>
+<fun r='__asan::FakeStack::AddrIsInFakeStack'/>
+<fun r='__asan::FakeStack::BytesInSizeClass'/>
+<fun r='__asan::FakeStack::SavedFlagPtr'/>
+<fun r='__asan::FakeStack::stack_size_log'/>
+<fun r='__asan::FakeStack::HandleNoReturn'/>
+<fun r='__asan::FakeStack::GC'/>
+<fun r='__asan::FakeStack::ForEachFakeFrame'/>
+<fun r='__asan::FakeStack::FakeStack'/>
+<smbr r='__asan::FakeStack::kFlagsOffset' t='const __sanitizer::uptr'/>
+<smbr r='__asan::FakeStack::kMaxStackMallocSize' t='const __sanitizer::uptr'/>
+<mbr r='__asan::FakeStack::hint_position_' o='0' t='__sanitizer::uptr [11]'/>
+<mbr r='__asan::FakeStack::stack_size_log_' o='704' t='__sanitizer::uptr'/>
+<mbr r='__asan::FakeStack::needs_gc_' o='768' t='bool'/>
+<use f='llvm/compiler-rt/lib/asan/asan_fake_stack.cpp' l='44' c='__asan::FakeStack::Create'/>
+<use f='llvm/compiler-rt/lib/asan/asan_fake_stack.cpp' l='52' c='__asan::FakeStack::Create'/>
+<use f='llvm/compiler-rt/lib/asan/asan_fake_stack.cpp' l='52' c='__asan::FakeStack::Create'/>
+<use f='llvm/compiler-rt/lib/asan/asan_fake_stack.cpp' l='174'/>
+<use f='llvm/compiler-rt/lib/asan/asan_fake_stack.cpp' l='176' c='__asan::GetTLSFakeStack'/>
+<use f='llvm/compiler-rt/lib/asan/asan_fake_stack.cpp' l='179' c='__asan::SetTLSFakeStack'/>
+<use f='llvm/compiler-rt/lib/asan/asan_fake_stack.cpp' l='187' c='__asan::GetFakeStack'/>
+<use f='llvm/compiler-rt/lib/asan/asan_fake_stack.cpp' l='193' c='__asan::GetFakeStackFast'/>
+<use f='llvm/compiler-rt/lib/asan/asan_fake_stack.cpp' l='194' c='__asan::GetFakeStackFast'/>
+<use f='llvm/compiler-rt/lib/asan/asan_fake_stack.cpp' l='202' c='__asan::OnMalloc'/>
+<use f='llvm/compiler-rt/lib/asan/asan_fake_stack.cpp' l='250' c='__asan_addr_is_in_fake_stack'/>
+<use f='llvm/compiler-rt/lib/asan/asan_fake_stack.cpp' l='250' c='__asan_addr_is_in_fake_stack'/>
+<size>104</size>
+<fun r='__asan::FakeStack::Create'/>
+<fun r='__asan::FakeStack::Destroy'/>
+<fun r='__asan::FakeStack::PoisonAll'/>
+<fun r='__asan::FakeStack::Allocate'/>
+<fun r='__asan::FakeStack::AddrIsInFakeStack'/>
+<fun r='__asan::FakeStack::HandleNoReturn'/>
+<fun r='__asan::FakeStack::GC'/>
+<fun r='__asan::FakeStack::ForEachFakeFrame'/>
+<use f='llvm/compiler-rt/lib/asan/asan_thread.cpp' l='117' c='__asan::AsanThread::StartSwitchFiber'/>
+<use f='llvm/compiler-rt/lib/asan/asan_thread.cpp' l='128' c='__asan::AsanThread::StartSwitchFiber'/>
+<use f='llvm/compiler-rt/lib/asan/asan_thread.cpp' l='138' c='__asan::AsanThread::FinishSwitchFiber'/>
+<use f='llvm/compiler-rt/lib/asan/asan_thread.cpp' l='193' c='__asan::AsanThread::AsyncSignalSafeLazyInitFakeStack'/>
+<use f='llvm/compiler-rt/lib/asan/asan_thread.cpp' l='531' c='__sanitizer_start_switch_fiber'/>
+<use f='llvm/compiler-rt/lib/asan/asan_thread.cpp' l='543' c='__sanitizer_finish_switch_fiber'/>
+<size>104</size>

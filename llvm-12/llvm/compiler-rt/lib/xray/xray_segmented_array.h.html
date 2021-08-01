@@ -1,0 +1,667 @@
+<!doctype html>
+<html>
+<head>
+<meta name="viewport" content="width=device-width, initial-scale=1.0"><title>xray_segmented_array.h source code [llvm/compiler-rt/lib/xray/xray_segmented_array.h] - Woboq Code Browser</title>
+<meta name="woboq:interestingDefinitions" content="__xray::Array "/>
+<link rel="stylesheet" href="../../../.././data/qtcreator.css" title="QtCreator"/>
+<link rel="alternate stylesheet" href="../../../.././data/kdevelop.css" title="KDevelop"/>
+<script type="text/javascript" src="../../../.././data/jquery/jquery.min.js"></script>
+<script type="text/javascript" src="../../../.././data/jquery/jquery-ui.min.js"></script>
+<script>var file = 'llvm/compiler-rt/lib/xray/xray_segmented_array.h'; var root_path = '../../../..'; var data_path = '../../../.././data'; var ecma_script_api_version = 2;</script>
+<script src='../../../.././data/codebrowser.js'></script>
+</head>
+<body><div id='header'><h1 id='breadcrumb'><span>Browse the source code of </span><a href='../../..'>llvm</a>/<a href='../..'>compiler-rt</a>/<a href='..'>lib</a>/<a href='./'>xray</a>/<a href='xray_segmented_array.h.html'>xray_segmented_array.h</a></h1></div>
+<hr/><div id='content'><table class="code">
+<tr><th id="1">1</th><td><i>//===-- xray_segmented_array.h ---------------------------------*- C++ -*-===//</i></td></tr>
+<tr><th id="2">2</th><td><i>//</i></td></tr>
+<tr><th id="3">3</th><td><i>// Part of the LLVM Project, under the Apache License v2.0 with LLVM Exceptions.</i></td></tr>
+<tr><th id="4">4</th><td><i>// See <a href="https://llvm.org/LICENSE.txt">https://llvm.org/LICENSE.txt</a> for license information.</i></td></tr>
+<tr><th id="5">5</th><td><i>// SPDX-License-Identifier: Apache-2.0 WITH LLVM-exception</i></td></tr>
+<tr><th id="6">6</th><td><i>//</i></td></tr>
+<tr><th id="7">7</th><td><i>//===----------------------------------------------------------------------===//</i></td></tr>
+<tr><th id="8">8</th><td><i>//</i></td></tr>
+<tr><th id="9">9</th><td><i>// This file is a part of XRay, a dynamic runtime instrumentation system.</i></td></tr>
+<tr><th id="10">10</th><td><i>//</i></td></tr>
+<tr><th id="11">11</th><td><i>// Defines the implementation of a segmented array, with fixed-size segments</i></td></tr>
+<tr><th id="12">12</th><td><i>// backing the segments.</i></td></tr>
+<tr><th id="13">13</th><td><i>//</i></td></tr>
+<tr><th id="14">14</th><td><i>//===----------------------------------------------------------------------===//</i></td></tr>
+<tr><th id="15">15</th><td><u>#<span data-ppcond="15">ifndef</span> <span class="macro" data-ref="_M/XRAY_SEGMENTED_ARRAY_H">XRAY_SEGMENTED_ARRAY_H</span></u></td></tr>
+<tr><th id="16">16</th><td><u>#define <dfn class="macro" id="_M/XRAY_SEGMENTED_ARRAY_H" data-ref="_M/XRAY_SEGMENTED_ARRAY_H">XRAY_SEGMENTED_ARRAY_H</dfn></u></td></tr>
+<tr><th id="17">17</th><td></td></tr>
+<tr><th id="18">18</th><td><u>#include <a href="../sanitizer_common/sanitizer_allocator.h.html">"sanitizer_common/sanitizer_allocator.h"</a></u></td></tr>
+<tr><th id="19">19</th><td><u>#include <a href="xray_allocator.h.html">"xray_allocator.h"</a></u></td></tr>
+<tr><th id="20">20</th><td><u>#include <a href="xray_utils.h.html">"xray_utils.h"</a></u></td></tr>
+<tr><th id="21">21</th><td><u>#include &lt;cassert&gt;</u></td></tr>
+<tr><th id="22">22</th><td><u>#include &lt;type_traits&gt;</u></td></tr>
+<tr><th id="23">23</th><td><u>#include &lt;utility&gt;</u></td></tr>
+<tr><th id="24">24</th><td></td></tr>
+<tr><th id="25">25</th><td><b>namespace</b> <span class="namespace">__xray</span> {</td></tr>
+<tr><th id="26">26</th><td></td></tr>
+<tr><th id="27">27</th><td><i class="doc">/// The Array type provides an interface similar to std::vector&lt;...&gt; but does</i></td></tr>
+<tr><th id="28">28</th><td><i class="doc">/// not shrink in size. Once constructed, elements can be appended but cannot be</i></td></tr>
+<tr><th id="29">29</th><td><i class="doc">/// removed. The implementation is heavily dependent on the contract provided by</i></td></tr>
+<tr><th id="30">30</th><td><i class="doc">/// the Allocator type, in that all memory will be released when the Allocator</i></td></tr>
+<tr><th id="31">31</th><td><i class="doc">/// is destroyed. When an Array is destroyed, it will destroy elements in the</i></td></tr>
+<tr><th id="32">32</th><td><i class="doc">/// backing store but will not free the memory.</i></td></tr>
+<tr><th id="33">33</th><td><b>template</b> &lt;<b>class</b> T&gt; <b>class</b> <dfn class="type def" id="__xray::Array" title='__xray::Array' data-ref="__xray::Array" data-ref-filename="__xray..Array">Array</dfn> {</td></tr>
+<tr><th id="34">34</th><td>  <b>struct</b> <dfn class="type def" id="__xray::Array::Segment" title='__xray::Array::Segment' data-ref="__xray::Array::Segment" data-ref-filename="__xray..Array..Segment">Segment</dfn> {</td></tr>
+<tr><th id="35">35</th><td>    <a class="type" href="#__xray::Array::Segment" title='__xray::Array::Segment' data-ref="__xray::Array::Segment" data-ref-filename="__xray..Array..Segment">Segment</a> *<dfn class="decl field" id="__xray::Array::Segment::Prev" title='__xray::Array::Segment::Prev' data-ref="__xray::Array::Segment::Prev" data-ref-filename="__xray..Array..Segment..Prev">Prev</dfn>;</td></tr>
+<tr><th id="36">36</th><td>    <a class="type" href="#__xray::Array::Segment" title='__xray::Array::Segment' data-ref="__xray::Array::Segment" data-ref-filename="__xray..Array..Segment">Segment</a> *<dfn class="decl field" id="__xray::Array::Segment::Next" title='__xray::Array::Segment::Next' data-ref="__xray::Array::Segment::Next" data-ref-filename="__xray..Array..Segment..Next">Next</dfn>;</td></tr>
+<tr><th id="37">37</th><td>    <em>char</em> <dfn class="decl field" id="__xray::Array::Segment::Data" title='__xray::Array::Segment::Data' data-ref="__xray::Array::Segment::Data" data-ref-filename="__xray..Array..Segment..Data">Data</dfn>[<var>1</var>];</td></tr>
+<tr><th id="38">38</th><td>  };</td></tr>
+<tr><th id="39">39</th><td></td></tr>
+<tr><th id="40">40</th><td><b>public</b>:</td></tr>
+<tr><th id="41">41</th><td>  <i>// Each segment of the array will be laid out with the following assumptions:</i></td></tr>
+<tr><th id="42">42</th><td><i>  //</i></td></tr>
+<tr><th id="43">43</th><td><i>  //   - Each segment will be on a cache-line address boundary (kCacheLineSize</i></td></tr>
+<tr><th id="44">44</th><td><i>  //     aligned).</i></td></tr>
+<tr><th id="45">45</th><td><i>  //</i></td></tr>
+<tr><th id="46">46</th><td><i>  //   - The elements will be accessed through an aligned pointer, dependent on</i></td></tr>
+<tr><th id="47">47</th><td><i>  //     the alignment of T.</i></td></tr>
+<tr><th id="48">48</th><td><i>  //</i></td></tr>
+<tr><th id="49">49</th><td><i>  //   - Each element is at least two-pointers worth from the beginning of the</i></td></tr>
+<tr><th id="50">50</th><td><i>  //     Segment, aligned properly, and the rest of the elements are accessed</i></td></tr>
+<tr><th id="51">51</th><td><i>  //     through appropriate alignment.</i></td></tr>
+<tr><th id="52">52</th><td><i>  //</i></td></tr>
+<tr><th id="53">53</th><td><i>  // We then compute the size of the segment to follow this logic:</i></td></tr>
+<tr><th id="54">54</th><td><i>  //</i></td></tr>
+<tr><th id="55">55</th><td><i>  //   - Compute the number of elements that can fit within</i></td></tr>
+<tr><th id="56">56</th><td><i>  //     kCacheLineSize-multiple segments, minus the size of two pointers.</i></td></tr>
+<tr><th id="57">57</th><td><i>  //</i></td></tr>
+<tr><th id="58">58</th><td><i>  //   - Request cacheline-multiple sized elements from the allocator.</i></td></tr>
+<tr><th id="59">59</th><td>  <em>static</em> <b>constexpr</b> <a class="typedef" href="../../../../include/bits/stdint-uintn.h.html#uint64_t" title='uint64_t' data-type='__uint64_t' data-ref="uint64_t" data-ref-filename="uint64_t">uint64_t</a> <dfn class="decl" id="__xray::Array::AlignedElementStorageSize" title='__xray::Array::AlignedElementStorageSize' data-ref="__xray::Array::AlignedElementStorageSize" data-ref-filename="__xray..Array..AlignedElementStorageSize">AlignedElementStorageSize</dfn> =</td></tr>
+<tr><th id="60">60</th><td>      <b>sizeof</b>(<b>typename</b> <span class="namespace">std::</span><span class='type' title='std::aligned_storage' data-ref="std::aligned_storage" data-ref-filename="std..aligned_storage">aligned_storage</span>&lt;<b>sizeof</b>(T), <b>alignof</b>(T)&gt;::type);</td></tr>
+<tr><th id="61">61</th><td></td></tr>
+<tr><th id="62">62</th><td>  <em>static</em> <b>constexpr</b> <a class="typedef" href="../../../../include/bits/stdint-uintn.h.html#uint64_t" title='uint64_t' data-type='__uint64_t' data-ref="uint64_t" data-ref-filename="uint64_t">uint64_t</a> <dfn class="decl" id="__xray::Array::SegmentControlBlockSize" title='__xray::Array::SegmentControlBlockSize' data-ref="__xray::Array::SegmentControlBlockSize" data-ref-filename="__xray..Array..SegmentControlBlockSize">SegmentControlBlockSize</dfn> = <b>sizeof</b>(<a class="type" href="#__xray::Array::Segment" title='__xray::Array::Segment' data-ref="__xray::Array::Segment" data-ref-filename="__xray..Array..Segment">Segment</a> *) * <var>2</var>;</td></tr>
+<tr><th id="63">63</th><td></td></tr>
+<tr><th id="64">64</th><td>  <em>static</em> <b>constexpr</b> <a class="typedef" href="../../../../include/bits/stdint-uintn.h.html#uint64_t" title='uint64_t' data-type='__uint64_t' data-ref="uint64_t" data-ref-filename="uint64_t">uint64_t</a> <dfn class="decl" id="__xray::Array::SegmentSize" title='__xray::Array::SegmentSize' data-ref="__xray::Array::SegmentSize" data-ref-filename="__xray..Array..SegmentSize">SegmentSize</dfn> = <a class="ref fn" href="xray_utils.h.html#__xray::nearest_boundary" title='__xray::nearest_boundary' data-ref="__xray::nearest_boundary" data-ref-filename="__xray..nearest_boundary">nearest_boundary</a>(</td></tr>
+<tr><th id="65">65</th><td>      <a class="ref" href="#__xray::Array::SegmentControlBlockSize" title='__xray::Array::SegmentControlBlockSize' data-ref="__xray::Array::SegmentControlBlockSize" data-ref-filename="__xray..Array..SegmentControlBlockSize">SegmentControlBlockSize</a> + <a class="ref fn" href="xray_utils.h.html#__xray::next_pow2" title='__xray::next_pow2' data-ref="__xray::next_pow2" data-ref-filename="__xray..next_pow2">next_pow2</a>(<b>sizeof</b>(T)), <a class="ref" href="../sanitizer_common/sanitizer_common.h.html#__sanitizer::kCacheLineSize" title='__sanitizer::kCacheLineSize' data-ref="__sanitizer::kCacheLineSize" data-ref-filename="__sanitizer..kCacheLineSize">kCacheLineSize</a>);</td></tr>
+<tr><th id="66">66</th><td></td></tr>
+<tr><th id="67">67</th><td>  <b>using</b> <dfn class="typedef" id="__xray::Array::AllocatorType" title='__xray::Array::AllocatorType' data-type='Allocator&lt;SegmentSize&gt;' data-ref="__xray::Array::AllocatorType" data-ref-filename="__xray..Array..AllocatorType">AllocatorType</dfn> = <a class="type" href="xray_allocator.h.html#__xray::Allocator" title='__xray::Allocator' data-ref="__xray::Allocator" data-ref-filename="__xray..Allocator">Allocator</a>&lt;<a class="ref" href="#__xray::Array::SegmentSize" title='__xray::Array::SegmentSize' data-ref="__xray::Array::SegmentSize" data-ref-filename="__xray..Array..SegmentSize">SegmentSize</a>&gt;;</td></tr>
+<tr><th id="68">68</th><td></td></tr>
+<tr><th id="69">69</th><td>  <em>static</em> <b>constexpr</b> <a class="typedef" href="../../../../include/bits/stdint-uintn.h.html#uint64_t" title='uint64_t' data-type='__uint64_t' data-ref="uint64_t" data-ref-filename="uint64_t">uint64_t</a> <dfn class="decl" id="__xray::Array::ElementsPerSegment" title='__xray::Array::ElementsPerSegment' data-ref="__xray::Array::ElementsPerSegment" data-ref-filename="__xray..Array..ElementsPerSegment">ElementsPerSegment</dfn> =</td></tr>
+<tr><th id="70">70</th><td>      (<a class="ref" href="#__xray::Array::SegmentSize" title='__xray::Array::SegmentSize' data-ref="__xray::Array::SegmentSize" data-ref-filename="__xray..Array..SegmentSize">SegmentSize</a> - <a class="ref" href="#__xray::Array::SegmentControlBlockSize" title='__xray::Array::SegmentControlBlockSize' data-ref="__xray::Array::SegmentControlBlockSize" data-ref-filename="__xray..Array..SegmentControlBlockSize">SegmentControlBlockSize</a>) / <a class="ref fn" href="xray_utils.h.html#__xray::next_pow2" title='__xray::next_pow2' data-ref="__xray::next_pow2" data-ref-filename="__xray..next_pow2">next_pow2</a>(<b>sizeof</b>(T));</td></tr>
+<tr><th id="71">71</th><td></td></tr>
+<tr><th id="72">72</th><td>  <b>static_assert</b>(<a class="ref" href="#__xray::Array::ElementsPerSegment" title='__xray::Array::ElementsPerSegment' data-ref="__xray::Array::ElementsPerSegment" data-ref-filename="__xray..Array..ElementsPerSegment">ElementsPerSegment</a> &gt; <var>0</var>,</td></tr>
+<tr><th id="73">73</th><td>                <q>"Must have at least 1 element per segment."</q>);</td></tr>
+<tr><th id="74">74</th><td></td></tr>
+<tr><th id="75">75</th><td>  <em>static</em> <a class="type" href="#__xray::Array::Segment" title='__xray::Array::Segment' data-ref="__xray::Array::Segment" data-ref-filename="__xray..Array..Segment">Segment</a> <dfn class="decl" id="__xray::Array::SentinelSegment" title='__xray::Array::SentinelSegment' data-ref="__xray::Array::SentinelSegment" data-ref-filename="__xray..Array..SentinelSegment">SentinelSegment</dfn>;</td></tr>
+<tr><th id="76">76</th><td></td></tr>
+<tr><th id="77">77</th><td>  <b>using</b> <dfn class="typedef" id="__xray::Array::size_type" title='__xray::Array::size_type' data-type='uint64_t' data-ref="__xray::Array::size_type" data-ref-filename="__xray..Array..size_type">size_type</dfn> = <a class="typedef" href="../../../../include/bits/stdint-uintn.h.html#uint64_t" title='uint64_t' data-type='__uint64_t' data-ref="uint64_t" data-ref-filename="uint64_t">uint64_t</a>;</td></tr>
+<tr><th id="78">78</th><td></td></tr>
+<tr><th id="79">79</th><td><b>private</b>:</td></tr>
+<tr><th id="80">80</th><td>  <i>// This Iterator models a BidirectionalIterator.</i></td></tr>
+<tr><th id="81">81</th><td>  <b>template</b> &lt;<b>class</b> U&gt; <b>class</b> <dfn class="type def" id="__xray::Array::Iterator" title='__xray::Array::Iterator' data-ref="__xray::Array::Iterator" data-ref-filename="__xray..Array..Iterator">Iterator</dfn> {</td></tr>
+<tr><th id="82">82</th><td>    <a class="type" href="#__xray::Array::Segment" title='__xray::Array::Segment' data-ref="__xray::Array::Segment" data-ref-filename="__xray..Array..Segment">Segment</a> *<dfn class="decl field" id="__xray::Array::Iterator::S" title='__xray::Array::Iterator::S' data-ref="__xray::Array::Iterator::S" data-ref-filename="__xray..Array..Iterator..S">S</dfn> = &amp;<a class="member" href="#__xray::Array::SentinelSegment" title='__xray::Array::SentinelSegment' data-ref="__xray::Array::SentinelSegment" data-ref-filename="__xray..Array..SentinelSegment">SentinelSegment</a>;</td></tr>
+<tr><th id="83">83</th><td>    <a class="typedef" href="../../../../include/bits/stdint-uintn.h.html#uint64_t" title='uint64_t' data-type='__uint64_t' data-ref="uint64_t" data-ref-filename="uint64_t">uint64_t</a> <dfn class="decl field" id="__xray::Array::Iterator::Offset" title='__xray::Array::Iterator::Offset' data-ref="__xray::Array::Iterator::Offset" data-ref-filename="__xray..Array..Iterator..Offset">Offset</dfn> = <var>0</var>;</td></tr>
+<tr><th id="84">84</th><td>    <a class="typedef" href="../../../../include/bits/stdint-uintn.h.html#uint64_t" title='uint64_t' data-type='__uint64_t' data-ref="uint64_t" data-ref-filename="uint64_t">uint64_t</a> <dfn class="decl field" id="__xray::Array::Iterator::Size" title='__xray::Array::Iterator::Size' data-ref="__xray::Array::Iterator::Size" data-ref-filename="__xray..Array..Iterator..Size">Size</dfn> = <var>0</var>;</td></tr>
+<tr><th id="85">85</th><td></td></tr>
+<tr><th id="86">86</th><td>  <b>public</b>:</td></tr>
+<tr><th id="87">87</th><td>    <dfn class="decl def fn" id="__xray::Array::Iterator::Iterator{U}" title='__xray::Array::Iterator::Iterator&lt;U&gt;' data-ref="__xray::Array::Iterator::Iterator{U}" data-ref-filename="__xray..Array..Iterator..Iterator{U}">Iterator</dfn>(<a class="type" href="#__xray::Array::Segment" title='__xray::Array::Segment' data-ref="__xray::Array::Segment" data-ref-filename="__xray..Array..Segment">Segment</a> *<dfn class="local col3 decl" id="3IS" title='IS' data-type='__xray::Array::Segment *' data-ref="3IS" data-ref-filename="3IS">IS</dfn>, <a class="typedef" href="../../../../include/bits/stdint-uintn.h.html#uint64_t" title='uint64_t' data-type='__uint64_t' data-ref="uint64_t" data-ref-filename="uint64_t">uint64_t</a> <dfn class="local col4 decl" id="4Off" title='Off' data-type='uint64_t' data-ref="4Off" data-ref-filename="4Off">Off</dfn>, <a class="typedef" href="../../../../include/bits/stdint-uintn.h.html#uint64_t" title='uint64_t' data-type='__uint64_t' data-ref="uint64_t" data-ref-filename="uint64_t">uint64_t</a> <dfn class="local col5 decl" id="5S" title='S' data-type='uint64_t' data-ref="5S" data-ref-filename="5S">S</dfn>) <a class="macro" href="xray_defs.h.html#18" title="" data-ref="_M/XRAY_NEVER_INSTRUMENT">XRAY_NEVER_INSTRUMENT</a></td></tr>
+<tr><th id="88">88</th><td>        : <a class="member field" href="#__xray::Array::Iterator::S" title='__xray::Array::Iterator::S' data-ref="__xray::Array::Iterator::S" data-ref-filename="__xray..Array..Iterator..S">S</a>(<a class="local col3 ref" href="#3IS" title='IS' data-ref="3IS" data-ref-filename="3IS">IS</a>),</td></tr>
+<tr><th id="89">89</th><td>          <a class="member field" href="#__xray::Array::Iterator::Offset" title='__xray::Array::Iterator::Offset' data-ref="__xray::Array::Iterator::Offset" data-ref-filename="__xray..Array..Iterator..Offset">Offset</a>(<a class="local col4 ref" href="#4Off" title='Off' data-ref="4Off" data-ref-filename="4Off">Off</a>),</td></tr>
+<tr><th id="90">90</th><td>          <a class="member field" href="#__xray::Array::Iterator::Size" title='__xray::Array::Iterator::Size' data-ref="__xray::Array::Iterator::Size" data-ref-filename="__xray..Array..Iterator..Size">Size</a>(<a class="local col5 ref" href="#5S" title='S' data-ref="5S" data-ref-filename="5S">S</a>) {}</td></tr>
+<tr><th id="91">91</th><td>    <dfn class="decl def fn" id="__xray::Array::Iterator::Iterator{U}" title='__xray::Array::Iterator::Iterator&lt;U&gt;' data-ref="__xray::Array::Iterator::Iterator{U}" data-ref-filename="__xray..Array..Iterator..Iterator{U}">Iterator</dfn>(<em>const</em> Iterator &amp;) <a class="macro" href="../sanitizer_common/sanitizer_internal_defs.h.html#248" title="noexcept" data-ref="_M/NOEXCEPT">NOEXCEPT</a> <a class="macro" href="xray_defs.h.html#18" title="" data-ref="_M/XRAY_NEVER_INSTRUMENT">XRAY_NEVER_INSTRUMENT</a> = <b>default</b>;</td></tr>
+<tr><th id="92">92</th><td>    <dfn class="decl def fn" id="__xray::Array::Iterator::Iterator{U}" title='__xray::Array::Iterator::Iterator&lt;U&gt;' data-ref="__xray::Array::Iterator::Iterator{U}" data-ref-filename="__xray..Array..Iterator..Iterator{U}">Iterator</dfn>() <a class="macro" href="../sanitizer_common/sanitizer_internal_defs.h.html#248" title="noexcept" data-ref="_M/NOEXCEPT">NOEXCEPT</a> <a class="macro" href="xray_defs.h.html#18" title="" data-ref="_M/XRAY_NEVER_INSTRUMENT">XRAY_NEVER_INSTRUMENT</a> = <b>default</b>;</td></tr>
+<tr><th id="93">93</th><td>    <dfn class="decl def fn" id="__xray::Array::Iterator::Iterator{U}" title='__xray::Array::Iterator::Iterator&lt;U&gt;' data-ref="__xray::Array::Iterator::Iterator{U}" data-ref-filename="__xray..Array..Iterator..Iterator{U}">Iterator</dfn>(Iterator &amp;&amp;) <a class="macro" href="../sanitizer_common/sanitizer_internal_defs.h.html#248" title="noexcept" data-ref="_M/NOEXCEPT">NOEXCEPT</a> <a class="macro" href="xray_defs.h.html#18" title="" data-ref="_M/XRAY_NEVER_INSTRUMENT">XRAY_NEVER_INSTRUMENT</a> = <b>default</b>;</td></tr>
+<tr><th id="94">94</th><td>    Iterator &amp;<dfn class="decl def fn" id="__xray::Array::Iterator::operator=" title='__xray::Array::Iterator::operator=' data-ref="__xray::Array::Iterator::operator=" data-ref-filename="__xray..Array..Iterator..operator="><b>operator</b>=</dfn>(<em>const</em> Iterator &amp;) <a class="macro" href="xray_defs.h.html#18" title="" data-ref="_M/XRAY_NEVER_INSTRUMENT">XRAY_NEVER_INSTRUMENT</a> = <b>default</b>;</td></tr>
+<tr><th id="95">95</th><td>    Iterator &amp;<dfn class="decl def fn" id="__xray::Array::Iterator::operator=" title='__xray::Array::Iterator::operator=' data-ref="__xray::Array::Iterator::operator=" data-ref-filename="__xray..Array..Iterator..operator="><b>operator</b>=</dfn>(Iterator &amp;&amp;) <a class="macro" href="xray_defs.h.html#18" title="" data-ref="_M/XRAY_NEVER_INSTRUMENT">XRAY_NEVER_INSTRUMENT</a> = <b>default</b>;</td></tr>
+<tr><th id="96">96</th><td>    <dfn class="decl def fn" id="__xray::Array::Iterator::~Iterator{U}" title='__xray::Array::Iterator::~Iterator&lt;U&gt;' data-ref="__xray::Array::Iterator::~Iterator{U}" data-ref-filename="__xray..Array..Iterator..~Iterator{U}">~Iterator</dfn>() <a class="macro" href="xray_defs.h.html#18" title="" data-ref="_M/XRAY_NEVER_INSTRUMENT">XRAY_NEVER_INSTRUMENT</a> = <b>default</b>;</td></tr>
+<tr><th id="97">97</th><td></td></tr>
+<tr><th id="98">98</th><td>    Iterator &amp;<dfn class="decl def fn" id="__xray::Array::Iterator::operator++" title='__xray::Array::Iterator::operator++' data-ref="__xray::Array::Iterator::operator++" data-ref-filename="__xray..Array..Iterator..operator++"><b>operator</b>++</dfn>() <a class="macro" href="xray_defs.h.html#18" title="" data-ref="_M/XRAY_NEVER_INSTRUMENT">XRAY_NEVER_INSTRUMENT</a> {</td></tr>
+<tr><th id="99">99</th><td>      <b>if</b> (++<a class="member field" href="#__xray::Array::Iterator::Offset" title='__xray::Array::Iterator::Offset' data-ref="__xray::Array::Iterator::Offset" data-ref-filename="__xray..Array..Iterator..Offset">Offset</a> % <a class="ref" href="#__xray::Array::ElementsPerSegment" title='__xray::Array::ElementsPerSegment' data-ref="__xray::Array::ElementsPerSegment" data-ref-filename="__xray..Array..ElementsPerSegment">ElementsPerSegment</a> || <a class="member field" href="#__xray::Array::Iterator::Offset" title='__xray::Array::Iterator::Offset' data-ref="__xray::Array::Iterator::Offset" data-ref-filename="__xray..Array..Iterator..Offset">Offset</a> == <a class="member field" href="#__xray::Array::Iterator::Size" title='__xray::Array::Iterator::Size' data-ref="__xray::Array::Iterator::Size" data-ref-filename="__xray..Array..Iterator..Size">Size</a>)</td></tr>
+<tr><th id="100">100</th><td>        <b>return</b> *<b>this</b>;</td></tr>
+<tr><th id="101">101</th><td></td></tr>
+<tr><th id="102">102</th><td>      <i>// At this point, we know that Offset % N == 0, so we must advance the</i></td></tr>
+<tr><th id="103">103</th><td><i>      // segment pointer.</i></td></tr>
+<tr><th id="104">104</th><td>      <a class="macro" href="../sanitizer_common/sanitizer_internal_defs.h.html#317" title="" data-ref="_M/DCHECK_EQ">DCHECK_EQ</a>(Offset % ElementsPerSegment, <var>0</var>);</td></tr>
+<tr><th id="105">105</th><td>      <a class="macro" href="../sanitizer_common/sanitizer_internal_defs.h.html#318" title="" data-ref="_M/DCHECK_NE">DCHECK_NE</a>(Offset, Size);</td></tr>
+<tr><th id="106">106</th><td>      <a class="macro" href="../sanitizer_common/sanitizer_internal_defs.h.html#318" title="" data-ref="_M/DCHECK_NE">DCHECK_NE</a>(S, &amp;SentinelSegment);</td></tr>
+<tr><th id="107">107</th><td>      <a class="macro" href="../sanitizer_common/sanitizer_internal_defs.h.html#318" title="" data-ref="_M/DCHECK_NE">DCHECK_NE</a>(S-&gt;Next, &amp;SentinelSegment);</td></tr>
+<tr><th id="108">108</th><td>      <a class="member field" href="#__xray::Array::Iterator::S" title='__xray::Array::Iterator::S' data-ref="__xray::Array::Iterator::S" data-ref-filename="__xray..Array..Iterator..S">S</a> = <a class="member field" href="#__xray::Array::Iterator::S" title='__xray::Array::Iterator::S' data-ref="__xray::Array::Iterator::S" data-ref-filename="__xray..Array..Iterator..S">S</a>-&gt;Next;</td></tr>
+<tr><th id="109">109</th><td>      <a class="macro" href="../sanitizer_common/sanitizer_internal_defs.h.html#318" title="" data-ref="_M/DCHECK_NE">DCHECK_NE</a>(S, &amp;SentinelSegment);</td></tr>
+<tr><th id="110">110</th><td>      <b>return</b> *<b>this</b>;</td></tr>
+<tr><th id="111">111</th><td>    }</td></tr>
+<tr><th id="112">112</th><td></td></tr>
+<tr><th id="113">113</th><td>    Iterator &amp;<dfn class="decl def fn" id="__xray::Array::Iterator::operator--" title='__xray::Array::Iterator::operator--' data-ref="__xray::Array::Iterator::operator--" data-ref-filename="__xray..Array..Iterator..operator--"><b>operator</b>--</dfn>() <a class="macro" href="xray_defs.h.html#18" title="" data-ref="_M/XRAY_NEVER_INSTRUMENT">XRAY_NEVER_INSTRUMENT</a> {</td></tr>
+<tr><th id="114">114</th><td>      <a class="macro" href="../sanitizer_common/sanitizer_internal_defs.h.html#318" title="" data-ref="_M/DCHECK_NE">DCHECK_NE</a>(S, &amp;SentinelSegment);</td></tr>
+<tr><th id="115">115</th><td>      <a class="macro" href="../sanitizer_common/sanitizer_internal_defs.h.html#321" title="" data-ref="_M/DCHECK_GT">DCHECK_GT</a>(Offset, <var>0</var>);</td></tr>
+<tr><th id="116">116</th><td></td></tr>
+<tr><th id="117">117</th><td>      <em>auto</em> <dfn class="local col6 decl" id="6PreviousOffset" title='PreviousOffset' data-type='unsigned long' data-ref="6PreviousOffset" data-ref-filename="6PreviousOffset">PreviousOffset</dfn> = <a class="member field" href="#__xray::Array::Iterator::Offset" title='__xray::Array::Iterator::Offset' data-ref="__xray::Array::Iterator::Offset" data-ref-filename="__xray..Array..Iterator..Offset">Offset</a>--;</td></tr>
+<tr><th id="118">118</th><td>      <b>if</b> (<a class="local col6 ref" href="#6PreviousOffset" title='PreviousOffset' data-ref="6PreviousOffset" data-ref-filename="6PreviousOffset">PreviousOffset</a> != <a class="member field" href="#__xray::Array::Iterator::Size" title='__xray::Array::Iterator::Size' data-ref="__xray::Array::Iterator::Size" data-ref-filename="__xray..Array..Iterator..Size">Size</a> &amp;&amp; <a class="local col6 ref" href="#6PreviousOffset" title='PreviousOffset' data-ref="6PreviousOffset" data-ref-filename="6PreviousOffset">PreviousOffset</a> % <a class="ref" href="#__xray::Array::ElementsPerSegment" title='__xray::Array::ElementsPerSegment' data-ref="__xray::Array::ElementsPerSegment" data-ref-filename="__xray..Array..ElementsPerSegment">ElementsPerSegment</a> == <var>0</var>) {</td></tr>
+<tr><th id="119">119</th><td>        <a class="macro" href="../sanitizer_common/sanitizer_internal_defs.h.html#318" title="" data-ref="_M/DCHECK_NE">DCHECK_NE</a>(S-&gt;Prev, &amp;SentinelSegment);</td></tr>
+<tr><th id="120">120</th><td>        <a class="member field" href="#__xray::Array::Iterator::S" title='__xray::Array::Iterator::S' data-ref="__xray::Array::Iterator::S" data-ref-filename="__xray..Array..Iterator..S">S</a> = <a class="member field" href="#__xray::Array::Iterator::S" title='__xray::Array::Iterator::S' data-ref="__xray::Array::Iterator::S" data-ref-filename="__xray..Array..Iterator..S">S</a>-&gt;Prev;</td></tr>
+<tr><th id="121">121</th><td>      }</td></tr>
+<tr><th id="122">122</th><td></td></tr>
+<tr><th id="123">123</th><td>      <b>return</b> *<b>this</b>;</td></tr>
+<tr><th id="124">124</th><td>    }</td></tr>
+<tr><th id="125">125</th><td></td></tr>
+<tr><th id="126">126</th><td>    Iterator <dfn class="decl def fn" id="__xray::Array::Iterator::operator++" title='__xray::Array::Iterator::operator++' data-ref="__xray::Array::Iterator::operator++" data-ref-filename="__xray..Array..Iterator..operator++"><b>operator</b>++</dfn>(<em>int</em>) <a class="macro" href="xray_defs.h.html#18" title="" data-ref="_M/XRAY_NEVER_INSTRUMENT">XRAY_NEVER_INSTRUMENT</a> {</td></tr>
+<tr><th id="127">127</th><td>      Iterator <dfn class="local col7 decl" id="7Copy" title='Copy' data-type='Iterator&lt;U&gt;' data-ref="7Copy" data-ref-filename="7Copy">Copy</dfn>(*<b>this</b>);</td></tr>
+<tr><th id="128">128</th><td>      ++(*<b>this</b>);</td></tr>
+<tr><th id="129">129</th><td>      <b>return</b> <a class="local col7 ref" href="#7Copy" title='Copy' data-ref="7Copy" data-ref-filename="7Copy">Copy</a>;</td></tr>
+<tr><th id="130">130</th><td>    }</td></tr>
+<tr><th id="131">131</th><td></td></tr>
+<tr><th id="132">132</th><td>    Iterator <dfn class="decl def fn" id="__xray::Array::Iterator::operator--" title='__xray::Array::Iterator::operator--' data-ref="__xray::Array::Iterator::operator--" data-ref-filename="__xray..Array..Iterator..operator--"><b>operator</b>--</dfn>(<em>int</em>) <a class="macro" href="xray_defs.h.html#18" title="" data-ref="_M/XRAY_NEVER_INSTRUMENT">XRAY_NEVER_INSTRUMENT</a> {</td></tr>
+<tr><th id="133">133</th><td>      Iterator <dfn class="local col8 decl" id="8Copy" title='Copy' data-type='Iterator&lt;U&gt;' data-ref="8Copy" data-ref-filename="8Copy">Copy</dfn>(*<b>this</b>);</td></tr>
+<tr><th id="134">134</th><td>      --(*<b>this</b>);</td></tr>
+<tr><th id="135">135</th><td>      <b>return</b> <a class="local col8 ref" href="#8Copy" title='Copy' data-ref="8Copy" data-ref-filename="8Copy">Copy</a>;</td></tr>
+<tr><th id="136">136</th><td>    }</td></tr>
+<tr><th id="137">137</th><td></td></tr>
+<tr><th id="138">138</th><td>    <b>template</b> &lt;<b>class</b> V, <b>class</b> W&gt;</td></tr>
+<tr><th id="139">139</th><td>    <b>friend</b> <em>bool</em> <dfn class="decl def fn" id="__xray::operator==" title='__xray::operator==' data-ref="__xray::operator==" data-ref-filename="__xray..operator=="><b>operator</b>==</dfn>(<em>const</em> <a class="type" href="#__xray::Array::Iterator" title='__xray::Array::Iterator' data-ref="__xray::Array::Iterator" data-ref-filename="__xray..Array..Iterator">Iterator</a>&lt;V&gt; &amp;<dfn class="local col9 decl" id="9L" title='L' data-type='const Iterator&lt;V&gt; &amp;' data-ref="9L" data-ref-filename="9L">L</dfn>,</td></tr>
+<tr><th id="140">140</th><td>                           <em>const</em> <a class="type" href="#__xray::Array::Iterator" title='__xray::Array::Iterator' data-ref="__xray::Array::Iterator" data-ref-filename="__xray..Array..Iterator">Iterator</a>&lt;W&gt; &amp;<dfn class="local col0 decl" id="10R" title='R' data-type='const Iterator&lt;W&gt; &amp;' data-ref="10R" data-ref-filename="10R">R</dfn>) <a class="macro" href="xray_defs.h.html#18" title="" data-ref="_M/XRAY_NEVER_INSTRUMENT">XRAY_NEVER_INSTRUMENT</a> {</td></tr>
+<tr><th id="141">141</th><td>      <b>return</b> <a class="local col9 ref" href="#9L" title='L' data-ref="9L" data-ref-filename="9L">L</a>.S == <a class="local col0 ref" href="#10R" title='R' data-ref="10R" data-ref-filename="10R">R</a>.S &amp;&amp; <a class="local col9 ref" href="#9L" title='L' data-ref="9L" data-ref-filename="9L">L</a>.Offset == <a class="local col0 ref" href="#10R" title='R' data-ref="10R" data-ref-filename="10R">R</a>.Offset;</td></tr>
+<tr><th id="142">142</th><td>    }</td></tr>
+<tr><th id="143">143</th><td></td></tr>
+<tr><th id="144">144</th><td>    <b>template</b> &lt;<b>class</b> V, <b>class</b> W&gt;</td></tr>
+<tr><th id="145">145</th><td>    <b>friend</b> <em>bool</em> <dfn class="decl def fn" id="__xray::operator!=" title='__xray::operator!=' data-ref="__xray::operator!=" data-ref-filename="__xray..operator!="><b>operator</b>!=</dfn>(<em>const</em> <a class="type" href="#__xray::Array::Iterator" title='__xray::Array::Iterator' data-ref="__xray::Array::Iterator" data-ref-filename="__xray..Array..Iterator">Iterator</a>&lt;V&gt; &amp;<dfn class="local col1 decl" id="11L" title='L' data-type='const Iterator&lt;V&gt; &amp;' data-ref="11L" data-ref-filename="11L">L</dfn>,</td></tr>
+<tr><th id="146">146</th><td>                           <em>const</em> <a class="type" href="#__xray::Array::Iterator" title='__xray::Array::Iterator' data-ref="__xray::Array::Iterator" data-ref-filename="__xray..Array..Iterator">Iterator</a>&lt;W&gt; &amp;<dfn class="local col2 decl" id="12R" title='R' data-type='const Iterator&lt;W&gt; &amp;' data-ref="12R" data-ref-filename="12R">R</dfn>) <a class="macro" href="xray_defs.h.html#18" title="" data-ref="_M/XRAY_NEVER_INSTRUMENT">XRAY_NEVER_INSTRUMENT</a> {</td></tr>
+<tr><th id="147">147</th><td>      <b>return</b> !(<a class="local col1 ref" href="#11L" title='L' data-ref="11L" data-ref-filename="11L">L</a> == <a class="local col2 ref" href="#12R" title='R' data-ref="12R" data-ref-filename="12R">R</a>);</td></tr>
+<tr><th id="148">148</th><td>    }</td></tr>
+<tr><th id="149">149</th><td></td></tr>
+<tr><th id="150">150</th><td>    U &amp;<dfn class="decl def fn" id="__xray::Array::Iterator::operator*" title='__xray::Array::Iterator::operator*' data-ref="__xray::Array::Iterator::operator*" data-ref-filename="__xray..Array..Iterator..operator*"><b>operator</b>*</dfn>() <em>const</em> <a class="macro" href="xray_defs.h.html#18" title="" data-ref="_M/XRAY_NEVER_INSTRUMENT">XRAY_NEVER_INSTRUMENT</a> {</td></tr>
+<tr><th id="151">151</th><td>      <a class="macro" href="../sanitizer_common/sanitizer_internal_defs.h.html#318" title="" data-ref="_M/DCHECK_NE">DCHECK_NE</a>(S, &amp;SentinelSegment);</td></tr>
+<tr><th id="152">152</th><td>      <em>auto</em> <dfn class="local col3 decl" id="13RelOff" title='RelOff' data-type='unsigned long' data-ref="13RelOff" data-ref-filename="13RelOff">RelOff</dfn> = <a class="member field" href="#__xray::Array::Iterator::Offset" title='__xray::Array::Iterator::Offset' data-ref="__xray::Array::Iterator::Offset" data-ref-filename="__xray..Array..Iterator..Offset">Offset</a> % <a class="ref" href="#__xray::Array::ElementsPerSegment" title='__xray::Array::ElementsPerSegment' data-ref="__xray::Array::ElementsPerSegment" data-ref-filename="__xray..Array..ElementsPerSegment">ElementsPerSegment</a>;</td></tr>
+<tr><th id="153">153</th><td></td></tr>
+<tr><th id="154">154</th><td>      <i>// We need to compute the character-aligned pointer, offset from the</i></td></tr>
+<tr><th id="155">155</th><td><i>      // segment's Data location to get the element in the position of Offset.</i></td></tr>
+<tr><th id="156">156</th><td>      <em>auto</em> <dfn class="local col4 decl" id="14Base" title='Base' data-type='auto' data-ref="14Base" data-ref-filename="14Base">Base</dfn> = &amp;<a class="member field" href="#__xray::Array::Iterator::S" title='__xray::Array::Iterator::S' data-ref="__xray::Array::Iterator::S" data-ref-filename="__xray..Array..Iterator..S">S</a>-&gt;Data;</td></tr>
+<tr><th id="157">157</th><td>      <em>auto</em> <dfn class="local col5 decl" id="15AlignedOffset" title='AlignedOffset' data-type='auto' data-ref="15AlignedOffset" data-ref-filename="15AlignedOffset">AlignedOffset</dfn> = <a class="local col4 ref" href="#14Base" title='Base' data-ref="14Base" data-ref-filename="14Base">Base</a> + (<a class="local col3 ref" href="#13RelOff" title='RelOff' data-ref="13RelOff" data-ref-filename="13RelOff">RelOff</a> * <a class="ref" href="#__xray::Array::AlignedElementStorageSize" title='__xray::Array::AlignedElementStorageSize' data-ref="__xray::Array::AlignedElementStorageSize" data-ref-filename="__xray..Array..AlignedElementStorageSize">AlignedElementStorageSize</a>);</td></tr>
+<tr><th id="158">158</th><td>      <b>return</b> *<b>reinterpret_cast</b>&lt;U *&gt;(<a class="local col5 ref" href="#15AlignedOffset" title='AlignedOffset' data-ref="15AlignedOffset" data-ref-filename="15AlignedOffset">AlignedOffset</a>);</td></tr>
+<tr><th id="159">159</th><td>    }</td></tr>
+<tr><th id="160">160</th><td></td></tr>
+<tr><th id="161">161</th><td>    U *<dfn class="decl def fn" id="__xray::Array::Iterator::operator-}" title='__xray::Array::Iterator::operator-&gt;' data-ref="__xray::Array::Iterator::operator-}" data-ref-filename="__xray..Array..Iterator..operator-}"><b>operator</b>-&gt;</dfn>() <em>const</em> <a class="macro" href="xray_defs.h.html#18" title="" data-ref="_M/XRAY_NEVER_INSTRUMENT">XRAY_NEVER_INSTRUMENT</a> { <b>return</b> &amp;(**<b>this</b>); }</td></tr>
+<tr><th id="162">162</th><td>  };</td></tr>
+<tr><th id="163">163</th><td></td></tr>
+<tr><th id="164">164</th><td>  <a class="typedef" href="#__xray::Array::AllocatorType" title='__xray::Array::AllocatorType' data-type='Allocator&lt;SegmentSize&gt;' data-ref="__xray::Array::AllocatorType" data-ref-filename="__xray..Array..AllocatorType">AllocatorType</a> *<dfn class="decl field" id="__xray::Array::Alloc" title='__xray::Array::Alloc' data-ref="__xray::Array::Alloc" data-ref-filename="__xray..Array..Alloc">Alloc</dfn>;</td></tr>
+<tr><th id="165">165</th><td>  <a class="type" href="#__xray::Array::Segment" title='__xray::Array::Segment' data-ref="__xray::Array::Segment" data-ref-filename="__xray..Array..Segment">Segment</a> *<dfn class="decl field" id="__xray::Array::Head" title='__xray::Array::Head' data-ref="__xray::Array::Head" data-ref-filename="__xray..Array..Head">Head</dfn>;</td></tr>
+<tr><th id="166">166</th><td>  <a class="type" href="#__xray::Array::Segment" title='__xray::Array::Segment' data-ref="__xray::Array::Segment" data-ref-filename="__xray..Array..Segment">Segment</a> *<dfn class="decl field" id="__xray::Array::Tail" title='__xray::Array::Tail' data-ref="__xray::Array::Tail" data-ref-filename="__xray..Array..Tail">Tail</dfn>;</td></tr>
+<tr><th id="167">167</th><td></td></tr>
+<tr><th id="168">168</th><td>  <i>// Here we keep track of segments in the freelist, to allow us to re-use</i></td></tr>
+<tr><th id="169">169</th><td><i>  // segments when elements are trimmed off the end.</i></td></tr>
+<tr><th id="170">170</th><td>  <a class="type" href="#__xray::Array::Segment" title='__xray::Array::Segment' data-ref="__xray::Array::Segment" data-ref-filename="__xray..Array..Segment">Segment</a> *<dfn class="decl field" id="__xray::Array::Freelist" title='__xray::Array::Freelist' data-ref="__xray::Array::Freelist" data-ref-filename="__xray..Array..Freelist">Freelist</dfn>;</td></tr>
+<tr><th id="171">171</th><td>  <a class="typedef" href="../../../../include/bits/stdint-uintn.h.html#uint64_t" title='uint64_t' data-type='__uint64_t' data-ref="uint64_t" data-ref-filename="uint64_t">uint64_t</a> <dfn class="decl field" id="__xray::Array::Size" title='__xray::Array::Size' data-ref="__xray::Array::Size" data-ref-filename="__xray..Array..Size">Size</dfn>;</td></tr>
+<tr><th id="172">172</th><td></td></tr>
+<tr><th id="173">173</th><td>  <i>// ===============================</i></td></tr>
+<tr><th id="174">174</th><td><i>  // In the following implementation, we work through the algorithms and the</i></td></tr>
+<tr><th id="175">175</th><td><i>  // list operations using the following notation:</i></td></tr>
+<tr><th id="176">176</th><td><i>  //</i></td></tr>
+<tr><th id="177">177</th><td><i>  //   - pred(s) is the predecessor (previous node accessor) and succ(s) is</i></td></tr>
+<tr><th id="178">178</th><td><i>  //     the successor (next node accessor).</i></td></tr>
+<tr><th id="179">179</th><td><i>  //</i></td></tr>
+<tr><th id="180">180</th><td><i>  //   - S is a sentinel segment, which has the following property:</i></td></tr>
+<tr><th id="181">181</th><td><i>  //</i></td></tr>
+<tr><th id="182">182</th><td><i>  //         pred(S) == succ(S) == S</i></td></tr>
+<tr><th id="183">183</th><td><i>  //</i></td></tr>
+<tr><th id="184">184</th><td><i>  //   - @ is a loop operator, which can imply pred(s) == s if it appears on</i></td></tr>
+<tr><th id="185">185</th><td><i>  //     the left of s, or succ(s) == S if it appears on the right of s.</i></td></tr>
+<tr><th id="186">186</th><td><i>  //</i></td></tr>
+<tr><th id="187">187</th><td><i>  //   - sL &lt;-&gt; sR : means a bidirectional relation between sL and sR, which</i></td></tr>
+<tr><th id="188">188</th><td><i>  //     means:</i></td></tr>
+<tr><th id="189">189</th><td><i>  //</i></td></tr>
+<tr><th id="190">190</th><td><i>  //         succ(sL) == sR &amp;&amp; pred(SR) == sL</i></td></tr>
+<tr><th id="191">191</th><td><i>  //</i></td></tr>
+<tr><th id="192">192</th><td><i>  //   - sL -&gt; sR : implies a unidirectional relation between sL and SR,</i></td></tr>
+<tr><th id="193">193</th><td><i>  //     with the following properties:</i></td></tr>
+<tr><th id="194">194</th><td><i>  //</i></td></tr>
+<tr><th id="195">195</th><td><i>  //         succ(sL) == sR</i></td></tr>
+<tr><th id="196">196</th><td><i>  //</i></td></tr>
+<tr><th id="197">197</th><td><i>  //     sL &lt;- sR : implies a unidirectional relation between sR and sL,</i></td></tr>
+<tr><th id="198">198</th><td><i>  //     with the following properties:</i></td></tr>
+<tr><th id="199">199</th><td><i>  //</i></td></tr>
+<tr><th id="200">200</th><td><i>  //         pred(sR) == sL</i></td></tr>
+<tr><th id="201">201</th><td><i>  //</i></td></tr>
+<tr><th id="202">202</th><td><i>  // ===============================</i></td></tr>
+<tr><th id="203">203</th><td></td></tr>
+<tr><th id="204">204</th><td>  <a class="type" href="#__xray::Array::Segment" title='__xray::Array::Segment' data-ref="__xray::Array::Segment" data-ref-filename="__xray..Array..Segment">Segment</a> *<dfn class="decl def fn" id="__xray::Array::NewSegment" title='__xray::Array::NewSegment' data-ref="__xray::Array::NewSegment" data-ref-filename="__xray..Array..NewSegment">NewSegment</dfn>() <a class="macro" href="xray_defs.h.html#18" title="" data-ref="_M/XRAY_NEVER_INSTRUMENT">XRAY_NEVER_INSTRUMENT</a> {</td></tr>
+<tr><th id="205">205</th><td>    <i>// We need to handle the case in which enough elements have been trimmed to</i></td></tr>
+<tr><th id="206">206</th><td><i>    // allow us to re-use segments we've allocated before. For this we look into</i></td></tr>
+<tr><th id="207">207</th><td><i>    // the Freelist, to see whether we need to actually allocate new blocks or</i></td></tr>
+<tr><th id="208">208</th><td><i>    // just re-use blocks we've already seen before.</i></td></tr>
+<tr><th id="209">209</th><td>    <b>if</b> (<a class="member field" href="#__xray::Array::Freelist" title='__xray::Array::Freelist' data-ref="__xray::Array::Freelist" data-ref-filename="__xray..Array..Freelist">Freelist</a> != &amp;<a class="member" href="#__xray::Array::SentinelSegment" title='__xray::Array::SentinelSegment' data-ref="__xray::Array::SentinelSegment" data-ref-filename="__xray..Array..SentinelSegment">SentinelSegment</a>) {</td></tr>
+<tr><th id="210">210</th><td>      <i>// The current state of lists resemble something like this at this point:</i></td></tr>
+<tr><th id="211">211</th><td><i>      //</i></td></tr>
+<tr><th id="212">212</th><td><i>      //   Freelist: @S@&lt;-f0-&gt;...&lt;-&gt;fN-&gt;@S@</i></td></tr>
+<tr><th id="213">213</th><td><i>      //                  ^ Freelist</i></td></tr>
+<tr><th id="214">214</th><td><i>      //</i></td></tr>
+<tr><th id="215">215</th><td><i>      // We want to perform a splice of `f0` from Freelist to a temporary list,</i></td></tr>
+<tr><th id="216">216</th><td><i>      // which looks like:</i></td></tr>
+<tr><th id="217">217</th><td><i>      //</i></td></tr>
+<tr><th id="218">218</th><td><i>      //   Templist: @S@&lt;-f0-&gt;@S@</i></td></tr>
+<tr><th id="219">219</th><td><i>      //                  ^ FreeSegment</i></td></tr>
+<tr><th id="220">220</th><td><i>      //</i></td></tr>
+<tr><th id="221">221</th><td><i>      // Our algorithm preconditions are:</i></td></tr>
+<tr><th id="222">222</th><td>      <a class="macro" href="../sanitizer_common/sanitizer_internal_defs.h.html#317" title="" data-ref="_M/DCHECK_EQ">DCHECK_EQ</a>(Freelist-&gt;Prev, &amp;SentinelSegment);</td></tr>
+<tr><th id="223">223</th><td></td></tr>
+<tr><th id="224">224</th><td>      <i>// Then the algorithm we implement is:</i></td></tr>
+<tr><th id="225">225</th><td><i>      //</i></td></tr>
+<tr><th id="226">226</th><td><i>      //   SFS = Freelist</i></td></tr>
+<tr><th id="227">227</th><td><i>      //   Freelist = succ(Freelist)</i></td></tr>
+<tr><th id="228">228</th><td><i>      //   if (Freelist != S)</i></td></tr>
+<tr><th id="229">229</th><td><i>      //     pred(Freelist) = S</i></td></tr>
+<tr><th id="230">230</th><td><i>      //   succ(SFS) = S</i></td></tr>
+<tr><th id="231">231</th><td><i>      //   pred(SFS) = S</i></td></tr>
+<tr><th id="232">232</th><td><i>      //</i></td></tr>
+<tr><th id="233">233</th><td>      <em>auto</em> *<dfn class="local col6 decl" id="16FreeSegment" title='FreeSegment' data-type='auto *' data-ref="16FreeSegment" data-ref-filename="16FreeSegment">FreeSegment</dfn> = <a class="member field" href="#__xray::Array::Freelist" title='__xray::Array::Freelist' data-ref="__xray::Array::Freelist" data-ref-filename="__xray..Array..Freelist">Freelist</a>;</td></tr>
+<tr><th id="234">234</th><td>      <a class="member field" href="#__xray::Array::Freelist" title='__xray::Array::Freelist' data-ref="__xray::Array::Freelist" data-ref-filename="__xray..Array..Freelist">Freelist</a> = <a class="member field" href="#__xray::Array::Freelist" title='__xray::Array::Freelist' data-ref="__xray::Array::Freelist" data-ref-filename="__xray..Array..Freelist">Freelist</a>-&gt;Next;</td></tr>
+<tr><th id="235">235</th><td></td></tr>
+<tr><th id="236">236</th><td>      <i>// Note that we need to handle the case where Freelist is now pointing to</i></td></tr>
+<tr><th id="237">237</th><td><i>      // S, which we don't want to be overwriting.</i></td></tr>
+<tr><th id="238">238</th><td><i>      // TODO: Determine whether the cost of the branch is higher than the cost</i></td></tr>
+<tr><th id="239">239</th><td><i>      // of the blind assignment.</i></td></tr>
+<tr><th id="240">240</th><td>      <b>if</b> (<a class="member field" href="#__xray::Array::Freelist" title='__xray::Array::Freelist' data-ref="__xray::Array::Freelist" data-ref-filename="__xray..Array..Freelist">Freelist</a> != &amp;<a class="member" href="#__xray::Array::SentinelSegment" title='__xray::Array::SentinelSegment' data-ref="__xray::Array::SentinelSegment" data-ref-filename="__xray..Array..SentinelSegment">SentinelSegment</a>)</td></tr>
+<tr><th id="241">241</th><td>        <a class="member field" href="#__xray::Array::Freelist" title='__xray::Array::Freelist' data-ref="__xray::Array::Freelist" data-ref-filename="__xray..Array..Freelist">Freelist</a>-&gt;Prev = &amp;<a class="member" href="#__xray::Array::SentinelSegment" title='__xray::Array::SentinelSegment' data-ref="__xray::Array::SentinelSegment" data-ref-filename="__xray..Array..SentinelSegment">SentinelSegment</a>;</td></tr>
+<tr><th id="242">242</th><td></td></tr>
+<tr><th id="243">243</th><td>      <a class="local col6 ref" href="#16FreeSegment" title='FreeSegment' data-ref="16FreeSegment" data-ref-filename="16FreeSegment">FreeSegment</a>-&gt;Next = &amp;<a class="member" href="#__xray::Array::SentinelSegment" title='__xray::Array::SentinelSegment' data-ref="__xray::Array::SentinelSegment" data-ref-filename="__xray..Array..SentinelSegment">SentinelSegment</a>;</td></tr>
+<tr><th id="244">244</th><td>      <a class="local col6 ref" href="#16FreeSegment" title='FreeSegment' data-ref="16FreeSegment" data-ref-filename="16FreeSegment">FreeSegment</a>-&gt;Prev = &amp;<a class="member" href="#__xray::Array::SentinelSegment" title='__xray::Array::SentinelSegment' data-ref="__xray::Array::SentinelSegment" data-ref-filename="__xray..Array..SentinelSegment">SentinelSegment</a>;</td></tr>
+<tr><th id="245">245</th><td></td></tr>
+<tr><th id="246">246</th><td>      <i>// Our postconditions are:</i></td></tr>
+<tr><th id="247">247</th><td>      <a class="macro" href="../sanitizer_common/sanitizer_internal_defs.h.html#317" title="" data-ref="_M/DCHECK_EQ">DCHECK_EQ</a>(Freelist-&gt;Prev, &amp;SentinelSegment);</td></tr>
+<tr><th id="248">248</th><td>      <a class="macro" href="../sanitizer_common/sanitizer_internal_defs.h.html#318" title="" data-ref="_M/DCHECK_NE">DCHECK_NE</a>(FreeSegment, &amp;SentinelSegment);</td></tr>
+<tr><th id="249">249</th><td>      <b>return</b> <a class="local col6 ref" href="#16FreeSegment" title='FreeSegment' data-ref="16FreeSegment" data-ref-filename="16FreeSegment">FreeSegment</a>;</td></tr>
+<tr><th id="250">250</th><td>    }</td></tr>
+<tr><th id="251">251</th><td></td></tr>
+<tr><th id="252">252</th><td>    <em>auto</em> <dfn class="local col7 decl" id="17SegmentBlock" title='SegmentBlock' data-type='auto' data-ref="17SegmentBlock" data-ref-filename="17SegmentBlock">SegmentBlock</dfn> = <a class="member field" href="#__xray::Array::Alloc" title='__xray::Array::Alloc' data-ref="__xray::Array::Alloc" data-ref-filename="__xray..Array..Alloc">Alloc</a>-&gt;Allocate();</td></tr>
+<tr><th id="253">253</th><td>    <b>if</b> (<a class="local col7 ref" href="#17SegmentBlock" title='SegmentBlock' data-ref="17SegmentBlock" data-ref-filename="17SegmentBlock">SegmentBlock</a>.Data == <b>nullptr</b>)</td></tr>
+<tr><th id="254">254</th><td>      <b>return</b> <b>nullptr</b>;</td></tr>
+<tr><th id="255">255</th><td></td></tr>
+<tr><th id="256">256</th><td>    <i>// Placement-new the Segment element at the beginning of the SegmentBlock.</i></td></tr>
+<tr><th id="257">257</th><td>    <b>new</b> (<a class="local col7 ref" href="#17SegmentBlock" title='SegmentBlock' data-ref="17SegmentBlock" data-ref-filename="17SegmentBlock">SegmentBlock</a>.Data) <a class="type" href="#__xray::Array::Segment" title='__xray::Array::Segment' data-ref="__xray::Array::Segment" data-ref-filename="__xray..Array..Segment">Segment</a>{&amp;<a class="member" href="#__xray::Array::SentinelSegment" title='__xray::Array::SentinelSegment' data-ref="__xray::Array::SentinelSegment" data-ref-filename="__xray..Array..SentinelSegment">SentinelSegment</a>, &amp;<a class="member" href="#__xray::Array::SentinelSegment" title='__xray::Array::SentinelSegment' data-ref="__xray::Array::SentinelSegment" data-ref-filename="__xray..Array..SentinelSegment">SentinelSegment</a>, {<var>0</var>}};</td></tr>
+<tr><th id="258">258</th><td>    <em>auto</em> <dfn class="local col8 decl" id="18SB" title='SB' data-type='auto' data-ref="18SB" data-ref-filename="18SB">SB</dfn> = <b>reinterpret_cast</b>&lt;<a class="type" href="#__xray::Array::Segment" title='__xray::Array::Segment' data-ref="__xray::Array::Segment" data-ref-filename="__xray..Array..Segment">Segment</a> *&gt;(<a class="local col7 ref" href="#17SegmentBlock" title='SegmentBlock' data-ref="17SegmentBlock" data-ref-filename="17SegmentBlock">SegmentBlock</a>.Data);</td></tr>
+<tr><th id="259">259</th><td>    <b>return</b> <a class="local col8 ref" href="#18SB" title='SB' data-ref="18SB" data-ref-filename="18SB">SB</a>;</td></tr>
+<tr><th id="260">260</th><td>  }</td></tr>
+<tr><th id="261">261</th><td></td></tr>
+<tr><th id="262">262</th><td>  <a class="type" href="#__xray::Array::Segment" title='__xray::Array::Segment' data-ref="__xray::Array::Segment" data-ref-filename="__xray..Array..Segment">Segment</a> *<dfn class="decl def fn" id="__xray::Array::InitHeadAndTail" title='__xray::Array::InitHeadAndTail' data-ref="__xray::Array::InitHeadAndTail" data-ref-filename="__xray..Array..InitHeadAndTail">InitHeadAndTail</dfn>() <a class="macro" href="xray_defs.h.html#18" title="" data-ref="_M/XRAY_NEVER_INSTRUMENT">XRAY_NEVER_INSTRUMENT</a> {</td></tr>
+<tr><th id="263">263</th><td>    <a class="macro" href="../sanitizer_common/sanitizer_internal_defs.h.html#317" title="" data-ref="_M/DCHECK_EQ">DCHECK_EQ</a>(Head, &amp;SentinelSegment);</td></tr>
+<tr><th id="264">264</th><td>    <a class="macro" href="../sanitizer_common/sanitizer_internal_defs.h.html#317" title="" data-ref="_M/DCHECK_EQ">DCHECK_EQ</a>(Tail, &amp;SentinelSegment);</td></tr>
+<tr><th id="265">265</th><td>    <em>auto</em> <dfn class="local col9 decl" id="19S" title='S' data-type='auto' data-ref="19S" data-ref-filename="19S">S</dfn> = <a class="member fn" href="#__xray::Array::NewSegment" title='__xray::Array::NewSegment' data-ref="__xray::Array::NewSegment" data-ref-filename="__xray..Array..NewSegment">NewSegment</a>();</td></tr>
+<tr><th id="266">266</th><td>    <b>if</b> (<a class="local col9 ref" href="#19S" title='S' data-ref="19S" data-ref-filename="19S">S</a> == <b>nullptr</b>)</td></tr>
+<tr><th id="267">267</th><td>      <b>return</b> <b>nullptr</b>;</td></tr>
+<tr><th id="268">268</th><td>    <a class="macro" href="../sanitizer_common/sanitizer_internal_defs.h.html#317" title="" data-ref="_M/DCHECK_EQ">DCHECK_EQ</a>(S-&gt;Next, &amp;SentinelSegment);</td></tr>
+<tr><th id="269">269</th><td>    <a class="macro" href="../sanitizer_common/sanitizer_internal_defs.h.html#317" title="" data-ref="_M/DCHECK_EQ">DCHECK_EQ</a>(S-&gt;Prev, &amp;SentinelSegment);</td></tr>
+<tr><th id="270">270</th><td>    <a class="macro" href="../sanitizer_common/sanitizer_internal_defs.h.html#318" title="" data-ref="_M/DCHECK_NE">DCHECK_NE</a>(S, &amp;SentinelSegment);</td></tr>
+<tr><th id="271">271</th><td>    <a class="member field" href="#__xray::Array::Head" title='__xray::Array::Head' data-ref="__xray::Array::Head" data-ref-filename="__xray..Array..Head">Head</a> = <a class="local col9 ref" href="#19S" title='S' data-ref="19S" data-ref-filename="19S">S</a>;</td></tr>
+<tr><th id="272">272</th><td>    <a class="member field" href="#__xray::Array::Tail" title='__xray::Array::Tail' data-ref="__xray::Array::Tail" data-ref-filename="__xray..Array..Tail">Tail</a> = <a class="local col9 ref" href="#19S" title='S' data-ref="19S" data-ref-filename="19S">S</a>;</td></tr>
+<tr><th id="273">273</th><td>    <a class="macro" href="../sanitizer_common/sanitizer_internal_defs.h.html#317" title="" data-ref="_M/DCHECK_EQ">DCHECK_EQ</a>(Head, Tail);</td></tr>
+<tr><th id="274">274</th><td>    <a class="macro" href="../sanitizer_common/sanitizer_internal_defs.h.html#317" title="" data-ref="_M/DCHECK_EQ">DCHECK_EQ</a>(Tail-&gt;Next, &amp;SentinelSegment);</td></tr>
+<tr><th id="275">275</th><td>    <a class="macro" href="../sanitizer_common/sanitizer_internal_defs.h.html#317" title="" data-ref="_M/DCHECK_EQ">DCHECK_EQ</a>(Tail-&gt;Prev, &amp;SentinelSegment);</td></tr>
+<tr><th id="276">276</th><td>    <b>return</b> <a class="local col9 ref" href="#19S" title='S' data-ref="19S" data-ref-filename="19S">S</a>;</td></tr>
+<tr><th id="277">277</th><td>  }</td></tr>
+<tr><th id="278">278</th><td></td></tr>
+<tr><th id="279">279</th><td>  <a class="type" href="#__xray::Array::Segment" title='__xray::Array::Segment' data-ref="__xray::Array::Segment" data-ref-filename="__xray..Array..Segment">Segment</a> *<dfn class="decl def fn" id="__xray::Array::AppendNewSegment" title='__xray::Array::AppendNewSegment' data-ref="__xray::Array::AppendNewSegment" data-ref-filename="__xray..Array..AppendNewSegment">AppendNewSegment</dfn>() <a class="macro" href="xray_defs.h.html#18" title="" data-ref="_M/XRAY_NEVER_INSTRUMENT">XRAY_NEVER_INSTRUMENT</a> {</td></tr>
+<tr><th id="280">280</th><td>    <em>auto</em> <dfn class="local col0 decl" id="20S" title='S' data-type='auto' data-ref="20S" data-ref-filename="20S">S</dfn> = <a class="member fn" href="#__xray::Array::NewSegment" title='__xray::Array::NewSegment' data-ref="__xray::Array::NewSegment" data-ref-filename="__xray..Array..NewSegment">NewSegment</a>();</td></tr>
+<tr><th id="281">281</th><td>    <b>if</b> (<a class="local col0 ref" href="#20S" title='S' data-ref="20S" data-ref-filename="20S">S</a> == <b>nullptr</b>)</td></tr>
+<tr><th id="282">282</th><td>      <b>return</b> <b>nullptr</b>;</td></tr>
+<tr><th id="283">283</th><td>    <a class="macro" href="../sanitizer_common/sanitizer_internal_defs.h.html#318" title="" data-ref="_M/DCHECK_NE">DCHECK_NE</a>(Tail, &amp;SentinelSegment);</td></tr>
+<tr><th id="284">284</th><td>    <a class="macro" href="../sanitizer_common/sanitizer_internal_defs.h.html#317" title="" data-ref="_M/DCHECK_EQ">DCHECK_EQ</a>(Tail-&gt;Next, &amp;SentinelSegment);</td></tr>
+<tr><th id="285">285</th><td>    <a class="macro" href="../sanitizer_common/sanitizer_internal_defs.h.html#317" title="" data-ref="_M/DCHECK_EQ">DCHECK_EQ</a>(S-&gt;Prev, &amp;SentinelSegment);</td></tr>
+<tr><th id="286">286</th><td>    <a class="macro" href="../sanitizer_common/sanitizer_internal_defs.h.html#317" title="" data-ref="_M/DCHECK_EQ">DCHECK_EQ</a>(S-&gt;Next, &amp;SentinelSegment);</td></tr>
+<tr><th id="287">287</th><td>    <a class="local col0 ref" href="#20S" title='S' data-ref="20S" data-ref-filename="20S">S</a>-&gt;Prev = <a class="member field" href="#__xray::Array::Tail" title='__xray::Array::Tail' data-ref="__xray::Array::Tail" data-ref-filename="__xray..Array..Tail">Tail</a>;</td></tr>
+<tr><th id="288">288</th><td>    <a class="member field" href="#__xray::Array::Tail" title='__xray::Array::Tail' data-ref="__xray::Array::Tail" data-ref-filename="__xray..Array..Tail">Tail</a>-&gt;Next = <a class="local col0 ref" href="#20S" title='S' data-ref="20S" data-ref-filename="20S">S</a>;</td></tr>
+<tr><th id="289">289</th><td>    <a class="member field" href="#__xray::Array::Tail" title='__xray::Array::Tail' data-ref="__xray::Array::Tail" data-ref-filename="__xray..Array..Tail">Tail</a> = <a class="local col0 ref" href="#20S" title='S' data-ref="20S" data-ref-filename="20S">S</a>;</td></tr>
+<tr><th id="290">290</th><td>    <a class="macro" href="../sanitizer_common/sanitizer_internal_defs.h.html#317" title="" data-ref="_M/DCHECK_EQ">DCHECK_EQ</a>(S, S-&gt;Prev-&gt;Next);</td></tr>
+<tr><th id="291">291</th><td>    <a class="macro" href="../sanitizer_common/sanitizer_internal_defs.h.html#317" title="" data-ref="_M/DCHECK_EQ">DCHECK_EQ</a>(Tail-&gt;Next, &amp;SentinelSegment);</td></tr>
+<tr><th id="292">292</th><td>    <b>return</b> <a class="local col0 ref" href="#20S" title='S' data-ref="20S" data-ref-filename="20S">S</a>;</td></tr>
+<tr><th id="293">293</th><td>  }</td></tr>
+<tr><th id="294">294</th><td></td></tr>
+<tr><th id="295">295</th><td><b>public</b>:</td></tr>
+<tr><th id="296">296</th><td>  <b>explicit</b> <dfn class="decl def fn" id="__xray::Array::Array{T}" title='__xray::Array::Array&lt;T&gt;' data-ref="__xray::Array::Array{T}" data-ref-filename="__xray..Array..Array{T}">Array</dfn>(<a class="typedef" href="#__xray::Array::AllocatorType" title='__xray::Array::AllocatorType' data-type='Allocator&lt;SegmentSize&gt;' data-ref="__xray::Array::AllocatorType" data-ref-filename="__xray..Array..AllocatorType">AllocatorType</a> &amp;<dfn class="local col1 decl" id="21A" title='A' data-type='__xray::Array::AllocatorType &amp;' data-ref="21A" data-ref-filename="21A">A</dfn>) <a class="macro" href="xray_defs.h.html#18" title="" data-ref="_M/XRAY_NEVER_INSTRUMENT">XRAY_NEVER_INSTRUMENT</a></td></tr>
+<tr><th id="297">297</th><td>      : <a class="member field" href="#__xray::Array::Alloc" title='__xray::Array::Alloc' data-ref="__xray::Array::Alloc" data-ref-filename="__xray..Array..Alloc">Alloc</a>(&amp;<a class="local col1 ref" href="#21A" title='A' data-ref="21A" data-ref-filename="21A">A</a>),</td></tr>
+<tr><th id="298">298</th><td>        <a class="member field" href="#__xray::Array::Head" title='__xray::Array::Head' data-ref="__xray::Array::Head" data-ref-filename="__xray..Array..Head">Head</a>(&amp;<a class="member" href="#__xray::Array::SentinelSegment" title='__xray::Array::SentinelSegment' data-ref="__xray::Array::SentinelSegment" data-ref-filename="__xray..Array..SentinelSegment">SentinelSegment</a>),</td></tr>
+<tr><th id="299">299</th><td>        <a class="member field" href="#__xray::Array::Tail" title='__xray::Array::Tail' data-ref="__xray::Array::Tail" data-ref-filename="__xray..Array..Tail">Tail</a>(&amp;<a class="member" href="#__xray::Array::SentinelSegment" title='__xray::Array::SentinelSegment' data-ref="__xray::Array::SentinelSegment" data-ref-filename="__xray..Array..SentinelSegment">SentinelSegment</a>),</td></tr>
+<tr><th id="300">300</th><td>        <a class="member field" href="#__xray::Array::Freelist" title='__xray::Array::Freelist' data-ref="__xray::Array::Freelist" data-ref-filename="__xray..Array..Freelist">Freelist</a>(&amp;<a class="member" href="#__xray::Array::SentinelSegment" title='__xray::Array::SentinelSegment' data-ref="__xray::Array::SentinelSegment" data-ref-filename="__xray..Array..SentinelSegment">SentinelSegment</a>),</td></tr>
+<tr><th id="301">301</th><td>        <a class="member field" href="#__xray::Array::Size" title='__xray::Array::Size' data-ref="__xray::Array::Size" data-ref-filename="__xray..Array..Size">Size</a>(<var>0</var>) {}</td></tr>
+<tr><th id="302">302</th><td></td></tr>
+<tr><th id="303">303</th><td>  <dfn class="decl def fn" id="__xray::Array::Array{T}" title='__xray::Array::Array&lt;T&gt;' data-ref="__xray::Array::Array{T}" data-ref-filename="__xray..Array..Array{T}">Array</dfn>() <a class="macro" href="xray_defs.h.html#18" title="" data-ref="_M/XRAY_NEVER_INSTRUMENT">XRAY_NEVER_INSTRUMENT</a> : <a class="member field" href="#__xray::Array::Alloc" title='__xray::Array::Alloc' data-ref="__xray::Array::Alloc" data-ref-filename="__xray..Array..Alloc">Alloc</a>(<b>nullptr</b>),</td></tr>
+<tr><th id="304">304</th><td>                                  <a class="member field" href="#__xray::Array::Head" title='__xray::Array::Head' data-ref="__xray::Array::Head" data-ref-filename="__xray..Array..Head">Head</a>(&amp;<a class="member" href="#__xray::Array::SentinelSegment" title='__xray::Array::SentinelSegment' data-ref="__xray::Array::SentinelSegment" data-ref-filename="__xray..Array..SentinelSegment">SentinelSegment</a>),</td></tr>
+<tr><th id="305">305</th><td>                                  <a class="member field" href="#__xray::Array::Tail" title='__xray::Array::Tail' data-ref="__xray::Array::Tail" data-ref-filename="__xray..Array..Tail">Tail</a>(&amp;<a class="member" href="#__xray::Array::SentinelSegment" title='__xray::Array::SentinelSegment' data-ref="__xray::Array::SentinelSegment" data-ref-filename="__xray..Array..SentinelSegment">SentinelSegment</a>),</td></tr>
+<tr><th id="306">306</th><td>                                  <a class="member field" href="#__xray::Array::Freelist" title='__xray::Array::Freelist' data-ref="__xray::Array::Freelist" data-ref-filename="__xray..Array..Freelist">Freelist</a>(&amp;<a class="member" href="#__xray::Array::SentinelSegment" title='__xray::Array::SentinelSegment' data-ref="__xray::Array::SentinelSegment" data-ref-filename="__xray..Array..SentinelSegment">SentinelSegment</a>),</td></tr>
+<tr><th id="307">307</th><td>                                  <a class="member field" href="#__xray::Array::Size" title='__xray::Array::Size' data-ref="__xray::Array::Size" data-ref-filename="__xray..Array..Size">Size</a>(<var>0</var>) {}</td></tr>
+<tr><th id="308">308</th><td></td></tr>
+<tr><th id="309">309</th><td>  <dfn class="decl def fn" id="__xray::Array::Array{T}" title='__xray::Array::Array&lt;T&gt;' data-ref="__xray::Array::Array{T}" data-ref-filename="__xray..Array..Array{T}">Array</dfn>(<em>const</em> Array &amp;) = <b>delete</b>;</td></tr>
+<tr><th id="310">310</th><td>  Array &amp;<dfn class="decl def fn" id="__xray::Array::operator=" title='__xray::Array::operator=' data-ref="__xray::Array::operator=" data-ref-filename="__xray..Array..operator="><b>operator</b>=</dfn>(<em>const</em> Array &amp;) = <b>delete</b>;</td></tr>
+<tr><th id="311">311</th><td></td></tr>
+<tr><th id="312">312</th><td>  <dfn class="decl def fn" id="__xray::Array::Array{T}" title='__xray::Array::Array&lt;T&gt;' data-ref="__xray::Array::Array{T}" data-ref-filename="__xray..Array..Array{T}">Array</dfn>(Array &amp;&amp;<dfn class="local col2 decl" id="22O" title='O' data-type='Array&lt;T&gt; &amp;&amp;' data-ref="22O" data-ref-filename="22O">O</dfn>) <a class="macro" href="xray_defs.h.html#18" title="" data-ref="_M/XRAY_NEVER_INSTRUMENT">XRAY_NEVER_INSTRUMENT</a> : <a class="member field" href="#__xray::Array::Alloc" title='__xray::Array::Alloc' data-ref="__xray::Array::Alloc" data-ref-filename="__xray..Array..Alloc">Alloc</a>(<a class="local col2 ref" href="#22O" title='O' data-ref="22O" data-ref-filename="22O">O</a>.Alloc),</td></tr>
+<tr><th id="313">313</th><td>                                           <a class="member field" href="#__xray::Array::Head" title='__xray::Array::Head' data-ref="__xray::Array::Head" data-ref-filename="__xray..Array..Head">Head</a>(<a class="local col2 ref" href="#22O" title='O' data-ref="22O" data-ref-filename="22O">O</a>.Head),</td></tr>
+<tr><th id="314">314</th><td>                                           <a class="member field" href="#__xray::Array::Tail" title='__xray::Array::Tail' data-ref="__xray::Array::Tail" data-ref-filename="__xray..Array..Tail">Tail</a>(<a class="local col2 ref" href="#22O" title='O' data-ref="22O" data-ref-filename="22O">O</a>.Tail),</td></tr>
+<tr><th id="315">315</th><td>                                           <a class="member field" href="#__xray::Array::Freelist" title='__xray::Array::Freelist' data-ref="__xray::Array::Freelist" data-ref-filename="__xray..Array..Freelist">Freelist</a>(<a class="local col2 ref" href="#22O" title='O' data-ref="22O" data-ref-filename="22O">O</a>.Freelist),</td></tr>
+<tr><th id="316">316</th><td>                                           <a class="member field" href="#__xray::Array::Size" title='__xray::Array::Size' data-ref="__xray::Array::Size" data-ref-filename="__xray..Array..Size">Size</a>(<a class="local col2 ref" href="#22O" title='O' data-ref="22O" data-ref-filename="22O">O</a>.Size) {</td></tr>
+<tr><th id="317">317</th><td>    <a class="local col2 ref" href="#22O" title='O' data-ref="22O" data-ref-filename="22O">O</a>.Alloc = <b>nullptr</b>;</td></tr>
+<tr><th id="318">318</th><td>    <a class="local col2 ref" href="#22O" title='O' data-ref="22O" data-ref-filename="22O">O</a>.Head = &amp;<a class="member" href="#__xray::Array::SentinelSegment" title='__xray::Array::SentinelSegment' data-ref="__xray::Array::SentinelSegment" data-ref-filename="__xray..Array..SentinelSegment">SentinelSegment</a>;</td></tr>
+<tr><th id="319">319</th><td>    <a class="local col2 ref" href="#22O" title='O' data-ref="22O" data-ref-filename="22O">O</a>.Tail = &amp;<a class="member" href="#__xray::Array::SentinelSegment" title='__xray::Array::SentinelSegment' data-ref="__xray::Array::SentinelSegment" data-ref-filename="__xray..Array..SentinelSegment">SentinelSegment</a>;</td></tr>
+<tr><th id="320">320</th><td>    <a class="local col2 ref" href="#22O" title='O' data-ref="22O" data-ref-filename="22O">O</a>.Size = <var>0</var>;</td></tr>
+<tr><th id="321">321</th><td>    <a class="local col2 ref" href="#22O" title='O' data-ref="22O" data-ref-filename="22O">O</a>.Freelist = &amp;<a class="member" href="#__xray::Array::SentinelSegment" title='__xray::Array::SentinelSegment' data-ref="__xray::Array::SentinelSegment" data-ref-filename="__xray..Array..SentinelSegment">SentinelSegment</a>;</td></tr>
+<tr><th id="322">322</th><td>  }</td></tr>
+<tr><th id="323">323</th><td></td></tr>
+<tr><th id="324">324</th><td>  Array &amp;<dfn class="decl def fn" id="__xray::Array::operator=" title='__xray::Array::operator=' data-ref="__xray::Array::operator=" data-ref-filename="__xray..Array..operator="><b>operator</b>=</dfn>(Array &amp;&amp;<dfn class="local col3 decl" id="23O" title='O' data-type='Array&lt;T&gt; &amp;&amp;' data-ref="23O" data-ref-filename="23O">O</dfn>) <a class="macro" href="xray_defs.h.html#18" title="" data-ref="_M/XRAY_NEVER_INSTRUMENT">XRAY_NEVER_INSTRUMENT</a> {</td></tr>
+<tr><th id="325">325</th><td>    <a class="member field" href="#__xray::Array::Alloc" title='__xray::Array::Alloc' data-ref="__xray::Array::Alloc" data-ref-filename="__xray..Array..Alloc">Alloc</a> = <a class="local col3 ref" href="#23O" title='O' data-ref="23O" data-ref-filename="23O">O</a>.Alloc;</td></tr>
+<tr><th id="326">326</th><td>    <a class="local col3 ref" href="#23O" title='O' data-ref="23O" data-ref-filename="23O">O</a>.Alloc = <b>nullptr</b>;</td></tr>
+<tr><th id="327">327</th><td>    <a class="member field" href="#__xray::Array::Head" title='__xray::Array::Head' data-ref="__xray::Array::Head" data-ref-filename="__xray..Array..Head">Head</a> = <a class="local col3 ref" href="#23O" title='O' data-ref="23O" data-ref-filename="23O">O</a>.Head;</td></tr>
+<tr><th id="328">328</th><td>    <a class="local col3 ref" href="#23O" title='O' data-ref="23O" data-ref-filename="23O">O</a>.Head = &amp;<a class="member" href="#__xray::Array::SentinelSegment" title='__xray::Array::SentinelSegment' data-ref="__xray::Array::SentinelSegment" data-ref-filename="__xray..Array..SentinelSegment">SentinelSegment</a>;</td></tr>
+<tr><th id="329">329</th><td>    <a class="member field" href="#__xray::Array::Tail" title='__xray::Array::Tail' data-ref="__xray::Array::Tail" data-ref-filename="__xray..Array..Tail">Tail</a> = <a class="local col3 ref" href="#23O" title='O' data-ref="23O" data-ref-filename="23O">O</a>.Tail;</td></tr>
+<tr><th id="330">330</th><td>    <a class="local col3 ref" href="#23O" title='O' data-ref="23O" data-ref-filename="23O">O</a>.Tail = &amp;<a class="member" href="#__xray::Array::SentinelSegment" title='__xray::Array::SentinelSegment' data-ref="__xray::Array::SentinelSegment" data-ref-filename="__xray..Array..SentinelSegment">SentinelSegment</a>;</td></tr>
+<tr><th id="331">331</th><td>    <a class="member field" href="#__xray::Array::Freelist" title='__xray::Array::Freelist' data-ref="__xray::Array::Freelist" data-ref-filename="__xray..Array..Freelist">Freelist</a> = <a class="local col3 ref" href="#23O" title='O' data-ref="23O" data-ref-filename="23O">O</a>.Freelist;</td></tr>
+<tr><th id="332">332</th><td>    <a class="local col3 ref" href="#23O" title='O' data-ref="23O" data-ref-filename="23O">O</a>.Freelist = &amp;<a class="member" href="#__xray::Array::SentinelSegment" title='__xray::Array::SentinelSegment' data-ref="__xray::Array::SentinelSegment" data-ref-filename="__xray..Array..SentinelSegment">SentinelSegment</a>;</td></tr>
+<tr><th id="333">333</th><td>    <a class="member field" href="#__xray::Array::Size" title='__xray::Array::Size' data-ref="__xray::Array::Size" data-ref-filename="__xray..Array..Size">Size</a> = <a class="local col3 ref" href="#23O" title='O' data-ref="23O" data-ref-filename="23O">O</a>.Size;</td></tr>
+<tr><th id="334">334</th><td>    <a class="local col3 ref" href="#23O" title='O' data-ref="23O" data-ref-filename="23O">O</a>.Size = <var>0</var>;</td></tr>
+<tr><th id="335">335</th><td>    <b>return</b> *<b>this</b>;</td></tr>
+<tr><th id="336">336</th><td>  }</td></tr>
+<tr><th id="337">337</th><td></td></tr>
+<tr><th id="338">338</th><td>  <dfn class="decl def fn" id="__xray::Array::~Array{T}" title='__xray::Array::~Array&lt;T&gt;' data-ref="__xray::Array::~Array{T}" data-ref-filename="__xray..Array..~Array{T}">~Array</dfn>() <a class="macro" href="xray_defs.h.html#18" title="" data-ref="_M/XRAY_NEVER_INSTRUMENT">XRAY_NEVER_INSTRUMENT</a> {</td></tr>
+<tr><th id="339">339</th><td>    <b>for</b> (<em>auto</em> &amp;<dfn class="local col4 decl" id="24E" title='E' data-type='auto &amp;' data-ref="24E" data-ref-filename="24E">E</dfn> : *<b>this</b>)</td></tr>
+<tr><th id="340">340</th><td>      (&amp;<a class="local col4 ref" href="#24E" title='E' data-ref="24E" data-ref-filename="24E">E</a>)-&gt;~T();</td></tr>
+<tr><th id="341">341</th><td>  }</td></tr>
+<tr><th id="342">342</th><td></td></tr>
+<tr><th id="343">343</th><td>  <em>bool</em> <dfn class="decl def fn" id="__xray::Array::empty" title='__xray::Array::empty' data-ref="__xray::Array::empty" data-ref-filename="__xray..Array..empty">empty</dfn>() <em>const</em> <a class="macro" href="xray_defs.h.html#18" title="" data-ref="_M/XRAY_NEVER_INSTRUMENT">XRAY_NEVER_INSTRUMENT</a> { <b>return</b> <a class="member field" href="#__xray::Array::Size" title='__xray::Array::Size' data-ref="__xray::Array::Size" data-ref-filename="__xray..Array..Size">Size</a> == <var>0</var>; }</td></tr>
+<tr><th id="344">344</th><td></td></tr>
+<tr><th id="345">345</th><td>  <a class="typedef" href="#__xray::Array::AllocatorType" title='__xray::Array::AllocatorType' data-type='Allocator&lt;SegmentSize&gt;' data-ref="__xray::Array::AllocatorType" data-ref-filename="__xray..Array..AllocatorType">AllocatorType</a> &amp;<dfn class="decl def fn" id="__xray::Array::allocator" title='__xray::Array::allocator' data-ref="__xray::Array::allocator" data-ref-filename="__xray..Array..allocator">allocator</dfn>() <em>const</em> <a class="macro" href="xray_defs.h.html#18" title="" data-ref="_M/XRAY_NEVER_INSTRUMENT">XRAY_NEVER_INSTRUMENT</a> {</td></tr>
+<tr><th id="346">346</th><td>    <a class="macro" href="../sanitizer_common/sanitizer_internal_defs.h.html#318" title="" data-ref="_M/DCHECK_NE">DCHECK_NE</a>(Alloc, <b>nullptr</b>);</td></tr>
+<tr><th id="347">347</th><td>    <b>return</b> *<a class="member field" href="#__xray::Array::Alloc" title='__xray::Array::Alloc' data-ref="__xray::Array::Alloc" data-ref-filename="__xray..Array..Alloc">Alloc</a>;</td></tr>
+<tr><th id="348">348</th><td>  }</td></tr>
+<tr><th id="349">349</th><td></td></tr>
+<tr><th id="350">350</th><td>  <a class="typedef" href="../../../../include/bits/stdint-uintn.h.html#uint64_t" title='uint64_t' data-type='__uint64_t' data-ref="uint64_t" data-ref-filename="uint64_t">uint64_t</a> <dfn class="decl def fn" id="__xray::Array::size" title='__xray::Array::size' data-ref="__xray::Array::size" data-ref-filename="__xray..Array..size">size</dfn>() <em>const</em> <a class="macro" href="xray_defs.h.html#18" title="" data-ref="_M/XRAY_NEVER_INSTRUMENT">XRAY_NEVER_INSTRUMENT</a> { <b>return</b> <a class="member field" href="#__xray::Array::Size" title='__xray::Array::Size' data-ref="__xray::Array::Size" data-ref-filename="__xray..Array..Size">Size</a>; }</td></tr>
+<tr><th id="351">351</th><td></td></tr>
+<tr><th id="352">352</th><td>  <b>template</b> &lt;<b>class</b>... Args&gt;</td></tr>
+<tr><th id="353">353</th><td>  T *<dfn class="decl def fn" id="__xray::Array::AppendEmplace" title='__xray::Array::AppendEmplace' data-ref="__xray::Array::AppendEmplace" data-ref-filename="__xray..Array..AppendEmplace">AppendEmplace</dfn>(Args &amp;&amp;... <dfn class="local col5 decl" id="25args" title='args' data-type='Args &amp;&amp;...' data-ref="25args" data-ref-filename="25args">args</dfn>) <a class="macro" href="xray_defs.h.html#18" title="" data-ref="_M/XRAY_NEVER_INSTRUMENT">XRAY_NEVER_INSTRUMENT</a> {</td></tr>
+<tr><th id="354">354</th><td>    <a class="macro" href="../sanitizer_common/sanitizer_internal_defs.h.html#316" title="" data-ref="_M/DCHECK">DCHECK</a>((Size == <var>0</var> &amp;&amp; Head == &amp;SentinelSegment &amp;&amp; Head == Tail) ||</td></tr>
+<tr><th id="355">355</th><td>           (Size != <var>0</var> &amp;&amp; Head != &amp;SentinelSegment &amp;&amp; Tail != &amp;SentinelSegment));</td></tr>
+<tr><th id="356">356</th><td>    <b>if</b> (<a class="macro" href="../sanitizer_common/sanitizer_internal_defs.h.html#229" title="__builtin_expect(!!(Head == &amp;SentinelSegment), 0)" data-ref="_M/UNLIKELY">UNLIKELY</a>(<a class="member field" href="#__xray::Array::Head" title='__xray::Array::Head' data-ref="__xray::Array::Head" data-ref-filename="__xray..Array..Head">Head</a> == &amp;<a class="member" href="#__xray::Array::SentinelSegment" title='__xray::Array::SentinelSegment' data-ref="__xray::Array::SentinelSegment" data-ref-filename="__xray..Array..SentinelSegment">SentinelSegment</a>)) {</td></tr>
+<tr><th id="357">357</th><td>      <em>auto</em> <dfn class="local col6 decl" id="26R" title='R' data-type='auto' data-ref="26R" data-ref-filename="26R">R</dfn> = <a class="member fn" href="#__xray::Array::InitHeadAndTail" title='__xray::Array::InitHeadAndTail' data-ref="__xray::Array::InitHeadAndTail" data-ref-filename="__xray..Array..InitHeadAndTail">InitHeadAndTail</a>();</td></tr>
+<tr><th id="358">358</th><td>      <b>if</b> (<a class="local col6 ref" href="#26R" title='R' data-ref="26R" data-ref-filename="26R">R</a> == <b>nullptr</b>)</td></tr>
+<tr><th id="359">359</th><td>        <b>return</b> <b>nullptr</b>;</td></tr>
+<tr><th id="360">360</th><td>    }</td></tr>
+<tr><th id="361">361</th><td></td></tr>
+<tr><th id="362">362</th><td>    <a class="macro" href="../sanitizer_common/sanitizer_internal_defs.h.html#318" title="" data-ref="_M/DCHECK_NE">DCHECK_NE</a>(Head, &amp;SentinelSegment);</td></tr>
+<tr><th id="363">363</th><td>    <a class="macro" href="../sanitizer_common/sanitizer_internal_defs.h.html#318" title="" data-ref="_M/DCHECK_NE">DCHECK_NE</a>(Tail, &amp;SentinelSegment);</td></tr>
+<tr><th id="364">364</th><td></td></tr>
+<tr><th id="365">365</th><td>    <em>auto</em> <dfn class="local col7 decl" id="27Offset" title='Offset' data-type='unsigned long' data-ref="27Offset" data-ref-filename="27Offset">Offset</dfn> = <a class="member field" href="#__xray::Array::Size" title='__xray::Array::Size' data-ref="__xray::Array::Size" data-ref-filename="__xray..Array..Size">Size</a> % <a class="member" href="#__xray::Array::ElementsPerSegment" title='__xray::Array::ElementsPerSegment' data-ref="__xray::Array::ElementsPerSegment" data-ref-filename="__xray..Array..ElementsPerSegment">ElementsPerSegment</a>;</td></tr>
+<tr><th id="366">366</th><td>    <b>if</b> (<a class="macro" href="../sanitizer_common/sanitizer_internal_defs.h.html#229" title="__builtin_expect(!!(Size != 0 &amp;&amp; Offset == 0), 0)" data-ref="_M/UNLIKELY">UNLIKELY</a>(<a class="member field" href="#__xray::Array::Size" title='__xray::Array::Size' data-ref="__xray::Array::Size" data-ref-filename="__xray..Array..Size">Size</a> != <var>0</var> &amp;&amp; <a class="local col7 ref" href="#27Offset" title='Offset' data-ref="27Offset" data-ref-filename="27Offset">Offset</a> == <var>0</var>))</td></tr>
+<tr><th id="367">367</th><td>      <b>if</b> (<a class="member fn" href="#__xray::Array::AppendNewSegment" title='__xray::Array::AppendNewSegment' data-ref="__xray::Array::AppendNewSegment" data-ref-filename="__xray..Array..AppendNewSegment">AppendNewSegment</a>() == <b>nullptr</b>)</td></tr>
+<tr><th id="368">368</th><td>        <b>return</b> <b>nullptr</b>;</td></tr>
+<tr><th id="369">369</th><td></td></tr>
+<tr><th id="370">370</th><td>    <a class="macro" href="../sanitizer_common/sanitizer_internal_defs.h.html#318" title="" data-ref="_M/DCHECK_NE">DCHECK_NE</a>(Tail, &amp;SentinelSegment);</td></tr>
+<tr><th id="371">371</th><td>    <em>auto</em> <dfn class="local col8 decl" id="28Base" title='Base' data-type='auto' data-ref="28Base" data-ref-filename="28Base">Base</dfn> = &amp;<a class="member field" href="#__xray::Array::Tail" title='__xray::Array::Tail' data-ref="__xray::Array::Tail" data-ref-filename="__xray..Array..Tail">Tail</a>-&gt;Data;</td></tr>
+<tr><th id="372">372</th><td>    <em>auto</em> <dfn class="local col9 decl" id="29AlignedOffset" title='AlignedOffset' data-type='auto' data-ref="29AlignedOffset" data-ref-filename="29AlignedOffset">AlignedOffset</dfn> = <a class="local col8 ref" href="#28Base" title='Base' data-ref="28Base" data-ref-filename="28Base">Base</a> + (<a class="local col7 ref" href="#27Offset" title='Offset' data-ref="27Offset" data-ref-filename="27Offset">Offset</a> * <a class="member" href="#__xray::Array::AlignedElementStorageSize" title='__xray::Array::AlignedElementStorageSize' data-ref="__xray::Array::AlignedElementStorageSize" data-ref-filename="__xray..Array..AlignedElementStorageSize">AlignedElementStorageSize</a>);</td></tr>
+<tr><th id="373">373</th><td>    <a class="macro" href="../sanitizer_common/sanitizer_internal_defs.h.html#320" title="" data-ref="_M/DCHECK_LE">DCHECK_LE</a>(AlignedOffset + <b>sizeof</b>(T),</td></tr>
+<tr><th id="374">374</th><td>              <b>reinterpret_cast</b>&lt;<em>unsigned</em> <em>char</em> *&gt;(Base) + SegmentSize);</td></tr>
+<tr><th id="375">375</th><td></td></tr>
+<tr><th id="376">376</th><td>    <i>// In-place construct at Position.</i></td></tr>
+<tr><th id="377">377</th><td>    <b>new</b> (<a class="local col9 ref" href="#29AlignedOffset" title='AlignedOffset' data-ref="29AlignedOffset" data-ref-filename="29AlignedOffset">AlignedOffset</a>) T{<span class="namespace">std::</span>forward&lt;Args&gt;(<a class="local col5 ref" href="#25args" title='args' data-ref="25args" data-ref-filename="25args">args</a>)...};</td></tr>
+<tr><th id="378">378</th><td>    ++<a class="member field" href="#__xray::Array::Size" title='__xray::Array::Size' data-ref="__xray::Array::Size" data-ref-filename="__xray..Array..Size">Size</a>;</td></tr>
+<tr><th id="379">379</th><td>    <b>return</b> <b>reinterpret_cast</b>&lt;T *&gt;(<a class="local col9 ref" href="#29AlignedOffset" title='AlignedOffset' data-ref="29AlignedOffset" data-ref-filename="29AlignedOffset">AlignedOffset</a>);</td></tr>
+<tr><th id="380">380</th><td>  }</td></tr>
+<tr><th id="381">381</th><td></td></tr>
+<tr><th id="382">382</th><td>  T *<dfn class="decl def fn" id="__xray::Array::Append" title='__xray::Array::Append' data-ref="__xray::Array::Append" data-ref-filename="__xray..Array..Append">Append</dfn>(<em>const</em> T &amp;<dfn class="local col0 decl" id="30E" title='E' data-type='const T &amp;' data-ref="30E" data-ref-filename="30E">E</dfn>) <a class="macro" href="xray_defs.h.html#18" title="" data-ref="_M/XRAY_NEVER_INSTRUMENT">XRAY_NEVER_INSTRUMENT</a> {</td></tr>
+<tr><th id="383">383</th><td>    <i>// FIXME: This is a duplication of AppenEmplace with the copy semantics</i></td></tr>
+<tr><th id="384">384</th><td><i>    // explicitly used, as a work-around to GCC 4.8 not invoking the copy</i></td></tr>
+<tr><th id="385">385</th><td><i>    // constructor with the placement new with braced-init syntax.</i></td></tr>
+<tr><th id="386">386</th><td>    <a class="macro" href="../sanitizer_common/sanitizer_internal_defs.h.html#316" title="" data-ref="_M/DCHECK">DCHECK</a>((Size == <var>0</var> &amp;&amp; Head == &amp;SentinelSegment &amp;&amp; Head == Tail) ||</td></tr>
+<tr><th id="387">387</th><td>           (Size != <var>0</var> &amp;&amp; Head != &amp;SentinelSegment &amp;&amp; Tail != &amp;SentinelSegment));</td></tr>
+<tr><th id="388">388</th><td>    <b>if</b> (<a class="macro" href="../sanitizer_common/sanitizer_internal_defs.h.html#229" title="__builtin_expect(!!(Head == &amp;SentinelSegment), 0)" data-ref="_M/UNLIKELY">UNLIKELY</a>(<a class="member field" href="#__xray::Array::Head" title='__xray::Array::Head' data-ref="__xray::Array::Head" data-ref-filename="__xray..Array..Head">Head</a> == &amp;<a class="member" href="#__xray::Array::SentinelSegment" title='__xray::Array::SentinelSegment' data-ref="__xray::Array::SentinelSegment" data-ref-filename="__xray..Array..SentinelSegment">SentinelSegment</a>)) {</td></tr>
+<tr><th id="389">389</th><td>      <em>auto</em> <dfn class="local col1 decl" id="31R" title='R' data-type='auto' data-ref="31R" data-ref-filename="31R">R</dfn> = <a class="member fn" href="#__xray::Array::InitHeadAndTail" title='__xray::Array::InitHeadAndTail' data-ref="__xray::Array::InitHeadAndTail" data-ref-filename="__xray..Array..InitHeadAndTail">InitHeadAndTail</a>();</td></tr>
+<tr><th id="390">390</th><td>      <b>if</b> (<a class="local col1 ref" href="#31R" title='R' data-ref="31R" data-ref-filename="31R">R</a> == <b>nullptr</b>)</td></tr>
+<tr><th id="391">391</th><td>        <b>return</b> <b>nullptr</b>;</td></tr>
+<tr><th id="392">392</th><td>    }</td></tr>
+<tr><th id="393">393</th><td></td></tr>
+<tr><th id="394">394</th><td>    <a class="macro" href="../sanitizer_common/sanitizer_internal_defs.h.html#318" title="" data-ref="_M/DCHECK_NE">DCHECK_NE</a>(Head, &amp;SentinelSegment);</td></tr>
+<tr><th id="395">395</th><td>    <a class="macro" href="../sanitizer_common/sanitizer_internal_defs.h.html#318" title="" data-ref="_M/DCHECK_NE">DCHECK_NE</a>(Tail, &amp;SentinelSegment);</td></tr>
+<tr><th id="396">396</th><td></td></tr>
+<tr><th id="397">397</th><td>    <em>auto</em> <dfn class="local col2 decl" id="32Offset" title='Offset' data-type='unsigned long' data-ref="32Offset" data-ref-filename="32Offset">Offset</dfn> = <a class="member field" href="#__xray::Array::Size" title='__xray::Array::Size' data-ref="__xray::Array::Size" data-ref-filename="__xray..Array..Size">Size</a> % <a class="member" href="#__xray::Array::ElementsPerSegment" title='__xray::Array::ElementsPerSegment' data-ref="__xray::Array::ElementsPerSegment" data-ref-filename="__xray..Array..ElementsPerSegment">ElementsPerSegment</a>;</td></tr>
+<tr><th id="398">398</th><td>    <b>if</b> (<a class="macro" href="../sanitizer_common/sanitizer_internal_defs.h.html#229" title="__builtin_expect(!!(Size != 0 &amp;&amp; Offset == 0), 0)" data-ref="_M/UNLIKELY">UNLIKELY</a>(<a class="member field" href="#__xray::Array::Size" title='__xray::Array::Size' data-ref="__xray::Array::Size" data-ref-filename="__xray..Array..Size">Size</a> != <var>0</var> &amp;&amp; <a class="local col2 ref" href="#32Offset" title='Offset' data-ref="32Offset" data-ref-filename="32Offset">Offset</a> == <var>0</var>))</td></tr>
+<tr><th id="399">399</th><td>      <b>if</b> (<a class="member fn" href="#__xray::Array::AppendNewSegment" title='__xray::Array::AppendNewSegment' data-ref="__xray::Array::AppendNewSegment" data-ref-filename="__xray..Array..AppendNewSegment">AppendNewSegment</a>() == <b>nullptr</b>)</td></tr>
+<tr><th id="400">400</th><td>        <b>return</b> <b>nullptr</b>;</td></tr>
+<tr><th id="401">401</th><td></td></tr>
+<tr><th id="402">402</th><td>    <a class="macro" href="../sanitizer_common/sanitizer_internal_defs.h.html#318" title="" data-ref="_M/DCHECK_NE">DCHECK_NE</a>(Tail, &amp;SentinelSegment);</td></tr>
+<tr><th id="403">403</th><td>    <em>auto</em> <dfn class="local col3 decl" id="33Base" title='Base' data-type='auto' data-ref="33Base" data-ref-filename="33Base">Base</dfn> = &amp;<a class="member field" href="#__xray::Array::Tail" title='__xray::Array::Tail' data-ref="__xray::Array::Tail" data-ref-filename="__xray..Array..Tail">Tail</a>-&gt;Data;</td></tr>
+<tr><th id="404">404</th><td>    <em>auto</em> <dfn class="local col4 decl" id="34AlignedOffset" title='AlignedOffset' data-type='auto' data-ref="34AlignedOffset" data-ref-filename="34AlignedOffset">AlignedOffset</dfn> = <a class="local col3 ref" href="#33Base" title='Base' data-ref="33Base" data-ref-filename="33Base">Base</a> + (<a class="local col2 ref" href="#32Offset" title='Offset' data-ref="32Offset" data-ref-filename="32Offset">Offset</a> * <a class="member" href="#__xray::Array::AlignedElementStorageSize" title='__xray::Array::AlignedElementStorageSize' data-ref="__xray::Array::AlignedElementStorageSize" data-ref-filename="__xray..Array..AlignedElementStorageSize">AlignedElementStorageSize</a>);</td></tr>
+<tr><th id="405">405</th><td>    <a class="macro" href="../sanitizer_common/sanitizer_internal_defs.h.html#320" title="" data-ref="_M/DCHECK_LE">DCHECK_LE</a>(AlignedOffset + <b>sizeof</b>(T),</td></tr>
+<tr><th id="406">406</th><td>              <b>reinterpret_cast</b>&lt;<em>unsigned</em> <em>char</em> *&gt;(Tail) + SegmentSize);</td></tr>
+<tr><th id="407">407</th><td></td></tr>
+<tr><th id="408">408</th><td>    <i>// In-place construct at Position.</i></td></tr>
+<tr><th id="409">409</th><td>    <b>new</b> (<a class="local col4 ref" href="#34AlignedOffset" title='AlignedOffset' data-ref="34AlignedOffset" data-ref-filename="34AlignedOffset">AlignedOffset</a>) T(<a class="local col0 ref" href="#30E" title='E' data-ref="30E" data-ref-filename="30E">E</a>);</td></tr>
+<tr><th id="410">410</th><td>    ++<a class="member field" href="#__xray::Array::Size" title='__xray::Array::Size' data-ref="__xray::Array::Size" data-ref-filename="__xray..Array..Size">Size</a>;</td></tr>
+<tr><th id="411">411</th><td>    <b>return</b> <b>reinterpret_cast</b>&lt;T *&gt;(<a class="local col4 ref" href="#34AlignedOffset" title='AlignedOffset' data-ref="34AlignedOffset" data-ref-filename="34AlignedOffset">AlignedOffset</a>);</td></tr>
+<tr><th id="412">412</th><td>  }</td></tr>
+<tr><th id="413">413</th><td></td></tr>
+<tr><th id="414">414</th><td>  T &amp;<dfn class="decl def fn" id="__xray::Array::operator[]" title='__xray::Array::operator[]' data-ref="__xray::Array::operator[]" data-ref-filename="__xray..Array..operator[]"><b>operator</b>[]</dfn>(<a class="typedef" href="../../../../include/bits/stdint-uintn.h.html#uint64_t" title='uint64_t' data-type='__uint64_t' data-ref="uint64_t" data-ref-filename="uint64_t">uint64_t</a> <dfn class="local col5 decl" id="35Offset" title='Offset' data-type='uint64_t' data-ref="35Offset" data-ref-filename="35Offset">Offset</dfn>) <em>const</em> <a class="macro" href="xray_defs.h.html#18" title="" data-ref="_M/XRAY_NEVER_INSTRUMENT">XRAY_NEVER_INSTRUMENT</a> {</td></tr>
+<tr><th id="415">415</th><td>    <a class="macro" href="../sanitizer_common/sanitizer_internal_defs.h.html#320" title="" data-ref="_M/DCHECK_LE">DCHECK_LE</a>(Offset, Size);</td></tr>
+<tr><th id="416">416</th><td>    <i>// We need to traverse the array enough times to find the element at Offset.</i></td></tr>
+<tr><th id="417">417</th><td>    <em>auto</em> <dfn class="local col6 decl" id="36S" title='S' data-type='auto' data-ref="36S" data-ref-filename="36S">S</dfn> = <a class="member field" href="#__xray::Array::Head" title='__xray::Array::Head' data-ref="__xray::Array::Head" data-ref-filename="__xray..Array..Head">Head</a>;</td></tr>
+<tr><th id="418">418</th><td>    <b>while</b> (<a class="local col5 ref" href="#35Offset" title='Offset' data-ref="35Offset" data-ref-filename="35Offset">Offset</a> &gt;= <a class="member" href="#__xray::Array::ElementsPerSegment" title='__xray::Array::ElementsPerSegment' data-ref="__xray::Array::ElementsPerSegment" data-ref-filename="__xray..Array..ElementsPerSegment">ElementsPerSegment</a>) {</td></tr>
+<tr><th id="419">419</th><td>      <a class="local col6 ref" href="#36S" title='S' data-ref="36S" data-ref-filename="36S">S</a> = <a class="local col6 ref" href="#36S" title='S' data-ref="36S" data-ref-filename="36S">S</a>-&gt;Next;</td></tr>
+<tr><th id="420">420</th><td>      <a class="local col5 ref" href="#35Offset" title='Offset' data-ref="35Offset" data-ref-filename="35Offset">Offset</a> -= <a class="member" href="#__xray::Array::ElementsPerSegment" title='__xray::Array::ElementsPerSegment' data-ref="__xray::Array::ElementsPerSegment" data-ref-filename="__xray..Array..ElementsPerSegment">ElementsPerSegment</a>;</td></tr>
+<tr><th id="421">421</th><td>      <a class="macro" href="../sanitizer_common/sanitizer_internal_defs.h.html#318" title="" data-ref="_M/DCHECK_NE">DCHECK_NE</a>(S, &amp;SentinelSegment);</td></tr>
+<tr><th id="422">422</th><td>    }</td></tr>
+<tr><th id="423">423</th><td>    <em>auto</em> <dfn class="local col7 decl" id="37Base" title='Base' data-type='auto' data-ref="37Base" data-ref-filename="37Base">Base</dfn> = &amp;<a class="local col6 ref" href="#36S" title='S' data-ref="36S" data-ref-filename="36S">S</a>-&gt;Data;</td></tr>
+<tr><th id="424">424</th><td>    <em>auto</em> <dfn class="local col8 decl" id="38AlignedOffset" title='AlignedOffset' data-type='auto' data-ref="38AlignedOffset" data-ref-filename="38AlignedOffset">AlignedOffset</dfn> = <a class="local col7 ref" href="#37Base" title='Base' data-ref="37Base" data-ref-filename="37Base">Base</a> + (<a class="local col5 ref" href="#35Offset" title='Offset' data-ref="35Offset" data-ref-filename="35Offset">Offset</a> * <a class="member" href="#__xray::Array::AlignedElementStorageSize" title='__xray::Array::AlignedElementStorageSize' data-ref="__xray::Array::AlignedElementStorageSize" data-ref-filename="__xray..Array..AlignedElementStorageSize">AlignedElementStorageSize</a>);</td></tr>
+<tr><th id="425">425</th><td>    <em>auto</em> <dfn class="local col9 decl" id="39Position" title='Position' data-type='auto' data-ref="39Position" data-ref-filename="39Position">Position</dfn> = <b>reinterpret_cast</b>&lt;T *&gt;(<a class="local col8 ref" href="#38AlignedOffset" title='AlignedOffset' data-ref="38AlignedOffset" data-ref-filename="38AlignedOffset">AlignedOffset</a>);</td></tr>
+<tr><th id="426">426</th><td>    <b>return</b> *<b>reinterpret_cast</b>&lt;T *&gt;(<a class="local col9 ref" href="#39Position" title='Position' data-ref="39Position" data-ref-filename="39Position">Position</a>);</td></tr>
+<tr><th id="427">427</th><td>  }</td></tr>
+<tr><th id="428">428</th><td></td></tr>
+<tr><th id="429">429</th><td>  T &amp;<dfn class="decl def fn" id="__xray::Array::front" title='__xray::Array::front' data-ref="__xray::Array::front" data-ref-filename="__xray..Array..front">front</dfn>() <em>const</em> <a class="macro" href="xray_defs.h.html#18" title="" data-ref="_M/XRAY_NEVER_INSTRUMENT">XRAY_NEVER_INSTRUMENT</a> {</td></tr>
+<tr><th id="430">430</th><td>    <a class="macro" href="../sanitizer_common/sanitizer_internal_defs.h.html#318" title="" data-ref="_M/DCHECK_NE">DCHECK_NE</a>(Head, &amp;SentinelSegment);</td></tr>
+<tr><th id="431">431</th><td>    <a class="macro" href="../sanitizer_common/sanitizer_internal_defs.h.html#318" title="" data-ref="_M/DCHECK_NE">DCHECK_NE</a>(Size, <var>0u</var>);</td></tr>
+<tr><th id="432">432</th><td>    <b>return</b> *<a class="member fn" href="#__xray::Array::begin" title='__xray::Array::begin' data-ref="__xray::Array::begin" data-ref-filename="__xray..Array..begin">begin</a>();</td></tr>
+<tr><th id="433">433</th><td>  }</td></tr>
+<tr><th id="434">434</th><td></td></tr>
+<tr><th id="435">435</th><td>  T &amp;<dfn class="decl def fn" id="__xray::Array::back" title='__xray::Array::back' data-ref="__xray::Array::back" data-ref-filename="__xray..Array..back">back</dfn>() <em>const</em> <a class="macro" href="xray_defs.h.html#18" title="" data-ref="_M/XRAY_NEVER_INSTRUMENT">XRAY_NEVER_INSTRUMENT</a> {</td></tr>
+<tr><th id="436">436</th><td>    <a class="macro" href="../sanitizer_common/sanitizer_internal_defs.h.html#318" title="" data-ref="_M/DCHECK_NE">DCHECK_NE</a>(Tail, &amp;SentinelSegment);</td></tr>
+<tr><th id="437">437</th><td>    <a class="macro" href="../sanitizer_common/sanitizer_internal_defs.h.html#318" title="" data-ref="_M/DCHECK_NE">DCHECK_NE</a>(Size, <var>0u</var>);</td></tr>
+<tr><th id="438">438</th><td>    <em>auto</em> <dfn class="local col0 decl" id="40It" title='It' data-type='auto' data-ref="40It" data-ref-filename="40It">It</dfn> = <a class="member fn" href="#__xray::Array::end" title='__xray::Array::end' data-ref="__xray::Array::end" data-ref-filename="__xray..Array..end">end</a>();</td></tr>
+<tr><th id="439">439</th><td>    --<a class="local col0 ref" href="#40It" title='It' data-ref="40It" data-ref-filename="40It">It</a>;</td></tr>
+<tr><th id="440">440</th><td>    <b>return</b> *<a class="local col0 ref" href="#40It" title='It' data-ref="40It" data-ref-filename="40It">It</a>;</td></tr>
+<tr><th id="441">441</th><td>  }</td></tr>
+<tr><th id="442">442</th><td></td></tr>
+<tr><th id="443">443</th><td>  <b>template</b> &lt;<b>class</b> Predicate&gt;</td></tr>
+<tr><th id="444">444</th><td>  T *<dfn class="decl def fn" id="__xray::Array::find_element" title='__xray::Array::find_element' data-ref="__xray::Array::find_element" data-ref-filename="__xray..Array..find_element">find_element</dfn>(Predicate <dfn class="local col1 decl" id="41P" title='P' data-type='Predicate' data-ref="41P" data-ref-filename="41P">P</dfn>) <em>const</em> <a class="macro" href="xray_defs.h.html#18" title="" data-ref="_M/XRAY_NEVER_INSTRUMENT">XRAY_NEVER_INSTRUMENT</a> {</td></tr>
+<tr><th id="445">445</th><td>    <b>if</b> (<a class="member fn" href="#__xray::Array::empty" title='__xray::Array::empty' data-ref="__xray::Array::empty" data-ref-filename="__xray..Array..empty">empty</a>())</td></tr>
+<tr><th id="446">446</th><td>      <b>return</b> <b>nullptr</b>;</td></tr>
+<tr><th id="447">447</th><td></td></tr>
+<tr><th id="448">448</th><td>    <em>auto</em> <dfn class="local col2 decl" id="42E" title='E' data-type='auto' data-ref="42E" data-ref-filename="42E">E</dfn> = <a class="member fn" href="#__xray::Array::end" title='__xray::Array::end' data-ref="__xray::Array::end" data-ref-filename="__xray..Array..end">end</a>();</td></tr>
+<tr><th id="449">449</th><td>    <b>for</b> (<em>auto</em> <dfn class="local col3 decl" id="43I" title='I' data-type='auto' data-ref="43I" data-ref-filename="43I">I</dfn> = <a class="member fn" href="#__xray::Array::begin" title='__xray::Array::begin' data-ref="__xray::Array::begin" data-ref-filename="__xray..Array..begin">begin</a>(); <a class="local col3 ref" href="#43I" title='I' data-ref="43I" data-ref-filename="43I">I</a> != <a class="local col2 ref" href="#42E" title='E' data-ref="42E" data-ref-filename="42E">E</a>; ++<a class="local col3 ref" href="#43I" title='I' data-ref="43I" data-ref-filename="43I">I</a>)</td></tr>
+<tr><th id="450">450</th><td>      <b>if</b> (<a class="local col1 ref" href="#41P" title='P' data-ref="41P" data-ref-filename="41P">P</a>(*<a class="local col3 ref" href="#43I" title='I' data-ref="43I" data-ref-filename="43I">I</a>))</td></tr>
+<tr><th id="451">451</th><td>        <b>return</b> &amp;(*<a class="local col3 ref" href="#43I" title='I' data-ref="43I" data-ref-filename="43I">I</a>);</td></tr>
+<tr><th id="452">452</th><td></td></tr>
+<tr><th id="453">453</th><td>    <b>return</b> <b>nullptr</b>;</td></tr>
+<tr><th id="454">454</th><td>  }</td></tr>
+<tr><th id="455">455</th><td></td></tr>
+<tr><th id="456">456</th><td>  <i class="doc">/// Remove N Elements from the end. This leaves the blocks behind, and not</i></td></tr>
+<tr><th id="457">457</th><td><i class="doc">  /// require allocation of new blocks for new elements added after trimming.</i></td></tr>
+<tr><th id="458">458</th><td>  <em>void</em> <dfn class="decl def fn" id="__xray::Array::trim" title='__xray::Array::trim' data-ref="__xray::Array::trim" data-ref-filename="__xray..Array..trim">trim</dfn>(<a class="typedef" href="../../../../include/bits/stdint-uintn.h.html#uint64_t" title='uint64_t' data-type='__uint64_t' data-ref="uint64_t" data-ref-filename="uint64_t">uint64_t</a> <dfn class="local col4 decl" id="44Elements" title='Elements' data-type='uint64_t' data-ref="44Elements" data-ref-filename="44Elements">Elements</dfn>) <a class="macro" href="xray_defs.h.html#18" title="" data-ref="_M/XRAY_NEVER_INSTRUMENT">XRAY_NEVER_INSTRUMENT</a> {</td></tr>
+<tr><th id="459">459</th><td>    <em>auto</em> <dfn class="local col5 decl" id="45OldSize" title='OldSize' data-type='unsigned long' data-ref="45OldSize" data-ref-filename="45OldSize">OldSize</dfn> = <a class="member field" href="#__xray::Array::Size" title='__xray::Array::Size' data-ref="__xray::Array::Size" data-ref-filename="__xray..Array..Size">Size</a>;</td></tr>
+<tr><th id="460">460</th><td>    <a class="local col4 ref" href="#44Elements" title='Elements' data-ref="44Elements" data-ref-filename="44Elements">Elements</a> = <a class="local col4 ref" href="#44Elements" title='Elements' data-ref="44Elements" data-ref-filename="44Elements">Elements</a> &gt; <a class="member field" href="#__xray::Array::Size" title='__xray::Array::Size' data-ref="__xray::Array::Size" data-ref-filename="__xray..Array..Size">Size</a> ? <a class="member field" href="#__xray::Array::Size" title='__xray::Array::Size' data-ref="__xray::Array::Size" data-ref-filename="__xray..Array..Size">Size</a> : <a class="local col4 ref" href="#44Elements" title='Elements' data-ref="44Elements" data-ref-filename="44Elements">Elements</a>;</td></tr>
+<tr><th id="461">461</th><td>    <a class="member field" href="#__xray::Array::Size" title='__xray::Array::Size' data-ref="__xray::Array::Size" data-ref-filename="__xray..Array..Size">Size</a> -= <a class="local col4 ref" href="#44Elements" title='Elements' data-ref="44Elements" data-ref-filename="44Elements">Elements</a>;</td></tr>
+<tr><th id="462">462</th><td></td></tr>
+<tr><th id="463">463</th><td>    <i>// We compute the number of segments we're going to return from the tail by</i></td></tr>
+<tr><th id="464">464</th><td><i>    // counting how many elements have been trimmed. Given the following:</i></td></tr>
+<tr><th id="465">465</th><td><i>    //</i></td></tr>
+<tr><th id="466">466</th><td><i>    // - Each segment has N valid positions, where N &gt; 0</i></td></tr>
+<tr><th id="467">467</th><td><i>    // - The previous size &gt; current size</i></td></tr>
+<tr><th id="468">468</th><td><i>    //</i></td></tr>
+<tr><th id="469">469</th><td><i>    // To compute the number of segments to return, we need to perform the</i></td></tr>
+<tr><th id="470">470</th><td><i>    // following calculations for the number of segments required given 'x'</i></td></tr>
+<tr><th id="471">471</th><td><i>    // elements:</i></td></tr>
+<tr><th id="472">472</th><td><i>    //</i></td></tr>
+<tr><th id="473">473</th><td><i>    //   f(x) = {</i></td></tr>
+<tr><th id="474">474</th><td><i>    //            x == 0          : 0</i></td></tr>
+<tr><th id="475">475</th><td><i>    //          , 0 &lt; x &lt;= N      : 1</i></td></tr>
+<tr><th id="476">476</th><td><i>    //          , N &lt; x &lt;= max    : x / N + (x % N ? 1 : 0)</i></td></tr>
+<tr><th id="477">477</th><td><i>    //          }</i></td></tr>
+<tr><th id="478">478</th><td><i>    //</i></td></tr>
+<tr><th id="479">479</th><td><i>    // We can simplify this down to:</i></td></tr>
+<tr><th id="480">480</th><td><i>    //</i></td></tr>
+<tr><th id="481">481</th><td><i>    //   f(x) = {</i></td></tr>
+<tr><th id="482">482</th><td><i>    //            x == 0          : 0,</i></td></tr>
+<tr><th id="483">483</th><td><i>    //          , 0 &lt; x &lt;= max    : x / N + (x &lt; N || x % N ? 1 : 0)</i></td></tr>
+<tr><th id="484">484</th><td><i>    //          }</i></td></tr>
+<tr><th id="485">485</th><td><i>    //</i></td></tr>
+<tr><th id="486">486</th><td><i>    // And further down to:</i></td></tr>
+<tr><th id="487">487</th><td><i>    //</i></td></tr>
+<tr><th id="488">488</th><td><i>    //   f(x) = x ? x / N + (x &lt; N || x % N ? 1 : 0) : 0</i></td></tr>
+<tr><th id="489">489</th><td><i>    //</i></td></tr>
+<tr><th id="490">490</th><td><i>    // We can then perform the following calculation `s` which counts the number</i></td></tr>
+<tr><th id="491">491</th><td><i>    // of segments we need to remove from the end of the data structure:</i></td></tr>
+<tr><th id="492">492</th><td><i>    //</i></td></tr>
+<tr><th id="493">493</th><td><i>    //   s(p, c) = f(p) - f(c)</i></td></tr>
+<tr><th id="494">494</th><td><i>    //</i></td></tr>
+<tr><th id="495">495</th><td><i>    // If we treat p = previous size, and c = current size, and given the</i></td></tr>
+<tr><th id="496">496</th><td><i>    // properties above, the possible range for s(...) is [0..max(typeof(p))/N]</i></td></tr>
+<tr><th id="497">497</th><td><i>    // given that typeof(p) == typeof(c).</i></td></tr>
+<tr><th id="498">498</th><td>    <em>auto</em> <dfn class="local col6 decl" id="46F" title='F' data-type='auto' data-ref="46F" data-ref-filename="46F">F</dfn> = [](<a class="typedef" href="../../../../include/bits/stdint-uintn.h.html#uint64_t" title='uint64_t' data-type='__uint64_t' data-ref="uint64_t" data-ref-filename="uint64_t">uint64_t</a> <dfn class="local col7 decl" id="47X" title='X' data-type='uint64_t' data-ref="47X" data-ref-filename="47X">X</dfn>) {</td></tr>
+<tr><th id="499">499</th><td>      <b>return</b> <a class="local col7 ref" href="#47X" title='X' data-ref="47X" data-ref-filename="47X">X</a> ? (<a class="local col7 ref" href="#47X" title='X' data-ref="47X" data-ref-filename="47X">X</a> / <a class="member" href="#__xray::Array::ElementsPerSegment" title='__xray::Array::ElementsPerSegment' data-ref="__xray::Array::ElementsPerSegment" data-ref-filename="__xray..Array..ElementsPerSegment">ElementsPerSegment</a>) +</td></tr>
+<tr><th id="500">500</th><td>                     (<a class="local col7 ref" href="#47X" title='X' data-ref="47X" data-ref-filename="47X">X</a> &lt; <a class="member" href="#__xray::Array::ElementsPerSegment" title='__xray::Array::ElementsPerSegment' data-ref="__xray::Array::ElementsPerSegment" data-ref-filename="__xray..Array..ElementsPerSegment">ElementsPerSegment</a> || <a class="local col7 ref" href="#47X" title='X' data-ref="47X" data-ref-filename="47X">X</a> % <a class="member" href="#__xray::Array::ElementsPerSegment" title='__xray::Array::ElementsPerSegment' data-ref="__xray::Array::ElementsPerSegment" data-ref-filename="__xray..Array..ElementsPerSegment">ElementsPerSegment</a> ? <var>1</var> : <var>0</var>)</td></tr>
+<tr><th id="501">501</th><td>               : <var>0</var>;</td></tr>
+<tr><th id="502">502</th><td>    };</td></tr>
+<tr><th id="503">503</th><td>    <em>auto</em> <dfn class="local col8 decl" id="48PS" title='PS' data-type='auto' data-ref="48PS" data-ref-filename="48PS">PS</dfn> = <a class="local col6 ref" href="#46F" title='F' data-ref="46F" data-ref-filename="46F">F</a>(<a class="local col5 ref" href="#45OldSize" title='OldSize' data-ref="45OldSize" data-ref-filename="45OldSize">OldSize</a>);</td></tr>
+<tr><th id="504">504</th><td>    <em>auto</em> <dfn class="local col9 decl" id="49CS" title='CS' data-type='auto' data-ref="49CS" data-ref-filename="49CS">CS</dfn> = <a class="local col6 ref" href="#46F" title='F' data-ref="46F" data-ref-filename="46F">F</a>(<a class="member field" href="#__xray::Array::Size" title='__xray::Array::Size' data-ref="__xray::Array::Size" data-ref-filename="__xray..Array..Size">Size</a>);</td></tr>
+<tr><th id="505">505</th><td>    <a class="macro" href="../sanitizer_common/sanitizer_internal_defs.h.html#322" title="" data-ref="_M/DCHECK_GE">DCHECK_GE</a>(PS, CS);</td></tr>
+<tr><th id="506">506</th><td>    <em>auto</em> <dfn class="local col0 decl" id="50SegmentsToTrim" title='SegmentsToTrim' data-type='auto' data-ref="50SegmentsToTrim" data-ref-filename="50SegmentsToTrim">SegmentsToTrim</dfn> = <a class="local col8 ref" href="#48PS" title='PS' data-ref="48PS" data-ref-filename="48PS">PS</a> - <a class="local col9 ref" href="#49CS" title='CS' data-ref="49CS" data-ref-filename="49CS">CS</a>;</td></tr>
+<tr><th id="507">507</th><td>    <b>for</b> (<em>auto</em> <dfn class="local col1 decl" id="51I" title='I' data-type='unsigned long' data-ref="51I" data-ref-filename="51I">I</dfn> = <var>0uL</var>; <a class="local col1 ref" href="#51I" title='I' data-ref="51I" data-ref-filename="51I">I</a> &lt; <a class="local col0 ref" href="#50SegmentsToTrim" title='SegmentsToTrim' data-ref="50SegmentsToTrim" data-ref-filename="50SegmentsToTrim">SegmentsToTrim</a>; ++<a class="local col1 ref" href="#51I" title='I' data-ref="51I" data-ref-filename="51I">I</a>) {</td></tr>
+<tr><th id="508">508</th><td>      <i>// Here we place the current tail segment to the freelist. To do this</i></td></tr>
+<tr><th id="509">509</th><td><i>      // appropriately, we need to perform a splice operation on two</i></td></tr>
+<tr><th id="510">510</th><td><i>      // bidirectional linked-lists. In particular, we have the current state of</i></td></tr>
+<tr><th id="511">511</th><td><i>      // the doubly-linked list of segments:</i></td></tr>
+<tr><th id="512">512</th><td><i>      //</i></td></tr>
+<tr><th id="513">513</th><td><i>      //   @S@ &lt;- s0 &lt;-&gt; s1 &lt;-&gt; ... &lt;-&gt; sT -&gt; @S@</i></td></tr>
+<tr><th id="514">514</th><td><i>      //</i></td></tr>
+<tr><th id="515">515</th><td>      <a class="macro" href="../sanitizer_common/sanitizer_internal_defs.h.html#318" title="" data-ref="_M/DCHECK_NE">DCHECK_NE</a>(Head, &amp;SentinelSegment);</td></tr>
+<tr><th id="516">516</th><td>      <a class="macro" href="../sanitizer_common/sanitizer_internal_defs.h.html#318" title="" data-ref="_M/DCHECK_NE">DCHECK_NE</a>(Tail, &amp;SentinelSegment);</td></tr>
+<tr><th id="517">517</th><td>      <a class="macro" href="../sanitizer_common/sanitizer_internal_defs.h.html#317" title="" data-ref="_M/DCHECK_EQ">DCHECK_EQ</a>(Tail-&gt;Next, &amp;SentinelSegment);</td></tr>
+<tr><th id="518">518</th><td></td></tr>
+<tr><th id="519">519</th><td>      <b>if</b> (<a class="member field" href="#__xray::Array::Freelist" title='__xray::Array::Freelist' data-ref="__xray::Array::Freelist" data-ref-filename="__xray..Array..Freelist">Freelist</a> == &amp;<a class="member" href="#__xray::Array::SentinelSegment" title='__xray::Array::SentinelSegment' data-ref="__xray::Array::SentinelSegment" data-ref-filename="__xray..Array..SentinelSegment">SentinelSegment</a>) {</td></tr>
+<tr><th id="520">520</th><td>        <i>// Our two lists at this point are in this configuration:</i></td></tr>
+<tr><th id="521">521</th><td><i>        //</i></td></tr>
+<tr><th id="522">522</th><td><i>        //   Freelist: (potentially) @S@</i></td></tr>
+<tr><th id="523">523</th><td><i>        //   Mainlist: @S@&lt;-s0&lt;-&gt;s1&lt;-&gt;...&lt;-&gt;sPT&lt;-&gt;sT-&gt;@S@</i></td></tr>
+<tr><th id="524">524</th><td><i>        //                  ^ Head                ^ Tail</i></td></tr>
+<tr><th id="525">525</th><td><i>        //</i></td></tr>
+<tr><th id="526">526</th><td><i>        // The end state for us will be this configuration:</i></td></tr>
+<tr><th id="527">527</th><td><i>        //</i></td></tr>
+<tr><th id="528">528</th><td><i>        //   Freelist: @S@&lt;-sT-&gt;@S@</i></td></tr>
+<tr><th id="529">529</th><td><i>        //   Mainlist: @S@&lt;-s0&lt;-&gt;s1&lt;-&gt;...&lt;-&gt;sPT-&gt;@S@</i></td></tr>
+<tr><th id="530">530</th><td><i>        //                  ^ Head          ^ Tail</i></td></tr>
+<tr><th id="531">531</th><td><i>        //</i></td></tr>
+<tr><th id="532">532</th><td><i>        // The first step for us is to hold a reference to the tail of Mainlist,</i></td></tr>
+<tr><th id="533">533</th><td><i>        // which in our notation is represented by sT. We call this our "free</i></td></tr>
+<tr><th id="534">534</th><td><i>        // segment" which is the segment we are placing on the Freelist.</i></td></tr>
+<tr><th id="535">535</th><td><i>        //</i></td></tr>
+<tr><th id="536">536</th><td><i>        //   sF = sT</i></td></tr>
+<tr><th id="537">537</th><td><i>        //</i></td></tr>
+<tr><th id="538">538</th><td><i>        // Then, we also hold a reference to the "pre-tail" element, which we</i></td></tr>
+<tr><th id="539">539</th><td><i>        // call sPT:</i></td></tr>
+<tr><th id="540">540</th><td><i>        //</i></td></tr>
+<tr><th id="541">541</th><td><i>        //   sPT = pred(sT)</i></td></tr>
+<tr><th id="542">542</th><td><i>        //</i></td></tr>
+<tr><th id="543">543</th><td><i>        // We want to splice sT into the beginning of the Freelist, which in</i></td></tr>
+<tr><th id="544">544</th><td><i>        // an empty Freelist means placing a segment whose predecessor and</i></td></tr>
+<tr><th id="545">545</th><td><i>        // successor is the sentinel segment.</i></td></tr>
+<tr><th id="546">546</th><td><i>        //</i></td></tr>
+<tr><th id="547">547</th><td><i>        // The splice operation then can be performed in the following</i></td></tr>
+<tr><th id="548">548</th><td><i>        // algorithm:</i></td></tr>
+<tr><th id="549">549</th><td><i>        //</i></td></tr>
+<tr><th id="550">550</th><td><i>        //   succ(sPT) = S</i></td></tr>
+<tr><th id="551">551</th><td><i>        //   pred(sT) = S</i></td></tr>
+<tr><th id="552">552</th><td><i>        //   succ(sT) = Freelist</i></td></tr>
+<tr><th id="553">553</th><td><i>        //   Freelist = sT</i></td></tr>
+<tr><th id="554">554</th><td><i>        //   Tail = sPT</i></td></tr>
+<tr><th id="555">555</th><td><i>        //</i></td></tr>
+<tr><th id="556">556</th><td>        <em>auto</em> <dfn class="local col2 decl" id="52SPT" title='SPT' data-type='auto' data-ref="52SPT" data-ref-filename="52SPT">SPT</dfn> = <a class="member field" href="#__xray::Array::Tail" title='__xray::Array::Tail' data-ref="__xray::Array::Tail" data-ref-filename="__xray..Array..Tail">Tail</a>-&gt;Prev;</td></tr>
+<tr><th id="557">557</th><td>        <a class="local col2 ref" href="#52SPT" title='SPT' data-ref="52SPT" data-ref-filename="52SPT">SPT</a>-&gt;Next = &amp;<a class="member" href="#__xray::Array::SentinelSegment" title='__xray::Array::SentinelSegment' data-ref="__xray::Array::SentinelSegment" data-ref-filename="__xray..Array..SentinelSegment">SentinelSegment</a>;</td></tr>
+<tr><th id="558">558</th><td>        <a class="member field" href="#__xray::Array::Tail" title='__xray::Array::Tail' data-ref="__xray::Array::Tail" data-ref-filename="__xray..Array..Tail">Tail</a>-&gt;Prev = &amp;<a class="member" href="#__xray::Array::SentinelSegment" title='__xray::Array::SentinelSegment' data-ref="__xray::Array::SentinelSegment" data-ref-filename="__xray..Array..SentinelSegment">SentinelSegment</a>;</td></tr>
+<tr><th id="559">559</th><td>        <a class="member field" href="#__xray::Array::Tail" title='__xray::Array::Tail' data-ref="__xray::Array::Tail" data-ref-filename="__xray..Array..Tail">Tail</a>-&gt;Next = <a class="member field" href="#__xray::Array::Freelist" title='__xray::Array::Freelist' data-ref="__xray::Array::Freelist" data-ref-filename="__xray..Array..Freelist">Freelist</a>;</td></tr>
+<tr><th id="560">560</th><td>        <a class="member field" href="#__xray::Array::Freelist" title='__xray::Array::Freelist' data-ref="__xray::Array::Freelist" data-ref-filename="__xray..Array..Freelist">Freelist</a> = <a class="member field" href="#__xray::Array::Tail" title='__xray::Array::Tail' data-ref="__xray::Array::Tail" data-ref-filename="__xray..Array..Tail">Tail</a>;</td></tr>
+<tr><th id="561">561</th><td>        <a class="member field" href="#__xray::Array::Tail" title='__xray::Array::Tail' data-ref="__xray::Array::Tail" data-ref-filename="__xray..Array..Tail">Tail</a> = <a class="local col2 ref" href="#52SPT" title='SPT' data-ref="52SPT" data-ref-filename="52SPT">SPT</a>;</td></tr>
+<tr><th id="562">562</th><td></td></tr>
+<tr><th id="563">563</th><td>        <i>// Our post-conditions here are:</i></td></tr>
+<tr><th id="564">564</th><td>        <a class="macro" href="../sanitizer_common/sanitizer_internal_defs.h.html#317" title="" data-ref="_M/DCHECK_EQ">DCHECK_EQ</a>(Tail-&gt;Next, &amp;SentinelSegment);</td></tr>
+<tr><th id="565">565</th><td>        <a class="macro" href="../sanitizer_common/sanitizer_internal_defs.h.html#317" title="" data-ref="_M/DCHECK_EQ">DCHECK_EQ</a>(Freelist-&gt;Prev, &amp;SentinelSegment);</td></tr>
+<tr><th id="566">566</th><td>      } <b>else</b> {</td></tr>
+<tr><th id="567">567</th><td>        <i>// In the other case, where the Freelist is not empty, we perform the</i></td></tr>
+<tr><th id="568">568</th><td><i>        // following transformation instead:</i></td></tr>
+<tr><th id="569">569</th><td><i>        //</i></td></tr>
+<tr><th id="570">570</th><td><i>        // This transforms the current state:</i></td></tr>
+<tr><th id="571">571</th><td><i>        //</i></td></tr>
+<tr><th id="572">572</th><td><i>        //   Freelist: @S@&lt;-f0-&gt;@S@</i></td></tr>
+<tr><th id="573">573</th><td><i>        //                  ^ Freelist</i></td></tr>
+<tr><th id="574">574</th><td><i>        //   Mainlist: @S@&lt;-s0&lt;-&gt;s1&lt;-&gt;...&lt;-&gt;sPT&lt;-&gt;sT-&gt;@S@</i></td></tr>
+<tr><th id="575">575</th><td><i>        //                  ^ Head                ^ Tail</i></td></tr>
+<tr><th id="576">576</th><td><i>        //</i></td></tr>
+<tr><th id="577">577</th><td><i>        // Into the following:</i></td></tr>
+<tr><th id="578">578</th><td><i>        //</i></td></tr>
+<tr><th id="579">579</th><td><i>        //   Freelist: @S@&lt;-sT&lt;-&gt;f0-&gt;@S@</i></td></tr>
+<tr><th id="580">580</th><td><i>        //                  ^ Freelist</i></td></tr>
+<tr><th id="581">581</th><td><i>        //   Mainlist: @S@&lt;-s0&lt;-&gt;s1&lt;-&gt;...&lt;-&gt;sPT-&gt;@S@</i></td></tr>
+<tr><th id="582">582</th><td><i>        //                  ^ Head          ^ Tail</i></td></tr>
+<tr><th id="583">583</th><td><i>        //</i></td></tr>
+<tr><th id="584">584</th><td><i>        // The algorithm is:</i></td></tr>
+<tr><th id="585">585</th><td><i>        //</i></td></tr>
+<tr><th id="586">586</th><td><i>        //   sFH = Freelist</i></td></tr>
+<tr><th id="587">587</th><td><i>        //   sPT = pred(sT)</i></td></tr>
+<tr><th id="588">588</th><td><i>        //   pred(SFH) = sT</i></td></tr>
+<tr><th id="589">589</th><td><i>        //   succ(sT) = Freelist</i></td></tr>
+<tr><th id="590">590</th><td><i>        //   pred(sT) = S</i></td></tr>
+<tr><th id="591">591</th><td><i>        //   succ(sPT) = S</i></td></tr>
+<tr><th id="592">592</th><td><i>        //   Tail = sPT</i></td></tr>
+<tr><th id="593">593</th><td><i>        //   Freelist = sT</i></td></tr>
+<tr><th id="594">594</th><td><i>        //</i></td></tr>
+<tr><th id="595">595</th><td>        <em>auto</em> <dfn class="local col3 decl" id="53SFH" title='SFH' data-type='auto' data-ref="53SFH" data-ref-filename="53SFH">SFH</dfn> = <a class="member field" href="#__xray::Array::Freelist" title='__xray::Array::Freelist' data-ref="__xray::Array::Freelist" data-ref-filename="__xray..Array..Freelist">Freelist</a>;</td></tr>
+<tr><th id="596">596</th><td>        <em>auto</em> <dfn class="local col4 decl" id="54SPT" title='SPT' data-type='auto' data-ref="54SPT" data-ref-filename="54SPT">SPT</dfn> = <a class="member field" href="#__xray::Array::Tail" title='__xray::Array::Tail' data-ref="__xray::Array::Tail" data-ref-filename="__xray..Array..Tail">Tail</a>-&gt;Prev;</td></tr>
+<tr><th id="597">597</th><td>        <em>auto</em> <dfn class="local col5 decl" id="55ST" title='ST' data-type='auto' data-ref="55ST" data-ref-filename="55ST">ST</dfn> = <a class="member field" href="#__xray::Array::Tail" title='__xray::Array::Tail' data-ref="__xray::Array::Tail" data-ref-filename="__xray..Array..Tail">Tail</a>;</td></tr>
+<tr><th id="598">598</th><td>        <a class="local col3 ref" href="#53SFH" title='SFH' data-ref="53SFH" data-ref-filename="53SFH">SFH</a>-&gt;Prev = <a class="local col5 ref" href="#55ST" title='ST' data-ref="55ST" data-ref-filename="55ST">ST</a>;</td></tr>
+<tr><th id="599">599</th><td>        <a class="local col5 ref" href="#55ST" title='ST' data-ref="55ST" data-ref-filename="55ST">ST</a>-&gt;Next = <a class="member field" href="#__xray::Array::Freelist" title='__xray::Array::Freelist' data-ref="__xray::Array::Freelist" data-ref-filename="__xray..Array..Freelist">Freelist</a>;</td></tr>
+<tr><th id="600">600</th><td>        <a class="local col5 ref" href="#55ST" title='ST' data-ref="55ST" data-ref-filename="55ST">ST</a>-&gt;Prev = &amp;<a class="member" href="#__xray::Array::SentinelSegment" title='__xray::Array::SentinelSegment' data-ref="__xray::Array::SentinelSegment" data-ref-filename="__xray..Array..SentinelSegment">SentinelSegment</a>;</td></tr>
+<tr><th id="601">601</th><td>        <a class="local col4 ref" href="#54SPT" title='SPT' data-ref="54SPT" data-ref-filename="54SPT">SPT</a>-&gt;Next = &amp;<a class="member" href="#__xray::Array::SentinelSegment" title='__xray::Array::SentinelSegment' data-ref="__xray::Array::SentinelSegment" data-ref-filename="__xray..Array..SentinelSegment">SentinelSegment</a>;</td></tr>
+<tr><th id="602">602</th><td>        <a class="member field" href="#__xray::Array::Tail" title='__xray::Array::Tail' data-ref="__xray::Array::Tail" data-ref-filename="__xray..Array..Tail">Tail</a> = <a class="local col4 ref" href="#54SPT" title='SPT' data-ref="54SPT" data-ref-filename="54SPT">SPT</a>;</td></tr>
+<tr><th id="603">603</th><td>        <a class="member field" href="#__xray::Array::Freelist" title='__xray::Array::Freelist' data-ref="__xray::Array::Freelist" data-ref-filename="__xray..Array..Freelist">Freelist</a> = <a class="local col5 ref" href="#55ST" title='ST' data-ref="55ST" data-ref-filename="55ST">ST</a>;</td></tr>
+<tr><th id="604">604</th><td></td></tr>
+<tr><th id="605">605</th><td>        <i>// Our post-conditions here are:</i></td></tr>
+<tr><th id="606">606</th><td>        <a class="macro" href="../sanitizer_common/sanitizer_internal_defs.h.html#317" title="" data-ref="_M/DCHECK_EQ">DCHECK_EQ</a>(Tail-&gt;Next, &amp;SentinelSegment);</td></tr>
+<tr><th id="607">607</th><td>        <a class="macro" href="../sanitizer_common/sanitizer_internal_defs.h.html#317" title="" data-ref="_M/DCHECK_EQ">DCHECK_EQ</a>(Freelist-&gt;Prev, &amp;SentinelSegment);</td></tr>
+<tr><th id="608">608</th><td>        <a class="macro" href="../sanitizer_common/sanitizer_internal_defs.h.html#317" title="" data-ref="_M/DCHECK_EQ">DCHECK_EQ</a>(Freelist-&gt;Next-&gt;Prev, Freelist);</td></tr>
+<tr><th id="609">609</th><td>      }</td></tr>
+<tr><th id="610">610</th><td>    }</td></tr>
+<tr><th id="611">611</th><td></td></tr>
+<tr><th id="612">612</th><td>    <i>// Now in case we've spliced all the segments in the end, we ensure that the</i></td></tr>
+<tr><th id="613">613</th><td><i>    // main list is "empty", or both the head and tail pointing to the sentinel</i></td></tr>
+<tr><th id="614">614</th><td><i>    // segment.</i></td></tr>
+<tr><th id="615">615</th><td>    <b>if</b> (<a class="member field" href="#__xray::Array::Tail" title='__xray::Array::Tail' data-ref="__xray::Array::Tail" data-ref-filename="__xray..Array..Tail">Tail</a> == &amp;<a class="member" href="#__xray::Array::SentinelSegment" title='__xray::Array::SentinelSegment' data-ref="__xray::Array::SentinelSegment" data-ref-filename="__xray..Array..SentinelSegment">SentinelSegment</a>)</td></tr>
+<tr><th id="616">616</th><td>      <a class="member field" href="#__xray::Array::Head" title='__xray::Array::Head' data-ref="__xray::Array::Head" data-ref-filename="__xray..Array..Head">Head</a> = <a class="member field" href="#__xray::Array::Tail" title='__xray::Array::Tail' data-ref="__xray::Array::Tail" data-ref-filename="__xray..Array..Tail">Tail</a>;</td></tr>
+<tr><th id="617">617</th><td></td></tr>
+<tr><th id="618">618</th><td>    <a class="macro" href="../sanitizer_common/sanitizer_internal_defs.h.html#316" title="" data-ref="_M/DCHECK">DCHECK</a>(</td></tr>
+<tr><th id="619">619</th><td>        (Size == <var>0</var> &amp;&amp; Head == &amp;SentinelSegment &amp;&amp; Tail == &amp;SentinelSegment) ||</td></tr>
+<tr><th id="620">620</th><td>        (Size != <var>0</var> &amp;&amp; Head != &amp;SentinelSegment &amp;&amp; Tail != &amp;SentinelSegment));</td></tr>
+<tr><th id="621">621</th><td>    <a class="macro" href="../sanitizer_common/sanitizer_internal_defs.h.html#316" title="" data-ref="_M/DCHECK">DCHECK</a>(</td></tr>
+<tr><th id="622">622</th><td>        (Freelist != &amp;SentinelSegment &amp;&amp; Freelist-&gt;Prev == &amp;SentinelSegment) ||</td></tr>
+<tr><th id="623">623</th><td>        (Freelist == &amp;SentinelSegment &amp;&amp; Tail-&gt;Next == &amp;SentinelSegment));</td></tr>
+<tr><th id="624">624</th><td>  }</td></tr>
+<tr><th id="625">625</th><td></td></tr>
+<tr><th id="626">626</th><td>  <i>// Provide iterators.</i></td></tr>
+<tr><th id="627">627</th><td>  <a class="type" href="#__xray::Array::Iterator" title='__xray::Array::Iterator' data-ref="__xray::Array::Iterator" data-ref-filename="__xray..Array..Iterator">Iterator</a>&lt;T&gt; <dfn class="decl def fn" id="__xray::Array::begin" title='__xray::Array::begin' data-ref="__xray::Array::begin" data-ref-filename="__xray..Array..begin">begin</dfn>() <em>const</em> <a class="macro" href="xray_defs.h.html#18" title="" data-ref="_M/XRAY_NEVER_INSTRUMENT">XRAY_NEVER_INSTRUMENT</a> {</td></tr>
+<tr><th id="628">628</th><td>    <b>return</b> <a class="type" href="#__xray::Array::Iterator" title='__xray::Array::Iterator' data-ref="__xray::Array::Iterator" data-ref-filename="__xray..Array..Iterator">Iterator</a>&lt;T&gt;(<a class="member field" href="#__xray::Array::Head" title='__xray::Array::Head' data-ref="__xray::Array::Head" data-ref-filename="__xray..Array..Head">Head</a>, <var>0</var>, <a class="member field" href="#__xray::Array::Size" title='__xray::Array::Size' data-ref="__xray::Array::Size" data-ref-filename="__xray..Array..Size">Size</a>);</td></tr>
+<tr><th id="629">629</th><td>  }</td></tr>
+<tr><th id="630">630</th><td>  <a class="type" href="#__xray::Array::Iterator" title='__xray::Array::Iterator' data-ref="__xray::Array::Iterator" data-ref-filename="__xray..Array..Iterator">Iterator</a>&lt;T&gt; <dfn class="decl def fn" id="__xray::Array::end" title='__xray::Array::end' data-ref="__xray::Array::end" data-ref-filename="__xray..Array..end">end</dfn>() <em>const</em> <a class="macro" href="xray_defs.h.html#18" title="" data-ref="_M/XRAY_NEVER_INSTRUMENT">XRAY_NEVER_INSTRUMENT</a> {</td></tr>
+<tr><th id="631">631</th><td>    <b>return</b> <a class="type" href="#__xray::Array::Iterator" title='__xray::Array::Iterator' data-ref="__xray::Array::Iterator" data-ref-filename="__xray..Array..Iterator">Iterator</a>&lt;T&gt;(<a class="member field" href="#__xray::Array::Tail" title='__xray::Array::Tail' data-ref="__xray::Array::Tail" data-ref-filename="__xray..Array..Tail">Tail</a>, <a class="member field" href="#__xray::Array::Size" title='__xray::Array::Size' data-ref="__xray::Array::Size" data-ref-filename="__xray..Array..Size">Size</a>, <a class="member field" href="#__xray::Array::Size" title='__xray::Array::Size' data-ref="__xray::Array::Size" data-ref-filename="__xray..Array..Size">Size</a>);</td></tr>
+<tr><th id="632">632</th><td>  }</td></tr>
+<tr><th id="633">633</th><td>  <a class="type" href="#__xray::Array::Iterator" title='__xray::Array::Iterator' data-ref="__xray::Array::Iterator" data-ref-filename="__xray..Array..Iterator">Iterator</a>&lt;<em>const</em> T&gt; <dfn class="decl def fn" id="__xray::Array::cbegin" title='__xray::Array::cbegin' data-ref="__xray::Array::cbegin" data-ref-filename="__xray..Array..cbegin">cbegin</dfn>() <em>const</em> <a class="macro" href="xray_defs.h.html#18" title="" data-ref="_M/XRAY_NEVER_INSTRUMENT">XRAY_NEVER_INSTRUMENT</a> {</td></tr>
+<tr><th id="634">634</th><td>    <b>return</b> <a class="type" href="#__xray::Array::Iterator" title='__xray::Array::Iterator' data-ref="__xray::Array::Iterator" data-ref-filename="__xray..Array..Iterator">Iterator</a>&lt;<em>const</em> T&gt;(<a class="member field" href="#__xray::Array::Head" title='__xray::Array::Head' data-ref="__xray::Array::Head" data-ref-filename="__xray..Array..Head">Head</a>, <var>0</var>, <a class="member field" href="#__xray::Array::Size" title='__xray::Array::Size' data-ref="__xray::Array::Size" data-ref-filename="__xray..Array..Size">Size</a>);</td></tr>
+<tr><th id="635">635</th><td>  }</td></tr>
+<tr><th id="636">636</th><td>  <a class="type" href="#__xray::Array::Iterator" title='__xray::Array::Iterator' data-ref="__xray::Array::Iterator" data-ref-filename="__xray..Array..Iterator">Iterator</a>&lt;<em>const</em> T&gt; <dfn class="decl def fn" id="__xray::Array::cend" title='__xray::Array::cend' data-ref="__xray::Array::cend" data-ref-filename="__xray..Array..cend">cend</dfn>() <em>const</em> <a class="macro" href="xray_defs.h.html#18" title="" data-ref="_M/XRAY_NEVER_INSTRUMENT">XRAY_NEVER_INSTRUMENT</a> {</td></tr>
+<tr><th id="637">637</th><td>    <b>return</b> <a class="type" href="#__xray::Array::Iterator" title='__xray::Array::Iterator' data-ref="__xray::Array::Iterator" data-ref-filename="__xray..Array..Iterator">Iterator</a>&lt;<em>const</em> T&gt;(<a class="member field" href="#__xray::Array::Tail" title='__xray::Array::Tail' data-ref="__xray::Array::Tail" data-ref-filename="__xray..Array..Tail">Tail</a>, <a class="member field" href="#__xray::Array::Size" title='__xray::Array::Size' data-ref="__xray::Array::Size" data-ref-filename="__xray..Array..Size">Size</a>, <a class="member field" href="#__xray::Array::Size" title='__xray::Array::Size' data-ref="__xray::Array::Size" data-ref-filename="__xray..Array..Size">Size</a>);</td></tr>
+<tr><th id="638">638</th><td>  }</td></tr>
+<tr><th id="639">639</th><td>};</td></tr>
+<tr><th id="640">640</th><td></td></tr>
+<tr><th id="641">641</th><td><i>// We need to have this storage definition out-of-line so that the compiler can</i></td></tr>
+<tr><th id="642">642</th><td><i>// ensure that storage for the SentinelSegment is defined and has a single</i></td></tr>
+<tr><th id="643">643</th><td><i>// address.</i></td></tr>
+<tr><th id="644">644</th><td><b>template</b> &lt;<b>class</b> T&gt;</td></tr>
+<tr><th id="645">645</th><td><b>typename</b> <a class="type" href="#__xray::Array" title='__xray::Array' data-ref="__xray::Array" data-ref-filename="__xray..Array">Array</a>&lt;T&gt;::<a class="type" href="#__xray::Array::Segment" title='__xray::Array::Segment' data-ref="__xray::Array::Segment" data-ref-filename="__xray..Array..Segment">Segment</a> <a class="type" href="#__xray::Array" title='__xray::Array' data-ref="__xray::Array" data-ref-filename="__xray..Array">Array</a>&lt;T&gt;::<dfn class="decl def" id="__xray::Array::SentinelSegment" title='__xray::Array::SentinelSegment' data-ref="__xray::Array::SentinelSegment" data-ref-filename="__xray..Array..SentinelSegment">SentinelSegment</dfn>{</td></tr>
+<tr><th id="646">646</th><td>    &amp;<a class="type" href="#__xray::Array" title='__xray::Array' data-ref="__xray::Array" data-ref-filename="__xray..Array">Array</a>&lt;T&gt;::<a class="ref" href="#__xray::Array::SentinelSegment" title='__xray::Array::SentinelSegment' data-ref="__xray::Array::SentinelSegment" data-ref-filename="__xray..Array..SentinelSegment">SentinelSegment</a>, &amp;<a class="type" href="#__xray::Array" title='__xray::Array' data-ref="__xray::Array" data-ref-filename="__xray..Array">Array</a>&lt;T&gt;::<a class="ref" href="#__xray::Array::SentinelSegment" title='__xray::Array::SentinelSegment' data-ref="__xray::Array::SentinelSegment" data-ref-filename="__xray..Array..SentinelSegment">SentinelSegment</a>, {<kbd>'\0'</kbd>}};</td></tr>
+<tr><th id="647">647</th><td></td></tr>
+<tr><th id="648">648</th><td>} <i>// namespace __xray</i></td></tr>
+<tr><th id="649">649</th><td></td></tr>
+<tr><th id="650">650</th><td><u>#<span data-ppcond="15">endif</span> // XRAY_SEGMENTED_ARRAY_H</u></td></tr>
+<tr><th id="651">651</th><td></td></tr>
+</table><hr/><p id='footer'>
+Generated while processing <a href='xray_profile_collector.cpp.html'>llvm/compiler-rt/lib/xray/xray_profile_collector.cpp</a><br/>Generated on <em>2021-Jul-01</em> from project llvm revision <em>12</em>

@@ -1,0 +1,341 @@
+<!doctype html>
+<html>
+<head>
+<meta name="viewport" content="width=device-width, initial-scale=1.0"><title>sanitizer_symbolizer_win.cpp source code [llvm/compiler-rt/lib/sanitizer_common/sanitizer_symbolizer_win.cpp] - Woboq Code Browser</title>
+<link rel="stylesheet" href="../../../.././data/qtcreator.css" title="QtCreator"/>
+<link rel="alternate stylesheet" href="../../../.././data/kdevelop.css" title="KDevelop"/>
+<script type="text/javascript" src="../../../.././data/jquery/jquery.min.js"></script>
+<script type="text/javascript" src="../../../.././data/jquery/jquery-ui.min.js"></script>
+<script>var file = 'llvm/compiler-rt/lib/sanitizer_common/sanitizer_symbolizer_win.cpp'; var root_path = '../../../..'; var data_path = '../../../.././data'; var ecma_script_api_version = 2;</script>
+<script src='../../../.././data/codebrowser.js'></script>
+</head>
+<body><div id='header'><h1 id='breadcrumb'><span>Browse the source code of </span><a href='../../..'>llvm</a>/<a href='../..'>compiler-rt</a>/<a href='..'>lib</a>/<a href='./'>sanitizer_common</a>/<a href='sanitizer_symbolizer_win.cpp.html'>sanitizer_symbolizer_win.cpp</a></h1></div>
+<hr/><div id='content'><table class="code">
+<tr><th id="1">1</th><td><i>//===-- sanitizer_symbolizer_win.cpp --------------------------------------===//</i></td></tr>
+<tr><th id="2">2</th><td><i>//</i></td></tr>
+<tr><th id="3">3</th><td><i>// Part of the LLVM Project, under the Apache License v2.0 with LLVM Exceptions.</i></td></tr>
+<tr><th id="4">4</th><td><i>// See <a href="https://llvm.org/LICENSE.txt">https://llvm.org/LICENSE.txt</a> for license information.</i></td></tr>
+<tr><th id="5">5</th><td><i>// SPDX-License-Identifier: Apache-2.0 WITH LLVM-exception</i></td></tr>
+<tr><th id="6">6</th><td><i>//</i></td></tr>
+<tr><th id="7">7</th><td><i>//===----------------------------------------------------------------------===//</i></td></tr>
+<tr><th id="8">8</th><td><i>//</i></td></tr>
+<tr><th id="9">9</th><td><i>// This file is shared between AddressSanitizer and ThreadSanitizer</i></td></tr>
+<tr><th id="10">10</th><td><i>// run-time libraries.</i></td></tr>
+<tr><th id="11">11</th><td><i>// Windows-specific implementation of symbolizer parts.</i></td></tr>
+<tr><th id="12">12</th><td><i>//===----------------------------------------------------------------------===//</i></td></tr>
+<tr><th id="13">13</th><td></td></tr>
+<tr><th id="14">14</th><td><u>#include <a href="sanitizer_platform.h.html">"sanitizer_platform.h"</a></u></td></tr>
+<tr><th id="15">15</th><td><u>#<span data-ppcond="15">if</span> <a class="macro" href="sanitizer_platform.h.html#93" title="0" data-ref="_M/SANITIZER_WINDOWS">SANITIZER_WINDOWS</a></u></td></tr>
+<tr><th id="16">16</th><td></td></tr>
+<tr><th id="17">17</th><td><u>#include "sanitizer_dbghelp.h"</u></td></tr>
+<tr><th id="18">18</th><td><u>#include "sanitizer_symbolizer_internal.h"</u></td></tr>
+<tr><th id="19">19</th><td></td></tr>
+<tr><th id="20">20</th><td><b>namespace</b> __sanitizer {</td></tr>
+<tr><th id="21">21</th><td></td></tr>
+<tr><th id="22">22</th><td><b>decltype</b>(::StackWalk64) *StackWalk64;</td></tr>
+<tr><th id="23">23</th><td><b>decltype</b>(::SymCleanup) *SymCleanup;</td></tr>
+<tr><th id="24">24</th><td><b>decltype</b>(::SymFromAddr) *SymFromAddr;</td></tr>
+<tr><th id="25">25</th><td><b>decltype</b>(::SymFunctionTableAccess64) *SymFunctionTableAccess64;</td></tr>
+<tr><th id="26">26</th><td><b>decltype</b>(::SymGetLineFromAddr64) *SymGetLineFromAddr64;</td></tr>
+<tr><th id="27">27</th><td><b>decltype</b>(::SymGetModuleBase64) *SymGetModuleBase64;</td></tr>
+<tr><th id="28">28</th><td><b>decltype</b>(::SymGetSearchPathW) *SymGetSearchPathW;</td></tr>
+<tr><th id="29">29</th><td><b>decltype</b>(::SymInitialize) *SymInitialize;</td></tr>
+<tr><th id="30">30</th><td><b>decltype</b>(::SymSetOptions) *SymSetOptions;</td></tr>
+<tr><th id="31">31</th><td><b>decltype</b>(::SymSetSearchPathW) *SymSetSearchPathW;</td></tr>
+<tr><th id="32">32</th><td><b>decltype</b>(::UnDecorateSymbolName) *UnDecorateSymbolName;</td></tr>
+<tr><th id="33">33</th><td></td></tr>
+<tr><th id="34">34</th><td><b>namespace</b> {</td></tr>
+<tr><th id="35">35</th><td></td></tr>
+<tr><th id="36">36</th><td><b>class</b> WinSymbolizerTool final : <b>public</b> SymbolizerTool {</td></tr>
+<tr><th id="37">37</th><td> <b>public</b>:</td></tr>
+<tr><th id="38">38</th><td>  <i>// The constructor is provided to avoid synthesized memsets.</i></td></tr>
+<tr><th id="39">39</th><td>  WinSymbolizerTool() {}</td></tr>
+<tr><th id="40">40</th><td></td></tr>
+<tr><th id="41">41</th><td>  <em>bool</em> SymbolizePC(uptr addr, SymbolizedStack *stack) override;</td></tr>
+<tr><th id="42">42</th><td>  <em>bool</em> SymbolizeData(uptr addr, DataInfo *info) override {</td></tr>
+<tr><th id="43">43</th><td>    <b>return</b> <b>false</b>;</td></tr>
+<tr><th id="44">44</th><td>  }</td></tr>
+<tr><th id="45">45</th><td>  <em>const</em> <em>char</em> *Demangle(<em>const</em> <em>char</em> *name) override;</td></tr>
+<tr><th id="46">46</th><td>};</td></tr>
+<tr><th id="47">47</th><td></td></tr>
+<tr><th id="48">48</th><td><em>bool</em> is_dbghelp_initialized = <b>false</b>;</td></tr>
+<tr><th id="49">49</th><td></td></tr>
+<tr><th id="50">50</th><td><em>bool</em> TrySymInitialize() {</td></tr>
+<tr><th id="51">51</th><td>  SymSetOptions(SYMOPT_DEFERRED_LOADS | SYMOPT_UNDNAME | SYMOPT_LOAD_LINES);</td></tr>
+<tr><th id="52">52</th><td>  <b>return</b> SymInitialize(GetCurrentProcess(), <var>0</var>, TRUE);</td></tr>
+<tr><th id="53">53</th><td>  <i>// FIXME: We don't call SymCleanup() on exit yet - should we?</i></td></tr>
+<tr><th id="54">54</th><td>}</td></tr>
+<tr><th id="55">55</th><td></td></tr>
+<tr><th id="56">56</th><td>}  <i>// namespace</i></td></tr>
+<tr><th id="57">57</th><td></td></tr>
+<tr><th id="58">58</th><td><i>// Initializes DbgHelp library, if it's not yet initialized. Calls to this</i></td></tr>
+<tr><th id="59">59</th><td><i>// function should be synchronized with respect to other calls to DbgHelp API</i></td></tr>
+<tr><th id="60">60</th><td><i>// (e.g. from WinSymbolizerTool).</i></td></tr>
+<tr><th id="61">61</th><td><em>void</em> InitializeDbgHelpIfNeeded() {</td></tr>
+<tr><th id="62">62</th><td>  <b>if</b> (is_dbghelp_initialized)</td></tr>
+<tr><th id="63">63</th><td>    <b>return</b>;</td></tr>
+<tr><th id="64">64</th><td></td></tr>
+<tr><th id="65">65</th><td>  HMODULE dbghelp = LoadLibraryA(<q>"dbghelp.dll"</q>);</td></tr>
+<tr><th id="66">66</th><td>  CHECK(dbghelp &amp;&amp; <q>"failed to load dbghelp.dll"</q>);</td></tr>
+<tr><th id="67">67</th><td></td></tr>
+<tr><th id="68">68</th><td><u>#define DBGHELP_IMPORT(name)                                                  \</u></td></tr>
+<tr><th id="69">69</th><td><u>  do {                                                                        \</u></td></tr>
+<tr><th id="70">70</th><td><u>    name =                                                                    \</u></td></tr>
+<tr><th id="71">71</th><td><u>        reinterpret_cast&lt;decltype(::name) *&gt;(GetProcAddress(dbghelp, #name)); \</u></td></tr>
+<tr><th id="72">72</th><td><u>    CHECK(name != nullptr);                                                   \</u></td></tr>
+<tr><th id="73">73</th><td><u>  } while (0)</u></td></tr>
+<tr><th id="74">74</th><td>  DBGHELP_IMPORT(StackWalk64);</td></tr>
+<tr><th id="75">75</th><td>  DBGHELP_IMPORT(SymCleanup);</td></tr>
+<tr><th id="76">76</th><td>  DBGHELP_IMPORT(SymFromAddr);</td></tr>
+<tr><th id="77">77</th><td>  DBGHELP_IMPORT(SymFunctionTableAccess64);</td></tr>
+<tr><th id="78">78</th><td>  DBGHELP_IMPORT(SymGetLineFromAddr64);</td></tr>
+<tr><th id="79">79</th><td>  DBGHELP_IMPORT(SymGetModuleBase64);</td></tr>
+<tr><th id="80">80</th><td>  DBGHELP_IMPORT(SymGetSearchPathW);</td></tr>
+<tr><th id="81">81</th><td>  DBGHELP_IMPORT(SymInitialize);</td></tr>
+<tr><th id="82">82</th><td>  DBGHELP_IMPORT(SymSetOptions);</td></tr>
+<tr><th id="83">83</th><td>  DBGHELP_IMPORT(SymSetSearchPathW);</td></tr>
+<tr><th id="84">84</th><td>  DBGHELP_IMPORT(UnDecorateSymbolName);</td></tr>
+<tr><th id="85">85</th><td><u>#undef DBGHELP_IMPORT</u></td></tr>
+<tr><th id="86">86</th><td></td></tr>
+<tr><th id="87">87</th><td>  <b>if</b> (!TrySymInitialize()) {</td></tr>
+<tr><th id="88">88</th><td>    <i>// OK, maybe the client app has called SymInitialize already.</i></td></tr>
+<tr><th id="89">89</th><td><i>    // That's a bit unfortunate for us as all the DbgHelp functions are</i></td></tr>
+<tr><th id="90">90</th><td><i>    // single-threaded and we can't coordinate with the app.</i></td></tr>
+<tr><th id="91">91</th><td><i>    // FIXME: Can we stop the other threads at this point?</i></td></tr>
+<tr><th id="92">92</th><td><i>    // Anyways, we have to reconfigure stuff to make sure that SymInitialize</i></td></tr>
+<tr><th id="93">93</th><td><i>    // has all the appropriate options set.</i></td></tr>
+<tr><th id="94">94</th><td><i>    // Cross our fingers and reinitialize DbgHelp.</i></td></tr>
+<tr><th id="95">95</th><td>    Report(<q>"*** WARNING: Failed to initialize DbgHelp!              ***\n"</q>);</td></tr>
+<tr><th id="96">96</th><td>    Report(<q>"*** Most likely this means that the app is already      ***\n"</q>);</td></tr>
+<tr><th id="97">97</th><td>    Report(<q>"*** using DbgHelp, possibly with incompatible flags.    ***\n"</q>);</td></tr>
+<tr><th id="98">98</th><td>    Report(<q>"*** Due to technical reasons, symbolization might crash ***\n"</q>);</td></tr>
+<tr><th id="99">99</th><td>    Report(<q>"*** or produce wrong results.                           ***\n"</q>);</td></tr>
+<tr><th id="100">100</th><td>    SymCleanup(GetCurrentProcess());</td></tr>
+<tr><th id="101">101</th><td>    TrySymInitialize();</td></tr>
+<tr><th id="102">102</th><td>  }</td></tr>
+<tr><th id="103">103</th><td>  is_dbghelp_initialized = <b>true</b>;</td></tr>
+<tr><th id="104">104</th><td></td></tr>
+<tr><th id="105">105</th><td>  <i>// When an executable is run from a location different from the one where it</i></td></tr>
+<tr><th id="106">106</th><td><i>  // was originally built, we may not see the nearby PDB files.</i></td></tr>
+<tr><th id="107">107</th><td><i>  // To work around this, let's append the directory of the main module</i></td></tr>
+<tr><th id="108">108</th><td><i>  // to the symbol search path.  All the failures below are not fatal.</i></td></tr>
+<tr><th id="109">109</th><td>  <em>const</em> size_t kSymPathSize = <var>2048</var>;</td></tr>
+<tr><th id="110">110</th><td>  <em>static</em> <em>wchar_t</em> path_buffer[kSymPathSize + <var>1</var> + MAX_PATH];</td></tr>
+<tr><th id="111">111</th><td>  <b>if</b> (!SymGetSearchPathW(GetCurrentProcess(), path_buffer, kSymPathSize)) {</td></tr>
+<tr><th id="112">112</th><td>    Report(<q>"*** WARNING: Failed to SymGetSearchPathW ***\n"</q>);</td></tr>
+<tr><th id="113">113</th><td>    <b>return</b>;</td></tr>
+<tr><th id="114">114</th><td>  }</td></tr>
+<tr><th id="115">115</th><td>  size_t sz = wcslen(path_buffer);</td></tr>
+<tr><th id="116">116</th><td>  <b>if</b> (sz) {</td></tr>
+<tr><th id="117">117</th><td>    CHECK_EQ(<var>0</var>, wcscat_s(path_buffer, L<q>";"</q>));</td></tr>
+<tr><th id="118">118</th><td>    sz++;</td></tr>
+<tr><th id="119">119</th><td>  }</td></tr>
+<tr><th id="120">120</th><td>  DWORD res = GetModuleFileNameW(NULL, path_buffer + sz, MAX_PATH);</td></tr>
+<tr><th id="121">121</th><td>  <b>if</b> (res == <var>0</var> || res == MAX_PATH) {</td></tr>
+<tr><th id="122">122</th><td>    Report(<q>"*** WARNING: Failed to getting the EXE directory ***\n"</q>);</td></tr>
+<tr><th id="123">123</th><td>    <b>return</b>;</td></tr>
+<tr><th id="124">124</th><td>  }</td></tr>
+<tr><th id="125">125</th><td>  <i>// Write the zero character in place of the last backslash to get the</i></td></tr>
+<tr><th id="126">126</th><td><i>  // directory of the main module at the end of path_buffer.</i></td></tr>
+<tr><th id="127">127</th><td>  <em>wchar_t</em> *last_bslash = wcsrchr(path_buffer + sz, L<kbd>'\\'</kbd>);</td></tr>
+<tr><th id="128">128</th><td>  CHECK_NE(last_bslash, <var>0</var>);</td></tr>
+<tr><th id="129">129</th><td>  *last_bslash = L<kbd>'\0'</kbd>;</td></tr>
+<tr><th id="130">130</th><td>  <b>if</b> (!SymSetSearchPathW(GetCurrentProcess(), path_buffer)) {</td></tr>
+<tr><th id="131">131</th><td>    Report(<q>"*** WARNING: Failed to SymSetSearchPathW\n"</q>);</td></tr>
+<tr><th id="132">132</th><td>    <b>return</b>;</td></tr>
+<tr><th id="133">133</th><td>  }</td></tr>
+<tr><th id="134">134</th><td>}</td></tr>
+<tr><th id="135">135</th><td></td></tr>
+<tr><th id="136">136</th><td><u>#ifdef __clang__</u></td></tr>
+<tr><th id="137">137</th><td><u>#pragma clang diagnostic push</u></td></tr>
+<tr><th id="138">138</th><td><u>#pragma clang diagnostic ignored "-Wframe-larger-than="</u></td></tr>
+<tr><th id="139">139</th><td><u>#endif</u></td></tr>
+<tr><th id="140">140</th><td><em>bool</em> WinSymbolizerTool::SymbolizePC(uptr addr, SymbolizedStack *frame) {</td></tr>
+<tr><th id="141">141</th><td>  InitializeDbgHelpIfNeeded();</td></tr>
+<tr><th id="142">142</th><td></td></tr>
+<tr><th id="143">143</th><td>  <i>// See <a href="https://docs.microsoft.com/en-us/windows/win32/debug/retrieving-symbol-information-by-address">https://docs.microsoft.com/en-us/windows/win32/debug/retrieving-symbol-information-by-address</a></i></td></tr>
+<tr><th id="144">144</th><td>  <em>char</em> buffer[<b>sizeof</b>(SYMBOL_INFO) + MAX_SYM_NAME * <b>sizeof</b>(CHAR)];</td></tr>
+<tr><th id="145">145</th><td>  PSYMBOL_INFO symbol = (PSYMBOL_INFO)buffer;</td></tr>
+<tr><th id="146">146</th><td>  symbol-&gt;SizeOfStruct = <b>sizeof</b>(SYMBOL_INFO);</td></tr>
+<tr><th id="147">147</th><td>  symbol-&gt;MaxNameLen = MAX_SYM_NAME;</td></tr>
+<tr><th id="148">148</th><td>  DWORD64 offset = <var>0</var>;</td></tr>
+<tr><th id="149">149</th><td>  BOOL got_objname = SymFromAddr(GetCurrentProcess(),</td></tr>
+<tr><th id="150">150</th><td>                                 (DWORD64)addr, &amp;offset, symbol);</td></tr>
+<tr><th id="151">151</th><td>  <b>if</b> (!got_objname)</td></tr>
+<tr><th id="152">152</th><td>    <b>return</b> <b>false</b>;</td></tr>
+<tr><th id="153">153</th><td></td></tr>
+<tr><th id="154">154</th><td>  DWORD unused;</td></tr>
+<tr><th id="155">155</th><td>  IMAGEHLP_LINE64 line_info;</td></tr>
+<tr><th id="156">156</th><td>  line_info.SizeOfStruct = <b>sizeof</b>(IMAGEHLP_LINE64);</td></tr>
+<tr><th id="157">157</th><td>  BOOL got_fileline = SymGetLineFromAddr64(GetCurrentProcess(), (DWORD64)addr,</td></tr>
+<tr><th id="158">158</th><td>                                           &amp;unused, &amp;line_info);</td></tr>
+<tr><th id="159">159</th><td>  frame-&gt;info.function = internal_strdup(symbol-&gt;Name);</td></tr>
+<tr><th id="160">160</th><td>  frame-&gt;info.function_offset = (uptr)offset;</td></tr>
+<tr><th id="161">161</th><td>  <b>if</b> (got_fileline) {</td></tr>
+<tr><th id="162">162</th><td>    frame-&gt;info.file = internal_strdup(line_info.FileName);</td></tr>
+<tr><th id="163">163</th><td>    frame-&gt;info.line = line_info.LineNumber;</td></tr>
+<tr><th id="164">164</th><td>  }</td></tr>
+<tr><th id="165">165</th><td>  <i>// Only consider this a successful symbolization attempt if we got file info.</i></td></tr>
+<tr><th id="166">166</th><td><i>  // Otherwise, try llvm-symbolizer.</i></td></tr>
+<tr><th id="167">167</th><td>  <b>return</b> got_fileline;</td></tr>
+<tr><th id="168">168</th><td>}</td></tr>
+<tr><th id="169">169</th><td><u>#ifdef __clang__</u></td></tr>
+<tr><th id="170">170</th><td><u>#pragma clang diagnostic pop</u></td></tr>
+<tr><th id="171">171</th><td><u>#endif</u></td></tr>
+<tr><th id="172">172</th><td></td></tr>
+<tr><th id="173">173</th><td><em>const</em> <em>char</em> *WinSymbolizerTool::Demangle(<em>const</em> <em>char</em> *name) {</td></tr>
+<tr><th id="174">174</th><td>  CHECK(is_dbghelp_initialized);</td></tr>
+<tr><th id="175">175</th><td>  <em>static</em> <em>char</em> demangle_buffer[<var>1000</var>];</td></tr>
+<tr><th id="176">176</th><td>  <b>if</b> (name[<var>0</var>] == <kbd>'\01'</kbd> &amp;&amp;</td></tr>
+<tr><th id="177">177</th><td>      UnDecorateSymbolName(name + <var>1</var>, demangle_buffer, <b>sizeof</b>(demangle_buffer),</td></tr>
+<tr><th id="178">178</th><td>                           UNDNAME_NAME_ONLY))</td></tr>
+<tr><th id="179">179</th><td>    <b>return</b> demangle_buffer;</td></tr>
+<tr><th id="180">180</th><td>  <b>else</b></td></tr>
+<tr><th id="181">181</th><td>    <b>return</b> name;</td></tr>
+<tr><th id="182">182</th><td>}</td></tr>
+<tr><th id="183">183</th><td></td></tr>
+<tr><th id="184">184</th><td><em>const</em> <em>char</em> *Symbolizer::PlatformDemangle(<em>const</em> <em>char</em> *name) {</td></tr>
+<tr><th id="185">185</th><td>  <b>return</b> name;</td></tr>
+<tr><th id="186">186</th><td>}</td></tr>
+<tr><th id="187">187</th><td></td></tr>
+<tr><th id="188">188</th><td><b>namespace</b> {</td></tr>
+<tr><th id="189">189</th><td><b>struct</b> ScopedHandle {</td></tr>
+<tr><th id="190">190</th><td>  ScopedHandle() : h_(<b>nullptr</b>) {}</td></tr>
+<tr><th id="191">191</th><td>  <b>explicit</b> ScopedHandle(HANDLE h) : h_(h) {}</td></tr>
+<tr><th id="192">192</th><td>  ~ScopedHandle() {</td></tr>
+<tr><th id="193">193</th><td>    <b>if</b> (h_)</td></tr>
+<tr><th id="194">194</th><td>      ::CloseHandle(h_);</td></tr>
+<tr><th id="195">195</th><td>  }</td></tr>
+<tr><th id="196">196</th><td>  HANDLE get() { <b>return</b> h_; }</td></tr>
+<tr><th id="197">197</th><td>  HANDLE *receive() { <b>return</b> &amp;h_; }</td></tr>
+<tr><th id="198">198</th><td>  HANDLE release() {</td></tr>
+<tr><th id="199">199</th><td>    HANDLE h = h_;</td></tr>
+<tr><th id="200">200</th><td>    h_ = <b>nullptr</b>;</td></tr>
+<tr><th id="201">201</th><td>    <b>return</b> h;</td></tr>
+<tr><th id="202">202</th><td>  }</td></tr>
+<tr><th id="203">203</th><td>  HANDLE h_;</td></tr>
+<tr><th id="204">204</th><td>};</td></tr>
+<tr><th id="205">205</th><td>} <i>// namespace</i></td></tr>
+<tr><th id="206">206</th><td></td></tr>
+<tr><th id="207">207</th><td><em>bool</em> SymbolizerProcess::StartSymbolizerSubprocess() {</td></tr>
+<tr><th id="208">208</th><td>  <i>// Create inherited pipes for stdin and stdout.</i></td></tr>
+<tr><th id="209">209</th><td>  ScopedHandle stdin_read, stdin_write;</td></tr>
+<tr><th id="210">210</th><td>  ScopedHandle stdout_read, stdout_write;</td></tr>
+<tr><th id="211">211</th><td>  SECURITY_ATTRIBUTES attrs;</td></tr>
+<tr><th id="212">212</th><td>  attrs.nLength = <b>sizeof</b>(SECURITY_ATTRIBUTES);</td></tr>
+<tr><th id="213">213</th><td>  attrs.bInheritHandle = TRUE;</td></tr>
+<tr><th id="214">214</th><td>  attrs.lpSecurityDescriptor = <b>nullptr</b>;</td></tr>
+<tr><th id="215">215</th><td>  <b>if</b> (!::CreatePipe(stdin_read.receive(), stdin_write.receive(), &amp;attrs, <var>0</var>) ||</td></tr>
+<tr><th id="216">216</th><td>      !::CreatePipe(stdout_read.receive(), stdout_write.receive(), &amp;attrs, <var>0</var>)) {</td></tr>
+<tr><th id="217">217</th><td>    VReport(<var>2</var>, <q>"WARNING: %s CreatePipe failed (error code: %d)\n"</q>,</td></tr>
+<tr><th id="218">218</th><td>            SanitizerToolName, path_, GetLastError());</td></tr>
+<tr><th id="219">219</th><td>    <b>return</b> <b>false</b>;</td></tr>
+<tr><th id="220">220</th><td>  }</td></tr>
+<tr><th id="221">221</th><td></td></tr>
+<tr><th id="222">222</th><td>  <i>// Don't inherit the writing end of stdin or the reading end of stdout.</i></td></tr>
+<tr><th id="223">223</th><td>  <b>if</b> (!SetHandleInformation(stdin_write.get(), HANDLE_FLAG_INHERIT, <var>0</var>) ||</td></tr>
+<tr><th id="224">224</th><td>      !SetHandleInformation(stdout_read.get(), HANDLE_FLAG_INHERIT, <var>0</var>)) {</td></tr>
+<tr><th id="225">225</th><td>    VReport(<var>2</var>, <q>"WARNING: %s SetHandleInformation failed (error code: %d)\n"</q>,</td></tr>
+<tr><th id="226">226</th><td>            SanitizerToolName, path_, GetLastError());</td></tr>
+<tr><th id="227">227</th><td>    <b>return</b> <b>false</b>;</td></tr>
+<tr><th id="228">228</th><td>  }</td></tr>
+<tr><th id="229">229</th><td></td></tr>
+<tr><th id="230">230</th><td>  <i>// Compute the command line. Wrap double quotes around everything.</i></td></tr>
+<tr><th id="231">231</th><td>  <em>const</em> <em>char</em> *argv[kArgVMax];</td></tr>
+<tr><th id="232">232</th><td>  GetArgV(path_, argv);</td></tr>
+<tr><th id="233">233</th><td>  InternalScopedString command_line(kMaxPathLength * <var>3</var>);</td></tr>
+<tr><th id="234">234</th><td>  <b>for</b> (<em>int</em> i = <var>0</var>; argv[i]; i++) {</td></tr>
+<tr><th id="235">235</th><td>    <em>const</em> <em>char</em> *arg = argv[i];</td></tr>
+<tr><th id="236">236</th><td>    <em>int</em> arglen = internal_strlen(arg);</td></tr>
+<tr><th id="237">237</th><td>    <i>// Check that tool command lines are simple and that complete escaping is</i></td></tr>
+<tr><th id="238">238</th><td><i>    // unnecessary.</i></td></tr>
+<tr><th id="239">239</th><td>    CHECK(!internal_strchr(arg, <kbd>'"'</kbd>) &amp;&amp; <q>"quotes in args unsupported"</q>);</td></tr>
+<tr><th id="240">240</th><td>    CHECK(!internal_strstr(arg, <q>"\\\\"</q>) &amp;&amp;</td></tr>
+<tr><th id="241">241</th><td>          <q>"double backslashes in args unsupported"</q>);</td></tr>
+<tr><th id="242">242</th><td>    CHECK(arglen &gt; <var>0</var> &amp;&amp; arg[arglen - <var>1</var>] != <kbd>'\\'</kbd> &amp;&amp;</td></tr>
+<tr><th id="243">243</th><td>          <q>"args ending in backslash and empty args unsupported"</q>);</td></tr>
+<tr><th id="244">244</th><td>    command_line.append(<q>"\"%s\" "</q>, arg);</td></tr>
+<tr><th id="245">245</th><td>  }</td></tr>
+<tr><th id="246">246</th><td>  VReport(<var>3</var>, <q>"Launching symbolizer command: %s\n"</q>, command_line.data());</td></tr>
+<tr><th id="247">247</th><td></td></tr>
+<tr><th id="248">248</th><td>  <i>// Launch llvm-symbolizer with stdin and stdout redirected.</i></td></tr>
+<tr><th id="249">249</th><td>  STARTUPINFOA si;</td></tr>
+<tr><th id="250">250</th><td>  memset(&amp;si, <var>0</var>, <b>sizeof</b>(si));</td></tr>
+<tr><th id="251">251</th><td>  si.cb = <b>sizeof</b>(si);</td></tr>
+<tr><th id="252">252</th><td>  si.dwFlags |= STARTF_USESTDHANDLES;</td></tr>
+<tr><th id="253">253</th><td>  si.hStdInput = stdin_read.get();</td></tr>
+<tr><th id="254">254</th><td>  si.hStdOutput = stdout_write.get();</td></tr>
+<tr><th id="255">255</th><td>  PROCESS_INFORMATION pi;</td></tr>
+<tr><th id="256">256</th><td>  memset(&amp;pi, <var>0</var>, <b>sizeof</b>(pi));</td></tr>
+<tr><th id="257">257</th><td>  <b>if</b> (!CreateProcessA(path_,               <i>// Executable</i></td></tr>
+<tr><th id="258">258</th><td>                      command_line.data(), <i>// Command line</i></td></tr>
+<tr><th id="259">259</th><td>                      <b>nullptr</b>,             <i>// Process handle not inheritable</i></td></tr>
+<tr><th id="260">260</th><td>                      <b>nullptr</b>,             <i>// Thread handle not inheritable</i></td></tr>
+<tr><th id="261">261</th><td>                      TRUE,                <i>// Set handle inheritance to TRUE</i></td></tr>
+<tr><th id="262">262</th><td>                      <var>0</var>,                   <i>// Creation flags</i></td></tr>
+<tr><th id="263">263</th><td>                      <b>nullptr</b>,             <i>// Use parent's environment block</i></td></tr>
+<tr><th id="264">264</th><td>                      <b>nullptr</b>,             <i>// Use parent's starting directory</i></td></tr>
+<tr><th id="265">265</th><td>                      &amp;si, &amp;pi)) {</td></tr>
+<tr><th id="266">266</th><td>    VReport(<var>2</var>, <q>"WARNING: %s failed to create process for %s (error code: %d)\n"</q>,</td></tr>
+<tr><th id="267">267</th><td>            SanitizerToolName, path_, GetLastError());</td></tr>
+<tr><th id="268">268</th><td>    <b>return</b> <b>false</b>;</td></tr>
+<tr><th id="269">269</th><td>  }</td></tr>
+<tr><th id="270">270</th><td></td></tr>
+<tr><th id="271">271</th><td>  <i>// Process creation succeeded, so transfer handle ownership into the fields.</i></td></tr>
+<tr><th id="272">272</th><td>  input_fd_ = stdout_read.release();</td></tr>
+<tr><th id="273">273</th><td>  output_fd_ = stdin_write.release();</td></tr>
+<tr><th id="274">274</th><td></td></tr>
+<tr><th id="275">275</th><td>  <i>// The llvm-symbolizer process is responsible for quitting itself when the</i></td></tr>
+<tr><th id="276">276</th><td><i>  // stdin pipe is closed, so we don't need these handles. Close them to prevent</i></td></tr>
+<tr><th id="277">277</th><td><i>  // leaks. If we ever want to try to kill the symbolizer process from the</i></td></tr>
+<tr><th id="278">278</th><td><i>  // parent, we'll want to hang on to these handles.</i></td></tr>
+<tr><th id="279">279</th><td>  CloseHandle(pi.hProcess);</td></tr>
+<tr><th id="280">280</th><td>  CloseHandle(pi.hThread);</td></tr>
+<tr><th id="281">281</th><td>  <b>return</b> <b>true</b>;</td></tr>
+<tr><th id="282">282</th><td>}</td></tr>
+<tr><th id="283">283</th><td></td></tr>
+<tr><th id="284">284</th><td><em>static</em> <em>void</em> ChooseSymbolizerTools(IntrusiveList&lt;SymbolizerTool&gt; *list,</td></tr>
+<tr><th id="285">285</th><td>                                  LowLevelAllocator *allocator) {</td></tr>
+<tr><th id="286">286</th><td>  <b>if</b> (!common_flags()-&gt;symbolize) {</td></tr>
+<tr><th id="287">287</th><td>    VReport(<var>2</var>, <q>"Symbolizer is disabled.\n"</q>);</td></tr>
+<tr><th id="288">288</th><td>    <b>return</b>;</td></tr>
+<tr><th id="289">289</th><td>  }</td></tr>
+<tr><th id="290">290</th><td></td></tr>
+<tr><th id="291">291</th><td>  <i>// Add llvm-symbolizer in case the binary has dwarf.</i></td></tr>
+<tr><th id="292">292</th><td>  <em>const</em> <em>char</em> *user_path = common_flags()-&gt;external_symbolizer_path;</td></tr>
+<tr><th id="293">293</th><td>  <em>const</em> <em>char</em> *path =</td></tr>
+<tr><th id="294">294</th><td>      user_path ? user_path : FindPathToBinary(<q>"llvm-symbolizer.exe"</q>);</td></tr>
+<tr><th id="295">295</th><td>  <b>if</b> (path) {</td></tr>
+<tr><th id="296">296</th><td>    VReport(<var>2</var>, <q>"Using llvm-symbolizer at %spath: %s\n"</q>,</td></tr>
+<tr><th id="297">297</th><td>            user_path ? <q>"user-specified "</q> : <q>""</q>, path);</td></tr>
+<tr><th id="298">298</th><td>    list-&gt;push_back(<b>new</b>(*allocator) LLVMSymbolizer(path, allocator));</td></tr>
+<tr><th id="299">299</th><td>  } <b>else</b> {</td></tr>
+<tr><th id="300">300</th><td>    <b>if</b> (user_path &amp;&amp; user_path[<var>0</var>] == <kbd>'\0'</kbd>) {</td></tr>
+<tr><th id="301">301</th><td>      VReport(<var>2</var>, <q>"External symbolizer is explicitly disabled.\n"</q>);</td></tr>
+<tr><th id="302">302</th><td>    } <b>else</b> {</td></tr>
+<tr><th id="303">303</th><td>      VReport(<var>2</var>, <q>"External symbolizer is not present.\n"</q>);</td></tr>
+<tr><th id="304">304</th><td>    }</td></tr>
+<tr><th id="305">305</th><td>  }</td></tr>
+<tr><th id="306">306</th><td></td></tr>
+<tr><th id="307">307</th><td>  <i>// Add the dbghelp based symbolizer.</i></td></tr>
+<tr><th id="308">308</th><td>  list-&gt;push_back(<b>new</b>(*allocator) WinSymbolizerTool());</td></tr>
+<tr><th id="309">309</th><td>}</td></tr>
+<tr><th id="310">310</th><td></td></tr>
+<tr><th id="311">311</th><td>Symbolizer *Symbolizer::PlatformInit() {</td></tr>
+<tr><th id="312">312</th><td>  IntrusiveList&lt;SymbolizerTool&gt; list;</td></tr>
+<tr><th id="313">313</th><td>  list.clear();</td></tr>
+<tr><th id="314">314</th><td>  ChooseSymbolizerTools(&amp;list, &amp;symbolizer_allocator_);</td></tr>
+<tr><th id="315">315</th><td></td></tr>
+<tr><th id="316">316</th><td>  <b>return</b> <b>new</b>(symbolizer_allocator_) Symbolizer(list);</td></tr>
+<tr><th id="317">317</th><td>}</td></tr>
+<tr><th id="318">318</th><td></td></tr>
+<tr><th id="319">319</th><td><em>void</em> Symbolizer::LateInitialize() {</td></tr>
+<tr><th id="320">320</th><td>  Symbolizer::GetOrInit()-&gt;LateInitializeTools();</td></tr>
+<tr><th id="321">321</th><td>}</td></tr>
+<tr><th id="322">322</th><td></td></tr>
+<tr><th id="323">323</th><td>}  <i>// namespace __sanitizer</i></td></tr>
+<tr><th id="324">324</th><td></td></tr>
+<tr><th id="325">325</th><td><u>#<span data-ppcond="15">endif</span>  // _WIN32</u></td></tr>
+<tr><th id="326">326</th><td></td></tr>
+</table><hr/><p id='footer'>
+Generated on <em>2021-Jul-01</em> from project llvm revision <em>12</em>

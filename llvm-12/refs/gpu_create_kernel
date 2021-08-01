@@ -1,0 +1,65 @@
+<dec f='llvm/polly/lib/External/ppcg/gpu.h' l='443' type='isl_schedule_node * gpu_create_kernel(struct gpu_gen * gen, isl_schedule_node * node, int scale, isl_multi_val * sizes)'/>
+<def f='llvm/polly/lib/External/ppcg/gpu.c' l='3834' ll='3984' type='isl_schedule_node * gpu_create_kernel(struct gpu_gen * gen, isl_schedule_node * node, int scale, isl_multi_val * sizes)'/>
+<use f='llvm/polly/lib/External/ppcg/gpu.c' l='4138' u='c' c='mark_outer_permutable'/>
+<doc f='llvm/polly/lib/External/ppcg/gpu.c' l='3773'>/* Create a ppcg_kernel representing the domain instances that reach &quot;node&quot;
+ * and insert a mark node pointing to the ppcg_kernel before &quot;node&quot;.
+ * The band that &quot;node&quot; points to is the band that needs to be mapped
+ * to block identifiers.  The band that needs to be mapped to thread
+ * identifiers should be marked by a &quot;thread&quot; mark by the caller.
+ * The linear branch between the current node and the &quot;thread&quot; mark
+ * may also have a &quot;shared&quot; mark.  If present, the mapping to shared
+ * memory is computed at that point.
+ * Both marks are removed by this function.
+ * If &quot;scale&quot; is set, then the band that &quot;node&quot; points to is scaled
+ * by &quot;sizes&quot;.
+ *
+ * Mark all outer band nodes as atomic to ensure each kernel is only
+ * scheduled once.
+ * If the domain elements that reach &quot;node&quot; live in more than one space,
+ * then group the domain elements into a single space, named kernelX,
+ * with X the kernel sequence number.
+ *
+ * Insert a guard node governing the kernel node to ensure that
+ * no kernels with zero blocks are launched.
+ *
+ * Insert a context node describing the block and thread
+ * identifiers inside the kernel mark.
+ * The context node needs to be inserted after the effective block size
+ * has been determined such that the bounds on the thread identifiers
+ * would reflect the effective block size.
+ * Insert a filter node inside the context node mapping the statement
+ * instances to block identifiers.  In particular, the block identifiers
+ * are equated to the partial schedule of band that was marked for mapping
+ * to blocks modulo the grid size.
+ * Insert a filter node inside the &quot;thread&quot; mark mapping the statement
+ * instances to thread identifiers.  In particular, the thread identifiers
+ * are equated to the partial schedule of band that was marked for mapping
+ * to threads modulo the block size.
+ *
+ * Compute array reference groups for all arrays, set the local
+ * array bounds based on the set of domain instances that reach
+ * the kernel node, check the total amount of shared memory used
+ * and compute all group tilings.
+ * The array reference groups are computed after the block filter
+ * has been inserted because it affects the mapping to shared or
+ * private memory.  This computation also requires the thread filter
+ * (in the ppcg_kernel object), but this thread filter should not
+ * have been added to the schedule tree yet since the computation
+ * requires the schedule of the band that needs to be mapped to
+ * threads before the privatization is applied.
+ *
+ * If any array reference group requires the band mapped to threads
+ * to be unrolled, then we perform the required unrolling.
+ *
+ * We save a copy of the schedule that may influence the mappings
+ * to shared or private memory in kernel-&gt;copy_schedule.
+ *
+ * Finally, we add synchronization and copy statements to the schedule tree,
+ * remove the &quot;thread&quot; mark and create representations for the local
+ * variables in the kernel.
+ *
+ * We keep a copy of the isl_id that points to the kernel to ensure
+ * that the kernel does not get destroyed if the schedule node
+ * is freed due to some error condition.
+ */</doc>
+<use f='llvm/polly/lib/External/ppcg/gpu_hybrid.c' l='101' u='c' c='update_phase'/>

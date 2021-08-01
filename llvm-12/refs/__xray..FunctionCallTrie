@@ -1,0 +1,107 @@
+<def f='llvm/compiler-rt/lib/xray/xray_function_call_trie.h' l='92' ll='599'/>
+<use f='llvm/compiler-rt/lib/xray/xray_function_call_trie.h' l='337' c='__xray::FunctionCallTrie::FunctionCallTrie'/>
+<use f='llvm/compiler-rt/lib/xray/xray_function_call_trie.h' l='338' c='__xray::FunctionCallTrie::operator='/>
+<use f='llvm/compiler-rt/lib/xray/xray_function_call_trie.h' l='338' c='__xray::FunctionCallTrie::operator='/>
+<use f='llvm/compiler-rt/lib/xray/xray_function_call_trie.h' l='340' c='__xray::FunctionCallTrie::FunctionCallTrie'/>
+<use f='llvm/compiler-rt/lib/xray/xray_function_call_trie.h' l='347' c='__xray::FunctionCallTrie::operator='/>
+<use f='llvm/compiler-rt/lib/xray/xray_function_call_trie.h' l='347' c='__xray::FunctionCallTrie::operator='/>
+<use f='llvm/compiler-rt/lib/xray/xray_function_call_trie.h' l='480' c='__xray::FunctionCallTrie::deepCopyInto'/>
+<use f='llvm/compiler-rt/lib/xray/xray_function_call_trie.h' l='543' c='__xray::FunctionCallTrie::mergeInto'/>
+<use f='llvm/compiler-rt/lib/xray/xray_profile_collector.h' l='39' c='__xray::profileCollectorService::post'/>
+<use f='llvm/compiler-rt/lib/xray/xray_profile_collector.cpp' l='63'/>
+<use f='llvm/compiler-rt/lib/xray/xray_profile_collector.cpp' l='108' c='__xray::profileCollectorService::post'/>
+<use f='llvm/compiler-rt/lib/xray/xray_profile_collector.cpp' l='168' c='__xray::profileCollectorService::(anonymousnamespace)::populateRecords'/>
+<size>136</size>
+<doc f='llvm/compiler-rt/lib/xray/xray_function_call_trie.h' l='27'>/// A FunctionCallTrie represents the stack traces of XRay instrumented
+/// functions that we&apos;ve encountered, where a node corresponds to a function and
+/// the path from the root to the node its stack trace. Each node in the trie
+/// will contain some useful values, including:
+///
+///   * The cumulative amount of time spent in this particular node/stack.
+///   * The number of times this stack has appeared.
+///   * A histogram of latencies for that particular node.
+///
+/// Each node in the trie will also contain a list of callees, represented using
+/// a Array&lt;NodeIdPair&gt; -- each NodeIdPair instance will contain the function
+/// ID of the callee, and a pointer to the node.
+///
+/// If we visualise this data structure, we&apos;ll find the following potential
+/// representation:
+///
+///   [function id node] -&gt; [callees] [cumulative time]
+///                         [call counter] [latency histogram]
+///
+/// As an example, when we have a function in this pseudocode:
+///
+///   func f(N) {
+///     g()
+///     h()
+///     for i := 1..N { j() }
+///   }
+///
+/// We may end up with a trie of the following form:
+///
+///   f -&gt; [ g, h, j ] [...] [1] [...]
+///   g -&gt; [ ... ] [...] [1] [...]
+///   h -&gt; [ ... ] [...] [1] [...]
+///   j -&gt; [ ... ] [...] [N] [...]
+///
+/// If for instance the function g() called j() like so:
+///
+///   func g() {
+///     for i := 1..10 { j() }
+///   }
+///
+/// We&apos;ll find the following updated trie:
+///
+///   f -&gt; [ g, h, j ] [...] [1] [...]
+///   g -&gt; [ j&apos; ] [...] [1] [...]
+///   h -&gt; [ ... ] [...] [1] [...]
+///   j -&gt; [ ... ] [...] [N] [...]
+///   j&apos; -&gt; [ ... ] [...] [10] [...]
+///
+/// Note that we&apos;ll have a new node representing the path `f -&gt; g -&gt; j&apos;` with
+/// isolated data. This isolation gives us a means of representing the stack
+/// traces as a path, as opposed to a key in a table. The alternative
+/// implementation here would be to use a separate table for the path, and use
+/// hashes of the path as an identifier to accumulate the information. We&apos;ve
+/// moved away from this approach as it takes a lot of time to compute the hash
+/// every time we need to update a function&apos;s call information as we&apos;re handling
+/// the entry and exit events.
+///
+/// This approach allows us to maintain a shadow stack, which represents the
+/// currently executing path, and on function exits quickly compute the amount
+/// of time elapsed from the entry, then update the counters for the node
+/// already represented in the trie. This necessitates an efficient
+/// representation of the various data structures (the list of callees must be
+/// cache-aware and efficient to look up, and the histogram must be compact and
+/// quick to update) to enable us to keep the overheads of this implementation
+/// to the minimum.</doc>
+<fun r='__xray::FunctionCallTrie::InitAllocators'/>
+<fun r='__xray::FunctionCallTrie::InitAllocatorsCustom'/>
+<fun r='__xray::FunctionCallTrie::InitAllocatorsFromBuffers'/>
+<mbr r='__xray::FunctionCallTrie::Nodes' o='0' t='__xray::FunctionCallTrie::NodeArray'/>
+<mbr r='__xray::FunctionCallTrie::Roots' o='320' t='__xray::FunctionCallTrie::RootArray'/>
+<mbr r='__xray::FunctionCallTrie::ShadowStack' o='640' t='__xray::FunctionCallTrie::ShadowStackArray'/>
+<mbr r='__xray::FunctionCallTrie::NodeIdPairAllocator' o='960' t='__xray::FunctionCallTrie::NodeIdPairAllocatorType *'/>
+<mbr r='__xray::FunctionCallTrie::OverflowedFunctions' o='1024' t='uint32_t'/>
+<fun r='__xray::FunctionCallTrie::FunctionCallTrie'/>
+<fun r='__xray::FunctionCallTrie::FunctionCallTrie'/>
+<fun r='__xray::FunctionCallTrie::FunctionCallTrie'/>
+<fun r='__xray::FunctionCallTrie::operator='/>
+<fun r='__xray::FunctionCallTrie::FunctionCallTrie'/>
+<fun r='__xray::FunctionCallTrie::operator='/>
+<fun r='__xray::FunctionCallTrie::~FunctionCallTrie'/>
+<fun r='__xray::FunctionCallTrie::enterFunction'/>
+<fun r='__xray::FunctionCallTrie::exitFunction'/>
+<fun r='__xray::FunctionCallTrie::getRoots'/>
+<fun r='__xray::FunctionCallTrie::deepCopyInto'/>
+<fun r='__xray::FunctionCallTrie::mergeInto'/>
+<use f='llvm/compiler-rt/lib/xray/xray_profiling.cpp' l='141' c='__xray::(anonymousnamespace)::getThreadLocalData'/>
+<use f='llvm/compiler-rt/lib/xray/xray_profiling.cpp' l='144' c='__xray::(anonymousnamespace)::getThreadLocalData'/>
+<use f='llvm/compiler-rt/lib/xray/xray_profiling.cpp' l='156' c='__xray::(anonymousnamespace)::cleanupTLD'/>
+<use f='llvm/compiler-rt/lib/xray/xray_profiling.cpp' l='158' c='__xray::(anonymousnamespace)::cleanupTLD'/>
+<use f='llvm/compiler-rt/lib/xray/xray_profiling.cpp' l='174' c='__xray::(anonymousnamespace)::postCurrentThreadFCT'/>
+<use f='llvm/compiler-rt/lib/xray/xray_profiling.cpp' l='177' c='__xray::(anonymousnamespace)::postCurrentThreadFCT'/>
+<use f='llvm/compiler-rt/lib/xray/xray_profiling.cpp' l='294' c='__xray::profilingHandleArg0'/>
+<size>136</size>

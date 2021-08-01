@@ -1,0 +1,340 @@
+<!doctype html>
+<html>
+<head>
+<meta name="viewport" content="width=device-width, initial-scale=1.0"><title>os_version_check.c source code [llvm/compiler-rt/lib/builtins/os_version_check.c] - Woboq Code Browser</title>
+<link rel="stylesheet" href="../../../.././data/qtcreator.css" title="QtCreator"/>
+<link rel="alternate stylesheet" href="../../../.././data/kdevelop.css" title="KDevelop"/>
+<script type="text/javascript" src="../../../.././data/jquery/jquery.min.js"></script>
+<script type="text/javascript" src="../../../.././data/jquery/jquery-ui.min.js"></script>
+<script>var file = 'llvm/compiler-rt/lib/builtins/os_version_check.c'; var root_path = '../../../..'; var data_path = '../../../.././data'; var ecma_script_api_version = 2;</script>
+<script src='../../../.././data/codebrowser.js'></script>
+</head>
+<body><div id='header'><h1 id='breadcrumb'><span>Browse the source code of </span><a href='../../..'>llvm</a>/<a href='../..'>compiler-rt</a>/<a href='..'>lib</a>/<a href='./'>builtins</a>/<a href='os_version_check.c.html'>os_version_check.c</a></h1></div>
+<hr/><div id='content'><table class="code">
+<tr><th id="1">1</th><td><i>//===-- os_version_check.c - OS version checking  -------------------------===//</i></td></tr>
+<tr><th id="2">2</th><td><i>//</i></td></tr>
+<tr><th id="3">3</th><td><i>// Part of the LLVM Project, under the Apache License v2.0 with LLVM Exceptions.</i></td></tr>
+<tr><th id="4">4</th><td><i>// See <a href="https://llvm.org/LICENSE.txt">https://llvm.org/LICENSE.txt</a> for license information.</i></td></tr>
+<tr><th id="5">5</th><td><i>// SPDX-License-Identifier: Apache-2.0 WITH LLVM-exception</i></td></tr>
+<tr><th id="6">6</th><td><i>//</i></td></tr>
+<tr><th id="7">7</th><td><i>//===----------------------------------------------------------------------===//</i></td></tr>
+<tr><th id="8">8</th><td><i>//</i></td></tr>
+<tr><th id="9">9</th><td><i>// This file implements the function __isOSVersionAtLeast, used by</i></td></tr>
+<tr><th id="10">10</th><td><i>// Objective-C's @available</i></td></tr>
+<tr><th id="11">11</th><td><i>//</i></td></tr>
+<tr><th id="12">12</th><td><i>//===----------------------------------------------------------------------===//</i></td></tr>
+<tr><th id="13">13</th><td></td></tr>
+<tr><th id="14">14</th><td><u>#<span data-ppcond="14">ifdef</span> <span class="macro" data-ref="_M/__APPLE__">__APPLE__</span></u></td></tr>
+<tr><th id="15">15</th><td></td></tr>
+<tr><th id="16">16</th><td><u>#include &lt;TargetConditionals.h&gt;</u></td></tr>
+<tr><th id="17">17</th><td><u>#include &lt;dispatch/dispatch.h&gt;</u></td></tr>
+<tr><th id="18">18</th><td><u>#include &lt;dlfcn.h&gt;</u></td></tr>
+<tr><th id="19">19</th><td><u>#include &lt;stdint.h&gt;</u></td></tr>
+<tr><th id="20">20</th><td><u>#include &lt;stdio.h&gt;</u></td></tr>
+<tr><th id="21">21</th><td><u>#include &lt;stdlib.h&gt;</u></td></tr>
+<tr><th id="22">22</th><td><u>#include &lt;string.h&gt;</u></td></tr>
+<tr><th id="23">23</th><td></td></tr>
+<tr><th id="24">24</th><td><i>// These three variables hold the host's OS version.</i></td></tr>
+<tr><th id="25">25</th><td><em>static</em> int32_t GlobalMajor, GlobalMinor, GlobalSubminor;</td></tr>
+<tr><th id="26">26</th><td><em>static</em> dispatch_once_t DispatchOnceCounter;</td></tr>
+<tr><th id="27">27</th><td><em>static</em> dispatch_once_t CompatibilityDispatchOnceCounter;</td></tr>
+<tr><th id="28">28</th><td></td></tr>
+<tr><th id="29">29</th><td><i>// _availability_version_check darwin API support.</i></td></tr>
+<tr><th id="30">30</th><td><b>typedef</b> uint32_t dyld_platform_t;</td></tr>
+<tr><th id="31">31</th><td></td></tr>
+<tr><th id="32">32</th><td><b>typedef</b> <b>struct</b> {</td></tr>
+<tr><th id="33">33</th><td>  dyld_platform_t platform;</td></tr>
+<tr><th id="34">34</th><td>  uint32_t version;</td></tr>
+<tr><th id="35">35</th><td>} dyld_build_version_t;</td></tr>
+<tr><th id="36">36</th><td></td></tr>
+<tr><th id="37">37</th><td><b>typedef</b> bool (*AvailabilityVersionCheckFuncTy)(uint32_t count,</td></tr>
+<tr><th id="38">38</th><td>                                               dyld_build_version_t versions[]);</td></tr>
+<tr><th id="39">39</th><td></td></tr>
+<tr><th id="40">40</th><td><em>static</em> AvailabilityVersionCheckFuncTy AvailabilityVersionCheck;</td></tr>
+<tr><th id="41">41</th><td></td></tr>
+<tr><th id="42">42</th><td><i>// We can't include &lt;CoreFoundation/CoreFoundation.h&gt; directly from here, so</i></td></tr>
+<tr><th id="43">43</th><td><i>// just forward declare everything that we need from it.</i></td></tr>
+<tr><th id="44">44</th><td></td></tr>
+<tr><th id="45">45</th><td><b>typedef</b> <em>const</em> <em>void</em> *CFDataRef, *CFAllocatorRef, *CFPropertyListRef,</td></tr>
+<tr><th id="46">46</th><td>    *CFStringRef, *CFDictionaryRef, *CFTypeRef, *CFErrorRef;</td></tr>
+<tr><th id="47">47</th><td></td></tr>
+<tr><th id="48">48</th><td><u>#if __LLP64__</u></td></tr>
+<tr><th id="49">49</th><td><b>typedef</b> <em>unsigned</em> <em>long</em> <em>long</em> CFTypeID;</td></tr>
+<tr><th id="50">50</th><td><b>typedef</b> <em>unsigned</em> <em>long</em> <em>long</em> CFOptionFlags;</td></tr>
+<tr><th id="51">51</th><td><b>typedef</b> <em>signed</em> <em>long</em> <em>long</em> CFIndex;</td></tr>
+<tr><th id="52">52</th><td><u>#else</u></td></tr>
+<tr><th id="53">53</th><td><b>typedef</b> <em>unsigned</em> <em>long</em> CFTypeID;</td></tr>
+<tr><th id="54">54</th><td><b>typedef</b> <em>unsigned</em> <em>long</em> CFOptionFlags;</td></tr>
+<tr><th id="55">55</th><td><b>typedef</b> <em>signed</em> <em>long</em> CFIndex;</td></tr>
+<tr><th id="56">56</th><td><u>#endif</u></td></tr>
+<tr><th id="57">57</th><td></td></tr>
+<tr><th id="58">58</th><td><b>typedef</b> <em>unsigned</em> <em>char</em> UInt8;</td></tr>
+<tr><th id="59">59</th><td><b>typedef</b> <b>_Bool</b> Boolean;</td></tr>
+<tr><th id="60">60</th><td><b>typedef</b> CFIndex CFPropertyListFormat;</td></tr>
+<tr><th id="61">61</th><td><b>typedef</b> uint32_t CFStringEncoding;</td></tr>
+<tr><th id="62">62</th><td></td></tr>
+<tr><th id="63">63</th><td><i>// kCFStringEncodingASCII analog.</i></td></tr>
+<tr><th id="64">64</th><td><u>#define CF_STRING_ENCODING_ASCII 0x0600</u></td></tr>
+<tr><th id="65">65</th><td><i>// kCFStringEncodingUTF8 analog.</i></td></tr>
+<tr><th id="66">66</th><td><u>#define CF_STRING_ENCODING_UTF8 0x08000100</u></td></tr>
+<tr><th id="67">67</th><td><u>#define CF_PROPERTY_LIST_IMMUTABLE 0</u></td></tr>
+<tr><th id="68">68</th><td></td></tr>
+<tr><th id="69">69</th><td><b>typedef</b> CFDataRef (*CFDataCreateWithBytesNoCopyFuncTy)(CFAllocatorRef,</td></tr>
+<tr><th id="70">70</th><td>                                                       <em>const</em> UInt8 *, CFIndex,</td></tr>
+<tr><th id="71">71</th><td>                                                       CFAllocatorRef);</td></tr>
+<tr><th id="72">72</th><td><b>typedef</b> CFPropertyListRef (*CFPropertyListCreateWithDataFuncTy)(</td></tr>
+<tr><th id="73">73</th><td>    CFAllocatorRef, CFDataRef, CFOptionFlags, CFPropertyListFormat *,</td></tr>
+<tr><th id="74">74</th><td>    CFErrorRef *);</td></tr>
+<tr><th id="75">75</th><td><b>typedef</b> CFPropertyListRef (*CFPropertyListCreateFromXMLDataFuncTy)(</td></tr>
+<tr><th id="76">76</th><td>    CFAllocatorRef, CFDataRef, CFOptionFlags, CFStringRef *);</td></tr>
+<tr><th id="77">77</th><td><b>typedef</b> CFStringRef (*CFStringCreateWithCStringNoCopyFuncTy)(CFAllocatorRef,</td></tr>
+<tr><th id="78">78</th><td>                                                             <em>const</em> <em>char</em> *,</td></tr>
+<tr><th id="79">79</th><td>                                                             CFStringEncoding,</td></tr>
+<tr><th id="80">80</th><td>                                                             CFAllocatorRef);</td></tr>
+<tr><th id="81">81</th><td><b>typedef</b> <em>const</em> <em>void</em> *(*CFDictionaryGetValueFuncTy)(CFDictionaryRef,</td></tr>
+<tr><th id="82">82</th><td>                                                  <em>const</em> <em>void</em> *);</td></tr>
+<tr><th id="83">83</th><td><b>typedef</b> CFTypeID (*CFGetTypeIDFuncTy)(CFTypeRef);</td></tr>
+<tr><th id="84">84</th><td><b>typedef</b> CFTypeID (*CFStringGetTypeIDFuncTy)(<em>void</em>);</td></tr>
+<tr><th id="85">85</th><td><b>typedef</b> Boolean (*CFStringGetCStringFuncTy)(CFStringRef, <em>char</em> *, CFIndex,</td></tr>
+<tr><th id="86">86</th><td>                                            CFStringEncoding);</td></tr>
+<tr><th id="87">87</th><td><b>typedef</b> <em>void</em> (*CFReleaseFuncTy)(CFTypeRef);</td></tr>
+<tr><th id="88">88</th><td></td></tr>
+<tr><th id="89">89</th><td><em>static</em> <em>void</em> _initializeAvailabilityCheck(bool LoadPlist) {</td></tr>
+<tr><th id="90">90</th><td>  <b>if</b> (AvailabilityVersionCheck &amp;&amp; !LoadPlist) {</td></tr>
+<tr><th id="91">91</th><td>    <i>// New API is supported and we're not being asked to load the plist,</i></td></tr>
+<tr><th id="92">92</th><td><i>    // exit early!</i></td></tr>
+<tr><th id="93">93</th><td>    <b>return</b>;</td></tr>
+<tr><th id="94">94</th><td>  }</td></tr>
+<tr><th id="95">95</th><td></td></tr>
+<tr><th id="96">96</th><td>  <i>// Use the new API if it's is available.</i></td></tr>
+<tr><th id="97">97</th><td>  AvailabilityVersionCheck = (AvailabilityVersionCheckFuncTy)dlsym(</td></tr>
+<tr><th id="98">98</th><td>      RTLD_DEFAULT, <q>"_availability_version_check"</q>);</td></tr>
+<tr><th id="99">99</th><td></td></tr>
+<tr><th id="100">100</th><td>  <b>if</b> (AvailabilityVersionCheck &amp;&amp; !LoadPlist) {</td></tr>
+<tr><th id="101">101</th><td>    <i>// New API is supported and we're not being asked to load the plist,</i></td></tr>
+<tr><th id="102">102</th><td><i>    // exit early!</i></td></tr>
+<tr><th id="103">103</th><td>    <b>return</b>;</td></tr>
+<tr><th id="104">104</th><td>  }</td></tr>
+<tr><th id="105">105</th><td>  <i>// Still load the PLIST to ensure that the existing calls to</i></td></tr>
+<tr><th id="106">106</th><td><i>  // __isOSVersionAtLeast still work even with new compiler-rt and old OSes.</i></td></tr>
+<tr><th id="107">107</th><td><i></i></td></tr>
+<tr><th id="108">108</th><td><i>  // Load CoreFoundation dynamically</i></td></tr>
+<tr><th id="109">109</th><td>  <em>const</em> <em>void</em> *NullAllocator = dlsym(RTLD_DEFAULT, <q>"kCFAllocatorNull"</q>);</td></tr>
+<tr><th id="110">110</th><td>  <b>if</b> (!NullAllocator)</td></tr>
+<tr><th id="111">111</th><td>    <b>return</b>;</td></tr>
+<tr><th id="112">112</th><td>  <em>const</em> CFAllocatorRef AllocatorNull = *(<em>const</em> CFAllocatorRef *)NullAllocator;</td></tr>
+<tr><th id="113">113</th><td>  CFDataCreateWithBytesNoCopyFuncTy CFDataCreateWithBytesNoCopyFunc =</td></tr>
+<tr><th id="114">114</th><td>      (CFDataCreateWithBytesNoCopyFuncTy)dlsym(RTLD_DEFAULT,</td></tr>
+<tr><th id="115">115</th><td>                                               <q>"CFDataCreateWithBytesNoCopy"</q>);</td></tr>
+<tr><th id="116">116</th><td>  <b>if</b> (!CFDataCreateWithBytesNoCopyFunc)</td></tr>
+<tr><th id="117">117</th><td>    <b>return</b>;</td></tr>
+<tr><th id="118">118</th><td>  CFPropertyListCreateWithDataFuncTy CFPropertyListCreateWithDataFunc =</td></tr>
+<tr><th id="119">119</th><td>      (CFPropertyListCreateWithDataFuncTy)dlsym(RTLD_DEFAULT,</td></tr>
+<tr><th id="120">120</th><td>                                                <q>"CFPropertyListCreateWithData"</q>);</td></tr>
+<tr><th id="121">121</th><td><i>// CFPropertyListCreateWithData was introduced only in macOS 10.6+, so it</i></td></tr>
+<tr><th id="122">122</th><td><i>// will be NULL on earlier OS versions.</i></td></tr>
+<tr><th id="123">123</th><td><u>#pragma clang diagnostic push</u></td></tr>
+<tr><th id="124">124</th><td><u>#pragma clang diagnostic ignored "-Wdeprecated-declarations"</u></td></tr>
+<tr><th id="125">125</th><td>  CFPropertyListCreateFromXMLDataFuncTy CFPropertyListCreateFromXMLDataFunc =</td></tr>
+<tr><th id="126">126</th><td>      (CFPropertyListCreateFromXMLDataFuncTy)dlsym(</td></tr>
+<tr><th id="127">127</th><td>          RTLD_DEFAULT, <q>"CFPropertyListCreateFromXMLData"</q>);</td></tr>
+<tr><th id="128">128</th><td><u>#pragma clang diagnostic pop</u></td></tr>
+<tr><th id="129">129</th><td>  <i>// CFPropertyListCreateFromXMLDataFunc is deprecated in macOS 10.10, so it</i></td></tr>
+<tr><th id="130">130</th><td><i>  // might be NULL in future OS versions.</i></td></tr>
+<tr><th id="131">131</th><td>  <b>if</b> (!CFPropertyListCreateWithDataFunc &amp;&amp; !CFPropertyListCreateFromXMLDataFunc)</td></tr>
+<tr><th id="132">132</th><td>    <b>return</b>;</td></tr>
+<tr><th id="133">133</th><td>  CFStringCreateWithCStringNoCopyFuncTy CFStringCreateWithCStringNoCopyFunc =</td></tr>
+<tr><th id="134">134</th><td>      (CFStringCreateWithCStringNoCopyFuncTy)dlsym(</td></tr>
+<tr><th id="135">135</th><td>          RTLD_DEFAULT, <q>"CFStringCreateWithCStringNoCopy"</q>);</td></tr>
+<tr><th id="136">136</th><td>  <b>if</b> (!CFStringCreateWithCStringNoCopyFunc)</td></tr>
+<tr><th id="137">137</th><td>    <b>return</b>;</td></tr>
+<tr><th id="138">138</th><td>  CFDictionaryGetValueFuncTy CFDictionaryGetValueFunc =</td></tr>
+<tr><th id="139">139</th><td>      (CFDictionaryGetValueFuncTy)dlsym(RTLD_DEFAULT, <q>"CFDictionaryGetValue"</q>);</td></tr>
+<tr><th id="140">140</th><td>  <b>if</b> (!CFDictionaryGetValueFunc)</td></tr>
+<tr><th id="141">141</th><td>    <b>return</b>;</td></tr>
+<tr><th id="142">142</th><td>  CFGetTypeIDFuncTy CFGetTypeIDFunc =</td></tr>
+<tr><th id="143">143</th><td>      (CFGetTypeIDFuncTy)dlsym(RTLD_DEFAULT, <q>"CFGetTypeID"</q>);</td></tr>
+<tr><th id="144">144</th><td>  <b>if</b> (!CFGetTypeIDFunc)</td></tr>
+<tr><th id="145">145</th><td>    <b>return</b>;</td></tr>
+<tr><th id="146">146</th><td>  CFStringGetTypeIDFuncTy CFStringGetTypeIDFunc =</td></tr>
+<tr><th id="147">147</th><td>      (CFStringGetTypeIDFuncTy)dlsym(RTLD_DEFAULT, <q>"CFStringGetTypeID"</q>);</td></tr>
+<tr><th id="148">148</th><td>  <b>if</b> (!CFStringGetTypeIDFunc)</td></tr>
+<tr><th id="149">149</th><td>    <b>return</b>;</td></tr>
+<tr><th id="150">150</th><td>  CFStringGetCStringFuncTy CFStringGetCStringFunc =</td></tr>
+<tr><th id="151">151</th><td>      (CFStringGetCStringFuncTy)dlsym(RTLD_DEFAULT, <q>"CFStringGetCString"</q>);</td></tr>
+<tr><th id="152">152</th><td>  <b>if</b> (!CFStringGetCStringFunc)</td></tr>
+<tr><th id="153">153</th><td>    <b>return</b>;</td></tr>
+<tr><th id="154">154</th><td>  CFReleaseFuncTy CFReleaseFunc =</td></tr>
+<tr><th id="155">155</th><td>      (CFReleaseFuncTy)dlsym(RTLD_DEFAULT, <q>"CFRelease"</q>);</td></tr>
+<tr><th id="156">156</th><td>  <b>if</b> (!CFReleaseFunc)</td></tr>
+<tr><th id="157">157</th><td>    <b>return</b>;</td></tr>
+<tr><th id="158">158</th><td></td></tr>
+<tr><th id="159">159</th><td>  <em>char</em> *PListPath = <q>"/System/Library/CoreServices/SystemVersion.plist"</q>;</td></tr>
+<tr><th id="160">160</th><td></td></tr>
+<tr><th id="161">161</th><td><u>#if TARGET_OS_SIMULATOR</u></td></tr>
+<tr><th id="162">162</th><td>  <em>char</em> *PListPathPrefix = getenv(<q>"IPHONE_SIMULATOR_ROOT"</q>);</td></tr>
+<tr><th id="163">163</th><td>  <b>if</b> (!PListPathPrefix)</td></tr>
+<tr><th id="164">164</th><td>    <b>return</b>;</td></tr>
+<tr><th id="165">165</th><td>  <em>char</em> FullPath[strlen(PListPathPrefix) + strlen(PListPath) + <var>1</var>];</td></tr>
+<tr><th id="166">166</th><td>  strcpy(FullPath, PListPathPrefix);</td></tr>
+<tr><th id="167">167</th><td>  strcat(FullPath, PListPath);</td></tr>
+<tr><th id="168">168</th><td>  PListPath = FullPath;</td></tr>
+<tr><th id="169">169</th><td><u>#endif</u></td></tr>
+<tr><th id="170">170</th><td>  FILE *PropertyList = fopen(PListPath, <q>"r"</q>);</td></tr>
+<tr><th id="171">171</th><td>  <b>if</b> (!PropertyList)</td></tr>
+<tr><th id="172">172</th><td>    <b>return</b>;</td></tr>
+<tr><th id="173">173</th><td></td></tr>
+<tr><th id="174">174</th><td>  <i>// Dynamically allocated stuff.</i></td></tr>
+<tr><th id="175">175</th><td>  CFDictionaryRef PListRef = NULL;</td></tr>
+<tr><th id="176">176</th><td>  CFDataRef FileContentsRef = NULL;</td></tr>
+<tr><th id="177">177</th><td>  UInt8 *PListBuf = NULL;</td></tr>
+<tr><th id="178">178</th><td></td></tr>
+<tr><th id="179">179</th><td>  fseek(PropertyList, <var>0</var>, SEEK_END);</td></tr>
+<tr><th id="180">180</th><td>  <em>long</em> PListFileSize = ftell(PropertyList);</td></tr>
+<tr><th id="181">181</th><td>  <b>if</b> (PListFileSize &lt; <var>0</var>)</td></tr>
+<tr><th id="182">182</th><td>    <b>goto</b> Fail;</td></tr>
+<tr><th id="183">183</th><td>  rewind(PropertyList);</td></tr>
+<tr><th id="184">184</th><td></td></tr>
+<tr><th id="185">185</th><td>  PListBuf = malloc((size_t)PListFileSize);</td></tr>
+<tr><th id="186">186</th><td>  <b>if</b> (!PListBuf)</td></tr>
+<tr><th id="187">187</th><td>    <b>goto</b> Fail;</td></tr>
+<tr><th id="188">188</th><td></td></tr>
+<tr><th id="189">189</th><td>  size_t NumRead = fread(PListBuf, <var>1</var>, (size_t)PListFileSize, PropertyList);</td></tr>
+<tr><th id="190">190</th><td>  <b>if</b> (NumRead != (size_t)PListFileSize)</td></tr>
+<tr><th id="191">191</th><td>    <b>goto</b> Fail;</td></tr>
+<tr><th id="192">192</th><td></td></tr>
+<tr><th id="193">193</th><td>  <i>// Get the file buffer into CF's format. We pass in a null allocator here *</i></td></tr>
+<tr><th id="194">194</th><td><i>  // because we free PListBuf ourselves</i></td></tr>
+<tr><th id="195">195</th><td>  FileContentsRef = (*CFDataCreateWithBytesNoCopyFunc)(</td></tr>
+<tr><th id="196">196</th><td>      NULL, PListBuf, (CFIndex)NumRead, AllocatorNull);</td></tr>
+<tr><th id="197">197</th><td>  <b>if</b> (!FileContentsRef)</td></tr>
+<tr><th id="198">198</th><td>    <b>goto</b> Fail;</td></tr>
+<tr><th id="199">199</th><td></td></tr>
+<tr><th id="200">200</th><td>  <b>if</b> (CFPropertyListCreateWithDataFunc)</td></tr>
+<tr><th id="201">201</th><td>    PListRef = (*CFPropertyListCreateWithDataFunc)(</td></tr>
+<tr><th id="202">202</th><td>        NULL, FileContentsRef, CF_PROPERTY_LIST_IMMUTABLE, NULL, NULL);</td></tr>
+<tr><th id="203">203</th><td>  <b>else</b></td></tr>
+<tr><th id="204">204</th><td>    PListRef = (*CFPropertyListCreateFromXMLDataFunc)(</td></tr>
+<tr><th id="205">205</th><td>        NULL, FileContentsRef, CF_PROPERTY_LIST_IMMUTABLE, NULL);</td></tr>
+<tr><th id="206">206</th><td>  <b>if</b> (!PListRef)</td></tr>
+<tr><th id="207">207</th><td>    <b>goto</b> Fail;</td></tr>
+<tr><th id="208">208</th><td></td></tr>
+<tr><th id="209">209</th><td>  CFStringRef ProductVersion = (*CFStringCreateWithCStringNoCopyFunc)(</td></tr>
+<tr><th id="210">210</th><td>      NULL, <q>"ProductVersion"</q>, CF_STRING_ENCODING_ASCII, AllocatorNull);</td></tr>
+<tr><th id="211">211</th><td>  <b>if</b> (!ProductVersion)</td></tr>
+<tr><th id="212">212</th><td>    <b>goto</b> Fail;</td></tr>
+<tr><th id="213">213</th><td>  CFTypeRef OpaqueValue = (*CFDictionaryGetValueFunc)(PListRef, ProductVersion);</td></tr>
+<tr><th id="214">214</th><td>  (*CFReleaseFunc)(ProductVersion);</td></tr>
+<tr><th id="215">215</th><td>  <b>if</b> (!OpaqueValue ||</td></tr>
+<tr><th id="216">216</th><td>      (*CFGetTypeIDFunc)(OpaqueValue) != (*CFStringGetTypeIDFunc)())</td></tr>
+<tr><th id="217">217</th><td>    <b>goto</b> Fail;</td></tr>
+<tr><th id="218">218</th><td></td></tr>
+<tr><th id="219">219</th><td>  <em>char</em> VersionStr[<var>32</var>];</td></tr>
+<tr><th id="220">220</th><td>  <b>if</b> (!(*CFStringGetCStringFunc)((CFStringRef)OpaqueValue, VersionStr,</td></tr>
+<tr><th id="221">221</th><td>                                 <b>sizeof</b>(VersionStr), CF_STRING_ENCODING_UTF8))</td></tr>
+<tr><th id="222">222</th><td>    <b>goto</b> Fail;</td></tr>
+<tr><th id="223">223</th><td>  sscanf(VersionStr, <q>"%d.%d.%d"</q>, &amp;GlobalMajor, &amp;GlobalMinor, &amp;GlobalSubminor);</td></tr>
+<tr><th id="224">224</th><td></td></tr>
+<tr><th id="225">225</th><td>Fail:</td></tr>
+<tr><th id="226">226</th><td>  <b>if</b> (PListRef)</td></tr>
+<tr><th id="227">227</th><td>    (*CFReleaseFunc)(PListRef);</td></tr>
+<tr><th id="228">228</th><td>  <b>if</b> (FileContentsRef)</td></tr>
+<tr><th id="229">229</th><td>    (*CFReleaseFunc)(FileContentsRef);</td></tr>
+<tr><th id="230">230</th><td>  free(PListBuf);</td></tr>
+<tr><th id="231">231</th><td>  fclose(PropertyList);</td></tr>
+<tr><th id="232">232</th><td>}</td></tr>
+<tr><th id="233">233</th><td></td></tr>
+<tr><th id="234">234</th><td><i>// Find and parse the SystemVersion.plist file.</i></td></tr>
+<tr><th id="235">235</th><td><em>static</em> <em>void</em> compatibilityInitializeAvailabilityCheck(<em>void</em> *Unused) {</td></tr>
+<tr><th id="236">236</th><td>  (<em>void</em>)Unused;</td></tr>
+<tr><th id="237">237</th><td>  _initializeAvailabilityCheck(<i>/*LoadPlist=*/</i>true);</td></tr>
+<tr><th id="238">238</th><td>}</td></tr>
+<tr><th id="239">239</th><td></td></tr>
+<tr><th id="240">240</th><td><em>static</em> <em>void</em> initializeAvailabilityCheck(<em>void</em> *Unused) {</td></tr>
+<tr><th id="241">241</th><td>  (<em>void</em>)Unused;</td></tr>
+<tr><th id="242">242</th><td>  _initializeAvailabilityCheck(<i>/*LoadPlist=*/</i>false);</td></tr>
+<tr><th id="243">243</th><td>}</td></tr>
+<tr><th id="244">244</th><td></td></tr>
+<tr><th id="245">245</th><td><i>// This old API entry point is no longer used by Clang for Darwin. We still need</i></td></tr>
+<tr><th id="246">246</th><td><i>// to keep it around to ensure that object files that reference it are still</i></td></tr>
+<tr><th id="247">247</th><td><i>// usable when linked with new compiler-rt.</i></td></tr>
+<tr><th id="248">248</th><td>int32_t __isOSVersionAtLeast(int32_t Major, int32_t Minor, int32_t Subminor) {</td></tr>
+<tr><th id="249">249</th><td>  <i>// Populate the global version variables, if they haven't already.</i></td></tr>
+<tr><th id="250">250</th><td>  dispatch_once_f(&amp;CompatibilityDispatchOnceCounter, NULL,</td></tr>
+<tr><th id="251">251</th><td>                  compatibilityInitializeAvailabilityCheck);</td></tr>
+<tr><th id="252">252</th><td></td></tr>
+<tr><th id="253">253</th><td>  <b>if</b> (Major &lt; GlobalMajor)</td></tr>
+<tr><th id="254">254</th><td>    <b>return</b> <var>1</var>;</td></tr>
+<tr><th id="255">255</th><td>  <b>if</b> (Major &gt; GlobalMajor)</td></tr>
+<tr><th id="256">256</th><td>    <b>return</b> <var>0</var>;</td></tr>
+<tr><th id="257">257</th><td>  <b>if</b> (Minor &lt; GlobalMinor)</td></tr>
+<tr><th id="258">258</th><td>    <b>return</b> <var>1</var>;</td></tr>
+<tr><th id="259">259</th><td>  <b>if</b> (Minor &gt; GlobalMinor)</td></tr>
+<tr><th id="260">260</th><td>    <b>return</b> <var>0</var>;</td></tr>
+<tr><th id="261">261</th><td>  <b>return</b> Subminor &lt;= GlobalSubminor;</td></tr>
+<tr><th id="262">262</th><td>}</td></tr>
+<tr><th id="263">263</th><td></td></tr>
+<tr><th id="264">264</th><td><em>static</em> <b>inline</b> uint32_t ConstructVersion(uint32_t Major, uint32_t Minor,</td></tr>
+<tr><th id="265">265</th><td>                                        uint32_t Subminor) {</td></tr>
+<tr><th id="266">266</th><td>  <b>return</b> ((Major &amp; <var>0xffff</var>) &lt;&lt; <var>16</var>) | ((Minor &amp; <var>0xff</var>) &lt;&lt; <var>8</var>) | (Subminor &amp; <var>0xff</var>);</td></tr>
+<tr><th id="267">267</th><td>}</td></tr>
+<tr><th id="268">268</th><td></td></tr>
+<tr><th id="269">269</th><td>int32_t __isPlatformVersionAtLeast(uint32_t Platform, uint32_t Major,</td></tr>
+<tr><th id="270">270</th><td>                                   uint32_t Minor, uint32_t Subminor) {</td></tr>
+<tr><th id="271">271</th><td>  dispatch_once_f(&amp;DispatchOnceCounter, NULL, initializeAvailabilityCheck);</td></tr>
+<tr><th id="272">272</th><td></td></tr>
+<tr><th id="273">273</th><td>  <b>if</b> (!AvailabilityVersionCheck) {</td></tr>
+<tr><th id="274">274</th><td>    <b>return</b> __isOSVersionAtLeast(Major, Minor, Subminor);</td></tr>
+<tr><th id="275">275</th><td>  }</td></tr>
+<tr><th id="276">276</th><td>  dyld_build_version_t Versions[] = {</td></tr>
+<tr><th id="277">277</th><td>      {Platform, ConstructVersion(Major, Minor, Subminor)}};</td></tr>
+<tr><th id="278">278</th><td>  <b>return</b> AvailabilityVersionCheck(<var>1</var>, Versions);</td></tr>
+<tr><th id="279">279</th><td>}</td></tr>
+<tr><th id="280">280</th><td></td></tr>
+<tr><th id="281">281</th><td><u>#<span data-ppcond="14">elif</span> __ANDROID__</u></td></tr>
+<tr><th id="282">282</th><td></td></tr>
+<tr><th id="283">283</th><td><u>#include &lt;pthread.h&gt;</u></td></tr>
+<tr><th id="284">284</th><td><u>#include &lt;stdlib.h&gt;</u></td></tr>
+<tr><th id="285">285</th><td><u>#include &lt;string.h&gt;</u></td></tr>
+<tr><th id="286">286</th><td><u>#include &lt;sys/system_properties.h&gt;</u></td></tr>
+<tr><th id="287">287</th><td></td></tr>
+<tr><th id="288">288</th><td><em>static</em> <em>int</em> SdkVersion;</td></tr>
+<tr><th id="289">289</th><td><em>static</em> <em>int</em> IsPreRelease;</td></tr>
+<tr><th id="290">290</th><td></td></tr>
+<tr><th id="291">291</th><td><em>static</em> <em>void</em> readSystemProperties(<em>void</em>) {</td></tr>
+<tr><th id="292">292</th><td>  <em>char</em> buf[PROP_VALUE_MAX];</td></tr>
+<tr><th id="293">293</th><td></td></tr>
+<tr><th id="294">294</th><td>  <b>if</b> (__system_property_get(<q>"ro.build.version.sdk"</q>, buf) == <var>0</var>) {</td></tr>
+<tr><th id="295">295</th><td>    <i>// When the system property doesn't exist, defaults to future API level.</i></td></tr>
+<tr><th id="296">296</th><td>    SdkVersion = __ANDROID_API_FUTURE__;</td></tr>
+<tr><th id="297">297</th><td>  } <b>else</b> {</td></tr>
+<tr><th id="298">298</th><td>    SdkVersion = atoi(buf);</td></tr>
+<tr><th id="299">299</th><td>  }</td></tr>
+<tr><th id="300">300</th><td></td></tr>
+<tr><th id="301">301</th><td>  <b>if</b> (__system_property_get(<q>"ro.build.version.codename"</q>, buf) == <var>0</var>) {</td></tr>
+<tr><th id="302">302</th><td>    IsPreRelease = <var>1</var>;</td></tr>
+<tr><th id="303">303</th><td>  } <b>else</b> {</td></tr>
+<tr><th id="304">304</th><td>    IsPreRelease = strcmp(buf, <q>"REL"</q>) != <var>0</var>;</td></tr>
+<tr><th id="305">305</th><td>  }</td></tr>
+<tr><th id="306">306</th><td>  <b>return</b>;</td></tr>
+<tr><th id="307">307</th><td>}</td></tr>
+<tr><th id="308">308</th><td></td></tr>
+<tr><th id="309">309</th><td>int32_t __isOSVersionAtLeast(int32_t Major, int32_t Minor, int32_t Subminor) {</td></tr>
+<tr><th id="310">310</th><td>  (int32_t) Minor;</td></tr>
+<tr><th id="311">311</th><td>  (int32_t) Subminor;</td></tr>
+<tr><th id="312">312</th><td>  <em>static</em> pthread_once_t once = PTHREAD_ONCE_INIT;</td></tr>
+<tr><th id="313">313</th><td>  pthread_once(&amp;once, readSystemProperties);</td></tr>
+<tr><th id="314">314</th><td></td></tr>
+<tr><th id="315">315</th><td>  <b>return</b> SdkVersion &gt;= Major ||</td></tr>
+<tr><th id="316">316</th><td>         (IsPreRelease &amp;&amp; Major == __ANDROID_API_FUTURE__);</td></tr>
+<tr><th id="317">317</th><td>}</td></tr>
+<tr><th id="318">318</th><td></td></tr>
+<tr><th id="319">319</th><td><u>#<span data-ppcond="14">else</span></u></td></tr>
+<tr><th id="320">320</th><td></td></tr>
+<tr><th id="321">321</th><td><i>// Silence an empty translation unit warning.</i></td></tr>
+<tr><th id="322">322</th><td><b>typedef</b> <em>int</em> <dfn class="typedef" id="unused" title='unused' data-type='int' data-ref="unused" data-ref-filename="unused">unused</dfn>;</td></tr>
+<tr><th id="323">323</th><td></td></tr>
+<tr><th id="324">324</th><td><u>#<span data-ppcond="14">endif</span></u></td></tr>
+<tr><th id="325">325</th><td></td></tr>
+</table><hr/><p id='footer'>
+Generated on <em>2021-Jul-01</em> from project llvm revision <em>12</em>

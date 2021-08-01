@@ -1,0 +1,25 @@
+<dec f='llvm/llvm/include/llvm/CodeGen/StackProtector.h' l='50' type='llvm::Function *'/>
+<offset>832</offset>
+<use f='llvm/llvm/lib/CodeGen/StackProtector.cpp' l='84' u='w' c='_ZN4llvm14StackProtector13runOnFunctionERNS_8FunctionE'/>
+<use f='llvm/llvm/lib/CodeGen/StackProtector.cpp' l='85' u='r' c='_ZN4llvm14StackProtector13runOnFunctionERNS_8FunctionE'/>
+<use f='llvm/llvm/lib/CodeGen/StackProtector.cpp' l='278' u='r' c='_ZN4llvm14StackProtector22RequiresStackProtectorEv'/>
+<use f='llvm/llvm/lib/CodeGen/StackProtector.cpp' l='284' u='r' c='_ZN4llvm14StackProtector22RequiresStackProtectorEv'/>
+<use f='llvm/llvm/lib/CodeGen/StackProtector.cpp' l='286' u='r' c='_ZN4llvm14StackProtector22RequiresStackProtectorEv'/>
+<use f='llvm/llvm/lib/CodeGen/StackProtector.cpp' l='288' u='r' c='_ZN4llvm14StackProtector22RequiresStackProtectorEv'/>
+<use f='llvm/llvm/lib/CodeGen/StackProtector.cpp' l='290' u='r' c='_ZN4llvm14StackProtector22RequiresStackProtectorEv'/>
+<use f='llvm/llvm/lib/CodeGen/StackProtector.cpp' l='295' u='r' c='_ZN4llvm14StackProtector22RequiresStackProtectorEv'/>
+<use f='llvm/llvm/lib/CodeGen/StackProtector.cpp' l='297' u='r' c='_ZN4llvm14StackProtector22RequiresStackProtectorEv'/>
+<use f='llvm/llvm/lib/CodeGen/StackProtector.cpp' l='300' u='r' c='_ZN4llvm14StackProtector22RequiresStackProtectorEv'/>
+<use f='llvm/llvm/lib/CodeGen/StackProtector.cpp' l='308' u='r' c='_ZN4llvm14StackProtector22RequiresStackProtectorEv'/>
+<use f='llvm/llvm/lib/CodeGen/StackProtector.cpp' l='345' u='r' c='_ZN4llvm14StackProtector22RequiresStackProtectorEv'/>
+<use f='llvm/llvm/lib/CodeGen/StackProtector.cpp' l='361' u='r' c='_ZN4llvm14StackProtector22RequiresStackProtectorEv'/>
+<use f='llvm/llvm/lib/CodeGen/StackProtector.cpp' l='443' u='r' c='_ZN4llvm14StackProtector21InsertStackProtectorsEv'/>
+<use f='llvm/llvm/lib/CodeGen/StackProtector.cpp' l='443' u='r' c='_ZN4llvm14StackProtector21InsertStackProtectorsEv'/>
+<use f='llvm/llvm/lib/CodeGen/StackProtector.cpp' l='452' u='r' c='_ZN4llvm14StackProtector21InsertStackProtectorsEv'/>
+<use f='llvm/llvm/lib/CodeGen/StackProtector.cpp' l='463' u='r' c='_ZN4llvm14StackProtector21InsertStackProtectorsEv'/>
+<use f='llvm/llvm/lib/CodeGen/StackProtector.cpp' l='541' u='r' c='_ZN4llvm14StackProtector21InsertStackProtectorsEv'/>
+<use f='llvm/llvm/lib/CodeGen/StackProtector.cpp' l='556' u='r' c='_ZN4llvm14StackProtector12CreateFailBBEv'/>
+<use f='llvm/llvm/lib/CodeGen/StackProtector.cpp' l='557' u='r' c='_ZN4llvm14StackProtector12CreateFailBBEv'/>
+<use f='llvm/llvm/lib/CodeGen/StackProtector.cpp' l='559' u='r' c='_ZN4llvm14StackProtector12CreateFailBBEv'/>
+<use f='llvm/llvm/lib/CodeGen/StackProtector.cpp' l='561' u='r' c='_ZN4llvm14StackProtector12CreateFailBBEv'/>
+<use f='llvm/llvm/lib/CodeGen/StackProtector.cpp' l='567' u='r' c='_ZN4llvm14StackProtector12CreateFailBBEv'/>

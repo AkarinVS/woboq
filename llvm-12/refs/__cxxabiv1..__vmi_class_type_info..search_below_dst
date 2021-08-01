@@ -1,0 +1,56 @@
+<dec f='llvm/libcxxabi/src/private_typeinfo.h' l='192' type='void __cxxabiv1::__vmi_class_type_info::search_below_dst(__cxxabiv1::__dynamic_cast_info * , const void * , int , bool ) const'/>
+<inh f='llvm/libcxxabi/src/private_typeinfo.cpp' l='1113' c='__cxxabiv1::__class_type_info::search_below_dst'/>
+<def f='llvm/libcxxabi/src/private_typeinfo.cpp' l='862' ll='1031' type='void __cxxabiv1::__vmi_class_type_info::search_below_dst(__cxxabiv1::__dynamic_cast_info * info, const void * current_ptr, int path_below, bool use_strcmp) const'/>
+<doc f='llvm/libcxxabi/src/private_typeinfo.cpp' l='809'>// Call this function when searching below a dst_type node.  This function searches
+// for a path to (static_ptr, static_type) and for paths to one or more dst_type nodes.
+// If it finds a static_type node, there is no need to further search base classes
+// above.
+// If it finds a dst_type node it should search base classes using search_above_dst
+// to find out if this dst_type points to (static_ptr, static_type) or not.
+// Either way, the dst_type is recorded as one of two &quot;flavors&quot;:  one that does
+// or does not point to (static_ptr, static_type).
+// If this is neither a static_type nor a dst_type node, continue searching
+// base classes above.
+// All the hoopla surrounding the search code is doing nothing but looking for
+// excuses to stop the search prematurely (break out of the for-loop).  That is,
+// the algorithm below is simply an optimization of this:
+// void
+// __vmi_class_type_info::search_below_dst(__dynamic_cast_info* info,
+//                                         const void* current_ptr,
+//                                         int path_below) const
+// {
+//     typedef const __base_class_type_info* Iter;
+//     if (this == info-&gt;static_type)
+//         process_static_type_below_dst(info, current_ptr, path_below);
+//     else if (this == info-&gt;dst_type)
+//     {
+//         // Record the most public access path that got us here
+//         if (info-&gt;path_dynamic_ptr_to_dst_ptr != public_path)
+//             info-&gt;path_dynamic_ptr_to_dst_ptr = path_below;
+//         bool does_dst_type_point_to_our_static_type = false;
+//         for (Iter p = __base_info, e= __base_info + __base_count; p &lt; e; ++p)
+//         {
+//             p-&gt;search_above_dst(info, current_ptr, current_ptr, public_path);
+//             if (info-&gt;found_our_static_ptr)
+//                 does_dst_type_point_to_our_static_type = true;
+//             // break out early here if you can detect it doesn&apos;t matter if you do
+//         }
+//         if (!does_dst_type_point_to_our_static_type)
+//         {
+//             // We found a dst_type that doesn&apos;t point to (static_ptr, static_type)
+//             // So record the address of this dst_ptr and increment the
+//             // count of the number of such dst_types found in the tree.
+//             info-&gt;dst_ptr_not_leading_to_static_ptr = current_ptr;
+//             info-&gt;number_to_dst_ptr += 1;
+//         }
+//     }
+//     else
+//     {
+//         // This is not a static_type and not a dst_type.
+//         for (Iter p = __base_info, e = __base_info + __base_count; p &lt; e; ++p)
+//         {
+//             p-&gt;search_below_dst(info, current_ptr, public_path);
+//             // break out early here if you can detect it doesn&apos;t matter if you do
+//         }
+//     }
+// }</doc>

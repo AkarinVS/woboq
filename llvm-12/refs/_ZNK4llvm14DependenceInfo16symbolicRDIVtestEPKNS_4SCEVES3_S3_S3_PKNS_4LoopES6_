@@ -1,0 +1,55 @@
+<dec f='llvm/llvm/include/llvm/Analysis/DependenceAnalysis.h' l='757' type='bool llvm::DependenceInfo::symbolicRDIVtest(const llvm::SCEV * SrcCoeff, const llvm::SCEV * DstCoeff, const llvm::SCEV * SrcConst, const llvm::SCEV * DstConst, const llvm::Loop * SrcLoop, const llvm::Loop * DstLoop) const'/>
+<doc f='llvm/llvm/include/llvm/Analysis/DependenceAnalysis.h' l='748'>/// symbolicRDIVtest - Tests the RDIV subscript pair for dependence.
+    /// Things of the form [c1 + a*i] and [c2 + b*j],
+    /// where i and j are induction variable, c1 and c2 are loop invariant,
+    /// and a and b are constants.
+    /// Returns true if any possible dependence is disproved.
+    /// Marks the result as inconsistent.
+    /// Works in some cases that exactRDIVtest doesn&apos;t,
+    /// and vice versa. Can also be used as a backup for
+    /// ordinary SIV tests.</doc>
+<def f='llvm/llvm/lib/Analysis/DependenceAnalysis.cpp' l='2024' ll='2128' type='bool llvm::DependenceInfo::symbolicRDIVtest(const llvm::SCEV * A1, const llvm::SCEV * A2, const llvm::SCEV * C1, const llvm::SCEV * C2, const llvm::Loop * Loop1, const llvm::Loop * Loop2) const'/>
+<use f='llvm/llvm/lib/Analysis/DependenceAnalysis.cpp' l='2167' u='c' c='_ZNK4llvm14DependenceInfo7testSIVEPKNS_4SCEVES3_RjRNS_14FullDependenceERNS0_10ConstraintERS3_'/>
+<use f='llvm/llvm/lib/Analysis/DependenceAnalysis.cpp' l='2264' u='c' c='_ZNK4llvm14DependenceInfo8testRDIVEPKNS_4SCEVES3_RNS_14FullDependenceE'/>
+<doc f='llvm/llvm/lib/Analysis/DependenceAnalysis.cpp' l='1982'>// symbolicRDIVtest -
+// In Section 4.5 of the Practical Dependence Testing paper,the authors
+// introduce a special case of Banerjee&apos;s Inequalities (also called the
+// Extreme-Value Test) that can handle some of the SIV and RDIV cases,
+// particularly cases with symbolics. Since it&apos;s only able to disprove
+// dependence (not compute distances or directions), we&apos;ll use it as a
+// fall back for the other tests.
+//
+// When we have a pair of subscripts of the form [c1 + a1*i] and [c2 + a2*j]
+// where i and j are induction variables and c1 and c2 are loop invariants,
+// we can use the symbolic tests to disprove some dependences, serving as a
+// backup for the RDIV test. Note that i and j can be the same variable,
+// letting this test serve as a backup for the various SIV tests.
+//
+// For a dependence to exist, c1 + a1*i must equal c2 + a2*j for some
+//  0 &lt;= i &lt;= N1 and some 0 &lt;= j &lt;= N2, where N1 and N2 are the (normalized)
+// loop bounds for the i and j loops, respectively. So, ...
+//
+// c1 + a1*i = c2 + a2*j
+// a1*i - a2*j = c2 - c1
+//
+// To test for a dependence, we compute c2 - c1 and make sure it&apos;s in the
+// range of the maximum and minimum possible values of a1*i - a2*j.
+// Considering the signs of a1 and a2, we have 4 possible cases:
+//
+// 1) If a1 &gt;= 0 and a2 &gt;= 0, then
+//        a1*0 - a2*N2 &lt;= c2 - c1 &lt;= a1*N1 - a2*0
+//              -a2*N2 &lt;= c2 - c1 &lt;= a1*N1
+//
+// 2) If a1 &gt;= 0 and a2 &lt;= 0, then
+//        a1*0 - a2*0 &lt;= c2 - c1 &lt;= a1*N1 - a2*N2
+//                  0 &lt;= c2 - c1 &lt;= a1*N1 - a2*N2
+//
+// 3) If a1 &lt;= 0 and a2 &gt;= 0, then
+//        a1*N1 - a2*N2 &lt;= c2 - c1 &lt;= a1*0 - a2*0
+//        a1*N1 - a2*N2 &lt;= c2 - c1 &lt;= 0
+//
+// 4) If a1 &lt;= 0 and a2 &lt;= 0, then
+//        a1*N1 - a2*0  &lt;= c2 - c1 &lt;= a1*0 - a2*N2
+//        a1*N1         &lt;= c2 - c1 &lt;=       -a2*N2
+//
+// return true if dependence disproved</doc>

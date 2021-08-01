@@ -1,0 +1,88 @@
+<!doctype html>
+<html>
+<head>
+<meta name="viewport" content="width=device-width, initial-scale=1.0"><title>IOStream.h source code [llvm/lldb/tools/lldb-vscode/IOStream.h] - Woboq Code Browser</title>
+<meta name="woboq:interestingDefinitions" content="lldb_vscode::InputStream,lldb_vscode::OutputStream,lldb_vscode::StreamDescriptor "/>
+<link rel="stylesheet" href="../../../.././data/qtcreator.css" title="QtCreator"/>
+<link rel="alternate stylesheet" href="../../../.././data/kdevelop.css" title="KDevelop"/>
+<script type="text/javascript" src="../../../.././data/jquery/jquery.min.js"></script>
+<script type="text/javascript" src="../../../.././data/jquery/jquery-ui.min.js"></script>
+<script>var file = 'llvm/lldb/tools/lldb-vscode/IOStream.h'; var root_path = '../../../..'; var data_path = '../../../.././data'; var ecma_script_api_version = 2;</script>
+<script src='../../../.././data/codebrowser.js'></script>
+</head>
+<body><div id='header'><h1 id='breadcrumb'><span>Browse the source code of </span><a href='../../..'>llvm</a>/<a href='../..'>lldb</a>/<a href='..'>tools</a>/<a href='./'>lldb-vscode</a>/<a href='IOStream.h.html'>IOStream.h</a></h1></div>
+<hr/><div id='content'><table class="code">
+<tr><th id="1">1</th><td><i>//===-- IOStream.h ----------------------------------------------*- C++ -*-===//</i></td></tr>
+<tr><th id="2">2</th><td><i>//</i></td></tr>
+<tr><th id="3">3</th><td><i>// Part of the LLVM Project, under the Apache License v2.0 with LLVM Exceptions.</i></td></tr>
+<tr><th id="4">4</th><td><i>// See <a href="https://llvm.org/LICENSE.txt">https://llvm.org/LICENSE.txt</a> for license information.</i></td></tr>
+<tr><th id="5">5</th><td><i>// SPDX-License-Identifier: Apache-2.0 WITH LLVM-exception</i></td></tr>
+<tr><th id="6">6</th><td><i>//</i></td></tr>
+<tr><th id="7">7</th><td><i>//===----------------------------------------------------------------------===//</i></td></tr>
+<tr><th id="8">8</th><td></td></tr>
+<tr><th id="9">9</th><td><u>#<span data-ppcond="9">ifndef</span> <span class="macro" data-ref="_M/LLDB_TOOLS_LLDB_VSCODE_IOSTREAM_H">LLDB_TOOLS_LLDB_VSCODE_IOSTREAM_H</span></u></td></tr>
+<tr><th id="10">10</th><td><u>#define <dfn class="macro" id="_M/LLDB_TOOLS_LLDB_VSCODE_IOSTREAM_H" data-ref="_M/LLDB_TOOLS_LLDB_VSCODE_IOSTREAM_H">LLDB_TOOLS_LLDB_VSCODE_IOSTREAM_H</dfn></u></td></tr>
+<tr><th id="11">11</th><td></td></tr>
+<tr><th id="12">12</th><td><u>#include <a href="../../../build/include/llvm/Config/llvm-config.h.html">"llvm/Config/llvm-config.h"</a> // for LLVM_ON_UNIX</u></td></tr>
+<tr><th id="13">13</th><td></td></tr>
+<tr><th id="14">14</th><td><u>#<span data-ppcond="14">if</span> defined(<span class="macro" data-ref="_M/_WIN32">_WIN32</span>)</u></td></tr>
+<tr><th id="15">15</th><td><i>// We need to #define NOMINMAX in order to skip `min()` and `max()` macro</i></td></tr>
+<tr><th id="16">16</th><td><i>// definitions that conflict with other system headers.</i></td></tr>
+<tr><th id="17">17</th><td><i>// We also need to #undef GetObject (which is defined to GetObjectW) because</i></td></tr>
+<tr><th id="18">18</th><td><i>// the JSON code we use also has methods named `GetObject()` and we conflict</i></td></tr>
+<tr><th id="19">19</th><td><i>// against these.</i></td></tr>
+<tr><th id="20">20</th><td><u>#define NOMINMAX</u></td></tr>
+<tr><th id="21">21</th><td><u>#include &lt;windows.h&gt;</u></td></tr>
+<tr><th id="22">22</th><td><u>#<span data-ppcond="14">else</span></u></td></tr>
+<tr><th id="23">23</th><td><b>typedef</b> <em>int</em> <dfn class="typedef" id="SOCKET" title='SOCKET' data-type='int' data-ref="SOCKET" data-ref-filename="SOCKET">SOCKET</dfn>;</td></tr>
+<tr><th id="24">24</th><td><u>#<span data-ppcond="14">endif</span></u></td></tr>
+<tr><th id="25">25</th><td></td></tr>
+<tr><th id="26">26</th><td><u>#include <a href="../../../llvm/include/llvm/ADT/StringRef.h.html">"llvm/ADT/StringRef.h"</a></u></td></tr>
+<tr><th id="27">27</th><td></td></tr>
+<tr><th id="28">28</th><td><u>#include &lt;fstream&gt;</u></td></tr>
+<tr><th id="29">29</th><td><u>#include &lt;string&gt;</u></td></tr>
+<tr><th id="30">30</th><td></td></tr>
+<tr><th id="31">31</th><td><i>// Windows requires different system calls for dealing with sockets and other</i></td></tr>
+<tr><th id="32">32</th><td><i>// types of files, so we can't simply have one code path that just uses read</i></td></tr>
+<tr><th id="33">33</th><td><i>// and write everywhere.  So we need an abstraction in order to allow us to</i></td></tr>
+<tr><th id="34">34</th><td><i>// treat them identically.</i></td></tr>
+<tr><th id="35">35</th><td><b>namespace</b> <span class="namespace">lldb_vscode</span> {</td></tr>
+<tr><th id="36">36</th><td><b>struct</b> <dfn class="type def" id="lldb_vscode::StreamDescriptor" title='lldb_vscode::StreamDescriptor' data-ref="lldb_vscode::StreamDescriptor" data-ref-filename="lldb_vscode..StreamDescriptor">StreamDescriptor</dfn> {</td></tr>
+<tr><th id="37">37</th><td>  <dfn class="decl fn" id="_ZN11lldb_vscode16StreamDescriptorC1Ev" title='lldb_vscode::StreamDescriptor::StreamDescriptor' data-ref="_ZN11lldb_vscode16StreamDescriptorC1Ev" data-ref-filename="_ZN11lldb_vscode16StreamDescriptorC1Ev">StreamDescriptor</dfn>();</td></tr>
+<tr><th id="38">38</th><td>  <dfn class="decl fn" id="_ZN11lldb_vscode16StreamDescriptorD1Ev" title='lldb_vscode::StreamDescriptor::~StreamDescriptor' data-ref="_ZN11lldb_vscode16StreamDescriptorD1Ev" data-ref-filename="_ZN11lldb_vscode16StreamDescriptorD1Ev">~StreamDescriptor</dfn>();</td></tr>
+<tr><th id="39">39</th><td>  <dfn class="decl fn" id="_ZN11lldb_vscode16StreamDescriptorC1EOS0_" title='lldb_vscode::StreamDescriptor::StreamDescriptor' data-ref="_ZN11lldb_vscode16StreamDescriptorC1EOS0_" data-ref-filename="_ZN11lldb_vscode16StreamDescriptorC1EOS0_">StreamDescriptor</dfn>(<a class="type" href="#lldb_vscode::StreamDescriptor" title='lldb_vscode::StreamDescriptor' data-ref="lldb_vscode::StreamDescriptor" data-ref-filename="lldb_vscode..StreamDescriptor">StreamDescriptor</a> &amp;&amp;<dfn class="local col5 decl" id="5other" title='other' data-type='lldb_vscode::StreamDescriptor &amp;&amp;' data-ref="5other" data-ref-filename="5other">other</dfn>);</td></tr>
+<tr><th id="40">40</th><td></td></tr>
+<tr><th id="41">41</th><td>  <a class="type" href="#lldb_vscode::StreamDescriptor" title='lldb_vscode::StreamDescriptor' data-ref="lldb_vscode::StreamDescriptor" data-ref-filename="lldb_vscode..StreamDescriptor">StreamDescriptor</a> &amp;<dfn class="decl fn" id="_ZN11lldb_vscode16StreamDescriptoraSEOS0_" title='lldb_vscode::StreamDescriptor::operator=' data-ref="_ZN11lldb_vscode16StreamDescriptoraSEOS0_" data-ref-filename="_ZN11lldb_vscode16StreamDescriptoraSEOS0_"><b>operator</b>=</dfn>(<a class="type" href="#lldb_vscode::StreamDescriptor" title='lldb_vscode::StreamDescriptor' data-ref="lldb_vscode::StreamDescriptor" data-ref-filename="lldb_vscode..StreamDescriptor">StreamDescriptor</a> &amp;&amp;<dfn class="local col6 decl" id="6other" title='other' data-type='lldb_vscode::StreamDescriptor &amp;&amp;' data-ref="6other" data-ref-filename="6other">other</dfn>);</td></tr>
+<tr><th id="42">42</th><td></td></tr>
+<tr><th id="43">43</th><td>  <em>static</em> <a class="type" href="#lldb_vscode::StreamDescriptor" title='lldb_vscode::StreamDescriptor' data-ref="lldb_vscode::StreamDescriptor" data-ref-filename="lldb_vscode..StreamDescriptor">StreamDescriptor</a> <dfn class="decl fn" id="_ZN11lldb_vscode16StreamDescriptor11from_socketEib" title='lldb_vscode::StreamDescriptor::from_socket' data-ref="_ZN11lldb_vscode16StreamDescriptor11from_socketEib" data-ref-filename="_ZN11lldb_vscode16StreamDescriptor11from_socketEib">from_socket</dfn>(<a class="typedef" href="#SOCKET" title='SOCKET' data-type='int' data-ref="SOCKET" data-ref-filename="SOCKET">SOCKET</a> <dfn class="local col7 decl" id="7s" title='s' data-type='SOCKET' data-ref="7s" data-ref-filename="7s">s</dfn>, <em>bool</em> <dfn class="local col8 decl" id="8close" title='close' data-type='bool' data-ref="8close" data-ref-filename="8close">close</dfn>);</td></tr>
+<tr><th id="44">44</th><td>  <em>static</em> <a class="type" href="#lldb_vscode::StreamDescriptor" title='lldb_vscode::StreamDescriptor' data-ref="lldb_vscode::StreamDescriptor" data-ref-filename="lldb_vscode..StreamDescriptor">StreamDescriptor</a> <dfn class="decl fn" id="_ZN11lldb_vscode16StreamDescriptor9from_fileEib" title='lldb_vscode::StreamDescriptor::from_file' data-ref="_ZN11lldb_vscode16StreamDescriptor9from_fileEib" data-ref-filename="_ZN11lldb_vscode16StreamDescriptor9from_fileEib">from_file</dfn>(<em>int</em> <dfn class="local col9 decl" id="9fd" title='fd' data-type='int' data-ref="9fd" data-ref-filename="9fd">fd</dfn>, <em>bool</em> <dfn class="local col0 decl" id="10close" title='close' data-type='bool' data-ref="10close" data-ref-filename="10close">close</dfn>);</td></tr>
+<tr><th id="45">45</th><td></td></tr>
+<tr><th id="46">46</th><td>  <em>bool</em> <dfn class="decl field" id="lldb_vscode::StreamDescriptor::m_is_socket" title='lldb_vscode::StreamDescriptor::m_is_socket' data-ref="lldb_vscode::StreamDescriptor::m_is_socket" data-ref-filename="lldb_vscode..StreamDescriptor..m_is_socket">m_is_socket</dfn> = <b>false</b>;</td></tr>
+<tr><th id="47">47</th><td>  <em>bool</em> <dfn class="decl field" id="lldb_vscode::StreamDescriptor::m_close" title='lldb_vscode::StreamDescriptor::m_close' data-ref="lldb_vscode::StreamDescriptor::m_close" data-ref-filename="lldb_vscode..StreamDescriptor..m_close">m_close</dfn> = <b>false</b>;</td></tr>
+<tr><th id="48">48</th><td>  <b>union</b> {</td></tr>
+<tr><th id="49">49</th><td>    <em>int</em> <dfn class="decl field" id="lldb_vscode::StreamDescriptor::(anonymous)::m_fd" title='lldb_vscode::StreamDescriptor::(anonymous union)::m_fd' data-ref="lldb_vscode::StreamDescriptor::(anonymous)::m_fd" data-ref-filename="lldb_vscode..StreamDescriptor..(anonymous)..m_fd">m_fd</dfn>;</td></tr>
+<tr><th id="50">50</th><td>    <a class="typedef" href="#SOCKET" title='SOCKET' data-type='int' data-ref="SOCKET" data-ref-filename="SOCKET">SOCKET</a> <dfn class="decl field" id="lldb_vscode::StreamDescriptor::(anonymous)::m_socket" title='lldb_vscode::StreamDescriptor::(anonymous union)::m_socket' data-ref="lldb_vscode::StreamDescriptor::(anonymous)::m_socket" data-ref-filename="lldb_vscode..StreamDescriptor..(anonymous)..m_socket">m_socket</dfn>;</td></tr>
+<tr><th id="51">51</th><td>  };</td></tr>
+<tr><th id="52">52</th><td>};</td></tr>
+<tr><th id="53">53</th><td></td></tr>
+<tr><th id="54">54</th><td><b>struct</b> <dfn class="type def" id="lldb_vscode::InputStream" title='lldb_vscode::InputStream' data-ref="lldb_vscode::InputStream" data-ref-filename="lldb_vscode..InputStream">InputStream</dfn> {</td></tr>
+<tr><th id="55">55</th><td>  <a class="type" href="#lldb_vscode::StreamDescriptor" title='lldb_vscode::StreamDescriptor' data-ref="lldb_vscode::StreamDescriptor" data-ref-filename="lldb_vscode..StreamDescriptor">StreamDescriptor</a> <dfn class="decl field" id="lldb_vscode::InputStream::descriptor" title='lldb_vscode::InputStream::descriptor' data-ref="lldb_vscode::InputStream::descriptor" data-ref-filename="lldb_vscode..InputStream..descriptor">descriptor</dfn>;</td></tr>
+<tr><th id="56">56</th><td></td></tr>
+<tr><th id="57">57</th><td>  <em>bool</em> <dfn class="decl fn" id="_ZN11lldb_vscode11InputStream9read_fullEPSt14basic_ofstreamIcSt11char_traitsIcEEmRNSt7__cxx1112basic_stringIcS3_SaIcEEE" title='lldb_vscode::InputStream::read_full' data-ref="_ZN11lldb_vscode11InputStream9read_fullEPSt14basic_ofstreamIcSt11char_traitsIcEEmRNSt7__cxx1112basic_stringIcS3_SaIcEEE" data-ref-filename="_ZN11lldb_vscode11InputStream9read_fullEPSt14basic_ofstreamIcSt11char_traitsIcEEmRNSt7__cxx1112basic_stringIcS3_SaIcEEE">read_full</dfn>(<span class="namespace">std::</span><span class='typedef' title='std::ofstream' data-type='basic_ofstream&lt;char&gt;' data-ref="std::ofstream" data-ref-filename="std..ofstream">ofstream</span> *<dfn class="local col1 decl" id="11log" title='log' data-type='std::ofstream *' data-ref="11log" data-ref-filename="11log">log</dfn>, <span class='typedef' title='size_t' data-type='unsigned long' data-ref="size_t" data-ref-filename="size_t">size_t</span> <dfn class="local col2 decl" id="12length" title='length' data-type='size_t' data-ref="12length" data-ref-filename="12length">length</dfn>, <span class="namespace">std::</span><span class='typedef' title='std::string' data-type='basic_string&lt;char&gt;' data-ref="std::string" data-ref-filename="std..string">string</span> &amp;<dfn class="local col3 decl" id="13text" title='text' data-type='std::string &amp;' data-ref="13text" data-ref-filename="13text">text</dfn>);</td></tr>
+<tr><th id="58">58</th><td></td></tr>
+<tr><th id="59">59</th><td>  <em>bool</em> <dfn class="decl fn" id="_ZN11lldb_vscode11InputStream9read_lineEPSt14basic_ofstreamIcSt11char_traitsIcEERNSt7__cxx1112basic_stringIcS3_SaIcEEE" title='lldb_vscode::InputStream::read_line' data-ref="_ZN11lldb_vscode11InputStream9read_lineEPSt14basic_ofstreamIcSt11char_traitsIcEERNSt7__cxx1112basic_stringIcS3_SaIcEEE" data-ref-filename="_ZN11lldb_vscode11InputStream9read_lineEPSt14basic_ofstreamIcSt11char_traitsIcEERNSt7__cxx1112basic_stringIcS3_SaIcEEE">read_line</dfn>(<span class="namespace">std::</span><span class='typedef' title='std::ofstream' data-type='basic_ofstream&lt;char&gt;' data-ref="std::ofstream" data-ref-filename="std..ofstream">ofstream</span> *<dfn class="local col4 decl" id="14log" title='log' data-type='std::ofstream *' data-ref="14log" data-ref-filename="14log">log</dfn>, <span class="namespace">std::</span><span class='typedef' title='std::string' data-type='basic_string&lt;char&gt;' data-ref="std::string" data-ref-filename="std..string">string</span> &amp;<dfn class="local col5 decl" id="15line" title='line' data-type='std::string &amp;' data-ref="15line" data-ref-filename="15line">line</dfn>);</td></tr>
+<tr><th id="60">60</th><td></td></tr>
+<tr><th id="61">61</th><td>  <em>bool</em> <dfn class="decl fn" id="_ZN11lldb_vscode11InputStream13read_expectedEPSt14basic_ofstreamIcSt11char_traitsIcEEN4llvm9StringRefE" title='lldb_vscode::InputStream::read_expected' data-ref="_ZN11lldb_vscode11InputStream13read_expectedEPSt14basic_ofstreamIcSt11char_traitsIcEEN4llvm9StringRefE" data-ref-filename="_ZN11lldb_vscode11InputStream13read_expectedEPSt14basic_ofstreamIcSt11char_traitsIcEEN4llvm9StringRefE">read_expected</dfn>(<span class="namespace">std::</span><span class='typedef' title='std::ofstream' data-type='basic_ofstream&lt;char&gt;' data-ref="std::ofstream" data-ref-filename="std..ofstream">ofstream</span> *<dfn class="local col6 decl" id="16log" title='log' data-type='std::ofstream *' data-ref="16log" data-ref-filename="16log">log</dfn>, <span class="namespace">llvm::</span><a class="type" href="../../../llvm/include/llvm/ADT/StringRef.h.html#llvm::StringRef" title='llvm::StringRef' data-ref="llvm::StringRef" data-ref-filename="llvm..StringRef">StringRef</a> <dfn class="local col7 decl" id="17expected" title='expected' data-type='llvm::StringRef' data-ref="17expected" data-ref-filename="17expected">expected</dfn>);</td></tr>
+<tr><th id="62">62</th><td>};</td></tr>
+<tr><th id="63">63</th><td></td></tr>
+<tr><th id="64">64</th><td><b>struct</b> <dfn class="type def" id="lldb_vscode::OutputStream" title='lldb_vscode::OutputStream' data-ref="lldb_vscode::OutputStream" data-ref-filename="lldb_vscode..OutputStream">OutputStream</dfn> {</td></tr>
+<tr><th id="65">65</th><td>  <a class="type" href="#lldb_vscode::StreamDescriptor" title='lldb_vscode::StreamDescriptor' data-ref="lldb_vscode::StreamDescriptor" data-ref-filename="lldb_vscode..StreamDescriptor">StreamDescriptor</a> <dfn class="decl field" id="lldb_vscode::OutputStream::descriptor" title='lldb_vscode::OutputStream::descriptor' data-ref="lldb_vscode::OutputStream::descriptor" data-ref-filename="lldb_vscode..OutputStream..descriptor">descriptor</dfn>;</td></tr>
+<tr><th id="66">66</th><td></td></tr>
+<tr><th id="67">67</th><td>  <em>bool</em> <dfn class="decl fn" id="_ZN11lldb_vscode12OutputStream10write_fullEN4llvm9StringRefE" title='lldb_vscode::OutputStream::write_full' data-ref="_ZN11lldb_vscode12OutputStream10write_fullEN4llvm9StringRefE" data-ref-filename="_ZN11lldb_vscode12OutputStream10write_fullEN4llvm9StringRefE">write_full</dfn>(<span class="namespace">llvm::</span><a class="type" href="../../../llvm/include/llvm/ADT/StringRef.h.html#llvm::StringRef" title='llvm::StringRef' data-ref="llvm::StringRef" data-ref-filename="llvm..StringRef">StringRef</a> <dfn class="local col8 decl" id="18str" title='str' data-type='llvm::StringRef' data-ref="18str" data-ref-filename="18str">str</dfn>);</td></tr>
+<tr><th id="68">68</th><td>};</td></tr>
+<tr><th id="69">69</th><td>} <i>// namespace lldb_vscode</i></td></tr>
+<tr><th id="70">70</th><td></td></tr>
+<tr><th id="71">71</th><td><u>#<span data-ppcond="9">endif</span></u></td></tr>
+<tr><th id="72">72</th><td></td></tr>
+</table><hr/><p id='footer'>
+Generated while processing <a href='ExceptionBreakpoint.cpp.html'>llvm/lldb/tools/lldb-vscode/ExceptionBreakpoint.cpp</a><br/>Generated on <em>2021-Jul-01</em> from project llvm revision <em>12</em>

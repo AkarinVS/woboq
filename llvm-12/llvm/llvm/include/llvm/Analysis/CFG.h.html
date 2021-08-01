@@ -1,0 +1,194 @@
+<!doctype html>
+<html>
+<head>
+<meta name="viewport" content="width=device-width, initial-scale=1.0"><title>CFG.h source code [llvm/llvm/include/llvm/Analysis/CFG.h] - Woboq Code Browser</title>
+<link rel="stylesheet" href="../../../../.././data/qtcreator.css" title="QtCreator"/>
+<link rel="alternate stylesheet" href="../../../../.././data/kdevelop.css" title="KDevelop"/>
+<script type="text/javascript" src="../../../../.././data/jquery/jquery.min.js"></script>
+<script type="text/javascript" src="../../../../.././data/jquery/jquery-ui.min.js"></script>
+<script>var file = 'llvm/llvm/include/llvm/Analysis/CFG.h'; var root_path = '../../../../..'; var data_path = '../../../../.././data'; var ecma_script_api_version = 2;</script>
+<script src='../../../../.././data/codebrowser.js'></script>
+</head>
+<body><div id='header'><h1 id='breadcrumb'><span>Browse the source code of </span><a href='../../../..'>llvm</a>/<a href='../../..'>llvm</a>/<a href='../..'>include</a>/<a href='..'>llvm</a>/<a href='./'>Analysis</a>/<a href='CFG.h.html'>CFG.h</a></h1></div>
+<hr/><div id='content'><table class="code">
+<tr><th id="1">1</th><td><i>//===-- Analysis/CFG.h - BasicBlock Analyses --------------------*- C++ -*-===//</i></td></tr>
+<tr><th id="2">2</th><td><i>//</i></td></tr>
+<tr><th id="3">3</th><td><i>// Part of the LLVM Project, under the Apache License v2.0 with LLVM Exceptions.</i></td></tr>
+<tr><th id="4">4</th><td><i>// See <a href="https://llvm.org/LICENSE.txt">https://llvm.org/LICENSE.txt</a> for license information.</i></td></tr>
+<tr><th id="5">5</th><td><i>// SPDX-License-Identifier: Apache-2.0 WITH LLVM-exception</i></td></tr>
+<tr><th id="6">6</th><td><i>//</i></td></tr>
+<tr><th id="7">7</th><td><i>//===----------------------------------------------------------------------===//</i></td></tr>
+<tr><th id="8">8</th><td><i>//</i></td></tr>
+<tr><th id="9">9</th><td><i>// This family of functions performs analyses on basic blocks, and instructions</i></td></tr>
+<tr><th id="10">10</th><td><i>// contained within basic blocks.</i></td></tr>
+<tr><th id="11">11</th><td><i>//</i></td></tr>
+<tr><th id="12">12</th><td><i>//===----------------------------------------------------------------------===//</i></td></tr>
+<tr><th id="13">13</th><td></td></tr>
+<tr><th id="14">14</th><td><u>#<span data-ppcond="14">ifndef</span> <span class="macro" data-ref="_M/LLVM_ANALYSIS_CFG_H">LLVM_ANALYSIS_CFG_H</span></u></td></tr>
+<tr><th id="15">15</th><td><u>#define <dfn class="macro" id="_M/LLVM_ANALYSIS_CFG_H" data-ref="_M/LLVM_ANALYSIS_CFG_H">LLVM_ANALYSIS_CFG_H</dfn></u></td></tr>
+<tr><th id="16">16</th><td></td></tr>
+<tr><th id="17">17</th><td><u>#include <a href="../ADT/GraphTraits.h.html">"llvm/ADT/GraphTraits.h"</a></u></td></tr>
+<tr><th id="18">18</th><td><u>#include <a href="../ADT/SmallPtrSet.h.html">"llvm/ADT/SmallPtrSet.h"</a></u></td></tr>
+<tr><th id="19">19</th><td><u>#include &lt;utility&gt;</u></td></tr>
+<tr><th id="20">20</th><td></td></tr>
+<tr><th id="21">21</th><td><b>namespace</b> <span class="namespace">llvm</span> {</td></tr>
+<tr><th id="22">22</th><td></td></tr>
+<tr><th id="23">23</th><td><b>class</b> <a class="type" href="../IR/BasicBlock.h.html#llvm::BasicBlock" title='llvm::BasicBlock' data-ref="llvm::BasicBlock" data-ref-filename="llvm..BasicBlock" id="llvm::BasicBlock">BasicBlock</a>;</td></tr>
+<tr><th id="24">24</th><td><b>class</b> <a class="type" href="../IR/Dominators.h.html#llvm::DominatorTree" title='llvm::DominatorTree' data-ref="llvm::DominatorTree" data-ref-filename="llvm..DominatorTree" id="llvm::DominatorTree">DominatorTree</a>;</td></tr>
+<tr><th id="25">25</th><td><b>class</b> <a class="type" href="../IR/Function.h.html#llvm::Function" title='llvm::Function' data-ref="llvm::Function" data-ref-filename="llvm..Function" id="llvm::Function">Function</a>;</td></tr>
+<tr><th id="26">26</th><td><b>class</b> <a class="type" href="../IR/Instruction.h.html#llvm::Instruction" title='llvm::Instruction' data-ref="llvm::Instruction" data-ref-filename="llvm..Instruction" id="llvm::Instruction">Instruction</a>;</td></tr>
+<tr><th id="27">27</th><td><b>class</b> <a class="type" href="LoopInfo.h.html#llvm::LoopInfo" title='llvm::LoopInfo' data-ref="llvm::LoopInfo" data-ref-filename="llvm..LoopInfo" id="llvm::LoopInfo">LoopInfo</a>;</td></tr>
+<tr><th id="28">28</th><td><b>template</b> &lt;<b>typename</b> T&gt; <b>class</b> <a class="type" href="../ADT/SmallVector.h.html#llvm::SmallVectorImpl" title='llvm::SmallVectorImpl' data-ref="llvm::SmallVectorImpl" data-ref-filename="llvm..SmallVectorImpl" id="llvm::SmallVectorImpl">SmallVectorImpl</a>;</td></tr>
+<tr><th id="29">29</th><td></td></tr>
+<tr><th id="30">30</th><td><i class="doc">/// Analyze the specified function to find all of the loop backedges in the</i></td></tr>
+<tr><th id="31">31</th><td><i class="doc">/// function and return them.  This is a relatively cheap (compared to</i></td></tr>
+<tr><th id="32">32</th><td><i class="doc">/// computing dominators and loop info) analysis.</i></td></tr>
+<tr><th id="33">33</th><td><i class="doc">///</i></td></tr>
+<tr><th id="34">34</th><td><i class="doc">/// The output is added to Result, as pairs of &lt;from,to&gt; edge info.</i></td></tr>
+<tr><th id="35">35</th><td><em>void</em> <dfn class="decl fn" id="_ZN4llvm21FindFunctionBackedgesERKNS_8FunctionERNS_15SmallVectorImplISt4pairIPKNS_10BasicBlockES7_EEE" title='llvm::FindFunctionBackedges' data-ref="_ZN4llvm21FindFunctionBackedgesERKNS_8FunctionERNS_15SmallVectorImplISt4pairIPKNS_10BasicBlockES7_EEE" data-ref-filename="_ZN4llvm21FindFunctionBackedgesERKNS_8FunctionERNS_15SmallVectorImplISt4pairIPKNS_10BasicBlockES7_EEE">FindFunctionBackedges</dfn>(</td></tr>
+<tr><th id="36">36</th><td>    <em>const</em> <a class="type" href="../IR/Function.h.html#llvm::Function" title='llvm::Function' data-ref="llvm::Function" data-ref-filename="llvm..Function">Function</a> &amp;<dfn class="local col5 decl" id="1445F" title='F' data-type='const llvm::Function &amp;' data-ref="1445F" data-ref-filename="1445F">F</dfn>,</td></tr>
+<tr><th id="37">37</th><td>    <a class="type" href="../../../../clang/include/clang/Basic/LLVM.h.html#llvm::SmallVectorImpl" title='llvm::SmallVectorImpl' data-ref="llvm::SmallVectorImpl" data-ref-filename="llvm..SmallVectorImpl">SmallVectorImpl</a>&lt;<span class="namespace">std::</span><span class='type' title='std::pair' data-ref="std::pair" data-ref-filename="std..pair">pair</span>&lt;<em>const</em> <a class="type" href="../IR/BasicBlock.h.html#llvm::BasicBlock" title='llvm::BasicBlock' data-ref="llvm::BasicBlock" data-ref-filename="llvm..BasicBlock">BasicBlock</a> *, <em>const</em> <a class="type" href="../IR/BasicBlock.h.html#llvm::BasicBlock" title='llvm::BasicBlock' data-ref="llvm::BasicBlock" data-ref-filename="llvm..BasicBlock">BasicBlock</a> *&gt; &gt; &amp;</td></tr>
+<tr><th id="38">38</th><td>        <dfn class="local col6 decl" id="1446Result" title='Result' data-type='SmallVectorImpl&lt;std::pair&lt;const BasicBlock *, const BasicBlock *&gt; &gt; &amp;' data-ref="1446Result" data-ref-filename="1446Result">Result</dfn>);</td></tr>
+<tr><th id="39">39</th><td></td></tr>
+<tr><th id="40">40</th><td><i class="doc">/// Search for the specified successor of basic block BB and return its position</i></td></tr>
+<tr><th id="41">41</th><td><i class="doc">/// in the terminator instruction's list of successors.  It is an error to call</i></td></tr>
+<tr><th id="42">42</th><td><i class="doc">/// this with a block that is not a successor.</i></td></tr>
+<tr><th id="43">43</th><td><em>unsigned</em> <dfn class="decl fn" id="_ZN4llvm18GetSuccessorNumberEPKNS_10BasicBlockES2_" title='llvm::GetSuccessorNumber' data-ref="_ZN4llvm18GetSuccessorNumberEPKNS_10BasicBlockES2_" data-ref-filename="_ZN4llvm18GetSuccessorNumberEPKNS_10BasicBlockES2_">GetSuccessorNumber</dfn>(<em>const</em> <a class="type" href="../IR/BasicBlock.h.html#llvm::BasicBlock" title='llvm::BasicBlock' data-ref="llvm::BasicBlock" data-ref-filename="llvm..BasicBlock">BasicBlock</a> *<dfn class="local col7 decl" id="1447BB" title='BB' data-type='const llvm::BasicBlock *' data-ref="1447BB" data-ref-filename="1447BB">BB</dfn>, <em>const</em> <a class="type" href="../IR/BasicBlock.h.html#llvm::BasicBlock" title='llvm::BasicBlock' data-ref="llvm::BasicBlock" data-ref-filename="llvm..BasicBlock">BasicBlock</a> *<dfn class="local col8 decl" id="1448Succ" title='Succ' data-type='const llvm::BasicBlock *' data-ref="1448Succ" data-ref-filename="1448Succ">Succ</dfn>);</td></tr>
+<tr><th id="44">44</th><td></td></tr>
+<tr><th id="45">45</th><td><i class="doc">/// Return true if the specified edge is a critical edge. Critical edges are</i></td></tr>
+<tr><th id="46">46</th><td><i class="doc">/// edges from a block with multiple successors to a block with multiple</i></td></tr>
+<tr><th id="47">47</th><td><i class="doc">/// predecessors.</i></td></tr>
+<tr><th id="48">48</th><td><i class="doc">///</i></td></tr>
+<tr><th id="49">49</th><td><em>bool</em> <dfn class="decl fn" id="_ZN4llvm14isCriticalEdgeEPKNS_11InstructionEjb" title='llvm::isCriticalEdge' data-ref="_ZN4llvm14isCriticalEdgeEPKNS_11InstructionEjb" data-ref-filename="_ZN4llvm14isCriticalEdgeEPKNS_11InstructionEjb">isCriticalEdge</dfn>(<em>const</em> <a class="type" href="../IR/Instruction.h.html#llvm::Instruction" title='llvm::Instruction' data-ref="llvm::Instruction" data-ref-filename="llvm..Instruction">Instruction</a> *<dfn class="local col9 decl" id="1449TI" title='TI' data-type='const llvm::Instruction *' data-ref="1449TI" data-ref-filename="1449TI">TI</dfn>, <em>unsigned</em> <dfn class="local col0 decl" id="1450SuccNum" title='SuccNum' data-type='unsigned int' data-ref="1450SuccNum" data-ref-filename="1450SuccNum">SuccNum</dfn>,</td></tr>
+<tr><th id="50">50</th><td>                    <em>bool</em> <dfn class="local col1 decl" id="1451AllowIdenticalEdges" title='AllowIdenticalEdges' data-type='bool' data-ref="1451AllowIdenticalEdges" data-ref-filename="1451AllowIdenticalEdges">AllowIdenticalEdges</dfn> = <b>false</b>);</td></tr>
+<tr><th id="51">51</th><td><em>bool</em> <dfn class="decl fn" id="_ZN4llvm14isCriticalEdgeEPKNS_11InstructionEPKNS_10BasicBlockEb" title='llvm::isCriticalEdge' data-ref="_ZN4llvm14isCriticalEdgeEPKNS_11InstructionEPKNS_10BasicBlockEb" data-ref-filename="_ZN4llvm14isCriticalEdgeEPKNS_11InstructionEPKNS_10BasicBlockEb">isCriticalEdge</dfn>(<em>const</em> <a class="type" href="../IR/Instruction.h.html#llvm::Instruction" title='llvm::Instruction' data-ref="llvm::Instruction" data-ref-filename="llvm..Instruction">Instruction</a> *<dfn class="local col2 decl" id="1452TI" title='TI' data-type='const llvm::Instruction *' data-ref="1452TI" data-ref-filename="1452TI">TI</dfn>, <em>const</em> <a class="type" href="../IR/BasicBlock.h.html#llvm::BasicBlock" title='llvm::BasicBlock' data-ref="llvm::BasicBlock" data-ref-filename="llvm..BasicBlock">BasicBlock</a> *<dfn class="local col3 decl" id="1453Succ" title='Succ' data-type='const llvm::BasicBlock *' data-ref="1453Succ" data-ref-filename="1453Succ">Succ</dfn>,</td></tr>
+<tr><th id="52">52</th><td>                    <em>bool</em> <dfn class="local col4 decl" id="1454AllowIdenticalEdges" title='AllowIdenticalEdges' data-type='bool' data-ref="1454AllowIdenticalEdges" data-ref-filename="1454AllowIdenticalEdges">AllowIdenticalEdges</dfn> = <b>false</b>);</td></tr>
+<tr><th id="53">53</th><td></td></tr>
+<tr><th id="54">54</th><td><i class="doc">/// Determine whether instruction 'To' is reachable from 'From', without passing</i></td></tr>
+<tr><th id="55">55</th><td><i class="doc">/// through any blocks in ExclusionSet, returning true if uncertain.</i></td></tr>
+<tr><th id="56">56</th><td><i class="doc">///</i></td></tr>
+<tr><th id="57">57</th><td><i class="doc">/// Determine whether there is a path from From to To within a single function.</i></td></tr>
+<tr><th id="58">58</th><td><i class="doc">/// Returns false only if we can prove that once 'From' has been executed then</i></td></tr>
+<tr><th id="59">59</th><td><i class="doc">/// 'To' can not be executed. Conservatively returns true.</i></td></tr>
+<tr><th id="60">60</th><td><i class="doc">///</i></td></tr>
+<tr><th id="61">61</th><td><i class="doc">/// This function is linear with respect to the number of blocks in the CFG,</i></td></tr>
+<tr><th id="62">62</th><td><i class="doc">/// walking down successors from From to reach To, with a fixed threshold.</i></td></tr>
+<tr><th id="63">63</th><td><i class="doc">/// Using DT or LI allows us to answer more quickly. LI reduces the cost of</i></td></tr>
+<tr><th id="64">64</th><td><i class="doc">/// an entire loop of any number of blocks to be the same as the cost of a</i></td></tr>
+<tr><th id="65">65</th><td><i class="doc">/// single block. DT reduces the cost by allowing the search to terminate when</i></td></tr>
+<tr><th id="66">66</th><td><i class="doc">/// we find a block that dominates the block containing 'To'. DT is most useful</i></td></tr>
+<tr><th id="67">67</th><td><i class="doc">/// on branchy code but not loops, and LI is most useful on code with loops but</i></td></tr>
+<tr><th id="68">68</th><td><i class="doc">/// does not help on branchy code outside loops.</i></td></tr>
+<tr><th id="69">69</th><td><em>bool</em> <dfn class="decl fn" id="_ZN4llvm22isPotentiallyReachableEPKNS_11InstructionES2_PKNS_15SmallPtrSetImplIPNS_10BasicBlockEEEPKNS_13DominatorTreeEPKNS_8LoopInfoE" title='llvm::isPotentiallyReachable' data-ref="_ZN4llvm22isPotentiallyReachableEPKNS_11InstructionES2_PKNS_15SmallPtrSetImplIPNS_10BasicBlockEEEPKNS_13DominatorTreeEPKNS_8LoopInfoE" data-ref-filename="_ZN4llvm22isPotentiallyReachableEPKNS_11InstructionES2_PKNS_15SmallPtrSetImplIPNS_10BasicBlockEEEPKNS_13DominatorTreeEPKNS_8LoopInfoE">isPotentiallyReachable</dfn>(</td></tr>
+<tr><th id="70">70</th><td>    <em>const</em> <a class="type" href="../IR/Instruction.h.html#llvm::Instruction" title='llvm::Instruction' data-ref="llvm::Instruction" data-ref-filename="llvm..Instruction">Instruction</a> *<dfn class="local col5 decl" id="1455From" title='From' data-type='const llvm::Instruction *' data-ref="1455From" data-ref-filename="1455From">From</dfn>, <em>const</em> <a class="type" href="../IR/Instruction.h.html#llvm::Instruction" title='llvm::Instruction' data-ref="llvm::Instruction" data-ref-filename="llvm..Instruction">Instruction</a> *<dfn class="local col6 decl" id="1456To" title='To' data-type='const llvm::Instruction *' data-ref="1456To" data-ref-filename="1456To">To</dfn>,</td></tr>
+<tr><th id="71">71</th><td>    <em>const</em> <a class="type" href="../ADT/SmallPtrSet.h.html#llvm::SmallPtrSetImpl" title='llvm::SmallPtrSetImpl' data-ref="llvm::SmallPtrSetImpl" data-ref-filename="llvm..SmallPtrSetImpl">SmallPtrSetImpl</a>&lt;<a class="type" href="../IR/BasicBlock.h.html#llvm::BasicBlock" title='llvm::BasicBlock' data-ref="llvm::BasicBlock" data-ref-filename="llvm..BasicBlock">BasicBlock</a> *&gt; *<dfn class="local col7 decl" id="1457ExclusionSet" title='ExclusionSet' data-type='const SmallPtrSetImpl&lt;llvm::BasicBlock *&gt; *' data-ref="1457ExclusionSet" data-ref-filename="1457ExclusionSet">ExclusionSet</dfn> = <b>nullptr</b>,</td></tr>
+<tr><th id="72">72</th><td>    <em>const</em> <a class="type" href="../IR/Dominators.h.html#llvm::DominatorTree" title='llvm::DominatorTree' data-ref="llvm::DominatorTree" data-ref-filename="llvm..DominatorTree">DominatorTree</a> *<dfn class="local col8 decl" id="1458DT" title='DT' data-type='const llvm::DominatorTree *' data-ref="1458DT" data-ref-filename="1458DT">DT</dfn> = <b>nullptr</b>, <em>const</em> <a class="type" href="LoopInfo.h.html#llvm::LoopInfo" title='llvm::LoopInfo' data-ref="llvm::LoopInfo" data-ref-filename="llvm..LoopInfo">LoopInfo</a> *<dfn class="local col9 decl" id="1459LI" title='LI' data-type='const llvm::LoopInfo *' data-ref="1459LI" data-ref-filename="1459LI">LI</dfn> = <b>nullptr</b>);</td></tr>
+<tr><th id="73">73</th><td></td></tr>
+<tr><th id="74">74</th><td><i class="doc">/// Determine whether block 'To' is reachable from 'From', returning</i></td></tr>
+<tr><th id="75">75</th><td><i class="doc">/// true if uncertain.</i></td></tr>
+<tr><th id="76">76</th><td><i class="doc">///</i></td></tr>
+<tr><th id="77">77</th><td><i class="doc">/// Determine whether there is a path from From to To within a single function.</i></td></tr>
+<tr><th id="78">78</th><td><i class="doc">/// Returns false only if we can prove that once 'From' has been reached then</i></td></tr>
+<tr><th id="79">79</th><td><i class="doc">/// 'To' can not be executed. Conservatively returns true.</i></td></tr>
+<tr><th id="80">80</th><td><em>bool</em> <dfn class="decl fn" id="_ZN4llvm22isPotentiallyReachableEPKNS_10BasicBlockES2_PKNS_13DominatorTreeEPKNS_8LoopInfoE" title='llvm::isPotentiallyReachable' data-ref="_ZN4llvm22isPotentiallyReachableEPKNS_10BasicBlockES2_PKNS_13DominatorTreeEPKNS_8LoopInfoE" data-ref-filename="_ZN4llvm22isPotentiallyReachableEPKNS_10BasicBlockES2_PKNS_13DominatorTreeEPKNS_8LoopInfoE">isPotentiallyReachable</dfn>(<em>const</em> <a class="type" href="../IR/BasicBlock.h.html#llvm::BasicBlock" title='llvm::BasicBlock' data-ref="llvm::BasicBlock" data-ref-filename="llvm..BasicBlock">BasicBlock</a> *<dfn class="local col0 decl" id="1460From" title='From' data-type='const llvm::BasicBlock *' data-ref="1460From" data-ref-filename="1460From">From</dfn>, <em>const</em> <a class="type" href="../IR/BasicBlock.h.html#llvm::BasicBlock" title='llvm::BasicBlock' data-ref="llvm::BasicBlock" data-ref-filename="llvm..BasicBlock">BasicBlock</a> *<dfn class="local col1 decl" id="1461To" title='To' data-type='const llvm::BasicBlock *' data-ref="1461To" data-ref-filename="1461To">To</dfn>,</td></tr>
+<tr><th id="81">81</th><td>                            <em>const</em> <a class="type" href="../IR/Dominators.h.html#llvm::DominatorTree" title='llvm::DominatorTree' data-ref="llvm::DominatorTree" data-ref-filename="llvm..DominatorTree">DominatorTree</a> *<dfn class="local col2 decl" id="1462DT" title='DT' data-type='const llvm::DominatorTree *' data-ref="1462DT" data-ref-filename="1462DT">DT</dfn> = <b>nullptr</b>,</td></tr>
+<tr><th id="82">82</th><td>                            <em>const</em> <a class="type" href="LoopInfo.h.html#llvm::LoopInfo" title='llvm::LoopInfo' data-ref="llvm::LoopInfo" data-ref-filename="llvm..LoopInfo">LoopInfo</a> *<dfn class="local col3 decl" id="1463LI" title='LI' data-type='const llvm::LoopInfo *' data-ref="1463LI" data-ref-filename="1463LI">LI</dfn> = <b>nullptr</b>);</td></tr>
+<tr><th id="83">83</th><td></td></tr>
+<tr><th id="84">84</th><td><i class="doc">/// Determine whether there is at least one path from a block in</i></td></tr>
+<tr><th id="85">85</th><td><i class="doc">/// 'Worklist' to 'StopBB', returning true if uncertain.</i></td></tr>
+<tr><th id="86">86</th><td><i class="doc">///</i></td></tr>
+<tr><th id="87">87</th><td><i class="doc">/// Determine whether there is a path from at least one block in Worklist to</i></td></tr>
+<tr><th id="88">88</th><td><i class="doc">/// StopBB within a single function. Returns false only if we can prove that</i></td></tr>
+<tr><th id="89">89</th><td><i class="doc">/// once any block in 'Worklist' has been reached then 'StopBB' can not be</i></td></tr>
+<tr><th id="90">90</th><td><i class="doc">/// executed. Conservatively returns true.</i></td></tr>
+<tr><th id="91">91</th><td><em>bool</em> <dfn class="decl fn" id="_ZN4llvm30isPotentiallyReachableFromManyERNS_15SmallVectorImplIPNS_10BasicBlockEEES2_PKNS_13DominatorTreeEPKNS_8LoopInfoE" title='llvm::isPotentiallyReachableFromMany' data-ref="_ZN4llvm30isPotentiallyReachableFromManyERNS_15SmallVectorImplIPNS_10BasicBlockEEES2_PKNS_13DominatorTreeEPKNS_8LoopInfoE" data-ref-filename="_ZN4llvm30isPotentiallyReachableFromManyERNS_15SmallVectorImplIPNS_10BasicBlockEEES2_PKNS_13DominatorTreeEPKNS_8LoopInfoE">isPotentiallyReachableFromMany</dfn>(<a class="type" href="../../../../clang/include/clang/Basic/LLVM.h.html#llvm::SmallVectorImpl" title='llvm::SmallVectorImpl' data-ref="llvm::SmallVectorImpl" data-ref-filename="llvm..SmallVectorImpl">SmallVectorImpl</a>&lt;<a class="type" href="../IR/BasicBlock.h.html#llvm::BasicBlock" title='llvm::BasicBlock' data-ref="llvm::BasicBlock" data-ref-filename="llvm..BasicBlock">BasicBlock</a> *&gt; &amp;<dfn class="local col4 decl" id="1464Worklist" title='Worklist' data-type='SmallVectorImpl&lt;llvm::BasicBlock *&gt; &amp;' data-ref="1464Worklist" data-ref-filename="1464Worklist">Worklist</dfn>,</td></tr>
+<tr><th id="92">92</th><td>                                    <a class="type" href="../IR/BasicBlock.h.html#llvm::BasicBlock" title='llvm::BasicBlock' data-ref="llvm::BasicBlock" data-ref-filename="llvm..BasicBlock">BasicBlock</a> *<dfn class="local col5 decl" id="1465StopBB" title='StopBB' data-type='llvm::BasicBlock *' data-ref="1465StopBB" data-ref-filename="1465StopBB">StopBB</dfn>,</td></tr>
+<tr><th id="93">93</th><td>                                    <em>const</em> <a class="type" href="../IR/Dominators.h.html#llvm::DominatorTree" title='llvm::DominatorTree' data-ref="llvm::DominatorTree" data-ref-filename="llvm..DominatorTree">DominatorTree</a> *<dfn class="local col6 decl" id="1466DT" title='DT' data-type='const llvm::DominatorTree *' data-ref="1466DT" data-ref-filename="1466DT">DT</dfn> = <b>nullptr</b>,</td></tr>
+<tr><th id="94">94</th><td>                                    <em>const</em> <a class="type" href="LoopInfo.h.html#llvm::LoopInfo" title='llvm::LoopInfo' data-ref="llvm::LoopInfo" data-ref-filename="llvm..LoopInfo">LoopInfo</a> *<dfn class="local col7 decl" id="1467LI" title='LI' data-type='const llvm::LoopInfo *' data-ref="1467LI" data-ref-filename="1467LI">LI</dfn> = <b>nullptr</b>);</td></tr>
+<tr><th id="95">95</th><td></td></tr>
+<tr><th id="96">96</th><td><i class="doc">/// Determine whether there is at least one path from a block in</i></td></tr>
+<tr><th id="97">97</th><td><i class="doc">/// 'Worklist' to 'StopBB' without passing through any blocks in</i></td></tr>
+<tr><th id="98">98</th><td><i class="doc">/// 'ExclusionSet', returning true if uncertain.</i></td></tr>
+<tr><th id="99">99</th><td><i class="doc">///</i></td></tr>
+<tr><th id="100">100</th><td><i class="doc">/// Determine whether there is a path from at least one block in Worklist to</i></td></tr>
+<tr><th id="101">101</th><td><i class="doc">/// StopBB within a single function without passing through any of the blocks</i></td></tr>
+<tr><th id="102">102</th><td><i class="doc">/// in 'ExclusionSet'. Returns false only if we can prove that once any block</i></td></tr>
+<tr><th id="103">103</th><td><i class="doc">/// in 'Worklist' has been reached then 'StopBB' can not be executed.</i></td></tr>
+<tr><th id="104">104</th><td><i class="doc">/// Conservatively returns true.</i></td></tr>
+<tr><th id="105">105</th><td><em>bool</em> <dfn class="decl fn" id="_ZN4llvm30isPotentiallyReachableFromManyERNS_15SmallVectorImplIPNS_10BasicBlockEEES2_PKNS_15SmallPtrSetImplIS2_EEPKNS_13DominatorTreeEPKNS_8LoopInfoE" title='llvm::isPotentiallyReachableFromMany' data-ref="_ZN4llvm30isPotentiallyReachableFromManyERNS_15SmallVectorImplIPNS_10BasicBlockEEES2_PKNS_15SmallPtrSetImplIS2_EEPKNS_13DominatorTreeEPKNS_8LoopInfoE" data-ref-filename="_ZN4llvm30isPotentiallyReachableFromManyERNS_15SmallVectorImplIPNS_10BasicBlockEEES2_PKNS_15SmallPtrSetImplIS2_EEPKNS_13DominatorTreeEPKNS_8LoopInfoE">isPotentiallyReachableFromMany</dfn>(</td></tr>
+<tr><th id="106">106</th><td>    <a class="type" href="../../../../clang/include/clang/Basic/LLVM.h.html#llvm::SmallVectorImpl" title='llvm::SmallVectorImpl' data-ref="llvm::SmallVectorImpl" data-ref-filename="llvm..SmallVectorImpl">SmallVectorImpl</a>&lt;<a class="type" href="../IR/BasicBlock.h.html#llvm::BasicBlock" title='llvm::BasicBlock' data-ref="llvm::BasicBlock" data-ref-filename="llvm..BasicBlock">BasicBlock</a> *&gt; &amp;<dfn class="local col8 decl" id="1468Worklist" title='Worklist' data-type='SmallVectorImpl&lt;llvm::BasicBlock *&gt; &amp;' data-ref="1468Worklist" data-ref-filename="1468Worklist">Worklist</dfn>, <a class="type" href="../IR/BasicBlock.h.html#llvm::BasicBlock" title='llvm::BasicBlock' data-ref="llvm::BasicBlock" data-ref-filename="llvm..BasicBlock">BasicBlock</a> *<dfn class="local col9 decl" id="1469StopBB" title='StopBB' data-type='llvm::BasicBlock *' data-ref="1469StopBB" data-ref-filename="1469StopBB">StopBB</dfn>,</td></tr>
+<tr><th id="107">107</th><td>    <em>const</em> <a class="type" href="../ADT/SmallPtrSet.h.html#llvm::SmallPtrSetImpl" title='llvm::SmallPtrSetImpl' data-ref="llvm::SmallPtrSetImpl" data-ref-filename="llvm..SmallPtrSetImpl">SmallPtrSetImpl</a>&lt;<a class="type" href="../IR/BasicBlock.h.html#llvm::BasicBlock" title='llvm::BasicBlock' data-ref="llvm::BasicBlock" data-ref-filename="llvm..BasicBlock">BasicBlock</a> *&gt; *<dfn class="local col0 decl" id="1470ExclusionSet" title='ExclusionSet' data-type='const SmallPtrSetImpl&lt;llvm::BasicBlock *&gt; *' data-ref="1470ExclusionSet" data-ref-filename="1470ExclusionSet">ExclusionSet</dfn>,</td></tr>
+<tr><th id="108">108</th><td>    <em>const</em> <a class="type" href="../IR/Dominators.h.html#llvm::DominatorTree" title='llvm::DominatorTree' data-ref="llvm::DominatorTree" data-ref-filename="llvm..DominatorTree">DominatorTree</a> *<dfn class="local col1 decl" id="1471DT" title='DT' data-type='const llvm::DominatorTree *' data-ref="1471DT" data-ref-filename="1471DT">DT</dfn> = <b>nullptr</b>, <em>const</em> <a class="type" href="LoopInfo.h.html#llvm::LoopInfo" title='llvm::LoopInfo' data-ref="llvm::LoopInfo" data-ref-filename="llvm..LoopInfo">LoopInfo</a> *<dfn class="local col2 decl" id="1472LI" title='LI' data-type='const llvm::LoopInfo *' data-ref="1472LI" data-ref-filename="1472LI">LI</dfn> = <b>nullptr</b>);</td></tr>
+<tr><th id="109">109</th><td></td></tr>
+<tr><th id="110">110</th><td><i class="doc">/// Return true if the control flow in<span class="command"> \p</span> <span class="arg">RPOTraversal</span> is irreducible.</i></td></tr>
+<tr><th id="111">111</th><td><i class="doc">///</i></td></tr>
+<tr><th id="112">112</th><td><i class="doc">/// This is a generic implementation to detect CFG irreducibility based on loop</i></td></tr>
+<tr><th id="113">113</th><td><i class="doc">/// info analysis. It can be used for any kind of CFG (Loop, MachineLoop,</i></td></tr>
+<tr><th id="114">114</th><td><i class="doc">/// Function, MachineFunction, etc.) by providing an RPO traversal <span class="command">(\p</span></i></td></tr>
+<tr><th id="115">115</th><td><i class="doc">/// <span class="arg">RPOTraversal)</span> and the loop info analysis <span class="command">(\p</span> <span class="arg">LI)</span> of the CFG. This utility</i></td></tr>
+<tr><th id="116">116</th><td><i class="doc">/// function is only recommended when loop info analysis is available. If loop</i></td></tr>
+<tr><th id="117">117</th><td><i class="doc">/// info analysis isn't available, please, don't compute it explicitly for this</i></td></tr>
+<tr><th id="118">118</th><td><i class="doc">/// purpose. There are more efficient ways to detect CFG irreducibility that</i></td></tr>
+<tr><th id="119">119</th><td><i class="doc">/// don't require recomputing loop info analysis (e.g., T1/T2 or Tarjan's</i></td></tr>
+<tr><th id="120">120</th><td><i class="doc">/// algorithm).</i></td></tr>
+<tr><th id="121">121</th><td><i class="doc">///</i></td></tr>
+<tr><th id="122">122</th><td><i class="doc">/// Requirements:</i></td></tr>
+<tr><th id="123">123</th><td><i class="doc">///   1) GraphTraits must be implemented for NodeT type. It is used to access</i></td></tr>
+<tr><th id="124">124</th><td><i class="doc">///      NodeT successors.</i></td></tr>
+<tr><th id="125">125</th><td><i class="doc">//    2)<span class="command"> \p</span> <span class="arg">RPOTraversal</span> must be a valid reverse post-order traversal of the</i></td></tr>
+<tr><th id="126">126</th><td><i class="doc">///      target CFG with begin()/end() iterator interfaces.</i></td></tr>
+<tr><th id="127">127</th><td><i class="doc">///   3)<span class="command"> \p</span> <span class="arg">LI</span> must be a valid LoopInfoBase that contains up-to-date loop</i></td></tr>
+<tr><th id="128">128</th><td><i class="doc">///      analysis information of the CFG.</i></td></tr>
+<tr><th id="129">129</th><td><i class="doc">///</i></td></tr>
+<tr><th id="130">130</th><td><i class="doc">/// This algorithm uses the information about reducible loop back-edges already</i></td></tr>
+<tr><th id="131">131</th><td><i class="doc">/// computed in<span class="command"> \p</span> <span class="arg">LI.</span> When a back-edge is found during the RPO traversal, the</i></td></tr>
+<tr><th id="132">132</th><td><i class="doc">/// algorithm checks whether the back-edge is one of the reducible back-edges in</i></td></tr>
+<tr><th id="133">133</th><td><i class="doc">/// loop info. If it isn't, the CFG is irreducible. For example, for the CFG</i></td></tr>
+<tr><th id="134">134</th><td><i class="doc">/// below (canonical irreducible graph) loop info won't contain any loop, so the</i></td></tr>
+<tr><th id="135">135</th><td><i class="doc">/// algorithm will return that the CFG is irreducible when checking the B &lt;-</i></td></tr>
+<tr><th id="136">136</th><td><i class="doc">/// -&gt; C back-edge.</i></td></tr>
+<tr><th id="137">137</th><td><i class="doc">///</i></td></tr>
+<tr><th id="138">138</th><td><i class="doc">/// (A-&gt;B, A-&gt;C, B-&gt;C, C-&gt;B, C-&gt;D)</i></td></tr>
+<tr><th id="139">139</th><td><i class="doc">///    A</i></td></tr>
+<tr><th id="140">140</th><td><i class="doc">///  /   \</i></td></tr>
+<tr><th id="141">141</th><td><i class="doc">/// B&lt;- -&gt;C</i></td></tr>
+<tr><th id="142">142</th><td><i class="doc">///       |</i></td></tr>
+<tr><th id="143">143</th><td><i class="doc">///       D</i></td></tr>
+<tr><th id="144">144</th><td><i class="doc">///</i></td></tr>
+<tr><th id="145">145</th><td><b>template</b> &lt;<b>class</b> NodeT, <b>class</b> RPOTraversalT, <b>class</b> LoopInfoT,</td></tr>
+<tr><th id="146">146</th><td>          <b>class</b> GT = <a class="type" href="../ADT/GraphTraits.h.html#llvm::GraphTraits" title='llvm::GraphTraits' data-ref="llvm::GraphTraits" data-ref-filename="llvm..GraphTraits">GraphTraits</a>&lt;NodeT&gt;&gt;</td></tr>
+<tr><th id="147">147</th><td><em>bool</em> <dfn class="decl def fn" id="_ZN4llvm22containsIrreducibleCFGERT0_RKT1_" title='llvm::containsIrreducibleCFG' data-ref="_ZN4llvm22containsIrreducibleCFGERT0_RKT1_" data-ref-filename="_ZN4llvm22containsIrreducibleCFGERT0_RKT1_">containsIrreducibleCFG</dfn>(RPOTraversalT &amp;<dfn class="local col3 decl" id="1473RPOTraversal" title='RPOTraversal' data-type='RPOTraversalT &amp;' data-ref="1473RPOTraversal" data-ref-filename="1473RPOTraversal">RPOTraversal</dfn>, <em>const</em> LoopInfoT &amp;<dfn class="local col4 decl" id="1474LI" title='LI' data-type='const LoopInfoT &amp;' data-ref="1474LI" data-ref-filename="1474LI">LI</dfn>) {</td></tr>
+<tr><th id="148">148</th><td>  <i class="doc">/// Check whether the edge <span class="command">(\p</span> <span class="arg">Src,</span><span class="command"> \p</span> <span class="arg">Dst)</span> is a reducible loop backedge</i></td></tr>
+<tr><th id="149">149</th><td><i class="doc">  /// according to LI. I.e., check if there exists a loop that contains Src and</i></td></tr>
+<tr><th id="150">150</th><td><i class="doc">  /// where Dst is the loop header.</i></td></tr>
+<tr><th id="151">151</th><td>  <em>auto</em> <dfn class="local col5 decl" id="1475isProperBackedge" title='isProperBackedge' data-type='auto' data-ref="1475isProperBackedge" data-ref-filename="1475isProperBackedge">isProperBackedge</dfn> = [&amp;](NodeT <dfn class="local col6 decl" id="1476Src" title='Src' data-type='NodeT' data-ref="1476Src" data-ref-filename="1476Src">Src</dfn>, NodeT <dfn class="local col7 decl" id="1477Dst" title='Dst' data-type='NodeT' data-ref="1477Dst" data-ref-filename="1477Dst">Dst</dfn>) {</td></tr>
+<tr><th id="152">152</th><td>    <b>for</b> (<em>const</em> <em>auto</em> *<dfn class="local col8 decl" id="1478Lp" title='Lp' data-type='const auto *' data-ref="1478Lp" data-ref-filename="1478Lp">Lp</dfn> = <a class="local col4 ref" href="#1474LI" title='LI' data-ref="1474LI" data-ref-filename="1474LI">LI</a>.getLoopFor(<a class="local col6 ref" href="#1476Src" title='Src' data-ref="1476Src" data-ref-filename="1476Src">Src</a>); <a class="local col8 ref" href="#1478Lp" title='Lp' data-ref="1478Lp" data-ref-filename="1478Lp">Lp</a>; <a class="local col8 ref" href="#1478Lp" title='Lp' data-ref="1478Lp" data-ref-filename="1478Lp">Lp</a> = <a class="local col8 ref" href="#1478Lp" title='Lp' data-ref="1478Lp" data-ref-filename="1478Lp">Lp</a>-&gt;getParentLoop()) {</td></tr>
+<tr><th id="153">153</th><td>      <b>if</b> (<a class="local col8 ref" href="#1478Lp" title='Lp' data-ref="1478Lp" data-ref-filename="1478Lp">Lp</a>-&gt;getHeader() == <a class="local col7 ref" href="#1477Dst" title='Dst' data-ref="1477Dst" data-ref-filename="1477Dst">Dst</a>)</td></tr>
+<tr><th id="154">154</th><td>        <b>return</b> <b>true</b>;</td></tr>
+<tr><th id="155">155</th><td>    }</td></tr>
+<tr><th id="156">156</th><td>    <b>return</b> <b>false</b>;</td></tr>
+<tr><th id="157">157</th><td>  };</td></tr>
+<tr><th id="158">158</th><td></td></tr>
+<tr><th id="159">159</th><td>  <a class="type" href="../ADT/SmallPtrSet.h.html#llvm::SmallPtrSet" title='llvm::SmallPtrSet' data-ref="llvm::SmallPtrSet" data-ref-filename="llvm..SmallPtrSet">SmallPtrSet</a>&lt;NodeT, <var>32</var>&gt; <dfn class="local col9 decl" id="1479Visited" title='Visited' data-type='SmallPtrSet&lt;NodeT, 32&gt;' data-ref="1479Visited" data-ref-filename="1479Visited">Visited</dfn>;</td></tr>
+<tr><th id="160">160</th><td>  <b>for</b> (NodeT <dfn class="local col0 decl" id="1480Node" title='Node' data-type='NodeT' data-ref="1480Node" data-ref-filename="1480Node">Node</dfn> : <a class="local col3 ref" href="#1473RPOTraversal" title='RPOTraversal' data-ref="1473RPOTraversal" data-ref-filename="1473RPOTraversal">RPOTraversal</a>) {</td></tr>
+<tr><th id="161">161</th><td>    <a class="local col9 ref" href="#1479Visited" title='Visited' data-ref="1479Visited" data-ref-filename="1479Visited">Visited</a>.insert(<a class="local col0 ref" href="#1480Node" title='Node' data-ref="1480Node" data-ref-filename="1480Node">Node</a>);</td></tr>
+<tr><th id="162">162</th><td>    <b>for</b> (NodeT <dfn class="local col1 decl" id="1481Succ" title='Succ' data-type='NodeT' data-ref="1481Succ" data-ref-filename="1481Succ">Succ</dfn> : make_range(GT::child_begin(<a class="local col0 ref" href="#1480Node" title='Node' data-ref="1480Node" data-ref-filename="1480Node">Node</a>), GT::child_end(<a class="local col0 ref" href="#1480Node" title='Node' data-ref="1480Node" data-ref-filename="1480Node">Node</a>))) {</td></tr>
+<tr><th id="163">163</th><td>      <i>// Succ hasn't been visited yet</i></td></tr>
+<tr><th id="164">164</th><td>      <b>if</b> (!<a class="local col9 ref" href="#1479Visited" title='Visited' data-ref="1479Visited" data-ref-filename="1479Visited">Visited</a>.count(<a class="local col1 ref" href="#1481Succ" title='Succ' data-ref="1481Succ" data-ref-filename="1481Succ">Succ</a>))</td></tr>
+<tr><th id="165">165</th><td>        <b>continue</b>;</td></tr>
+<tr><th id="166">166</th><td>      <i>// We already visited Succ, thus Node-&gt;Succ must be a backedge. Check that</i></td></tr>
+<tr><th id="167">167</th><td><i>      // the head matches what we have in the loop information. Otherwise, we</i></td></tr>
+<tr><th id="168">168</th><td><i>      // have an irreducible graph.</i></td></tr>
+<tr><th id="169">169</th><td>      <b>if</b> (!<a class="local col5 ref" href="#1475isProperBackedge" title='isProperBackedge' data-ref="1475isProperBackedge" data-ref-filename="1475isProperBackedge">isProperBackedge</a>(<a class="local col0 ref" href="#1480Node" title='Node' data-ref="1480Node" data-ref-filename="1480Node">Node</a>, <a class="local col1 ref" href="#1481Succ" title='Succ' data-ref="1481Succ" data-ref-filename="1481Succ">Succ</a>))</td></tr>
+<tr><th id="170">170</th><td>        <b>return</b> <b>true</b>;</td></tr>
+<tr><th id="171">171</th><td>    }</td></tr>
+<tr><th id="172">172</th><td>  }</td></tr>
+<tr><th id="173">173</th><td></td></tr>
+<tr><th id="174">174</th><td>  <b>return</b> <b>false</b>;</td></tr>
+<tr><th id="175">175</th><td>}</td></tr>
+<tr><th id="176">176</th><td>} <i>// End llvm namespace</i></td></tr>
+<tr><th id="177">177</th><td></td></tr>
+<tr><th id="178">178</th><td><u>#<span data-ppcond="14">endif</span></u></td></tr>
+<tr><th id="179">179</th><td></td></tr>
+</table><hr/><p id='footer'>
+Generated while processing <a href='../../../../clang/tools/driver/cc1_main.cpp.html'>llvm/clang/tools/driver/cc1_main.cpp</a><br/>Generated on <em>2021-Jul-01</em> from project llvm revision <em>12</em>

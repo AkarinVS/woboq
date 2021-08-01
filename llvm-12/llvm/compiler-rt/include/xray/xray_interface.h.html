@@ -1,0 +1,146 @@
+<!doctype html>
+<html>
+<head>
+<meta name="viewport" content="width=device-width, initial-scale=1.0"><title>xray_interface.h source code [llvm/compiler-rt/include/xray/xray_interface.h] - Woboq Code Browser</title>
+<link rel="stylesheet" href="../../../.././data/qtcreator.css" title="QtCreator"/>
+<link rel="alternate stylesheet" href="../../../.././data/kdevelop.css" title="KDevelop"/>
+<script type="text/javascript" src="../../../.././data/jquery/jquery.min.js"></script>
+<script type="text/javascript" src="../../../.././data/jquery/jquery-ui.min.js"></script>
+<script>var file = 'llvm/compiler-rt/include/xray/xray_interface.h'; var root_path = '../../../..'; var data_path = '../../../.././data'; var ecma_script_api_version = 2;</script>
+<script src='../../../.././data/codebrowser.js'></script>
+</head>
+<body><div id='header'><h1 id='breadcrumb'><span>Browse the source code of </span><a href='../../..'>llvm</a>/<a href='../..'>compiler-rt</a>/<a href='..'>include</a>/<a href='./'>xray</a>/<a href='xray_interface.h.html'>xray_interface.h</a></h1></div>
+<hr/><div id='content'><table class="code">
+<tr><th id="1">1</th><td><i>//===- xray_interface.h -----------------------------------------*- C++ -*-===//</i></td></tr>
+<tr><th id="2">2</th><td><i>//</i></td></tr>
+<tr><th id="3">3</th><td><i>// Part of the LLVM Project, under the Apache License v2.0 with LLVM Exceptions.</i></td></tr>
+<tr><th id="4">4</th><td><i>// See <a href="https://llvm.org/LICENSE.txt">https://llvm.org/LICENSE.txt</a> for license information.</i></td></tr>
+<tr><th id="5">5</th><td><i>// SPDX-License-Identifier: Apache-2.0 WITH LLVM-exception</i></td></tr>
+<tr><th id="6">6</th><td><i>//</i></td></tr>
+<tr><th id="7">7</th><td><i>//===----------------------------------------------------------------------===//</i></td></tr>
+<tr><th id="8">8</th><td><i>//</i></td></tr>
+<tr><th id="9">9</th><td><i>// This file is a part of XRay, a dynamic runtime instrumentation system.</i></td></tr>
+<tr><th id="10">10</th><td><i>//</i></td></tr>
+<tr><th id="11">11</th><td><i>// APIs for controlling XRay functionality explicitly.</i></td></tr>
+<tr><th id="12">12</th><td><i>//===----------------------------------------------------------------------===//</i></td></tr>
+<tr><th id="13">13</th><td></td></tr>
+<tr><th id="14">14</th><td><u>#<span data-ppcond="14">ifndef</span> <span class="macro" data-ref="_M/XRAY_XRAY_INTERFACE_H">XRAY_XRAY_INTERFACE_H</span></u></td></tr>
+<tr><th id="15">15</th><td><u>#define <dfn class="macro" id="_M/XRAY_XRAY_INTERFACE_H" data-ref="_M/XRAY_XRAY_INTERFACE_H">XRAY_XRAY_INTERFACE_H</dfn></u></td></tr>
+<tr><th id="16">16</th><td></td></tr>
+<tr><th id="17">17</th><td><u>#include &lt;cstddef&gt;</u></td></tr>
+<tr><th id="18">18</th><td><u>#include &lt;cstdint&gt;</u></td></tr>
+<tr><th id="19">19</th><td></td></tr>
+<tr><th id="20">20</th><td><b>extern</b> <q>"C"</q> {</td></tr>
+<tr><th id="21">21</th><td></td></tr>
+<tr><th id="22">22</th><td><i class="doc">/// Synchronize this with AsmPrinter::SledKind in LLVM.</i></td></tr>
+<tr><th id="23">23</th><td><b>enum</b> <dfn class="type def" id="XRayEntryType" title='XRayEntryType' data-ref="XRayEntryType" data-ref-filename="XRayEntryType">XRayEntryType</dfn> {</td></tr>
+<tr><th id="24">24</th><td>  <dfn class="enum" id="ENTRY" title='ENTRY' data-ref="ENTRY" data-ref-filename="ENTRY">ENTRY</dfn> = <var>0</var>,</td></tr>
+<tr><th id="25">25</th><td>  <dfn class="enum" id="EXIT" title='EXIT' data-ref="EXIT" data-ref-filename="EXIT">EXIT</dfn> = <var>1</var>,</td></tr>
+<tr><th id="26">26</th><td>  <dfn class="enum" id="TAIL" title='TAIL' data-ref="TAIL" data-ref-filename="TAIL">TAIL</dfn> = <var>2</var>,</td></tr>
+<tr><th id="27">27</th><td>  <dfn class="enum" id="LOG_ARGS_ENTRY" title='LOG_ARGS_ENTRY' data-ref="LOG_ARGS_ENTRY" data-ref-filename="LOG_ARGS_ENTRY">LOG_ARGS_ENTRY</dfn> = <var>3</var>,</td></tr>
+<tr><th id="28">28</th><td>  <dfn class="enum" id="CUSTOM_EVENT" title='CUSTOM_EVENT' data-ref="CUSTOM_EVENT" data-ref-filename="CUSTOM_EVENT">CUSTOM_EVENT</dfn> = <var>4</var>,</td></tr>
+<tr><th id="29">29</th><td>  <dfn class="enum" id="TYPED_EVENT" title='TYPED_EVENT' data-ref="TYPED_EVENT" data-ref-filename="TYPED_EVENT">TYPED_EVENT</dfn> = <var>5</var>,</td></tr>
+<tr><th id="30">30</th><td>};</td></tr>
+<tr><th id="31">31</th><td></td></tr>
+<tr><th id="32">32</th><td><i class="doc">/// Provide a function to invoke for when instrumentation points are hit. This</i></td></tr>
+<tr><th id="33">33</th><td><i class="doc">/// is a user-visible control surface that overrides the default implementation.</i></td></tr>
+<tr><th id="34">34</th><td><i class="doc">/// The function provided should take the following arguments:</i></td></tr>
+<tr><th id="35">35</th><td><i class="doc">///</i></td></tr>
+<tr><th id="36">36</th><td><i class="doc">///   - function id: an identifier that indicates the id of a function; this id</i></td></tr>
+<tr><th id="37">37</th><td><i class="doc">///                  is generated by xray; the mapping between the function id</i></td></tr>
+<tr><th id="38">38</th><td><i class="doc">///                  and the actual function pointer is available through</i></td></tr>
+<tr><th id="39">39</th><td><i class="doc">///                  __xray_table.</i></td></tr>
+<tr><th id="40">40</th><td><i class="doc">///   - entry type: identifies what kind of instrumentation point was</i></td></tr>
+<tr><th id="41">41</th><td><i class="doc">///                 encountered (function entry, function exit, etc.). See the</i></td></tr>
+<tr><th id="42">42</th><td><i class="doc">///                 enum XRayEntryType for more details.</i></td></tr>
+<tr><th id="43">43</th><td><i class="doc">///</i></td></tr>
+<tr><th id="44">44</th><td><i class="doc">/// The user handler must handle correctly spurious calls after this handler is</i></td></tr>
+<tr><th id="45">45</th><td><i class="doc">/// removed or replaced with another handler, because it would be too costly for</i></td></tr>
+<tr><th id="46">46</th><td><i class="doc">/// XRay runtime to avoid spurious calls.</i></td></tr>
+<tr><th id="47">47</th><td><i class="doc">/// To prevent circular calling, the handler function itself and all its</i></td></tr>
+<tr><th id="48">48</th><td><i class="doc">/// direct&amp;indirect callees must not be instrumented with XRay, which can be</i></td></tr>
+<tr><th id="49">49</th><td><i class="doc">/// achieved by marking them all with: __attribute__((xray_never_instrument))</i></td></tr>
+<tr><th id="50">50</th><td><i class="doc">///</i></td></tr>
+<tr><th id="51">51</th><td><i class="doc">/// Returns 1 on success, 0 on error.</i></td></tr>
+<tr><th id="52">52</th><td><b>extern</b> <em>int</em> <dfn class="decl fn" id="__xray_set_handler" title='__xray_set_handler' data-ref="__xray_set_handler" data-ref-filename="__xray_set_handler">__xray_set_handler</dfn>(<em>void</em> (*<dfn class="local col2 decl" id="2entry" title='entry' data-type='void (*)(int32_t, XRayEntryType)' data-ref="2entry" data-ref-filename="2entry">entry</dfn>)(<a class="typedef" href="../../../../include/bits/stdint-intn.h.html#int32_t" title='int32_t' data-type='__int32_t' data-ref="int32_t" data-ref-filename="int32_t">int32_t</a>, <a class="type" href="#XRayEntryType" title='XRayEntryType' data-ref="XRayEntryType" data-ref-filename="XRayEntryType">XRayEntryType</a>));</td></tr>
+<tr><th id="53">53</th><td></td></tr>
+<tr><th id="54">54</th><td><i class="doc">/// This removes whatever the currently provided handler is. Returns 1 on</i></td></tr>
+<tr><th id="55">55</th><td><i class="doc">/// success, 0 on error.</i></td></tr>
+<tr><th id="56">56</th><td><b>extern</b> <em>int</em> <dfn class="decl fn" id="__xray_remove_handler" title='__xray_remove_handler' data-ref="__xray_remove_handler" data-ref-filename="__xray_remove_handler">__xray_remove_handler</dfn>();</td></tr>
+<tr><th id="57">57</th><td></td></tr>
+<tr><th id="58">58</th><td><i class="doc">/// Use XRay to log the first argument of each (instrumented) function call.</i></td></tr>
+<tr><th id="59">59</th><td><i class="doc">/// When this function exits, all threads will have observed the effect and</i></td></tr>
+<tr><th id="60">60</th><td><i class="doc">/// start logging their subsequent affected function calls (if patched).</i></td></tr>
+<tr><th id="61">61</th><td><i class="doc">///</i></td></tr>
+<tr><th id="62">62</th><td><i class="doc">/// Returns 1 on success, 0 on error.</i></td></tr>
+<tr><th id="63">63</th><td><b>extern</b> <em>int</em> <dfn class="decl fn" id="__xray_set_handler_arg1" title='__xray_set_handler_arg1' data-ref="__xray_set_handler_arg1" data-ref-filename="__xray_set_handler_arg1">__xray_set_handler_arg1</dfn>(<em>void</em> (*<dfn class="local col3 decl" id="3entry" title='entry' data-type='void (*)(int32_t, XRayEntryType, uint64_t)' data-ref="3entry" data-ref-filename="3entry">entry</dfn>)(<a class="typedef" href="../../../../include/bits/stdint-intn.h.html#int32_t" title='int32_t' data-type='__int32_t' data-ref="int32_t" data-ref-filename="int32_t">int32_t</a>, <a class="type" href="#XRayEntryType" title='XRayEntryType' data-ref="XRayEntryType" data-ref-filename="XRayEntryType">XRayEntryType</a>,</td></tr>
+<tr><th id="64">64</th><td>                                                 <a class="typedef" href="../../../../include/bits/stdint-uintn.h.html#uint64_t" title='uint64_t' data-type='__uint64_t' data-ref="uint64_t" data-ref-filename="uint64_t">uint64_t</a>));</td></tr>
+<tr><th id="65">65</th><td></td></tr>
+<tr><th id="66">66</th><td><i class="doc">/// Disables the XRay handler used to log first arguments of function calls.</i></td></tr>
+<tr><th id="67">67</th><td><i class="doc">/// Returns 1 on success, 0 on error.</i></td></tr>
+<tr><th id="68">68</th><td><b>extern</b> <em>int</em> <dfn class="decl fn" id="__xray_remove_handler_arg1" title='__xray_remove_handler_arg1' data-ref="__xray_remove_handler_arg1" data-ref-filename="__xray_remove_handler_arg1">__xray_remove_handler_arg1</dfn>();</td></tr>
+<tr><th id="69">69</th><td></td></tr>
+<tr><th id="70">70</th><td><i class="doc">/// Provide a function to invoke when XRay encounters a custom event.</i></td></tr>
+<tr><th id="71">71</th><td><b>extern</b> <em>int</em> <dfn class="decl fn" id="__xray_set_customevent_handler" title='__xray_set_customevent_handler' data-ref="__xray_set_customevent_handler" data-ref-filename="__xray_set_customevent_handler">__xray_set_customevent_handler</dfn>(<em>void</em> (*<dfn class="local col4 decl" id="4entry" title='entry' data-type='void (*)(void *, std::size_t)' data-ref="4entry" data-ref-filename="4entry">entry</dfn>)(<em>void</em> *, <span class="namespace">std::</span><span class='typedef' title='std::size_t' data-type='unsigned long' data-ref="std::size_t" data-ref-filename="std..size_t">size_t</span>));</td></tr>
+<tr><th id="72">72</th><td></td></tr>
+<tr><th id="73">73</th><td><i class="doc">/// This removes whatever the currently provided custom event handler is.</i></td></tr>
+<tr><th id="74">74</th><td><i class="doc">/// Returns 1 on success, 0 on error.</i></td></tr>
+<tr><th id="75">75</th><td><b>extern</b> <em>int</em> <dfn class="decl fn" id="__xray_remove_customevent_handler" title='__xray_remove_customevent_handler' data-ref="__xray_remove_customevent_handler" data-ref-filename="__xray_remove_customevent_handler">__xray_remove_customevent_handler</dfn>();</td></tr>
+<tr><th id="76">76</th><td></td></tr>
+<tr><th id="77">77</th><td><i class="doc">/// Set a handler for xray typed event logging. The first parameter is a type</i></td></tr>
+<tr><th id="78">78</th><td><i class="doc">/// identifier, the second is a payload, and the third is the payload size.</i></td></tr>
+<tr><th id="79">79</th><td><b>extern</b> <em>int</em> <dfn class="decl fn" id="__xray_set_typedevent_handler" title='__xray_set_typedevent_handler' data-ref="__xray_set_typedevent_handler" data-ref-filename="__xray_set_typedevent_handler">__xray_set_typedevent_handler</dfn>(<em>void</em> (*<dfn class="local col5 decl" id="5entry" title='entry' data-type='void (*)(uint16_t, const void *, std::size_t)' data-ref="5entry" data-ref-filename="5entry">entry</dfn>)(<a class="typedef" href="../../../../include/bits/stdint-uintn.h.html#uint16_t" title='uint16_t' data-type='__uint16_t' data-ref="uint16_t" data-ref-filename="uint16_t">uint16_t</a>, <em>const</em> <em>void</em> *,</td></tr>
+<tr><th id="80">80</th><td>                                                       <span class="namespace">std::</span><span class='typedef' title='std::size_t' data-type='unsigned long' data-ref="std::size_t" data-ref-filename="std..size_t">size_t</span>));</td></tr>
+<tr><th id="81">81</th><td></td></tr>
+<tr><th id="82">82</th><td><i class="doc">/// Removes the currently set typed event handler.</i></td></tr>
+<tr><th id="83">83</th><td><i class="doc">/// Returns 1 on success, 0 on error.</i></td></tr>
+<tr><th id="84">84</th><td><b>extern</b> <em>int</em> <dfn class="decl fn" id="__xray_remove_typedevent_handler" title='__xray_remove_typedevent_handler' data-ref="__xray_remove_typedevent_handler" data-ref-filename="__xray_remove_typedevent_handler">__xray_remove_typedevent_handler</dfn>();</td></tr>
+<tr><th id="85">85</th><td></td></tr>
+<tr><th id="86">86</th><td><b>extern</b> <a class="typedef" href="../../../../include/bits/stdint-uintn.h.html#uint16_t" title='uint16_t' data-type='__uint16_t' data-ref="uint16_t" data-ref-filename="uint16_t">uint16_t</a> <dfn class="decl fn" id="__xray_register_event_type" title='__xray_register_event_type' data-ref="__xray_register_event_type" data-ref-filename="__xray_register_event_type">__xray_register_event_type</dfn>(<em>const</em> <em>char</em> *<dfn class="local col6 decl" id="6event_type" title='event_type' data-type='const char *' data-ref="6event_type" data-ref-filename="6event_type">event_type</dfn>);</td></tr>
+<tr><th id="87">87</th><td></td></tr>
+<tr><th id="88">88</th><td><b>enum</b> <dfn class="type def" id="XRayPatchingStatus" title='XRayPatchingStatus' data-ref="XRayPatchingStatus" data-ref-filename="XRayPatchingStatus">XRayPatchingStatus</dfn> {</td></tr>
+<tr><th id="89">89</th><td>  <dfn class="enum" id="NOT_INITIALIZED" title='NOT_INITIALIZED' data-ref="NOT_INITIALIZED" data-ref-filename="NOT_INITIALIZED">NOT_INITIALIZED</dfn> = <var>0</var>,</td></tr>
+<tr><th id="90">90</th><td>  <dfn class="enum" id="SUCCESS" title='SUCCESS' data-ref="SUCCESS" data-ref-filename="SUCCESS">SUCCESS</dfn> = <var>1</var>,</td></tr>
+<tr><th id="91">91</th><td>  <dfn class="enum" id="ONGOING" title='ONGOING' data-ref="ONGOING" data-ref-filename="ONGOING">ONGOING</dfn> = <var>2</var>,</td></tr>
+<tr><th id="92">92</th><td>  <dfn class="enum" id="FAILED" title='FAILED' data-ref="FAILED" data-ref-filename="FAILED">FAILED</dfn> = <var>3</var>,</td></tr>
+<tr><th id="93">93</th><td>};</td></tr>
+<tr><th id="94">94</th><td></td></tr>
+<tr><th id="95">95</th><td><i class="doc">/// This tells XRay to patch the instrumentation points. See XRayPatchingStatus</i></td></tr>
+<tr><th id="96">96</th><td><i class="doc">/// for possible result values.</i></td></tr>
+<tr><th id="97">97</th><td><b>extern</b> <a class="type" href="#XRayPatchingStatus" title='XRayPatchingStatus' data-ref="XRayPatchingStatus" data-ref-filename="XRayPatchingStatus">XRayPatchingStatus</a> <dfn class="decl fn" id="__xray_patch" title='__xray_patch' data-ref="__xray_patch" data-ref-filename="__xray_patch">__xray_patch</dfn>();</td></tr>
+<tr><th id="98">98</th><td></td></tr>
+<tr><th id="99">99</th><td><i class="doc">/// Reverses the effect of __xray_patch(). See XRayPatchingStatus for possible</i></td></tr>
+<tr><th id="100">100</th><td><i class="doc">/// result values.</i></td></tr>
+<tr><th id="101">101</th><td><b>extern</b> <a class="type" href="#XRayPatchingStatus" title='XRayPatchingStatus' data-ref="XRayPatchingStatus" data-ref-filename="XRayPatchingStatus">XRayPatchingStatus</a> <dfn class="decl fn" id="__xray_unpatch" title='__xray_unpatch' data-ref="__xray_unpatch" data-ref-filename="__xray_unpatch">__xray_unpatch</dfn>();</td></tr>
+<tr><th id="102">102</th><td></td></tr>
+<tr><th id="103">103</th><td><i class="doc">/// This patches a specific function id. See XRayPatchingStatus for possible</i></td></tr>
+<tr><th id="104">104</th><td><i class="doc">/// result values.</i></td></tr>
+<tr><th id="105">105</th><td><b>extern</b> <a class="type" href="#XRayPatchingStatus" title='XRayPatchingStatus' data-ref="XRayPatchingStatus" data-ref-filename="XRayPatchingStatus">XRayPatchingStatus</a> <dfn class="decl fn" id="__xray_patch_function" title='__xray_patch_function' data-ref="__xray_patch_function" data-ref-filename="__xray_patch_function">__xray_patch_function</dfn>(<a class="typedef" href="../../../../include/bits/stdint-intn.h.html#int32_t" title='int32_t' data-type='__int32_t' data-ref="int32_t" data-ref-filename="int32_t">int32_t</a> <dfn class="local col7 decl" id="7FuncId" title='FuncId' data-type='int32_t' data-ref="7FuncId" data-ref-filename="7FuncId">FuncId</dfn>);</td></tr>
+<tr><th id="106">106</th><td></td></tr>
+<tr><th id="107">107</th><td><i class="doc">/// This unpatches a specific function id. See XRayPatchingStatus for possible</i></td></tr>
+<tr><th id="108">108</th><td><i class="doc">/// result values.</i></td></tr>
+<tr><th id="109">109</th><td><b>extern</b> <a class="type" href="#XRayPatchingStatus" title='XRayPatchingStatus' data-ref="XRayPatchingStatus" data-ref-filename="XRayPatchingStatus">XRayPatchingStatus</a> <dfn class="decl fn" id="__xray_unpatch_function" title='__xray_unpatch_function' data-ref="__xray_unpatch_function" data-ref-filename="__xray_unpatch_function">__xray_unpatch_function</dfn>(<a class="typedef" href="../../../../include/bits/stdint-intn.h.html#int32_t" title='int32_t' data-type='__int32_t' data-ref="int32_t" data-ref-filename="int32_t">int32_t</a> <dfn class="local col8 decl" id="8FuncId" title='FuncId' data-type='int32_t' data-ref="8FuncId" data-ref-filename="8FuncId">FuncId</dfn>);</td></tr>
+<tr><th id="110">110</th><td></td></tr>
+<tr><th id="111">111</th><td><i class="doc">/// This function returns the address of the function provided a valid function</i></td></tr>
+<tr><th id="112">112</th><td><i class="doc">/// id. We return 0 if we encounter any error, even if 0 may be a valid function</i></td></tr>
+<tr><th id="113">113</th><td><i class="doc">/// address.</i></td></tr>
+<tr><th id="114">114</th><td><b>extern</b> <a class="typedef" href="../../../../include/stdint.h.html#uintptr_t" title='uintptr_t' data-type='unsigned long' data-ref="uintptr_t" data-ref-filename="uintptr_t">uintptr_t</a> <dfn class="decl fn" id="__xray_function_address" title='__xray_function_address' data-ref="__xray_function_address" data-ref-filename="__xray_function_address">__xray_function_address</dfn>(<a class="typedef" href="../../../../include/bits/stdint-intn.h.html#int32_t" title='int32_t' data-type='__int32_t' data-ref="int32_t" data-ref-filename="int32_t">int32_t</a> <dfn class="local col9 decl" id="9FuncId" title='FuncId' data-type='int32_t' data-ref="9FuncId" data-ref-filename="9FuncId">FuncId</dfn>);</td></tr>
+<tr><th id="115">115</th><td></td></tr>
+<tr><th id="116">116</th><td><i class="doc">/// This function returns the maximum valid function id. Returns 0 if we</i></td></tr>
+<tr><th id="117">117</th><td><i class="doc">/// encounter errors (when there are no instrumented functions, etc.).</i></td></tr>
+<tr><th id="118">118</th><td><b>extern</b> <span class='typedef' title='size_t' data-type='unsigned long' data-ref="size_t" data-ref-filename="size_t">size_t</span> <dfn class="decl fn" id="__xray_max_function_id" title='__xray_max_function_id' data-ref="__xray_max_function_id" data-ref-filename="__xray_max_function_id">__xray_max_function_id</dfn>();</td></tr>
+<tr><th id="119">119</th><td></td></tr>
+<tr><th id="120">120</th><td><i class="doc">/// Initialize the required XRay data structures. This is useful in cases where</i></td></tr>
+<tr><th id="121">121</th><td><i class="doc">/// users want to control precisely when the XRay instrumentation data</i></td></tr>
+<tr><th id="122">122</th><td><i class="doc">/// structures are initialized, for example when the XRay library is built with</i></td></tr>
+<tr><th id="123">123</th><td><i class="doc">/// the XRAY_NO_PREINIT preprocessor definition.</i></td></tr>
+<tr><th id="124">124</th><td><i class="doc">///</i></td></tr>
+<tr><th id="125">125</th><td><i class="doc">/// Calling __xray_init() more than once is safe across multiple threads.</i></td></tr>
+<tr><th id="126">126</th><td><b>extern</b> <em>void</em> <dfn class="decl fn" id="__xray_init" title='__xray_init' data-ref="__xray_init" data-ref-filename="__xray_init">__xray_init</dfn>();</td></tr>
+<tr><th id="127">127</th><td></td></tr>
+<tr><th id="128">128</th><td>} <i>// end extern "C"</i></td></tr>
+<tr><th id="129">129</th><td></td></tr>
+<tr><th id="130">130</th><td><u>#<span data-ppcond="14">endif</span> // XRAY_XRAY_INTERFACE_H</u></td></tr>
+<tr><th id="131">131</th><td></td></tr>
+</table><hr/><p id='footer'>
+Generated while processing <a href='../../lib/xray/xray_basic_logging.cpp.html'>llvm/compiler-rt/lib/xray/xray_basic_logging.cpp</a><br/>Generated on <em>2021-Jul-01</em> from project llvm revision <em>12</em>

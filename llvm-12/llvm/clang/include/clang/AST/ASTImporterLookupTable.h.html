@@ -1,0 +1,91 @@
+<!doctype html>
+<html>
+<head>
+<meta name="viewport" content="width=device-width, initial-scale=1.0"><title>ASTImporterLookupTable.h source code [llvm/clang/include/clang/AST/ASTImporterLookupTable.h] - Woboq Code Browser</title>
+<meta name="woboq:interestingDefinitions" content="clang::ASTImporterLookupTable "/>
+<link rel="stylesheet" href="../../../../.././data/qtcreator.css" title="QtCreator"/>
+<link rel="alternate stylesheet" href="../../../../.././data/kdevelop.css" title="KDevelop"/>
+<script type="text/javascript" src="../../../../.././data/jquery/jquery.min.js"></script>
+<script type="text/javascript" src="../../../../.././data/jquery/jquery-ui.min.js"></script>
+<script>var file = 'llvm/clang/include/clang/AST/ASTImporterLookupTable.h'; var root_path = '../../../../..'; var data_path = '../../../../.././data'; var ecma_script_api_version = 2;</script>
+<script src='../../../../.././data/codebrowser.js'></script>
+</head>
+<body><div id='header'><h1 id='breadcrumb'><span>Browse the source code of </span><a href='../../../..'>llvm</a>/<a href='../../..'>clang</a>/<a href='../..'>include</a>/<a href='..'>clang</a>/<a href='./'>AST</a>/<a href='ASTImporterLookupTable.h.html'>ASTImporterLookupTable.h</a></h1></div>
+<hr/><div id='content'><table class="code">
+<tr><th id="1">1</th><td><i>//===- ASTImporterLookupTable.h - ASTImporter specific lookup--*- C++ -*---===//</i></td></tr>
+<tr><th id="2">2</th><td><i>//</i></td></tr>
+<tr><th id="3">3</th><td><i>// Part of the LLVM Project, under the Apache License v2.0 with LLVM Exceptions.</i></td></tr>
+<tr><th id="4">4</th><td><i>// See <a href="https://llvm.org/LICENSE.txt">https://llvm.org/LICENSE.txt</a> for license information.</i></td></tr>
+<tr><th id="5">5</th><td><i>// SPDX-License-Identifier: Apache-2.0 WITH LLVM-exception</i></td></tr>
+<tr><th id="6">6</th><td><i>//</i></td></tr>
+<tr><th id="7">7</th><td><i>//===----------------------------------------------------------------------===//</i></td></tr>
+<tr><th id="8">8</th><td><i>//</i></td></tr>
+<tr><th id="9">9</th><td><i>//  This file defines the ASTImporterLookupTable class which implements a</i></td></tr>
+<tr><th id="10">10</th><td><i>//  lookup procedure for the import mechanism.</i></td></tr>
+<tr><th id="11">11</th><td><i>//</i></td></tr>
+<tr><th id="12">12</th><td><i>//===----------------------------------------------------------------------===//</i></td></tr>
+<tr><th id="13">13</th><td></td></tr>
+<tr><th id="14">14</th><td><u>#<span data-ppcond="14">ifndef</span> <span class="macro" data-ref="_M/LLVM_CLANG_AST_ASTIMPORTERLOOKUPTABLE_H">LLVM_CLANG_AST_ASTIMPORTERLOOKUPTABLE_H</span></u></td></tr>
+<tr><th id="15">15</th><td><u>#define <dfn class="macro" id="_M/LLVM_CLANG_AST_ASTIMPORTERLOOKUPTABLE_H" data-ref="_M/LLVM_CLANG_AST_ASTIMPORTERLOOKUPTABLE_H">LLVM_CLANG_AST_ASTIMPORTERLOOKUPTABLE_H</dfn></u></td></tr>
+<tr><th id="16">16</th><td></td></tr>
+<tr><th id="17">17</th><td><u>#include <a href="DeclBase.h.html">"clang/AST/DeclBase.h"</a> // lookup_result</u></td></tr>
+<tr><th id="18">18</th><td><u>#include <a href="DeclarationName.h.html">"clang/AST/DeclarationName.h"</a></u></td></tr>
+<tr><th id="19">19</th><td><u>#include <a href="../../../../llvm/include/llvm/ADT/DenseMap.h.html">"llvm/ADT/DenseMap.h"</a></u></td></tr>
+<tr><th id="20">20</th><td><u>#include <a href="../../../../llvm/include/llvm/ADT/SetVector.h.html">"llvm/ADT/SetVector.h"</a></u></td></tr>
+<tr><th id="21">21</th><td></td></tr>
+<tr><th id="22">22</th><td><b>namespace</b> <span class="namespace">clang</span> {</td></tr>
+<tr><th id="23">23</th><td></td></tr>
+<tr><th id="24">24</th><td><b>class</b> <a class="type" href="ASTContext.h.html#clang::ASTContext" title='clang::ASTContext' data-ref="clang::ASTContext" data-ref-filename="clang..ASTContext" id="clang::ASTContext">ASTContext</a>;</td></tr>
+<tr><th id="25">25</th><td><b>class</b> <a class="type" href="Decl.h.html#clang::NamedDecl" title='clang::NamedDecl' data-ref="clang::NamedDecl" data-ref-filename="clang..NamedDecl" id="clang::NamedDecl">NamedDecl</a>;</td></tr>
+<tr><th id="26">26</th><td><b>class</b> <a class="type" href="DeclBase.h.html#clang::DeclContext" title='clang::DeclContext' data-ref="clang::DeclContext" data-ref-filename="clang..DeclContext" id="clang::DeclContext">DeclContext</a>;</td></tr>
+<tr><th id="27">27</th><td></td></tr>
+<tr><th id="28">28</th><td><i>// There are certain cases when normal C/C++ lookup (localUncachedLookup)</i></td></tr>
+<tr><th id="29">29</th><td><i>// does not find AST nodes. E.g.:</i></td></tr>
+<tr><th id="30">30</th><td><i>// Example 1:</i></td></tr>
+<tr><th id="31">31</th><td><i>//   template &lt;class T&gt;</i></td></tr>
+<tr><th id="32">32</th><td><i>//   struct X {</i></td></tr>
+<tr><th id="33">33</th><td><i>//     friend void foo(); // this is never found in the DC of the TU.</i></td></tr>
+<tr><th id="34">34</th><td><i>//   };</i></td></tr>
+<tr><th id="35">35</th><td><i>// Example 2:</i></td></tr>
+<tr><th id="36">36</th><td><i>//   // The fwd decl to Foo is not found in the lookupPtr of the DC of the</i></td></tr>
+<tr><th id="37">37</th><td><i>//   // translation unit decl.</i></td></tr>
+<tr><th id="38">38</th><td><i>//   // Here we could find the node by doing a traverse throught the list of</i></td></tr>
+<tr><th id="39">39</th><td><i>//   // the Decls in the DC, but that would not scale.</i></td></tr>
+<tr><th id="40">40</th><td><i>//   struct A { struct Foo *p; };</i></td></tr>
+<tr><th id="41">41</th><td><i>// This is a severe problem because the importer decides if it has to create a</i></td></tr>
+<tr><th id="42">42</th><td><i>// new Decl or not based on the lookup results.</i></td></tr>
+<tr><th id="43">43</th><td><i>// To overcome these cases we need an importer specific lookup table which</i></td></tr>
+<tr><th id="44">44</th><td><i>// holds every node and we are not interested in any C/C++ specific visibility</i></td></tr>
+<tr><th id="45">45</th><td><i>// considerations. Simply, we must know if there is an existing Decl in a</i></td></tr>
+<tr><th id="46">46</th><td><i>// given DC. Once we found it then we can handle any visibility related tasks.</i></td></tr>
+<tr><th id="47">47</th><td><b>class</b> <dfn class="type def" id="clang::ASTImporterLookupTable" title='clang::ASTImporterLookupTable' data-ref="clang::ASTImporterLookupTable" data-ref-filename="clang..ASTImporterLookupTable">ASTImporterLookupTable</dfn> {</td></tr>
+<tr><th id="48">48</th><td></td></tr>
+<tr><th id="49">49</th><td>  <i>// We store a list of declarations for each name.</i></td></tr>
+<tr><th id="50">50</th><td><i>  // And we collect these lists for each DeclContext.</i></td></tr>
+<tr><th id="51">51</th><td><i>  // We could have a flat map with (DeclContext, Name) tuple as key, but a two</i></td></tr>
+<tr><th id="52">52</th><td><i>  // level map seems easier to handle.</i></td></tr>
+<tr><th id="53">53</th><td>  <b>using</b> <dfn class="typedef" id="clang::ASTImporterLookupTable::DeclList" title='clang::ASTImporterLookupTable::DeclList' data-type='llvm::SmallSetVector&lt;NamedDecl *, 2&gt;' data-ref="clang::ASTImporterLookupTable::DeclList" data-ref-filename="clang..ASTImporterLookupTable..DeclList">DeclList</dfn> = <span class="namespace">llvm::</span><a class="type" href="../../../../llvm/include/llvm/ADT/SetVector.h.html#llvm::SmallSetVector" title='llvm::SmallSetVector' data-ref="llvm::SmallSetVector" data-ref-filename="llvm..SmallSetVector">SmallSetVector</a>&lt;<a class="type" href="Decl.h.html#clang::NamedDecl" title='clang::NamedDecl' data-ref="clang::NamedDecl" data-ref-filename="clang..NamedDecl">NamedDecl</a> *, <var>2</var>&gt;;</td></tr>
+<tr><th id="54">54</th><td>  <b>using</b> <dfn class="typedef" id="clang::ASTImporterLookupTable::NameMap" title='clang::ASTImporterLookupTable::NameMap' data-type='llvm::SmallDenseMap&lt;DeclarationName, DeclList, 4&gt;' data-ref="clang::ASTImporterLookupTable::NameMap" data-ref-filename="clang..ASTImporterLookupTable..NameMap">NameMap</dfn> = <span class="namespace">llvm::</span><a class="type" href="../../../../llvm/include/llvm/ADT/DenseMap.h.html#llvm::SmallDenseMap" title='llvm::SmallDenseMap' data-ref="llvm::SmallDenseMap" data-ref-filename="llvm..SmallDenseMap">SmallDenseMap</a>&lt;<a class="type" href="DeclarationName.h.html#clang::DeclarationName" title='clang::DeclarationName' data-ref="clang::DeclarationName" data-ref-filename="clang..DeclarationName">DeclarationName</a>, <a class="typedef" href="#clang::ASTImporterLookupTable::DeclList" title='clang::ASTImporterLookupTable::DeclList' data-type='llvm::SmallSetVector&lt;NamedDecl *, 2&gt;' data-ref="clang::ASTImporterLookupTable::DeclList" data-ref-filename="clang..ASTImporterLookupTable..DeclList">DeclList</a>, <var>4</var>&gt;;</td></tr>
+<tr><th id="55">55</th><td>  <b>using</b> <dfn class="typedef" id="clang::ASTImporterLookupTable::DCMap" title='clang::ASTImporterLookupTable::DCMap' data-type='llvm::DenseMap&lt;DeclContext *, NameMap&gt;' data-ref="clang::ASTImporterLookupTable::DCMap" data-ref-filename="clang..ASTImporterLookupTable..DCMap">DCMap</dfn> = <span class="namespace">llvm::</span><a class="type" href="../../../../llvm/include/llvm/ADT/DenseMap.h.html#llvm::DenseMap" title='llvm::DenseMap' data-ref="llvm::DenseMap" data-ref-filename="llvm..DenseMap">DenseMap</a>&lt;<a class="type" href="DeclBase.h.html#clang::DeclContext" title='clang::DeclContext' data-ref="clang::DeclContext" data-ref-filename="clang..DeclContext">DeclContext</a> *, <a class="typedef" href="#clang::ASTImporterLookupTable::NameMap" title='clang::ASTImporterLookupTable::NameMap' data-type='llvm::SmallDenseMap&lt;DeclarationName, DeclList, 4&gt;' data-ref="clang::ASTImporterLookupTable::NameMap" data-ref-filename="clang..ASTImporterLookupTable..NameMap">NameMap</a>&gt;;</td></tr>
+<tr><th id="56">56</th><td></td></tr>
+<tr><th id="57">57</th><td>  <em>void</em> <dfn class="decl fn" id="_ZN5clang22ASTImporterLookupTable3addEPNS_11DeclContextEPNS_9NamedDeclE" title='clang::ASTImporterLookupTable::add' data-ref="_ZN5clang22ASTImporterLookupTable3addEPNS_11DeclContextEPNS_9NamedDeclE" data-ref-filename="_ZN5clang22ASTImporterLookupTable3addEPNS_11DeclContextEPNS_9NamedDeclE">add</dfn>(<a class="type" href="DeclBase.h.html#clang::DeclContext" title='clang::DeclContext' data-ref="clang::DeclContext" data-ref-filename="clang..DeclContext">DeclContext</a> *<dfn class="local col5 decl" id="75DC" title='DC' data-type='clang::DeclContext *' data-ref="75DC" data-ref-filename="75DC">DC</dfn>, <a class="type" href="Decl.h.html#clang::NamedDecl" title='clang::NamedDecl' data-ref="clang::NamedDecl" data-ref-filename="clang..NamedDecl">NamedDecl</a> *<dfn class="local col6 decl" id="76ND" title='ND' data-type='clang::NamedDecl *' data-ref="76ND" data-ref-filename="76ND">ND</dfn>);</td></tr>
+<tr><th id="58">58</th><td>  <em>void</em> <dfn class="decl fn" id="_ZN5clang22ASTImporterLookupTable6removeEPNS_11DeclContextEPNS_9NamedDeclE" title='clang::ASTImporterLookupTable::remove' data-ref="_ZN5clang22ASTImporterLookupTable6removeEPNS_11DeclContextEPNS_9NamedDeclE" data-ref-filename="_ZN5clang22ASTImporterLookupTable6removeEPNS_11DeclContextEPNS_9NamedDeclE">remove</dfn>(<a class="type" href="DeclBase.h.html#clang::DeclContext" title='clang::DeclContext' data-ref="clang::DeclContext" data-ref-filename="clang..DeclContext">DeclContext</a> *<dfn class="local col7 decl" id="77DC" title='DC' data-type='clang::DeclContext *' data-ref="77DC" data-ref-filename="77DC">DC</dfn>, <a class="type" href="Decl.h.html#clang::NamedDecl" title='clang::NamedDecl' data-ref="clang::NamedDecl" data-ref-filename="clang..NamedDecl">NamedDecl</a> *<dfn class="local col8 decl" id="78ND" title='ND' data-type='clang::NamedDecl *' data-ref="78ND" data-ref-filename="78ND">ND</dfn>);</td></tr>
+<tr><th id="59">59</th><td></td></tr>
+<tr><th id="60">60</th><td>  <a class="typedef" href="#clang::ASTImporterLookupTable::DCMap" title='clang::ASTImporterLookupTable::DCMap' data-type='llvm::DenseMap&lt;DeclContext *, NameMap&gt;' data-ref="clang::ASTImporterLookupTable::DCMap" data-ref-filename="clang..ASTImporterLookupTable..DCMap">DCMap</a> <dfn class="decl field" id="clang::ASTImporterLookupTable::LookupTable" title='clang::ASTImporterLookupTable::LookupTable' data-ref="clang::ASTImporterLookupTable::LookupTable" data-ref-filename="clang..ASTImporterLookupTable..LookupTable">LookupTable</dfn>;</td></tr>
+<tr><th id="61">61</th><td></td></tr>
+<tr><th id="62">62</th><td><b>public</b>:</td></tr>
+<tr><th id="63">63</th><td>  <dfn class="decl fn" id="_ZN5clang22ASTImporterLookupTableC1ERNS_19TranslationUnitDeclE" title='clang::ASTImporterLookupTable::ASTImporterLookupTable' data-ref="_ZN5clang22ASTImporterLookupTableC1ERNS_19TranslationUnitDeclE" data-ref-filename="_ZN5clang22ASTImporterLookupTableC1ERNS_19TranslationUnitDeclE">ASTImporterLookupTable</dfn>(<a class="type" href="Decl.h.html#clang::TranslationUnitDecl" title='clang::TranslationUnitDecl' data-ref="clang::TranslationUnitDecl" data-ref-filename="clang..TranslationUnitDecl">TranslationUnitDecl</a> &amp;<dfn class="local col9 decl" id="79TU" title='TU' data-type='clang::TranslationUnitDecl &amp;' data-ref="79TU" data-ref-filename="79TU">TU</dfn>);</td></tr>
+<tr><th id="64">64</th><td>  <em>void</em> <dfn class="decl fn" id="_ZN5clang22ASTImporterLookupTable3addEPNS_9NamedDeclE" title='clang::ASTImporterLookupTable::add' data-ref="_ZN5clang22ASTImporterLookupTable3addEPNS_9NamedDeclE" data-ref-filename="_ZN5clang22ASTImporterLookupTable3addEPNS_9NamedDeclE">add</dfn>(<a class="type" href="Decl.h.html#clang::NamedDecl" title='clang::NamedDecl' data-ref="clang::NamedDecl" data-ref-filename="clang..NamedDecl">NamedDecl</a> *<dfn class="local col0 decl" id="80ND" title='ND' data-type='clang::NamedDecl *' data-ref="80ND" data-ref-filename="80ND">ND</dfn>);</td></tr>
+<tr><th id="65">65</th><td>  <em>void</em> <dfn class="decl fn" id="_ZN5clang22ASTImporterLookupTable6removeEPNS_9NamedDeclE" title='clang::ASTImporterLookupTable::remove' data-ref="_ZN5clang22ASTImporterLookupTable6removeEPNS_9NamedDeclE" data-ref-filename="_ZN5clang22ASTImporterLookupTable6removeEPNS_9NamedDeclE">remove</dfn>(<a class="type" href="Decl.h.html#clang::NamedDecl" title='clang::NamedDecl' data-ref="clang::NamedDecl" data-ref-filename="clang..NamedDecl">NamedDecl</a> *<dfn class="local col1 decl" id="81ND" title='ND' data-type='clang::NamedDecl *' data-ref="81ND" data-ref-filename="81ND">ND</dfn>);</td></tr>
+<tr><th id="66">66</th><td>  <b>using</b> <dfn class="typedef" id="clang::ASTImporterLookupTable::LookupResult" title='clang::ASTImporterLookupTable::LookupResult' data-type='clang::ASTImporterLookupTable::DeclList' data-ref="clang::ASTImporterLookupTable::LookupResult" data-ref-filename="clang..ASTImporterLookupTable..LookupResult">LookupResult</dfn> = <a class="typedef" href="#clang::ASTImporterLookupTable::DeclList" title='clang::ASTImporterLookupTable::DeclList' data-type='llvm::SmallSetVector&lt;NamedDecl *, 2&gt;' data-ref="clang::ASTImporterLookupTable::DeclList" data-ref-filename="clang..ASTImporterLookupTable..DeclList">DeclList</a>;</td></tr>
+<tr><th id="67">67</th><td>  <a class="typedef" href="#clang::ASTImporterLookupTable::LookupResult" title='clang::ASTImporterLookupTable::LookupResult' data-type='clang::ASTImporterLookupTable::DeclList' data-ref="clang::ASTImporterLookupTable::LookupResult" data-ref-filename="clang..ASTImporterLookupTable..LookupResult">LookupResult</a> <dfn class="decl fn" id="_ZNK5clang22ASTImporterLookupTable6lookupEPNS_11DeclContextENS_15DeclarationNameE" title='clang::ASTImporterLookupTable::lookup' data-ref="_ZNK5clang22ASTImporterLookupTable6lookupEPNS_11DeclContextENS_15DeclarationNameE" data-ref-filename="_ZNK5clang22ASTImporterLookupTable6lookupEPNS_11DeclContextENS_15DeclarationNameE">lookup</dfn>(<a class="type" href="DeclBase.h.html#clang::DeclContext" title='clang::DeclContext' data-ref="clang::DeclContext" data-ref-filename="clang..DeclContext">DeclContext</a> *<dfn class="local col2 decl" id="82DC" title='DC' data-type='clang::DeclContext *' data-ref="82DC" data-ref-filename="82DC">DC</dfn>, <a class="type" href="DeclarationName.h.html#clang::DeclarationName" title='clang::DeclarationName' data-ref="clang::DeclarationName" data-ref-filename="clang..DeclarationName">DeclarationName</a> <dfn class="local col3 decl" id="83Name" title='Name' data-type='clang::DeclarationName' data-ref="83Name" data-ref-filename="83Name">Name</dfn>) <em>const</em>;</td></tr>
+<tr><th id="68">68</th><td>  <em>void</em> <dfn class="decl fn" id="_ZNK5clang22ASTImporterLookupTable4dumpEPNS_11DeclContextE" title='clang::ASTImporterLookupTable::dump' data-ref="_ZNK5clang22ASTImporterLookupTable4dumpEPNS_11DeclContextE" data-ref-filename="_ZNK5clang22ASTImporterLookupTable4dumpEPNS_11DeclContextE">dump</dfn>(<a class="type" href="DeclBase.h.html#clang::DeclContext" title='clang::DeclContext' data-ref="clang::DeclContext" data-ref-filename="clang..DeclContext">DeclContext</a> *<dfn class="local col4 decl" id="84DC" title='DC' data-type='clang::DeclContext *' data-ref="84DC" data-ref-filename="84DC">DC</dfn>) <em>const</em>;</td></tr>
+<tr><th id="69">69</th><td>  <em>void</em> <dfn class="decl fn" id="_ZNK5clang22ASTImporterLookupTable4dumpEv" title='clang::ASTImporterLookupTable::dump' data-ref="_ZNK5clang22ASTImporterLookupTable4dumpEv" data-ref-filename="_ZNK5clang22ASTImporterLookupTable4dumpEv">dump</dfn>() <em>const</em>;</td></tr>
+<tr><th id="70">70</th><td>};</td></tr>
+<tr><th id="71">71</th><td></td></tr>
+<tr><th id="72">72</th><td>} <i>// namespace clang</i></td></tr>
+<tr><th id="73">73</th><td></td></tr>
+<tr><th id="74">74</th><td><u>#<span data-ppcond="14">endif</span> // LLVM_CLANG_AST_ASTIMPORTERLOOKUPTABLE_H</u></td></tr>
+<tr><th id="75">75</th><td></td></tr>
+</table><hr/><p id='footer'>
+Generated while processing <a href='../../../lib/AST/ASTImporter.cpp.html'>llvm/clang/lib/AST/ASTImporter.cpp</a><br/>Generated on <em>2021-Jul-01</em> from project llvm revision <em>12</em>

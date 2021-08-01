@@ -1,0 +1,166 @@
+<!doctype html>
+<html>
+<head>
+<meta name="viewport" content="width=device-width, initial-scale=1.0"><title>MsgPackReader.h source code [llvm/llvm/include/llvm/BinaryFormat/MsgPackReader.h] - Woboq Code Browser</title>
+<meta name="woboq:interestingDefinitions" content="llvm::msgpack::ExtensionType,llvm::msgpack::Object,llvm::msgpack::Reader,llvm::msgpack::Type "/>
+<link rel="stylesheet" href="../../../../.././data/qtcreator.css" title="QtCreator"/>
+<link rel="alternate stylesheet" href="../../../../.././data/kdevelop.css" title="KDevelop"/>
+<script type="text/javascript" src="../../../../.././data/jquery/jquery.min.js"></script>
+<script type="text/javascript" src="../../../../.././data/jquery/jquery-ui.min.js"></script>
+<script>var file = 'llvm/llvm/include/llvm/BinaryFormat/MsgPackReader.h'; var root_path = '../../../../..'; var data_path = '../../../../.././data'; var ecma_script_api_version = 2;</script>
+<script src='../../../../.././data/codebrowser.js'></script>
+</head>
+<body><div id='header'><h1 id='breadcrumb'><span>Browse the source code of </span><a href='../../../..'>llvm</a>/<a href='../../..'>llvm</a>/<a href='../..'>include</a>/<a href='..'>llvm</a>/<a href='./'>BinaryFormat</a>/<a href='MsgPackReader.h.html'>MsgPackReader.h</a></h1></div>
+<hr/><div id='content'><table class="code">
+<tr><th id="1">1</th><td><i>//===- MsgPackReader.h - Simple MsgPack reader ------------------*- C++ -*-===//</i></td></tr>
+<tr><th id="2">2</th><td><i>//</i></td></tr>
+<tr><th id="3">3</th><td><i>// Part of the LLVM Project, under the Apache License v2.0 with LLVM Exceptions.</i></td></tr>
+<tr><th id="4">4</th><td><i>// See <a href="https://llvm.org/LICENSE.txt">https://llvm.org/LICENSE.txt</a> for license information.</i></td></tr>
+<tr><th id="5">5</th><td><i>// SPDX-License-Identifier: Apache-2.0 WITH LLVM-exception</i></td></tr>
+<tr><th id="6">6</th><td><i>//</i></td></tr>
+<tr><th id="7">7</th><td><i>//===----------------------------------------------------------------------===//</i></td></tr>
+<tr><th id="8">8</th><td><i>///</i></td></tr>
+<tr><th id="9">9</th><td><i>///  \file</i></td></tr>
+<tr><th id="10">10</th><td><i>///  This is a MessagePack reader.</i></td></tr>
+<tr><th id="11">11</th><td><i>///</i></td></tr>
+<tr><th id="12">12</th><td><i>///  See <a href="https://github.com/msgpack/msgpack/blob/master/spec.md">https://github.com/msgpack/msgpack/blob/master/spec.md</a> for the full</i></td></tr>
+<tr><th id="13">13</th><td><i>///  standard.</i></td></tr>
+<tr><th id="14">14</th><td><i>///</i></td></tr>
+<tr><th id="15">15</th><td><i>///  Typical usage:</i></td></tr>
+<tr><th id="16">16</th><td><i>///  \code</i></td></tr>
+<tr><th id="17">17</th><td><i>///  StringRef input = GetInput();</i></td></tr>
+<tr><th id="18">18</th><td><i>///  msgpack::Reader MPReader(input);</i></td></tr>
+<tr><th id="19">19</th><td><i>///  msgpack::Object Obj;</i></td></tr>
+<tr><th id="20">20</th><td><i>///</i></td></tr>
+<tr><th id="21">21</th><td><i>///  while (MPReader.read(Obj)) {</i></td></tr>
+<tr><th id="22">22</th><td><i>///    switch (Obj.Kind) {</i></td></tr>
+<tr><th id="23">23</th><td><i>///    case msgpack::Type::Int:</i></td></tr>
+<tr><th id="24">24</th><td><i>//       // Use Obj.Int</i></td></tr>
+<tr><th id="25">25</th><td><i>///      break;</i></td></tr>
+<tr><th id="26">26</th><td><i>///    // ...</i></td></tr>
+<tr><th id="27">27</th><td><i>///    }</i></td></tr>
+<tr><th id="28">28</th><td><i>///  }</i></td></tr>
+<tr><th id="29">29</th><td><i>///  \endcode</i></td></tr>
+<tr><th id="30">30</th><td><i>///</i></td></tr>
+<tr><th id="31">31</th><td><i>//===----------------------------------------------------------------------===//</i></td></tr>
+<tr><th id="32">32</th><td></td></tr>
+<tr><th id="33">33</th><td><u>#<span data-ppcond="33">ifndef</span> <span class="macro" data-ref="_M/LLVM_SUPPORT_MSGPACKREADER_H">LLVM_SUPPORT_MSGPACKREADER_H</span></u></td></tr>
+<tr><th id="34">34</th><td><u>#define <dfn class="macro" id="_M/LLVM_SUPPORT_MSGPACKREADER_H" data-ref="_M/LLVM_SUPPORT_MSGPACKREADER_H">LLVM_SUPPORT_MSGPACKREADER_H</dfn></u></td></tr>
+<tr><th id="35">35</th><td></td></tr>
+<tr><th id="36">36</th><td><u>#include <a href="../Support/Error.h.html">"llvm/Support/Error.h"</a></u></td></tr>
+<tr><th id="37">37</th><td><u>#include <a href="../Support/MemoryBuffer.h.html">"llvm/Support/MemoryBuffer.h"</a></u></td></tr>
+<tr><th id="38">38</th><td><u>#include <a href="../Support/raw_ostream.h.html">"llvm/Support/raw_ostream.h"</a></u></td></tr>
+<tr><th id="39">39</th><td><u>#include &lt;cstdint&gt;</u></td></tr>
+<tr><th id="40">40</th><td></td></tr>
+<tr><th id="41">41</th><td><b>namespace</b> <span class="namespace">llvm</span> {</td></tr>
+<tr><th id="42">42</th><td><b>namespace</b> <span class="namespace">msgpack</span> {</td></tr>
+<tr><th id="43">43</th><td></td></tr>
+<tr><th id="44">44</th><td><i class="doc">/// MessagePack types as defined in the standard, with the exception of Integer</i></td></tr>
+<tr><th id="45">45</th><td><i class="doc">/// being divided into a signed Int and unsigned UInt variant in order to map</i></td></tr>
+<tr><th id="46">46</th><td><i class="doc">/// directly to C++ types.</i></td></tr>
+<tr><th id="47">47</th><td><i class="doc">///</i></td></tr>
+<tr><th id="48">48</th><td><i class="doc">/// The types map onto corresponding union members of the<span class="command"> \c</span> <span class="arg">Object</span> struct.</i></td></tr>
+<tr><th id="49">49</th><td><b>enum</b> <b>class</b> <dfn class="type def" id="llvm::msgpack::Type" title='llvm::msgpack::Type' data-ref="llvm::msgpack::Type" data-ref-filename="llvm..msgpack..Type">Type</dfn> : uint8_t {</td></tr>
+<tr><th id="50">50</th><td>  <dfn class="enum" id="llvm::msgpack::Type::Int" title='llvm::msgpack::Type::Int' data-ref="llvm::msgpack::Type::Int" data-ref-filename="llvm..msgpack..Type..Int">Int</dfn>,</td></tr>
+<tr><th id="51">51</th><td>  <dfn class="enum" id="llvm::msgpack::Type::UInt" title='llvm::msgpack::Type::UInt' data-ref="llvm::msgpack::Type::UInt" data-ref-filename="llvm..msgpack..Type..UInt">UInt</dfn>,</td></tr>
+<tr><th id="52">52</th><td>  <dfn class="enum" id="llvm::msgpack::Type::Nil" title='llvm::msgpack::Type::Nil' data-ref="llvm::msgpack::Type::Nil" data-ref-filename="llvm..msgpack..Type..Nil">Nil</dfn>,</td></tr>
+<tr><th id="53">53</th><td>  <dfn class="enum" id="llvm::msgpack::Type::Boolean" title='llvm::msgpack::Type::Boolean' data-ref="llvm::msgpack::Type::Boolean" data-ref-filename="llvm..msgpack..Type..Boolean">Boolean</dfn>,</td></tr>
+<tr><th id="54">54</th><td>  <dfn class="enum" id="llvm::msgpack::Type::Float" title='llvm::msgpack::Type::Float' data-ref="llvm::msgpack::Type::Float" data-ref-filename="llvm..msgpack..Type..Float">Float</dfn>,</td></tr>
+<tr><th id="55">55</th><td>  <dfn class="enum" id="llvm::msgpack::Type::String" title='llvm::msgpack::Type::String' data-ref="llvm::msgpack::Type::String" data-ref-filename="llvm..msgpack..Type..String">String</dfn>,</td></tr>
+<tr><th id="56">56</th><td>  <dfn class="enum" id="llvm::msgpack::Type::Binary" title='llvm::msgpack::Type::Binary' data-ref="llvm::msgpack::Type::Binary" data-ref-filename="llvm..msgpack..Type..Binary">Binary</dfn>,</td></tr>
+<tr><th id="57">57</th><td>  <dfn class="enum" id="llvm::msgpack::Type::Array" title='llvm::msgpack::Type::Array' data-ref="llvm::msgpack::Type::Array" data-ref-filename="llvm..msgpack..Type..Array">Array</dfn>,</td></tr>
+<tr><th id="58">58</th><td>  <dfn class="enum" id="llvm::msgpack::Type::Map" title='llvm::msgpack::Type::Map' data-ref="llvm::msgpack::Type::Map" data-ref-filename="llvm..msgpack..Type..Map">Map</dfn>,</td></tr>
+<tr><th id="59">59</th><td>  <dfn class="enum" id="llvm::msgpack::Type::Extension" title='llvm::msgpack::Type::Extension' data-ref="llvm::msgpack::Type::Extension" data-ref-filename="llvm..msgpack..Type..Extension">Extension</dfn>,</td></tr>
+<tr><th id="60">60</th><td>  <dfn class="enum" id="llvm::msgpack::Type::Empty" title='llvm::msgpack::Type::Empty' data-ref="llvm::msgpack::Type::Empty" data-ref-filename="llvm..msgpack..Type..Empty">Empty</dfn>, <i>// Used by MsgPackDocument to represent an empty node</i></td></tr>
+<tr><th id="61">61</th><td>};</td></tr>
+<tr><th id="62">62</th><td></td></tr>
+<tr><th id="63">63</th><td><i class="doc">/// Extension types are composed of a user-defined type ID and an uninterpreted</i></td></tr>
+<tr><th id="64">64</th><td><i class="doc">/// sequence of bytes.</i></td></tr>
+<tr><th id="65">65</th><td><b>struct</b> <dfn class="type def" id="llvm::msgpack::ExtensionType" title='llvm::msgpack::ExtensionType' data-ref="llvm::msgpack::ExtensionType" data-ref-filename="llvm..msgpack..ExtensionType">ExtensionType</dfn> {</td></tr>
+<tr><th id="66">66</th><td>  <i class="doc">/// User-defined extension type.</i></td></tr>
+<tr><th id="67">67</th><td>  <a class="typedef" href="../../../../../include/bits/stdint-intn.h.html#int8_t" title='int8_t' data-type='__int8_t' data-ref="int8_t" data-ref-filename="int8_t">int8_t</a> <dfn class="decl field" id="llvm::msgpack::ExtensionType::Type" title='llvm::msgpack::ExtensionType::Type' data-ref="llvm::msgpack::ExtensionType::Type" data-ref-filename="llvm..msgpack..ExtensionType..Type">Type</dfn>;</td></tr>
+<tr><th id="68">68</th><td>  <i class="doc">/// Raw bytes of the extension object.</i></td></tr>
+<tr><th id="69">69</th><td>  <a class="type" href="../ADT/StringRef.h.html#llvm::StringRef" title='llvm::StringRef' data-ref="llvm::StringRef" data-ref-filename="llvm..StringRef">StringRef</a> <dfn class="decl field" id="llvm::msgpack::ExtensionType::Bytes" title='llvm::msgpack::ExtensionType::Bytes' data-ref="llvm::msgpack::ExtensionType::Bytes" data-ref-filename="llvm..msgpack..ExtensionType..Bytes">Bytes</dfn>;</td></tr>
+<tr><th id="70">70</th><td>};</td></tr>
+<tr><th id="71">71</th><td></td></tr>
+<tr><th id="72">72</th><td><i class="doc">/// MessagePack object, represented as a tagged union of C++ types.</i></td></tr>
+<tr><th id="73">73</th><td><i class="doc">///</i></td></tr>
+<tr><th id="74">74</th><td><i class="doc">/// All types except<span class="command"> \c</span> <span class="arg">Type::Nil</span> (which has only one value, and so is</i></td></tr>
+<tr><th id="75">75</th><td><i class="doc">/// completely represented by the<span class="command"> \c</span> <span class="arg">Kind</span> itself) map to a exactly one union</i></td></tr>
+<tr><th id="76">76</th><td><i class="doc">/// member.</i></td></tr>
+<tr><th id="77">77</th><td><b>struct</b> <dfn class="type def" id="llvm::msgpack::Object" title='llvm::msgpack::Object' data-ref="llvm::msgpack::Object" data-ref-filename="llvm..msgpack..Object">Object</dfn> {</td></tr>
+<tr><th id="78">78</th><td>  <a class="type" href="#llvm::msgpack::Type" title='llvm::msgpack::Type' data-ref="llvm::msgpack::Type" data-ref-filename="llvm..msgpack..Type">Type</a> <dfn class="decl field" id="llvm::msgpack::Object::Kind" title='llvm::msgpack::Object::Kind' data-ref="llvm::msgpack::Object::Kind" data-ref-filename="llvm..msgpack..Object..Kind">Kind</dfn>;</td></tr>
+<tr><th id="79">79</th><td>  <b>union</b> {</td></tr>
+<tr><th id="80">80</th><td>    <i class="doc">/// Value for<span class="command"> \c</span> <span class="arg">Type::Int.</span></i></td></tr>
+<tr><th id="81">81</th><td>    <a class="typedef" href="../../../../../include/bits/stdint-intn.h.html#int64_t" title='int64_t' data-type='__int64_t' data-ref="int64_t" data-ref-filename="int64_t">int64_t</a> <dfn class="decl field" id="llvm::msgpack::Object::(anonymous)::Int" title='llvm::msgpack::Object::(anonymous union)::Int' data-ref="llvm::msgpack::Object::(anonymous)::Int" data-ref-filename="llvm..msgpack..Object..(anonymous)..Int">Int</dfn>;</td></tr>
+<tr><th id="82">82</th><td>    <i class="doc">/// Value for<span class="command"> \c</span> <span class="arg">Type::Uint.</span></i></td></tr>
+<tr><th id="83">83</th><td>    <a class="typedef" href="../../../../../include/bits/stdint-uintn.h.html#uint64_t" title='uint64_t' data-type='__uint64_t' data-ref="uint64_t" data-ref-filename="uint64_t">uint64_t</a> <dfn class="decl field" id="llvm::msgpack::Object::(anonymous)::UInt" title='llvm::msgpack::Object::(anonymous union)::UInt' data-ref="llvm::msgpack::Object::(anonymous)::UInt" data-ref-filename="llvm..msgpack..Object..(anonymous)..UInt">UInt</dfn>;</td></tr>
+<tr><th id="84">84</th><td>    <i class="doc">/// Value for<span class="command"> \c</span> <span class="arg">Type::Boolean.</span></i></td></tr>
+<tr><th id="85">85</th><td>    <em>bool</em> <dfn class="decl field" id="llvm::msgpack::Object::(anonymous)::Bool" title='llvm::msgpack::Object::(anonymous union)::Bool' data-ref="llvm::msgpack::Object::(anonymous)::Bool" data-ref-filename="llvm..msgpack..Object..(anonymous)..Bool">Bool</dfn>;</td></tr>
+<tr><th id="86">86</th><td>    <i class="doc">/// Value for<span class="command"> \c</span> <span class="arg">Type::Float.</span></i></td></tr>
+<tr><th id="87">87</th><td>    <em>double</em> <dfn class="decl field" id="llvm::msgpack::Object::(anonymous)::Float" title='llvm::msgpack::Object::(anonymous union)::Float' data-ref="llvm::msgpack::Object::(anonymous)::Float" data-ref-filename="llvm..msgpack..Object..(anonymous)..Float">Float</dfn>;</td></tr>
+<tr><th id="88">88</th><td>    <i class="doc">/// Value for<span class="command"> \c</span> <span class="arg">Type::String</span> and<span class="command"> \c</span> <span class="arg">Type::Binary.</span></i></td></tr>
+<tr><th id="89">89</th><td>    <a class="type" href="../ADT/StringRef.h.html#llvm::StringRef" title='llvm::StringRef' data-ref="llvm::StringRef" data-ref-filename="llvm..StringRef">StringRef</a> <dfn class="decl field" id="llvm::msgpack::Object::(anonymous)::Raw" title='llvm::msgpack::Object::(anonymous union)::Raw' data-ref="llvm::msgpack::Object::(anonymous)::Raw" data-ref-filename="llvm..msgpack..Object..(anonymous)..Raw">Raw</dfn>;</td></tr>
+<tr><th id="90">90</th><td>    <i class="doc">/// Value for<span class="command"> \c</span> <span class="arg">Type::Array</span> and<span class="command"> \c</span> <span class="arg">Type::Map.</span></i></td></tr>
+<tr><th id="91">91</th><td>    <span class='typedef' title='size_t' data-type='unsigned long' data-ref="size_t" data-ref-filename="size_t">size_t</span> <dfn class="decl field" id="llvm::msgpack::Object::(anonymous)::Length" title='llvm::msgpack::Object::(anonymous union)::Length' data-ref="llvm::msgpack::Object::(anonymous)::Length" data-ref-filename="llvm..msgpack..Object..(anonymous)..Length">Length</dfn>;</td></tr>
+<tr><th id="92">92</th><td>    <i class="doc">/// Value for<span class="command"> \c</span> <span class="arg">Type::Extension.</span></i></td></tr>
+<tr><th id="93">93</th><td>    <a class="type" href="#llvm::msgpack::ExtensionType" title='llvm::msgpack::ExtensionType' data-ref="llvm::msgpack::ExtensionType" data-ref-filename="llvm..msgpack..ExtensionType">ExtensionType</a> <dfn class="decl field" id="llvm::msgpack::Object::(anonymous)::Extension" title='llvm::msgpack::Object::(anonymous union)::Extension' data-ref="llvm::msgpack::Object::(anonymous)::Extension" data-ref-filename="llvm..msgpack..Object..(anonymous)..Extension">Extension</dfn>;</td></tr>
+<tr><th id="94">94</th><td>  };</td></tr>
+<tr><th id="95">95</th><td></td></tr>
+<tr><th id="96">96</th><td>  <dfn class="decl def fn" id="_ZN4llvm7msgpack6ObjectC1Ev" title='llvm::msgpack::Object::Object' data-ref="_ZN4llvm7msgpack6ObjectC1Ev" data-ref-filename="_ZN4llvm7msgpack6ObjectC1Ev">Object</dfn>() : <a class="member field" href="#llvm::msgpack::Object::Kind" title='llvm::msgpack::Object::Kind' data-ref="llvm::msgpack::Object::Kind" data-ref-filename="llvm..msgpack..Object..Kind">Kind</a>(<a class="type" href="#llvm::msgpack::Type" title='llvm::msgpack::Type' data-ref="llvm::msgpack::Type" data-ref-filename="llvm..msgpack..Type">Type</a>::<a class="enum" href="#llvm::msgpack::Type::Int" title='llvm::msgpack::Type::Int' data-ref="llvm::msgpack::Type::Int" data-ref-filename="llvm..msgpack..Type..Int">Int</a>), <a class="ref field" href="#llvm::msgpack::Object::(anonymous)::Int" title='llvm::msgpack::Object::(anonymous union)::Int' data-ref="llvm::msgpack::Object::(anonymous)::Int" data-ref-filename="llvm..msgpack..Object..(anonymous)..Int">Int</a>(<var>0</var>) {}</td></tr>
+<tr><th id="97">97</th><td>};</td></tr>
+<tr><th id="98">98</th><td></td></tr>
+<tr><th id="99">99</th><td><i class="doc">/// Reads MessagePack objects from memory, one at a time.</i></td></tr>
+<tr><th id="100">100</th><td><b>class</b> <dfn class="type def" id="llvm::msgpack::Reader" title='llvm::msgpack::Reader' data-ref="llvm::msgpack::Reader" data-ref-filename="llvm..msgpack..Reader">Reader</dfn> {</td></tr>
+<tr><th id="101">101</th><td><b>public</b>:</td></tr>
+<tr><th id="102">102</th><td>  <i class="doc">/// Construct a reader, keeping a reference to the<span class="command"> \p</span> <span class="arg">InputBuffer.</span></i></td></tr>
+<tr><th id="103">103</th><td>  <dfn class="decl fn" id="_ZN4llvm7msgpack6ReaderC1ENS_15MemoryBufferRefE" title='llvm::msgpack::Reader::Reader' data-ref="_ZN4llvm7msgpack6ReaderC1ENS_15MemoryBufferRefE" data-ref-filename="_ZN4llvm7msgpack6ReaderC1ENS_15MemoryBufferRefE">Reader</dfn>(<a class="type" href="../Support/MemoryBufferRef.h.html#llvm::MemoryBufferRef" title='llvm::MemoryBufferRef' data-ref="llvm::MemoryBufferRef" data-ref-filename="llvm..MemoryBufferRef">MemoryBufferRef</a> <dfn class="local col1 decl" id="1InputBuffer" title='InputBuffer' data-type='llvm::MemoryBufferRef' data-ref="1InputBuffer" data-ref-filename="1InputBuffer">InputBuffer</dfn>);</td></tr>
+<tr><th id="104">104</th><td>  <i class="doc">/// Construct a reader, keeping a reference to the<span class="command"> \p</span> <span class="arg">Input.</span></i></td></tr>
+<tr><th id="105">105</th><td>  <dfn class="decl fn" id="_ZN4llvm7msgpack6ReaderC1ENS_9StringRefE" title='llvm::msgpack::Reader::Reader' data-ref="_ZN4llvm7msgpack6ReaderC1ENS_9StringRefE" data-ref-filename="_ZN4llvm7msgpack6ReaderC1ENS_9StringRefE">Reader</dfn>(<a class="type" href="../ADT/StringRef.h.html#llvm::StringRef" title='llvm::StringRef' data-ref="llvm::StringRef" data-ref-filename="llvm..StringRef">StringRef</a> <dfn class="local col2 decl" id="2Input" title='Input' data-type='llvm::StringRef' data-ref="2Input" data-ref-filename="2Input">Input</dfn>);</td></tr>
+<tr><th id="106">106</th><td></td></tr>
+<tr><th id="107">107</th><td>  <dfn class="decl def fn" id="_ZN4llvm7msgpack6ReaderC1ERKS1_" title='llvm::msgpack::Reader::Reader' data-ref="_ZN4llvm7msgpack6ReaderC1ERKS1_" data-ref-filename="_ZN4llvm7msgpack6ReaderC1ERKS1_">Reader</dfn>(<em>const</em> <a class="type" href="#llvm::msgpack::Reader" title='llvm::msgpack::Reader' data-ref="llvm::msgpack::Reader" data-ref-filename="llvm..msgpack..Reader">Reader</a> &amp;) = <b>delete</b>;</td></tr>
+<tr><th id="108">108</th><td>  <a class="type" href="#llvm::msgpack::Reader" title='llvm::msgpack::Reader' data-ref="llvm::msgpack::Reader" data-ref-filename="llvm..msgpack..Reader">Reader</a> &amp;<dfn class="decl def fn" id="_ZN4llvm7msgpack6ReaderaSERKS1_" title='llvm::msgpack::Reader::operator=' data-ref="_ZN4llvm7msgpack6ReaderaSERKS1_" data-ref-filename="_ZN4llvm7msgpack6ReaderaSERKS1_"><b>operator</b>=</dfn>(<em>const</em> <a class="type" href="#llvm::msgpack::Reader" title='llvm::msgpack::Reader' data-ref="llvm::msgpack::Reader" data-ref-filename="llvm..msgpack..Reader">Reader</a> &amp;) = <b>delete</b>;</td></tr>
+<tr><th id="109">109</th><td></td></tr>
+<tr><th id="110">110</th><td>  <i class="doc">/// Read one object from the input buffer, advancing past it.</i></td></tr>
+<tr><th id="111">111</th><td><i class="doc">  ///</i></td></tr>
+<tr><th id="112">112</th><td><i class="doc">  /// The<span class="command"> \p</span> <span class="arg">Obj</span> is updated with the kind of the object read, and the</i></td></tr>
+<tr><th id="113">113</th><td><i class="doc">  /// corresponding union member is updated.</i></td></tr>
+<tr><th id="114">114</th><td><i class="doc">  ///</i></td></tr>
+<tr><th id="115">115</th><td><i class="doc">  /// For the collection objects (Array and Map), only the length is read, and</i></td></tr>
+<tr><th id="116">116</th><td><i class="doc">  /// the caller must make and additional<span class="command"> \c</span> <span class="arg">N</span> calls (in the case of Array) or</i></td></tr>
+<tr><th id="117">117</th><td><i class="doc">  ///<span class="command"> \c</span> <span class="arg">N*2</span> calls (in the case of Map) to<span class="command"> \c</span> <span class="arg">Read</span> to retrieve the collection</i></td></tr>
+<tr><th id="118">118</th><td><i class="doc">  /// elements.</i></td></tr>
+<tr><th id="119">119</th><td><i class="doc">  ///</i></td></tr>
+<tr><th id="120">120</th><td><i class="doc">  /// <span class="command">\param</span> [out] <span class="arg">Obj</span> filled with next object on success.</i></td></tr>
+<tr><th id="121">121</th><td><i class="doc">  ///</i></td></tr>
+<tr><th id="122">122</th><td><i class="doc">  /// <span class="command">\returns</span> true when object successfully read, false when at end of</i></td></tr>
+<tr><th id="123">123</th><td><i class="doc">  /// input (and so<span class="command"> \p</span> <span class="arg">Obj</span> was not updated), otherwise an error.</i></td></tr>
+<tr><th id="124">124</th><td>  <a class="type" href="../Support/raw_ostream.h.html#llvm::Expected" title='llvm::Expected' data-ref="llvm::Expected" data-ref-filename="llvm..Expected">Expected</a>&lt;<em>bool</em>&gt; <dfn class="decl fn" id="_ZN4llvm7msgpack6Reader4readERNS0_6ObjectE" title='llvm::msgpack::Reader::read' data-ref="_ZN4llvm7msgpack6Reader4readERNS0_6ObjectE" data-ref-filename="_ZN4llvm7msgpack6Reader4readERNS0_6ObjectE">read</dfn>(<a class="type" href="#llvm::msgpack::Object" title='llvm::msgpack::Object' data-ref="llvm::msgpack::Object" data-ref-filename="llvm..msgpack..Object">Object</a> &amp;<dfn class="local col3 decl" id="3Obj" title='Obj' data-type='llvm::msgpack::Object &amp;' data-ref="3Obj" data-ref-filename="3Obj">Obj</dfn>);</td></tr>
+<tr><th id="125">125</th><td></td></tr>
+<tr><th id="126">126</th><td><b>private</b>:</td></tr>
+<tr><th id="127">127</th><td>  <a class="type" href="../Support/MemoryBufferRef.h.html#llvm::MemoryBufferRef" title='llvm::MemoryBufferRef' data-ref="llvm::MemoryBufferRef" data-ref-filename="llvm..MemoryBufferRef">MemoryBufferRef</a> <dfn class="decl field" id="llvm::msgpack::Reader::InputBuffer" title='llvm::msgpack::Reader::InputBuffer' data-ref="llvm::msgpack::Reader::InputBuffer" data-ref-filename="llvm..msgpack..Reader..InputBuffer">InputBuffer</dfn>;</td></tr>
+<tr><th id="128">128</th><td>  <a class="type" href="../ADT/StringRef.h.html#llvm::StringRef" title='llvm::StringRef' data-ref="llvm::StringRef" data-ref-filename="llvm..StringRef">StringRef</a>::<a class="typedef" href="../ADT/StringRef.h.html#llvm::StringRef::iterator" title='llvm::StringRef::iterator' data-type='const char *' data-ref="llvm::StringRef::iterator" data-ref-filename="llvm..StringRef..iterator">iterator</a> <dfn class="decl field" id="llvm::msgpack::Reader::Current" title='llvm::msgpack::Reader::Current' data-ref="llvm::msgpack::Reader::Current" data-ref-filename="llvm..msgpack..Reader..Current">Current</dfn>;</td></tr>
+<tr><th id="129">129</th><td>  <a class="type" href="../ADT/StringRef.h.html#llvm::StringRef" title='llvm::StringRef' data-ref="llvm::StringRef" data-ref-filename="llvm..StringRef">StringRef</a>::<a class="typedef" href="../ADT/StringRef.h.html#llvm::StringRef::iterator" title='llvm::StringRef::iterator' data-type='const char *' data-ref="llvm::StringRef::iterator" data-ref-filename="llvm..StringRef..iterator">iterator</a> <dfn class="decl field" id="llvm::msgpack::Reader::End" title='llvm::msgpack::Reader::End' data-ref="llvm::msgpack::Reader::End" data-ref-filename="llvm..msgpack..Reader..End">End</dfn>;</td></tr>
+<tr><th id="130">130</th><td></td></tr>
+<tr><th id="131">131</th><td>  <span class='typedef' title='size_t' data-type='unsigned long' data-ref="size_t" data-ref-filename="size_t">size_t</span> <dfn class="decl def fn" id="_ZN4llvm7msgpack6Reader14remainingSpaceEv" title='llvm::msgpack::Reader::remainingSpace' data-ref="_ZN4llvm7msgpack6Reader14remainingSpaceEv" data-ref-filename="_ZN4llvm7msgpack6Reader14remainingSpaceEv">remainingSpace</dfn>() {</td></tr>
+<tr><th id="132">132</th><td>    <i>// The rest of the code maintains the invariant that End &gt;= Current, so</i></td></tr>
+<tr><th id="133">133</th><td><i>    // that this cast is always defined behavior.</i></td></tr>
+<tr><th id="134">134</th><td>    <b>return</b> <b>static_cast</b>&lt;<span class='typedef' title='size_t' data-type='unsigned long' data-ref="size_t" data-ref-filename="size_t">size_t</span>&gt;(<a class="member field" href="#llvm::msgpack::Reader::End" title='llvm::msgpack::Reader::End' data-ref="llvm::msgpack::Reader::End" data-ref-filename="llvm..msgpack..Reader..End">End</a> - <a class="member field" href="#llvm::msgpack::Reader::Current" title='llvm::msgpack::Reader::Current' data-ref="llvm::msgpack::Reader::Current" data-ref-filename="llvm..msgpack..Reader..Current">Current</a>);</td></tr>
+<tr><th id="135">135</th><td>  }</td></tr>
+<tr><th id="136">136</th><td></td></tr>
+<tr><th id="137">137</th><td>  <b>template</b> &lt;<b>class</b> T&gt; <a class="type" href="../Support/raw_ostream.h.html#llvm::Expected" title='llvm::Expected' data-ref="llvm::Expected" data-ref-filename="llvm..Expected">Expected</a>&lt;<em>bool</em>&gt; <dfn class="decl fn" id="_ZN4llvm7msgpack6Reader7readRawERNS0_6ObjectE" title='llvm::msgpack::Reader::readRaw' data-ref="_ZN4llvm7msgpack6Reader7readRawERNS0_6ObjectE" data-ref-filename="_ZN4llvm7msgpack6Reader7readRawERNS0_6ObjectE">readRaw</dfn>(<a class="type" href="#llvm::msgpack::Object" title='llvm::msgpack::Object' data-ref="llvm::msgpack::Object" data-ref-filename="llvm..msgpack..Object">Object</a> &amp;<dfn class="local col4 decl" id="4Obj" title='Obj' data-type='llvm::msgpack::Object &amp;' data-ref="4Obj" data-ref-filename="4Obj">Obj</dfn>);</td></tr>
+<tr><th id="138">138</th><td>  <b>template</b> &lt;<b>class</b> T&gt; <a class="type" href="../Support/raw_ostream.h.html#llvm::Expected" title='llvm::Expected' data-ref="llvm::Expected" data-ref-filename="llvm..Expected">Expected</a>&lt;<em>bool</em>&gt; <dfn class="decl fn" id="_ZN4llvm7msgpack6Reader7readIntERNS0_6ObjectE" title='llvm::msgpack::Reader::readInt' data-ref="_ZN4llvm7msgpack6Reader7readIntERNS0_6ObjectE" data-ref-filename="_ZN4llvm7msgpack6Reader7readIntERNS0_6ObjectE">readInt</dfn>(<a class="type" href="#llvm::msgpack::Object" title='llvm::msgpack::Object' data-ref="llvm::msgpack::Object" data-ref-filename="llvm..msgpack..Object">Object</a> &amp;<dfn class="local col5 decl" id="5Obj" title='Obj' data-type='llvm::msgpack::Object &amp;' data-ref="5Obj" data-ref-filename="5Obj">Obj</dfn>);</td></tr>
+<tr><th id="139">139</th><td>  <b>template</b> &lt;<b>class</b> T&gt; <a class="type" href="../Support/raw_ostream.h.html#llvm::Expected" title='llvm::Expected' data-ref="llvm::Expected" data-ref-filename="llvm..Expected">Expected</a>&lt;<em>bool</em>&gt; <dfn class="decl fn" id="_ZN4llvm7msgpack6Reader8readUIntERNS0_6ObjectE" title='llvm::msgpack::Reader::readUInt' data-ref="_ZN4llvm7msgpack6Reader8readUIntERNS0_6ObjectE" data-ref-filename="_ZN4llvm7msgpack6Reader8readUIntERNS0_6ObjectE">readUInt</dfn>(<a class="type" href="#llvm::msgpack::Object" title='llvm::msgpack::Object' data-ref="llvm::msgpack::Object" data-ref-filename="llvm..msgpack..Object">Object</a> &amp;<dfn class="local col6 decl" id="6Obj" title='Obj' data-type='llvm::msgpack::Object &amp;' data-ref="6Obj" data-ref-filename="6Obj">Obj</dfn>);</td></tr>
+<tr><th id="140">140</th><td>  <b>template</b> &lt;<b>class</b> T&gt; <a class="type" href="../Support/raw_ostream.h.html#llvm::Expected" title='llvm::Expected' data-ref="llvm::Expected" data-ref-filename="llvm..Expected">Expected</a>&lt;<em>bool</em>&gt; <dfn class="decl fn" id="_ZN4llvm7msgpack6Reader10readLengthERNS0_6ObjectE" title='llvm::msgpack::Reader::readLength' data-ref="_ZN4llvm7msgpack6Reader10readLengthERNS0_6ObjectE" data-ref-filename="_ZN4llvm7msgpack6Reader10readLengthERNS0_6ObjectE">readLength</dfn>(<a class="type" href="#llvm::msgpack::Object" title='llvm::msgpack::Object' data-ref="llvm::msgpack::Object" data-ref-filename="llvm..msgpack..Object">Object</a> &amp;<dfn class="local col7 decl" id="7Obj" title='Obj' data-type='llvm::msgpack::Object &amp;' data-ref="7Obj" data-ref-filename="7Obj">Obj</dfn>);</td></tr>
+<tr><th id="141">141</th><td>  <b>template</b> &lt;<b>class</b> T&gt; <a class="type" href="../Support/raw_ostream.h.html#llvm::Expected" title='llvm::Expected' data-ref="llvm::Expected" data-ref-filename="llvm..Expected">Expected</a>&lt;<em>bool</em>&gt; <dfn class="decl fn" id="_ZN4llvm7msgpack6Reader7readExtERNS0_6ObjectE" title='llvm::msgpack::Reader::readExt' data-ref="_ZN4llvm7msgpack6Reader7readExtERNS0_6ObjectE" data-ref-filename="_ZN4llvm7msgpack6Reader7readExtERNS0_6ObjectE">readExt</dfn>(<a class="type" href="#llvm::msgpack::Object" title='llvm::msgpack::Object' data-ref="llvm::msgpack::Object" data-ref-filename="llvm..msgpack..Object">Object</a> &amp;<dfn class="local col8 decl" id="8Obj" title='Obj' data-type='llvm::msgpack::Object &amp;' data-ref="8Obj" data-ref-filename="8Obj">Obj</dfn>);</td></tr>
+<tr><th id="142">142</th><td>  <a class="type" href="../Support/raw_ostream.h.html#llvm::Expected" title='llvm::Expected' data-ref="llvm::Expected" data-ref-filename="llvm..Expected">Expected</a>&lt;<em>bool</em>&gt; <dfn class="decl fn" id="_ZN4llvm7msgpack6Reader9createRawERNS0_6ObjectEj" title='llvm::msgpack::Reader::createRaw' data-ref="_ZN4llvm7msgpack6Reader9createRawERNS0_6ObjectEj" data-ref-filename="_ZN4llvm7msgpack6Reader9createRawERNS0_6ObjectEj">createRaw</dfn>(<a class="type" href="#llvm::msgpack::Object" title='llvm::msgpack::Object' data-ref="llvm::msgpack::Object" data-ref-filename="llvm..msgpack..Object">Object</a> &amp;<dfn class="local col9 decl" id="9Obj" title='Obj' data-type='llvm::msgpack::Object &amp;' data-ref="9Obj" data-ref-filename="9Obj">Obj</dfn>, <a class="typedef" href="../../../../../include/bits/stdint-uintn.h.html#uint32_t" title='uint32_t' data-type='__uint32_t' data-ref="uint32_t" data-ref-filename="uint32_t">uint32_t</a> <dfn class="local col0 decl" id="10Size" title='Size' data-type='uint32_t' data-ref="10Size" data-ref-filename="10Size">Size</dfn>);</td></tr>
+<tr><th id="143">143</th><td>  <a class="type" href="../Support/raw_ostream.h.html#llvm::Expected" title='llvm::Expected' data-ref="llvm::Expected" data-ref-filename="llvm..Expected">Expected</a>&lt;<em>bool</em>&gt; <dfn class="decl fn" id="_ZN4llvm7msgpack6Reader9createExtERNS0_6ObjectEj" title='llvm::msgpack::Reader::createExt' data-ref="_ZN4llvm7msgpack6Reader9createExtERNS0_6ObjectEj" data-ref-filename="_ZN4llvm7msgpack6Reader9createExtERNS0_6ObjectEj">createExt</dfn>(<a class="type" href="#llvm::msgpack::Object" title='llvm::msgpack::Object' data-ref="llvm::msgpack::Object" data-ref-filename="llvm..msgpack..Object">Object</a> &amp;<dfn class="local col1 decl" id="11Obj" title='Obj' data-type='llvm::msgpack::Object &amp;' data-ref="11Obj" data-ref-filename="11Obj">Obj</dfn>, <a class="typedef" href="../../../../../include/bits/stdint-uintn.h.html#uint32_t" title='uint32_t' data-type='__uint32_t' data-ref="uint32_t" data-ref-filename="uint32_t">uint32_t</a> <dfn class="local col2 decl" id="12Size" title='Size' data-type='uint32_t' data-ref="12Size" data-ref-filename="12Size">Size</dfn>);</td></tr>
+<tr><th id="144">144</th><td>};</td></tr>
+<tr><th id="145">145</th><td></td></tr>
+<tr><th id="146">146</th><td>} <i>// end namespace msgpack</i></td></tr>
+<tr><th id="147">147</th><td>} <i>// end namespace llvm</i></td></tr>
+<tr><th id="148">148</th><td></td></tr>
+<tr><th id="149">149</th><td><u>#<span data-ppcond="33">endif</span> // LLVM_SUPPORT_MSGPACKREADER_H</u></td></tr>
+<tr><th id="150">150</th><td></td></tr>
+</table><hr/><p id='footer'>
+Generated while processing <a href='../../../lib/BinaryFormat/AMDGPUMetadataVerifier.cpp.html'>llvm/llvm/lib/BinaryFormat/AMDGPUMetadataVerifier.cpp</a><br/>Generated on <em>2021-Jul-01</em> from project llvm revision <em>12</em>

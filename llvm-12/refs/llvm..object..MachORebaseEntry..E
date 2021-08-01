@@ -1,0 +1,19 @@
+<dec f='llvm/llvm/include/llvm/Object/MachO.h' l='190' type='llvm::Error *'/>
+<offset>0</offset>
+<use f='llvm/llvm/lib/Object/MachOObjectFile.cpp' l='3139' u='w' c='_ZN4llvm6object16MachORebaseEntryC1EPNS_5ErrorEPKNS0_15MachOObjectFileENS_8ArrayRefIhEEb'/>
+<use f='llvm/llvm/lib/Object/MachOObjectFile.cpp' l='3154' u='r' c='_ZN4llvm6object16MachORebaseEntry8moveNextEv'/>
+<use f='llvm/llvm/lib/Object/MachOObjectFile.cpp' l='3187' u='r' c='_ZN4llvm6object16MachORebaseEntry8moveNextEv'/>
+<use f='llvm/llvm/lib/Object/MachOObjectFile.cpp' l='3202' u='r' c='_ZN4llvm6object16MachORebaseEntry8moveNextEv'/>
+<use f='llvm/llvm/lib/Object/MachOObjectFile.cpp' l='3211' u='r' c='_ZN4llvm6object16MachORebaseEntry8moveNextEv'/>
+<use f='llvm/llvm/lib/Object/MachOObjectFile.cpp' l='3227' u='r' c='_ZN4llvm6object16MachORebaseEntry8moveNextEv'/>
+<use f='llvm/llvm/lib/Object/MachOObjectFile.cpp' l='3236' u='r' c='_ZN4llvm6object16MachORebaseEntry8moveNextEv'/>
+<use f='llvm/llvm/lib/Object/MachOObjectFile.cpp' l='3252' u='r' c='_ZN4llvm6object16MachORebaseEntry8moveNextEv'/>
+<use f='llvm/llvm/lib/Object/MachOObjectFile.cpp' l='3274' u='r' c='_ZN4llvm6object16MachORebaseEntry8moveNextEv'/>
+<use f='llvm/llvm/lib/Object/MachOObjectFile.cpp' l='3293' u='r' c='_ZN4llvm6object16MachORebaseEntry8moveNextEv'/>
+<use f='llvm/llvm/lib/Object/MachOObjectFile.cpp' l='3306' u='r' c='_ZN4llvm6object16MachORebaseEntry8moveNextEv'/>
+<use f='llvm/llvm/lib/Object/MachOObjectFile.cpp' l='3323' u='r' c='_ZN4llvm6object16MachORebaseEntry8moveNextEv'/>
+<use f='llvm/llvm/lib/Object/MachOObjectFile.cpp' l='3335' u='r' c='_ZN4llvm6object16MachORebaseEntry8moveNextEv'/>
+<use f='llvm/llvm/lib/Object/MachOObjectFile.cpp' l='3352' u='r' c='_ZN4llvm6object16MachORebaseEntry8moveNextEv'/>
+<use f='llvm/llvm/lib/Object/MachOObjectFile.cpp' l='3365' u='r' c='_ZN4llvm6object16MachORebaseEntry8moveNextEv'/>
+<use f='llvm/llvm/lib/Object/MachOObjectFile.cpp' l='3377' u='r' c='_ZN4llvm6object16MachORebaseEntry8moveNextEv'/>
+<use f='llvm/llvm/lib/Object/MachOObjectFile.cpp' l='3393' u='r' c='_ZN4llvm6object16MachORebaseEntry8moveNextEv'/>

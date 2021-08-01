@@ -1,0 +1,551 @@
+<!doctype html>
+<html>
+<head>
+<meta name="viewport" content="width=device-width, initial-scale=1.0"><title>StackFrame.h source code [llvm/lldb/include/lldb/Target/StackFrame.h] - Woboq Code Browser</title>
+<meta name="woboq:interestingDefinitions" content="lldb_private::StackFrame "/>
+<link rel="stylesheet" href="../../../../.././data/qtcreator.css" title="QtCreator"/>
+<link rel="alternate stylesheet" href="../../../../.././data/kdevelop.css" title="KDevelop"/>
+<script type="text/javascript" src="../../../../.././data/jquery/jquery.min.js"></script>
+<script type="text/javascript" src="../../../../.././data/jquery/jquery-ui.min.js"></script>
+<script>var file = 'llvm/lldb/include/lldb/Target/StackFrame.h'; var root_path = '../../../../..'; var data_path = '../../../../.././data'; var ecma_script_api_version = 2;</script>
+<script src='../../../../.././data/codebrowser.js'></script>
+</head>
+<body><div id='header'><h1 id='breadcrumb'><span>Browse the source code of </span><a href='../../../..'>llvm</a>/<a href='../../..'>lldb</a>/<a href='../..'>include</a>/<a href='..'>lldb</a>/<a href='./'>Target</a>/<a href='StackFrame.h.html'>StackFrame.h</a></h1></div>
+<hr/><div id='content'><table class="code">
+<tr><th id="1">1</th><td><i>//===-- StackFrame.h --------------------------------------------*- C++ -*-===//</i></td></tr>
+<tr><th id="2">2</th><td><i>//</i></td></tr>
+<tr><th id="3">3</th><td><i>// Part of the LLVM Project, under the Apache License v2.0 with LLVM Exceptions.</i></td></tr>
+<tr><th id="4">4</th><td><i>// See <a href="https://llvm.org/LICENSE.txt">https://llvm.org/LICENSE.txt</a> for license information.</i></td></tr>
+<tr><th id="5">5</th><td><i>// SPDX-License-Identifier: Apache-2.0 WITH LLVM-exception</i></td></tr>
+<tr><th id="6">6</th><td><i>//</i></td></tr>
+<tr><th id="7">7</th><td><i>//===----------------------------------------------------------------------===//</i></td></tr>
+<tr><th id="8">8</th><td></td></tr>
+<tr><th id="9">9</th><td><u>#<span data-ppcond="9">ifndef</span> <span class="macro" data-ref="_M/LLDB_TARGET_STACKFRAME_H">LLDB_TARGET_STACKFRAME_H</span></u></td></tr>
+<tr><th id="10">10</th><td><u>#define <dfn class="macro" id="_M/LLDB_TARGET_STACKFRAME_H" data-ref="_M/LLDB_TARGET_STACKFRAME_H">LLDB_TARGET_STACKFRAME_H</dfn></u></td></tr>
+<tr><th id="11">11</th><td></td></tr>
+<tr><th id="12">12</th><td><u>#include &lt;memory&gt;</u></td></tr>
+<tr><th id="13">13</th><td><u>#include &lt;mutex&gt;</u></td></tr>
+<tr><th id="14">14</th><td></td></tr>
+<tr><th id="15">15</th><td><u>#include <a href="../Utility/Flags.h.html">"lldb/Utility/Flags.h"</a></u></td></tr>
+<tr><th id="16">16</th><td></td></tr>
+<tr><th id="17">17</th><td><u>#include <a href="../Core/ValueObjectList.h.html">"lldb/Core/ValueObjectList.h"</a></u></td></tr>
+<tr><th id="18">18</th><td><u>#include <a href="../Symbol/SymbolContext.h.html">"lldb/Symbol/SymbolContext.h"</a></u></td></tr>
+<tr><th id="19">19</th><td><u>#include <a href="ExecutionContextScope.h.html">"lldb/Target/ExecutionContextScope.h"</a></u></td></tr>
+<tr><th id="20">20</th><td><u>#include <a href="StackID.h.html">"lldb/Target/StackID.h"</a></u></td></tr>
+<tr><th id="21">21</th><td><u>#include <a href="../Utility/Scalar.h.html">"lldb/Utility/Scalar.h"</a></u></td></tr>
+<tr><th id="22">22</th><td><u>#include <a href="../Utility/Status.h.html">"lldb/Utility/Status.h"</a></u></td></tr>
+<tr><th id="23">23</th><td><u>#include <a href="../Utility/StreamString.h.html">"lldb/Utility/StreamString.h"</a></u></td></tr>
+<tr><th id="24">24</th><td><u>#include <a href="../Utility/UserID.h.html">"lldb/Utility/UserID.h"</a></u></td></tr>
+<tr><th id="25">25</th><td></td></tr>
+<tr><th id="26">26</th><td><b>namespace</b> <span class="namespace">lldb_private</span> {</td></tr>
+<tr><th id="27">27</th><td></td></tr>
+<tr><th id="28">28</th><td><i class="doc">/// <span class="command">\class</span> <span class="verb">StackFrame StackFrame.h "lldb/Target/StackFrame.h"</span></i></td></tr>
+<tr><th id="29">29</th><td><i class="doc">///</i></td></tr>
+<tr><th id="30">30</th><td><i class="doc">/// This base class provides an interface to stack frames.</i></td></tr>
+<tr><th id="31">31</th><td><i class="doc">///</i></td></tr>
+<tr><th id="32">32</th><td><i class="doc">/// StackFrames may have a Canonical Frame Address (CFA) or not.</i></td></tr>
+<tr><th id="33">33</th><td><i class="doc">/// A frame may have a plain pc value or it may  indicate a specific point in</i></td></tr>
+<tr><th id="34">34</th><td><i class="doc">/// the debug session so the correct section load list is used for</i></td></tr>
+<tr><th id="35">35</th><td><i class="doc">/// symbolication.</i></td></tr>
+<tr><th id="36">36</th><td><i class="doc">///</i></td></tr>
+<tr><th id="37">37</th><td><i class="doc">/// Local variables may be available, or not.  A register context may be</i></td></tr>
+<tr><th id="38">38</th><td><i class="doc">/// available, or not.</i></td></tr>
+<tr><th id="39">39</th><td></td></tr>
+<tr><th id="40">40</th><td><b>class</b> <dfn class="type def" id="lldb_private::StackFrame" title='lldb_private::StackFrame' data-ref="lldb_private::StackFrame" data-ref-filename="lldb_private..StackFrame">StackFrame</dfn> : <b>public</b> <a class="type" href="ExecutionContextScope.h.html#lldb_private::ExecutionContextScope" title='lldb_private::ExecutionContextScope' data-ref="lldb_private::ExecutionContextScope" data-ref-filename="lldb_private..ExecutionContextScope">ExecutionContextScope</a>,</td></tr>
+<tr><th id="41">41</th><td>                   <b>public</b> <span class="namespace">std::</span><span class='type' title='std::enable_shared_from_this' data-ref="std::enable_shared_from_this" data-ref-filename="std..enable_shared_from_this">enable_shared_from_this</span>&lt;<a class="type" href="#lldb_private::StackFrame" title='lldb_private::StackFrame' data-ref="lldb_private::StackFrame" data-ref-filename="lldb_private..StackFrame">StackFrame</a>&gt; {</td></tr>
+<tr><th id="42">42</th><td><b>public</b>:</td></tr>
+<tr><th id="43">43</th><td>  <b>enum</b> <dfn class="type def" id="lldb_private::StackFrame::ExpressionPathOption" title='lldb_private::StackFrame::ExpressionPathOption' data-ref="lldb_private::StackFrame::ExpressionPathOption" data-ref-filename="lldb_private..StackFrame..ExpressionPathOption">ExpressionPathOption</dfn> {</td></tr>
+<tr><th id="44">44</th><td>    <dfn class="enum" id="lldb_private::StackFrame::eExpressionPathOptionCheckPtrVsMember" title='lldb_private::StackFrame::eExpressionPathOptionCheckPtrVsMember' data-ref="lldb_private::StackFrame::eExpressionPathOptionCheckPtrVsMember" data-ref-filename="lldb_private..StackFrame..eExpressionPathOptionCheckPtrVsMember">eExpressionPathOptionCheckPtrVsMember</dfn> = (<var>1u</var> &lt;&lt; <var>0</var>),</td></tr>
+<tr><th id="45">45</th><td>    <dfn class="enum" id="lldb_private::StackFrame::eExpressionPathOptionsNoFragileObjcIvar" title='lldb_private::StackFrame::eExpressionPathOptionsNoFragileObjcIvar' data-ref="lldb_private::StackFrame::eExpressionPathOptionsNoFragileObjcIvar" data-ref-filename="lldb_private..StackFrame..eExpressionPathOptionsNoFragileObjcIvar">eExpressionPathOptionsNoFragileObjcIvar</dfn> = (<var>1u</var> &lt;&lt; <var>1</var>),</td></tr>
+<tr><th id="46">46</th><td>    <dfn class="enum" id="lldb_private::StackFrame::eExpressionPathOptionsNoSyntheticChildren" title='lldb_private::StackFrame::eExpressionPathOptionsNoSyntheticChildren' data-ref="lldb_private::StackFrame::eExpressionPathOptionsNoSyntheticChildren" data-ref-filename="lldb_private..StackFrame..eExpressionPathOptionsNoSyntheticChildren">eExpressionPathOptionsNoSyntheticChildren</dfn> = (<var>1u</var> &lt;&lt; <var>2</var>),</td></tr>
+<tr><th id="47">47</th><td>    <dfn class="enum" id="lldb_private::StackFrame::eExpressionPathOptionsNoSyntheticArrayRange" title='lldb_private::StackFrame::eExpressionPathOptionsNoSyntheticArrayRange' data-ref="lldb_private::StackFrame::eExpressionPathOptionsNoSyntheticArrayRange" data-ref-filename="lldb_private..StackFrame..eExpressionPathOptionsNoSyntheticArrayRange">eExpressionPathOptionsNoSyntheticArrayRange</dfn> = (<var>1u</var> &lt;&lt; <var>3</var>),</td></tr>
+<tr><th id="48">48</th><td>    <dfn class="enum" id="lldb_private::StackFrame::eExpressionPathOptionsAllowDirectIVarAccess" title='lldb_private::StackFrame::eExpressionPathOptionsAllowDirectIVarAccess' data-ref="lldb_private::StackFrame::eExpressionPathOptionsAllowDirectIVarAccess" data-ref-filename="lldb_private..StackFrame..eExpressionPathOptionsAllowDirectIVarAccess">eExpressionPathOptionsAllowDirectIVarAccess</dfn> = (<var>1u</var> &lt;&lt; <var>4</var>),</td></tr>
+<tr><th id="49">49</th><td>    <dfn class="enum" id="lldb_private::StackFrame::eExpressionPathOptionsInspectAnonymousUnions" title='lldb_private::StackFrame::eExpressionPathOptionsInspectAnonymousUnions' data-ref="lldb_private::StackFrame::eExpressionPathOptionsInspectAnonymousUnions" data-ref-filename="lldb_private..StackFrame..eExpressionPathOptionsInspectAnonymousUnions">eExpressionPathOptionsInspectAnonymousUnions</dfn> = (<var>1u</var> &lt;&lt; <var>5</var>)</td></tr>
+<tr><th id="50">50</th><td>  };</td></tr>
+<tr><th id="51">51</th><td></td></tr>
+<tr><th id="52">52</th><td>  <b>enum</b> <b>class</b> <dfn class="type def" id="lldb_private::StackFrame::Kind" title='lldb_private::StackFrame::Kind' data-ref="lldb_private::StackFrame::Kind" data-ref-filename="lldb_private..StackFrame..Kind">Kind</dfn> {</td></tr>
+<tr><th id="53">53</th><td>    <i class="doc">/// A regular stack frame with access to registers and local variables.</i></td></tr>
+<tr><th id="54">54</th><td>    <dfn class="enum" id="lldb_private::StackFrame::Kind::Regular" title='lldb_private::StackFrame::Kind::Regular' data-ref="lldb_private::StackFrame::Kind::Regular" data-ref-filename="lldb_private..StackFrame..Kind..Regular">Regular</dfn>,</td></tr>
+<tr><th id="55">55</th><td></td></tr>
+<tr><th id="56">56</th><td>    <i class="doc">/// A historical stack frame -- possibly without CFA or registers or</i></td></tr>
+<tr><th id="57">57</th><td><i class="doc">    /// local variables.</i></td></tr>
+<tr><th id="58">58</th><td>    <dfn class="enum" id="lldb_private::StackFrame::Kind::History" title='lldb_private::StackFrame::Kind::History' data-ref="lldb_private::StackFrame::Kind::History" data-ref-filename="lldb_private..StackFrame..Kind..History">History</dfn>,</td></tr>
+<tr><th id="59">59</th><td></td></tr>
+<tr><th id="60">60</th><td>    <i class="doc">/// An artificial stack frame (e.g. a synthesized result of inferring</i></td></tr>
+<tr><th id="61">61</th><td><i class="doc">    /// missing tail call frames from a backtrace) with limited support for</i></td></tr>
+<tr><th id="62">62</th><td><i class="doc">    /// local variables.</i></td></tr>
+<tr><th id="63">63</th><td>    <dfn class="enum" id="lldb_private::StackFrame::Kind::Artificial" title='lldb_private::StackFrame::Kind::Artificial' data-ref="lldb_private::StackFrame::Kind::Artificial" data-ref-filename="lldb_private..StackFrame..Kind..Artificial">Artificial</dfn></td></tr>
+<tr><th id="64">64</th><td>  };</td></tr>
+<tr><th id="65">65</th><td></td></tr>
+<tr><th id="66">66</th><td>  <i class="doc">/// Construct a StackFrame object without supplying a RegisterContextSP.</i></td></tr>
+<tr><th id="67">67</th><td><i class="doc">  ///</i></td></tr>
+<tr><th id="68">68</th><td><i class="doc">  /// This is the one constructor that doesn't take a RegisterContext</i></td></tr>
+<tr><th id="69">69</th><td><i class="doc">  /// parameter.  This ctor may be called when creating a history StackFrame;</i></td></tr>
+<tr><th id="70">70</th><td><i class="doc">  /// these are used if we've collected a stack trace of pc addresses at some</i></td></tr>
+<tr><th id="71">71</th><td><i class="doc">  /// point in the past.  We may only have pc values. We may have a CFA,</i></td></tr>
+<tr><th id="72">72</th><td><i class="doc">  /// or more likely, we won't.</i></td></tr>
+<tr><th id="73">73</th><td><i class="doc">  ///</i></td></tr>
+<tr><th id="74">74</th><td><i class="doc">  /// <span class="command">\param</span> [in] <span class="arg">thread_sp</span></i></td></tr>
+<tr><th id="75">75</th><td><i class="doc">  ///   The Thread that this frame belongs to.</i></td></tr>
+<tr><th id="76">76</th><td><i class="doc">  ///</i></td></tr>
+<tr><th id="77">77</th><td><i class="doc">  /// <span class="command">\param</span> [in] <span class="arg">frame_idx</span></i></td></tr>
+<tr><th id="78">78</th><td><i class="doc">  ///   This StackFrame's frame index number in the Thread.  If inlined stack</i></td></tr>
+<tr><th id="79">79</th><td><i class="doc">  ///   frames are being created, this may differ from the concrete_frame_idx</i></td></tr>
+<tr><th id="80">80</th><td><i class="doc">  ///   which is the frame index without any inlined stack frames.</i></td></tr>
+<tr><th id="81">81</th><td><i class="doc">  ///</i></td></tr>
+<tr><th id="82">82</th><td><i class="doc">  /// <span class="command">\param</span> [in] <span class="arg">concrete_frame_idx</span></i></td></tr>
+<tr><th id="83">83</th><td><i class="doc">  ///   The StackFrame's frame index number in the Thread without any inlined</i></td></tr>
+<tr><th id="84">84</th><td><i class="doc">  ///   stack frames being included in the index.</i></td></tr>
+<tr><th id="85">85</th><td><i class="doc">  ///</i></td></tr>
+<tr><th id="86">86</th><td><i class="doc">  /// <span class="command">\param</span> [in] <span class="arg">cfa</span></i></td></tr>
+<tr><th id="87">87</th><td><i class="doc">  ///   The Canonical Frame Address (this terminology from DWARF) for this</i></td></tr>
+<tr><th id="88">88</th><td><i class="doc">  ///   stack frame.  The CFA for a stack frame does not change over the</i></td></tr>
+<tr><th id="89">89</th><td><i class="doc">  ///   span of the stack frame's existence.  It is often the value of the</i></td></tr>
+<tr><th id="90">90</th><td><i class="doc">  ///   caller's stack pointer before the call instruction into this frame's</i></td></tr>
+<tr><th id="91">91</th><td><i class="doc">  ///   function.  It is usually not the same as the frame pointer register's</i></td></tr>
+<tr><th id="92">92</th><td><i class="doc">  ///   value.</i></td></tr>
+<tr><th id="93">93</th><td><i class="doc">  ///</i></td></tr>
+<tr><th id="94">94</th><td><i class="doc">  /// <span class="command">\param</span> [in] <span class="arg">cfa_is_valid</span></i></td></tr>
+<tr><th id="95">95</th><td><i class="doc">  ///   A history stack frame may not have a CFA value collected.  We want to</i></td></tr>
+<tr><th id="96">96</th><td><i class="doc">  ///   distinguish between "no CFA available" and a CFA of</i></td></tr>
+<tr><th id="97">97</th><td><i class="doc">  ///   LLDB_INVALID_ADDRESS.</i></td></tr>
+<tr><th id="98">98</th><td><i class="doc">  ///</i></td></tr>
+<tr><th id="99">99</th><td><i class="doc">  /// <span class="command">\param</span> [in] <span class="arg">pc</span></i></td></tr>
+<tr><th id="100">100</th><td><i class="doc">  ///   The current pc value of this stack frame.</i></td></tr>
+<tr><th id="101">101</th><td><i class="doc">  ///</i></td></tr>
+<tr><th id="102">102</th><td><i class="doc">  /// <span class="command">\param</span> [in] <span class="arg">sc_ptr</span></i></td></tr>
+<tr><th id="103">103</th><td><i class="doc">  ///   Optionally seed the StackFrame with the SymbolContext information that</i></td></tr>
+<tr><th id="104">104</th><td><i class="doc">  ///   has</i></td></tr>
+<tr><th id="105">105</th><td><i class="doc">  ///   already been discovered.</i></td></tr>
+<tr><th id="106">106</th><td>  <dfn class="decl fn" id="_ZN12lldb_private10StackFrameC1ERKSt10shared_ptrINS_6ThreadEEmmmbmNS0_4KindEbPKNS_13SymbolContextE" title='lldb_private::StackFrame::StackFrame' data-ref="_ZN12lldb_private10StackFrameC1ERKSt10shared_ptrINS_6ThreadEEmmmbmNS0_4KindEbPKNS_13SymbolContextE" data-ref-filename="_ZN12lldb_private10StackFrameC1ERKSt10shared_ptrINS_6ThreadEEmmmbmNS0_4KindEbPKNS_13SymbolContextE">StackFrame</dfn>(<em>const</em> <span class="namespace">lldb::</span><a class="typedef" href="../lldb-forward.h.html#lldb::ThreadSP" title='lldb::ThreadSP' data-type='std::shared_ptr&lt;lldb_private::Thread&gt;' data-ref="lldb::ThreadSP" data-ref-filename="lldb..ThreadSP">ThreadSP</a> &amp;<dfn class="local col8 decl" id="388thread_sp" title='thread_sp' data-type='const lldb::ThreadSP &amp;' data-ref="388thread_sp" data-ref-filename="388thread_sp">thread_sp</dfn>, <span class="namespace">lldb::</span><a class="typedef" href="../lldb-types.h.html#lldb::user_id_t" title='lldb::user_id_t' data-type='uint64_t' data-ref="lldb::user_id_t" data-ref-filename="lldb..user_id_t">user_id_t</a> <dfn class="local col9 decl" id="389frame_idx" title='frame_idx' data-type='lldb::user_id_t' data-ref="389frame_idx" data-ref-filename="389frame_idx">frame_idx</dfn>,</td></tr>
+<tr><th id="107">107</th><td>             <span class="namespace">lldb::</span><a class="typedef" href="../lldb-types.h.html#lldb::user_id_t" title='lldb::user_id_t' data-type='uint64_t' data-ref="lldb::user_id_t" data-ref-filename="lldb..user_id_t">user_id_t</a> <dfn class="local col0 decl" id="390concrete_frame_idx" title='concrete_frame_idx' data-type='lldb::user_id_t' data-ref="390concrete_frame_idx" data-ref-filename="390concrete_frame_idx">concrete_frame_idx</dfn>, <span class="namespace">lldb::</span><a class="typedef" href="../lldb-types.h.html#lldb::addr_t" title='lldb::addr_t' data-type='uint64_t' data-ref="lldb::addr_t" data-ref-filename="lldb..addr_t">addr_t</a> <dfn class="local col1 decl" id="391cfa" title='cfa' data-type='lldb::addr_t' data-ref="391cfa" data-ref-filename="391cfa">cfa</dfn>,</td></tr>
+<tr><th id="108">108</th><td>             <em>bool</em> <dfn class="local col2 decl" id="392cfa_is_valid" title='cfa_is_valid' data-type='bool' data-ref="392cfa_is_valid" data-ref-filename="392cfa_is_valid">cfa_is_valid</dfn>, <span class="namespace">lldb::</span><a class="typedef" href="../lldb-types.h.html#lldb::addr_t" title='lldb::addr_t' data-type='uint64_t' data-ref="lldb::addr_t" data-ref-filename="lldb..addr_t">addr_t</a> <dfn class="local col3 decl" id="393pc" title='pc' data-type='lldb::addr_t' data-ref="393pc" data-ref-filename="393pc">pc</dfn>, <a class="type" href="#lldb_private::StackFrame::Kind" title='lldb_private::StackFrame::Kind' data-ref="lldb_private::StackFrame::Kind" data-ref-filename="lldb_private..StackFrame..Kind">Kind</a> <dfn class="local col4 decl" id="394frame_kind" title='frame_kind' data-type='lldb_private::StackFrame::Kind' data-ref="394frame_kind" data-ref-filename="394frame_kind">frame_kind</dfn>,</td></tr>
+<tr><th id="109">109</th><td>             <em>bool</em> <dfn class="local col5 decl" id="395behaves_like_zeroth_frame" title='behaves_like_zeroth_frame' data-type='bool' data-ref="395behaves_like_zeroth_frame" data-ref-filename="395behaves_like_zeroth_frame">behaves_like_zeroth_frame</dfn>, <em>const</em> <a class="type" href="../Symbol/SymbolContext.h.html#lldb_private::SymbolContext" title='lldb_private::SymbolContext' data-ref="lldb_private::SymbolContext" data-ref-filename="lldb_private..SymbolContext">SymbolContext</a> *<dfn class="local col6 decl" id="396sc_ptr" title='sc_ptr' data-type='const lldb_private::SymbolContext *' data-ref="396sc_ptr" data-ref-filename="396sc_ptr">sc_ptr</dfn>);</td></tr>
+<tr><th id="110">110</th><td></td></tr>
+<tr><th id="111">111</th><td>  <dfn class="decl fn" id="_ZN12lldb_private10StackFrameC1ERKSt10shared_ptrINS_6ThreadEEmmRKS1_INS_15RegisterContextEEmmbPKNS_13SymbolContextE" title='lldb_private::StackFrame::StackFrame' data-ref="_ZN12lldb_private10StackFrameC1ERKSt10shared_ptrINS_6ThreadEEmmRKS1_INS_15RegisterContextEEmmbPKNS_13SymbolContextE" data-ref-filename="_ZN12lldb_private10StackFrameC1ERKSt10shared_ptrINS_6ThreadEEmmRKS1_INS_15RegisterContextEEmmbPKNS_13SymbolContextE">StackFrame</dfn>(<em>const</em> <span class="namespace">lldb::</span><a class="typedef" href="../lldb-forward.h.html#lldb::ThreadSP" title='lldb::ThreadSP' data-type='std::shared_ptr&lt;lldb_private::Thread&gt;' data-ref="lldb::ThreadSP" data-ref-filename="lldb..ThreadSP">ThreadSP</a> &amp;<dfn class="local col7 decl" id="397thread_sp" title='thread_sp' data-type='const lldb::ThreadSP &amp;' data-ref="397thread_sp" data-ref-filename="397thread_sp">thread_sp</dfn>, <span class="namespace">lldb::</span><a class="typedef" href="../lldb-types.h.html#lldb::user_id_t" title='lldb::user_id_t' data-type='uint64_t' data-ref="lldb::user_id_t" data-ref-filename="lldb..user_id_t">user_id_t</a> <dfn class="local col8 decl" id="398frame_idx" title='frame_idx' data-type='lldb::user_id_t' data-ref="398frame_idx" data-ref-filename="398frame_idx">frame_idx</dfn>,</td></tr>
+<tr><th id="112">112</th><td>             <span class="namespace">lldb::</span><a class="typedef" href="../lldb-types.h.html#lldb::user_id_t" title='lldb::user_id_t' data-type='uint64_t' data-ref="lldb::user_id_t" data-ref-filename="lldb..user_id_t">user_id_t</a> <dfn class="local col9 decl" id="399concrete_frame_idx" title='concrete_frame_idx' data-type='lldb::user_id_t' data-ref="399concrete_frame_idx" data-ref-filename="399concrete_frame_idx">concrete_frame_idx</dfn>,</td></tr>
+<tr><th id="113">113</th><td>             <em>const</em> <span class="namespace">lldb::</span><a class="typedef" href="../lldb-forward.h.html#lldb::RegisterContextSP" title='lldb::RegisterContextSP' data-type='std::shared_ptr&lt;lldb_private::RegisterContext&gt;' data-ref="lldb::RegisterContextSP" data-ref-filename="lldb..RegisterContextSP">RegisterContextSP</a> &amp;<dfn class="local col0 decl" id="400reg_context_sp" title='reg_context_sp' data-type='const lldb::RegisterContextSP &amp;' data-ref="400reg_context_sp" data-ref-filename="400reg_context_sp">reg_context_sp</dfn>, <span class="namespace">lldb::</span><a class="typedef" href="../lldb-types.h.html#lldb::addr_t" title='lldb::addr_t' data-type='uint64_t' data-ref="lldb::addr_t" data-ref-filename="lldb..addr_t">addr_t</a> <dfn class="local col1 decl" id="401cfa" title='cfa' data-type='lldb::addr_t' data-ref="401cfa" data-ref-filename="401cfa">cfa</dfn>,</td></tr>
+<tr><th id="114">114</th><td>             <span class="namespace">lldb::</span><a class="typedef" href="../lldb-types.h.html#lldb::addr_t" title='lldb::addr_t' data-type='uint64_t' data-ref="lldb::addr_t" data-ref-filename="lldb..addr_t">addr_t</a> <dfn class="local col2 decl" id="402pc" title='pc' data-type='lldb::addr_t' data-ref="402pc" data-ref-filename="402pc">pc</dfn>, <em>bool</em> <dfn class="local col3 decl" id="403behaves_like_zeroth_frame" title='behaves_like_zeroth_frame' data-type='bool' data-ref="403behaves_like_zeroth_frame" data-ref-filename="403behaves_like_zeroth_frame">behaves_like_zeroth_frame</dfn>,</td></tr>
+<tr><th id="115">115</th><td>             <em>const</em> <a class="type" href="../Symbol/SymbolContext.h.html#lldb_private::SymbolContext" title='lldb_private::SymbolContext' data-ref="lldb_private::SymbolContext" data-ref-filename="lldb_private..SymbolContext">SymbolContext</a> *<dfn class="local col4 decl" id="404sc_ptr" title='sc_ptr' data-type='const lldb_private::SymbolContext *' data-ref="404sc_ptr" data-ref-filename="404sc_ptr">sc_ptr</dfn>);</td></tr>
+<tr><th id="116">116</th><td></td></tr>
+<tr><th id="117">117</th><td>  <dfn class="decl fn" id="_ZN12lldb_private10StackFrameC1ERKSt10shared_ptrINS_6ThreadEEmmRKS1_INS_15RegisterContextEEmRKNS_7AddressEbPKNS_13SymbolContextE" title='lldb_private::StackFrame::StackFrame' data-ref="_ZN12lldb_private10StackFrameC1ERKSt10shared_ptrINS_6ThreadEEmmRKS1_INS_15RegisterContextEEmRKNS_7AddressEbPKNS_13SymbolContextE" data-ref-filename="_ZN12lldb_private10StackFrameC1ERKSt10shared_ptrINS_6ThreadEEmmRKS1_INS_15RegisterContextEEmRKNS_7AddressEbPKNS_13SymbolContextE">StackFrame</dfn>(<em>const</em> <span class="namespace">lldb::</span><a class="typedef" href="../lldb-forward.h.html#lldb::ThreadSP" title='lldb::ThreadSP' data-type='std::shared_ptr&lt;lldb_private::Thread&gt;' data-ref="lldb::ThreadSP" data-ref-filename="lldb..ThreadSP">ThreadSP</a> &amp;<dfn class="local col5 decl" id="405thread_sp" title='thread_sp' data-type='const lldb::ThreadSP &amp;' data-ref="405thread_sp" data-ref-filename="405thread_sp">thread_sp</dfn>, <span class="namespace">lldb::</span><a class="typedef" href="../lldb-types.h.html#lldb::user_id_t" title='lldb::user_id_t' data-type='uint64_t' data-ref="lldb::user_id_t" data-ref-filename="lldb..user_id_t">user_id_t</a> <dfn class="local col6 decl" id="406frame_idx" title='frame_idx' data-type='lldb::user_id_t' data-ref="406frame_idx" data-ref-filename="406frame_idx">frame_idx</dfn>,</td></tr>
+<tr><th id="118">118</th><td>             <span class="namespace">lldb::</span><a class="typedef" href="../lldb-types.h.html#lldb::user_id_t" title='lldb::user_id_t' data-type='uint64_t' data-ref="lldb::user_id_t" data-ref-filename="lldb..user_id_t">user_id_t</a> <dfn class="local col7 decl" id="407concrete_frame_idx" title='concrete_frame_idx' data-type='lldb::user_id_t' data-ref="407concrete_frame_idx" data-ref-filename="407concrete_frame_idx">concrete_frame_idx</dfn>,</td></tr>
+<tr><th id="119">119</th><td>             <em>const</em> <span class="namespace">lldb::</span><a class="typedef" href="../lldb-forward.h.html#lldb::RegisterContextSP" title='lldb::RegisterContextSP' data-type='std::shared_ptr&lt;lldb_private::RegisterContext&gt;' data-ref="lldb::RegisterContextSP" data-ref-filename="lldb..RegisterContextSP">RegisterContextSP</a> &amp;<dfn class="local col8 decl" id="408reg_context_sp" title='reg_context_sp' data-type='const lldb::RegisterContextSP &amp;' data-ref="408reg_context_sp" data-ref-filename="408reg_context_sp">reg_context_sp</dfn>, <span class="namespace">lldb::</span><a class="typedef" href="../lldb-types.h.html#lldb::addr_t" title='lldb::addr_t' data-type='uint64_t' data-ref="lldb::addr_t" data-ref-filename="lldb..addr_t">addr_t</a> <dfn class="local col9 decl" id="409cfa" title='cfa' data-type='lldb::addr_t' data-ref="409cfa" data-ref-filename="409cfa">cfa</dfn>,</td></tr>
+<tr><th id="120">120</th><td>             <em>const</em> <a class="type" href="../Core/Address.h.html#lldb_private::Address" title='lldb_private::Address' data-ref="lldb_private::Address" data-ref-filename="lldb_private..Address">Address</a> &amp;<dfn class="local col0 decl" id="410pc" title='pc' data-type='const lldb_private::Address &amp;' data-ref="410pc" data-ref-filename="410pc">pc</dfn>, <em>bool</em> <dfn class="local col1 decl" id="411behaves_like_zeroth_frame" title='behaves_like_zeroth_frame' data-type='bool' data-ref="411behaves_like_zeroth_frame" data-ref-filename="411behaves_like_zeroth_frame">behaves_like_zeroth_frame</dfn>,</td></tr>
+<tr><th id="121">121</th><td>             <em>const</em> <a class="type" href="../Symbol/SymbolContext.h.html#lldb_private::SymbolContext" title='lldb_private::SymbolContext' data-ref="lldb_private::SymbolContext" data-ref-filename="lldb_private..SymbolContext">SymbolContext</a> *<dfn class="local col2 decl" id="412sc_ptr" title='sc_ptr' data-type='const lldb_private::SymbolContext *' data-ref="412sc_ptr" data-ref-filename="412sc_ptr">sc_ptr</dfn>);</td></tr>
+<tr><th id="122">122</th><td></td></tr>
+<tr><th id="123">123</th><td>  <dfn class="virtual decl fn" id="_ZN12lldb_private10StackFrameD1Ev" title='lldb_private::StackFrame::~StackFrame' data-ref="_ZN12lldb_private10StackFrameD1Ev" data-ref-filename="_ZN12lldb_private10StackFrameD1Ev">~StackFrame</dfn>() override;</td></tr>
+<tr><th id="124">124</th><td></td></tr>
+<tr><th id="125">125</th><td>  <span class="namespace">lldb::</span><a class="typedef" href="../lldb-forward.h.html#lldb::ThreadSP" title='lldb::ThreadSP' data-type='std::shared_ptr&lt;lldb_private::Thread&gt;' data-ref="lldb::ThreadSP" data-ref-filename="lldb..ThreadSP">ThreadSP</a> <dfn class="decl def fn" id="_ZNK12lldb_private10StackFrame9GetThreadEv" title='lldb_private::StackFrame::GetThread' data-ref="_ZNK12lldb_private10StackFrame9GetThreadEv" data-ref-filename="_ZNK12lldb_private10StackFrame9GetThreadEv">GetThread</dfn>() <em>const</em> { <b>return</b> <a class="member field" href="#lldb_private::StackFrame::m_thread_wp" title='lldb_private::StackFrame::m_thread_wp' data-ref="lldb_private::StackFrame::m_thread_wp" data-ref-filename="lldb_private..StackFrame..m_thread_wp">m_thread_wp</a>.<span class='ref fn' title='std::weak_ptr::lock' data-ref="_ZNKSt8weak_ptr4lockEv" data-ref-filename="_ZNKSt8weak_ptr4lockEv">lock</span>(); }</td></tr>
+<tr><th id="126">126</th><td></td></tr>
+<tr><th id="127">127</th><td>  <a class="type" href="StackID.h.html#lldb_private::StackID" title='lldb_private::StackID' data-ref="lldb_private::StackID" data-ref-filename="lldb_private..StackID">StackID</a> &amp;<dfn class="decl fn" id="_ZN12lldb_private10StackFrame10GetStackIDEv" title='lldb_private::StackFrame::GetStackID' data-ref="_ZN12lldb_private10StackFrame10GetStackIDEv" data-ref-filename="_ZN12lldb_private10StackFrame10GetStackIDEv">GetStackID</dfn>();</td></tr>
+<tr><th id="128">128</th><td></td></tr>
+<tr><th id="129">129</th><td>  <i class="doc">/// Get an Address for the current pc value in this StackFrame.</i></td></tr>
+<tr><th id="130">130</th><td><i class="doc">  ///</i></td></tr>
+<tr><th id="131">131</th><td><i class="doc">  /// May not be the same as the actual PC value for inlined stack frames.</i></td></tr>
+<tr><th id="132">132</th><td><i class="doc">  ///</i></td></tr>
+<tr><th id="133">133</th><td><i class="doc">  /// <span class="command">\return</span></i></td></tr>
+<tr><th id="134">134</th><td><i class="doc">  ///   The Address object set to the current PC value.</i></td></tr>
+<tr><th id="135">135</th><td>  <em>const</em> <a class="type" href="../Core/Address.h.html#lldb_private::Address" title='lldb_private::Address' data-ref="lldb_private::Address" data-ref-filename="lldb_private..Address">Address</a> &amp;<dfn class="decl fn" id="_ZN12lldb_private10StackFrame19GetFrameCodeAddressEv" title='lldb_private::StackFrame::GetFrameCodeAddress' data-ref="_ZN12lldb_private10StackFrame19GetFrameCodeAddressEv" data-ref-filename="_ZN12lldb_private10StackFrame19GetFrameCodeAddressEv">GetFrameCodeAddress</dfn>();</td></tr>
+<tr><th id="136">136</th><td></td></tr>
+<tr><th id="137">137</th><td>  <i class="doc">/// Change the pc value for a given thread.</i></td></tr>
+<tr><th id="138">138</th><td><i class="doc">  ///</i></td></tr>
+<tr><th id="139">139</th><td><i class="doc">  /// Change the current pc value for the frame on this thread.</i></td></tr>
+<tr><th id="140">140</th><td><i class="doc">  ///</i></td></tr>
+<tr><th id="141">141</th><td><i class="doc">  /// <span class="command">\param</span>[in] <span class="arg">pc</span></i></td></tr>
+<tr><th id="142">142</th><td><i class="doc">  ///     The load address that the pc will be set to.</i></td></tr>
+<tr><th id="143">143</th><td><i class="doc">  ///</i></td></tr>
+<tr><th id="144">144</th><td><i class="doc">  /// <span class="command">\return</span></i></td></tr>
+<tr><th id="145">145</th><td><i class="doc">  ///     true if the pc was changed.  false if this failed -- possibly</i></td></tr>
+<tr><th id="146">146</th><td><i class="doc">  ///     because this frame is not a live StackFrame.</i></td></tr>
+<tr><th id="147">147</th><td>  <em>bool</em> <dfn class="decl fn" id="_ZN12lldb_private10StackFrame8ChangePCEm" title='lldb_private::StackFrame::ChangePC' data-ref="_ZN12lldb_private10StackFrame8ChangePCEm" data-ref-filename="_ZN12lldb_private10StackFrame8ChangePCEm">ChangePC</dfn>(<span class="namespace">lldb::</span><a class="typedef" href="../lldb-types.h.html#lldb::addr_t" title='lldb::addr_t' data-type='uint64_t' data-ref="lldb::addr_t" data-ref-filename="lldb..addr_t">addr_t</a> <dfn class="local col3 decl" id="413pc" title='pc' data-type='lldb::addr_t' data-ref="413pc" data-ref-filename="413pc">pc</dfn>);</td></tr>
+<tr><th id="148">148</th><td></td></tr>
+<tr><th id="149">149</th><td>  <i class="doc">/// Provide a SymbolContext for this StackFrame's current pc value.</i></td></tr>
+<tr><th id="150">150</th><td><i class="doc">  ///</i></td></tr>
+<tr><th id="151">151</th><td><i class="doc">  /// The StackFrame maintains this SymbolContext and adds additional</i></td></tr>
+<tr><th id="152">152</th><td><i class="doc">  /// information to it on an as-needed basis.  This helps to avoid different</i></td></tr>
+<tr><th id="153">153</th><td><i class="doc">  /// functions looking up symbolic information for a given pc value multiple</i></td></tr>
+<tr><th id="154">154</th><td><i class="doc">  /// times.</i></td></tr>
+<tr><th id="155">155</th><td><i class="doc">  ///</i></td></tr>
+<tr><th id="156">156</th><td><i class="doc">  /// <span class="command">\param</span>s [in] <span class="arg">resolve_scope</span></i></td></tr>
+<tr><th id="157">157</th><td><i class="doc">  ///   Flags from the SymbolContextItem enumerated type which specify what</i></td></tr>
+<tr><th id="158">158</th><td><i class="doc">  ///   type of symbol context is needed by this caller.</i></td></tr>
+<tr><th id="159">159</th><td><i class="doc">  ///</i></td></tr>
+<tr><th id="160">160</th><td><i class="doc">  /// <span class="command">\return</span></i></td></tr>
+<tr><th id="161">161</th><td><i class="doc">  ///   A SymbolContext reference which includes the types of information</i></td></tr>
+<tr><th id="162">162</th><td><i class="doc">  ///   requested by resolve_scope, if they are available.</i></td></tr>
+<tr><th id="163">163</th><td>  <em>const</em> <a class="type" href="../Symbol/SymbolContext.h.html#lldb_private::SymbolContext" title='lldb_private::SymbolContext' data-ref="lldb_private::SymbolContext" data-ref-filename="lldb_private..SymbolContext">SymbolContext</a> &amp;<dfn class="decl fn" id="_ZN12lldb_private10StackFrame16GetSymbolContextEN4lldb17SymbolContextItemE" title='lldb_private::StackFrame::GetSymbolContext' data-ref="_ZN12lldb_private10StackFrame16GetSymbolContextEN4lldb17SymbolContextItemE" data-ref-filename="_ZN12lldb_private10StackFrame16GetSymbolContextEN4lldb17SymbolContextItemE">GetSymbolContext</dfn>(<span class="namespace">lldb::</span><a class="type" href="../lldb-enumerations.h.html#341" title='lldb::SymbolContextItem' data-ref="lldb::SymbolContextItem" data-ref-filename="lldb..SymbolContextItem">SymbolContextItem</a> <dfn class="local col4 decl" id="414resolve_scope" title='resolve_scope' data-type='lldb::SymbolContextItem' data-ref="414resolve_scope" data-ref-filename="414resolve_scope">resolve_scope</dfn>);</td></tr>
+<tr><th id="164">164</th><td></td></tr>
+<tr><th id="165">165</th><td>  <i class="doc">/// Return the Canonical Frame Address (DWARF term) for this frame.</i></td></tr>
+<tr><th id="166">166</th><td><i class="doc">  ///</i></td></tr>
+<tr><th id="167">167</th><td><i class="doc">  /// The CFA is typically the value of the stack pointer register before the</i></td></tr>
+<tr><th id="168">168</th><td><i class="doc">  /// call invocation is made.  It will not change during the lifetime of a</i></td></tr>
+<tr><th id="169">169</th><td><i class="doc">  /// stack frame.  It is often not the same thing as the frame pointer</i></td></tr>
+<tr><th id="170">170</th><td><i class="doc">  /// register value.</i></td></tr>
+<tr><th id="171">171</th><td><i class="doc">  ///</i></td></tr>
+<tr><th id="172">172</th><td><i class="doc">  /// Live StackFrames will always have a CFA but other types of frames may</i></td></tr>
+<tr><th id="173">173</th><td><i class="doc">  /// not be able to supply one.</i></td></tr>
+<tr><th id="174">174</th><td><i class="doc">  ///</i></td></tr>
+<tr><th id="175">175</th><td><i class="doc">  /// <span class="command">\param</span> [out] <span class="arg">value</span></i></td></tr>
+<tr><th id="176">176</th><td><i class="doc">  ///   The address of the CFA for this frame, if available.</i></td></tr>
+<tr><th id="177">177</th><td><i class="doc">  ///</i></td></tr>
+<tr><th id="178">178</th><td><i class="doc">  /// <span class="command">\param</span> [out] <span class="arg">error_ptr</span></i></td></tr>
+<tr><th id="179">179</th><td><i class="doc">  ///   If there is an error determining the CFA address, this may contain a</i></td></tr>
+<tr><th id="180">180</th><td><i class="doc">  ///   string explaining the failure.</i></td></tr>
+<tr><th id="181">181</th><td><i class="doc">  ///</i></td></tr>
+<tr><th id="182">182</th><td><i class="doc">  /// <span class="command">\return</span></i></td></tr>
+<tr><th id="183">183</th><td><i class="doc">  ///   Returns true if the CFA value was successfully set in value.  Some</i></td></tr>
+<tr><th id="184">184</th><td><i class="doc">  ///   frames may be unable to provide this value; they will return false.</i></td></tr>
+<tr><th id="185">185</th><td>  <em>bool</em> <dfn class="decl fn" id="_ZN12lldb_private10StackFrame17GetFrameBaseValueERNS_6ScalarEPNS_6StatusE" title='lldb_private::StackFrame::GetFrameBaseValue' data-ref="_ZN12lldb_private10StackFrame17GetFrameBaseValueERNS_6ScalarEPNS_6StatusE" data-ref-filename="_ZN12lldb_private10StackFrame17GetFrameBaseValueERNS_6ScalarEPNS_6StatusE">GetFrameBaseValue</dfn>(<a class="type" href="../Utility/Scalar.h.html#lldb_private::Scalar" title='lldb_private::Scalar' data-ref="lldb_private::Scalar" data-ref-filename="lldb_private..Scalar">Scalar</a> &amp;<dfn class="local col5 decl" id="415value" title='value' data-type='lldb_private::Scalar &amp;' data-ref="415value" data-ref-filename="415value">value</dfn>, <a class="type" href="../Utility/Status.h.html#lldb_private::Status" title='lldb_private::Status' data-ref="lldb_private::Status" data-ref-filename="lldb_private..Status">Status</a> *<dfn class="local col6 decl" id="416error_ptr" title='error_ptr' data-type='lldb_private::Status *' data-ref="416error_ptr" data-ref-filename="416error_ptr">error_ptr</dfn>);</td></tr>
+<tr><th id="186">186</th><td></td></tr>
+<tr><th id="187">187</th><td>  <i class="doc">/// Get the DWARFExpression corresponding to the Canonical Frame Address.</i></td></tr>
+<tr><th id="188">188</th><td><i class="doc">  ///</i></td></tr>
+<tr><th id="189">189</th><td><i class="doc">  /// Often a register (bp), but sometimes a register + offset.</i></td></tr>
+<tr><th id="190">190</th><td><i class="doc">  ///</i></td></tr>
+<tr><th id="191">191</th><td><i class="doc">  /// <span class="command">\param</span> [out] <span class="arg">error_ptr</span></i></td></tr>
+<tr><th id="192">192</th><td><i class="doc">  ///   If there is an error determining the CFA address, this may contain a</i></td></tr>
+<tr><th id="193">193</th><td><i class="doc">  ///   string explaining the failure.</i></td></tr>
+<tr><th id="194">194</th><td><i class="doc">  ///</i></td></tr>
+<tr><th id="195">195</th><td><i class="doc">  /// <span class="command">\return</span></i></td></tr>
+<tr><th id="196">196</th><td><i class="doc">  ///   Returns the corresponding DWARF expression, or NULL.</i></td></tr>
+<tr><th id="197">197</th><td>  <a class="type" href="../lldb-forward.h.html#lldb_private::DWARFExpression" title='lldb_private::DWARFExpression' data-ref="lldb_private::DWARFExpression" data-ref-filename="lldb_private..DWARFExpression">DWARFExpression</a> *<dfn class="decl fn" id="_ZN12lldb_private10StackFrame22GetFrameBaseExpressionEPNS_6StatusE" title='lldb_private::StackFrame::GetFrameBaseExpression' data-ref="_ZN12lldb_private10StackFrame22GetFrameBaseExpressionEPNS_6StatusE" data-ref-filename="_ZN12lldb_private10StackFrame22GetFrameBaseExpressionEPNS_6StatusE">GetFrameBaseExpression</dfn>(<a class="type" href="../Utility/Status.h.html#lldb_private::Status" title='lldb_private::Status' data-ref="lldb_private::Status" data-ref-filename="lldb_private..Status">Status</a> *<dfn class="local col7 decl" id="417error_ptr" title='error_ptr' data-type='lldb_private::Status *' data-ref="417error_ptr" data-ref-filename="417error_ptr">error_ptr</dfn>);</td></tr>
+<tr><th id="198">198</th><td></td></tr>
+<tr><th id="199">199</th><td>  <i class="doc">/// Get the current lexical scope block for this StackFrame, if possible.</i></td></tr>
+<tr><th id="200">200</th><td><i class="doc">  ///</i></td></tr>
+<tr><th id="201">201</th><td><i class="doc">  /// If debug information is available for this stack frame, return a pointer</i></td></tr>
+<tr><th id="202">202</th><td><i class="doc">  /// to the innermost lexical Block that the frame is currently executing.</i></td></tr>
+<tr><th id="203">203</th><td><i class="doc">  ///</i></td></tr>
+<tr><th id="204">204</th><td><i class="doc">  /// <span class="command">\return</span></i></td></tr>
+<tr><th id="205">205</th><td><i class="doc">  ///   A pointer to the current Block.  nullptr is returned if this can</i></td></tr>
+<tr><th id="206">206</th><td><i class="doc">  ///   not be provided.</i></td></tr>
+<tr><th id="207">207</th><td>  <a class="type" href="../lldb-forward.h.html#lldb_private::Block" title='lldb_private::Block' data-ref="lldb_private::Block" data-ref-filename="lldb_private..Block">Block</a> *<dfn class="decl fn" id="_ZN12lldb_private10StackFrame13GetFrameBlockEv" title='lldb_private::StackFrame::GetFrameBlock' data-ref="_ZN12lldb_private10StackFrame13GetFrameBlockEv" data-ref-filename="_ZN12lldb_private10StackFrame13GetFrameBlockEv">GetFrameBlock</dfn>();</td></tr>
+<tr><th id="208">208</th><td></td></tr>
+<tr><th id="209">209</th><td>  <i class="doc">/// Get the RegisterContext for this frame, if possible.</i></td></tr>
+<tr><th id="210">210</th><td><i class="doc">  ///</i></td></tr>
+<tr><th id="211">211</th><td><i class="doc">  /// Returns a shared pointer to the RegisterContext for this stack frame.</i></td></tr>
+<tr><th id="212">212</th><td><i class="doc">  /// Only a live StackFrame object will be able to return a RegisterContext -</i></td></tr>
+<tr><th id="213">213</th><td><i class="doc">  /// callers must be prepared for an empty shared pointer being returned.</i></td></tr>
+<tr><th id="214">214</th><td><i class="doc">  ///</i></td></tr>
+<tr><th id="215">215</th><td><i class="doc">  /// Even a live StackFrame RegisterContext may not be able to provide all</i></td></tr>
+<tr><th id="216">216</th><td><i class="doc">  /// registers.  Only the currently executing frame (frame 0) can reliably</i></td></tr>
+<tr><th id="217">217</th><td><i class="doc">  /// provide every register in the register context.</i></td></tr>
+<tr><th id="218">218</th><td><i class="doc">  ///</i></td></tr>
+<tr><th id="219">219</th><td><i class="doc">  /// <span class="command">\return</span></i></td></tr>
+<tr><th id="220">220</th><td><i class="doc">  ///   The RegisterContext shared point for this frame.</i></td></tr>
+<tr><th id="221">221</th><td>  <span class="namespace">lldb::</span><a class="typedef" href="../lldb-forward.h.html#lldb::RegisterContextSP" title='lldb::RegisterContextSP' data-type='std::shared_ptr&lt;lldb_private::RegisterContext&gt;' data-ref="lldb::RegisterContextSP" data-ref-filename="lldb..RegisterContextSP">RegisterContextSP</a> <dfn class="decl fn" id="_ZN12lldb_private10StackFrame18GetRegisterContextEv" title='lldb_private::StackFrame::GetRegisterContext' data-ref="_ZN12lldb_private10StackFrame18GetRegisterContextEv" data-ref-filename="_ZN12lldb_private10StackFrame18GetRegisterContextEv">GetRegisterContext</dfn>();</td></tr>
+<tr><th id="222">222</th><td></td></tr>
+<tr><th id="223">223</th><td>  <em>const</em> <span class="namespace">lldb::</span><a class="typedef" href="../lldb-forward.h.html#lldb::RegisterContextSP" title='lldb::RegisterContextSP' data-type='std::shared_ptr&lt;lldb_private::RegisterContext&gt;' data-ref="lldb::RegisterContextSP" data-ref-filename="lldb..RegisterContextSP">RegisterContextSP</a> &amp;<dfn class="decl def fn" id="_ZNK12lldb_private10StackFrame20GetRegisterContextSPEv" title='lldb_private::StackFrame::GetRegisterContextSP' data-ref="_ZNK12lldb_private10StackFrame20GetRegisterContextSPEv" data-ref-filename="_ZNK12lldb_private10StackFrame20GetRegisterContextSPEv">GetRegisterContextSP</dfn>() <em>const</em> {</td></tr>
+<tr><th id="224">224</th><td>    <b>return</b> <a class="member field" href="#lldb_private::StackFrame::m_reg_context_sp" title='lldb_private::StackFrame::m_reg_context_sp' data-ref="lldb_private::StackFrame::m_reg_context_sp" data-ref-filename="lldb_private..StackFrame..m_reg_context_sp">m_reg_context_sp</a>;</td></tr>
+<tr><th id="225">225</th><td>  }</td></tr>
+<tr><th id="226">226</th><td></td></tr>
+<tr><th id="227">227</th><td>  <i class="doc">/// Retrieve the list of variables that are in scope at this StackFrame's</i></td></tr>
+<tr><th id="228">228</th><td><i class="doc">  /// pc.</i></td></tr>
+<tr><th id="229">229</th><td><i class="doc">  ///</i></td></tr>
+<tr><th id="230">230</th><td><i class="doc">  /// A frame that is not live may return an empty VariableList for a given</i></td></tr>
+<tr><th id="231">231</th><td><i class="doc">  /// pc value even though variables would be available at this point if it</i></td></tr>
+<tr><th id="232">232</th><td><i class="doc">  /// were a live stack frame.</i></td></tr>
+<tr><th id="233">233</th><td><i class="doc">  ///</i></td></tr>
+<tr><th id="234">234</th><td><i class="doc">  /// <span class="command">\param</span>[in] <span class="arg">get_file_globals</span></i></td></tr>
+<tr><th id="235">235</th><td><i class="doc">  ///     Whether to also retrieve compilation-unit scoped variables</i></td></tr>
+<tr><th id="236">236</th><td><i class="doc">  ///     that are visible to the entire compilation unit (e.g. file</i></td></tr>
+<tr><th id="237">237</th><td><i class="doc">  ///     static in C, globals that are homed in this CU).</i></td></tr>
+<tr><th id="238">238</th><td><i class="doc">  ///</i></td></tr>
+<tr><th id="239">239</th><td><i class="doc">  /// <span class="command">\return</span></i></td></tr>
+<tr><th id="240">240</th><td><i class="doc">  ///     A pointer to a list of variables.</i></td></tr>
+<tr><th id="241">241</th><td>  <a class="type" href="../lldb-forward.h.html#lldb_private::VariableList" title='lldb_private::VariableList' data-ref="lldb_private::VariableList" data-ref-filename="lldb_private..VariableList">VariableList</a> *<dfn class="decl fn" id="_ZN12lldb_private10StackFrame15GetVariableListEb" title='lldb_private::StackFrame::GetVariableList' data-ref="_ZN12lldb_private10StackFrame15GetVariableListEb" data-ref-filename="_ZN12lldb_private10StackFrame15GetVariableListEb">GetVariableList</dfn>(<em>bool</em> <dfn class="local col8 decl" id="418get_file_globals" title='get_file_globals' data-type='bool' data-ref="418get_file_globals" data-ref-filename="418get_file_globals">get_file_globals</dfn>);</td></tr>
+<tr><th id="242">242</th><td></td></tr>
+<tr><th id="243">243</th><td>  <i class="doc">/// Retrieve the list of variables that are in scope at this StackFrame's</i></td></tr>
+<tr><th id="244">244</th><td><i class="doc">  /// pc.</i></td></tr>
+<tr><th id="245">245</th><td><i class="doc">  ///</i></td></tr>
+<tr><th id="246">246</th><td><i class="doc">  /// A frame that is not live may return an empty VariableListSP for a</i></td></tr>
+<tr><th id="247">247</th><td><i class="doc">  /// given pc value even though variables would be available at this point if</i></td></tr>
+<tr><th id="248">248</th><td><i class="doc">  /// it were a live stack frame.</i></td></tr>
+<tr><th id="249">249</th><td><i class="doc">  ///</i></td></tr>
+<tr><th id="250">250</th><td><i class="doc">  /// <span class="command">\param</span>[in] <span class="arg">get_file_globals</span></i></td></tr>
+<tr><th id="251">251</th><td><i class="doc">  ///     Whether to also retrieve compilation-unit scoped variables</i></td></tr>
+<tr><th id="252">252</th><td><i class="doc">  ///     that are visible to the entire compilation unit (e.g. file</i></td></tr>
+<tr><th id="253">253</th><td><i class="doc">  ///     static in C, globals that are homed in this CU).</i></td></tr>
+<tr><th id="254">254</th><td><i class="doc">  ///</i></td></tr>
+<tr><th id="255">255</th><td><i class="doc">  /// <span class="command">\return</span></i></td></tr>
+<tr><th id="256">256</th><td><i class="doc">  ///     A pointer to a list of variables.</i></td></tr>
+<tr><th id="257">257</th><td>  <span class="namespace">lldb::</span><a class="typedef" href="../lldb-forward.h.html#lldb::VariableListSP" title='lldb::VariableListSP' data-type='std::shared_ptr&lt;lldb_private::VariableList&gt;' data-ref="lldb::VariableListSP" data-ref-filename="lldb..VariableListSP">VariableListSP</a></td></tr>
+<tr><th id="258">258</th><td>  <dfn class="decl fn" id="_ZN12lldb_private10StackFrame22GetInScopeVariableListEbb" title='lldb_private::StackFrame::GetInScopeVariableList' data-ref="_ZN12lldb_private10StackFrame22GetInScopeVariableListEbb" data-ref-filename="_ZN12lldb_private10StackFrame22GetInScopeVariableListEbb">GetInScopeVariableList</dfn>(<em>bool</em> <dfn class="local col9 decl" id="419get_file_globals" title='get_file_globals' data-type='bool' data-ref="419get_file_globals" data-ref-filename="419get_file_globals">get_file_globals</dfn>,</td></tr>
+<tr><th id="259">259</th><td>                         <em>bool</em> <dfn class="local col0 decl" id="420must_have_valid_location" title='must_have_valid_location' data-type='bool' data-ref="420must_have_valid_location" data-ref-filename="420must_have_valid_location">must_have_valid_location</dfn> = <b>false</b>);</td></tr>
+<tr><th id="260">260</th><td></td></tr>
+<tr><th id="261">261</th><td>  <i class="doc">/// Create a ValueObject for a variable name / pathname, possibly including</i></td></tr>
+<tr><th id="262">262</th><td><i class="doc">  /// simple dereference/child selection syntax.</i></td></tr>
+<tr><th id="263">263</th><td><i class="doc">  ///</i></td></tr>
+<tr><th id="264">264</th><td><i class="doc">  /// <span class="command">\param</span>[in] <span class="arg">var_expr</span></i></td></tr>
+<tr><th id="265">265</th><td><i class="doc">  ///     The string specifying a variable to base the VariableObject off</i></td></tr>
+<tr><th id="266">266</th><td><i class="doc">  ///     of.</i></td></tr>
+<tr><th id="267">267</th><td><i class="doc">  ///</i></td></tr>
+<tr><th id="268">268</th><td><i class="doc">  /// <span class="command">\param</span>[in] <span class="arg">use_dynamic</span></i></td></tr>
+<tr><th id="269">269</th><td><i class="doc">  ///     Whether the correct dynamic type of an object pointer should be</i></td></tr>
+<tr><th id="270">270</th><td><i class="doc">  ///     determined before creating the object, or if the static type is</i></td></tr>
+<tr><th id="271">271</th><td><i class="doc">  ///     sufficient.  One of the DynamicValueType enumerated values.</i></td></tr>
+<tr><th id="272">272</th><td><i class="doc">  ///</i></td></tr>
+<tr><th id="273">273</th><td><i class="doc">  /// <span class="command">\param</span>[in] <span class="arg">options</span></i></td></tr>
+<tr><th id="274">274</th><td><i class="doc">  ///     An unsigned integer of flags, values from</i></td></tr>
+<tr><th id="275">275</th><td><i class="doc">  ///     StackFrame::ExpressionPathOption</i></td></tr>
+<tr><th id="276">276</th><td><i class="doc">  ///     enum.</i></td></tr>
+<tr><th id="277">277</th><td><i class="doc">  /// <span class="command">\param</span>[in] <span class="arg">var_sp</span></i></td></tr>
+<tr><th id="278">278</th><td><i class="doc">  ///     A VariableSP that will be set to the variable described in the</i></td></tr>
+<tr><th id="279">279</th><td><i class="doc">  ///     var_expr path.</i></td></tr>
+<tr><th id="280">280</th><td><i class="doc">  ///</i></td></tr>
+<tr><th id="281">281</th><td><i class="doc">  /// <span class="command">\param</span>[in] <span class="arg">error</span></i></td></tr>
+<tr><th id="282">282</th><td><i class="doc">  ///     Record any errors encountered while evaluating var_expr.</i></td></tr>
+<tr><th id="283">283</th><td><i class="doc">  ///</i></td></tr>
+<tr><th id="284">284</th><td><i class="doc">  /// <span class="command">\return</span></i></td></tr>
+<tr><th id="285">285</th><td><i class="doc">  ///     A shared pointer to the ValueObject described by var_expr.</i></td></tr>
+<tr><th id="286">286</th><td>  <span class="namespace">lldb::</span><a class="typedef" href="../lldb-forward.h.html#lldb::ValueObjectSP" title='lldb::ValueObjectSP' data-type='std::shared_ptr&lt;lldb_private::ValueObject&gt;' data-ref="lldb::ValueObjectSP" data-ref-filename="lldb..ValueObjectSP">ValueObjectSP</a> <dfn class="decl fn" id="_ZN12lldb_private10StackFrame33GetValueForVariableExpressionPathEN4llvm9StringRefEN4lldb16DynamicValueTypeEjRSt10shared_ptrINS_8VariableEERNS_6StatusE" title='lldb_private::StackFrame::GetValueForVariableExpressionPath' data-ref="_ZN12lldb_private10StackFrame33GetValueForVariableExpressionPathEN4llvm9StringRefEN4lldb16DynamicValueTypeEjRSt10shared_ptrINS_8VariableEERNS_6StatusE" data-ref-filename="_ZN12lldb_private10StackFrame33GetValueForVariableExpressionPathEN4llvm9StringRefEN4lldb16DynamicValueTypeEjRSt10shared_ptrINS_8VariableEERNS_6StatusE">GetValueForVariableExpressionPath</dfn>(</td></tr>
+<tr><th id="287">287</th><td>      <span class="namespace">llvm::</span><a class="type" href="../../../../llvm/include/llvm/ADT/StringRef.h.html#llvm::StringRef" title='llvm::StringRef' data-ref="llvm::StringRef" data-ref-filename="llvm..StringRef">StringRef</a> <dfn class="local col1 decl" id="421var_expr" title='var_expr' data-type='llvm::StringRef' data-ref="421var_expr" data-ref-filename="421var_expr">var_expr</dfn>, <span class="namespace">lldb::</span><a class="type" href="../lldb-enumerations.h.html#lldb::DynamicValueType" title='lldb::DynamicValueType' data-ref="lldb::DynamicValueType" data-ref-filename="lldb..DynamicValueType">DynamicValueType</a> <dfn class="local col2 decl" id="422use_dynamic" title='use_dynamic' data-type='lldb::DynamicValueType' data-ref="422use_dynamic" data-ref-filename="422use_dynamic">use_dynamic</dfn>,</td></tr>
+<tr><th id="288">288</th><td>      <a class="typedef" href="../../../../../include/bits/stdint-uintn.h.html#uint32_t" title='uint32_t' data-type='__uint32_t' data-ref="uint32_t" data-ref-filename="uint32_t">uint32_t</a> <dfn class="local col3 decl" id="423options" title='options' data-type='uint32_t' data-ref="423options" data-ref-filename="423options">options</dfn>, <span class="namespace">lldb::</span><a class="typedef" href="../lldb-forward.h.html#lldb::VariableSP" title='lldb::VariableSP' data-type='std::shared_ptr&lt;lldb_private::Variable&gt;' data-ref="lldb::VariableSP" data-ref-filename="lldb..VariableSP">VariableSP</a> &amp;<dfn class="local col4 decl" id="424var_sp" title='var_sp' data-type='lldb::VariableSP &amp;' data-ref="424var_sp" data-ref-filename="424var_sp">var_sp</dfn>, <a class="type" href="../Utility/Status.h.html#lldb_private::Status" title='lldb_private::Status' data-ref="lldb_private::Status" data-ref-filename="lldb_private..Status">Status</a> &amp;<dfn class="local col5 decl" id="425error" title='error' data-type='lldb_private::Status &amp;' data-ref="425error" data-ref-filename="425error">error</dfn>);</td></tr>
+<tr><th id="289">289</th><td></td></tr>
+<tr><th id="290">290</th><td>  <i class="doc">/// Determine whether this StackFrame has debug information available or not.</i></td></tr>
+<tr><th id="291">291</th><td><i class="doc">  ///</i></td></tr>
+<tr><th id="292">292</th><td><i class="doc">  /// <span class="command">\return</span></i></td></tr>
+<tr><th id="293">293</th><td><i class="doc">  ///    true if debug information is available for this frame (function,</i></td></tr>
+<tr><th id="294">294</th><td><i class="doc">  ///    compilation unit, block, etc.)</i></td></tr>
+<tr><th id="295">295</th><td>  <em>bool</em> <dfn class="decl fn" id="_ZN12lldb_private10StackFrame19HasDebugInformationEv" title='lldb_private::StackFrame::HasDebugInformation' data-ref="_ZN12lldb_private10StackFrame19HasDebugInformationEv" data-ref-filename="_ZN12lldb_private10StackFrame19HasDebugInformationEv">HasDebugInformation</dfn>();</td></tr>
+<tr><th id="296">296</th><td></td></tr>
+<tr><th id="297">297</th><td>  <i class="doc">/// Return the disassembly for the instructions of this StackFrame's</i></td></tr>
+<tr><th id="298">298</th><td><i class="doc">  /// function as a single C string.</i></td></tr>
+<tr><th id="299">299</th><td><i class="doc">  ///</i></td></tr>
+<tr><th id="300">300</th><td><i class="doc">  /// <span class="command">\return</span></i></td></tr>
+<tr><th id="301">301</th><td><i class="doc">  ///    C string with the assembly instructions for this function.</i></td></tr>
+<tr><th id="302">302</th><td>  <em>const</em> <em>char</em> *<dfn class="decl fn" id="_ZN12lldb_private10StackFrame11DisassembleEv" title='lldb_private::StackFrame::Disassemble' data-ref="_ZN12lldb_private10StackFrame11DisassembleEv" data-ref-filename="_ZN12lldb_private10StackFrame11DisassembleEv">Disassemble</dfn>();</td></tr>
+<tr><th id="303">303</th><td></td></tr>
+<tr><th id="304">304</th><td>  <i class="doc">/// Print a description for this frame using the frame-format formatter</i></td></tr>
+<tr><th id="305">305</th><td><i class="doc">  /// settings.</i></td></tr>
+<tr><th id="306">306</th><td><i class="doc">  ///</i></td></tr>
+<tr><th id="307">307</th><td><i class="doc">  /// <span class="command">\param</span> [in] <span class="arg">strm</span></i></td></tr>
+<tr><th id="308">308</th><td><i class="doc">  ///   The Stream to print the description to.</i></td></tr>
+<tr><th id="309">309</th><td><i class="doc">  ///</i></td></tr>
+<tr><th id="310">310</th><td><i class="doc">  /// <span class="command">\param</span> [in] <span class="arg">show_unique</span></i></td></tr>
+<tr><th id="311">311</th><td><i class="doc">  ///   Whether to print the function arguments or not for backtrace unique.</i></td></tr>
+<tr><th id="312">312</th><td><i class="doc">  ///</i></td></tr>
+<tr><th id="313">313</th><td><i class="doc">  /// <span class="command">\param</span> [in] <span class="arg">frame_marker</span></i></td></tr>
+<tr><th id="314">314</th><td><i class="doc">  ///   Optional string that will be prepended to the frame output description.</i></td></tr>
+<tr><th id="315">315</th><td>  <em>void</em> <dfn class="decl fn" id="_ZN12lldb_private10StackFrame23DumpUsingSettingsFormatEPNS_6StreamEbPKc" title='lldb_private::StackFrame::DumpUsingSettingsFormat' data-ref="_ZN12lldb_private10StackFrame23DumpUsingSettingsFormatEPNS_6StreamEbPKc" data-ref-filename="_ZN12lldb_private10StackFrame23DumpUsingSettingsFormatEPNS_6StreamEbPKc">DumpUsingSettingsFormat</dfn>(<a class="type" href="../Utility/Stream.h.html#lldb_private::Stream" title='lldb_private::Stream' data-ref="lldb_private::Stream" data-ref-filename="lldb_private..Stream">Stream</a> *<dfn class="local col6 decl" id="426strm" title='strm' data-type='lldb_private::Stream *' data-ref="426strm" data-ref-filename="426strm">strm</dfn>, <em>bool</em> <dfn class="local col7 decl" id="427show_unique" title='show_unique' data-type='bool' data-ref="427show_unique" data-ref-filename="427show_unique">show_unique</dfn> = <b>false</b>,</td></tr>
+<tr><th id="316">316</th><td>                               <em>const</em> <em>char</em> *<dfn class="local col8 decl" id="428frame_marker" title='frame_marker' data-type='const char *' data-ref="428frame_marker" data-ref-filename="428frame_marker">frame_marker</dfn> = <b>nullptr</b>);</td></tr>
+<tr><th id="317">317</th><td></td></tr>
+<tr><th id="318">318</th><td>  <i class="doc">/// Print a description for this frame using a default format.</i></td></tr>
+<tr><th id="319">319</th><td><i class="doc">  ///</i></td></tr>
+<tr><th id="320">320</th><td><i class="doc">  /// <span class="command">\param</span> [in] <span class="arg">strm</span></i></td></tr>
+<tr><th id="321">321</th><td><i class="doc">  ///   The Stream to print the description to.</i></td></tr>
+<tr><th id="322">322</th><td><i class="doc">  ///</i></td></tr>
+<tr><th id="323">323</th><td><i class="doc">  /// <span class="command">\param</span> [in] <span class="arg">show_frame_index</span></i></td></tr>
+<tr><th id="324">324</th><td><i class="doc">  ///   Whether to print the frame number or not.</i></td></tr>
+<tr><th id="325">325</th><td><i class="doc">  ///</i></td></tr>
+<tr><th id="326">326</th><td><i class="doc">  /// <span class="command">\param</span> [in] <span class="arg">show_fullpaths</span></i></td></tr>
+<tr><th id="327">327</th><td><i class="doc">  ///   Whether to print the full source paths or just the file base name.</i></td></tr>
+<tr><th id="328">328</th><td>  <em>void</em> <dfn class="decl fn" id="_ZN12lldb_private10StackFrame4DumpEPNS_6StreamEbb" title='lldb_private::StackFrame::Dump' data-ref="_ZN12lldb_private10StackFrame4DumpEPNS_6StreamEbb" data-ref-filename="_ZN12lldb_private10StackFrame4DumpEPNS_6StreamEbb">Dump</dfn>(<a class="type" href="../Utility/Stream.h.html#lldb_private::Stream" title='lldb_private::Stream' data-ref="lldb_private::Stream" data-ref-filename="lldb_private..Stream">Stream</a> *<dfn class="local col9 decl" id="429strm" title='strm' data-type='lldb_private::Stream *' data-ref="429strm" data-ref-filename="429strm">strm</dfn>, <em>bool</em> <dfn class="local col0 decl" id="430show_frame_index" title='show_frame_index' data-type='bool' data-ref="430show_frame_index" data-ref-filename="430show_frame_index">show_frame_index</dfn>, <em>bool</em> <dfn class="local col1 decl" id="431show_fullpaths" title='show_fullpaths' data-type='bool' data-ref="431show_fullpaths" data-ref-filename="431show_fullpaths">show_fullpaths</dfn>);</td></tr>
+<tr><th id="329">329</th><td></td></tr>
+<tr><th id="330">330</th><td>  <i class="doc">/// Print a description of this stack frame and/or the source</i></td></tr>
+<tr><th id="331">331</th><td><i class="doc">  /// context/assembly for this stack frame.</i></td></tr>
+<tr><th id="332">332</th><td><i class="doc">  ///</i></td></tr>
+<tr><th id="333">333</th><td><i class="doc">  /// <span class="command">\param</span>[in] <span class="arg">strm</span></i></td></tr>
+<tr><th id="334">334</th><td><i class="doc">  ///   The Stream to send the output to.</i></td></tr>
+<tr><th id="335">335</th><td><i class="doc">  ///</i></td></tr>
+<tr><th id="336">336</th><td><i class="doc">  /// <span class="command">\param</span>[in] <span class="arg">show_frame_info</span></i></td></tr>
+<tr><th id="337">337</th><td><i class="doc">  ///   If true, print the frame info by calling DumpUsingSettingsFormat().</i></td></tr>
+<tr><th id="338">338</th><td><i class="doc">  ///</i></td></tr>
+<tr><th id="339">339</th><td><i class="doc">  /// <span class="command">\param</span>[in] <span class="arg">show_source</span></i></td></tr>
+<tr><th id="340">340</th><td><i class="doc">  ///   If true, print source or disassembly as per the user's settings.</i></td></tr>
+<tr><th id="341">341</th><td><i class="doc">  ///</i></td></tr>
+<tr><th id="342">342</th><td><i class="doc">  /// <span class="command">\param</span>[in] <span class="arg">show_unique</span></i></td></tr>
+<tr><th id="343">343</th><td><i class="doc">  ///   If true, print using backtrace unique style, without function</i></td></tr>
+<tr><th id="344">344</th><td><i class="doc">  ///            arguments as per the user's settings.</i></td></tr>
+<tr><th id="345">345</th><td><i class="doc">  ///</i></td></tr>
+<tr><th id="346">346</th><td><i class="doc">  /// <span class="command">\param</span>[in] <span class="arg">frame_marker</span></i></td></tr>
+<tr><th id="347">347</th><td><i class="doc">  ///   Passed to DumpUsingSettingsFormat() for the frame info printing.</i></td></tr>
+<tr><th id="348">348</th><td><i class="doc">  ///</i></td></tr>
+<tr><th id="349">349</th><td><i class="doc">  /// <span class="command">\return</span></i></td></tr>
+<tr><th id="350">350</th><td><i class="doc">  ///   Returns true if successful.</i></td></tr>
+<tr><th id="351">351</th><td>  <em>bool</em> <dfn class="decl fn" id="_ZN12lldb_private10StackFrame9GetStatusERNS_6StreamEbbbPKc" title='lldb_private::StackFrame::GetStatus' data-ref="_ZN12lldb_private10StackFrame9GetStatusERNS_6StreamEbbbPKc" data-ref-filename="_ZN12lldb_private10StackFrame9GetStatusERNS_6StreamEbbbPKc">GetStatus</dfn>(<a class="type" href="../Utility/Stream.h.html#lldb_private::Stream" title='lldb_private::Stream' data-ref="lldb_private::Stream" data-ref-filename="lldb_private..Stream">Stream</a> &amp;<dfn class="local col2 decl" id="432strm" title='strm' data-type='lldb_private::Stream &amp;' data-ref="432strm" data-ref-filename="432strm">strm</dfn>, <em>bool</em> <dfn class="local col3 decl" id="433show_frame_info" title='show_frame_info' data-type='bool' data-ref="433show_frame_info" data-ref-filename="433show_frame_info">show_frame_info</dfn>, <em>bool</em> <dfn class="local col4 decl" id="434show_source" title='show_source' data-type='bool' data-ref="434show_source" data-ref-filename="434show_source">show_source</dfn>,</td></tr>
+<tr><th id="352">352</th><td>                 <em>bool</em> <dfn class="local col5 decl" id="435show_unique" title='show_unique' data-type='bool' data-ref="435show_unique" data-ref-filename="435show_unique">show_unique</dfn> = <b>false</b>, <em>const</em> <em>char</em> *<dfn class="local col6 decl" id="436frame_marker" title='frame_marker' data-type='const char *' data-ref="436frame_marker" data-ref-filename="436frame_marker">frame_marker</dfn> = <b>nullptr</b>);</td></tr>
+<tr><th id="353">353</th><td></td></tr>
+<tr><th id="354">354</th><td>  <i class="doc">/// Query whether this frame is a concrete frame on the call stack, or if it</i></td></tr>
+<tr><th id="355">355</th><td><i class="doc">  /// is an inlined frame derived from the debug information and presented by</i></td></tr>
+<tr><th id="356">356</th><td><i class="doc">  /// the debugger.</i></td></tr>
+<tr><th id="357">357</th><td><i class="doc">  ///</i></td></tr>
+<tr><th id="358">358</th><td><i class="doc">  /// <span class="command">\return</span></i></td></tr>
+<tr><th id="359">359</th><td><i class="doc">  ///   true if this is an inlined frame.</i></td></tr>
+<tr><th id="360">360</th><td>  <em>bool</em> <dfn class="decl fn" id="_ZN12lldb_private10StackFrame9IsInlinedEv" title='lldb_private::StackFrame::IsInlined' data-ref="_ZN12lldb_private10StackFrame9IsInlinedEv" data-ref-filename="_ZN12lldb_private10StackFrame9IsInlinedEv">IsInlined</dfn>();</td></tr>
+<tr><th id="361">361</th><td></td></tr>
+<tr><th id="362">362</th><td>  <i class="doc">/// Query whether this frame is part of a historical backtrace.</i></td></tr>
+<tr><th id="363">363</th><td>  <em>bool</em> <dfn class="decl fn" id="_ZNK12lldb_private10StackFrame12IsHistoricalEv" title='lldb_private::StackFrame::IsHistorical' data-ref="_ZNK12lldb_private10StackFrame12IsHistoricalEv" data-ref-filename="_ZNK12lldb_private10StackFrame12IsHistoricalEv">IsHistorical</dfn>() <em>const</em>;</td></tr>
+<tr><th id="364">364</th><td></td></tr>
+<tr><th id="365">365</th><td>  <i class="doc">/// Query whether this frame is artificial (e.g a synthesized result of</i></td></tr>
+<tr><th id="366">366</th><td><i class="doc">  /// inferring missing tail call frames from a backtrace). Artificial frames</i></td></tr>
+<tr><th id="367">367</th><td><i class="doc">  /// may have limited support for inspecting variables.</i></td></tr>
+<tr><th id="368">368</th><td>  <em>bool</em> <dfn class="decl fn" id="_ZNK12lldb_private10StackFrame12IsArtificialEv" title='lldb_private::StackFrame::IsArtificial' data-ref="_ZNK12lldb_private10StackFrame12IsArtificialEv" data-ref-filename="_ZNK12lldb_private10StackFrame12IsArtificialEv">IsArtificial</dfn>() <em>const</em>;</td></tr>
+<tr><th id="369">369</th><td></td></tr>
+<tr><th id="370">370</th><td>  <i class="doc">/// Query this frame to find what frame it is in this Thread's</i></td></tr>
+<tr><th id="371">371</th><td><i class="doc">  /// StackFrameList.</i></td></tr>
+<tr><th id="372">372</th><td><i class="doc">  ///</i></td></tr>
+<tr><th id="373">373</th><td><i class="doc">  /// <span class="command">\return</span></i></td></tr>
+<tr><th id="374">374</th><td><i class="doc">  ///   StackFrame index 0 indicates the currently-executing function.  Inline</i></td></tr>
+<tr><th id="375">375</th><td><i class="doc">  ///   frames are included in this frame index count.</i></td></tr>
+<tr><th id="376">376</th><td>  <a class="typedef" href="../../../../../include/bits/stdint-uintn.h.html#uint32_t" title='uint32_t' data-type='__uint32_t' data-ref="uint32_t" data-ref-filename="uint32_t">uint32_t</a> <dfn class="decl fn" id="_ZNK12lldb_private10StackFrame13GetFrameIndexEv" title='lldb_private::StackFrame::GetFrameIndex' data-ref="_ZNK12lldb_private10StackFrame13GetFrameIndexEv" data-ref-filename="_ZNK12lldb_private10StackFrame13GetFrameIndexEv">GetFrameIndex</dfn>() <em>const</em>;</td></tr>
+<tr><th id="377">377</th><td></td></tr>
+<tr><th id="378">378</th><td>  <i class="doc">/// Set this frame's synthetic frame index.</i></td></tr>
+<tr><th id="379">379</th><td>  <em>void</em> <dfn class="decl def fn" id="_ZN12lldb_private10StackFrame13SetFrameIndexEj" title='lldb_private::StackFrame::SetFrameIndex' data-ref="_ZN12lldb_private10StackFrame13SetFrameIndexEj" data-ref-filename="_ZN12lldb_private10StackFrame13SetFrameIndexEj">SetFrameIndex</dfn>(<a class="typedef" href="../../../../../include/bits/stdint-uintn.h.html#uint32_t" title='uint32_t' data-type='__uint32_t' data-ref="uint32_t" data-ref-filename="uint32_t">uint32_t</a> <dfn class="local col7 decl" id="437index" title='index' data-type='uint32_t' data-ref="437index" data-ref-filename="437index">index</dfn>) { <a class="member field" href="#lldb_private::StackFrame::m_frame_index" title='lldb_private::StackFrame::m_frame_index' data-ref="lldb_private::StackFrame::m_frame_index" data-ref-filename="lldb_private..StackFrame..m_frame_index">m_frame_index</a> = <a class="local col7 ref" href="#437index" title='index' data-ref="437index" data-ref-filename="437index">index</a>; }</td></tr>
+<tr><th id="380">380</th><td></td></tr>
+<tr><th id="381">381</th><td>  <i class="doc">/// Query this frame to find what frame it is in this Thread's</i></td></tr>
+<tr><th id="382">382</th><td><i class="doc">  /// StackFrameList, not counting inlined frames.</i></td></tr>
+<tr><th id="383">383</th><td><i class="doc">  ///</i></td></tr>
+<tr><th id="384">384</th><td><i class="doc">  /// <span class="command">\return</span></i></td></tr>
+<tr><th id="385">385</th><td><i class="doc">  ///   StackFrame index 0 indicates the currently-executing function.  Inline</i></td></tr>
+<tr><th id="386">386</th><td><i class="doc">  ///   frames are not included in this frame index count; their concrete</i></td></tr>
+<tr><th id="387">387</th><td><i class="doc">  ///   frame index will be the same as the concrete frame that they are</i></td></tr>
+<tr><th id="388">388</th><td><i class="doc">  ///   derived from.</i></td></tr>
+<tr><th id="389">389</th><td>  <a class="typedef" href="../../../../../include/bits/stdint-uintn.h.html#uint32_t" title='uint32_t' data-type='__uint32_t' data-ref="uint32_t" data-ref-filename="uint32_t">uint32_t</a> <dfn class="decl def fn" id="_ZNK12lldb_private10StackFrame21GetConcreteFrameIndexEv" title='lldb_private::StackFrame::GetConcreteFrameIndex' data-ref="_ZNK12lldb_private10StackFrame21GetConcreteFrameIndexEv" data-ref-filename="_ZNK12lldb_private10StackFrame21GetConcreteFrameIndexEv">GetConcreteFrameIndex</dfn>() <em>const</em> { <b>return</b> <a class="member field" href="#lldb_private::StackFrame::m_concrete_frame_index" title='lldb_private::StackFrame::m_concrete_frame_index' data-ref="lldb_private::StackFrame::m_concrete_frame_index" data-ref-filename="lldb_private..StackFrame..m_concrete_frame_index">m_concrete_frame_index</a>; }</td></tr>
+<tr><th id="390">390</th><td></td></tr>
+<tr><th id="391">391</th><td>  <i class="doc">/// Create a ValueObject for a given Variable in this StackFrame.</i></td></tr>
+<tr><th id="392">392</th><td><i class="doc">  ///</i></td></tr>
+<tr><th id="393">393</th><td><i class="doc">  /// <span class="command">\param</span>s [in] <span class="arg">variable_sp</span></i></td></tr>
+<tr><th id="394">394</th><td><i class="doc">  ///   The Variable to base this ValueObject on</i></td></tr>
+<tr><th id="395">395</th><td><i class="doc">  ///</i></td></tr>
+<tr><th id="396">396</th><td><i class="doc">  /// <span class="command">\param</span>s [in] <span class="arg">use_dynamic</span></i></td></tr>
+<tr><th id="397">397</th><td><i class="doc">  ///     Whether the correct dynamic type of the variable should be</i></td></tr>
+<tr><th id="398">398</th><td><i class="doc">  ///     determined before creating the ValueObject, or if the static type</i></td></tr>
+<tr><th id="399">399</th><td><i class="doc">  ///     is sufficient.  One of the DynamicValueType enumerated values.</i></td></tr>
+<tr><th id="400">400</th><td><i class="doc">  ///</i></td></tr>
+<tr><th id="401">401</th><td><i class="doc">  /// <span class="command">\return</span></i></td></tr>
+<tr><th id="402">402</th><td><i class="doc">  ///     A ValueObject for this variable.</i></td></tr>
+<tr><th id="403">403</th><td>  <span class="namespace">lldb::</span><a class="typedef" href="../lldb-forward.h.html#lldb::ValueObjectSP" title='lldb::ValueObjectSP' data-type='std::shared_ptr&lt;lldb_private::ValueObject&gt;' data-ref="lldb::ValueObjectSP" data-ref-filename="lldb..ValueObjectSP">ValueObjectSP</a></td></tr>
+<tr><th id="404">404</th><td>  <dfn class="decl fn" id="_ZN12lldb_private10StackFrame30GetValueObjectForFrameVariableERKSt10shared_ptrINS_8VariableEEN4lldb16DynamicValueTypeE" title='lldb_private::StackFrame::GetValueObjectForFrameVariable' data-ref="_ZN12lldb_private10StackFrame30GetValueObjectForFrameVariableERKSt10shared_ptrINS_8VariableEEN4lldb16DynamicValueTypeE" data-ref-filename="_ZN12lldb_private10StackFrame30GetValueObjectForFrameVariableERKSt10shared_ptrINS_8VariableEEN4lldb16DynamicValueTypeE">GetValueObjectForFrameVariable</dfn>(<em>const</em> <span class="namespace">lldb::</span><a class="typedef" href="../lldb-forward.h.html#lldb::VariableSP" title='lldb::VariableSP' data-type='std::shared_ptr&lt;lldb_private::Variable&gt;' data-ref="lldb::VariableSP" data-ref-filename="lldb..VariableSP">VariableSP</a> &amp;<dfn class="local col8 decl" id="438variable_sp" title='variable_sp' data-type='const lldb::VariableSP &amp;' data-ref="438variable_sp" data-ref-filename="438variable_sp">variable_sp</dfn>,</td></tr>
+<tr><th id="405">405</th><td>                                 <span class="namespace">lldb::</span><a class="type" href="../lldb-enumerations.h.html#lldb::DynamicValueType" title='lldb::DynamicValueType' data-ref="lldb::DynamicValueType" data-ref-filename="lldb..DynamicValueType">DynamicValueType</a> <dfn class="local col9 decl" id="439use_dynamic" title='use_dynamic' data-type='lldb::DynamicValueType' data-ref="439use_dynamic" data-ref-filename="439use_dynamic">use_dynamic</dfn>);</td></tr>
+<tr><th id="406">406</th><td></td></tr>
+<tr><th id="407">407</th><td>  <i class="doc">/// Add an arbitrary Variable object (e.g. one that specifics a global or</i></td></tr>
+<tr><th id="408">408</th><td><i class="doc">  /// static) to a StackFrame's list of ValueObjects.</i></td></tr>
+<tr><th id="409">409</th><td><i class="doc">  ///</i></td></tr>
+<tr><th id="410">410</th><td><i class="doc">  /// <span class="command">\param</span>s [in] <span class="arg">variable_sp</span></i></td></tr>
+<tr><th id="411">411</th><td><i class="doc">  ///   The Variable to base this ValueObject on</i></td></tr>
+<tr><th id="412">412</th><td><i class="doc">  ///</i></td></tr>
+<tr><th id="413">413</th><td><i class="doc">  /// <span class="command">\param</span>s [in] <span class="arg">use_dynamic</span></i></td></tr>
+<tr><th id="414">414</th><td><i class="doc">  ///     Whether the correct dynamic type of the variable should be</i></td></tr>
+<tr><th id="415">415</th><td><i class="doc">  ///     determined before creating the ValueObject, or if the static type</i></td></tr>
+<tr><th id="416">416</th><td><i class="doc">  ///     is sufficient.  One of the DynamicValueType enumerated values.</i></td></tr>
+<tr><th id="417">417</th><td><i class="doc">  ///</i></td></tr>
+<tr><th id="418">418</th><td><i class="doc">  /// <span class="command">\return</span></i></td></tr>
+<tr><th id="419">419</th><td><i class="doc">  ///     A ValueObject for this variable.</i></td></tr>
+<tr><th id="420">420</th><td>  <span class="namespace">lldb::</span><a class="typedef" href="../lldb-forward.h.html#lldb::ValueObjectSP" title='lldb::ValueObjectSP' data-type='std::shared_ptr&lt;lldb_private::ValueObject&gt;' data-ref="lldb::ValueObjectSP" data-ref-filename="lldb..ValueObjectSP">ValueObjectSP</a> <dfn class="decl fn" id="_ZN12lldb_private10StackFrame19TrackGlobalVariableERKSt10shared_ptrINS_8VariableEEN4lldb16DynamicValueTypeE" title='lldb_private::StackFrame::TrackGlobalVariable' data-ref="_ZN12lldb_private10StackFrame19TrackGlobalVariableERKSt10shared_ptrINS_8VariableEEN4lldb16DynamicValueTypeE" data-ref-filename="_ZN12lldb_private10StackFrame19TrackGlobalVariableERKSt10shared_ptrINS_8VariableEEN4lldb16DynamicValueTypeE">TrackGlobalVariable</dfn>(<em>const</em> <span class="namespace">lldb::</span><a class="typedef" href="../lldb-forward.h.html#lldb::VariableSP" title='lldb::VariableSP' data-type='std::shared_ptr&lt;lldb_private::Variable&gt;' data-ref="lldb::VariableSP" data-ref-filename="lldb..VariableSP">VariableSP</a> &amp;<dfn class="local col0 decl" id="440variable_sp" title='variable_sp' data-type='const lldb::VariableSP &amp;' data-ref="440variable_sp" data-ref-filename="440variable_sp">variable_sp</dfn>,</td></tr>
+<tr><th id="421">421</th><td>                                          <span class="namespace">lldb::</span><a class="type" href="../lldb-enumerations.h.html#lldb::DynamicValueType" title='lldb::DynamicValueType' data-ref="lldb::DynamicValueType" data-ref-filename="lldb..DynamicValueType">DynamicValueType</a> <dfn class="local col1 decl" id="441use_dynamic" title='use_dynamic' data-type='lldb::DynamicValueType' data-ref="441use_dynamic" data-ref-filename="441use_dynamic">use_dynamic</dfn>);</td></tr>
+<tr><th id="422">422</th><td></td></tr>
+<tr><th id="423">423</th><td>  <i class="doc">/// Query this frame to determine what the default language should be when</i></td></tr>
+<tr><th id="424">424</th><td><i class="doc">  /// parsing expressions given the execution context.</i></td></tr>
+<tr><th id="425">425</th><td><i class="doc">  ///</i></td></tr>
+<tr><th id="426">426</th><td><i class="doc">  /// <span class="command">\return</span></i></td></tr>
+<tr><th id="427">427</th><td><i class="doc">  ///   The language of the frame if known, else lldb::eLanguageTypeUnknown.</i></td></tr>
+<tr><th id="428">428</th><td>  <span class="namespace">lldb::</span><a class="type" href="../lldb-enumerations.h.html#lldb::LanguageType" title='lldb::LanguageType' data-ref="lldb::LanguageType" data-ref-filename="lldb..LanguageType">LanguageType</a> <dfn class="decl fn" id="_ZN12lldb_private10StackFrame11GetLanguageEv" title='lldb_private::StackFrame::GetLanguage' data-ref="_ZN12lldb_private10StackFrame11GetLanguageEv" data-ref-filename="_ZN12lldb_private10StackFrame11GetLanguageEv">GetLanguage</dfn>();</td></tr>
+<tr><th id="429">429</th><td></td></tr>
+<tr><th id="430">430</th><td>  <i>// similar to GetLanguage(), but is allowed to take a potentially incorrect</i></td></tr>
+<tr><th id="431">431</th><td><i>  // guess if exact information is not available</i></td></tr>
+<tr><th id="432">432</th><td>  <span class="namespace">lldb::</span><a class="type" href="../lldb-enumerations.h.html#lldb::LanguageType" title='lldb::LanguageType' data-ref="lldb::LanguageType" data-ref-filename="lldb..LanguageType">LanguageType</a> <dfn class="decl fn" id="_ZN12lldb_private10StackFrame13GuessLanguageEv" title='lldb_private::StackFrame::GuessLanguage' data-ref="_ZN12lldb_private10StackFrame13GuessLanguageEv" data-ref-filename="_ZN12lldb_private10StackFrame13GuessLanguageEv">GuessLanguage</dfn>();</td></tr>
+<tr><th id="433">433</th><td></td></tr>
+<tr><th id="434">434</th><td>  <i class="doc">/// Attempt to econstruct the ValueObject for a given raw address touched by</i></td></tr>
+<tr><th id="435">435</th><td><i class="doc">  /// the current instruction.  The ExpressionPath should indicate how to get</i></td></tr>
+<tr><th id="436">436</th><td><i class="doc">  /// to this value using "frame variable."</i></td></tr>
+<tr><th id="437">437</th><td><i class="doc">  ///</i></td></tr>
+<tr><th id="438">438</th><td><i class="doc">  /// <span class="command">\param</span>s [in] <span class="arg">addr</span></i></td></tr>
+<tr><th id="439">439</th><td><i class="doc">  ///   The raw address.</i></td></tr>
+<tr><th id="440">440</th><td><i class="doc">  ///</i></td></tr>
+<tr><th id="441">441</th><td><i class="doc">  /// <span class="command">\return</span></i></td></tr>
+<tr><th id="442">442</th><td><i class="doc">  ///   The ValueObject if found.  If valid, it has a valid ExpressionPath.</i></td></tr>
+<tr><th id="443">443</th><td>  <span class="namespace">lldb::</span><a class="typedef" href="../lldb-forward.h.html#lldb::ValueObjectSP" title='lldb::ValueObjectSP' data-type='std::shared_ptr&lt;lldb_private::ValueObject&gt;' data-ref="lldb::ValueObjectSP" data-ref-filename="lldb..ValueObjectSP">ValueObjectSP</a> <dfn class="decl fn" id="_ZN12lldb_private10StackFrame20GuessValueForAddressEm" title='lldb_private::StackFrame::GuessValueForAddress' data-ref="_ZN12lldb_private10StackFrame20GuessValueForAddressEm" data-ref-filename="_ZN12lldb_private10StackFrame20GuessValueForAddressEm">GuessValueForAddress</dfn>(<span class="namespace">lldb::</span><a class="typedef" href="../lldb-types.h.html#lldb::addr_t" title='lldb::addr_t' data-type='uint64_t' data-ref="lldb::addr_t" data-ref-filename="lldb..addr_t">addr_t</a> <dfn class="local col2 decl" id="442addr" title='addr' data-type='lldb::addr_t' data-ref="442addr" data-ref-filename="442addr">addr</dfn>);</td></tr>
+<tr><th id="444">444</th><td></td></tr>
+<tr><th id="445">445</th><td>  <i class="doc">/// Attempt to reconstruct the ValueObject for the address contained in a</i></td></tr>
+<tr><th id="446">446</th><td><i class="doc">  /// given register plus an offset.  The ExpressionPath should indicate how</i></td></tr>
+<tr><th id="447">447</th><td><i class="doc">  /// to get to this value using "frame variable."</i></td></tr>
+<tr><th id="448">448</th><td><i class="doc">  ///</i></td></tr>
+<tr><th id="449">449</th><td><i class="doc">  /// <span class="command">\param</span>s [in] <span class="arg">reg</span></i></td></tr>
+<tr><th id="450">450</th><td><i class="doc">  ///   The name of the register.</i></td></tr>
+<tr><th id="451">451</th><td><i class="doc">  ///</i></td></tr>
+<tr><th id="452">452</th><td><i class="doc">  /// <span class="command">\param</span>s [in] <span class="arg">offset</span></i></td></tr>
+<tr><th id="453">453</th><td><i class="doc">  ///   The offset from the register.  Particularly important for sp...</i></td></tr>
+<tr><th id="454">454</th><td><i class="doc">  ///</i></td></tr>
+<tr><th id="455">455</th><td><i class="doc">  /// <span class="command">\return</span></i></td></tr>
+<tr><th id="456">456</th><td><i class="doc">  ///   The ValueObject if found.  If valid, it has a valid ExpressionPath.</i></td></tr>
+<tr><th id="457">457</th><td>  <span class="namespace">lldb::</span><a class="typedef" href="../lldb-forward.h.html#lldb::ValueObjectSP" title='lldb::ValueObjectSP' data-type='std::shared_ptr&lt;lldb_private::ValueObject&gt;' data-ref="lldb::ValueObjectSP" data-ref-filename="lldb..ValueObjectSP">ValueObjectSP</a> <dfn class="decl fn" id="_ZN12lldb_private10StackFrame30GuessValueForRegisterAndOffsetENS_11ConstStringEl" title='lldb_private::StackFrame::GuessValueForRegisterAndOffset' data-ref="_ZN12lldb_private10StackFrame30GuessValueForRegisterAndOffsetENS_11ConstStringEl" data-ref-filename="_ZN12lldb_private10StackFrame30GuessValueForRegisterAndOffsetENS_11ConstStringEl">GuessValueForRegisterAndOffset</dfn>(<a class="type" href="../Utility/ConstString.h.html#lldb_private::ConstString" title='lldb_private::ConstString' data-ref="lldb_private::ConstString" data-ref-filename="lldb_private..ConstString">ConstString</a> <dfn class="local col3 decl" id="443reg" title='reg' data-type='lldb_private::ConstString' data-ref="443reg" data-ref-filename="443reg">reg</dfn>,</td></tr>
+<tr><th id="458">458</th><td>                                                     <a class="typedef" href="../../../../../include/bits/stdint-intn.h.html#int64_t" title='int64_t' data-type='__int64_t' data-ref="int64_t" data-ref-filename="int64_t">int64_t</a> <dfn class="local col4 decl" id="444offset" title='offset' data-type='int64_t' data-ref="444offset" data-ref-filename="444offset">offset</dfn>);</td></tr>
+<tr><th id="459">459</th><td></td></tr>
+<tr><th id="460">460</th><td>  <i class="doc">/// Attempt to reconstruct the ValueObject for a variable with a given<span class="command"> \a</span> <span class="arg">name</span></i></td></tr>
+<tr><th id="461">461</th><td><i class="doc">  /// from within the current StackFrame, within the current block. The search</i></td></tr>
+<tr><th id="462">462</th><td><i class="doc">  /// for the variable starts in the deepest block corresponding to the current</i></td></tr>
+<tr><th id="463">463</th><td><i class="doc">  /// PC in the stack frame and traverse through all parent blocks stopping at</i></td></tr>
+<tr><th id="464">464</th><td><i class="doc">  /// inlined function boundaries.</i></td></tr>
+<tr><th id="465">465</th><td><i class="doc">  ///</i></td></tr>
+<tr><th id="466">466</th><td><i class="doc">  /// <span class="command">\param</span>s [in] <span class="arg">name</span></i></td></tr>
+<tr><th id="467">467</th><td><i class="doc">  ///   The name of the variable.</i></td></tr>
+<tr><th id="468">468</th><td><i class="doc">  ///</i></td></tr>
+<tr><th id="469">469</th><td><i class="doc">  /// <span class="command">\return</span></i></td></tr>
+<tr><th id="470">470</th><td><i class="doc">  ///   The ValueObject if found.</i></td></tr>
+<tr><th id="471">471</th><td>  <span class="namespace">lldb::</span><a class="typedef" href="../lldb-forward.h.html#lldb::ValueObjectSP" title='lldb::ValueObjectSP' data-type='std::shared_ptr&lt;lldb_private::ValueObject&gt;' data-ref="lldb::ValueObjectSP" data-ref-filename="lldb..ValueObjectSP">ValueObjectSP</a> <dfn class="decl fn" id="_ZN12lldb_private10StackFrame12FindVariableENS_11ConstStringE" title='lldb_private::StackFrame::FindVariable' data-ref="_ZN12lldb_private10StackFrame12FindVariableENS_11ConstStringE" data-ref-filename="_ZN12lldb_private10StackFrame12FindVariableENS_11ConstStringE">FindVariable</dfn>(<a class="type" href="../Utility/ConstString.h.html#lldb_private::ConstString" title='lldb_private::ConstString' data-ref="lldb_private::ConstString" data-ref-filename="lldb_private..ConstString">ConstString</a> <dfn class="local col5 decl" id="445name" title='name' data-type='lldb_private::ConstString' data-ref="445name" data-ref-filename="445name">name</dfn>);</td></tr>
+<tr><th id="472">472</th><td></td></tr>
+<tr><th id="473">473</th><td>  <i>// lldb::ExecutionContextScope pure virtual functions</i></td></tr>
+<tr><th id="474">474</th><td>  <span class="namespace">lldb::</span><a class="typedef" href="../lldb-forward.h.html#lldb::TargetSP" title='lldb::TargetSP' data-type='std::shared_ptr&lt;lldb_private::Target&gt;' data-ref="lldb::TargetSP" data-ref-filename="lldb..TargetSP">TargetSP</a> <dfn class="virtual decl fn" id="_ZN12lldb_private10StackFrame15CalculateTargetEv" title='lldb_private::StackFrame::CalculateTarget' data-ref="_ZN12lldb_private10StackFrame15CalculateTargetEv" data-ref-filename="_ZN12lldb_private10StackFrame15CalculateTargetEv">CalculateTarget</dfn>() override;</td></tr>
+<tr><th id="475">475</th><td></td></tr>
+<tr><th id="476">476</th><td>  <span class="namespace">lldb::</span><a class="typedef" href="../lldb-forward.h.html#lldb::ProcessSP" title='lldb::ProcessSP' data-type='std::shared_ptr&lt;lldb_private::Process&gt;' data-ref="lldb::ProcessSP" data-ref-filename="lldb..ProcessSP">ProcessSP</a> <dfn class="virtual decl fn" id="_ZN12lldb_private10StackFrame16CalculateProcessEv" title='lldb_private::StackFrame::CalculateProcess' data-ref="_ZN12lldb_private10StackFrame16CalculateProcessEv" data-ref-filename="_ZN12lldb_private10StackFrame16CalculateProcessEv">CalculateProcess</dfn>() override;</td></tr>
+<tr><th id="477">477</th><td></td></tr>
+<tr><th id="478">478</th><td>  <span class="namespace">lldb::</span><a class="typedef" href="../lldb-forward.h.html#lldb::ThreadSP" title='lldb::ThreadSP' data-type='std::shared_ptr&lt;lldb_private::Thread&gt;' data-ref="lldb::ThreadSP" data-ref-filename="lldb..ThreadSP">ThreadSP</a> <dfn class="virtual decl fn" id="_ZN12lldb_private10StackFrame15CalculateThreadEv" title='lldb_private::StackFrame::CalculateThread' data-ref="_ZN12lldb_private10StackFrame15CalculateThreadEv" data-ref-filename="_ZN12lldb_private10StackFrame15CalculateThreadEv">CalculateThread</dfn>() override;</td></tr>
+<tr><th id="479">479</th><td></td></tr>
+<tr><th id="480">480</th><td>  <span class="namespace">lldb::</span><a class="typedef" href="../lldb-forward.h.html#lldb::StackFrameSP" title='lldb::StackFrameSP' data-type='std::shared_ptr&lt;lldb_private::StackFrame&gt;' data-ref="lldb::StackFrameSP" data-ref-filename="lldb..StackFrameSP">StackFrameSP</a> <dfn class="virtual decl fn" id="_ZN12lldb_private10StackFrame19CalculateStackFrameEv" title='lldb_private::StackFrame::CalculateStackFrame' data-ref="_ZN12lldb_private10StackFrame19CalculateStackFrameEv" data-ref-filename="_ZN12lldb_private10StackFrame19CalculateStackFrameEv">CalculateStackFrame</dfn>() override;</td></tr>
+<tr><th id="481">481</th><td></td></tr>
+<tr><th id="482">482</th><td>  <em>void</em> <dfn class="virtual decl fn" id="_ZN12lldb_private10StackFrame25CalculateExecutionContextERNS_16ExecutionContextE" title='lldb_private::StackFrame::CalculateExecutionContext' data-ref="_ZN12lldb_private10StackFrame25CalculateExecutionContextERNS_16ExecutionContextE" data-ref-filename="_ZN12lldb_private10StackFrame25CalculateExecutionContextERNS_16ExecutionContextE">CalculateExecutionContext</dfn>(<a class="type" href="ExecutionContext.h.html#lldb_private::ExecutionContext" title='lldb_private::ExecutionContext' data-ref="lldb_private::ExecutionContext" data-ref-filename="lldb_private..ExecutionContext">ExecutionContext</a> &amp;<dfn class="local col6 decl" id="446exe_ctx" title='exe_ctx' data-type='lldb_private::ExecutionContext &amp;' data-ref="446exe_ctx" data-ref-filename="446exe_ctx">exe_ctx</dfn>) override;</td></tr>
+<tr><th id="483">483</th><td></td></tr>
+<tr><th id="484">484</th><td>  <span class="namespace">lldb::</span><a class="typedef" href="../lldb-forward.h.html#lldb::RecognizedStackFrameSP" title='lldb::RecognizedStackFrameSP' data-type='std::shared_ptr&lt;lldb_private::RecognizedStackFrame&gt;' data-ref="lldb::RecognizedStackFrameSP" data-ref-filename="lldb..RecognizedStackFrameSP">RecognizedStackFrameSP</a> <dfn class="decl fn" id="_ZN12lldb_private10StackFrame18GetRecognizedFrameEv" title='lldb_private::StackFrame::GetRecognizedFrame' data-ref="_ZN12lldb_private10StackFrame18GetRecognizedFrameEv" data-ref-filename="_ZN12lldb_private10StackFrame18GetRecognizedFrameEv">GetRecognizedFrame</dfn>();</td></tr>
+<tr><th id="485">485</th><td></td></tr>
+<tr><th id="486">486</th><td><b>protected</b>:</td></tr>
+<tr><th id="487">487</th><td>  <b>friend</b> <b>class</b> <a class="type" href="StackFrameList.h.html#lldb_private::StackFrameList" title='lldb_private::StackFrameList' data-ref="lldb_private::StackFrameList" data-ref-filename="lldb_private..StackFrameList">StackFrameList</a>;</td></tr>
+<tr><th id="488">488</th><td></td></tr>
+<tr><th id="489">489</th><td>  <em>void</em> <dfn class="decl fn" id="_ZN12lldb_private10StackFrame21SetSymbolContextScopeEPNS_18SymbolContextScopeE" title='lldb_private::StackFrame::SetSymbolContextScope' data-ref="_ZN12lldb_private10StackFrame21SetSymbolContextScopeEPNS_18SymbolContextScopeE" data-ref-filename="_ZN12lldb_private10StackFrame21SetSymbolContextScopeEPNS_18SymbolContextScopeE">SetSymbolContextScope</dfn>(<a class="type" href="../Symbol/SymbolContextScope.h.html#lldb_private::SymbolContextScope" title='lldb_private::SymbolContextScope' data-ref="lldb_private::SymbolContextScope" data-ref-filename="lldb_private..SymbolContextScope">SymbolContextScope</a> *<dfn class="local col7 decl" id="447symbol_scope" title='symbol_scope' data-type='lldb_private::SymbolContextScope *' data-ref="447symbol_scope" data-ref-filename="447symbol_scope">symbol_scope</dfn>);</td></tr>
+<tr><th id="490">490</th><td></td></tr>
+<tr><th id="491">491</th><td>  <em>void</em> <dfn class="decl fn" id="_ZN12lldb_private10StackFrame35UpdateCurrentFrameFromPreviousFrameERS0_" title='lldb_private::StackFrame::UpdateCurrentFrameFromPreviousFrame' data-ref="_ZN12lldb_private10StackFrame35UpdateCurrentFrameFromPreviousFrameERS0_" data-ref-filename="_ZN12lldb_private10StackFrame35UpdateCurrentFrameFromPreviousFrameERS0_">UpdateCurrentFrameFromPreviousFrame</dfn>(<a class="type" href="#lldb_private::StackFrame" title='lldb_private::StackFrame' data-ref="lldb_private::StackFrame" data-ref-filename="lldb_private..StackFrame">StackFrame</a> &amp;<dfn class="local col8 decl" id="448prev_frame" title='prev_frame' data-type='lldb_private::StackFrame &amp;' data-ref="448prev_frame" data-ref-filename="448prev_frame">prev_frame</dfn>);</td></tr>
+<tr><th id="492">492</th><td></td></tr>
+<tr><th id="493">493</th><td>  <em>void</em> <dfn class="decl fn" id="_ZN12lldb_private10StackFrame35UpdatePreviousFrameFromCurrentFrameERS0_" title='lldb_private::StackFrame::UpdatePreviousFrameFromCurrentFrame' data-ref="_ZN12lldb_private10StackFrame35UpdatePreviousFrameFromCurrentFrameERS0_" data-ref-filename="_ZN12lldb_private10StackFrame35UpdatePreviousFrameFromCurrentFrameERS0_">UpdatePreviousFrameFromCurrentFrame</dfn>(<a class="type" href="#lldb_private::StackFrame" title='lldb_private::StackFrame' data-ref="lldb_private::StackFrame" data-ref-filename="lldb_private..StackFrame">StackFrame</a> &amp;<dfn class="local col9 decl" id="449curr_frame" title='curr_frame' data-type='lldb_private::StackFrame &amp;' data-ref="449curr_frame" data-ref-filename="449curr_frame">curr_frame</dfn>);</td></tr>
+<tr><th id="494">494</th><td></td></tr>
+<tr><th id="495">495</th><td>  <em>bool</em> <dfn class="decl fn" id="_ZNK12lldb_private10StackFrame13HasCachedDataEv" title='lldb_private::StackFrame::HasCachedData' data-ref="_ZNK12lldb_private10StackFrame13HasCachedDataEv" data-ref-filename="_ZNK12lldb_private10StackFrame13HasCachedDataEv">HasCachedData</dfn>() <em>const</em>;</td></tr>
+<tr><th id="496">496</th><td></td></tr>
+<tr><th id="497">497</th><td><b>private</b>:</td></tr>
+<tr><th id="498">498</th><td>  <i>// For StackFrame only</i></td></tr>
+<tr><th id="499">499</th><td>  <span class="namespace">lldb::</span><a class="typedef" href="../lldb-forward.h.html#lldb::ThreadWP" title='lldb::ThreadWP' data-type='std::weak_ptr&lt;lldb_private::Thread&gt;' data-ref="lldb::ThreadWP" data-ref-filename="lldb..ThreadWP">ThreadWP</a> <dfn class="decl field" id="lldb_private::StackFrame::m_thread_wp" title='lldb_private::StackFrame::m_thread_wp' data-ref="lldb_private::StackFrame::m_thread_wp" data-ref-filename="lldb_private..StackFrame..m_thread_wp">m_thread_wp</dfn>;</td></tr>
+<tr><th id="500">500</th><td>  <a class="typedef" href="../../../../../include/bits/stdint-uintn.h.html#uint32_t" title='uint32_t' data-type='__uint32_t' data-ref="uint32_t" data-ref-filename="uint32_t">uint32_t</a> <dfn class="decl field" id="lldb_private::StackFrame::m_frame_index" title='lldb_private::StackFrame::m_frame_index' data-ref="lldb_private::StackFrame::m_frame_index" data-ref-filename="lldb_private..StackFrame..m_frame_index">m_frame_index</dfn>;</td></tr>
+<tr><th id="501">501</th><td>  <a class="typedef" href="../../../../../include/bits/stdint-uintn.h.html#uint32_t" title='uint32_t' data-type='__uint32_t' data-ref="uint32_t" data-ref-filename="uint32_t">uint32_t</a> <dfn class="decl field" id="lldb_private::StackFrame::m_concrete_frame_index" title='lldb_private::StackFrame::m_concrete_frame_index' data-ref="lldb_private::StackFrame::m_concrete_frame_index" data-ref-filename="lldb_private..StackFrame..m_concrete_frame_index">m_concrete_frame_index</dfn>;</td></tr>
+<tr><th id="502">502</th><td>  <span class="namespace">lldb::</span><a class="typedef" href="../lldb-forward.h.html#lldb::RegisterContextSP" title='lldb::RegisterContextSP' data-type='std::shared_ptr&lt;lldb_private::RegisterContext&gt;' data-ref="lldb::RegisterContextSP" data-ref-filename="lldb..RegisterContextSP">RegisterContextSP</a> <dfn class="decl field" id="lldb_private::StackFrame::m_reg_context_sp" title='lldb_private::StackFrame::m_reg_context_sp' data-ref="lldb_private::StackFrame::m_reg_context_sp" data-ref-filename="lldb_private..StackFrame..m_reg_context_sp">m_reg_context_sp</dfn>;</td></tr>
+<tr><th id="503">503</th><td>  <a class="type" href="StackID.h.html#lldb_private::StackID" title='lldb_private::StackID' data-ref="lldb_private::StackID" data-ref-filename="lldb_private..StackID">StackID</a> <dfn class="decl field" id="lldb_private::StackFrame::m_id" title='lldb_private::StackFrame::m_id' data-ref="lldb_private::StackFrame::m_id" data-ref-filename="lldb_private..StackFrame..m_id">m_id</dfn>;</td></tr>
+<tr><th id="504">504</th><td>  <a class="type" href="../Core/Address.h.html#lldb_private::Address" title='lldb_private::Address' data-ref="lldb_private::Address" data-ref-filename="lldb_private..Address">Address</a> <dfn class="decl field" id="lldb_private::StackFrame::m_frame_code_addr" title='lldb_private::StackFrame::m_frame_code_addr' data-ref="lldb_private::StackFrame::m_frame_code_addr" data-ref-filename="lldb_private..StackFrame..m_frame_code_addr">m_frame_code_addr</dfn>; <i>// The frame code address (might not be the same as</i></td></tr>
+<tr><th id="505">505</th><td>                             <i>// the actual PC for inlined frames) as a</i></td></tr>
+<tr><th id="506">506</th><td><i>                             // section/offset address</i></td></tr>
+<tr><th id="507">507</th><td>  <a class="type" href="../Symbol/SymbolContext.h.html#lldb_private::SymbolContext" title='lldb_private::SymbolContext' data-ref="lldb_private::SymbolContext" data-ref-filename="lldb_private..SymbolContext">SymbolContext</a> <dfn class="decl field" id="lldb_private::StackFrame::m_sc" title='lldb_private::StackFrame::m_sc' data-ref="lldb_private::StackFrame::m_sc" data-ref-filename="lldb_private..StackFrame..m_sc">m_sc</dfn>;</td></tr>
+<tr><th id="508">508</th><td>  <a class="type" href="../Utility/Flags.h.html#lldb_private::Flags" title='lldb_private::Flags' data-ref="lldb_private::Flags" data-ref-filename="lldb_private..Flags">Flags</a> <dfn class="decl field" id="lldb_private::StackFrame::m_flags" title='lldb_private::StackFrame::m_flags' data-ref="lldb_private::StackFrame::m_flags" data-ref-filename="lldb_private..StackFrame..m_flags">m_flags</dfn>;</td></tr>
+<tr><th id="509">509</th><td>  <a class="type" href="../Utility/Scalar.h.html#lldb_private::Scalar" title='lldb_private::Scalar' data-ref="lldb_private::Scalar" data-ref-filename="lldb_private..Scalar">Scalar</a> <dfn class="decl field" id="lldb_private::StackFrame::m_frame_base" title='lldb_private::StackFrame::m_frame_base' data-ref="lldb_private::StackFrame::m_frame_base" data-ref-filename="lldb_private..StackFrame..m_frame_base">m_frame_base</dfn>;</td></tr>
+<tr><th id="510">510</th><td>  <a class="type" href="../Utility/Status.h.html#lldb_private::Status" title='lldb_private::Status' data-ref="lldb_private::Status" data-ref-filename="lldb_private..Status">Status</a> <dfn class="decl field" id="lldb_private::StackFrame::m_frame_base_error" title='lldb_private::StackFrame::m_frame_base_error' data-ref="lldb_private::StackFrame::m_frame_base_error" data-ref-filename="lldb_private..StackFrame..m_frame_base_error">m_frame_base_error</dfn>;</td></tr>
+<tr><th id="511">511</th><td>  <em>bool</em> <dfn class="decl field" id="lldb_private::StackFrame::m_cfa_is_valid" title='lldb_private::StackFrame::m_cfa_is_valid' data-ref="lldb_private::StackFrame::m_cfa_is_valid" data-ref-filename="lldb_private..StackFrame..m_cfa_is_valid">m_cfa_is_valid</dfn>; <i>// Does this frame have a CFA?  Different from CFA ==</i></td></tr>
+<tr><th id="512">512</th><td>                       <i>// LLDB_INVALID_ADDRESS</i></td></tr>
+<tr><th id="513">513</th><td>  <a class="type" href="#lldb_private::StackFrame::Kind" title='lldb_private::StackFrame::Kind' data-ref="lldb_private::StackFrame::Kind" data-ref-filename="lldb_private..StackFrame..Kind">Kind</a> <dfn class="decl field" id="lldb_private::StackFrame::m_stack_frame_kind" title='lldb_private::StackFrame::m_stack_frame_kind' data-ref="lldb_private::StackFrame::m_stack_frame_kind" data-ref-filename="lldb_private..StackFrame..m_stack_frame_kind">m_stack_frame_kind</dfn>;</td></tr>
+<tr><th id="514">514</th><td></td></tr>
+<tr><th id="515">515</th><td>  <i>// Whether this frame behaves like the zeroth frame, in the sense</i></td></tr>
+<tr><th id="516">516</th><td><i>  // that its pc value might not immediately follow a call (and thus might</i></td></tr>
+<tr><th id="517">517</th><td><i>  // be the first address of its function). True for actual frame zero as</i></td></tr>
+<tr><th id="518">518</th><td><i>  // well as any other frame with the same trait.</i></td></tr>
+<tr><th id="519">519</th><td>  <em>bool</em> <dfn class="decl field" id="lldb_private::StackFrame::m_behaves_like_zeroth_frame" title='lldb_private::StackFrame::m_behaves_like_zeroth_frame' data-ref="lldb_private::StackFrame::m_behaves_like_zeroth_frame" data-ref-filename="lldb_private..StackFrame..m_behaves_like_zeroth_frame">m_behaves_like_zeroth_frame</dfn>;</td></tr>
+<tr><th id="520">520</th><td>  <span class="namespace">lldb::</span><a class="typedef" href="../lldb-forward.h.html#lldb::VariableListSP" title='lldb::VariableListSP' data-type='std::shared_ptr&lt;lldb_private::VariableList&gt;' data-ref="lldb::VariableListSP" data-ref-filename="lldb..VariableListSP">VariableListSP</a> <dfn class="decl field" id="lldb_private::StackFrame::m_variable_list_sp" title='lldb_private::StackFrame::m_variable_list_sp' data-ref="lldb_private::StackFrame::m_variable_list_sp" data-ref-filename="lldb_private..StackFrame..m_variable_list_sp">m_variable_list_sp</dfn>;</td></tr>
+<tr><th id="521">521</th><td>  <a class="type" href="../Core/ValueObjectList.h.html#lldb_private::ValueObjectList" title='lldb_private::ValueObjectList' data-ref="lldb_private::ValueObjectList" data-ref-filename="lldb_private..ValueObjectList">ValueObjectList</a> <dfn class="decl field" id="lldb_private::StackFrame::m_variable_list_value_objects" title='lldb_private::StackFrame::m_variable_list_value_objects' data-ref="lldb_private::StackFrame::m_variable_list_value_objects" data-ref-filename="lldb_private..StackFrame..m_variable_list_value_objects">m_variable_list_value_objects</dfn>; <i>// Value objects for each</i></td></tr>
+<tr><th id="522">522</th><td>                                                 <i>// variable in</i></td></tr>
+<tr><th id="523">523</th><td><i>                                                 // m_variable_list_sp</i></td></tr>
+<tr><th id="524">524</th><td>  <span class="namespace">lldb::</span><a class="typedef" href="../lldb-forward.h.html#lldb::RecognizedStackFrameSP" title='lldb::RecognizedStackFrameSP' data-type='std::shared_ptr&lt;lldb_private::RecognizedStackFrame&gt;' data-ref="lldb::RecognizedStackFrameSP" data-ref-filename="lldb..RecognizedStackFrameSP">RecognizedStackFrameSP</a> <dfn class="decl field" id="lldb_private::StackFrame::m_recognized_frame_sp" title='lldb_private::StackFrame::m_recognized_frame_sp' data-ref="lldb_private::StackFrame::m_recognized_frame_sp" data-ref-filename="lldb_private..StackFrame..m_recognized_frame_sp">m_recognized_frame_sp</dfn>;</td></tr>
+<tr><th id="525">525</th><td>  <a class="type" href="../Utility/StreamString.h.html#lldb_private::StreamString" title='lldb_private::StreamString' data-ref="lldb_private::StreamString" data-ref-filename="lldb_private..StreamString">StreamString</a> <dfn class="decl field" id="lldb_private::StackFrame::m_disassembly" title='lldb_private::StackFrame::m_disassembly' data-ref="lldb_private::StackFrame::m_disassembly" data-ref-filename="lldb_private..StackFrame..m_disassembly">m_disassembly</dfn>;</td></tr>
+<tr><th id="526">526</th><td>  <span class="namespace">std::</span><span class='type' title='std::recursive_mutex' data-ref="std::recursive_mutex" data-ref-filename="std..recursive_mutex">recursive_mutex</span> <dfn class="decl field" id="lldb_private::StackFrame::m_mutex" title='lldb_private::StackFrame::m_mutex' data-ref="lldb_private::StackFrame::m_mutex" data-ref-filename="lldb_private..StackFrame..m_mutex">m_mutex</dfn>;</td></tr>
+<tr><th id="527">527</th><td></td></tr>
+<tr><th id="528">528</th><td>  <dfn class="decl def fn" id="_ZN12lldb_private10StackFrameC1ERKS0_" title='lldb_private::StackFrame::StackFrame' data-ref="_ZN12lldb_private10StackFrameC1ERKS0_" data-ref-filename="_ZN12lldb_private10StackFrameC1ERKS0_">StackFrame</dfn>(<em>const</em> <a class="type" href="#lldb_private::StackFrame" title='lldb_private::StackFrame' data-ref="lldb_private::StackFrame" data-ref-filename="lldb_private..StackFrame">StackFrame</a> &amp;) = <b>delete</b>;</td></tr>
+<tr><th id="529">529</th><td>  <em>const</em> <a class="type" href="#lldb_private::StackFrame" title='lldb_private::StackFrame' data-ref="lldb_private::StackFrame" data-ref-filename="lldb_private..StackFrame">StackFrame</a> &amp;<dfn class="decl def fn" id="_ZN12lldb_private10StackFrameaSERKS0_" title='lldb_private::StackFrame::operator=' data-ref="_ZN12lldb_private10StackFrameaSERKS0_" data-ref-filename="_ZN12lldb_private10StackFrameaSERKS0_"><b>operator</b>=</dfn>(<em>const</em> <a class="type" href="#lldb_private::StackFrame" title='lldb_private::StackFrame' data-ref="lldb_private::StackFrame" data-ref-filename="lldb_private..StackFrame">StackFrame</a> &amp;) = <b>delete</b>;</td></tr>
+<tr><th id="530">530</th><td>};</td></tr>
+<tr><th id="531">531</th><td></td></tr>
+<tr><th id="532">532</th><td>} <i>// namespace lldb_private</i></td></tr>
+<tr><th id="533">533</th><td></td></tr>
+<tr><th id="534">534</th><td><u>#<span data-ppcond="9">endif</span> // LLDB_TARGET_STACKFRAME_H</u></td></tr>
+<tr><th id="535">535</th><td></td></tr>
+</table><hr/><p id='footer'>
+Generated while processing <a href='../../../source/API/SBAttachInfo.cpp.html'>llvm/lldb/source/API/SBAttachInfo.cpp</a><br/>Generated on <em>2021-Jul-01</em> from project llvm revision <em>12</em>

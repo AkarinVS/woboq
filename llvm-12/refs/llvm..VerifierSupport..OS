@@ -1,0 +1,26 @@
+<dec f='llvm/llvm/lib/IR/Verifier.cpp' l='126' type='llvm::raw_ostream *'/>
+<use f='llvm/llvm/lib/IR/Verifier.cpp' l='141' u='w' c='_ZN4llvm15VerifierSupportC1EPNS_11raw_ostreamERKNS_6ModuleE'/>
+<use f='llvm/llvm/lib/IR/Verifier.cpp' l='146' u='r' c='_ZN4llvm15VerifierSupport5WriteEPKNS_6ModuleE'/>
+<use f='llvm/llvm/lib/IR/Verifier.cpp' l='156' u='r' c='_ZN4llvm15VerifierSupport5WriteERKNS_5ValueE'/>
+<use f='llvm/llvm/lib/IR/Verifier.cpp' l='157' u='r' c='_ZN4llvm15VerifierSupport5WriteERKNS_5ValueE'/>
+<use f='llvm/llvm/lib/IR/Verifier.cpp' l='159' u='r' c='_ZN4llvm15VerifierSupport5WriteERKNS_5ValueE'/>
+<use f='llvm/llvm/lib/IR/Verifier.cpp' l='160' u='r' c='_ZN4llvm15VerifierSupport5WriteERKNS_5ValueE'/>
+<use f='llvm/llvm/lib/IR/Verifier.cpp' l='167' u='r' c='_ZN4llvm15VerifierSupport5WriteEPKNS_8MetadataE'/>
+<use f='llvm/llvm/lib/IR/Verifier.cpp' l='168' u='r' c='_ZN4llvm15VerifierSupport5WriteEPKNS_8MetadataE'/>
+<use f='llvm/llvm/lib/IR/Verifier.cpp' l='178' u='r' c='_ZN4llvm15VerifierSupport5WriteEPKNS_11NamedMDNodeE'/>
+<use f='llvm/llvm/lib/IR/Verifier.cpp' l='179' u='r' c='_ZN4llvm15VerifierSupport5WriteEPKNS_11NamedMDNodeE'/>
+<use f='llvm/llvm/lib/IR/Verifier.cpp' l='185' u='r' c='_ZN4llvm15VerifierSupport5WriteEPNS_4TypeE'/>
+<use f='llvm/llvm/lib/IR/Verifier.cpp' l='191' u='r' c='_ZN4llvm15VerifierSupport5WriteEPKNS_6ComdatE'/>
+<use f='llvm/llvm/lib/IR/Verifier.cpp' l='197' u='r' c='_ZN4llvm15VerifierSupport5WriteEPKNS_5APIntE'/>
+<use f='llvm/llvm/lib/IR/Verifier.cpp' l='200' u='r' c='_ZN4llvm15VerifierSupport5WriteEj'/>
+<use f='llvm/llvm/lib/IR/Verifier.cpp' l='221' u='r' c='_ZN4llvm15VerifierSupport11CheckFailedERKNS_5TwineE'/>
+<use f='llvm/llvm/lib/IR/Verifier.cpp' l='222' u='r' c='_ZN4llvm15VerifierSupport11CheckFailedERKNS_5TwineE'/>
+<use f='llvm/llvm/lib/IR/Verifier.cpp' l='233' u='r' c='_ZN4llvm15VerifierSupport11CheckFailedERKNS_5TwineERKT_DpRKT0_'/>
+<use f='llvm/llvm/lib/IR/Verifier.cpp' l='239' u='r' c='_ZN4llvm15VerifierSupport20DebugInfoCheckFailedERKNS_5TwineE'/>
+<use f='llvm/llvm/lib/IR/Verifier.cpp' l='240' u='r' c='_ZN4llvm15VerifierSupport20DebugInfoCheckFailedERKNS_5TwineE'/>
+<use f='llvm/llvm/lib/IR/Verifier.cpp' l='250' u='r' c='_ZN4llvm15VerifierSupport20DebugInfoCheckFailedERKNS_5TwineERKT_DpRKT0_'/>
+<use f='llvm/llvm/lib/IR/Verifier.cpp' l='352' u='r' c='_ZN12_GLOBAL__N_18Verifier6verifyERKN4llvm8FunctionE'/>
+<use f='llvm/llvm/lib/IR/Verifier.cpp' l='353' u='r' c='_ZN12_GLOBAL__N_18Verifier6verifyERKN4llvm8FunctionE'/>
+<use f='llvm/llvm/lib/IR/Verifier.cpp' l='355' u='r' c='_ZN12_GLOBAL__N_18Verifier6verifyERKN4llvm8FunctionE'/>
+<use f='llvm/llvm/lib/IR/Verifier.cpp' l='356' u='r' c='_ZN12_GLOBAL__N_18Verifier6verifyERKN4llvm8FunctionE'/>
+<offset>0</offset>

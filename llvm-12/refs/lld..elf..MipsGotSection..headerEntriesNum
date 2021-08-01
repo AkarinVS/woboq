@@ -1,0 +1,93 @@
+<dec f='llvm/lld/ELF/SyntheticSections.h' l='325' type='const unsigned int'/>
+<doc f='llvm/lld/ELF/SyntheticSections.h' l='238'>// MIPS GOT consists of three parts: local, global and tls. Each part
+  // contains different types of entries. Here is a layout of GOT:
+  // - Header entries                |
+  // - Page entries                  |   Local part
+  // - Local entries (16-bit access) |
+  // - Local entries (32-bit access) |
+  // - Normal global entries         ||  Global part
+  // - Reloc-only global entries     ||
+  // - TLS entries                   ||| TLS part
+  //
+  // Header:
+  //   Two entries hold predefined value 0x0 and 0x80000000.
+  // Page entries:
+  //   These entries created by R_MIPS_GOT_PAGE relocation and R_MIPS_GOT16
+  //   relocation against local symbols. They are initialized by higher 16-bit
+  //   of the corresponding symbol&apos;s value. So each 64kb of address space
+  //   requires a single GOT entry.
+  // Local entries (16-bit access):
+  //   These entries created by GOT relocations against global non-preemptible
+  //   symbols so dynamic linker is not necessary to resolve the symbol&apos;s
+  //   values. &quot;16-bit access&quot; means that corresponding relocations address
+  //   GOT using 16-bit index. Each unique Symbol-Addend pair has its own
+  //   GOT entry.
+  // Local entries (32-bit access):
+  //   These entries are the same as above but created by relocations which
+  //   address GOT using 32-bit index (R_MIPS_GOT_HI16/LO16 etc).
+  // Normal global entries:
+  //   These entries created by GOT relocations against preemptible global
+  //   symbols. They need to be initialized by dynamic linker and they ordered
+  //   exactly as the corresponding entries in the dynamic symbols table.
+  // Reloc-only global entries:
+  //   These entries created for symbols that are referenced by dynamic
+  //   relocations R_MIPS_REL32. These entries are not accessed with gp-relative
+  //   addressing, but MIPS ABI requires that these entries be present in GOT.
+  // TLS entries:
+  //   Entries created by TLS relocations.
+  //
+  // If the sum of local, global and tls entries is less than 64K only single
+  // got is enough. Otherwise, multi-got is created. Series of primary and
+  // multiple secondary GOTs have the following layout:
+  // - Primary GOT
+  //     Header
+  //     Local entries
+  //     Global entries
+  //     Relocation only entries
+  //     TLS entries
+  //
+  // - Secondary GOT
+  //     Local entries
+  //     Global entries
+  //     TLS entries
+  // ...
+  //
+  // All GOT entries required by relocations from a single input file entirely
+  // belong to either primary or one of secondary GOTs. To reference GOT entries
+  // each GOT has its own _gp value points to the &quot;middle&quot; of the GOT.
+  // In the code this value loaded to the register which is used for GOT access.
+  //
+  // MIPS 32 function&apos;s prologue:
+  //   lui     v0,0x0
+  //   0: R_MIPS_HI16  _gp_disp
+  //   addiu   v0,v0,0
+  //   4: R_MIPS_LO16  _gp_disp
+  //
+  // MIPS 64:
+  //   lui     at,0x0
+  //   14: R_MIPS_GPREL16  main
+  //
+  // Dynamic linker does not know anything about secondary GOTs and cannot
+  // use a regular MIPS mechanism for GOT entries initialization. So we have
+  // to use an approach accepted by other architectures and create dynamic
+  // relocations R_MIPS_REL32 to initialize global entries (and local in case
+  // of PIC code) in secondary GOTs. But ironically MIPS dynamic linker
+  // requires GOT entries and correspondingly ordered dynamic symbol table
+  // entries to deal with dynamic relocations. To handle this problem
+  // relocation-only section in the primary GOT contains entries for all
+  // symbols referenced in global parts of secondary GOTs. Although the sum
+  // of local and normal global entries of the primary got should be less
+  // than 64K, the size of the primary got (including relocation-only entries
+  // can be greater than 64K, because parts of the primary got that overflow
+  // the 64K limit are used only by the dynamic linker at dynamic link-time
+  // and not by 16-bit gp-relative addressing at run-time.
+  //
+  // For complete multi-GOT description see the following link
+  // https://dmz-portal.mips.com/wiki/MIPS_Multi_GOT
+
+  // Number of &quot;Header&quot; entries.</doc>
+<use f='llvm/lld/ELF/SyntheticSections.cpp' l='825' u='r' c='_ZNK3lld3elf14MipsGotSection18getLocalEntriesNumEv'/>
+<use f='llvm/lld/ELF/SyntheticSections.cpp' l='826' u='r' c='_ZNK3lld3elf14MipsGotSection18getLocalEntriesNumEv'/>
+<use f='llvm/lld/ELF/SyntheticSections.cpp' l='839' u='r' c='_ZN3lld3elf14MipsGotSection12tryMergeGotsERNS1_7FileGotES3_b'/>
+<use f='llvm/lld/ELF/SyntheticSections.cpp' l='852' u='r' c='_ZN3lld3elf14MipsGotSection15updateAllocSizeEv'/>
+<use f='llvm/lld/ELF/SyntheticSections.cpp' l='947' u='r' c='_ZN3lld3elf14MipsGotSection5buildEv'/>

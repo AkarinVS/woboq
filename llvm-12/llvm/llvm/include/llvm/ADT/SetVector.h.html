@@ -1,0 +1,356 @@
+<!doctype html>
+<html>
+<head>
+<meta name="viewport" content="width=device-width, initial-scale=1.0"><title>SetVector.h source code [llvm/llvm/include/llvm/ADT/SetVector.h] - Woboq Code Browser</title>
+<meta name="woboq:interestingDefinitions" content="llvm::SetVector,llvm::SmallSetVector "/>
+<link rel="stylesheet" href="../../../../.././data/qtcreator.css" title="QtCreator"/>
+<link rel="alternate stylesheet" href="../../../../.././data/kdevelop.css" title="KDevelop"/>
+<script type="text/javascript" src="../../../../.././data/jquery/jquery.min.js"></script>
+<script type="text/javascript" src="../../../../.././data/jquery/jquery-ui.min.js"></script>
+<script>var file = 'llvm/llvm/include/llvm/ADT/SetVector.h'; var root_path = '../../../../..'; var data_path = '../../../../.././data'; var ecma_script_api_version = 2;</script>
+<script src='../../../../.././data/codebrowser.js'></script>
+</head>
+<body><div id='header'><h1 id='breadcrumb'><span>Browse the source code of </span><a href='../../../..'>llvm</a>/<a href='../../..'>llvm</a>/<a href='../..'>include</a>/<a href='..'>llvm</a>/<a href='./'>ADT</a>/<a href='SetVector.h.html'>SetVector.h</a></h1></div>
+<hr/><div id='content'><table class="code">
+<tr><th id="1">1</th><td><i>//===- llvm/ADT/SetVector.h - Set with insert order iteration ---*- C++ -*-===//</i></td></tr>
+<tr><th id="2">2</th><td><i>//</i></td></tr>
+<tr><th id="3">3</th><td><i>// Part of the LLVM Project, under the Apache License v2.0 with LLVM Exceptions.</i></td></tr>
+<tr><th id="4">4</th><td><i>// See <a href="https://llvm.org/LICENSE.txt">https://llvm.org/LICENSE.txt</a> for license information.</i></td></tr>
+<tr><th id="5">5</th><td><i>// SPDX-License-Identifier: Apache-2.0 WITH LLVM-exception</i></td></tr>
+<tr><th id="6">6</th><td><i>//</i></td></tr>
+<tr><th id="7">7</th><td><i>//===----------------------------------------------------------------------===//</i></td></tr>
+<tr><th id="8">8</th><td><i>//</i></td></tr>
+<tr><th id="9">9</th><td><i>// This file implements a set that has insertion order iteration</i></td></tr>
+<tr><th id="10">10</th><td><i>// characteristics. This is useful for keeping a set of things that need to be</i></td></tr>
+<tr><th id="11">11</th><td><i>// visited later but in a deterministic order (insertion order). The interface</i></td></tr>
+<tr><th id="12">12</th><td><i>// is purposefully minimal.</i></td></tr>
+<tr><th id="13">13</th><td><i>//</i></td></tr>
+<tr><th id="14">14</th><td><i>// This file defines SetVector and SmallSetVector, which performs no allocations</i></td></tr>
+<tr><th id="15">15</th><td><i>// if the SetVector has less than a certain number of elements.</i></td></tr>
+<tr><th id="16">16</th><td><i>//</i></td></tr>
+<tr><th id="17">17</th><td><i>//===----------------------------------------------------------------------===//</i></td></tr>
+<tr><th id="18">18</th><td></td></tr>
+<tr><th id="19">19</th><td><u>#<span data-ppcond="19">ifndef</span> <span class="macro" data-ref="_M/LLVM_ADT_SETVECTOR_H">LLVM_ADT_SETVECTOR_H</span></u></td></tr>
+<tr><th id="20">20</th><td><u>#define <dfn class="macro" id="_M/LLVM_ADT_SETVECTOR_H" data-ref="_M/LLVM_ADT_SETVECTOR_H">LLVM_ADT_SETVECTOR_H</dfn></u></td></tr>
+<tr><th id="21">21</th><td></td></tr>
+<tr><th id="22">22</th><td><u>#include <a href="ArrayRef.h.html">"llvm/ADT/ArrayRef.h"</a></u></td></tr>
+<tr><th id="23">23</th><td><u>#include <a href="DenseSet.h.html">"llvm/ADT/DenseSet.h"</a></u></td></tr>
+<tr><th id="24">24</th><td><u>#include <a href="STLExtras.h.html">"llvm/ADT/STLExtras.h"</a></u></td></tr>
+<tr><th id="25">25</th><td><u>#include <a href="../Support/Compiler.h.html">"llvm/Support/Compiler.h"</a></u></td></tr>
+<tr><th id="26">26</th><td><u>#include &lt;algorithm&gt;</u></td></tr>
+<tr><th id="27">27</th><td><u>#include &lt;cassert&gt;</u></td></tr>
+<tr><th id="28">28</th><td><u>#include &lt;iterator&gt;</u></td></tr>
+<tr><th id="29">29</th><td><u>#include &lt;vector&gt;</u></td></tr>
+<tr><th id="30">30</th><td></td></tr>
+<tr><th id="31">31</th><td><b>namespace</b> <span class="namespace">llvm</span> {</td></tr>
+<tr><th id="32">32</th><td></td></tr>
+<tr><th id="33">33</th><td><i class="doc">/// A vector that has set insertion semantics.</i></td></tr>
+<tr><th id="34">34</th><td><i class="doc">///</i></td></tr>
+<tr><th id="35">35</th><td><i class="doc">/// This adapter class provides a way to keep a set of things that also has the</i></td></tr>
+<tr><th id="36">36</th><td><i class="doc">/// property of a deterministic iteration order. The order of iteration is the</i></td></tr>
+<tr><th id="37">37</th><td><i class="doc">/// order of insertion.</i></td></tr>
+<tr><th id="38">38</th><td><b>template</b> &lt;<b>typename</b> T, <b>typename</b> Vector = <span class="namespace">std::</span><span class='type' title='std::vector' data-ref="std::vector" data-ref-filename="std..vector">vector</span>&lt;T&gt;,</td></tr>
+<tr><th id="39">39</th><td>          <b>typename</b> Set = <a class="type" href="DenseSet.h.html#llvm::DenseSet" title='llvm::DenseSet' data-ref="llvm::DenseSet" data-ref-filename="llvm..DenseSet">DenseSet</a>&lt;T&gt;&gt;</td></tr>
+<tr><th id="40">40</th><td><b>class</b> <dfn class="type def" id="llvm::SetVector" title='llvm::SetVector' data-ref="llvm::SetVector" data-ref-filename="llvm..SetVector">SetVector</dfn> {</td></tr>
+<tr><th id="41">41</th><td><b>public</b>:</td></tr>
+<tr><th id="42">42</th><td>  <b>using</b> <dfn class="typedef" id="llvm::SetVector::value_type" title='llvm::SetVector::value_type' data-type='T' data-ref="llvm::SetVector::value_type" data-ref-filename="llvm..SetVector..value_type">value_type</dfn> = T;</td></tr>
+<tr><th id="43">43</th><td>  <b>using</b> <dfn class="typedef" id="llvm::SetVector::key_type" title='llvm::SetVector::key_type' data-type='T' data-ref="llvm::SetVector::key_type" data-ref-filename="llvm..SetVector..key_type">key_type</dfn> = T;</td></tr>
+<tr><th id="44">44</th><td>  <b>using</b> <dfn class="typedef" id="llvm::SetVector::reference" title='llvm::SetVector::reference' data-type='T &amp;' data-ref="llvm::SetVector::reference" data-ref-filename="llvm..SetVector..reference">reference</dfn> = T&amp;;</td></tr>
+<tr><th id="45">45</th><td>  <b>using</b> <dfn class="typedef" id="llvm::SetVector::const_reference" title='llvm::SetVector::const_reference' data-type='const T &amp;' data-ref="llvm::SetVector::const_reference" data-ref-filename="llvm..SetVector..const_reference">const_reference</dfn> = <em>const</em> T&amp;;</td></tr>
+<tr><th id="46">46</th><td>  <b>using</b> <dfn class="typedef" id="llvm::SetVector::set_type" title='llvm::SetVector::set_type' data-type='Set' data-ref="llvm::SetVector::set_type" data-ref-filename="llvm..SetVector..set_type">set_type</dfn> = Set;</td></tr>
+<tr><th id="47">47</th><td>  <b>using</b> <dfn class="typedef" id="llvm::SetVector::vector_type" title='llvm::SetVector::vector_type' data-type='Vector' data-ref="llvm::SetVector::vector_type" data-ref-filename="llvm..SetVector..vector_type">vector_type</dfn> = Vector;</td></tr>
+<tr><th id="48">48</th><td>  <b>using</b> <dfn class="typedef" id="llvm::SetVector::iterator" title='llvm::SetVector::iterator' data-type='typename vector_type::const_iterator' data-ref="llvm::SetVector::iterator" data-ref-filename="llvm..SetVector..iterator">iterator</dfn> = <b>typename</b> <a class="typedef" href="#llvm::SetVector::vector_type" title='llvm::SetVector::vector_type' data-type='Vector' data-ref="llvm::SetVector::vector_type" data-ref-filename="llvm..SetVector..vector_type">vector_type</a>::const_iterator;</td></tr>
+<tr><th id="49">49</th><td>  <b>using</b> <dfn class="typedef" id="llvm::SetVector::const_iterator" title='llvm::SetVector::const_iterator' data-type='typename vector_type::const_iterator' data-ref="llvm::SetVector::const_iterator" data-ref-filename="llvm..SetVector..const_iterator">const_iterator</dfn> = <b>typename</b> <a class="typedef" href="#llvm::SetVector::vector_type" title='llvm::SetVector::vector_type' data-type='Vector' data-ref="llvm::SetVector::vector_type" data-ref-filename="llvm..SetVector..vector_type">vector_type</a>::const_iterator;</td></tr>
+<tr><th id="50">50</th><td>  <b>using</b> <dfn class="typedef" id="llvm::SetVector::reverse_iterator" title='llvm::SetVector::reverse_iterator' data-type='typename vector_type::const_reverse_iterator' data-ref="llvm::SetVector::reverse_iterator" data-ref-filename="llvm..SetVector..reverse_iterator">reverse_iterator</dfn> = <b>typename</b> <a class="typedef" href="#llvm::SetVector::vector_type" title='llvm::SetVector::vector_type' data-type='Vector' data-ref="llvm::SetVector::vector_type" data-ref-filename="llvm..SetVector..vector_type">vector_type</a>::const_reverse_iterator;</td></tr>
+<tr><th id="51">51</th><td>  <b>using</b> <dfn class="typedef" id="llvm::SetVector::const_reverse_iterator" title='llvm::SetVector::const_reverse_iterator' data-type='typename vector_type::const_reverse_iterator' data-ref="llvm::SetVector::const_reverse_iterator" data-ref-filename="llvm..SetVector..const_reverse_iterator">const_reverse_iterator</dfn> = <b>typename</b> <a class="typedef" href="#llvm::SetVector::vector_type" title='llvm::SetVector::vector_type' data-type='Vector' data-ref="llvm::SetVector::vector_type" data-ref-filename="llvm..SetVector..vector_type">vector_type</a>::const_reverse_iterator;</td></tr>
+<tr><th id="52">52</th><td>  <b>using</b> <dfn class="typedef" id="llvm::SetVector::size_type" title='llvm::SetVector::size_type' data-type='typename vector_type::size_type' data-ref="llvm::SetVector::size_type" data-ref-filename="llvm..SetVector..size_type">size_type</dfn> = <b>typename</b> <a class="typedef" href="#llvm::SetVector::vector_type" title='llvm::SetVector::vector_type' data-type='Vector' data-ref="llvm::SetVector::vector_type" data-ref-filename="llvm..SetVector..vector_type">vector_type</a>::size_type;</td></tr>
+<tr><th id="53">53</th><td></td></tr>
+<tr><th id="54">54</th><td>  <i class="doc">/// Construct an empty SetVector</i></td></tr>
+<tr><th id="55">55</th><td>  <dfn class="decl def fn" id="_ZN4llvm9SetVectorC1Ev" title='llvm::SetVector::SetVector&lt;T, Vector, Set&gt;' data-ref="_ZN4llvm9SetVectorC1Ev" data-ref-filename="_ZN4llvm9SetVectorC1Ev">SetVector</dfn>() = <b>default</b>;</td></tr>
+<tr><th id="56">56</th><td></td></tr>
+<tr><th id="57">57</th><td>  <i class="doc">/// Initialize a SetVector with a range of elements</i></td></tr>
+<tr><th id="58">58</th><td>  <b>template</b>&lt;<b>typename</b> It&gt;</td></tr>
+<tr><th id="59">59</th><td>  <dfn class="decl def fn" id="_ZN4llvm9SetVectorC1ETL0__S1_" title='llvm::SetVector::SetVector&lt;T, Vector, Set&gt;' data-ref="_ZN4llvm9SetVectorC1ETL0__S1_" data-ref-filename="_ZN4llvm9SetVectorC1ETL0__S1_">SetVector</dfn>(It <dfn class="local col3 decl" id="5793Start" title='Start' data-type='It' data-ref="5793Start" data-ref-filename="5793Start">Start</dfn>, It <dfn class="local col4 decl" id="5794End" title='End' data-type='It' data-ref="5794End" data-ref-filename="5794End">End</dfn>) {</td></tr>
+<tr><th id="60">60</th><td>    insert(<a class="local col3 ref" href="#5793Start" title='Start' data-ref="5793Start" data-ref-filename="5793Start">Start</a>, <a class="local col4 ref" href="#5794End" title='End' data-ref="5794End" data-ref-filename="5794End">End</a>);</td></tr>
+<tr><th id="61">61</th><td>  }</td></tr>
+<tr><th id="62">62</th><td></td></tr>
+<tr><th id="63">63</th><td>  <a class="type" href="../../../../clang/include/clang/Basic/LLVM.h.html#llvm::ArrayRef" title='llvm::ArrayRef' data-ref="llvm::ArrayRef" data-ref-filename="llvm..ArrayRef">ArrayRef</a>&lt;T&gt; <dfn class="decl def fn" id="_ZNK4llvm9SetVector11getArrayRefEv" title='llvm::SetVector::getArrayRef' data-ref="_ZNK4llvm9SetVector11getArrayRefEv" data-ref-filename="_ZNK4llvm9SetVector11getArrayRefEv">getArrayRef</dfn>() <em>const</em> { <b>return</b> <a class="member field" href="#llvm::SetVector::vector_" title='llvm::SetVector::vector_' data-ref="llvm::SetVector::vector_" data-ref-filename="llvm..SetVector..vector_">vector_</a>; }</td></tr>
+<tr><th id="64">64</th><td></td></tr>
+<tr><th id="65">65</th><td>  <i class="doc">/// Clear the SetVector and return the underlying vector.</i></td></tr>
+<tr><th id="66">66</th><td>  Vector <dfn class="decl def fn" id="_ZN4llvm9SetVector10takeVectorEv" title='llvm::SetVector::takeVector' data-ref="_ZN4llvm9SetVector10takeVectorEv" data-ref-filename="_ZN4llvm9SetVector10takeVectorEv">takeVector</dfn>() {</td></tr>
+<tr><th id="67">67</th><td>    <a class="member field" href="#llvm::SetVector::set_" title='llvm::SetVector::set_' data-ref="llvm::SetVector::set_" data-ref-filename="llvm..SetVector..set_">set_</a>.clear();</td></tr>
+<tr><th id="68">68</th><td>    <b>return</b> <span class="namespace">std::</span>move(<a class="member field" href="#llvm::SetVector::vector_" title='llvm::SetVector::vector_' data-ref="llvm::SetVector::vector_" data-ref-filename="llvm..SetVector..vector_">vector_</a>);</td></tr>
+<tr><th id="69">69</th><td>  }</td></tr>
+<tr><th id="70">70</th><td></td></tr>
+<tr><th id="71">71</th><td>  <i class="doc">/// Determine if the SetVector is empty or not.</i></td></tr>
+<tr><th id="72">72</th><td>  <em>bool</em> <dfn class="decl def fn" id="_ZNK4llvm9SetVector5emptyEv" title='llvm::SetVector::empty' data-ref="_ZNK4llvm9SetVector5emptyEv" data-ref-filename="_ZNK4llvm9SetVector5emptyEv">empty</dfn>() <em>const</em> {</td></tr>
+<tr><th id="73">73</th><td>    <b>return</b> <a class="member field" href="#llvm::SetVector::vector_" title='llvm::SetVector::vector_' data-ref="llvm::SetVector::vector_" data-ref-filename="llvm..SetVector..vector_">vector_</a>.empty();</td></tr>
+<tr><th id="74">74</th><td>  }</td></tr>
+<tr><th id="75">75</th><td></td></tr>
+<tr><th id="76">76</th><td>  <i class="doc">/// Determine the number of elements in the SetVector.</i></td></tr>
+<tr><th id="77">77</th><td>  <a class="typedef" href="#llvm::SetVector::size_type" title='llvm::SetVector::size_type' data-type='typename vector_type::size_type' data-ref="llvm::SetVector::size_type" data-ref-filename="llvm..SetVector..size_type">size_type</a> <dfn class="decl def fn" id="_ZNK4llvm9SetVector4sizeEv" title='llvm::SetVector::size' data-ref="_ZNK4llvm9SetVector4sizeEv" data-ref-filename="_ZNK4llvm9SetVector4sizeEv">size</dfn>() <em>const</em> {</td></tr>
+<tr><th id="78">78</th><td>    <b>return</b> <a class="member field" href="#llvm::SetVector::vector_" title='llvm::SetVector::vector_' data-ref="llvm::SetVector::vector_" data-ref-filename="llvm..SetVector..vector_">vector_</a>.size();</td></tr>
+<tr><th id="79">79</th><td>  }</td></tr>
+<tr><th id="80">80</th><td></td></tr>
+<tr><th id="81">81</th><td>  <i class="doc">/// Get an iterator to the beginning of the SetVector.</i></td></tr>
+<tr><th id="82">82</th><td>  <a class="typedef" href="#llvm::SetVector::iterator" title='llvm::SetVector::iterator' data-type='typename vector_type::const_iterator' data-ref="llvm::SetVector::iterator" data-ref-filename="llvm..SetVector..iterator">iterator</a> <dfn class="decl def fn" id="_ZN4llvm9SetVector5beginEv" title='llvm::SetVector::begin' data-ref="_ZN4llvm9SetVector5beginEv" data-ref-filename="_ZN4llvm9SetVector5beginEv">begin</dfn>() {</td></tr>
+<tr><th id="83">83</th><td>    <b>return</b> <a class="member field" href="#llvm::SetVector::vector_" title='llvm::SetVector::vector_' data-ref="llvm::SetVector::vector_" data-ref-filename="llvm..SetVector..vector_">vector_</a>.begin();</td></tr>
+<tr><th id="84">84</th><td>  }</td></tr>
+<tr><th id="85">85</th><td></td></tr>
+<tr><th id="86">86</th><td>  <i class="doc">/// Get a const_iterator to the beginning of the SetVector.</i></td></tr>
+<tr><th id="87">87</th><td>  <a class="typedef" href="#llvm::SetVector::const_iterator" title='llvm::SetVector::const_iterator' data-type='typename vector_type::const_iterator' data-ref="llvm::SetVector::const_iterator" data-ref-filename="llvm..SetVector..const_iterator">const_iterator</a> <dfn class="decl def fn" id="_ZNK4llvm9SetVector5beginEv" title='llvm::SetVector::begin' data-ref="_ZNK4llvm9SetVector5beginEv" data-ref-filename="_ZNK4llvm9SetVector5beginEv">begin</dfn>() <em>const</em> {</td></tr>
+<tr><th id="88">88</th><td>    <b>return</b> <a class="member field" href="#llvm::SetVector::vector_" title='llvm::SetVector::vector_' data-ref="llvm::SetVector::vector_" data-ref-filename="llvm..SetVector..vector_">vector_</a>.begin();</td></tr>
+<tr><th id="89">89</th><td>  }</td></tr>
+<tr><th id="90">90</th><td></td></tr>
+<tr><th id="91">91</th><td>  <i class="doc">/// Get an iterator to the end of the SetVector.</i></td></tr>
+<tr><th id="92">92</th><td>  <a class="typedef" href="#llvm::SetVector::iterator" title='llvm::SetVector::iterator' data-type='typename vector_type::const_iterator' data-ref="llvm::SetVector::iterator" data-ref-filename="llvm..SetVector..iterator">iterator</a> <dfn class="decl def fn" id="_ZN4llvm9SetVector3endEv" title='llvm::SetVector::end' data-ref="_ZN4llvm9SetVector3endEv" data-ref-filename="_ZN4llvm9SetVector3endEv">end</dfn>() {</td></tr>
+<tr><th id="93">93</th><td>    <b>return</b> <a class="member field" href="#llvm::SetVector::vector_" title='llvm::SetVector::vector_' data-ref="llvm::SetVector::vector_" data-ref-filename="llvm..SetVector..vector_">vector_</a>.end();</td></tr>
+<tr><th id="94">94</th><td>  }</td></tr>
+<tr><th id="95">95</th><td></td></tr>
+<tr><th id="96">96</th><td>  <i class="doc">/// Get a const_iterator to the end of the SetVector.</i></td></tr>
+<tr><th id="97">97</th><td>  <a class="typedef" href="#llvm::SetVector::const_iterator" title='llvm::SetVector::const_iterator' data-type='typename vector_type::const_iterator' data-ref="llvm::SetVector::const_iterator" data-ref-filename="llvm..SetVector..const_iterator">const_iterator</a> <dfn class="decl def fn" id="_ZNK4llvm9SetVector3endEv" title='llvm::SetVector::end' data-ref="_ZNK4llvm9SetVector3endEv" data-ref-filename="_ZNK4llvm9SetVector3endEv">end</dfn>() <em>const</em> {</td></tr>
+<tr><th id="98">98</th><td>    <b>return</b> <a class="member field" href="#llvm::SetVector::vector_" title='llvm::SetVector::vector_' data-ref="llvm::SetVector::vector_" data-ref-filename="llvm..SetVector..vector_">vector_</a>.end();</td></tr>
+<tr><th id="99">99</th><td>  }</td></tr>
+<tr><th id="100">100</th><td></td></tr>
+<tr><th id="101">101</th><td>  <i class="doc">/// Get an reverse_iterator to the end of the SetVector.</i></td></tr>
+<tr><th id="102">102</th><td>  <a class="typedef" href="#llvm::SetVector::reverse_iterator" title='llvm::SetVector::reverse_iterator' data-type='typename vector_type::const_reverse_iterator' data-ref="llvm::SetVector::reverse_iterator" data-ref-filename="llvm..SetVector..reverse_iterator">reverse_iterator</a> <dfn class="decl def fn" id="_ZN4llvm9SetVector6rbeginEv" title='llvm::SetVector::rbegin' data-ref="_ZN4llvm9SetVector6rbeginEv" data-ref-filename="_ZN4llvm9SetVector6rbeginEv">rbegin</dfn>() {</td></tr>
+<tr><th id="103">103</th><td>    <b>return</b> <a class="member field" href="#llvm::SetVector::vector_" title='llvm::SetVector::vector_' data-ref="llvm::SetVector::vector_" data-ref-filename="llvm..SetVector..vector_">vector_</a>.rbegin();</td></tr>
+<tr><th id="104">104</th><td>  }</td></tr>
+<tr><th id="105">105</th><td></td></tr>
+<tr><th id="106">106</th><td>  <i class="doc">/// Get a const_reverse_iterator to the end of the SetVector.</i></td></tr>
+<tr><th id="107">107</th><td>  <a class="typedef" href="#llvm::SetVector::const_reverse_iterator" title='llvm::SetVector::const_reverse_iterator' data-type='typename vector_type::const_reverse_iterator' data-ref="llvm::SetVector::const_reverse_iterator" data-ref-filename="llvm..SetVector..const_reverse_iterator">const_reverse_iterator</a> <dfn class="decl def fn" id="_ZNK4llvm9SetVector6rbeginEv" title='llvm::SetVector::rbegin' data-ref="_ZNK4llvm9SetVector6rbeginEv" data-ref-filename="_ZNK4llvm9SetVector6rbeginEv">rbegin</dfn>() <em>const</em> {</td></tr>
+<tr><th id="108">108</th><td>    <b>return</b> <a class="member field" href="#llvm::SetVector::vector_" title='llvm::SetVector::vector_' data-ref="llvm::SetVector::vector_" data-ref-filename="llvm..SetVector..vector_">vector_</a>.rbegin();</td></tr>
+<tr><th id="109">109</th><td>  }</td></tr>
+<tr><th id="110">110</th><td></td></tr>
+<tr><th id="111">111</th><td>  <i class="doc">/// Get a reverse_iterator to the beginning of the SetVector.</i></td></tr>
+<tr><th id="112">112</th><td>  <a class="typedef" href="#llvm::SetVector::reverse_iterator" title='llvm::SetVector::reverse_iterator' data-type='typename vector_type::const_reverse_iterator' data-ref="llvm::SetVector::reverse_iterator" data-ref-filename="llvm..SetVector..reverse_iterator">reverse_iterator</a> <dfn class="decl def fn" id="_ZN4llvm9SetVector4rendEv" title='llvm::SetVector::rend' data-ref="_ZN4llvm9SetVector4rendEv" data-ref-filename="_ZN4llvm9SetVector4rendEv">rend</dfn>() {</td></tr>
+<tr><th id="113">113</th><td>    <b>return</b> <a class="member field" href="#llvm::SetVector::vector_" title='llvm::SetVector::vector_' data-ref="llvm::SetVector::vector_" data-ref-filename="llvm..SetVector..vector_">vector_</a>.rend();</td></tr>
+<tr><th id="114">114</th><td>  }</td></tr>
+<tr><th id="115">115</th><td></td></tr>
+<tr><th id="116">116</th><td>  <i class="doc">/// Get a const_reverse_iterator to the beginning of the SetVector.</i></td></tr>
+<tr><th id="117">117</th><td>  <a class="typedef" href="#llvm::SetVector::const_reverse_iterator" title='llvm::SetVector::const_reverse_iterator' data-type='typename vector_type::const_reverse_iterator' data-ref="llvm::SetVector::const_reverse_iterator" data-ref-filename="llvm..SetVector..const_reverse_iterator">const_reverse_iterator</a> <dfn class="decl def fn" id="_ZNK4llvm9SetVector4rendEv" title='llvm::SetVector::rend' data-ref="_ZNK4llvm9SetVector4rendEv" data-ref-filename="_ZNK4llvm9SetVector4rendEv">rend</dfn>() <em>const</em> {</td></tr>
+<tr><th id="118">118</th><td>    <b>return</b> <a class="member field" href="#llvm::SetVector::vector_" title='llvm::SetVector::vector_' data-ref="llvm::SetVector::vector_" data-ref-filename="llvm..SetVector..vector_">vector_</a>.rend();</td></tr>
+<tr><th id="119">119</th><td>  }</td></tr>
+<tr><th id="120">120</th><td></td></tr>
+<tr><th id="121">121</th><td>  <i class="doc">/// Return the first element of the SetVector.</i></td></tr>
+<tr><th id="122">122</th><td>  <em>const</em> T &amp;<dfn class="decl def fn" id="_ZNK4llvm9SetVector5frontEv" title='llvm::SetVector::front' data-ref="_ZNK4llvm9SetVector5frontEv" data-ref-filename="_ZNK4llvm9SetVector5frontEv">front</dfn>() <em>const</em> {</td></tr>
+<tr><th id="123">123</th><td>    <a class="macro" href="../../../../../include/assert.h.html#50" title="(static_cast&lt;void&gt; (0))" data-ref="_M/assert">assert</a>(!empty() &amp;&amp; <q>"Cannot call front() on empty SetVector!"</q>);</td></tr>
+<tr><th id="124">124</th><td>    <b>return</b> <a class="member field" href="#llvm::SetVector::vector_" title='llvm::SetVector::vector_' data-ref="llvm::SetVector::vector_" data-ref-filename="llvm..SetVector..vector_">vector_</a>.front();</td></tr>
+<tr><th id="125">125</th><td>  }</td></tr>
+<tr><th id="126">126</th><td></td></tr>
+<tr><th id="127">127</th><td>  <i class="doc">/// Return the last element of the SetVector.</i></td></tr>
+<tr><th id="128">128</th><td>  <em>const</em> T &amp;<dfn class="decl def fn" id="_ZNK4llvm9SetVector4backEv" title='llvm::SetVector::back' data-ref="_ZNK4llvm9SetVector4backEv" data-ref-filename="_ZNK4llvm9SetVector4backEv">back</dfn>() <em>const</em> {</td></tr>
+<tr><th id="129">129</th><td>    <a class="macro" href="../../../../../include/assert.h.html#50" title="(static_cast&lt;void&gt; (0))" data-ref="_M/assert">assert</a>(!empty() &amp;&amp; <q>"Cannot call back() on empty SetVector!"</q>);</td></tr>
+<tr><th id="130">130</th><td>    <b>return</b> <a class="member field" href="#llvm::SetVector::vector_" title='llvm::SetVector::vector_' data-ref="llvm::SetVector::vector_" data-ref-filename="llvm..SetVector..vector_">vector_</a>.back();</td></tr>
+<tr><th id="131">131</th><td>  }</td></tr>
+<tr><th id="132">132</th><td></td></tr>
+<tr><th id="133">133</th><td>  <i class="doc">/// Index into the SetVector.</i></td></tr>
+<tr><th id="134">134</th><td>  <a class="typedef" href="#llvm::SetVector::const_reference" title='llvm::SetVector::const_reference' data-type='const T &amp;' data-ref="llvm::SetVector::const_reference" data-ref-filename="llvm..SetVector..const_reference">const_reference</a> <dfn class="decl def fn" id="_ZNK4llvm9SetVectorixENT0_9size_typeE" title='llvm::SetVector::operator[]' data-ref="_ZNK4llvm9SetVectorixENT0_9size_typeE" data-ref-filename="_ZNK4llvm9SetVectorixENT0_9size_typeE"><b>operator</b>[]</dfn>(<a class="typedef" href="#llvm::SetVector::size_type" title='llvm::SetVector::size_type' data-type='typename vector_type::size_type' data-ref="llvm::SetVector::size_type" data-ref-filename="llvm..SetVector..size_type">size_type</a> <dfn class="local col5 decl" id="5795n" title='n' data-type='llvm::SetVector::size_type' data-ref="5795n" data-ref-filename="5795n">n</dfn>) <em>const</em> {</td></tr>
+<tr><th id="135">135</th><td>    <a class="macro" href="../../../../../include/assert.h.html#50" title="(static_cast&lt;void&gt; (0))" data-ref="_M/assert">assert</a>(n &lt; vector_.size() &amp;&amp; <q>"SetVector access out of range!"</q>);</td></tr>
+<tr><th id="136">136</th><td>    <b>return</b> <a class="member field" href="#llvm::SetVector::vector_" title='llvm::SetVector::vector_' data-ref="llvm::SetVector::vector_" data-ref-filename="llvm..SetVector..vector_">vector_</a>[<a class="local col5 ref" href="#5795n" title='n' data-ref="5795n" data-ref-filename="5795n">n</a>];</td></tr>
+<tr><th id="137">137</th><td>  }</td></tr>
+<tr><th id="138">138</th><td></td></tr>
+<tr><th id="139">139</th><td>  <i class="doc">/// Insert a new element into the SetVector.</i></td></tr>
+<tr><th id="140">140</th><td><i class="doc">  /// <span class="command">\returns</span> true if the element was inserted into the SetVector.</i></td></tr>
+<tr><th id="141">141</th><td>  <em>bool</em> <dfn class="decl def fn" id="_ZN4llvm9SetVector6insertERKT_" title='llvm::SetVector::insert' data-ref="_ZN4llvm9SetVector6insertERKT_" data-ref-filename="_ZN4llvm9SetVector6insertERKT_">insert</dfn>(<em>const</em> <a class="typedef" href="#llvm::SetVector::value_type" title='llvm::SetVector::value_type' data-type='T' data-ref="llvm::SetVector::value_type" data-ref-filename="llvm..SetVector..value_type">value_type</a> &amp;<dfn class="local col6 decl" id="5796X" title='X' data-type='const llvm::SetVector::value_type &amp;' data-ref="5796X" data-ref-filename="5796X">X</dfn>) {</td></tr>
+<tr><th id="142">142</th><td>    <em>bool</em> <dfn class="local col7 decl" id="5797result" title='result' data-type='bool' data-ref="5797result" data-ref-filename="5797result">result</dfn> = <a class="member field" href="#llvm::SetVector::set_" title='llvm::SetVector::set_' data-ref="llvm::SetVector::set_" data-ref-filename="llvm..SetVector..set_">set_</a>.insert(<a class="local col6 ref" href="#5796X" title='X' data-ref="5796X" data-ref-filename="5796X">X</a>).second;</td></tr>
+<tr><th id="143">143</th><td>    <b>if</b> (<a class="local col7 ref" href="#5797result" title='result' data-ref="5797result" data-ref-filename="5797result">result</a>)</td></tr>
+<tr><th id="144">144</th><td>      <a class="member field" href="#llvm::SetVector::vector_" title='llvm::SetVector::vector_' data-ref="llvm::SetVector::vector_" data-ref-filename="llvm..SetVector..vector_">vector_</a>.push_back(<a class="local col6 ref" href="#5796X" title='X' data-ref="5796X" data-ref-filename="5796X">X</a>);</td></tr>
+<tr><th id="145">145</th><td>    <b>return</b> <a class="local col7 ref" href="#5797result" title='result' data-ref="5797result" data-ref-filename="5797result">result</a>;</td></tr>
+<tr><th id="146">146</th><td>  }</td></tr>
+<tr><th id="147">147</th><td></td></tr>
+<tr><th id="148">148</th><td>  <i class="doc">/// Insert a range of elements into the SetVector.</i></td></tr>
+<tr><th id="149">149</th><td>  <b>template</b>&lt;<b>typename</b> It&gt;</td></tr>
+<tr><th id="150">150</th><td>  <em>void</em> <dfn class="decl def fn" id="_ZN4llvm9SetVector6insertETL0__S1_" title='llvm::SetVector::insert' data-ref="_ZN4llvm9SetVector6insertETL0__S1_" data-ref-filename="_ZN4llvm9SetVector6insertETL0__S1_">insert</dfn>(It <dfn class="local col8 decl" id="5798Start" title='Start' data-type='It' data-ref="5798Start" data-ref-filename="5798Start">Start</dfn>, It <dfn class="local col9 decl" id="5799End" title='End' data-type='It' data-ref="5799End" data-ref-filename="5799End">End</dfn>) {</td></tr>
+<tr><th id="151">151</th><td>    <b>for</b> (; <a class="local col8 ref" href="#5798Start" title='Start' data-ref="5798Start" data-ref-filename="5798Start">Start</a> != <a class="local col9 ref" href="#5799End" title='End' data-ref="5799End" data-ref-filename="5799End">End</a>; ++<a class="local col8 ref" href="#5798Start" title='Start' data-ref="5798Start" data-ref-filename="5798Start">Start</a>)</td></tr>
+<tr><th id="152">152</th><td>      <b>if</b> (<a class="member field" href="#llvm::SetVector::set_" title='llvm::SetVector::set_' data-ref="llvm::SetVector::set_" data-ref-filename="llvm..SetVector..set_">set_</a>.insert(*<a class="local col8 ref" href="#5798Start" title='Start' data-ref="5798Start" data-ref-filename="5798Start">Start</a>).second)</td></tr>
+<tr><th id="153">153</th><td>        <a class="member field" href="#llvm::SetVector::vector_" title='llvm::SetVector::vector_' data-ref="llvm::SetVector::vector_" data-ref-filename="llvm..SetVector..vector_">vector_</a>.push_back(*<a class="local col8 ref" href="#5798Start" title='Start' data-ref="5798Start" data-ref-filename="5798Start">Start</a>);</td></tr>
+<tr><th id="154">154</th><td>  }</td></tr>
+<tr><th id="155">155</th><td></td></tr>
+<tr><th id="156">156</th><td>  <i class="doc">/// Remove an item from the set vector.</i></td></tr>
+<tr><th id="157">157</th><td>  <em>bool</em> <dfn class="decl def fn" id="_ZN4llvm9SetVector6removeERKT_" title='llvm::SetVector::remove' data-ref="_ZN4llvm9SetVector6removeERKT_" data-ref-filename="_ZN4llvm9SetVector6removeERKT_">remove</dfn>(<em>const</em> <a class="typedef" href="#llvm::SetVector::value_type" title='llvm::SetVector::value_type' data-type='T' data-ref="llvm::SetVector::value_type" data-ref-filename="llvm..SetVector..value_type">value_type</a>&amp; <dfn class="local col0 decl" id="5800X" title='X' data-type='const llvm::SetVector::value_type &amp;' data-ref="5800X" data-ref-filename="5800X">X</dfn>) {</td></tr>
+<tr><th id="158">158</th><td>    <b>if</b> (<a class="member field" href="#llvm::SetVector::set_" title='llvm::SetVector::set_' data-ref="llvm::SetVector::set_" data-ref-filename="llvm..SetVector..set_">set_</a>.erase(<a class="local col0 ref" href="#5800X" title='X' data-ref="5800X" data-ref-filename="5800X">X</a>)) {</td></tr>
+<tr><th id="159">159</th><td>      <b>typename</b> <a class="typedef" href="#llvm::SetVector::vector_type" title='llvm::SetVector::vector_type' data-type='Vector' data-ref="llvm::SetVector::vector_type" data-ref-filename="llvm..SetVector..vector_type">vector_type</a>::iterator <dfn class="local col1 decl" id="5801I" title='I' data-type='typename vector_type::iterator' data-ref="5801I" data-ref-filename="5801I">I</dfn> = find(<a class="member field" href="#llvm::SetVector::vector_" title='llvm::SetVector::vector_' data-ref="llvm::SetVector::vector_" data-ref-filename="llvm..SetVector..vector_">vector_</a>, <a class="local col0 ref" href="#5800X" title='X' data-ref="5800X" data-ref-filename="5800X">X</a>);</td></tr>
+<tr><th id="160">160</th><td>      <a class="macro" href="../../../../../include/assert.h.html#50" title="(static_cast&lt;void&gt; (0))" data-ref="_M/assert">assert</a>(I != vector_.end() &amp;&amp; <q>"Corrupted SetVector instances!"</q>);</td></tr>
+<tr><th id="161">161</th><td>      <a class="member field" href="#llvm::SetVector::vector_" title='llvm::SetVector::vector_' data-ref="llvm::SetVector::vector_" data-ref-filename="llvm..SetVector..vector_">vector_</a>.erase(<a class="local col1 ref" href="#5801I" title='I' data-ref="5801I" data-ref-filename="5801I">I</a>);</td></tr>
+<tr><th id="162">162</th><td>      <b>return</b> <b>true</b>;</td></tr>
+<tr><th id="163">163</th><td>    }</td></tr>
+<tr><th id="164">164</th><td>    <b>return</b> <b>false</b>;</td></tr>
+<tr><th id="165">165</th><td>  }</td></tr>
+<tr><th id="166">166</th><td></td></tr>
+<tr><th id="167">167</th><td>  <i class="doc">/// Erase a single element from the set vector.</i></td></tr>
+<tr><th id="168">168</th><td><i class="doc">  /// <span class="command">\returns</span> an iterator pointing to the next element that followed the</i></td></tr>
+<tr><th id="169">169</th><td><i class="doc">  /// element erased. This is the end of the SetVector if the last element is</i></td></tr>
+<tr><th id="170">170</th><td><i class="doc">  /// erased.</i></td></tr>
+<tr><th id="171">171</th><td>  <a class="typedef" href="#llvm::SetVector::iterator" title='llvm::SetVector::iterator' data-type='typename vector_type::const_iterator' data-ref="llvm::SetVector::iterator" data-ref-filename="llvm..SetVector..iterator">iterator</a> <dfn class="decl def fn" id="_ZN4llvm9SetVector5eraseENT0_14const_iteratorE" title='llvm::SetVector::erase' data-ref="_ZN4llvm9SetVector5eraseENT0_14const_iteratorE" data-ref-filename="_ZN4llvm9SetVector5eraseENT0_14const_iteratorE">erase</dfn>(<a class="typedef" href="#llvm::SetVector::iterator" title='llvm::SetVector::iterator' data-type='typename vector_type::const_iterator' data-ref="llvm::SetVector::iterator" data-ref-filename="llvm..SetVector..iterator">iterator</a> <dfn class="local col2 decl" id="5802I" title='I' data-type='llvm::SetVector::iterator' data-ref="5802I" data-ref-filename="5802I">I</dfn>) {</td></tr>
+<tr><th id="172">172</th><td>    <em>const</em> <a class="typedef" href="#llvm::SetVector::key_type" title='llvm::SetVector::key_type' data-type='T' data-ref="llvm::SetVector::key_type" data-ref-filename="llvm..SetVector..key_type">key_type</a> &amp;<dfn class="local col3 decl" id="5803V" title='V' data-type='const llvm::SetVector::key_type &amp;' data-ref="5803V" data-ref-filename="5803V">V</dfn> = *<a class="local col2 ref" href="#5802I" title='I' data-ref="5802I" data-ref-filename="5802I">I</a>;</td></tr>
+<tr><th id="173">173</th><td>    <a class="macro" href="../../../../../include/assert.h.html#50" title="(static_cast&lt;void&gt; (0))" data-ref="_M/assert">assert</a>(set_.count(V) &amp;&amp; <q>"Corrupted SetVector instances!"</q>);</td></tr>
+<tr><th id="174">174</th><td>    <a class="member field" href="#llvm::SetVector::set_" title='llvm::SetVector::set_' data-ref="llvm::SetVector::set_" data-ref-filename="llvm..SetVector..set_">set_</a>.erase(<a class="local col3 ref" href="#5803V" title='V' data-ref="5803V" data-ref-filename="5803V">V</a>);</td></tr>
+<tr><th id="175">175</th><td></td></tr>
+<tr><th id="176">176</th><td>    <i>// FIXME: No need to use the non-const iterator when built with</i></td></tr>
+<tr><th id="177">177</th><td><i>    // std::vector.erase(const_iterator) as defined in C++11. This is for</i></td></tr>
+<tr><th id="178">178</th><td><i>    // compatibility with non-standard libstdc++ up to 4.8 (fixed in 4.9).</i></td></tr>
+<tr><th id="179">179</th><td>    <em>auto</em> <dfn class="local col4 decl" id="5804NI" title='NI' data-type='auto' data-ref="5804NI" data-ref-filename="5804NI">NI</dfn> = <a class="member field" href="#llvm::SetVector::vector_" title='llvm::SetVector::vector_' data-ref="llvm::SetVector::vector_" data-ref-filename="llvm..SetVector..vector_">vector_</a>.begin();</td></tr>
+<tr><th id="180">180</th><td>    <span class="namespace">std::</span>advance(<a class="local col4 ref" href="#5804NI" title='NI' data-ref="5804NI" data-ref-filename="5804NI">NI</a>, <span class="namespace">std::</span>distance&lt;<a class="typedef" href="#llvm::SetVector::iterator" title='llvm::SetVector::iterator' data-type='typename vector_type::const_iterator' data-ref="llvm::SetVector::iterator" data-ref-filename="llvm..SetVector..iterator">iterator</a>&gt;(<a class="local col4 ref" href="#5804NI" title='NI' data-ref="5804NI" data-ref-filename="5804NI">NI</a>, <a class="local col2 ref" href="#5802I" title='I' data-ref="5802I" data-ref-filename="5802I">I</a>));</td></tr>
+<tr><th id="181">181</th><td></td></tr>
+<tr><th id="182">182</th><td>    <b>return</b> <a class="member field" href="#llvm::SetVector::vector_" title='llvm::SetVector::vector_' data-ref="llvm::SetVector::vector_" data-ref-filename="llvm..SetVector..vector_">vector_</a>.erase(<a class="local col4 ref" href="#5804NI" title='NI' data-ref="5804NI" data-ref-filename="5804NI">NI</a>);</td></tr>
+<tr><th id="183">183</th><td>  }</td></tr>
+<tr><th id="184">184</th><td></td></tr>
+<tr><th id="185">185</th><td>  <i class="doc">/// Remove items from the set vector based on a predicate function.</i></td></tr>
+<tr><th id="186">186</th><td><i class="doc">  ///</i></td></tr>
+<tr><th id="187">187</th><td><i class="doc">  /// This is intended to be equivalent to the following code, if we could</i></td></tr>
+<tr><th id="188">188</th><td><i class="doc">  /// write it:</i></td></tr>
+<tr><th id="189">189</th><td><i class="doc">  ///</i></td></tr>
+<tr><th id="190">190</th><td><i class="doc">  /// <span class="command">\code</span></i></td></tr>
+<tr><th id="191">191</th><td><i class="doc">  ///<span class="verb">   V.erase(remove_if(V, P), V.end());</span></i></td></tr>
+<tr><th id="192">192</th><td><i class="doc"><span class="verb"></span>  /// \endcode</i></td></tr>
+<tr><th id="193">193</th><td><i class="doc">  ///</i></td></tr>
+<tr><th id="194">194</th><td><i class="doc">  /// However, SetVector doesn't expose non-const iterators, making any</i></td></tr>
+<tr><th id="195">195</th><td><i class="doc">  /// algorithm like remove_if impossible to use.</i></td></tr>
+<tr><th id="196">196</th><td><i class="doc">  ///</i></td></tr>
+<tr><th id="197">197</th><td><i class="doc">  /// <span class="command">\returns</span> true if any element is removed.</i></td></tr>
+<tr><th id="198">198</th><td>  <b>template</b> &lt;<b>typename</b> UnaryPredicate&gt;</td></tr>
+<tr><th id="199">199</th><td>  <em>bool</em> <dfn class="decl def fn" id="_ZN4llvm9SetVector9remove_ifETL0__" title='llvm::SetVector::remove_if' data-ref="_ZN4llvm9SetVector9remove_ifETL0__" data-ref-filename="_ZN4llvm9SetVector9remove_ifETL0__">remove_if</dfn>(UnaryPredicate <dfn class="local col5 decl" id="5805P" title='P' data-type='UnaryPredicate' data-ref="5805P" data-ref-filename="5805P">P</dfn>) {</td></tr>
+<tr><th id="200">200</th><td>    <b>typename</b> <a class="typedef" href="#llvm::SetVector::vector_type" title='llvm::SetVector::vector_type' data-type='Vector' data-ref="llvm::SetVector::vector_type" data-ref-filename="llvm..SetVector..vector_type">vector_type</a>::iterator <dfn class="local col6 decl" id="5806I" title='I' data-type='typename vector_type::iterator' data-ref="5806I" data-ref-filename="5806I">I</dfn> =</td></tr>
+<tr><th id="201">201</th><td>        <span class="namespace">llvm::</span>remove_if(<a class="member field" href="#llvm::SetVector::vector_" title='llvm::SetVector::vector_' data-ref="llvm::SetVector::vector_" data-ref-filename="llvm..SetVector..vector_">vector_</a>, <a class="type" href="#llvm::SetVector::TestAndEraseFromSet" title='llvm::SetVector::TestAndEraseFromSet' data-ref="llvm::SetVector::TestAndEraseFromSet" data-ref-filename="llvm..SetVector..TestAndEraseFromSet">TestAndEraseFromSet</a>&lt;UnaryPredicate&gt;(<a class="local col5 ref" href="#5805P" title='P' data-ref="5805P" data-ref-filename="5805P">P</a>, <a class="member field" href="#llvm::SetVector::set_" title='llvm::SetVector::set_' data-ref="llvm::SetVector::set_" data-ref-filename="llvm..SetVector..set_">set_</a>));</td></tr>
+<tr><th id="202">202</th><td>    <b>if</b> (<a class="local col6 ref" href="#5806I" title='I' data-ref="5806I" data-ref-filename="5806I">I</a> == <a class="member field" href="#llvm::SetVector::vector_" title='llvm::SetVector::vector_' data-ref="llvm::SetVector::vector_" data-ref-filename="llvm..SetVector..vector_">vector_</a>.end())</td></tr>
+<tr><th id="203">203</th><td>      <b>return</b> <b>false</b>;</td></tr>
+<tr><th id="204">204</th><td>    <a class="member field" href="#llvm::SetVector::vector_" title='llvm::SetVector::vector_' data-ref="llvm::SetVector::vector_" data-ref-filename="llvm..SetVector..vector_">vector_</a>.erase(<a class="local col6 ref" href="#5806I" title='I' data-ref="5806I" data-ref-filename="5806I">I</a>, <a class="member field" href="#llvm::SetVector::vector_" title='llvm::SetVector::vector_' data-ref="llvm::SetVector::vector_" data-ref-filename="llvm..SetVector..vector_">vector_</a>.end());</td></tr>
+<tr><th id="205">205</th><td>    <b>return</b> <b>true</b>;</td></tr>
+<tr><th id="206">206</th><td>  }</td></tr>
+<tr><th id="207">207</th><td></td></tr>
+<tr><th id="208">208</th><td>  <i class="doc">/// Check if the SetVector contains the given key.</i></td></tr>
+<tr><th id="209">209</th><td>  <em>bool</em> <dfn class="decl def fn" id="_ZNK4llvm9SetVector8containsERKT_" title='llvm::SetVector::contains' data-ref="_ZNK4llvm9SetVector8containsERKT_" data-ref-filename="_ZNK4llvm9SetVector8containsERKT_">contains</dfn>(<em>const</em> <a class="typedef" href="#llvm::SetVector::key_type" title='llvm::SetVector::key_type' data-type='T' data-ref="llvm::SetVector::key_type" data-ref-filename="llvm..SetVector..key_type">key_type</a> &amp;<dfn class="local col7 decl" id="5807key" title='key' data-type='const llvm::SetVector::key_type &amp;' data-ref="5807key" data-ref-filename="5807key">key</dfn>) <em>const</em> {</td></tr>
+<tr><th id="210">210</th><td>    <b>return</b> <a class="member field" href="#llvm::SetVector::set_" title='llvm::SetVector::set_' data-ref="llvm::SetVector::set_" data-ref-filename="llvm..SetVector..set_">set_</a>.find(<a class="local col7 ref" href="#5807key" title='key' data-ref="5807key" data-ref-filename="5807key">key</a>) != <a class="member field" href="#llvm::SetVector::set_" title='llvm::SetVector::set_' data-ref="llvm::SetVector::set_" data-ref-filename="llvm..SetVector..set_">set_</a>.end();</td></tr>
+<tr><th id="211">211</th><td>  }</td></tr>
+<tr><th id="212">212</th><td></td></tr>
+<tr><th id="213">213</th><td>  <i class="doc">/// Count the number of elements of a given key in the SetVector.</i></td></tr>
+<tr><th id="214">214</th><td><i class="doc">  /// <span class="command">\returns</span> 0 if the element is not in the SetVector, 1 if it is.</i></td></tr>
+<tr><th id="215">215</th><td>  <a class="typedef" href="#llvm::SetVector::size_type" title='llvm::SetVector::size_type' data-type='typename vector_type::size_type' data-ref="llvm::SetVector::size_type" data-ref-filename="llvm..SetVector..size_type">size_type</a> <dfn class="decl def fn" id="_ZNK4llvm9SetVector5countERKT_" title='llvm::SetVector::count' data-ref="_ZNK4llvm9SetVector5countERKT_" data-ref-filename="_ZNK4llvm9SetVector5countERKT_">count</dfn>(<em>const</em> <a class="typedef" href="#llvm::SetVector::key_type" title='llvm::SetVector::key_type' data-type='T' data-ref="llvm::SetVector::key_type" data-ref-filename="llvm..SetVector..key_type">key_type</a> &amp;<dfn class="local col8 decl" id="5808key" title='key' data-type='const llvm::SetVector::key_type &amp;' data-ref="5808key" data-ref-filename="5808key">key</dfn>) <em>const</em> {</td></tr>
+<tr><th id="216">216</th><td>    <b>return</b> <a class="member field" href="#llvm::SetVector::set_" title='llvm::SetVector::set_' data-ref="llvm::SetVector::set_" data-ref-filename="llvm..SetVector..set_">set_</a>.count(<a class="local col8 ref" href="#5808key" title='key' data-ref="5808key" data-ref-filename="5808key">key</a>);</td></tr>
+<tr><th id="217">217</th><td>  }</td></tr>
+<tr><th id="218">218</th><td></td></tr>
+<tr><th id="219">219</th><td>  <i class="doc">/// Completely clear the SetVector</i></td></tr>
+<tr><th id="220">220</th><td>  <em>void</em> <dfn class="decl def fn" id="_ZN4llvm9SetVector5clearEv" title='llvm::SetVector::clear' data-ref="_ZN4llvm9SetVector5clearEv" data-ref-filename="_ZN4llvm9SetVector5clearEv">clear</dfn>() {</td></tr>
+<tr><th id="221">221</th><td>    <a class="member field" href="#llvm::SetVector::set_" title='llvm::SetVector::set_' data-ref="llvm::SetVector::set_" data-ref-filename="llvm..SetVector..set_">set_</a>.clear();</td></tr>
+<tr><th id="222">222</th><td>    <a class="member field" href="#llvm::SetVector::vector_" title='llvm::SetVector::vector_' data-ref="llvm::SetVector::vector_" data-ref-filename="llvm..SetVector..vector_">vector_</a>.clear();</td></tr>
+<tr><th id="223">223</th><td>  }</td></tr>
+<tr><th id="224">224</th><td></td></tr>
+<tr><th id="225">225</th><td>  <i class="doc">/// Remove the last element of the SetVector.</i></td></tr>
+<tr><th id="226">226</th><td>  <em>void</em> <dfn class="decl def fn" id="_ZN4llvm9SetVector8pop_backEv" title='llvm::SetVector::pop_back' data-ref="_ZN4llvm9SetVector8pop_backEv" data-ref-filename="_ZN4llvm9SetVector8pop_backEv">pop_back</dfn>() {</td></tr>
+<tr><th id="227">227</th><td>    <a class="macro" href="../../../../../include/assert.h.html#50" title="(static_cast&lt;void&gt; (0))" data-ref="_M/assert">assert</a>(!empty() &amp;&amp; <q>"Cannot remove an element from an empty SetVector!"</q>);</td></tr>
+<tr><th id="228">228</th><td>    <a class="member field" href="#llvm::SetVector::set_" title='llvm::SetVector::set_' data-ref="llvm::SetVector::set_" data-ref-filename="llvm..SetVector..set_">set_</a>.erase(<a class="member fn" href="#_ZNK4llvm9SetVector4backEv" title='llvm::SetVector::back' data-ref="_ZNK4llvm9SetVector4backEv" data-ref-filename="_ZNK4llvm9SetVector4backEv">back</a>());</td></tr>
+<tr><th id="229">229</th><td>    <a class="member field" href="#llvm::SetVector::vector_" title='llvm::SetVector::vector_' data-ref="llvm::SetVector::vector_" data-ref-filename="llvm..SetVector..vector_">vector_</a>.pop_back();</td></tr>
+<tr><th id="230">230</th><td>  }</td></tr>
+<tr><th id="231">231</th><td></td></tr>
+<tr><th id="232">232</th><td>  <a class="macro" href="../Support/Compiler.h.html#152" title="[[clang::warn_unused_result]]" data-ref="_M/LLVM_NODISCARD">LLVM_NODISCARD</a> T <dfn class="decl def fn" id="_ZN4llvm9SetVector12pop_back_valEv" title='llvm::SetVector::pop_back_val' data-ref="_ZN4llvm9SetVector12pop_back_valEv" data-ref-filename="_ZN4llvm9SetVector12pop_back_valEv">pop_back_val</dfn>() {</td></tr>
+<tr><th id="233">233</th><td>    T <dfn class="local col9 decl" id="5809Ret" title='Ret' data-type='T' data-ref="5809Ret" data-ref-filename="5809Ret">Ret</dfn> = <a class="member fn" href="#_ZNK4llvm9SetVector4backEv" title='llvm::SetVector::back' data-ref="_ZNK4llvm9SetVector4backEv" data-ref-filename="_ZNK4llvm9SetVector4backEv">back</a>();</td></tr>
+<tr><th id="234">234</th><td>    <a class="member fn" href="#_ZN4llvm9SetVector8pop_backEv" title='llvm::SetVector::pop_back' data-ref="_ZN4llvm9SetVector8pop_backEv" data-ref-filename="_ZN4llvm9SetVector8pop_backEv">pop_back</a>();</td></tr>
+<tr><th id="235">235</th><td>    <b>return</b> <a class="local col9 ref" href="#5809Ret" title='Ret' data-ref="5809Ret" data-ref-filename="5809Ret">Ret</a>;</td></tr>
+<tr><th id="236">236</th><td>  }</td></tr>
+<tr><th id="237">237</th><td></td></tr>
+<tr><th id="238">238</th><td>  <em>bool</em> <dfn class="decl def fn" id="_ZNK4llvm9SetVectoreqERKNS_9SetVectorIT_T0_T1_EE" title='llvm::SetVector::operator==' data-ref="_ZNK4llvm9SetVectoreqERKNS_9SetVectorIT_T0_T1_EE" data-ref-filename="_ZNK4llvm9SetVectoreqERKNS_9SetVectorIT_T0_T1_EE"><b>operator</b>==</dfn>(<em>const</em> SetVector &amp;<dfn class="local col0 decl" id="5810that" title='that' data-type='const SetVector&lt;T, Vector, Set&gt; &amp;' data-ref="5810that" data-ref-filename="5810that">that</dfn>) <em>const</em> {</td></tr>
+<tr><th id="239">239</th><td>    <b>return</b> <a class="member field" href="#llvm::SetVector::vector_" title='llvm::SetVector::vector_' data-ref="llvm::SetVector::vector_" data-ref-filename="llvm..SetVector..vector_">vector_</a> == <a class="local col0 ref" href="#5810that" title='that' data-ref="5810that" data-ref-filename="5810that">that</a>.vector_;</td></tr>
+<tr><th id="240">240</th><td>  }</td></tr>
+<tr><th id="241">241</th><td></td></tr>
+<tr><th id="242">242</th><td>  <em>bool</em> <dfn class="decl def fn" id="_ZNK4llvm9SetVectorneERKNS_9SetVectorIT_T0_T1_EE" title='llvm::SetVector::operator!=' data-ref="_ZNK4llvm9SetVectorneERKNS_9SetVectorIT_T0_T1_EE" data-ref-filename="_ZNK4llvm9SetVectorneERKNS_9SetVectorIT_T0_T1_EE"><b>operator</b>!=</dfn>(<em>const</em> SetVector &amp;<dfn class="local col1 decl" id="5811that" title='that' data-type='const SetVector&lt;T, Vector, Set&gt; &amp;' data-ref="5811that" data-ref-filename="5811that">that</dfn>) <em>const</em> {</td></tr>
+<tr><th id="243">243</th><td>    <b>return</b> <a class="member field" href="#llvm::SetVector::vector_" title='llvm::SetVector::vector_' data-ref="llvm::SetVector::vector_" data-ref-filename="llvm..SetVector..vector_">vector_</a> != <a class="local col1 ref" href="#5811that" title='that' data-ref="5811that" data-ref-filename="5811that">that</a>.vector_;</td></tr>
+<tr><th id="244">244</th><td>  }</td></tr>
+<tr><th id="245">245</th><td></td></tr>
+<tr><th id="246">246</th><td>  <i class="doc">/// Compute This := This u S, return whether 'This' changed.</i></td></tr>
+<tr><th id="247">247</th><td><i class="doc">  /// TODO: We should be able to use set_union from SetOperations.h, but</i></td></tr>
+<tr><th id="248">248</th><td><i class="doc">  ///       SetVector interface is inconsistent with DenseSet.</i></td></tr>
+<tr><th id="249">249</th><td>  <b>template</b> &lt;<b>class</b> STy&gt;</td></tr>
+<tr><th id="250">250</th><td>  <em>bool</em> <dfn class="decl def fn" id="_ZN4llvm9SetVector9set_unionERKTL0__" title='llvm::SetVector::set_union' data-ref="_ZN4llvm9SetVector9set_unionERKTL0__" data-ref-filename="_ZN4llvm9SetVector9set_unionERKTL0__">set_union</dfn>(<em>const</em> STy &amp;<dfn class="local col2 decl" id="5812S" title='S' data-type='const STy &amp;' data-ref="5812S" data-ref-filename="5812S">S</dfn>) {</td></tr>
+<tr><th id="251">251</th><td>    <em>bool</em> <dfn class="local col3 decl" id="5813Changed" title='Changed' data-type='bool' data-ref="5813Changed" data-ref-filename="5813Changed">Changed</dfn> = <b>false</b>;</td></tr>
+<tr><th id="252">252</th><td></td></tr>
+<tr><th id="253">253</th><td>    <b>for</b> (<b>typename</b> STy::const_iterator <dfn class="local col4 decl" id="5814SI" title='SI' data-type='typename STy::const_iterator' data-ref="5814SI" data-ref-filename="5814SI">SI</dfn> = <a class="local col2 ref" href="#5812S" title='S' data-ref="5812S" data-ref-filename="5812S">S</a>.begin(), <dfn class="local col5 decl" id="5815SE" title='SE' data-type='typename STy::const_iterator' data-ref="5815SE" data-ref-filename="5815SE">SE</dfn> = <a class="local col2 ref" href="#5812S" title='S' data-ref="5812S" data-ref-filename="5812S">S</a>.end(); <a class="local col4 ref" href="#5814SI" title='SI' data-ref="5814SI" data-ref-filename="5814SI">SI</a> != <a class="local col5 ref" href="#5815SE" title='SE' data-ref="5815SE" data-ref-filename="5815SE">SE</a>;</td></tr>
+<tr><th id="254">254</th><td>         ++<a class="local col4 ref" href="#5814SI" title='SI' data-ref="5814SI" data-ref-filename="5814SI">SI</a>)</td></tr>
+<tr><th id="255">255</th><td>      <b>if</b> (insert(*<a class="local col4 ref" href="#5814SI" title='SI' data-ref="5814SI" data-ref-filename="5814SI">SI</a>))</td></tr>
+<tr><th id="256">256</th><td>        <a class="local col3 ref" href="#5813Changed" title='Changed' data-ref="5813Changed" data-ref-filename="5813Changed">Changed</a> = <b>true</b>;</td></tr>
+<tr><th id="257">257</th><td></td></tr>
+<tr><th id="258">258</th><td>    <b>return</b> <a class="local col3 ref" href="#5813Changed" title='Changed' data-ref="5813Changed" data-ref-filename="5813Changed">Changed</a>;</td></tr>
+<tr><th id="259">259</th><td>  }</td></tr>
+<tr><th id="260">260</th><td></td></tr>
+<tr><th id="261">261</th><td>  <i class="doc">/// Compute This := This - B</i></td></tr>
+<tr><th id="262">262</th><td><i class="doc">  /// TODO: We should be able to use set_subtract from SetOperations.h, but</i></td></tr>
+<tr><th id="263">263</th><td><i class="doc">  ///       SetVector interface is inconsistent with DenseSet.</i></td></tr>
+<tr><th id="264">264</th><td>  <b>template</b> &lt;<b>class</b> STy&gt;</td></tr>
+<tr><th id="265">265</th><td>  <em>void</em> <dfn class="decl def fn" id="_ZN4llvm9SetVector12set_subtractERKTL0__" title='llvm::SetVector::set_subtract' data-ref="_ZN4llvm9SetVector12set_subtractERKTL0__" data-ref-filename="_ZN4llvm9SetVector12set_subtractERKTL0__">set_subtract</dfn>(<em>const</em> STy &amp;<dfn class="local col6 decl" id="5816S" title='S' data-type='const STy &amp;' data-ref="5816S" data-ref-filename="5816S">S</dfn>) {</td></tr>
+<tr><th id="266">266</th><td>    <b>for</b> (<b>typename</b> STy::const_iterator <dfn class="local col7 decl" id="5817SI" title='SI' data-type='typename STy::const_iterator' data-ref="5817SI" data-ref-filename="5817SI">SI</dfn> = <a class="local col6 ref" href="#5816S" title='S' data-ref="5816S" data-ref-filename="5816S">S</a>.begin(), <dfn class="local col8 decl" id="5818SE" title='SE' data-type='typename STy::const_iterator' data-ref="5818SE" data-ref-filename="5818SE">SE</dfn> = <a class="local col6 ref" href="#5816S" title='S' data-ref="5816S" data-ref-filename="5816S">S</a>.end(); <a class="local col7 ref" href="#5817SI" title='SI' data-ref="5817SI" data-ref-filename="5817SI">SI</a> != <a class="local col8 ref" href="#5818SE" title='SE' data-ref="5818SE" data-ref-filename="5818SE">SE</a>;</td></tr>
+<tr><th id="267">267</th><td>         ++<a class="local col7 ref" href="#5817SI" title='SI' data-ref="5817SI" data-ref-filename="5817SI">SI</a>)</td></tr>
+<tr><th id="268">268</th><td>      <a class="member fn" href="#_ZN4llvm9SetVector6removeERKT_" title='llvm::SetVector::remove' data-ref="_ZN4llvm9SetVector6removeERKT_" data-ref-filename="_ZN4llvm9SetVector6removeERKT_">remove</a>(*<a class="local col7 ref" href="#5817SI" title='SI' data-ref="5817SI" data-ref-filename="5817SI">SI</a>);</td></tr>
+<tr><th id="269">269</th><td>  }</td></tr>
+<tr><th id="270">270</th><td></td></tr>
+<tr><th id="271">271</th><td>  <em>void</em> <dfn class="decl def fn" id="_ZN4llvm9SetVector4swapERNS_9SetVectorIT_T0_T1_EE" title='llvm::SetVector::swap' data-ref="_ZN4llvm9SetVector4swapERNS_9SetVectorIT_T0_T1_EE" data-ref-filename="_ZN4llvm9SetVector4swapERNS_9SetVectorIT_T0_T1_EE">swap</dfn>(<a class="type" href="#llvm::SetVector" title='llvm::SetVector' data-ref="llvm::SetVector" data-ref-filename="llvm..SetVector">SetVector</a>&lt;T, Vector, Set&gt; &amp;<dfn class="local col9 decl" id="5819RHS" title='RHS' data-type='SetVector&lt;T, Vector, Set&gt; &amp;' data-ref="5819RHS" data-ref-filename="5819RHS">RHS</dfn>) {</td></tr>
+<tr><th id="272">272</th><td>    <a class="member field" href="#llvm::SetVector::set_" title='llvm::SetVector::set_' data-ref="llvm::SetVector::set_" data-ref-filename="llvm..SetVector..set_">set_</a>.swap(<a class="local col9 ref" href="#5819RHS" title='RHS' data-ref="5819RHS" data-ref-filename="5819RHS">RHS</a>.set_);</td></tr>
+<tr><th id="273">273</th><td>    <a class="member field" href="#llvm::SetVector::vector_" title='llvm::SetVector::vector_' data-ref="llvm::SetVector::vector_" data-ref-filename="llvm..SetVector..vector_">vector_</a>.swap(<a class="local col9 ref" href="#5819RHS" title='RHS' data-ref="5819RHS" data-ref-filename="5819RHS">RHS</a>.vector_);</td></tr>
+<tr><th id="274">274</th><td>  }</td></tr>
+<tr><th id="275">275</th><td></td></tr>
+<tr><th id="276">276</th><td><b>private</b>:</td></tr>
+<tr><th id="277">277</th><td>  <i class="doc">/// A wrapper predicate designed for use with std::remove_if.</i></td></tr>
+<tr><th id="278">278</th><td><i class="doc">  ///</i></td></tr>
+<tr><th id="279">279</th><td><i class="doc">  /// This predicate wraps a predicate suitable for use with std::remove_if to</i></td></tr>
+<tr><th id="280">280</th><td><i class="doc">  /// call set_.erase(x) on each element which is slated for removal.</i></td></tr>
+<tr><th id="281">281</th><td>  <b>template</b> &lt;<b>typename</b> UnaryPredicate&gt;</td></tr>
+<tr><th id="282">282</th><td>  <b>class</b> <dfn class="type def" id="llvm::SetVector::TestAndEraseFromSet" title='llvm::SetVector::TestAndEraseFromSet' data-ref="llvm::SetVector::TestAndEraseFromSet" data-ref-filename="llvm..SetVector..TestAndEraseFromSet">TestAndEraseFromSet</dfn> {</td></tr>
+<tr><th id="283">283</th><td>    UnaryPredicate <dfn class="decl field" id="llvm::SetVector::TestAndEraseFromSet::P" title='llvm::SetVector::TestAndEraseFromSet::P' data-ref="llvm::SetVector::TestAndEraseFromSet::P" data-ref-filename="llvm..SetVector..TestAndEraseFromSet..P">P</dfn>;</td></tr>
+<tr><th id="284">284</th><td>    <a class="typedef" href="#llvm::SetVector::set_type" title='llvm::SetVector::set_type' data-type='Set' data-ref="llvm::SetVector::set_type" data-ref-filename="llvm..SetVector..set_type">set_type</a> &amp;<dfn class="decl field" id="llvm::SetVector::TestAndEraseFromSet::set_" title='llvm::SetVector::TestAndEraseFromSet::set_' data-ref="llvm::SetVector::TestAndEraseFromSet::set_" data-ref-filename="llvm..SetVector..TestAndEraseFromSet..set_">set_</dfn>;</td></tr>
+<tr><th id="285">285</th><td></td></tr>
+<tr><th id="286">286</th><td>  <b>public</b>:</td></tr>
+<tr><th id="287">287</th><td>    <dfn class="decl def fn" id="_ZN4llvm9SetVector19TestAndEraseFromSetC1ETL0__RT1_" title='llvm::SetVector::TestAndEraseFromSet::TestAndEraseFromSet&lt;UnaryPredicate&gt;' data-ref="_ZN4llvm9SetVector19TestAndEraseFromSetC1ETL0__RT1_" data-ref-filename="_ZN4llvm9SetVector19TestAndEraseFromSetC1ETL0__RT1_">TestAndEraseFromSet</dfn>(UnaryPredicate <dfn class="local col0 decl" id="5820P" title='P' data-type='UnaryPredicate' data-ref="5820P" data-ref-filename="5820P">P</dfn>, <a class="typedef" href="#llvm::SetVector::set_type" title='llvm::SetVector::set_type' data-type='Set' data-ref="llvm::SetVector::set_type" data-ref-filename="llvm..SetVector..set_type">set_type</a> &amp;<dfn class="local col1 decl" id="5821set_" title='set_' data-type='llvm::SetVector::set_type &amp;' data-ref="5821set_" data-ref-filename="5821set_">set_</dfn>)</td></tr>
+<tr><th id="288">288</th><td>        : <a class="member field" href="#llvm::SetVector::TestAndEraseFromSet::P" title='llvm::SetVector::TestAndEraseFromSet::P' data-ref="llvm::SetVector::TestAndEraseFromSet::P" data-ref-filename="llvm..SetVector..TestAndEraseFromSet..P">P</a>(<span class="namespace">std::</span>move(<a class="local col0 ref" href="#5820P" title='P' data-ref="5820P" data-ref-filename="5820P">P</a>)), <a class="member field" href="#llvm::SetVector::TestAndEraseFromSet::set_" title='llvm::SetVector::TestAndEraseFromSet::set_' data-ref="llvm::SetVector::TestAndEraseFromSet::set_" data-ref-filename="llvm..SetVector..TestAndEraseFromSet..set_">set_</a>(<a class="local col1 ref" href="#5821set_" title='set_' data-ref="5821set_" data-ref-filename="5821set_">set_</a>) {}</td></tr>
+<tr><th id="289">289</th><td></td></tr>
+<tr><th id="290">290</th><td>    <b>template</b> &lt;<b>typename</b> ArgumentT&gt;</td></tr>
+<tr><th id="291">291</th><td>    <em>bool</em> <dfn class="decl def fn" id="_ZN4llvm9SetVector19TestAndEraseFromSetclERKTL1__" title='llvm::SetVector::TestAndEraseFromSet::operator()' data-ref="_ZN4llvm9SetVector19TestAndEraseFromSetclERKTL1__" data-ref-filename="_ZN4llvm9SetVector19TestAndEraseFromSetclERKTL1__"><b>operator</b>()</dfn>(<em>const</em> ArgumentT &amp;<dfn class="local col2 decl" id="5822Arg" title='Arg' data-type='const ArgumentT &amp;' data-ref="5822Arg" data-ref-filename="5822Arg">Arg</dfn>) {</td></tr>
+<tr><th id="292">292</th><td>      <b>if</b> (<a class="member field" href="#llvm::SetVector::TestAndEraseFromSet::P" title='llvm::SetVector::TestAndEraseFromSet::P' data-ref="llvm::SetVector::TestAndEraseFromSet::P" data-ref-filename="llvm..SetVector..TestAndEraseFromSet..P">P</a>(<a class="local col2 ref" href="#5822Arg" title='Arg' data-ref="5822Arg" data-ref-filename="5822Arg">Arg</a>)) {</td></tr>
+<tr><th id="293">293</th><td>        <a class="member field" href="#llvm::SetVector::TestAndEraseFromSet::set_" title='llvm::SetVector::TestAndEraseFromSet::set_' data-ref="llvm::SetVector::TestAndEraseFromSet::set_" data-ref-filename="llvm..SetVector..TestAndEraseFromSet..set_">set_</a>.erase(<a class="local col2 ref" href="#5822Arg" title='Arg' data-ref="5822Arg" data-ref-filename="5822Arg">Arg</a>);</td></tr>
+<tr><th id="294">294</th><td>        <b>return</b> <b>true</b>;</td></tr>
+<tr><th id="295">295</th><td>      }</td></tr>
+<tr><th id="296">296</th><td>      <b>return</b> <b>false</b>;</td></tr>
+<tr><th id="297">297</th><td>    }</td></tr>
+<tr><th id="298">298</th><td>  };</td></tr>
+<tr><th id="299">299</th><td></td></tr>
+<tr><th id="300">300</th><td>  <a class="typedef" href="#llvm::SetVector::set_type" title='llvm::SetVector::set_type' data-type='Set' data-ref="llvm::SetVector::set_type" data-ref-filename="llvm..SetVector..set_type">set_type</a> <dfn class="decl field" id="llvm::SetVector::set_" title='llvm::SetVector::set_' data-ref="llvm::SetVector::set_" data-ref-filename="llvm..SetVector..set_">set_</dfn>;         <i class="doc">///&lt; The set.</i></td></tr>
+<tr><th id="301">301</th><td>  <a class="typedef" href="#llvm::SetVector::vector_type" title='llvm::SetVector::vector_type' data-type='Vector' data-ref="llvm::SetVector::vector_type" data-ref-filename="llvm..SetVector..vector_type">vector_type</a> <dfn class="decl field" id="llvm::SetVector::vector_" title='llvm::SetVector::vector_' data-ref="llvm::SetVector::vector_" data-ref-filename="llvm..SetVector..vector_">vector_</dfn>;   <i class="doc">///&lt; The vector.</i></td></tr>
+<tr><th id="302">302</th><td>};</td></tr>
+<tr><th id="303">303</th><td></td></tr>
+<tr><th id="304">304</th><td><i class="doc">/// A SetVector that performs no allocations if smaller than</i></td></tr>
+<tr><th id="305">305</th><td><i class="doc">/// a certain size.</i></td></tr>
+<tr><th id="306">306</th><td><b>template</b> &lt;<b>typename</b> T, <em>unsigned</em> N&gt;</td></tr>
+<tr><th id="307">307</th><td><b>class</b> <dfn class="type def" id="llvm::SmallSetVector" title='llvm::SmallSetVector' data-ref="llvm::SmallSetVector" data-ref-filename="llvm..SmallSetVector">SmallSetVector</dfn></td></tr>
+<tr><th id="308">308</th><td>    : <b>public</b> <a class="type" href="#llvm::SetVector" title='llvm::SetVector' data-ref="llvm::SetVector" data-ref-filename="llvm..SetVector">SetVector</a>&lt;T, <a class="type" href="../../../../clang/include/clang/Basic/LLVM.h.html#llvm::SmallVector" title='llvm::SmallVector' data-ref="llvm::SmallVector" data-ref-filename="llvm..SmallVector">SmallVector</a>&lt;T, <a class="tu ref" href="#llvm::SmallSetVector::N" title='llvm::SmallSetVector::N' data-ref="llvm::SmallSetVector::N" data-ref-filename="llvm..SmallSetVector..N">N</a>&gt;, <a class="type" href="DenseSet.h.html#llvm::SmallDenseSet" title='llvm::SmallDenseSet' data-ref="llvm::SmallDenseSet" data-ref-filename="llvm..SmallDenseSet">SmallDenseSet</a>&lt;T, <a class="tu ref" href="#llvm::SmallSetVector::N" title='llvm::SmallSetVector::N' data-ref="llvm::SmallSetVector::N" data-ref-filename="llvm..SmallSetVector..N">N</a>&gt;&gt; {</td></tr>
+<tr><th id="309">309</th><td><b>public</b>:</td></tr>
+<tr><th id="310">310</th><td>  <dfn class="decl def fn" id="_ZN4llvm14SmallSetVectorC1Ev" title='llvm::SmallSetVector::SmallSetVector&lt;T, N&gt;' data-ref="_ZN4llvm14SmallSetVectorC1Ev" data-ref-filename="_ZN4llvm14SmallSetVectorC1Ev">SmallSetVector</dfn>() = <b>default</b>;</td></tr>
+<tr><th id="311">311</th><td></td></tr>
+<tr><th id="312">312</th><td>  <i class="doc">/// Initialize a SmallSetVector with a range of elements</i></td></tr>
+<tr><th id="313">313</th><td>  <b>template</b>&lt;<b>typename</b> It&gt;</td></tr>
+<tr><th id="314">314</th><td>  <dfn class="decl def fn" id="_ZN4llvm14SmallSetVectorC1ETL0__S1_" title='llvm::SmallSetVector::SmallSetVector&lt;T, N&gt;' data-ref="_ZN4llvm14SmallSetVectorC1ETL0__S1_" data-ref-filename="_ZN4llvm14SmallSetVectorC1ETL0__S1_">SmallSetVector</dfn>(It <dfn class="local col3 decl" id="5823Start" title='Start' data-type='It' data-ref="5823Start" data-ref-filename="5823Start">Start</dfn>, It <dfn class="local col4 decl" id="5824End" title='End' data-type='It' data-ref="5824End" data-ref-filename="5824End">End</dfn>) {</td></tr>
+<tr><th id="315">315</th><td>    <b>this</b>-&gt;insert(<a class="local col3 ref" href="#5823Start" title='Start' data-ref="5823Start" data-ref-filename="5823Start">Start</a>, <a class="local col4 ref" href="#5824End" title='End' data-ref="5824End" data-ref-filename="5824End">End</a>);</td></tr>
+<tr><th id="316">316</th><td>  }</td></tr>
+<tr><th id="317">317</th><td>};</td></tr>
+<tr><th id="318">318</th><td></td></tr>
+<tr><th id="319">319</th><td>} <i>// end namespace llvm</i></td></tr>
+<tr><th id="320">320</th><td></td></tr>
+<tr><th id="321">321</th><td><b>namespace</b> <span class="namespace">std</span> {</td></tr>
+<tr><th id="322">322</th><td></td></tr>
+<tr><th id="323">323</th><td><i class="doc">/// Implement std::swap in terms of SetVector swap.</i></td></tr>
+<tr><th id="324">324</th><td><b>template</b>&lt;<b>typename</b> T, <b>typename</b> V, <b>typename</b> S&gt;</td></tr>
+<tr><th id="325">325</th><td><b>inline</b> <em>void</em></td></tr>
+<tr><th id="326">326</th><td><dfn class="decl def fn" id="_ZSt4swapRN4llvm9SetVectorIT_T0_T1_EES5_" title='std::swap' data-ref="_ZSt4swapRN4llvm9SetVectorIT_T0_T1_EES5_" data-ref-filename="_ZSt4swapRN4llvm9SetVectorIT_T0_T1_EES5_">swap</dfn>(<span class="namespace">llvm::</span><a class="type" href="#llvm::SetVector" title='llvm::SetVector' data-ref="llvm::SetVector" data-ref-filename="llvm..SetVector">SetVector</a>&lt;T, V, S&gt; &amp;<dfn class="local col5 decl" id="5825LHS" title='LHS' data-type='llvm::SetVector&lt;T, V, S&gt; &amp;' data-ref="5825LHS" data-ref-filename="5825LHS">LHS</dfn>, <span class="namespace">llvm::</span><a class="type" href="#llvm::SetVector" title='llvm::SetVector' data-ref="llvm::SetVector" data-ref-filename="llvm..SetVector">SetVector</a>&lt;T, V, S&gt; &amp;<dfn class="local col6 decl" id="5826RHS" title='RHS' data-type='llvm::SetVector&lt;T, V, S&gt; &amp;' data-ref="5826RHS" data-ref-filename="5826RHS">RHS</dfn>) {</td></tr>
+<tr><th id="327">327</th><td>  <a class="local col5 ref" href="#5825LHS" title='LHS' data-ref="5825LHS" data-ref-filename="5825LHS">LHS</a>.swap(<a class="local col6 ref" href="#5826RHS" title='RHS' data-ref="5826RHS" data-ref-filename="5826RHS">RHS</a>);</td></tr>
+<tr><th id="328">328</th><td>}</td></tr>
+<tr><th id="329">329</th><td></td></tr>
+<tr><th id="330">330</th><td><i class="doc">/// Implement std::swap in terms of SmallSetVector swap.</i></td></tr>
+<tr><th id="331">331</th><td><b>template</b>&lt;<b>typename</b> T, <em>unsigned</em> N&gt;</td></tr>
+<tr><th id="332">332</th><td><b>inline</b> <em>void</em></td></tr>
+<tr><th id="333">333</th><td><dfn class="decl def fn" id="_ZSt4swapRN4llvm14SmallSetVectorIT_XT0_EEES3_" title='std::swap' data-ref="_ZSt4swapRN4llvm14SmallSetVectorIT_XT0_EEES3_" data-ref-filename="_ZSt4swapRN4llvm14SmallSetVectorIT_XT0_EEES3_">swap</dfn>(<span class="namespace">llvm::</span><a class="type" href="#llvm::SmallSetVector" title='llvm::SmallSetVector' data-ref="llvm::SmallSetVector" data-ref-filename="llvm..SmallSetVector">SmallSetVector</a>&lt;T, <a class="tu ref" href="#N" title='N' data-ref="N" data-ref-filename="N">N</a>&gt; &amp;<dfn class="local col7 decl" id="5827LHS" title='LHS' data-type='llvm::SmallSetVector&lt;T, N&gt; &amp;' data-ref="5827LHS" data-ref-filename="5827LHS">LHS</dfn>, <span class="namespace">llvm::</span><a class="type" href="#llvm::SmallSetVector" title='llvm::SmallSetVector' data-ref="llvm::SmallSetVector" data-ref-filename="llvm..SmallSetVector">SmallSetVector</a>&lt;T, <a class="tu ref" href="#N" title='N' data-ref="N" data-ref-filename="N">N</a>&gt; &amp;<dfn class="local col8 decl" id="5828RHS" title='RHS' data-type='llvm::SmallSetVector&lt;T, N&gt; &amp;' data-ref="5828RHS" data-ref-filename="5828RHS">RHS</dfn>) {</td></tr>
+<tr><th id="334">334</th><td>  <a class="local col7 ref" href="#5827LHS" title='LHS' data-ref="5827LHS" data-ref-filename="5827LHS">LHS</a>.swap(<a class="local col8 ref" href="#5828RHS" title='RHS' data-ref="5828RHS" data-ref-filename="5828RHS">RHS</a>);</td></tr>
+<tr><th id="335">335</th><td>}</td></tr>
+<tr><th id="336">336</th><td></td></tr>
+<tr><th id="337">337</th><td>} <i>// end namespace std</i></td></tr>
+<tr><th id="338">338</th><td></td></tr>
+<tr><th id="339">339</th><td><u>#<span data-ppcond="19">endif</span> // LLVM_ADT_SETVECTOR_H</u></td></tr>
+<tr><th id="340">340</th><td></td></tr>
+</table><hr/><p id='footer'>
+Generated while processing <a href='../../../../clang/examples/AnnotateFunctions/AnnotateFunctions.cpp.html'>llvm/clang/examples/AnnotateFunctions/AnnotateFunctions.cpp</a><br/>Generated on <em>2021-Jul-01</em> from project llvm revision <em>12</em>

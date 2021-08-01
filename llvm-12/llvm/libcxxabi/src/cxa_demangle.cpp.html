@@ -1,0 +1,382 @@
+<!doctype html>
+<html>
+<head>
+<meta name="viewport" content="width=device-width, initial-scale=1.0"><title>cxa_demangle.cpp source code [llvm/libcxxabi/src/cxa_demangle.cpp] - Woboq Code Browser</title>
+<link rel="stylesheet" href="../../.././data/qtcreator.css" title="QtCreator"/>
+<link rel="alternate stylesheet" href="../../.././data/kdevelop.css" title="KDevelop"/>
+<script type="text/javascript" src="../../.././data/jquery/jquery.min.js"></script>
+<script type="text/javascript" src="../../.././data/jquery/jquery-ui.min.js"></script>
+<script>var file = 'llvm/libcxxabi/src/cxa_demangle.cpp'; var root_path = '../../..'; var data_path = '../../.././data'; var ecma_script_api_version = 2;</script>
+<script src='../../.././data/codebrowser.js'></script>
+</head>
+<body><div id='header'><h1 id='breadcrumb'><span>Browse the source code of </span><a href='../..'>llvm</a>/<a href='..'>libcxxabi</a>/<a href='./'>src</a>/<a href='cxa_demangle.cpp.html'>cxa_demangle.cpp</a></h1></div>
+<hr/><div id='content'><table class="code">
+<tr><th id="1">1</th><td><i>//===-------------------------- cxa_demangle.cpp --------------------------===//</i></td></tr>
+<tr><th id="2">2</th><td><i>//</i></td></tr>
+<tr><th id="3">3</th><td><i>// Part of the LLVM Project, under the Apache License v2.0 with LLVM Exceptions.</i></td></tr>
+<tr><th id="4">4</th><td><i>// See <a href="https://llvm.org/LICENSE.txt">https://llvm.org/LICENSE.txt</a> for license information.</i></td></tr>
+<tr><th id="5">5</th><td><i>// SPDX-License-Identifier: Apache-2.0 WITH LLVM-exception</i></td></tr>
+<tr><th id="6">6</th><td><i>//</i></td></tr>
+<tr><th id="7">7</th><td><i>//===----------------------------------------------------------------------===//</i></td></tr>
+<tr><th id="8">8</th><td><i></i></td></tr>
+<tr><th id="9">9</th><td><i>// FIXME: (possibly) incomplete list of features that clang mangles that this</i></td></tr>
+<tr><th id="10">10</th><td><i>// file does not yet support:</i></td></tr>
+<tr><th id="11">11</th><td><i>//   - C++ modules TS</i></td></tr>
+<tr><th id="12">12</th><td></td></tr>
+<tr><th id="13">13</th><td><u>#include <a href="demangle/ItaniumDemangle.h.html">"demangle/ItaniumDemangle.h"</a></u></td></tr>
+<tr><th id="14">14</th><td><u>#include <a href="../include/__cxxabi_config.h.html">"__cxxabi_config.h"</a></u></td></tr>
+<tr><th id="15">15</th><td><u>#include <a href="../../libcxx/include/cassert.html">&lt;cassert&gt;</a></u></td></tr>
+<tr><th id="16">16</th><td><u>#include <a href="../../libcxx/include/cctype.html">&lt;cctype&gt;</a></u></td></tr>
+<tr><th id="17">17</th><td><u>#include <a href="../../libcxx/include/cstdio.html">&lt;cstdio&gt;</a></u></td></tr>
+<tr><th id="18">18</th><td><u>#include <a href="../../libcxx/include/cstdlib.html">&lt;cstdlib&gt;</a></u></td></tr>
+<tr><th id="19">19</th><td><u>#include <a href="../../libcxx/include/cstring.html">&lt;cstring&gt;</a></u></td></tr>
+<tr><th id="20">20</th><td><u>#include <a href="../../libcxx/include/functional.html">&lt;functional&gt;</a></u></td></tr>
+<tr><th id="21">21</th><td><u>#include <a href="../../libcxx/include/numeric.html">&lt;numeric&gt;</a></u></td></tr>
+<tr><th id="22">22</th><td><u>#include <a href="../../libcxx/include/utility.html">&lt;utility&gt;</a></u></td></tr>
+<tr><th id="23">23</th><td></td></tr>
+<tr><th id="24">24</th><td><b>using</b> <b>namespace</b> <span class="namespace">itanium_demangle</span>;</td></tr>
+<tr><th id="25">25</th><td></td></tr>
+<tr><th id="26">26</th><td><b>constexpr</b> <em>const</em> <em>char</em> *<span class="namespace">itanium_demangle::</span><a class="type" href="demangle/ItaniumDemangle.h.html#(anonymousnamespace)::itanium_demangle::FloatData" title='(anonymous namespace)::itanium_demangle::FloatData' data-ref="(anonymousnamespace)::itanium_demangle::FloatData" data-ref-filename="(anonymousnamespace)..itanium_demangle..FloatData">FloatData</a>&lt;<em>float</em>&gt;::<a class="tu decl" href="demangle/ItaniumDemangle.h.html#(anonymousnamespace)::itanium_demangle::FloatData{float}::spec" title='(anonymous namespace)::itanium_demangle::FloatData&lt;float&gt;::spec' data-type='const char *const' data-ref="(anonymousnamespace)::itanium_demangle::FloatData{float}::spec" data-ref-filename="(anonymousnamespace)..itanium_demangle..FloatData{float}..spec" id="(anonymousnamespace)::itanium_demangle::FloatData{float}::spec">spec</a>;</td></tr>
+<tr><th id="27">27</th><td><b>constexpr</b> <em>const</em> <em>char</em> *<span class="namespace">itanium_demangle::</span><a class="type" href="demangle/ItaniumDemangle.h.html#(anonymousnamespace)::itanium_demangle::FloatData" title='(anonymous namespace)::itanium_demangle::FloatData' data-ref="(anonymousnamespace)::itanium_demangle::FloatData" data-ref-filename="(anonymousnamespace)..itanium_demangle..FloatData">FloatData</a>&lt;<em>double</em>&gt;::<a class="tu decl" href="demangle/ItaniumDemangle.h.html#(anonymousnamespace)::itanium_demangle::FloatData{double}::spec" title='(anonymous namespace)::itanium_demangle::FloatData&lt;double&gt;::spec' data-type='const char *const' data-ref="(anonymousnamespace)::itanium_demangle::FloatData{double}::spec" data-ref-filename="(anonymousnamespace)..itanium_demangle..FloatData{double}..spec" id="(anonymousnamespace)::itanium_demangle::FloatData{double}::spec">spec</a>;</td></tr>
+<tr><th id="28">28</th><td><b>constexpr</b> <em>const</em> <em>char</em> *<span class="namespace">itanium_demangle::</span><a class="type" href="demangle/ItaniumDemangle.h.html#(anonymousnamespace)::itanium_demangle::FloatData" title='(anonymous namespace)::itanium_demangle::FloatData' data-ref="(anonymousnamespace)::itanium_demangle::FloatData" data-ref-filename="(anonymousnamespace)..itanium_demangle..FloatData">FloatData</a>&lt;<em>long</em> <em>double</em>&gt;::<a class="tu decl" href="demangle/ItaniumDemangle.h.html#(anonymousnamespace)::itanium_demangle::FloatData{longdouble}::spec" title='(anonymous namespace)::itanium_demangle::FloatData&lt;long double&gt;::spec' data-type='const char *const' data-ref="(anonymousnamespace)::itanium_demangle::FloatData{longdouble}::spec" data-ref-filename="(anonymousnamespace)..itanium_demangle..FloatData{longdouble}..spec" id="(anonymousnamespace)::itanium_demangle::FloatData{longdouble}::spec">spec</a>;</td></tr>
+<tr><th id="29">29</th><td></td></tr>
+<tr><th id="30">30</th><td><i  data-doc="_ZN12_GLOBAL__N_116itanium_demangle19parse_discriminatorEPKcS2_">// &lt;discriminator&gt; := _ &lt;non-negative number&gt;      # when number &lt; 10</i></td></tr>
+<tr><th id="31">31</th><td><i  data-doc="_ZN12_GLOBAL__N_116itanium_demangle19parse_discriminatorEPKcS2_">//                 := __ &lt;non-negative number&gt; _   # when number &gt;= 10</i></td></tr>
+<tr><th id="32">32</th><td><i  data-doc="_ZN12_GLOBAL__N_116itanium_demangle19parse_discriminatorEPKcS2_">//  extension      := decimal-digit+               # at the end of string</i></td></tr>
+<tr><th id="33">33</th><td><em>const</em> <em>char</em> *<span class="namespace">itanium_demangle::</span><dfn class="tu decl def fn" id="_ZN12_GLOBAL__N_116itanium_demangle19parse_discriminatorEPKcS2_" title='(anonymous namespace)::itanium_demangle::parse_discriminator' data-type='const char * (anonymous namespace)::itanium_demangle::parse_discriminator(const char * first, const char * last)' data-ref="_ZN12_GLOBAL__N_116itanium_demangle19parse_discriminatorEPKcS2_" data-ref-filename="_ZN12_GLOBAL__N_116itanium_demangle19parse_discriminatorEPKcS2_">parse_discriminator</dfn>(<em>const</em> <em>char</em> *<dfn class="local col5 decl" id="2805first" title='first' data-type='const char *' data-ref="2805first" data-ref-filename="2805first">first</dfn>,</td></tr>
+<tr><th id="34">34</th><td>                                                  <em>const</em> <em>char</em> *<dfn class="local col6 decl" id="2806last" title='last' data-type='const char *' data-ref="2806last" data-ref-filename="2806last">last</dfn>) {</td></tr>
+<tr><th id="35">35</th><td>  <i>// parse but ignore discriminator</i></td></tr>
+<tr><th id="36">36</th><td>  <b>if</b> (<a class="local col5 ref" href="#2805first" title='first' data-ref="2805first" data-ref-filename="2805first">first</a> != <a class="local col6 ref" href="#2806last" title='last' data-ref="2806last" data-ref-filename="2806last">last</a>) {</td></tr>
+<tr><th id="37">37</th><td>    <b>if</b> (*<a class="local col5 ref" href="#2805first" title='first' data-ref="2805first" data-ref-filename="2805first">first</a> == <kbd>'_'</kbd>) {</td></tr>
+<tr><th id="38">38</th><td>      <em>const</em> <em>char</em> *<dfn class="local col7 decl" id="2807t1" title='t1' data-type='const char *' data-ref="2807t1" data-ref-filename="2807t1">t1</dfn> = <a class="local col5 ref" href="#2805first" title='first' data-ref="2805first" data-ref-filename="2805first">first</a> + <var>1</var>;</td></tr>
+<tr><th id="39">39</th><td>      <b>if</b> (<a class="local col7 ref" href="#2807t1" title='t1' data-ref="2807t1" data-ref-filename="2807t1">t1</a> != <a class="local col6 ref" href="#2806last" title='last' data-ref="2806last" data-ref-filename="2806last">last</a>) {</td></tr>
+<tr><th id="40">40</th><td>        <b>if</b> (<span class="namespace">std::</span><a class="ref fn" href="../../../include/ctype.h.html#111" title='isdigit' data-ref="isdigit" data-ref-filename="isdigit">isdigit</a>(*<a class="local col7 ref" href="#2807t1" title='t1' data-ref="2807t1" data-ref-filename="2807t1">t1</a>))</td></tr>
+<tr><th id="41">41</th><td>          <a class="local col5 ref" href="#2805first" title='first' data-ref="2805first" data-ref-filename="2805first">first</a> = <a class="local col7 ref" href="#2807t1" title='t1' data-ref="2807t1" data-ref-filename="2807t1">t1</a> + <var>1</var>;</td></tr>
+<tr><th id="42">42</th><td>        <b>else</b> <b>if</b> (*<a class="local col7 ref" href="#2807t1" title='t1' data-ref="2807t1" data-ref-filename="2807t1">t1</a> == <kbd>'_'</kbd>) {</td></tr>
+<tr><th id="43">43</th><td>          <b>for</b> (++<a class="local col7 ref" href="#2807t1" title='t1' data-ref="2807t1" data-ref-filename="2807t1">t1</a>; <a class="local col7 ref" href="#2807t1" title='t1' data-ref="2807t1" data-ref-filename="2807t1">t1</a> != <a class="local col6 ref" href="#2806last" title='last' data-ref="2806last" data-ref-filename="2806last">last</a> &amp;&amp; <span class="namespace">std::</span><a class="ref fn" href="../../../include/ctype.h.html#111" title='isdigit' data-ref="isdigit" data-ref-filename="isdigit">isdigit</a>(*<a class="local col7 ref" href="#2807t1" title='t1' data-ref="2807t1" data-ref-filename="2807t1">t1</a>); ++<a class="local col7 ref" href="#2807t1" title='t1' data-ref="2807t1" data-ref-filename="2807t1">t1</a>)</td></tr>
+<tr><th id="44">44</th><td>            ;</td></tr>
+<tr><th id="45">45</th><td>          <b>if</b> (<a class="local col7 ref" href="#2807t1" title='t1' data-ref="2807t1" data-ref-filename="2807t1">t1</a> != <a class="local col6 ref" href="#2806last" title='last' data-ref="2806last" data-ref-filename="2806last">last</a> &amp;&amp; *<a class="local col7 ref" href="#2807t1" title='t1' data-ref="2807t1" data-ref-filename="2807t1">t1</a> == <kbd>'_'</kbd>)</td></tr>
+<tr><th id="46">46</th><td>            <a class="local col5 ref" href="#2805first" title='first' data-ref="2805first" data-ref-filename="2805first">first</a> = <a class="local col7 ref" href="#2807t1" title='t1' data-ref="2807t1" data-ref-filename="2807t1">t1</a> + <var>1</var>;</td></tr>
+<tr><th id="47">47</th><td>        }</td></tr>
+<tr><th id="48">48</th><td>      }</td></tr>
+<tr><th id="49">49</th><td>    } <b>else</b> <b>if</b> (<span class="namespace">std::</span><a class="ref fn" href="../../../include/ctype.h.html#111" title='isdigit' data-ref="isdigit" data-ref-filename="isdigit">isdigit</a>(*<a class="local col5 ref" href="#2805first" title='first' data-ref="2805first" data-ref-filename="2805first">first</a>)) {</td></tr>
+<tr><th id="50">50</th><td>      <em>const</em> <em>char</em> *<dfn class="local col8 decl" id="2808t1" title='t1' data-type='const char *' data-ref="2808t1" data-ref-filename="2808t1">t1</dfn> = <a class="local col5 ref" href="#2805first" title='first' data-ref="2805first" data-ref-filename="2805first">first</a> + <var>1</var>;</td></tr>
+<tr><th id="51">51</th><td>      <b>for</b> (; <a class="local col8 ref" href="#2808t1" title='t1' data-ref="2808t1" data-ref-filename="2808t1">t1</a> != <a class="local col6 ref" href="#2806last" title='last' data-ref="2806last" data-ref-filename="2806last">last</a> &amp;&amp; <span class="namespace">std::</span><a class="ref fn" href="../../../include/ctype.h.html#111" title='isdigit' data-ref="isdigit" data-ref-filename="isdigit">isdigit</a>(*<a class="local col8 ref" href="#2808t1" title='t1' data-ref="2808t1" data-ref-filename="2808t1">t1</a>); ++<a class="local col8 ref" href="#2808t1" title='t1' data-ref="2808t1" data-ref-filename="2808t1">t1</a>)</td></tr>
+<tr><th id="52">52</th><td>        ;</td></tr>
+<tr><th id="53">53</th><td>      <b>if</b> (<a class="local col8 ref" href="#2808t1" title='t1' data-ref="2808t1" data-ref-filename="2808t1">t1</a> == <a class="local col6 ref" href="#2806last" title='last' data-ref="2806last" data-ref-filename="2806last">last</a>)</td></tr>
+<tr><th id="54">54</th><td>        <a class="local col5 ref" href="#2805first" title='first' data-ref="2805first" data-ref-filename="2805first">first</a> = <a class="local col6 ref" href="#2806last" title='last' data-ref="2806last" data-ref-filename="2806last">last</a>;</td></tr>
+<tr><th id="55">55</th><td>    }</td></tr>
+<tr><th id="56">56</th><td>  }</td></tr>
+<tr><th id="57">57</th><td>  <b>return</b> <a class="local col5 ref" href="#2805first" title='first' data-ref="2805first" data-ref-filename="2805first">first</a>;</td></tr>
+<tr><th id="58">58</th><td>}</td></tr>
+<tr><th id="59">59</th><td></td></tr>
+<tr><th id="60">60</th><td><u>#<span data-ppcond="60">ifndef</span> <span class="macro" data-ref="_M/NDEBUG">NDEBUG</span></u></td></tr>
+<tr><th id="61">61</th><td><b>namespace</b> {</td></tr>
+<tr><th id="62">62</th><td><b>struct</b> DumpVisitor {</td></tr>
+<tr><th id="63">63</th><td>  <em>unsigned</em> Depth = <var>0</var>;</td></tr>
+<tr><th id="64">64</th><td>  <em>bool</em> PendingNewline = <b>false</b>;</td></tr>
+<tr><th id="65">65</th><td></td></tr>
+<tr><th id="66">66</th><td>  <b>template</b>&lt;<b>typename</b> NodeT&gt; <em>static</em> <b>constexpr</b> <em>bool</em> wantsNewline(<em>const</em> NodeT *) {</td></tr>
+<tr><th id="67">67</th><td>    <b>return</b> <b>true</b>;</td></tr>
+<tr><th id="68">68</th><td>  }</td></tr>
+<tr><th id="69">69</th><td>  <em>static</em> <em>bool</em> wantsNewline(NodeArray A) { <b>return</b> !A.empty(); }</td></tr>
+<tr><th id="70">70</th><td>  <em>static</em> <b>constexpr</b> <em>bool</em> wantsNewline(...) { <b>return</b> <b>false</b>; }</td></tr>
+<tr><th id="71">71</th><td></td></tr>
+<tr><th id="72">72</th><td>  <b>template</b>&lt;<b>typename</b> ...Ts&gt; <em>static</em> <em>bool</em> anyWantNewline(Ts ...Vs) {</td></tr>
+<tr><th id="73">73</th><td>    <b>for</b> (<em>bool</em> B : {wantsNewline(Vs)...})</td></tr>
+<tr><th id="74">74</th><td>      <b>if</b> (B)</td></tr>
+<tr><th id="75">75</th><td>        <b>return</b> <b>true</b>;</td></tr>
+<tr><th id="76">76</th><td>    <b>return</b> <b>false</b>;</td></tr>
+<tr><th id="77">77</th><td>  }</td></tr>
+<tr><th id="78">78</th><td></td></tr>
+<tr><th id="79">79</th><td>  <em>void</em> printStr(<em>const</em> <em>char</em> *S) { fprintf(stderr, <q>"%s"</q>, S); }</td></tr>
+<tr><th id="80">80</th><td>  <em>void</em> print(StringView SV) {</td></tr>
+<tr><th id="81">81</th><td>    fprintf(stderr, <q>"\"%.*s\""</q>, (<em>int</em>)SV.size(), SV.begin());</td></tr>
+<tr><th id="82">82</th><td>  }</td></tr>
+<tr><th id="83">83</th><td>  <em>void</em> print(<em>const</em> Node *N) {</td></tr>
+<tr><th id="84">84</th><td>    <b>if</b> (N)</td></tr>
+<tr><th id="85">85</th><td>      N-&gt;visit(std::ref(*<b>this</b>));</td></tr>
+<tr><th id="86">86</th><td>    <b>else</b></td></tr>
+<tr><th id="87">87</th><td>      printStr(<q>"&lt;null&gt;"</q>);</td></tr>
+<tr><th id="88">88</th><td>  }</td></tr>
+<tr><th id="89">89</th><td>  <em>void</em> print(NodeArray A) {</td></tr>
+<tr><th id="90">90</th><td>    ++Depth;</td></tr>
+<tr><th id="91">91</th><td>    printStr(<q>"{"</q>);</td></tr>
+<tr><th id="92">92</th><td>    <em>bool</em> First = <b>true</b>;</td></tr>
+<tr><th id="93">93</th><td>    <b>for</b> (<em>const</em> Node *N : A) {</td></tr>
+<tr><th id="94">94</th><td>      <b>if</b> (First)</td></tr>
+<tr><th id="95">95</th><td>        print(N);</td></tr>
+<tr><th id="96">96</th><td>      <b>else</b></td></tr>
+<tr><th id="97">97</th><td>        printWithComma(N);</td></tr>
+<tr><th id="98">98</th><td>      First = <b>false</b>;</td></tr>
+<tr><th id="99">99</th><td>    }</td></tr>
+<tr><th id="100">100</th><td>    printStr(<q>"}"</q>);</td></tr>
+<tr><th id="101">101</th><td>    --Depth;</td></tr>
+<tr><th id="102">102</th><td>  }</td></tr>
+<tr><th id="103">103</th><td></td></tr>
+<tr><th id="104">104</th><td>  <i>// Overload used when T is exactly 'bool', not merely convertible to 'bool'.</i></td></tr>
+<tr><th id="105">105</th><td>  <em>void</em> print(<em>bool</em> B) { printStr(B ? <q>"true"</q> : <q>"false"</q>); }</td></tr>
+<tr><th id="106">106</th><td></td></tr>
+<tr><th id="107">107</th><td>  <b>template</b> &lt;<b>class</b> T&gt;</td></tr>
+<tr><th id="108">108</th><td>  <b>typename</b> std::enable_if&lt;std::is_unsigned&lt;T&gt;::value&gt;::type print(T N) {</td></tr>
+<tr><th id="109">109</th><td>    fprintf(stderr, <q>"%llu"</q>, (<em>unsigned</em> <em>long</em> <em>long</em>)N);</td></tr>
+<tr><th id="110">110</th><td>  }</td></tr>
+<tr><th id="111">111</th><td></td></tr>
+<tr><th id="112">112</th><td>  <b>template</b> &lt;<b>class</b> T&gt;</td></tr>
+<tr><th id="113">113</th><td>  <b>typename</b> std::enable_if&lt;std::is_signed&lt;T&gt;::value&gt;::type print(T N) {</td></tr>
+<tr><th id="114">114</th><td>    fprintf(stderr, <q>"%lld"</q>, (<em>long</em> <em>long</em>)N);</td></tr>
+<tr><th id="115">115</th><td>  }</td></tr>
+<tr><th id="116">116</th><td></td></tr>
+<tr><th id="117">117</th><td>  <em>void</em> print(ReferenceKind RK) {</td></tr>
+<tr><th id="118">118</th><td>    <b>switch</b> (RK) {</td></tr>
+<tr><th id="119">119</th><td>    <b>case</b> ReferenceKind::LValue:</td></tr>
+<tr><th id="120">120</th><td>      <b>return</b> printStr(<q>"ReferenceKind::LValue"</q>);</td></tr>
+<tr><th id="121">121</th><td>    <b>case</b> ReferenceKind::RValue:</td></tr>
+<tr><th id="122">122</th><td>      <b>return</b> printStr(<q>"ReferenceKind::RValue"</q>);</td></tr>
+<tr><th id="123">123</th><td>    }</td></tr>
+<tr><th id="124">124</th><td>  }</td></tr>
+<tr><th id="125">125</th><td>  <em>void</em> print(FunctionRefQual RQ) {</td></tr>
+<tr><th id="126">126</th><td>    <b>switch</b> (RQ) {</td></tr>
+<tr><th id="127">127</th><td>    <b>case</b> FunctionRefQual::FrefQualNone:</td></tr>
+<tr><th id="128">128</th><td>      <b>return</b> printStr(<q>"FunctionRefQual::FrefQualNone"</q>);</td></tr>
+<tr><th id="129">129</th><td>    <b>case</b> FunctionRefQual::FrefQualLValue:</td></tr>
+<tr><th id="130">130</th><td>      <b>return</b> printStr(<q>"FunctionRefQual::FrefQualLValue"</q>);</td></tr>
+<tr><th id="131">131</th><td>    <b>case</b> FunctionRefQual::FrefQualRValue:</td></tr>
+<tr><th id="132">132</th><td>      <b>return</b> printStr(<q>"FunctionRefQual::FrefQualRValue"</q>);</td></tr>
+<tr><th id="133">133</th><td>    }</td></tr>
+<tr><th id="134">134</th><td>  }</td></tr>
+<tr><th id="135">135</th><td>  <em>void</em> print(Qualifiers Qs) {</td></tr>
+<tr><th id="136">136</th><td>    <b>if</b> (!Qs) <b>return</b> printStr(<q>"QualNone"</q>);</td></tr>
+<tr><th id="137">137</th><td>    <b>struct</b> QualName { Qualifiers Q; <em>const</em> <em>char</em> *Name; } Names[] = {</td></tr>
+<tr><th id="138">138</th><td>      {QualConst, <q>"QualConst"</q>},</td></tr>
+<tr><th id="139">139</th><td>      {QualVolatile, <q>"QualVolatile"</q>},</td></tr>
+<tr><th id="140">140</th><td>      {QualRestrict, <q>"QualRestrict"</q>},</td></tr>
+<tr><th id="141">141</th><td>    };</td></tr>
+<tr><th id="142">142</th><td>    <b>for</b> (QualName Name : Names) {</td></tr>
+<tr><th id="143">143</th><td>      <b>if</b> (Qs &amp; Name.Q) {</td></tr>
+<tr><th id="144">144</th><td>        printStr(Name.Name);</td></tr>
+<tr><th id="145">145</th><td>        Qs = Qualifiers(Qs &amp; ~Name.Q);</td></tr>
+<tr><th id="146">146</th><td>        <b>if</b> (Qs) printStr(<q>" | "</q>);</td></tr>
+<tr><th id="147">147</th><td>      }</td></tr>
+<tr><th id="148">148</th><td>    }</td></tr>
+<tr><th id="149">149</th><td>  }</td></tr>
+<tr><th id="150">150</th><td>  <em>void</em> print(SpecialSubKind SSK) {</td></tr>
+<tr><th id="151">151</th><td>    <b>switch</b> (SSK) {</td></tr>
+<tr><th id="152">152</th><td>    <b>case</b> SpecialSubKind::allocator:</td></tr>
+<tr><th id="153">153</th><td>      <b>return</b> printStr(<q>"SpecialSubKind::allocator"</q>);</td></tr>
+<tr><th id="154">154</th><td>    <b>case</b> SpecialSubKind::basic_string:</td></tr>
+<tr><th id="155">155</th><td>      <b>return</b> printStr(<q>"SpecialSubKind::basic_string"</q>);</td></tr>
+<tr><th id="156">156</th><td>    <b>case</b> SpecialSubKind::string:</td></tr>
+<tr><th id="157">157</th><td>      <b>return</b> printStr(<q>"SpecialSubKind::string"</q>);</td></tr>
+<tr><th id="158">158</th><td>    <b>case</b> SpecialSubKind::istream:</td></tr>
+<tr><th id="159">159</th><td>      <b>return</b> printStr(<q>"SpecialSubKind::istream"</q>);</td></tr>
+<tr><th id="160">160</th><td>    <b>case</b> SpecialSubKind::ostream:</td></tr>
+<tr><th id="161">161</th><td>      <b>return</b> printStr(<q>"SpecialSubKind::ostream"</q>);</td></tr>
+<tr><th id="162">162</th><td>    <b>case</b> SpecialSubKind::iostream:</td></tr>
+<tr><th id="163">163</th><td>      <b>return</b> printStr(<q>"SpecialSubKind::iostream"</q>);</td></tr>
+<tr><th id="164">164</th><td>    }</td></tr>
+<tr><th id="165">165</th><td>  }</td></tr>
+<tr><th id="166">166</th><td>  <em>void</em> print(TemplateParamKind TPK) {</td></tr>
+<tr><th id="167">167</th><td>    <b>switch</b> (TPK) {</td></tr>
+<tr><th id="168">168</th><td>    <b>case</b> TemplateParamKind::Type:</td></tr>
+<tr><th id="169">169</th><td>      <b>return</b> printStr(<q>"TemplateParamKind::Type"</q>);</td></tr>
+<tr><th id="170">170</th><td>    <b>case</b> TemplateParamKind::NonType:</td></tr>
+<tr><th id="171">171</th><td>      <b>return</b> printStr(<q>"TemplateParamKind::NonType"</q>);</td></tr>
+<tr><th id="172">172</th><td>    <b>case</b> TemplateParamKind::Template:</td></tr>
+<tr><th id="173">173</th><td>      <b>return</b> printStr(<q>"TemplateParamKind::Template"</q>);</td></tr>
+<tr><th id="174">174</th><td>    }</td></tr>
+<tr><th id="175">175</th><td>  }</td></tr>
+<tr><th id="176">176</th><td></td></tr>
+<tr><th id="177">177</th><td>  <em>void</em> newLine() {</td></tr>
+<tr><th id="178">178</th><td>    printStr(<q>"\n"</q>);</td></tr>
+<tr><th id="179">179</th><td>    <b>for</b> (<em>unsigned</em> I = <var>0</var>; I != Depth; ++I)</td></tr>
+<tr><th id="180">180</th><td>      printStr(<q>" "</q>);</td></tr>
+<tr><th id="181">181</th><td>    PendingNewline = <b>false</b>;</td></tr>
+<tr><th id="182">182</th><td>  }</td></tr>
+<tr><th id="183">183</th><td></td></tr>
+<tr><th id="184">184</th><td>  <b>template</b>&lt;<b>typename</b> T&gt; <em>void</em> printWithPendingNewline(T V) {</td></tr>
+<tr><th id="185">185</th><td>    print(V);</td></tr>
+<tr><th id="186">186</th><td>    <b>if</b> (wantsNewline(V))</td></tr>
+<tr><th id="187">187</th><td>      PendingNewline = <b>true</b>;</td></tr>
+<tr><th id="188">188</th><td>  }</td></tr>
+<tr><th id="189">189</th><td></td></tr>
+<tr><th id="190">190</th><td>  <b>template</b>&lt;<b>typename</b> T&gt; <em>void</em> printWithComma(T V) {</td></tr>
+<tr><th id="191">191</th><td>    <b>if</b> (PendingNewline || wantsNewline(V)) {</td></tr>
+<tr><th id="192">192</th><td>      printStr(<q>","</q>);</td></tr>
+<tr><th id="193">193</th><td>      newLine();</td></tr>
+<tr><th id="194">194</th><td>    } <b>else</b> {</td></tr>
+<tr><th id="195">195</th><td>      printStr(<q>", "</q>);</td></tr>
+<tr><th id="196">196</th><td>    }</td></tr>
+<tr><th id="197">197</th><td></td></tr>
+<tr><th id="198">198</th><td>    printWithPendingNewline(V);</td></tr>
+<tr><th id="199">199</th><td>  }</td></tr>
+<tr><th id="200">200</th><td></td></tr>
+<tr><th id="201">201</th><td>  <b>struct</b> CtorArgPrinter {</td></tr>
+<tr><th id="202">202</th><td>    DumpVisitor &amp;Visitor;</td></tr>
+<tr><th id="203">203</th><td></td></tr>
+<tr><th id="204">204</th><td>    <b>template</b>&lt;<b>typename</b> T, <b>typename</b> ...Rest&gt; <em>void</em> <b>operator</b>()(T V, Rest ...Vs) {</td></tr>
+<tr><th id="205">205</th><td>      <b>if</b> (Visitor.anyWantNewline(V, Vs...))</td></tr>
+<tr><th id="206">206</th><td>        Visitor.newLine();</td></tr>
+<tr><th id="207">207</th><td>      Visitor.printWithPendingNewline(V);</td></tr>
+<tr><th id="208">208</th><td>      <em>int</em> PrintInOrder[] = { (Visitor.printWithComma(Vs), <var>0</var>)..., <var>0</var> };</td></tr>
+<tr><th id="209">209</th><td>      (<em>void</em>)PrintInOrder;</td></tr>
+<tr><th id="210">210</th><td>    }</td></tr>
+<tr><th id="211">211</th><td>  };</td></tr>
+<tr><th id="212">212</th><td></td></tr>
+<tr><th id="213">213</th><td>  <b>template</b>&lt;<b>typename</b> NodeT&gt; <em>void</em> <b>operator</b>()(<em>const</em> NodeT *Node) {</td></tr>
+<tr><th id="214">214</th><td>    Depth += <var>2</var>;</td></tr>
+<tr><th id="215">215</th><td>    fprintf(stderr, <q>"%s("</q>, itanium_demangle::NodeKind&lt;NodeT&gt;::name());</td></tr>
+<tr><th id="216">216</th><td>    Node-&gt;match(CtorArgPrinter{*<b>this</b>});</td></tr>
+<tr><th id="217">217</th><td>    fprintf(stderr, <q>")"</q>);</td></tr>
+<tr><th id="218">218</th><td>    Depth -= <var>2</var>;</td></tr>
+<tr><th id="219">219</th><td>  }</td></tr>
+<tr><th id="220">220</th><td></td></tr>
+<tr><th id="221">221</th><td>  <em>void</em> <b>operator</b>()(<em>const</em> ForwardTemplateReference *Node) {</td></tr>
+<tr><th id="222">222</th><td>    Depth += <var>2</var>;</td></tr>
+<tr><th id="223">223</th><td>    fprintf(stderr, <q>"ForwardTemplateReference("</q>);</td></tr>
+<tr><th id="224">224</th><td>    <b>if</b> (Node-&gt;Ref &amp;&amp; !Node-&gt;Printing) {</td></tr>
+<tr><th id="225">225</th><td>      Node-&gt;Printing = <b>true</b>;</td></tr>
+<tr><th id="226">226</th><td>      CtorArgPrinter{*<b>this</b>}(Node-&gt;Ref);</td></tr>
+<tr><th id="227">227</th><td>      Node-&gt;Printing = <b>false</b>;</td></tr>
+<tr><th id="228">228</th><td>    } <b>else</b> {</td></tr>
+<tr><th id="229">229</th><td>      CtorArgPrinter{*<b>this</b>}(Node-&gt;Index);</td></tr>
+<tr><th id="230">230</th><td>    }</td></tr>
+<tr><th id="231">231</th><td>    fprintf(stderr, <q>")"</q>);</td></tr>
+<tr><th id="232">232</th><td>    Depth -= <var>2</var>;</td></tr>
+<tr><th id="233">233</th><td>  }</td></tr>
+<tr><th id="234">234</th><td>};</td></tr>
+<tr><th id="235">235</th><td>}</td></tr>
+<tr><th id="236">236</th><td></td></tr>
+<tr><th id="237">237</th><td><em>void</em> itanium_demangle::Node::dump() <em>const</em> {</td></tr>
+<tr><th id="238">238</th><td>  DumpVisitor V;</td></tr>
+<tr><th id="239">239</th><td>  visit(std::ref(V));</td></tr>
+<tr><th id="240">240</th><td>  V.newLine();</td></tr>
+<tr><th id="241">241</th><td>}</td></tr>
+<tr><th id="242">242</th><td><u>#<span data-ppcond="60">endif</span></u></td></tr>
+<tr><th id="243">243</th><td></td></tr>
+<tr><th id="244">244</th><td><b>namespace</b> {</td></tr>
+<tr><th id="245">245</th><td><b>class</b> <dfn class="tu type def" id="(anonymousnamespace)::BumpPointerAllocator" title='(anonymous namespace)::BumpPointerAllocator' data-ref="(anonymousnamespace)::BumpPointerAllocator" data-ref-filename="(anonymousnamespace)..BumpPointerAllocator">BumpPointerAllocator</dfn> {</td></tr>
+<tr><th id="246">246</th><td>  <b>struct</b> <dfn class="tu type def" id="(anonymousnamespace)::BumpPointerAllocator::BlockMeta" title='(anonymous namespace)::BumpPointerAllocator::BlockMeta' data-ref="(anonymousnamespace)::BumpPointerAllocator::BlockMeta" data-ref-filename="(anonymousnamespace)..BumpPointerAllocator..BlockMeta">BlockMeta</dfn> {</td></tr>
+<tr><th id="247">247</th><td>    <a class="tu type" href="#(anonymousnamespace)::BumpPointerAllocator::BlockMeta" title='(anonymous namespace)::BumpPointerAllocator::BlockMeta' data-ref="(anonymousnamespace)::BumpPointerAllocator::BlockMeta" data-ref-filename="(anonymousnamespace)..BumpPointerAllocator..BlockMeta">BlockMeta</a>* <dfn class="tu decl field" id="(anonymousnamespace)::BumpPointerAllocator::BlockMeta::Next" title='(anonymous namespace)::BumpPointerAllocator::BlockMeta::Next' data-type='(anonymous namespace)::BumpPointerAllocator::BlockMeta *' data-ref="(anonymousnamespace)::BumpPointerAllocator::BlockMeta::Next" data-ref-filename="(anonymousnamespace)..BumpPointerAllocator..BlockMeta..Next">Next</dfn>;</td></tr>
+<tr><th id="248">248</th><td>    <span class='typedef' title='size_t' data-type='unsigned long' data-ref="size_t" data-ref-filename="size_t">size_t</span> <dfn class="tu decl field" id="(anonymousnamespace)::BumpPointerAllocator::BlockMeta::Current" title='(anonymous namespace)::BumpPointerAllocator::BlockMeta::Current' data-type='size_t' data-ref="(anonymousnamespace)::BumpPointerAllocator::BlockMeta::Current" data-ref-filename="(anonymousnamespace)..BumpPointerAllocator..BlockMeta..Current">Current</dfn>;</td></tr>
+<tr><th id="249">249</th><td>  };</td></tr>
+<tr><th id="250">250</th><td></td></tr>
+<tr><th id="251">251</th><td>  <em>static</em> <b>constexpr</b> <span class='typedef' title='size_t' data-type='unsigned long' data-ref="size_t" data-ref-filename="size_t">size_t</span> <dfn class="tu decl def" id="(anonymousnamespace)::BumpPointerAllocator::AllocSize" title='(anonymous namespace)::BumpPointerAllocator::AllocSize' data-type='const size_t' data-ref="(anonymousnamespace)::BumpPointerAllocator::AllocSize" data-ref-filename="(anonymousnamespace)..BumpPointerAllocator..AllocSize">AllocSize</dfn> = <var>4096</var>;</td></tr>
+<tr><th id="252">252</th><td>  <em>static</em> <b>constexpr</b> <span class='typedef' title='size_t' data-type='unsigned long' data-ref="size_t" data-ref-filename="size_t">size_t</span> <dfn class="tu decl def" id="(anonymousnamespace)::BumpPointerAllocator::UsableAllocSize" title='(anonymous namespace)::BumpPointerAllocator::UsableAllocSize' data-type='const size_t' data-ref="(anonymousnamespace)::BumpPointerAllocator::UsableAllocSize" data-ref-filename="(anonymousnamespace)..BumpPointerAllocator..UsableAllocSize">UsableAllocSize</dfn> = <a class="tu ref" href="#(anonymousnamespace)::BumpPointerAllocator::AllocSize" title='(anonymous namespace)::BumpPointerAllocator::AllocSize' data-use='r' data-ref="(anonymousnamespace)::BumpPointerAllocator::AllocSize" data-ref-filename="(anonymousnamespace)..BumpPointerAllocator..AllocSize">AllocSize</a> - <b>sizeof</b>(<a class="tu type" href="#(anonymousnamespace)::BumpPointerAllocator::BlockMeta" title='(anonymous namespace)::BumpPointerAllocator::BlockMeta' data-ref="(anonymousnamespace)::BumpPointerAllocator::BlockMeta" data-ref-filename="(anonymousnamespace)..BumpPointerAllocator..BlockMeta">BlockMeta</a>);</td></tr>
+<tr><th id="253">253</th><td></td></tr>
+<tr><th id="254">254</th><td>  <b>alignas</b>(<em>long</em> <em>double</em>) <em>char</em> <dfn class="tu decl field" id="(anonymousnamespace)::BumpPointerAllocator::InitialBuffer" title='(anonymous namespace)::BumpPointerAllocator::InitialBuffer' data-type='char [4096]' data-ref="(anonymousnamespace)::BumpPointerAllocator::InitialBuffer" data-ref-filename="(anonymousnamespace)..BumpPointerAllocator..InitialBuffer">InitialBuffer</dfn>[<a class="tu ref" href="#(anonymousnamespace)::BumpPointerAllocator::AllocSize" title='(anonymous namespace)::BumpPointerAllocator::AllocSize' data-ref="(anonymousnamespace)::BumpPointerAllocator::AllocSize" data-ref-filename="(anonymousnamespace)..BumpPointerAllocator..AllocSize">AllocSize</a>];</td></tr>
+<tr><th id="255">255</th><td>  <a class="tu type" href="#(anonymousnamespace)::BumpPointerAllocator::BlockMeta" title='(anonymous namespace)::BumpPointerAllocator::BlockMeta' data-ref="(anonymousnamespace)::BumpPointerAllocator::BlockMeta" data-ref-filename="(anonymousnamespace)..BumpPointerAllocator..BlockMeta">BlockMeta</a>* <dfn class="tu decl field" id="(anonymousnamespace)::BumpPointerAllocator::BlockList" title='(anonymous namespace)::BumpPointerAllocator::BlockList' data-type='(anonymous namespace)::BumpPointerAllocator::BlockMeta *' data-ref="(anonymousnamespace)::BumpPointerAllocator::BlockList" data-ref-filename="(anonymousnamespace)..BumpPointerAllocator..BlockList">BlockList</dfn> = <b>nullptr</b>;</td></tr>
+<tr><th id="256">256</th><td></td></tr>
+<tr><th id="257">257</th><td>  <em>void</em> <dfn class="tu decl def fn" id="_ZN12_GLOBAL__N_120BumpPointerAllocator4growEv" title='(anonymous namespace)::BumpPointerAllocator::grow' data-type='void (anonymous namespace)::BumpPointerAllocator::grow()' data-ref="_ZN12_GLOBAL__N_120BumpPointerAllocator4growEv" data-ref-filename="_ZN12_GLOBAL__N_120BumpPointerAllocator4growEv">grow</dfn>() {</td></tr>
+<tr><th id="258">258</th><td>    <em>char</em>* <dfn class="local col9 decl" id="2809NewMeta" title='NewMeta' data-type='char *' data-ref="2809NewMeta" data-ref-filename="2809NewMeta">NewMeta</dfn> = <b>static_cast</b>&lt;<em>char</em> *&gt;(<span class="namespace">std::</span><a class="ref fn" href="../../../include/stdlib.h.html#malloc" title='malloc' data-ref="malloc" data-ref-filename="malloc">malloc</a>(<a class="tu member" href="#(anonymousnamespace)::BumpPointerAllocator::AllocSize" title='(anonymous namespace)::BumpPointerAllocator::AllocSize' data-use='r' data-ref="(anonymousnamespace)::BumpPointerAllocator::AllocSize" data-ref-filename="(anonymousnamespace)..BumpPointerAllocator..AllocSize">AllocSize</a>));</td></tr>
+<tr><th id="259">259</th><td>    <b>if</b> (<a class="local col9 ref" href="#2809NewMeta" title='NewMeta' data-ref="2809NewMeta" data-ref-filename="2809NewMeta">NewMeta</a> == <b>nullptr</b>)</td></tr>
+<tr><th id="260">260</th><td>      <span class="namespace">std::</span><a class="ref fn" href="../../libcxx/include/exception.html#_ZSt9terminatev" title='std::terminate' data-ref="_ZSt9terminatev" data-ref-filename="_ZSt9terminatev">terminate</a>();</td></tr>
+<tr><th id="261">261</th><td>    <a class="tu member field" href="#(anonymousnamespace)::BumpPointerAllocator::BlockList" title='(anonymous namespace)::BumpPointerAllocator::BlockList' data-use='w' data-ref="(anonymousnamespace)::BumpPointerAllocator::BlockList" data-ref-filename="(anonymousnamespace)..BumpPointerAllocator..BlockList">BlockList</a> = <b>new</b> (<a class="local col9 ref" href="#2809NewMeta" title='NewMeta' data-ref="2809NewMeta" data-ref-filename="2809NewMeta">NewMeta</a>) <a class="tu type" href="#(anonymousnamespace)::BumpPointerAllocator::BlockMeta" title='(anonymous namespace)::BumpPointerAllocator::BlockMeta' data-ref="(anonymousnamespace)::BumpPointerAllocator::BlockMeta" data-ref-filename="(anonymousnamespace)..BumpPointerAllocator..BlockMeta">BlockMeta</a>{<a class="tu member field" href="#(anonymousnamespace)::BumpPointerAllocator::BlockList" title='(anonymous namespace)::BumpPointerAllocator::BlockList' data-use='r' data-ref="(anonymousnamespace)::BumpPointerAllocator::BlockList" data-ref-filename="(anonymousnamespace)..BumpPointerAllocator..BlockList">BlockList</a>, <var>0</var>};</td></tr>
+<tr><th id="262">262</th><td>  }</td></tr>
+<tr><th id="263">263</th><td></td></tr>
+<tr><th id="264">264</th><td>  <em>void</em>* <dfn class="tu decl def fn" id="_ZN12_GLOBAL__N_120BumpPointerAllocator15allocateMassiveEm" title='(anonymous namespace)::BumpPointerAllocator::allocateMassive' data-type='void * (anonymous namespace)::BumpPointerAllocator::allocateMassive(size_t NBytes)' data-ref="_ZN12_GLOBAL__N_120BumpPointerAllocator15allocateMassiveEm" data-ref-filename="_ZN12_GLOBAL__N_120BumpPointerAllocator15allocateMassiveEm">allocateMassive</dfn>(<span class='typedef' title='size_t' data-type='unsigned long' data-ref="size_t" data-ref-filename="size_t">size_t</span> <dfn class="local col0 decl" id="2810NBytes" title='NBytes' data-type='size_t' data-ref="2810NBytes" data-ref-filename="2810NBytes">NBytes</dfn>) {</td></tr>
+<tr><th id="265">265</th><td>    <a class="local col0 ref" href="#2810NBytes" title='NBytes' data-ref="2810NBytes" data-ref-filename="2810NBytes">NBytes</a> += <b>sizeof</b>(<a class="tu type" href="#(anonymousnamespace)::BumpPointerAllocator::BlockMeta" title='(anonymous namespace)::BumpPointerAllocator::BlockMeta' data-ref="(anonymousnamespace)::BumpPointerAllocator::BlockMeta" data-ref-filename="(anonymousnamespace)..BumpPointerAllocator..BlockMeta">BlockMeta</a>);</td></tr>
+<tr><th id="266">266</th><td>    <a class="tu type" href="#(anonymousnamespace)::BumpPointerAllocator::BlockMeta" title='(anonymous namespace)::BumpPointerAllocator::BlockMeta' data-ref="(anonymousnamespace)::BumpPointerAllocator::BlockMeta" data-ref-filename="(anonymousnamespace)..BumpPointerAllocator..BlockMeta">BlockMeta</a>* <dfn class="local col1 decl" id="2811NewMeta" title='NewMeta' data-type='(anonymous namespace)::BumpPointerAllocator::BlockMeta *' data-ref="2811NewMeta" data-ref-filename="2811NewMeta">NewMeta</dfn> = <b>reinterpret_cast</b>&lt;<a class="tu type" href="#(anonymousnamespace)::BumpPointerAllocator::BlockMeta" title='(anonymous namespace)::BumpPointerAllocator::BlockMeta' data-ref="(anonymousnamespace)::BumpPointerAllocator::BlockMeta" data-ref-filename="(anonymousnamespace)..BumpPointerAllocator..BlockMeta">BlockMeta</a>*&gt;(<span class="namespace">std::</span><a class="ref fn" href="../../../include/stdlib.h.html#malloc" title='malloc' data-ref="malloc" data-ref-filename="malloc">malloc</a>(<a class="local col0 ref" href="#2810NBytes" title='NBytes' data-ref="2810NBytes" data-ref-filename="2810NBytes">NBytes</a>));</td></tr>
+<tr><th id="267">267</th><td>    <b>if</b> (<a class="local col1 ref" href="#2811NewMeta" title='NewMeta' data-ref="2811NewMeta" data-ref-filename="2811NewMeta">NewMeta</a> == <b>nullptr</b>)</td></tr>
+<tr><th id="268">268</th><td>      <span class="namespace">std::</span><a class="ref fn" href="../../libcxx/include/exception.html#_ZSt9terminatev" title='std::terminate' data-ref="_ZSt9terminatev" data-ref-filename="_ZSt9terminatev">terminate</a>();</td></tr>
+<tr><th id="269">269</th><td>    <a class="tu member field" href="#(anonymousnamespace)::BumpPointerAllocator::BlockList" title='(anonymous namespace)::BumpPointerAllocator::BlockList' data-use='r' data-ref="(anonymousnamespace)::BumpPointerAllocator::BlockList" data-ref-filename="(anonymousnamespace)..BumpPointerAllocator..BlockList">BlockList</a>-&gt;<a class="tu ref field" href="#(anonymousnamespace)::BumpPointerAllocator::BlockMeta::Next" title='(anonymous namespace)::BumpPointerAllocator::BlockMeta::Next' data-use='w' data-ref="(anonymousnamespace)::BumpPointerAllocator::BlockMeta::Next" data-ref-filename="(anonymousnamespace)..BumpPointerAllocator..BlockMeta..Next">Next</a> = <b>new</b> (<a class="local col1 ref" href="#2811NewMeta" title='NewMeta' data-ref="2811NewMeta" data-ref-filename="2811NewMeta">NewMeta</a>) <a class="tu type" href="#(anonymousnamespace)::BumpPointerAllocator::BlockMeta" title='(anonymous namespace)::BumpPointerAllocator::BlockMeta' data-ref="(anonymousnamespace)::BumpPointerAllocator::BlockMeta" data-ref-filename="(anonymousnamespace)..BumpPointerAllocator..BlockMeta">BlockMeta</a>{<a class="tu member field" href="#(anonymousnamespace)::BumpPointerAllocator::BlockList" title='(anonymous namespace)::BumpPointerAllocator::BlockList' data-use='r' data-ref="(anonymousnamespace)::BumpPointerAllocator::BlockList" data-ref-filename="(anonymousnamespace)..BumpPointerAllocator..BlockList">BlockList</a>-&gt;<a class="tu ref field" href="#(anonymousnamespace)::BumpPointerAllocator::BlockMeta::Next" title='(anonymous namespace)::BumpPointerAllocator::BlockMeta::Next' data-use='r' data-ref="(anonymousnamespace)::BumpPointerAllocator::BlockMeta::Next" data-ref-filename="(anonymousnamespace)..BumpPointerAllocator..BlockMeta..Next">Next</a>, <var>0</var>};</td></tr>
+<tr><th id="270">270</th><td>    <b>return</b> <b>static_cast</b>&lt;<em>void</em>*&gt;(<a class="local col1 ref" href="#2811NewMeta" title='NewMeta' data-ref="2811NewMeta" data-ref-filename="2811NewMeta">NewMeta</a> + <var>1</var>);</td></tr>
+<tr><th id="271">271</th><td>  }</td></tr>
+<tr><th id="272">272</th><td></td></tr>
+<tr><th id="273">273</th><td><b>public</b>:</td></tr>
+<tr><th id="274">274</th><td>  <dfn class="tu decl def fn" id="_ZN12_GLOBAL__N_120BumpPointerAllocatorC1Ev" title='(anonymous namespace)::BumpPointerAllocator::BumpPointerAllocator' data-type='void (anonymous namespace)::BumpPointerAllocator::BumpPointerAllocator()' data-ref="_ZN12_GLOBAL__N_120BumpPointerAllocatorC1Ev" data-ref-filename="_ZN12_GLOBAL__N_120BumpPointerAllocatorC1Ev">BumpPointerAllocator</dfn>()</td></tr>
+<tr><th id="275">275</th><td>      : <a class="tu member field" href="#(anonymousnamespace)::BumpPointerAllocator::BlockList" title='(anonymous namespace)::BumpPointerAllocator::BlockList' data-use='w' data-ref="(anonymousnamespace)::BumpPointerAllocator::BlockList" data-ref-filename="(anonymousnamespace)..BumpPointerAllocator..BlockList">BlockList</a>(<b>new</b> (<a class="tu member field" href="#(anonymousnamespace)::BumpPointerAllocator::InitialBuffer" title='(anonymous namespace)::BumpPointerAllocator::InitialBuffer' data-use='r' data-ref="(anonymousnamespace)::BumpPointerAllocator::InitialBuffer" data-ref-filename="(anonymousnamespace)..BumpPointerAllocator..InitialBuffer">InitialBuffer</a>) <a class="tu type" href="#(anonymousnamespace)::BumpPointerAllocator::BlockMeta" title='(anonymous namespace)::BumpPointerAllocator::BlockMeta' data-ref="(anonymousnamespace)::BumpPointerAllocator::BlockMeta" data-ref-filename="(anonymousnamespace)..BumpPointerAllocator..BlockMeta">BlockMeta</a>{<b>nullptr</b>, <var>0</var>}) {}</td></tr>
+<tr><th id="276">276</th><td></td></tr>
+<tr><th id="277">277</th><td>  <em>void</em>* <dfn class="tu decl def fn" id="_ZN12_GLOBAL__N_120BumpPointerAllocator8allocateEm" title='(anonymous namespace)::BumpPointerAllocator::allocate' data-type='void * (anonymous namespace)::BumpPointerAllocator::allocate(size_t N)' data-ref="_ZN12_GLOBAL__N_120BumpPointerAllocator8allocateEm" data-ref-filename="_ZN12_GLOBAL__N_120BumpPointerAllocator8allocateEm">allocate</dfn>(<span class='typedef' title='size_t' data-type='unsigned long' data-ref="size_t" data-ref-filename="size_t">size_t</span> <dfn class="local col2 decl" id="2812N" title='N' data-type='size_t' data-ref="2812N" data-ref-filename="2812N">N</dfn>) {</td></tr>
+<tr><th id="278">278</th><td>    <a class="local col2 ref" href="#2812N" title='N' data-ref="2812N" data-ref-filename="2812N">N</a> = (<a class="local col2 ref" href="#2812N" title='N' data-ref="2812N" data-ref-filename="2812N">N</a> + <var>15u</var>) &amp; ~<var>15u</var>;</td></tr>
+<tr><th id="279">279</th><td>    <b>if</b> (<a class="local col2 ref" href="#2812N" title='N' data-ref="2812N" data-ref-filename="2812N">N</a> + <a class="tu member field" href="#(anonymousnamespace)::BumpPointerAllocator::BlockList" title='(anonymous namespace)::BumpPointerAllocator::BlockList' data-use='r' data-ref="(anonymousnamespace)::BumpPointerAllocator::BlockList" data-ref-filename="(anonymousnamespace)..BumpPointerAllocator..BlockList">BlockList</a>-&gt;<a class="tu ref field" href="#(anonymousnamespace)::BumpPointerAllocator::BlockMeta::Current" title='(anonymous namespace)::BumpPointerAllocator::BlockMeta::Current' data-use='r' data-ref="(anonymousnamespace)::BumpPointerAllocator::BlockMeta::Current" data-ref-filename="(anonymousnamespace)..BumpPointerAllocator..BlockMeta..Current">Current</a> &gt;= <a class="tu member" href="#(anonymousnamespace)::BumpPointerAllocator::UsableAllocSize" title='(anonymous namespace)::BumpPointerAllocator::UsableAllocSize' data-use='r' data-ref="(anonymousnamespace)::BumpPointerAllocator::UsableAllocSize" data-ref-filename="(anonymousnamespace)..BumpPointerAllocator..UsableAllocSize">UsableAllocSize</a>) {</td></tr>
+<tr><th id="280">280</th><td>      <b>if</b> (<a class="local col2 ref" href="#2812N" title='N' data-ref="2812N" data-ref-filename="2812N">N</a> &gt; <a class="tu member" href="#(anonymousnamespace)::BumpPointerAllocator::UsableAllocSize" title='(anonymous namespace)::BumpPointerAllocator::UsableAllocSize' data-use='r' data-ref="(anonymousnamespace)::BumpPointerAllocator::UsableAllocSize" data-ref-filename="(anonymousnamespace)..BumpPointerAllocator..UsableAllocSize">UsableAllocSize</a>)</td></tr>
+<tr><th id="281">281</th><td>        <b>return</b> <a class="tu member fn" href="#_ZN12_GLOBAL__N_120BumpPointerAllocator15allocateMassiveEm" title='(anonymous namespace)::BumpPointerAllocator::allocateMassive' data-use='c' data-ref="_ZN12_GLOBAL__N_120BumpPointerAllocator15allocateMassiveEm" data-ref-filename="_ZN12_GLOBAL__N_120BumpPointerAllocator15allocateMassiveEm">allocateMassive</a>(<a class="local col2 ref" href="#2812N" title='N' data-ref="2812N" data-ref-filename="2812N">N</a>);</td></tr>
+<tr><th id="282">282</th><td>      <a class="tu member fn" href="#_ZN12_GLOBAL__N_120BumpPointerAllocator4growEv" title='(anonymous namespace)::BumpPointerAllocator::grow' data-use='c' data-ref="_ZN12_GLOBAL__N_120BumpPointerAllocator4growEv" data-ref-filename="_ZN12_GLOBAL__N_120BumpPointerAllocator4growEv">grow</a>();</td></tr>
+<tr><th id="283">283</th><td>    }</td></tr>
+<tr><th id="284">284</th><td>    <a class="tu member field" href="#(anonymousnamespace)::BumpPointerAllocator::BlockList" title='(anonymous namespace)::BumpPointerAllocator::BlockList' data-use='r' data-ref="(anonymousnamespace)::BumpPointerAllocator::BlockList" data-ref-filename="(anonymousnamespace)..BumpPointerAllocator..BlockList">BlockList</a>-&gt;<a class="tu ref field" href="#(anonymousnamespace)::BumpPointerAllocator::BlockMeta::Current" title='(anonymous namespace)::BumpPointerAllocator::BlockMeta::Current' data-use='w' data-ref="(anonymousnamespace)::BumpPointerAllocator::BlockMeta::Current" data-ref-filename="(anonymousnamespace)..BumpPointerAllocator..BlockMeta..Current">Current</a> += <a class="local col2 ref" href="#2812N" title='N' data-ref="2812N" data-ref-filename="2812N">N</a>;</td></tr>
+<tr><th id="285">285</th><td>    <b>return</b> <b>static_cast</b>&lt;<em>void</em>*&gt;(<b>reinterpret_cast</b>&lt;<em>char</em>*&gt;(<a class="tu member field" href="#(anonymousnamespace)::BumpPointerAllocator::BlockList" title='(anonymous namespace)::BumpPointerAllocator::BlockList' data-use='r' data-ref="(anonymousnamespace)::BumpPointerAllocator::BlockList" data-ref-filename="(anonymousnamespace)..BumpPointerAllocator..BlockList">BlockList</a> + <var>1</var>) +</td></tr>
+<tr><th id="286">286</th><td>                              <a class="tu member field" href="#(anonymousnamespace)::BumpPointerAllocator::BlockList" title='(anonymous namespace)::BumpPointerAllocator::BlockList' data-use='r' data-ref="(anonymousnamespace)::BumpPointerAllocator::BlockList" data-ref-filename="(anonymousnamespace)..BumpPointerAllocator..BlockList">BlockList</a>-&gt;<a class="tu ref field" href="#(anonymousnamespace)::BumpPointerAllocator::BlockMeta::Current" title='(anonymous namespace)::BumpPointerAllocator::BlockMeta::Current' data-use='r' data-ref="(anonymousnamespace)::BumpPointerAllocator::BlockMeta::Current" data-ref-filename="(anonymousnamespace)..BumpPointerAllocator..BlockMeta..Current">Current</a> - <a class="local col2 ref" href="#2812N" title='N' data-ref="2812N" data-ref-filename="2812N">N</a>);</td></tr>
+<tr><th id="287">287</th><td>  }</td></tr>
+<tr><th id="288">288</th><td></td></tr>
+<tr><th id="289">289</th><td>  <em>void</em> <dfn class="tu decl def fn" id="_ZN12_GLOBAL__N_120BumpPointerAllocator5resetEv" title='(anonymous namespace)::BumpPointerAllocator::reset' data-type='void (anonymous namespace)::BumpPointerAllocator::reset()' data-ref="_ZN12_GLOBAL__N_120BumpPointerAllocator5resetEv" data-ref-filename="_ZN12_GLOBAL__N_120BumpPointerAllocator5resetEv">reset</dfn>() {</td></tr>
+<tr><th id="290">290</th><td>    <b>while</b> (<a class="tu member field" href="#(anonymousnamespace)::BumpPointerAllocator::BlockList" title='(anonymous namespace)::BumpPointerAllocator::BlockList' data-use='r' data-ref="(anonymousnamespace)::BumpPointerAllocator::BlockList" data-ref-filename="(anonymousnamespace)..BumpPointerAllocator..BlockList">BlockList</a>) {</td></tr>
+<tr><th id="291">291</th><td>      <a class="tu type" href="#(anonymousnamespace)::BumpPointerAllocator::BlockMeta" title='(anonymous namespace)::BumpPointerAllocator::BlockMeta' data-ref="(anonymousnamespace)::BumpPointerAllocator::BlockMeta" data-ref-filename="(anonymousnamespace)..BumpPointerAllocator..BlockMeta">BlockMeta</a>* <dfn class="local col3 decl" id="2813Tmp" title='Tmp' data-type='(anonymous namespace)::BumpPointerAllocator::BlockMeta *' data-ref="2813Tmp" data-ref-filename="2813Tmp">Tmp</dfn> = <a class="tu member field" href="#(anonymousnamespace)::BumpPointerAllocator::BlockList" title='(anonymous namespace)::BumpPointerAllocator::BlockList' data-use='r' data-ref="(anonymousnamespace)::BumpPointerAllocator::BlockList" data-ref-filename="(anonymousnamespace)..BumpPointerAllocator..BlockList">BlockList</a>;</td></tr>
+<tr><th id="292">292</th><td>      <a class="tu member field" href="#(anonymousnamespace)::BumpPointerAllocator::BlockList" title='(anonymous namespace)::BumpPointerAllocator::BlockList' data-use='w' data-ref="(anonymousnamespace)::BumpPointerAllocator::BlockList" data-ref-filename="(anonymousnamespace)..BumpPointerAllocator..BlockList">BlockList</a> = <a class="tu member field" href="#(anonymousnamespace)::BumpPointerAllocator::BlockList" title='(anonymous namespace)::BumpPointerAllocator::BlockList' data-use='r' data-ref="(anonymousnamespace)::BumpPointerAllocator::BlockList" data-ref-filename="(anonymousnamespace)..BumpPointerAllocator..BlockList">BlockList</a>-&gt;<a class="tu ref field" href="#(anonymousnamespace)::BumpPointerAllocator::BlockMeta::Next" title='(anonymous namespace)::BumpPointerAllocator::BlockMeta::Next' data-use='r' data-ref="(anonymousnamespace)::BumpPointerAllocator::BlockMeta::Next" data-ref-filename="(anonymousnamespace)..BumpPointerAllocator..BlockMeta..Next">Next</a>;</td></tr>
+<tr><th id="293">293</th><td>      <b>if</b> (<b>reinterpret_cast</b>&lt;<em>char</em>*&gt;(<a class="local col3 ref" href="#2813Tmp" title='Tmp' data-ref="2813Tmp" data-ref-filename="2813Tmp">Tmp</a>) != <a class="tu member field" href="#(anonymousnamespace)::BumpPointerAllocator::InitialBuffer" title='(anonymous namespace)::BumpPointerAllocator::InitialBuffer' data-use='r' data-ref="(anonymousnamespace)::BumpPointerAllocator::InitialBuffer" data-ref-filename="(anonymousnamespace)..BumpPointerAllocator..InitialBuffer">InitialBuffer</a>)</td></tr>
+<tr><th id="294">294</th><td>        <span class="namespace">std::</span><a class="ref fn" href="../../../include/stdlib.h.html#free" title='free' data-ref="free" data-ref-filename="free">free</a>(<a class="local col3 ref" href="#2813Tmp" title='Tmp' data-ref="2813Tmp" data-ref-filename="2813Tmp">Tmp</a>);</td></tr>
+<tr><th id="295">295</th><td>    }</td></tr>
+<tr><th id="296">296</th><td>    <a class="tu member field" href="#(anonymousnamespace)::BumpPointerAllocator::BlockList" title='(anonymous namespace)::BumpPointerAllocator::BlockList' data-use='w' data-ref="(anonymousnamespace)::BumpPointerAllocator::BlockList" data-ref-filename="(anonymousnamespace)..BumpPointerAllocator..BlockList">BlockList</a> = <b>new</b> (<a class="tu member field" href="#(anonymousnamespace)::BumpPointerAllocator::InitialBuffer" title='(anonymous namespace)::BumpPointerAllocator::InitialBuffer' data-use='r' data-ref="(anonymousnamespace)::BumpPointerAllocator::InitialBuffer" data-ref-filename="(anonymousnamespace)..BumpPointerAllocator..InitialBuffer">InitialBuffer</a>) <a class="tu type" href="#(anonymousnamespace)::BumpPointerAllocator::BlockMeta" title='(anonymous namespace)::BumpPointerAllocator::BlockMeta' data-ref="(anonymousnamespace)::BumpPointerAllocator::BlockMeta" data-ref-filename="(anonymousnamespace)..BumpPointerAllocator..BlockMeta">BlockMeta</a>{<b>nullptr</b>, <var>0</var>};</td></tr>
+<tr><th id="297">297</th><td>  }</td></tr>
+<tr><th id="298">298</th><td></td></tr>
+<tr><th id="299">299</th><td>  <dfn class="tu decl def fn" id="_ZN12_GLOBAL__N_120BumpPointerAllocatorD1Ev" title='(anonymous namespace)::BumpPointerAllocator::~BumpPointerAllocator' data-type='void (anonymous namespace)::BumpPointerAllocator::~BumpPointerAllocator()' data-ref="_ZN12_GLOBAL__N_120BumpPointerAllocatorD1Ev" data-ref-filename="_ZN12_GLOBAL__N_120BumpPointerAllocatorD1Ev">~BumpPointerAllocator</dfn>() { <a class="tu member fn" href="#_ZN12_GLOBAL__N_120BumpPointerAllocator5resetEv" title='(anonymous namespace)::BumpPointerAllocator::reset' data-use='c' data-ref="_ZN12_GLOBAL__N_120BumpPointerAllocator5resetEv" data-ref-filename="_ZN12_GLOBAL__N_120BumpPointerAllocator5resetEv">reset</a>(); }</td></tr>
+<tr><th id="300">300</th><td>};</td></tr>
+<tr><th id="301">301</th><td></td></tr>
+<tr><th id="302">302</th><td><b>class</b> <dfn class="tu type def" id="(anonymousnamespace)::DefaultAllocator" title='(anonymous namespace)::DefaultAllocator' data-ref="(anonymousnamespace)::DefaultAllocator" data-ref-filename="(anonymousnamespace)..DefaultAllocator">DefaultAllocator</dfn> {</td></tr>
+<tr><th id="303">303</th><td>  <a class="tu type" href="#(anonymousnamespace)::BumpPointerAllocator" title='(anonymous namespace)::BumpPointerAllocator' data-ref="(anonymousnamespace)::BumpPointerAllocator" data-ref-filename="(anonymousnamespace)..BumpPointerAllocator">BumpPointerAllocator</a> <dfn class="tu decl field" id="(anonymousnamespace)::DefaultAllocator::Alloc" title='(anonymous namespace)::DefaultAllocator::Alloc' data-type='(anonymous namespace)::BumpPointerAllocator' data-ref="(anonymousnamespace)::DefaultAllocator::Alloc" data-ref-filename="(anonymousnamespace)..DefaultAllocator..Alloc">Alloc</dfn>;</td></tr>
+<tr><th id="304">304</th><td></td></tr>
+<tr><th id="305">305</th><td><b>public</b>:</td></tr>
+<tr><th id="306">306</th><td>  <em>void</em> <dfn class="tu decl def fn" id="_ZN12_GLOBAL__N_116DefaultAllocator5resetEv" title='(anonymous namespace)::DefaultAllocator::reset' data-type='void (anonymous namespace)::DefaultAllocator::reset()' data-ref="_ZN12_GLOBAL__N_116DefaultAllocator5resetEv" data-ref-filename="_ZN12_GLOBAL__N_116DefaultAllocator5resetEv">reset</dfn>() { <a class="tu member field" href="#(anonymousnamespace)::DefaultAllocator::Alloc" title='(anonymous namespace)::DefaultAllocator::Alloc' data-use='m' data-ref="(anonymousnamespace)::DefaultAllocator::Alloc" data-ref-filename="(anonymousnamespace)..DefaultAllocator..Alloc">Alloc</a>.<a class="tu ref fn" href="#_ZN12_GLOBAL__N_120BumpPointerAllocator5resetEv" title='(anonymous namespace)::BumpPointerAllocator::reset' data-use='c' data-ref="_ZN12_GLOBAL__N_120BumpPointerAllocator5resetEv" data-ref-filename="_ZN12_GLOBAL__N_120BumpPointerAllocator5resetEv">reset</a>(); }</td></tr>
+<tr><th id="307">307</th><td></td></tr>
+<tr><th id="308">308</th><td>  <b>template</b>&lt;<b>typename</b> T, <b>typename</b> ...Args&gt; T *<dfn class="tu decl def fn" id="_ZN12_GLOBAL__N_116DefaultAllocator8makeNodeEDpOT0_" title='(anonymous namespace)::DefaultAllocator::makeNode' data-type='T * (anonymous namespace)::DefaultAllocator::makeNode(Args &amp;&amp;... args)' data-ref="_ZN12_GLOBAL__N_116DefaultAllocator8makeNodeEDpOT0_" data-ref-filename="_ZN12_GLOBAL__N_116DefaultAllocator8makeNodeEDpOT0_">makeNode</dfn>(Args &amp;&amp;...<dfn class="local col4 decl" id="2814args" title='args' data-type='Args &amp;&amp;...' data-ref="2814args" data-ref-filename="2814args">args</dfn>) {</td></tr>
+<tr><th id="309">309</th><td>    <b>return</b> <b>new</b> (<a class="tu member field" href="#(anonymousnamespace)::DefaultAllocator::Alloc" title='(anonymous namespace)::DefaultAllocator::Alloc' data-use='m' data-ref="(anonymousnamespace)::DefaultAllocator::Alloc" data-ref-filename="(anonymousnamespace)..DefaultAllocator..Alloc">Alloc</a>.<a class="tu ref fn" href="#_ZN12_GLOBAL__N_120BumpPointerAllocator8allocateEm" title='(anonymous namespace)::BumpPointerAllocator::allocate' data-use='c' data-ref="_ZN12_GLOBAL__N_120BumpPointerAllocator8allocateEm" data-ref-filename="_ZN12_GLOBAL__N_120BumpPointerAllocator8allocateEm">allocate</a>(<b>sizeof</b>(T)))</td></tr>
+<tr><th id="310">310</th><td>        T(<span class="namespace">std::</span>forward&lt;Args&gt;(<a class="local col4 ref" href="#2814args" title='args' data-ref="2814args" data-ref-filename="2814args">args</a>)...);</td></tr>
+<tr><th id="311">311</th><td>  }</td></tr>
+<tr><th id="312">312</th><td></td></tr>
+<tr><th id="313">313</th><td>  <em>void</em> *<dfn class="tu decl def fn" id="_ZN12_GLOBAL__N_116DefaultAllocator17allocateNodeArrayEm" title='(anonymous namespace)::DefaultAllocator::allocateNodeArray' data-type='void * (anonymous namespace)::DefaultAllocator::allocateNodeArray(size_t sz)' data-ref="_ZN12_GLOBAL__N_116DefaultAllocator17allocateNodeArrayEm" data-ref-filename="_ZN12_GLOBAL__N_116DefaultAllocator17allocateNodeArrayEm">allocateNodeArray</dfn>(<span class='typedef' title='size_t' data-type='unsigned long' data-ref="size_t" data-ref-filename="size_t">size_t</span> <dfn class="local col5 decl" id="2815sz" title='sz' data-type='size_t' data-ref="2815sz" data-ref-filename="2815sz">sz</dfn>) {</td></tr>
+<tr><th id="314">314</th><td>    <b>return</b> <a class="tu member field" href="#(anonymousnamespace)::DefaultAllocator::Alloc" title='(anonymous namespace)::DefaultAllocator::Alloc' data-use='m' data-ref="(anonymousnamespace)::DefaultAllocator::Alloc" data-ref-filename="(anonymousnamespace)..DefaultAllocator..Alloc">Alloc</a>.<a class="tu ref fn" href="#_ZN12_GLOBAL__N_120BumpPointerAllocator8allocateEm" title='(anonymous namespace)::BumpPointerAllocator::allocate' data-use='c' data-ref="_ZN12_GLOBAL__N_120BumpPointerAllocator8allocateEm" data-ref-filename="_ZN12_GLOBAL__N_120BumpPointerAllocator8allocateEm">allocate</a>(<b>sizeof</b>(<a class="type" href="demangle/ItaniumDemangle.h.html#(anonymousnamespace)::itanium_demangle::Node" title='(anonymous namespace)::itanium_demangle::Node' data-ref="(anonymousnamespace)::itanium_demangle::Node" data-ref-filename="(anonymousnamespace)..itanium_demangle..Node">Node</a> *) * <a class="local col5 ref" href="#2815sz" title='sz' data-ref="2815sz" data-ref-filename="2815sz">sz</a>);</td></tr>
+<tr><th id="315">315</th><td>  }</td></tr>
+<tr><th id="316">316</th><td>};</td></tr>
+<tr><th id="317">317</th><td>}  <i>// unnamed namespace</i></td></tr>
+<tr><th id="318">318</th><td></td></tr>
+<tr><th id="319">319</th><td><i>//===----------------------------------------------------------------------===//</i></td></tr>
+<tr><th id="320">320</th><td><i>// Code beyond this point should not be synchronized with LLVM.</i></td></tr>
+<tr><th id="321">321</th><td><i>//===----------------------------------------------------------------------===//</i></td></tr>
+<tr><th id="322">322</th><td></td></tr>
+<tr><th id="323">323</th><td><b>using</b> <dfn class="typedef" id="Demangler" title='Demangler' data-type='itanium_demangle::ManglingParser&lt;DefaultAllocator&gt;' data-ref="Demangler" data-ref-filename="Demangler">Demangler</dfn> = <span class="namespace">itanium_demangle::</span><a class="type" href="demangle/ItaniumDemangle.h.html#(anonymousnamespace)::itanium_demangle::ManglingParser" title='(anonymous namespace)::itanium_demangle::ManglingParser' data-ref="(anonymousnamespace)::itanium_demangle::ManglingParser" data-ref-filename="(anonymousnamespace)..itanium_demangle..ManglingParser">ManglingParser</a>&lt;<a class="tu type" href="#(anonymousnamespace)::DefaultAllocator" title='(anonymous namespace)::DefaultAllocator' data-ref="(anonymousnamespace)::DefaultAllocator" data-ref-filename="(anonymousnamespace)..DefaultAllocator">DefaultAllocator</a>&gt;;</td></tr>
+<tr><th id="324">324</th><td></td></tr>
+<tr><th id="325">325</th><td><b>namespace</b> {</td></tr>
+<tr><th id="326">326</th><td><b>enum</b> : <em>int</em> {</td></tr>
+<tr><th id="327">327</th><td>  <dfn class="tu enum" id="(anonymousnamespace)::demangle_invalid_args" title='(anonymous namespace)::demangle_invalid_args' data-type='-3' data-ref="(anonymousnamespace)::demangle_invalid_args" data-ref-filename="(anonymousnamespace)..demangle_invalid_args">demangle_invalid_args</dfn> = -<var>3</var>,</td></tr>
+<tr><th id="328">328</th><td>  <dfn class="tu enum" id="(anonymousnamespace)::demangle_invalid_mangled_name" title='(anonymous namespace)::demangle_invalid_mangled_name' data-type='-2' data-ref="(anonymousnamespace)::demangle_invalid_mangled_name" data-ref-filename="(anonymousnamespace)..demangle_invalid_mangled_name">demangle_invalid_mangled_name</dfn> = -<var>2</var>,</td></tr>
+<tr><th id="329">329</th><td>  <dfn class="tu enum" id="(anonymousnamespace)::demangle_memory_alloc_failure" title='(anonymous namespace)::demangle_memory_alloc_failure' data-type='-1' data-ref="(anonymousnamespace)::demangle_memory_alloc_failure" data-ref-filename="(anonymousnamespace)..demangle_memory_alloc_failure">demangle_memory_alloc_failure</dfn> = -<var>1</var>,</td></tr>
+<tr><th id="330">330</th><td>  <dfn class="tu enum" id="(anonymousnamespace)::demangle_success" title='(anonymous namespace)::demangle_success' data-type='0' data-ref="(anonymousnamespace)::demangle_success" data-ref-filename="(anonymousnamespace)..demangle_success">demangle_success</dfn> = <var>0</var>,</td></tr>
+<tr><th id="331">331</th><td>};</td></tr>
+<tr><th id="332">332</th><td>}</td></tr>
+<tr><th id="333">333</th><td></td></tr>
+<tr><th id="334">334</th><td><b>namespace</b> <span class="namespace">__cxxabiv1</span> {</td></tr>
+<tr><th id="335">335</th><td><b>extern</b> <q>"C"</q> <a class="macro" href="../include/__cxxabi_config.h.html#55" title="__attribute__((__visibility__(&quot;default&quot;)))" data-ref="_M/_LIBCXXABI_FUNC_VIS">_LIBCXXABI_FUNC_VIS</a> <em>char</em> *</td></tr>
+<tr><th id="336">336</th><td><dfn class="decl def fn" id="__cxxabiv1::__cxa_demangle" title='__cxxabiv1::__cxa_demangle' data-ref="__cxxabiv1::__cxa_demangle" data-ref-filename="__cxxabiv1..__cxa_demangle">__cxa_demangle</dfn>(<em>const</em> <em>char</em> *<dfn class="local col6 decl" id="2816MangledName" title='MangledName' data-type='const char *' data-ref="2816MangledName" data-ref-filename="2816MangledName">MangledName</dfn>, <em>char</em> *<dfn class="local col7 decl" id="2817Buf" title='Buf' data-type='char *' data-ref="2817Buf" data-ref-filename="2817Buf">Buf</dfn>, <span class='typedef' title='size_t' data-type='unsigned long' data-ref="size_t" data-ref-filename="size_t">size_t</span> *<dfn class="local col8 decl" id="2818N" title='N' data-type='size_t *' data-ref="2818N" data-ref-filename="2818N">N</dfn>, <em>int</em> *<dfn class="local col9 decl" id="2819Status" title='Status' data-type='int *' data-ref="2819Status" data-ref-filename="2819Status">Status</dfn>) {</td></tr>
+<tr><th id="337">337</th><td>  <b>if</b> (<a class="local col6 ref" href="#2816MangledName" title='MangledName' data-ref="2816MangledName" data-ref-filename="2816MangledName">MangledName</a> == <b>nullptr</b> || (<a class="local col7 ref" href="#2817Buf" title='Buf' data-ref="2817Buf" data-ref-filename="2817Buf">Buf</a> != <b>nullptr</b> &amp;&amp; <a class="local col8 ref" href="#2818N" title='N' data-ref="2818N" data-ref-filename="2818N">N</a> == <b>nullptr</b>)) {</td></tr>
+<tr><th id="338">338</th><td>    <b>if</b> (<a class="local col9 ref" href="#2819Status" title='Status' data-ref="2819Status" data-ref-filename="2819Status">Status</a>)</td></tr>
+<tr><th id="339">339</th><td>      *<a class="local col9 ref" href="#2819Status" title='Status' data-ref="2819Status" data-ref-filename="2819Status">Status</a> = <a class="tu enum" href="#(anonymousnamespace)::demangle_invalid_args" title='(anonymous namespace)::demangle_invalid_args' data-use='r' data-ref="(anonymousnamespace)::demangle_invalid_args" data-ref-filename="(anonymousnamespace)..demangle_invalid_args">demangle_invalid_args</a>;</td></tr>
+<tr><th id="340">340</th><td>    <b>return</b> <b>nullptr</b>;</td></tr>
+<tr><th id="341">341</th><td>  }</td></tr>
+<tr><th id="342">342</th><td></td></tr>
+<tr><th id="343">343</th><td>  <em>int</em> <dfn class="local col0 decl" id="2820InternalStatus" title='InternalStatus' data-type='int' data-ref="2820InternalStatus" data-ref-filename="2820InternalStatus">InternalStatus</dfn> = <a class="tu enum" href="#(anonymousnamespace)::demangle_success" title='(anonymous namespace)::demangle_success' data-use='r' data-ref="(anonymousnamespace)::demangle_success" data-ref-filename="(anonymousnamespace)..demangle_success">demangle_success</a>;</td></tr>
+<tr><th id="344">344</th><td>  <a class="typedef" href="#Demangler" title='Demangler' data-type='itanium_demangle::ManglingParser&lt;DefaultAllocator&gt;' data-ref="Demangler" data-ref-filename="Demangler">Demangler</a> <dfn class="local col1 decl" id="2821Parser" title='Parser' data-type='Demangler' data-ref="2821Parser" data-ref-filename="2821Parser">Parser</dfn><a class="ref fn" href="demangle/ItaniumDemangle.h.html#5700" title='(anonymous namespace)::itanium_demangle::ManglingParser&lt;(anonymous namespace)::DefaultAllocator&gt;::AbstractManglingParser' data-ref="_ZN12_GLOBAL__N_116itanium_demangle14ManglingParserINS_16DefaultAllocatorEECI1NS0_22AbstractManglingParserIS3_S2_EEEPKcS6_" data-ref-filename="_ZN12_GLOBAL__N_116itanium_demangle14ManglingParserINS_16DefaultAllocatorEECI1NS0_22AbstractManglingParserIS3_S2_EEEPKcS6_">(</a><a class="local col6 ref" href="#2816MangledName" title='MangledName' data-ref="2816MangledName" data-ref-filename="2816MangledName">MangledName</a>, <a class="local col6 ref" href="#2816MangledName" title='MangledName' data-ref="2816MangledName" data-ref-filename="2816MangledName">MangledName</a> + <span class="namespace">std::</span><a class="ref fn" href="../../../include/string.h.html#strlen" title='strlen' data-ref="strlen" data-ref-filename="strlen">strlen</a>(<a class="local col6 ref" href="#2816MangledName" title='MangledName' data-ref="2816MangledName" data-ref-filename="2816MangledName">MangledName</a>));</td></tr>
+<tr><th id="345">345</th><td>  <a class="type" href="demangle/Utility.h.html#(anonymousnamespace)::itanium_demangle::OutputStream" title='(anonymous namespace)::itanium_demangle::OutputStream' data-ref="(anonymousnamespace)::itanium_demangle::OutputStream" data-ref-filename="(anonymousnamespace)..itanium_demangle..OutputStream">OutputStream</a> <a class="ref fn fake" href="demangle/Utility.h.html#_ZN12_GLOBAL__N_116itanium_demangle12OutputStreamC1Ev" title='(anonymous namespace)::itanium_demangle::OutputStream::OutputStream' data-ref="_ZN12_GLOBAL__N_116itanium_demangle12OutputStreamC1Ev" data-ref-filename="_ZN12_GLOBAL__N_116itanium_demangle12OutputStreamC1Ev"></a><dfn class="local col2 decl" id="2822S" title='S' data-type='(anonymous namespace)::itanium_demangle::OutputStream' data-ref="2822S" data-ref-filename="2822S">S</dfn>;</td></tr>
+<tr><th id="346">346</th><td></td></tr>
+<tr><th id="347">347</th><td>  <a class="type" href="demangle/ItaniumDemangle.h.html#(anonymousnamespace)::itanium_demangle::Node" title='(anonymous namespace)::itanium_demangle::Node' data-ref="(anonymousnamespace)::itanium_demangle::Node" data-ref-filename="(anonymousnamespace)..itanium_demangle..Node">Node</a> *<dfn class="local col3 decl" id="2823AST" title='AST' data-type='(anonymous namespace)::itanium_demangle::Node *' data-ref="2823AST" data-ref-filename="2823AST">AST</dfn> = <a class="local col1 ref" href="#2821Parser" title='Parser' data-ref="2821Parser" data-ref-filename="2821Parser">Parser</a>.<a class="ref fn" href="demangle/ItaniumDemangle.h.html#_ZN12_GLOBAL__N_116itanium_demangle22AbstractManglingParser5parseEv" title='(anonymous namespace)::itanium_demangle::AbstractManglingParser::parse' data-ref="_ZN12_GLOBAL__N_116itanium_demangle22AbstractManglingParser5parseEv" data-ref-filename="_ZN12_GLOBAL__N_116itanium_demangle22AbstractManglingParser5parseEv">parse</a>();</td></tr>
+<tr><th id="348">348</th><td></td></tr>
+<tr><th id="349">349</th><td>  <b>if</b> (<a class="local col3 ref" href="#2823AST" title='AST' data-ref="2823AST" data-ref-filename="2823AST">AST</a> == <b>nullptr</b>)</td></tr>
+<tr><th id="350">350</th><td>    <a class="local col0 ref" href="#2820InternalStatus" title='InternalStatus' data-ref="2820InternalStatus" data-ref-filename="2820InternalStatus">InternalStatus</a> = <a class="tu enum" href="#(anonymousnamespace)::demangle_invalid_mangled_name" title='(anonymous namespace)::demangle_invalid_mangled_name' data-use='r' data-ref="(anonymousnamespace)::demangle_invalid_mangled_name" data-ref-filename="(anonymousnamespace)..demangle_invalid_mangled_name">demangle_invalid_mangled_name</a>;</td></tr>
+<tr><th id="351">351</th><td>  <b>else</b> <b>if</b> (!<a class="ref fn" href="demangle/Utility.h.html#_ZN12_GLOBAL__N_116itanium_demangle22initializeOutputStreamEPcPmRNS0_12OutputStreamEm" title='(anonymous namespace)::itanium_demangle::initializeOutputStream' data-ref="_ZN12_GLOBAL__N_116itanium_demangle22initializeOutputStreamEPcPmRNS0_12OutputStreamEm" data-ref-filename="_ZN12_GLOBAL__N_116itanium_demangle22initializeOutputStreamEPcPmRNS0_12OutputStreamEm">initializeOutputStream</a>(<a class="local col7 ref" href="#2817Buf" title='Buf' data-ref="2817Buf" data-ref-filename="2817Buf">Buf</a>, <a class="local col8 ref" href="#2818N" title='N' data-ref="2818N" data-ref-filename="2818N">N</a>, <span class='refarg'><a class="local col2 ref" href="#2822S" title='S' data-ref="2822S" data-ref-filename="2822S">S</a></span>, <var>1024</var>))</td></tr>
+<tr><th id="352">352</th><td>    <a class="local col0 ref" href="#2820InternalStatus" title='InternalStatus' data-ref="2820InternalStatus" data-ref-filename="2820InternalStatus">InternalStatus</a> = <a class="tu enum" href="#(anonymousnamespace)::demangle_memory_alloc_failure" title='(anonymous namespace)::demangle_memory_alloc_failure' data-use='r' data-ref="(anonymousnamespace)::demangle_memory_alloc_failure" data-ref-filename="(anonymousnamespace)..demangle_memory_alloc_failure">demangle_memory_alloc_failure</a>;</td></tr>
+<tr><th id="353">353</th><td>  <b>else</b> {</td></tr>
+<tr><th id="354">354</th><td>    <a class="macro" href="../../../include/assert.h.html#50" title="(static_cast&lt;void&gt; (0))" data-ref="_M/assert">assert</a>(Parser.ForwardTemplateRefs.empty());</td></tr>
+<tr><th id="355">355</th><td>    <a class="local col3 ref" href="#2823AST" title='AST' data-ref="2823AST" data-ref-filename="2823AST">AST</a>-&gt;<a class="ref fn" href="demangle/ItaniumDemangle.h.html#_ZNK12_GLOBAL__N_116itanium_demangle4Node5printERNS0_12OutputStreamE" title='(anonymous namespace)::itanium_demangle::Node::print' data-ref="_ZNK12_GLOBAL__N_116itanium_demangle4Node5printERNS0_12OutputStreamE" data-ref-filename="_ZNK12_GLOBAL__N_116itanium_demangle4Node5printERNS0_12OutputStreamE">print</a>(<span class='refarg'><a class="local col2 ref" href="#2822S" title='S' data-ref="2822S" data-ref-filename="2822S">S</a></span>);</td></tr>
+<tr><th id="356">356</th><td>    <a class="local col2 ref" href="#2822S" title='S' data-ref="2822S" data-ref-filename="2822S">S</a> <a class="ref fn" href="demangle/Utility.h.html#_ZN12_GLOBAL__N_116itanium_demangle12OutputStreampLEc" title='(anonymous namespace)::itanium_demangle::OutputStream::operator+=' data-ref="_ZN12_GLOBAL__N_116itanium_demangle12OutputStreampLEc" data-ref-filename="_ZN12_GLOBAL__N_116itanium_demangle12OutputStreampLEc">+=</a> <kbd>'\0'</kbd>;</td></tr>
+<tr><th id="357">357</th><td>    <b>if</b> (<a class="local col8 ref" href="#2818N" title='N' data-ref="2818N" data-ref-filename="2818N">N</a> != <b>nullptr</b>)</td></tr>
+<tr><th id="358">358</th><td>      *<a class="local col8 ref" href="#2818N" title='N' data-ref="2818N" data-ref-filename="2818N">N</a> = <a class="local col2 ref" href="#2822S" title='S' data-ref="2822S" data-ref-filename="2822S">S</a>.<a class="ref fn" href="demangle/Utility.h.html#_ZNK12_GLOBAL__N_116itanium_demangle12OutputStream18getCurrentPositionEv" title='(anonymous namespace)::itanium_demangle::OutputStream::getCurrentPosition' data-ref="_ZNK12_GLOBAL__N_116itanium_demangle12OutputStream18getCurrentPositionEv" data-ref-filename="_ZNK12_GLOBAL__N_116itanium_demangle12OutputStream18getCurrentPositionEv">getCurrentPosition</a>();</td></tr>
+<tr><th id="359">359</th><td>    <a class="local col7 ref" href="#2817Buf" title='Buf' data-ref="2817Buf" data-ref-filename="2817Buf">Buf</a> = <a class="local col2 ref" href="#2822S" title='S' data-ref="2822S" data-ref-filename="2822S">S</a>.<a class="ref fn" href="demangle/Utility.h.html#_ZN12_GLOBAL__N_116itanium_demangle12OutputStream9getBufferEv" title='(anonymous namespace)::itanium_demangle::OutputStream::getBuffer' data-ref="_ZN12_GLOBAL__N_116itanium_demangle12OutputStream9getBufferEv" data-ref-filename="_ZN12_GLOBAL__N_116itanium_demangle12OutputStream9getBufferEv">getBuffer</a>();</td></tr>
+<tr><th id="360">360</th><td>  }</td></tr>
+<tr><th id="361">361</th><td></td></tr>
+<tr><th id="362">362</th><td>  <b>if</b> (<a class="local col9 ref" href="#2819Status" title='Status' data-ref="2819Status" data-ref-filename="2819Status">Status</a>)</td></tr>
+<tr><th id="363">363</th><td>    *<a class="local col9 ref" href="#2819Status" title='Status' data-ref="2819Status" data-ref-filename="2819Status">Status</a> = <a class="local col0 ref" href="#2820InternalStatus" title='InternalStatus' data-ref="2820InternalStatus" data-ref-filename="2820InternalStatus">InternalStatus</a>;</td></tr>
+<tr><th id="364">364</th><td>  <b>return</b> <a class="local col0 ref" href="#2820InternalStatus" title='InternalStatus' data-ref="2820InternalStatus" data-ref-filename="2820InternalStatus">InternalStatus</a> == <a class="tu enum" href="#(anonymousnamespace)::demangle_success" title='(anonymous namespace)::demangle_success' data-use='r' data-ref="(anonymousnamespace)::demangle_success" data-ref-filename="(anonymousnamespace)..demangle_success">demangle_success</a> ? <a class="local col7 ref" href="#2817Buf" title='Buf' data-ref="2817Buf" data-ref-filename="2817Buf">Buf</a> : <b>nullptr</b>;</td></tr>
+<tr><th id="365">365</th><td>}</td></tr>
+<tr><th id="366">366</th><td>}  <i>// __cxxabiv1</i></td></tr>
+<tr><th id="367">367</th><td></td></tr>
+</table><hr/><p id='footer'>
+Generated on <em>2021-Jul-01</em> from project llvm revision <em>12</em>

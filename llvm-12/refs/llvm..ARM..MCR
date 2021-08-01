@@ -1,0 +1,10 @@
+<dec f='llvm/build/lib/Target/ARM/ARMGenInstrInfo.inc' l='855' type='840'/>
+<use f='llvm/build/lib/Target/ARM/ARMGenDAGISel.inc' l='40589' u='r' c='_ZN12_GLOBAL__N_115ARMDAGToDAGISel10SelectCodeEPN4llvm6SDNodeE'/>
+<use f='llvm/build/lib/Target/ARM/ARMGenDAGISel.inc' l='40589' u='r' c='_ZN12_GLOBAL__N_115ARMDAGToDAGISel10SelectCodeEPN4llvm6SDNodeE'/>
+<use f='llvm/build/lib/Target/ARM/ARMGenDAGISel.inc' l='60796' u='r' c='_ZN12_GLOBAL__N_115ARMDAGToDAGISel10SelectCodeEPN4llvm6SDNodeE'/>
+<use f='llvm/build/lib/Target/ARM/ARMGenDAGISel.inc' l='60796' u='r' c='_ZN12_GLOBAL__N_115ARMDAGToDAGISel10SelectCodeEPN4llvm6SDNodeE'/>
+<use f='llvm/llvm/lib/Target/ARM/ARMISelDAGToDAG.cpp' l='5180' u='r' c='_ZN12_GLOBAL__N_115ARMDAGToDAGISel16tryWriteRegisterEPN4llvm6SDNodeE'/>
+<use f='llvm/build/lib/Target/ARM/ARMGenGlobalISel.inc' l='36732' u='r' c='_ZNK12_GLOBAL__N_122ARMInstructionSelector13getMatchTableEv'/>
+<use f='llvm/build/lib/Target/ARM/ARMGenAsmMatcher.inc' l='11139'/>
+<use f='llvm/build/lib/Target/ARM/ARMGenAsmMatcher.inc' l='11141'/>
+<use f='llvm/build/lib/Target/ARM/ARMGenMCCodeEmitter.inc' l='16474' c='_ZNK12_GLOBAL__N_116ARMMCCodeEmitter21getBinaryCodeForInstrERKN4llvm6MCInstERNS1_15SmallVectorImplINS1_7MCFixupEEERKNS1_15MCSubtargetInfoE'/>

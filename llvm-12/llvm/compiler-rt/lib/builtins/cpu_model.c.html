@@ -1,0 +1,800 @@
+<!doctype html>
+<html>
+<head>
+<meta name="viewport" content="width=device-width, initial-scale=1.0"><title>cpu_model.c source code [llvm/compiler-rt/lib/builtins/cpu_model.c] - Woboq Code Browser</title>
+<meta name="woboq:interestingDefinitions" content="ProcessorFeatures,ProcessorSubtypes,ProcessorTypes,ProcessorVendors,VendorSignatures,__processor_model "/>
+<link rel="stylesheet" href="../../../.././data/qtcreator.css" title="QtCreator"/>
+<link rel="alternate stylesheet" href="../../../.././data/kdevelop.css" title="KDevelop"/>
+<script type="text/javascript" src="../../../.././data/jquery/jquery.min.js"></script>
+<script type="text/javascript" src="../../../.././data/jquery/jquery-ui.min.js"></script>
+<script>var file = 'llvm/compiler-rt/lib/builtins/cpu_model.c'; var root_path = '../../../..'; var data_path = '../../../.././data'; var ecma_script_api_version = 2;</script>
+<script src='../../../.././data/codebrowser.js'></script>
+</head>
+<body><div id='header'><h1 id='breadcrumb'><span>Browse the source code of </span><a href='../../..'>llvm</a>/<a href='../..'>compiler-rt</a>/<a href='..'>lib</a>/<a href='./'>builtins</a>/<a href='cpu_model.c.html'>cpu_model.c</a></h1></div>
+<hr/><div id='content'><table class="code">
+<tr><th id="1">1</th><td><i>//===-- cpu_model.c - Support for __cpu_model builtin  ------------*- C -*-===//</i></td></tr>
+<tr><th id="2">2</th><td><i>//</i></td></tr>
+<tr><th id="3">3</th><td><i>// Part of the LLVM Project, under the Apache License v2.0 with LLVM Exceptions.</i></td></tr>
+<tr><th id="4">4</th><td><i>// See <a href="https://llvm.org/LICENSE.txt">https://llvm.org/LICENSE.txt</a> for license information.</i></td></tr>
+<tr><th id="5">5</th><td><i>// SPDX-License-Identifier: Apache-2.0 WITH LLVM-exception</i></td></tr>
+<tr><th id="6">6</th><td><i>//</i></td></tr>
+<tr><th id="7">7</th><td><i>//===----------------------------------------------------------------------===//</i></td></tr>
+<tr><th id="8">8</th><td><i>//</i></td></tr>
+<tr><th id="9">9</th><td><i>//  This file is based on LLVM's lib/Support/Host.cpp.</i></td></tr>
+<tr><th id="10">10</th><td><i>//  It implements the operating system Host concept and builtin</i></td></tr>
+<tr><th id="11">11</th><td><i>//  __cpu_model for the compiler_rt library for x86 and</i></td></tr>
+<tr><th id="12">12</th><td><i>//  __aarch64_have_lse_atomics for AArch64.</i></td></tr>
+<tr><th id="13">13</th><td><i>//</i></td></tr>
+<tr><th id="14">14</th><td><i>//===----------------------------------------------------------------------===//</i></td></tr>
+<tr><th id="15">15</th><td></td></tr>
+<tr><th id="16">16</th><td><u>#<span data-ppcond="16">if</span> defined(<span class="macro" data-ref="_M/HAVE_INIT_PRIORITY">HAVE_INIT_PRIORITY</span>)</u></td></tr>
+<tr><th id="17">17</th><td><u>#define CONSTRUCTOR_ATTRIBUTE __attribute__((__constructor__ 101))</u></td></tr>
+<tr><th id="18">18</th><td><u>#<span data-ppcond="16">elif</span> <span class="macro" title="" data-ref="_M/__has_attribute">__has_attribute</span>(__constructor__)</u></td></tr>
+<tr><th id="19">19</th><td><u>#define <dfn class="macro" id="_M/CONSTRUCTOR_ATTRIBUTE" data-ref="_M/CONSTRUCTOR_ATTRIBUTE">CONSTRUCTOR_ATTRIBUTE</dfn> __attribute__((__constructor__))</u></td></tr>
+<tr><th id="20">20</th><td><u>#<span data-ppcond="16">else</span></u></td></tr>
+<tr><th id="21">21</th><td><i>// FIXME: For MSVC, we should make a function pointer global in .CRT$X?? so that</i></td></tr>
+<tr><th id="22">22</th><td><i>// this runs during initialization.</i></td></tr>
+<tr><th id="23">23</th><td><u>#define CONSTRUCTOR_ATTRIBUTE</u></td></tr>
+<tr><th id="24">24</th><td><u>#<span data-ppcond="16">endif</span></u></td></tr>
+<tr><th id="25">25</th><td></td></tr>
+<tr><th id="26">26</th><td><u>#<span data-ppcond="26">if</span> (defined(<span class="macro" data-ref="_M/__i386__">__i386__</span>) || defined(<span class="macro" data-ref="_M/_M_IX86">_M_IX86</span>) || defined(<span class="macro" data-ref="_M/__x86_64__">__x86_64__</span>) ||           \</u></td></tr>
+<tr><th id="27">27</th><td><u>     defined(<span class="macro" data-ref="_M/_M_X64">_M_X64</span>)) &amp;&amp;                                                       \</u></td></tr>
+<tr><th id="28">28</th><td><u>    (defined(<span class="macro" data-ref="_M/__GNUC__">__GNUC__</span>) || defined(<span class="macro" data-ref="_M/__clang__">__clang__</span>) || defined(<span class="macro" data-ref="_M/_MSC_VER">_MSC_VER</span>))</u></td></tr>
+<tr><th id="29">29</th><td></td></tr>
+<tr><th id="30">30</th><td><u>#include <a href="../../../../include/assert.h.html">&lt;assert.h&gt;</a></u></td></tr>
+<tr><th id="31">31</th><td></td></tr>
+<tr><th id="32">32</th><td><u>#define <dfn class="macro" id="_M/bool" data-ref="_M/bool">bool</dfn> int</u></td></tr>
+<tr><th id="33">33</th><td><u>#define <dfn class="macro" id="_M/true" data-ref="_M/true">true</dfn> 1</u></td></tr>
+<tr><th id="34">34</th><td><u>#define <dfn class="macro" id="_M/false" data-ref="_M/false">false</dfn> 0</u></td></tr>
+<tr><th id="35">35</th><td></td></tr>
+<tr><th id="36">36</th><td><u>#<span data-ppcond="36">ifdef</span> <span class="macro" data-ref="_M/_MSC_VER">_MSC_VER</span></u></td></tr>
+<tr><th id="37">37</th><td><u>#include &lt;intrin.h&gt;</u></td></tr>
+<tr><th id="38">38</th><td><u>#<span data-ppcond="36">endif</span></u></td></tr>
+<tr><th id="39">39</th><td></td></tr>
+<tr><th id="40">40</th><td><u>#<span data-ppcond="40">ifndef</span> <span class="macro" data-ref="_M/__has_attribute">__has_attribute</span></u></td></tr>
+<tr><th id="41">41</th><td><u>#define __has_attribute(attr) 0</u></td></tr>
+<tr><th id="42">42</th><td><u>#<span data-ppcond="40">endif</span></u></td></tr>
+<tr><th id="43">43</th><td></td></tr>
+<tr><th id="44">44</th><td><b>enum</b> <dfn class="type def" id="VendorSignatures" title='VendorSignatures' data-ref="VendorSignatures" data-ref-filename="VendorSignatures">VendorSignatures</dfn> {</td></tr>
+<tr><th id="45">45</th><td>  <dfn class="enum" id="SIG_INTEL" title='SIG_INTEL' data-ref="SIG_INTEL" data-ref-filename="SIG_INTEL">SIG_INTEL</dfn> = <var>0x756e6547</var>, <i>// Genu</i></td></tr>
+<tr><th id="46">46</th><td>  <dfn class="enum" id="SIG_AMD" title='SIG_AMD' data-ref="SIG_AMD" data-ref-filename="SIG_AMD">SIG_AMD</dfn> = <var>0x68747541</var>,   <i>// Auth</i></td></tr>
+<tr><th id="47">47</th><td>};</td></tr>
+<tr><th id="48">48</th><td></td></tr>
+<tr><th id="49">49</th><td><b>enum</b> <dfn class="type def" id="ProcessorVendors" title='ProcessorVendors' data-ref="ProcessorVendors" data-ref-filename="ProcessorVendors">ProcessorVendors</dfn> {</td></tr>
+<tr><th id="50">50</th><td>  <dfn class="enum" id="VENDOR_INTEL" title='VENDOR_INTEL' data-ref="VENDOR_INTEL" data-ref-filename="VENDOR_INTEL">VENDOR_INTEL</dfn> = <var>1</var>,</td></tr>
+<tr><th id="51">51</th><td>  <dfn class="enum" id="VENDOR_AMD" title='VENDOR_AMD' data-ref="VENDOR_AMD" data-ref-filename="VENDOR_AMD">VENDOR_AMD</dfn>,</td></tr>
+<tr><th id="52">52</th><td>  <dfn class="enum" id="VENDOR_OTHER" title='VENDOR_OTHER' data-ref="VENDOR_OTHER" data-ref-filename="VENDOR_OTHER">VENDOR_OTHER</dfn>,</td></tr>
+<tr><th id="53">53</th><td>  <dfn class="enum" id="VENDOR_MAX" title='VENDOR_MAX' data-ref="VENDOR_MAX" data-ref-filename="VENDOR_MAX">VENDOR_MAX</dfn></td></tr>
+<tr><th id="54">54</th><td>};</td></tr>
+<tr><th id="55">55</th><td></td></tr>
+<tr><th id="56">56</th><td><b>enum</b> <dfn class="type def" id="ProcessorTypes" title='ProcessorTypes' data-ref="ProcessorTypes" data-ref-filename="ProcessorTypes">ProcessorTypes</dfn> {</td></tr>
+<tr><th id="57">57</th><td>  <dfn class="enum" id="INTEL_BONNELL" title='INTEL_BONNELL' data-ref="INTEL_BONNELL" data-ref-filename="INTEL_BONNELL">INTEL_BONNELL</dfn> = <var>1</var>,</td></tr>
+<tr><th id="58">58</th><td>  <dfn class="enum" id="INTEL_CORE2" title='INTEL_CORE2' data-ref="INTEL_CORE2" data-ref-filename="INTEL_CORE2">INTEL_CORE2</dfn>,</td></tr>
+<tr><th id="59">59</th><td>  <dfn class="enum" id="INTEL_COREI7" title='INTEL_COREI7' data-ref="INTEL_COREI7" data-ref-filename="INTEL_COREI7">INTEL_COREI7</dfn>,</td></tr>
+<tr><th id="60">60</th><td>  <dfn class="enum" id="AMDFAM10H" title='AMDFAM10H' data-ref="AMDFAM10H" data-ref-filename="AMDFAM10H">AMDFAM10H</dfn>,</td></tr>
+<tr><th id="61">61</th><td>  <dfn class="enum" id="AMDFAM15H" title='AMDFAM15H' data-ref="AMDFAM15H" data-ref-filename="AMDFAM15H">AMDFAM15H</dfn>,</td></tr>
+<tr><th id="62">62</th><td>  <dfn class="enum" id="INTEL_SILVERMONT" title='INTEL_SILVERMONT' data-ref="INTEL_SILVERMONT" data-ref-filename="INTEL_SILVERMONT">INTEL_SILVERMONT</dfn>,</td></tr>
+<tr><th id="63">63</th><td>  <dfn class="enum" id="INTEL_KNL" title='INTEL_KNL' data-ref="INTEL_KNL" data-ref-filename="INTEL_KNL">INTEL_KNL</dfn>,</td></tr>
+<tr><th id="64">64</th><td>  <dfn class="enum" id="AMD_BTVER1" title='AMD_BTVER1' data-ref="AMD_BTVER1" data-ref-filename="AMD_BTVER1">AMD_BTVER1</dfn>,</td></tr>
+<tr><th id="65">65</th><td>  <dfn class="enum" id="AMD_BTVER2" title='AMD_BTVER2' data-ref="AMD_BTVER2" data-ref-filename="AMD_BTVER2">AMD_BTVER2</dfn>,</td></tr>
+<tr><th id="66">66</th><td>  <dfn class="enum" id="AMDFAM17H" title='AMDFAM17H' data-ref="AMDFAM17H" data-ref-filename="AMDFAM17H">AMDFAM17H</dfn>,</td></tr>
+<tr><th id="67">67</th><td>  <dfn class="enum" id="INTEL_KNM" title='INTEL_KNM' data-ref="INTEL_KNM" data-ref-filename="INTEL_KNM">INTEL_KNM</dfn>,</td></tr>
+<tr><th id="68">68</th><td>  <dfn class="enum" id="INTEL_GOLDMONT" title='INTEL_GOLDMONT' data-ref="INTEL_GOLDMONT" data-ref-filename="INTEL_GOLDMONT">INTEL_GOLDMONT</dfn>,</td></tr>
+<tr><th id="69">69</th><td>  <dfn class="enum" id="INTEL_GOLDMONT_PLUS" title='INTEL_GOLDMONT_PLUS' data-ref="INTEL_GOLDMONT_PLUS" data-ref-filename="INTEL_GOLDMONT_PLUS">INTEL_GOLDMONT_PLUS</dfn>,</td></tr>
+<tr><th id="70">70</th><td>  <dfn class="enum" id="INTEL_TREMONT" title='INTEL_TREMONT' data-ref="INTEL_TREMONT" data-ref-filename="INTEL_TREMONT">INTEL_TREMONT</dfn>,</td></tr>
+<tr><th id="71">71</th><td>  <dfn class="enum" id="AMDFAM19H" title='AMDFAM19H' data-ref="AMDFAM19H" data-ref-filename="AMDFAM19H">AMDFAM19H</dfn>,</td></tr>
+<tr><th id="72">72</th><td>  <dfn class="enum" id="CPU_TYPE_MAX" title='CPU_TYPE_MAX' data-ref="CPU_TYPE_MAX" data-ref-filename="CPU_TYPE_MAX">CPU_TYPE_MAX</dfn></td></tr>
+<tr><th id="73">73</th><td>};</td></tr>
+<tr><th id="74">74</th><td></td></tr>
+<tr><th id="75">75</th><td><b>enum</b> <dfn class="type def" id="ProcessorSubtypes" title='ProcessorSubtypes' data-ref="ProcessorSubtypes" data-ref-filename="ProcessorSubtypes">ProcessorSubtypes</dfn> {</td></tr>
+<tr><th id="76">76</th><td>  <dfn class="enum" id="INTEL_COREI7_NEHALEM" title='INTEL_COREI7_NEHALEM' data-ref="INTEL_COREI7_NEHALEM" data-ref-filename="INTEL_COREI7_NEHALEM">INTEL_COREI7_NEHALEM</dfn> = <var>1</var>,</td></tr>
+<tr><th id="77">77</th><td>  <dfn class="enum" id="INTEL_COREI7_WESTMERE" title='INTEL_COREI7_WESTMERE' data-ref="INTEL_COREI7_WESTMERE" data-ref-filename="INTEL_COREI7_WESTMERE">INTEL_COREI7_WESTMERE</dfn>,</td></tr>
+<tr><th id="78">78</th><td>  <dfn class="enum" id="INTEL_COREI7_SANDYBRIDGE" title='INTEL_COREI7_SANDYBRIDGE' data-ref="INTEL_COREI7_SANDYBRIDGE" data-ref-filename="INTEL_COREI7_SANDYBRIDGE">INTEL_COREI7_SANDYBRIDGE</dfn>,</td></tr>
+<tr><th id="79">79</th><td>  <dfn class="enum" id="AMDFAM10H_BARCELONA" title='AMDFAM10H_BARCELONA' data-ref="AMDFAM10H_BARCELONA" data-ref-filename="AMDFAM10H_BARCELONA">AMDFAM10H_BARCELONA</dfn>,</td></tr>
+<tr><th id="80">80</th><td>  <dfn class="enum" id="AMDFAM10H_SHANGHAI" title='AMDFAM10H_SHANGHAI' data-ref="AMDFAM10H_SHANGHAI" data-ref-filename="AMDFAM10H_SHANGHAI">AMDFAM10H_SHANGHAI</dfn>,</td></tr>
+<tr><th id="81">81</th><td>  <dfn class="enum" id="AMDFAM10H_ISTANBUL" title='AMDFAM10H_ISTANBUL' data-ref="AMDFAM10H_ISTANBUL" data-ref-filename="AMDFAM10H_ISTANBUL">AMDFAM10H_ISTANBUL</dfn>,</td></tr>
+<tr><th id="82">82</th><td>  <dfn class="enum" id="AMDFAM15H_BDVER1" title='AMDFAM15H_BDVER1' data-ref="AMDFAM15H_BDVER1" data-ref-filename="AMDFAM15H_BDVER1">AMDFAM15H_BDVER1</dfn>,</td></tr>
+<tr><th id="83">83</th><td>  <dfn class="enum" id="AMDFAM15H_BDVER2" title='AMDFAM15H_BDVER2' data-ref="AMDFAM15H_BDVER2" data-ref-filename="AMDFAM15H_BDVER2">AMDFAM15H_BDVER2</dfn>,</td></tr>
+<tr><th id="84">84</th><td>  <dfn class="enum" id="AMDFAM15H_BDVER3" title='AMDFAM15H_BDVER3' data-ref="AMDFAM15H_BDVER3" data-ref-filename="AMDFAM15H_BDVER3">AMDFAM15H_BDVER3</dfn>,</td></tr>
+<tr><th id="85">85</th><td>  <dfn class="enum" id="AMDFAM15H_BDVER4" title='AMDFAM15H_BDVER4' data-ref="AMDFAM15H_BDVER4" data-ref-filename="AMDFAM15H_BDVER4">AMDFAM15H_BDVER4</dfn>,</td></tr>
+<tr><th id="86">86</th><td>  <dfn class="enum" id="AMDFAM17H_ZNVER1" title='AMDFAM17H_ZNVER1' data-ref="AMDFAM17H_ZNVER1" data-ref-filename="AMDFAM17H_ZNVER1">AMDFAM17H_ZNVER1</dfn>,</td></tr>
+<tr><th id="87">87</th><td>  <dfn class="enum" id="INTEL_COREI7_IVYBRIDGE" title='INTEL_COREI7_IVYBRIDGE' data-ref="INTEL_COREI7_IVYBRIDGE" data-ref-filename="INTEL_COREI7_IVYBRIDGE">INTEL_COREI7_IVYBRIDGE</dfn>,</td></tr>
+<tr><th id="88">88</th><td>  <dfn class="enum" id="INTEL_COREI7_HASWELL" title='INTEL_COREI7_HASWELL' data-ref="INTEL_COREI7_HASWELL" data-ref-filename="INTEL_COREI7_HASWELL">INTEL_COREI7_HASWELL</dfn>,</td></tr>
+<tr><th id="89">89</th><td>  <dfn class="enum" id="INTEL_COREI7_BROADWELL" title='INTEL_COREI7_BROADWELL' data-ref="INTEL_COREI7_BROADWELL" data-ref-filename="INTEL_COREI7_BROADWELL">INTEL_COREI7_BROADWELL</dfn>,</td></tr>
+<tr><th id="90">90</th><td>  <dfn class="enum" id="INTEL_COREI7_SKYLAKE" title='INTEL_COREI7_SKYLAKE' data-ref="INTEL_COREI7_SKYLAKE" data-ref-filename="INTEL_COREI7_SKYLAKE">INTEL_COREI7_SKYLAKE</dfn>,</td></tr>
+<tr><th id="91">91</th><td>  <dfn class="enum" id="INTEL_COREI7_SKYLAKE_AVX512" title='INTEL_COREI7_SKYLAKE_AVX512' data-ref="INTEL_COREI7_SKYLAKE_AVX512" data-ref-filename="INTEL_COREI7_SKYLAKE_AVX512">INTEL_COREI7_SKYLAKE_AVX512</dfn>,</td></tr>
+<tr><th id="92">92</th><td>  <dfn class="enum" id="INTEL_COREI7_CANNONLAKE" title='INTEL_COREI7_CANNONLAKE' data-ref="INTEL_COREI7_CANNONLAKE" data-ref-filename="INTEL_COREI7_CANNONLAKE">INTEL_COREI7_CANNONLAKE</dfn>,</td></tr>
+<tr><th id="93">93</th><td>  <dfn class="enum" id="INTEL_COREI7_ICELAKE_CLIENT" title='INTEL_COREI7_ICELAKE_CLIENT' data-ref="INTEL_COREI7_ICELAKE_CLIENT" data-ref-filename="INTEL_COREI7_ICELAKE_CLIENT">INTEL_COREI7_ICELAKE_CLIENT</dfn>,</td></tr>
+<tr><th id="94">94</th><td>  <dfn class="enum" id="INTEL_COREI7_ICELAKE_SERVER" title='INTEL_COREI7_ICELAKE_SERVER' data-ref="INTEL_COREI7_ICELAKE_SERVER" data-ref-filename="INTEL_COREI7_ICELAKE_SERVER">INTEL_COREI7_ICELAKE_SERVER</dfn>,</td></tr>
+<tr><th id="95">95</th><td>  <dfn class="enum" id="AMDFAM17H_ZNVER2" title='AMDFAM17H_ZNVER2' data-ref="AMDFAM17H_ZNVER2" data-ref-filename="AMDFAM17H_ZNVER2">AMDFAM17H_ZNVER2</dfn>,</td></tr>
+<tr><th id="96">96</th><td>  <dfn class="enum" id="INTEL_COREI7_CASCADELAKE" title='INTEL_COREI7_CASCADELAKE' data-ref="INTEL_COREI7_CASCADELAKE" data-ref-filename="INTEL_COREI7_CASCADELAKE">INTEL_COREI7_CASCADELAKE</dfn>,</td></tr>
+<tr><th id="97">97</th><td>  <dfn class="enum" id="INTEL_COREI7_TIGERLAKE" title='INTEL_COREI7_TIGERLAKE' data-ref="INTEL_COREI7_TIGERLAKE" data-ref-filename="INTEL_COREI7_TIGERLAKE">INTEL_COREI7_TIGERLAKE</dfn>,</td></tr>
+<tr><th id="98">98</th><td>  <dfn class="enum" id="INTEL_COREI7_COOPERLAKE" title='INTEL_COREI7_COOPERLAKE' data-ref="INTEL_COREI7_COOPERLAKE" data-ref-filename="INTEL_COREI7_COOPERLAKE">INTEL_COREI7_COOPERLAKE</dfn>,</td></tr>
+<tr><th id="99">99</th><td>  <dfn class="enum" id="INTEL_COREI7_SAPPHIRERAPIDS" title='INTEL_COREI7_SAPPHIRERAPIDS' data-ref="INTEL_COREI7_SAPPHIRERAPIDS" data-ref-filename="INTEL_COREI7_SAPPHIRERAPIDS">INTEL_COREI7_SAPPHIRERAPIDS</dfn>,</td></tr>
+<tr><th id="100">100</th><td>  <dfn class="enum" id="INTEL_COREI7_ALDERLAKE" title='INTEL_COREI7_ALDERLAKE' data-ref="INTEL_COREI7_ALDERLAKE" data-ref-filename="INTEL_COREI7_ALDERLAKE">INTEL_COREI7_ALDERLAKE</dfn>,</td></tr>
+<tr><th id="101">101</th><td>  <dfn class="enum" id="AMDFAM19H_ZNVER3" title='AMDFAM19H_ZNVER3' data-ref="AMDFAM19H_ZNVER3" data-ref-filename="AMDFAM19H_ZNVER3">AMDFAM19H_ZNVER3</dfn>,</td></tr>
+<tr><th id="102">102</th><td>  <dfn class="enum" id="CPU_SUBTYPE_MAX" title='CPU_SUBTYPE_MAX' data-ref="CPU_SUBTYPE_MAX" data-ref-filename="CPU_SUBTYPE_MAX">CPU_SUBTYPE_MAX</dfn></td></tr>
+<tr><th id="103">103</th><td>};</td></tr>
+<tr><th id="104">104</th><td></td></tr>
+<tr><th id="105">105</th><td><b>enum</b> <dfn class="type def" id="ProcessorFeatures" title='ProcessorFeatures' data-ref="ProcessorFeatures" data-ref-filename="ProcessorFeatures">ProcessorFeatures</dfn> {</td></tr>
+<tr><th id="106">106</th><td>  <dfn class="enum" id="FEATURE_CMOV" title='FEATURE_CMOV' data-ref="FEATURE_CMOV" data-ref-filename="FEATURE_CMOV">FEATURE_CMOV</dfn> = <var>0</var>,</td></tr>
+<tr><th id="107">107</th><td>  <dfn class="enum" id="FEATURE_MMX" title='FEATURE_MMX' data-ref="FEATURE_MMX" data-ref-filename="FEATURE_MMX">FEATURE_MMX</dfn>,</td></tr>
+<tr><th id="108">108</th><td>  <dfn class="enum" id="FEATURE_POPCNT" title='FEATURE_POPCNT' data-ref="FEATURE_POPCNT" data-ref-filename="FEATURE_POPCNT">FEATURE_POPCNT</dfn>,</td></tr>
+<tr><th id="109">109</th><td>  <dfn class="enum" id="FEATURE_SSE" title='FEATURE_SSE' data-ref="FEATURE_SSE" data-ref-filename="FEATURE_SSE">FEATURE_SSE</dfn>,</td></tr>
+<tr><th id="110">110</th><td>  <dfn class="enum" id="FEATURE_SSE2" title='FEATURE_SSE2' data-ref="FEATURE_SSE2" data-ref-filename="FEATURE_SSE2">FEATURE_SSE2</dfn>,</td></tr>
+<tr><th id="111">111</th><td>  <dfn class="enum" id="FEATURE_SSE3" title='FEATURE_SSE3' data-ref="FEATURE_SSE3" data-ref-filename="FEATURE_SSE3">FEATURE_SSE3</dfn>,</td></tr>
+<tr><th id="112">112</th><td>  <dfn class="enum" id="FEATURE_SSSE3" title='FEATURE_SSSE3' data-ref="FEATURE_SSSE3" data-ref-filename="FEATURE_SSSE3">FEATURE_SSSE3</dfn>,</td></tr>
+<tr><th id="113">113</th><td>  <dfn class="enum" id="FEATURE_SSE4_1" title='FEATURE_SSE4_1' data-ref="FEATURE_SSE4_1" data-ref-filename="FEATURE_SSE4_1">FEATURE_SSE4_1</dfn>,</td></tr>
+<tr><th id="114">114</th><td>  <dfn class="enum" id="FEATURE_SSE4_2" title='FEATURE_SSE4_2' data-ref="FEATURE_SSE4_2" data-ref-filename="FEATURE_SSE4_2">FEATURE_SSE4_2</dfn>,</td></tr>
+<tr><th id="115">115</th><td>  <dfn class="enum" id="FEATURE_AVX" title='FEATURE_AVX' data-ref="FEATURE_AVX" data-ref-filename="FEATURE_AVX">FEATURE_AVX</dfn>,</td></tr>
+<tr><th id="116">116</th><td>  <dfn class="enum" id="FEATURE_AVX2" title='FEATURE_AVX2' data-ref="FEATURE_AVX2" data-ref-filename="FEATURE_AVX2">FEATURE_AVX2</dfn>,</td></tr>
+<tr><th id="117">117</th><td>  <dfn class="enum" id="FEATURE_SSE4_A" title='FEATURE_SSE4_A' data-ref="FEATURE_SSE4_A" data-ref-filename="FEATURE_SSE4_A">FEATURE_SSE4_A</dfn>,</td></tr>
+<tr><th id="118">118</th><td>  <dfn class="enum" id="FEATURE_FMA4" title='FEATURE_FMA4' data-ref="FEATURE_FMA4" data-ref-filename="FEATURE_FMA4">FEATURE_FMA4</dfn>,</td></tr>
+<tr><th id="119">119</th><td>  <dfn class="enum" id="FEATURE_XOP" title='FEATURE_XOP' data-ref="FEATURE_XOP" data-ref-filename="FEATURE_XOP">FEATURE_XOP</dfn>,</td></tr>
+<tr><th id="120">120</th><td>  <dfn class="enum" id="FEATURE_FMA" title='FEATURE_FMA' data-ref="FEATURE_FMA" data-ref-filename="FEATURE_FMA">FEATURE_FMA</dfn>,</td></tr>
+<tr><th id="121">121</th><td>  <dfn class="enum" id="FEATURE_AVX512F" title='FEATURE_AVX512F' data-ref="FEATURE_AVX512F" data-ref-filename="FEATURE_AVX512F">FEATURE_AVX512F</dfn>,</td></tr>
+<tr><th id="122">122</th><td>  <dfn class="enum" id="FEATURE_BMI" title='FEATURE_BMI' data-ref="FEATURE_BMI" data-ref-filename="FEATURE_BMI">FEATURE_BMI</dfn>,</td></tr>
+<tr><th id="123">123</th><td>  <dfn class="enum" id="FEATURE_BMI2" title='FEATURE_BMI2' data-ref="FEATURE_BMI2" data-ref-filename="FEATURE_BMI2">FEATURE_BMI2</dfn>,</td></tr>
+<tr><th id="124">124</th><td>  <dfn class="enum" id="FEATURE_AES" title='FEATURE_AES' data-ref="FEATURE_AES" data-ref-filename="FEATURE_AES">FEATURE_AES</dfn>,</td></tr>
+<tr><th id="125">125</th><td>  <dfn class="enum" id="FEATURE_PCLMUL" title='FEATURE_PCLMUL' data-ref="FEATURE_PCLMUL" data-ref-filename="FEATURE_PCLMUL">FEATURE_PCLMUL</dfn>,</td></tr>
+<tr><th id="126">126</th><td>  <dfn class="enum" id="FEATURE_AVX512VL" title='FEATURE_AVX512VL' data-ref="FEATURE_AVX512VL" data-ref-filename="FEATURE_AVX512VL">FEATURE_AVX512VL</dfn>,</td></tr>
+<tr><th id="127">127</th><td>  <dfn class="enum" id="FEATURE_AVX512BW" title='FEATURE_AVX512BW' data-ref="FEATURE_AVX512BW" data-ref-filename="FEATURE_AVX512BW">FEATURE_AVX512BW</dfn>,</td></tr>
+<tr><th id="128">128</th><td>  <dfn class="enum" id="FEATURE_AVX512DQ" title='FEATURE_AVX512DQ' data-ref="FEATURE_AVX512DQ" data-ref-filename="FEATURE_AVX512DQ">FEATURE_AVX512DQ</dfn>,</td></tr>
+<tr><th id="129">129</th><td>  <dfn class="enum" id="FEATURE_AVX512CD" title='FEATURE_AVX512CD' data-ref="FEATURE_AVX512CD" data-ref-filename="FEATURE_AVX512CD">FEATURE_AVX512CD</dfn>,</td></tr>
+<tr><th id="130">130</th><td>  <dfn class="enum" id="FEATURE_AVX512ER" title='FEATURE_AVX512ER' data-ref="FEATURE_AVX512ER" data-ref-filename="FEATURE_AVX512ER">FEATURE_AVX512ER</dfn>,</td></tr>
+<tr><th id="131">131</th><td>  <dfn class="enum" id="FEATURE_AVX512PF" title='FEATURE_AVX512PF' data-ref="FEATURE_AVX512PF" data-ref-filename="FEATURE_AVX512PF">FEATURE_AVX512PF</dfn>,</td></tr>
+<tr><th id="132">132</th><td>  <dfn class="enum" id="FEATURE_AVX512VBMI" title='FEATURE_AVX512VBMI' data-ref="FEATURE_AVX512VBMI" data-ref-filename="FEATURE_AVX512VBMI">FEATURE_AVX512VBMI</dfn>,</td></tr>
+<tr><th id="133">133</th><td>  <dfn class="enum" id="FEATURE_AVX512IFMA" title='FEATURE_AVX512IFMA' data-ref="FEATURE_AVX512IFMA" data-ref-filename="FEATURE_AVX512IFMA">FEATURE_AVX512IFMA</dfn>,</td></tr>
+<tr><th id="134">134</th><td>  <dfn class="enum" id="FEATURE_AVX5124VNNIW" title='FEATURE_AVX5124VNNIW' data-ref="FEATURE_AVX5124VNNIW" data-ref-filename="FEATURE_AVX5124VNNIW">FEATURE_AVX5124VNNIW</dfn>,</td></tr>
+<tr><th id="135">135</th><td>  <dfn class="enum" id="FEATURE_AVX5124FMAPS" title='FEATURE_AVX5124FMAPS' data-ref="FEATURE_AVX5124FMAPS" data-ref-filename="FEATURE_AVX5124FMAPS">FEATURE_AVX5124FMAPS</dfn>,</td></tr>
+<tr><th id="136">136</th><td>  <dfn class="enum" id="FEATURE_AVX512VPOPCNTDQ" title='FEATURE_AVX512VPOPCNTDQ' data-ref="FEATURE_AVX512VPOPCNTDQ" data-ref-filename="FEATURE_AVX512VPOPCNTDQ">FEATURE_AVX512VPOPCNTDQ</dfn>,</td></tr>
+<tr><th id="137">137</th><td>  <dfn class="enum" id="FEATURE_AVX512VBMI2" title='FEATURE_AVX512VBMI2' data-ref="FEATURE_AVX512VBMI2" data-ref-filename="FEATURE_AVX512VBMI2">FEATURE_AVX512VBMI2</dfn>,</td></tr>
+<tr><th id="138">138</th><td>  <dfn class="enum" id="FEATURE_GFNI" title='FEATURE_GFNI' data-ref="FEATURE_GFNI" data-ref-filename="FEATURE_GFNI">FEATURE_GFNI</dfn>,</td></tr>
+<tr><th id="139">139</th><td>  <dfn class="enum" id="FEATURE_VPCLMULQDQ" title='FEATURE_VPCLMULQDQ' data-ref="FEATURE_VPCLMULQDQ" data-ref-filename="FEATURE_VPCLMULQDQ">FEATURE_VPCLMULQDQ</dfn>,</td></tr>
+<tr><th id="140">140</th><td>  <dfn class="enum" id="FEATURE_AVX512VNNI" title='FEATURE_AVX512VNNI' data-ref="FEATURE_AVX512VNNI" data-ref-filename="FEATURE_AVX512VNNI">FEATURE_AVX512VNNI</dfn>,</td></tr>
+<tr><th id="141">141</th><td>  <dfn class="enum" id="FEATURE_AVX512BITALG" title='FEATURE_AVX512BITALG' data-ref="FEATURE_AVX512BITALG" data-ref-filename="FEATURE_AVX512BITALG">FEATURE_AVX512BITALG</dfn>,</td></tr>
+<tr><th id="142">142</th><td>  <dfn class="enum" id="FEATURE_AVX512BF16" title='FEATURE_AVX512BF16' data-ref="FEATURE_AVX512BF16" data-ref-filename="FEATURE_AVX512BF16">FEATURE_AVX512BF16</dfn>,</td></tr>
+<tr><th id="143">143</th><td>  <dfn class="enum" id="FEATURE_AVX512VP2INTERSECT" title='FEATURE_AVX512VP2INTERSECT' data-ref="FEATURE_AVX512VP2INTERSECT" data-ref-filename="FEATURE_AVX512VP2INTERSECT">FEATURE_AVX512VP2INTERSECT</dfn>,</td></tr>
+<tr><th id="144">144</th><td>  <dfn class="enum" id="CPU_FEATURE_MAX" title='CPU_FEATURE_MAX' data-ref="CPU_FEATURE_MAX" data-ref-filename="CPU_FEATURE_MAX">CPU_FEATURE_MAX</dfn></td></tr>
+<tr><th id="145">145</th><td>};</td></tr>
+<tr><th id="146">146</th><td></td></tr>
+<tr><th id="147">147</th><td><i  data-doc="isCpuIdSupported">// The check below for i386 was copied from clang's cpuid.h (__get_cpuid_max).</i></td></tr>
+<tr><th id="148">148</th><td><i  data-doc="isCpuIdSupported">// Check motivated by bug reports for OpenSSL crashing on CPUs without CPUID</i></td></tr>
+<tr><th id="149">149</th><td><i  data-doc="isCpuIdSupported">// support. Consequently, for i386, the presence of CPUID is checked first</i></td></tr>
+<tr><th id="150">150</th><td><i  data-doc="isCpuIdSupported">// via the corresponding eflags bit.</i></td></tr>
+<tr><th id="151">151</th><td><em>static</em> <a class="macro" href="#32" title="int" data-ref="_M/bool">bool</a> <dfn class="tu decl def fn" id="isCpuIdSupported" title='isCpuIdSupported' data-type='int isCpuIdSupported()' data-ref="isCpuIdSupported" data-ref-filename="isCpuIdSupported">isCpuIdSupported</dfn>() {</td></tr>
+<tr><th id="152">152</th><td><u>#<span data-ppcond="152">if</span> defined(<span class="macro" data-ref="_M/__GNUC__">__GNUC__</span>) || defined(<span class="macro" data-ref="_M/__clang__">__clang__</span>)</u></td></tr>
+<tr><th id="153">153</th><td><u>#<span data-ppcond="153">if</span> defined(<span class="macro" data-ref="_M/__i386__">__i386__</span>)</u></td></tr>
+<tr><th id="154">154</th><td>  <em>int</em> <dfn class="local col1 decl" id="1__cpuid_supported" title='__cpuid_supported' data-type='int' data-ref="1__cpuid_supported" data-ref-filename="1__cpuid_supported">__cpuid_supported</dfn>;</td></tr>
+<tr><th id="155">155</th><td>  <b>__asm__</b>(<q>"  pushfl\n"</q></td></tr>
+<tr><th id="156">156</th><td>          <q>"  popl   %%eax\n"</q></td></tr>
+<tr><th id="157">157</th><td>          <q>"  movl   %%eax,%%ecx\n"</q></td></tr>
+<tr><th id="158">158</th><td>          <q>"  xorl   $0x00200000,%%eax\n"</q></td></tr>
+<tr><th id="159">159</th><td>          <q>"  pushl  %%eax\n"</q></td></tr>
+<tr><th id="160">160</th><td>          <q>"  popfl\n"</q></td></tr>
+<tr><th id="161">161</th><td>          <q>"  pushfl\n"</q></td></tr>
+<tr><th id="162">162</th><td>          <q>"  popl   %%eax\n"</q></td></tr>
+<tr><th id="163">163</th><td>          <q>"  movl   $0,%0\n"</q></td></tr>
+<tr><th id="164">164</th><td>          <q>"  cmpl   %%eax,%%ecx\n"</q></td></tr>
+<tr><th id="165">165</th><td>          <q>"  je     1f\n"</q></td></tr>
+<tr><th id="166">166</th><td>          <q>"  movl   $1,%0\n"</q></td></tr>
+<tr><th id="167">167</th><td>          <q>"1:"</q></td></tr>
+<tr><th id="168">168</th><td>          : <q>"=r"</q>(<a class="local col1 ref" href="#1__cpuid_supported" title='__cpuid_supported' data-ref="1__cpuid_supported" data-ref-filename="1__cpuid_supported">__cpuid_supported</a>)</td></tr>
+<tr><th id="169">169</th><td>          :</td></tr>
+<tr><th id="170">170</th><td>          : <q>"eax"</q>, <q>"ecx"</q>);</td></tr>
+<tr><th id="171">171</th><td>  <b>if</b> (!<a class="local col1 ref" href="#1__cpuid_supported" title='__cpuid_supported' data-ref="1__cpuid_supported" data-ref-filename="1__cpuid_supported">__cpuid_supported</a>)</td></tr>
+<tr><th id="172">172</th><td>    <b>return</b> <a class="macro" href="#34" title="0" data-ref="_M/false">false</a>;</td></tr>
+<tr><th id="173">173</th><td><u>#<span data-ppcond="153">endif</span></u></td></tr>
+<tr><th id="174">174</th><td>  <b>return</b> <a class="macro" href="#33" title="1" data-ref="_M/true">true</a>;</td></tr>
+<tr><th id="175">175</th><td><u>#<span data-ppcond="152">endif</span></u></td></tr>
+<tr><th id="176">176</th><td>  <b>return</b> <a class="macro" href="#33" title="1" data-ref="_M/true">true</a>;</td></tr>
+<tr><th id="177">177</th><td>}</td></tr>
+<tr><th id="178">178</th><td></td></tr>
+<tr><th id="179">179</th><td><i  data-doc="getX86CpuIDAndInfo">// This code is copied from lib/Support/Host.cpp.</i></td></tr>
+<tr><th id="180">180</th><td><i  data-doc="getX86CpuIDAndInfo">// Changes to either file should be mirrored in the other.</i></td></tr>
+<tr><th id="181">181</th><td><i  data-doc="getX86CpuIDAndInfo"></i></td></tr>
+<tr><th id="182">182</th><td><i  data-doc="getX86CpuIDAndInfo">/// getX86CpuIDAndInfo - Execute the specified cpuid and return the 4 values in</i></td></tr>
+<tr><th id="183">183</th><td><i  data-doc="getX86CpuIDAndInfo">/// the specified arguments.  If we can't run cpuid on the host, return true.</i></td></tr>
+<tr><th id="184">184</th><td><em>static</em> <a class="macro" href="#32" title="int" data-ref="_M/bool">bool</a> <dfn class="tu decl def fn" id="getX86CpuIDAndInfo" title='getX86CpuIDAndInfo' data-type='int getX86CpuIDAndInfo(unsigned int value, unsigned int * rEAX, unsigned int * rEBX, unsigned int * rECX, unsigned int * rEDX)' data-ref="getX86CpuIDAndInfo" data-ref-filename="getX86CpuIDAndInfo">getX86CpuIDAndInfo</dfn>(<em>unsigned</em> <dfn class="local col2 decl" id="2value" title='value' data-type='unsigned int' data-ref="2value" data-ref-filename="2value">value</dfn>, <em>unsigned</em> *<dfn class="local col3 decl" id="3rEAX" title='rEAX' data-type='unsigned int *' data-ref="3rEAX" data-ref-filename="3rEAX">rEAX</dfn>, <em>unsigned</em> *<dfn class="local col4 decl" id="4rEBX" title='rEBX' data-type='unsigned int *' data-ref="4rEBX" data-ref-filename="4rEBX">rEBX</dfn>,</td></tr>
+<tr><th id="185">185</th><td>                               <em>unsigned</em> *<dfn class="local col5 decl" id="5rECX" title='rECX' data-type='unsigned int *' data-ref="5rECX" data-ref-filename="5rECX">rECX</dfn>, <em>unsigned</em> *<dfn class="local col6 decl" id="6rEDX" title='rEDX' data-type='unsigned int *' data-ref="6rEDX" data-ref-filename="6rEDX">rEDX</dfn>) {</td></tr>
+<tr><th id="186">186</th><td><u>#<span data-ppcond="186">if</span> defined(<span class="macro" data-ref="_M/__GNUC__">__GNUC__</span>) || defined(<span class="macro" data-ref="_M/__clang__">__clang__</span>)</u></td></tr>
+<tr><th id="187">187</th><td><u>#<span data-ppcond="187">if</span> defined(<span class="macro" data-ref="_M/__x86_64__">__x86_64__</span>)</u></td></tr>
+<tr><th id="188">188</th><td>  <i>// gcc doesn't know cpuid would clobber ebx/rbx. Preserve it manually.</i></td></tr>
+<tr><th id="189">189</th><td><i>  // FIXME: should we save this for Clang?</i></td></tr>
+<tr><th id="190">190</th><td>  <b>__asm__</b>(<q>"movq\t%%rbx, %%rsi\n\t"</q></td></tr>
+<tr><th id="191">191</th><td>          <q>"cpuid\n\t"</q></td></tr>
+<tr><th id="192">192</th><td>          <q>"xchgq\t%%rbx, %%rsi\n\t"</q></td></tr>
+<tr><th id="193">193</th><td>          : <q>"=a"</q>(*rEAX), <q>"=S"</q>(*rEBX), <q>"=c"</q>(*rECX), <q>"=d"</q>(*rEDX)</td></tr>
+<tr><th id="194">194</th><td>          : <q>"a"</q>(value));</td></tr>
+<tr><th id="195">195</th><td>  <b>return</b> false;</td></tr>
+<tr><th id="196">196</th><td><u>#<span data-ppcond="187">elif</span> defined(<span class="macro" data-ref="_M/__i386__">__i386__</span>)</u></td></tr>
+<tr><th id="197">197</th><td>  <b>__asm__</b>(<q>"movl\t%%ebx, %%esi\n\t"</q></td></tr>
+<tr><th id="198">198</th><td>          <q>"cpuid\n\t"</q></td></tr>
+<tr><th id="199">199</th><td>          <q>"xchgl\t%%ebx, %%esi\n\t"</q></td></tr>
+<tr><th id="200">200</th><td>          : <q>"=a"</q>(*<a class="local col3 ref" href="#3rEAX" title='rEAX' data-ref="3rEAX" data-ref-filename="3rEAX">rEAX</a>), <q>"=S"</q>(*<a class="local col4 ref" href="#4rEBX" title='rEBX' data-ref="4rEBX" data-ref-filename="4rEBX">rEBX</a>), <q>"=c"</q>(*<a class="local col5 ref" href="#5rECX" title='rECX' data-ref="5rECX" data-ref-filename="5rECX">rECX</a>), <q>"=d"</q>(*<a class="local col6 ref" href="#6rEDX" title='rEDX' data-ref="6rEDX" data-ref-filename="6rEDX">rEDX</a>)</td></tr>
+<tr><th id="201">201</th><td>          : <q>"a"</q>(<a class="local col2 ref" href="#2value" title='value' data-ref="2value" data-ref-filename="2value">value</a>));</td></tr>
+<tr><th id="202">202</th><td>  <b>return</b> <a class="macro" href="#34" title="0" data-ref="_M/false">false</a>;</td></tr>
+<tr><th id="203">203</th><td><u>#<span data-ppcond="187">else</span></u></td></tr>
+<tr><th id="204">204</th><td>  <b>return</b> true;</td></tr>
+<tr><th id="205">205</th><td><u>#<span data-ppcond="187">endif</span></u></td></tr>
+<tr><th id="206">206</th><td><u>#<span data-ppcond="186">elif</span> defined(_MSC_VER)</u></td></tr>
+<tr><th id="207">207</th><td>  <i>// The MSVC intrinsic is portable across x86 and x64.</i></td></tr>
+<tr><th id="208">208</th><td>  <em>int</em> registers[<var>4</var>];</td></tr>
+<tr><th id="209">209</th><td>  __cpuid(registers, value);</td></tr>
+<tr><th id="210">210</th><td>  *rEAX = registers[<var>0</var>];</td></tr>
+<tr><th id="211">211</th><td>  *rEBX = registers[<var>1</var>];</td></tr>
+<tr><th id="212">212</th><td>  *rECX = registers[<var>2</var>];</td></tr>
+<tr><th id="213">213</th><td>  *rEDX = registers[<var>3</var>];</td></tr>
+<tr><th id="214">214</th><td>  <b>return</b> false;</td></tr>
+<tr><th id="215">215</th><td><u>#else</u></td></tr>
+<tr><th id="216">216</th><td>  <b>return</b> true;</td></tr>
+<tr><th id="217">217</th><td><u>#<span data-ppcond="186">endif</span></u></td></tr>
+<tr><th id="218">218</th><td>}</td></tr>
+<tr><th id="219">219</th><td></td></tr>
+<tr><th id="220">220</th><td><i class="doc" data-doc="getX86CpuIDAndInfoEx">/// getX86CpuIDAndInfoEx - Execute the specified cpuid with subleaf and return</i></td></tr>
+<tr><th id="221">221</th><td><i class="doc" data-doc="getX86CpuIDAndInfoEx">/// the 4 values in the specified arguments.  If we can't run cpuid on the host,</i></td></tr>
+<tr><th id="222">222</th><td><i class="doc" data-doc="getX86CpuIDAndInfoEx">/// return true.</i></td></tr>
+<tr><th id="223">223</th><td><em>static</em> <a class="macro" href="#32" title="int" data-ref="_M/bool">bool</a> <dfn class="tu decl def fn" id="getX86CpuIDAndInfoEx" title='getX86CpuIDAndInfoEx' data-type='int getX86CpuIDAndInfoEx(unsigned int value, unsigned int subleaf, unsigned int * rEAX, unsigned int * rEBX, unsigned int * rECX, unsigned int * rEDX)' data-ref="getX86CpuIDAndInfoEx" data-ref-filename="getX86CpuIDAndInfoEx">getX86CpuIDAndInfoEx</dfn>(<em>unsigned</em> <dfn class="local col7 decl" id="7value" title='value' data-type='unsigned int' data-ref="7value" data-ref-filename="7value">value</dfn>, <em>unsigned</em> <dfn class="local col8 decl" id="8subleaf" title='subleaf' data-type='unsigned int' data-ref="8subleaf" data-ref-filename="8subleaf">subleaf</dfn>,</td></tr>
+<tr><th id="224">224</th><td>                                 <em>unsigned</em> *<dfn class="local col9 decl" id="9rEAX" title='rEAX' data-type='unsigned int *' data-ref="9rEAX" data-ref-filename="9rEAX">rEAX</dfn>, <em>unsigned</em> *<dfn class="local col0 decl" id="10rEBX" title='rEBX' data-type='unsigned int *' data-ref="10rEBX" data-ref-filename="10rEBX">rEBX</dfn>, <em>unsigned</em> *<dfn class="local col1 decl" id="11rECX" title='rECX' data-type='unsigned int *' data-ref="11rECX" data-ref-filename="11rECX">rECX</dfn>,</td></tr>
+<tr><th id="225">225</th><td>                                 <em>unsigned</em> *<dfn class="local col2 decl" id="12rEDX" title='rEDX' data-type='unsigned int *' data-ref="12rEDX" data-ref-filename="12rEDX">rEDX</dfn>) {</td></tr>
+<tr><th id="226">226</th><td><u>#<span data-ppcond="226">if</span> defined(<span class="macro" data-ref="_M/__GNUC__">__GNUC__</span>) || defined(<span class="macro" data-ref="_M/__clang__">__clang__</span>)</u></td></tr>
+<tr><th id="227">227</th><td><u>#<span data-ppcond="227">if</span> defined(<span class="macro" data-ref="_M/__x86_64__">__x86_64__</span>)</u></td></tr>
+<tr><th id="228">228</th><td>  <i>// gcc doesn't know cpuid would clobber ebx/rbx. Preserve it manually.</i></td></tr>
+<tr><th id="229">229</th><td><i>  // FIXME: should we save this for Clang?</i></td></tr>
+<tr><th id="230">230</th><td>  <b>__asm__</b>(<q>"movq\t%%rbx, %%rsi\n\t"</q></td></tr>
+<tr><th id="231">231</th><td>          <q>"cpuid\n\t"</q></td></tr>
+<tr><th id="232">232</th><td>          <q>"xchgq\t%%rbx, %%rsi\n\t"</q></td></tr>
+<tr><th id="233">233</th><td>          : <q>"=a"</q>(*rEAX), <q>"=S"</q>(*rEBX), <q>"=c"</q>(*rECX), <q>"=d"</q>(*rEDX)</td></tr>
+<tr><th id="234">234</th><td>          : <q>"a"</q>(value), <q>"c"</q>(subleaf));</td></tr>
+<tr><th id="235">235</th><td>  <b>return</b> false;</td></tr>
+<tr><th id="236">236</th><td><u>#<span data-ppcond="227">elif</span> defined(<span class="macro" data-ref="_M/__i386__">__i386__</span>)</u></td></tr>
+<tr><th id="237">237</th><td>  <b>__asm__</b>(<q>"movl\t%%ebx, %%esi\n\t"</q></td></tr>
+<tr><th id="238">238</th><td>          <q>"cpuid\n\t"</q></td></tr>
+<tr><th id="239">239</th><td>          <q>"xchgl\t%%ebx, %%esi\n\t"</q></td></tr>
+<tr><th id="240">240</th><td>          : <q>"=a"</q>(*<a class="local col9 ref" href="#9rEAX" title='rEAX' data-ref="9rEAX" data-ref-filename="9rEAX">rEAX</a>), <q>"=S"</q>(*<a class="local col0 ref" href="#10rEBX" title='rEBX' data-ref="10rEBX" data-ref-filename="10rEBX">rEBX</a>), <q>"=c"</q>(*<a class="local col1 ref" href="#11rECX" title='rECX' data-ref="11rECX" data-ref-filename="11rECX">rECX</a>), <q>"=d"</q>(*<a class="local col2 ref" href="#12rEDX" title='rEDX' data-ref="12rEDX" data-ref-filename="12rEDX">rEDX</a>)</td></tr>
+<tr><th id="241">241</th><td>          : <q>"a"</q>(<a class="local col7 ref" href="#7value" title='value' data-ref="7value" data-ref-filename="7value">value</a>), <q>"c"</q>(<a class="local col8 ref" href="#8subleaf" title='subleaf' data-ref="8subleaf" data-ref-filename="8subleaf">subleaf</a>));</td></tr>
+<tr><th id="242">242</th><td>  <b>return</b> <a class="macro" href="#34" title="0" data-ref="_M/false">false</a>;</td></tr>
+<tr><th id="243">243</th><td><u>#<span data-ppcond="227">else</span></u></td></tr>
+<tr><th id="244">244</th><td>  <b>return</b> true;</td></tr>
+<tr><th id="245">245</th><td><u>#<span data-ppcond="227">endif</span></u></td></tr>
+<tr><th id="246">246</th><td><u>#<span data-ppcond="226">elif</span> defined(_MSC_VER)</u></td></tr>
+<tr><th id="247">247</th><td>  <em>int</em> registers[<var>4</var>];</td></tr>
+<tr><th id="248">248</th><td>  __cpuidex(registers, value, subleaf);</td></tr>
+<tr><th id="249">249</th><td>  *rEAX = registers[<var>0</var>];</td></tr>
+<tr><th id="250">250</th><td>  *rEBX = registers[<var>1</var>];</td></tr>
+<tr><th id="251">251</th><td>  *rECX = registers[<var>2</var>];</td></tr>
+<tr><th id="252">252</th><td>  *rEDX = registers[<var>3</var>];</td></tr>
+<tr><th id="253">253</th><td>  <b>return</b> false;</td></tr>
+<tr><th id="254">254</th><td><u>#else</u></td></tr>
+<tr><th id="255">255</th><td>  <b>return</b> true;</td></tr>
+<tr><th id="256">256</th><td><u>#<span data-ppcond="226">endif</span></u></td></tr>
+<tr><th id="257">257</th><td>}</td></tr>
+<tr><th id="258">258</th><td></td></tr>
+<tr><th id="259">259</th><td><i  data-doc="getX86XCR0">// Read control register 0 (XCR0). Used to detect features such as AVX.</i></td></tr>
+<tr><th id="260">260</th><td><em>static</em> <a class="macro" href="#32" title="int" data-ref="_M/bool">bool</a> <dfn class="tu decl def fn" id="getX86XCR0" title='getX86XCR0' data-type='int getX86XCR0(unsigned int * rEAX, unsigned int * rEDX)' data-ref="getX86XCR0" data-ref-filename="getX86XCR0">getX86XCR0</dfn>(<em>unsigned</em> *<dfn class="local col3 decl" id="13rEAX" title='rEAX' data-type='unsigned int *' data-ref="13rEAX" data-ref-filename="13rEAX">rEAX</dfn>, <em>unsigned</em> *<dfn class="local col4 decl" id="14rEDX" title='rEDX' data-type='unsigned int *' data-ref="14rEDX" data-ref-filename="14rEDX">rEDX</dfn>) {</td></tr>
+<tr><th id="261">261</th><td><u>#<span data-ppcond="261">if</span> defined(<span class="macro" data-ref="_M/__GNUC__">__GNUC__</span>) || defined(<span class="macro" data-ref="_M/__clang__">__clang__</span>)</u></td></tr>
+<tr><th id="262">262</th><td>  <i>// Check xgetbv; this uses a .byte sequence instead of the instruction</i></td></tr>
+<tr><th id="263">263</th><td><i>  // directly because older assemblers do not include support for xgetbv and</i></td></tr>
+<tr><th id="264">264</th><td><i>  // there is no easy way to conditionally compile based on the assembler used.</i></td></tr>
+<tr><th id="265">265</th><td>  <b>__asm__</b>(<q>".byte 0x0f, 0x01, 0xd0"</q> : <q>"=a"</q>(*<a class="local col3 ref" href="#13rEAX" title='rEAX' data-ref="13rEAX" data-ref-filename="13rEAX">rEAX</a>), <q>"=d"</q>(*<a class="local col4 ref" href="#14rEDX" title='rEDX' data-ref="14rEDX" data-ref-filename="14rEDX">rEDX</a>) : <q>"c"</q>(<var>0</var>));</td></tr>
+<tr><th id="266">266</th><td>  <b>return</b> <a class="macro" href="#34" title="0" data-ref="_M/false">false</a>;</td></tr>
+<tr><th id="267">267</th><td><u>#<span data-ppcond="261">elif</span> defined(_MSC_FULL_VER) &amp;&amp; defined(_XCR_XFEATURE_ENABLED_MASK)</u></td></tr>
+<tr><th id="268">268</th><td>  <em>unsigned</em> <em>long</em> <em>long</em> Result = _xgetbv(_XCR_XFEATURE_ENABLED_MASK);</td></tr>
+<tr><th id="269">269</th><td>  *rEAX = Result;</td></tr>
+<tr><th id="270">270</th><td>  *rEDX = Result &gt;&gt; <var>32</var>;</td></tr>
+<tr><th id="271">271</th><td>  <b>return</b> false;</td></tr>
+<tr><th id="272">272</th><td><u>#else</u></td></tr>
+<tr><th id="273">273</th><td>  <b>return</b> true;</td></tr>
+<tr><th id="274">274</th><td><u>#<span data-ppcond="261">endif</span></u></td></tr>
+<tr><th id="275">275</th><td>}</td></tr>
+<tr><th id="276">276</th><td></td></tr>
+<tr><th id="277">277</th><td><em>static</em> <em>void</em> <dfn class="tu decl def fn" id="detectX86FamilyModel" title='detectX86FamilyModel' data-type='void detectX86FamilyModel(unsigned int EAX, unsigned int * Family, unsigned int * Model)' data-ref="detectX86FamilyModel" data-ref-filename="detectX86FamilyModel">detectX86FamilyModel</dfn>(<em>unsigned</em> <dfn class="local col5 decl" id="15EAX" title='EAX' data-type='unsigned int' data-ref="15EAX" data-ref-filename="15EAX">EAX</dfn>, <em>unsigned</em> *<dfn class="local col6 decl" id="16Family" title='Family' data-type='unsigned int *' data-ref="16Family" data-ref-filename="16Family">Family</dfn>,</td></tr>
+<tr><th id="278">278</th><td>                                 <em>unsigned</em> *<dfn class="local col7 decl" id="17Model" title='Model' data-type='unsigned int *' data-ref="17Model" data-ref-filename="17Model">Model</dfn>) {</td></tr>
+<tr><th id="279">279</th><td>  *<a class="local col6 ref" href="#16Family" title='Family' data-ref="16Family" data-ref-filename="16Family">Family</a> = (<a class="local col5 ref" href="#15EAX" title='EAX' data-ref="15EAX" data-ref-filename="15EAX">EAX</a> &gt;&gt; <var>8</var>) &amp; <var>0xf</var>; <i>// Bits 8 - 11</i></td></tr>
+<tr><th id="280">280</th><td>  *<a class="local col7 ref" href="#17Model" title='Model' data-ref="17Model" data-ref-filename="17Model">Model</a> = (<a class="local col5 ref" href="#15EAX" title='EAX' data-ref="15EAX" data-ref-filename="15EAX">EAX</a> &gt;&gt; <var>4</var>) &amp; <var>0xf</var>;  <i>// Bits 4 - 7</i></td></tr>
+<tr><th id="281">281</th><td>  <b>if</b> (*<a class="local col6 ref" href="#16Family" title='Family' data-ref="16Family" data-ref-filename="16Family">Family</a> == <var>6</var> || *<a class="local col6 ref" href="#16Family" title='Family' data-ref="16Family" data-ref-filename="16Family">Family</a> == <var>0xf</var>) {</td></tr>
+<tr><th id="282">282</th><td>    <b>if</b> (*<a class="local col6 ref" href="#16Family" title='Family' data-ref="16Family" data-ref-filename="16Family">Family</a> == <var>0xf</var>)</td></tr>
+<tr><th id="283">283</th><td>      <i>// Examine extended family ID if family ID is F.</i></td></tr>
+<tr><th id="284">284</th><td>      *<a class="local col6 ref" href="#16Family" title='Family' data-ref="16Family" data-ref-filename="16Family">Family</a> += (<a class="local col5 ref" href="#15EAX" title='EAX' data-ref="15EAX" data-ref-filename="15EAX">EAX</a> &gt;&gt; <var>20</var>) &amp; <var>0xff</var>; <i>// Bits 20 - 27</i></td></tr>
+<tr><th id="285">285</th><td>    <i>// Examine extended model ID if family ID is 6 or F.</i></td></tr>
+<tr><th id="286">286</th><td>    *<a class="local col7 ref" href="#17Model" title='Model' data-ref="17Model" data-ref-filename="17Model">Model</a> += ((<a class="local col5 ref" href="#15EAX" title='EAX' data-ref="15EAX" data-ref-filename="15EAX">EAX</a> &gt;&gt; <var>16</var>) &amp; <var>0xf</var>) &lt;&lt; <var>4</var>; <i>// Bits 16 - 19</i></td></tr>
+<tr><th id="287">287</th><td>  }</td></tr>
+<tr><th id="288">288</th><td>}</td></tr>
+<tr><th id="289">289</th><td></td></tr>
+<tr><th id="290">290</th><td><em>static</em> <em>const</em> <em>char</em> *</td></tr>
+<tr><th id="291">291</th><td><dfn class="tu decl def fn" id="getIntelProcessorTypeAndSubtype" title='getIntelProcessorTypeAndSubtype' data-type='const char * getIntelProcessorTypeAndSubtype(unsigned int Family, unsigned int Model, const unsigned int * Features, unsigned int * Type, unsigned int * Subtype)' data-ref="getIntelProcessorTypeAndSubtype" data-ref-filename="getIntelProcessorTypeAndSubtype">getIntelProcessorTypeAndSubtype</dfn>(<em>unsigned</em> <dfn class="local col8 decl" id="18Family" title='Family' data-type='unsigned int' data-ref="18Family" data-ref-filename="18Family">Family</dfn>, <em>unsigned</em> <dfn class="local col9 decl" id="19Model" title='Model' data-type='unsigned int' data-ref="19Model" data-ref-filename="19Model">Model</dfn>,</td></tr>
+<tr><th id="292">292</th><td>                                <em>const</em> <em>unsigned</em> *<dfn class="local col0 decl" id="20Features" title='Features' data-type='const unsigned int *' data-ref="20Features" data-ref-filename="20Features">Features</dfn>,</td></tr>
+<tr><th id="293">293</th><td>                                <em>unsigned</em> *<dfn class="local col1 decl" id="21Type" title='Type' data-type='unsigned int *' data-ref="21Type" data-ref-filename="21Type">Type</dfn>, <em>unsigned</em> *<dfn class="local col2 decl" id="22Subtype" title='Subtype' data-type='unsigned int *' data-ref="22Subtype" data-ref-filename="22Subtype">Subtype</dfn>) {</td></tr>
+<tr><th id="294">294</th><td><u>#define <dfn class="macro" id="_M/testFeature" data-ref="_M/testFeature">testFeature</dfn>(F)                                                         \</u></td></tr>
+<tr><th id="295">295</th><td><u>  (<a class="local col0 ref" href="#20Features" title='Features' data-ref="20Features" data-ref-filename="20Features">Features</a>[F / 32] &amp; (1 &lt;&lt; (F % 32))) != 0</u></td></tr>
+<tr><th id="296">296</th><td></td></tr>
+<tr><th id="297">297</th><td>  <i>// We select CPU strings to match the code in Host.cpp, but we don't use them</i></td></tr>
+<tr><th id="298">298</th><td><i>  // in compiler-rt.</i></td></tr>
+<tr><th id="299">299</th><td>  <em>const</em> <em>char</em> *<dfn class="local col3 decl" id="23CPU" title='CPU' data-type='const char *' data-ref="23CPU" data-ref-filename="23CPU">CPU</dfn> = <var>0</var>;</td></tr>
+<tr><th id="300">300</th><td></td></tr>
+<tr><th id="301">301</th><td>  <b>switch</b> (<a class="local col8 ref" href="#18Family" title='Family' data-ref="18Family" data-ref-filename="18Family">Family</a>) {</td></tr>
+<tr><th id="302">302</th><td>  <b>case</b> <var>6</var>:</td></tr>
+<tr><th id="303">303</th><td>    <b>switch</b> (<a class="local col9 ref" href="#19Model" title='Model' data-ref="19Model" data-ref-filename="19Model">Model</a>) {</td></tr>
+<tr><th id="304">304</th><td>    <b>case</b> <var>0x0f</var>: <i>// Intel Core 2 Duo processor, Intel Core 2 Duo mobile</i></td></tr>
+<tr><th id="305">305</th><td>               <i>// processor, Intel Core 2 Quad processor, Intel Core 2 Quad</i></td></tr>
+<tr><th id="306">306</th><td><i>               // mobile processor, Intel Core 2 Extreme processor, Intel</i></td></tr>
+<tr><th id="307">307</th><td><i>               // Pentium Dual-Core processor, Intel Xeon processor, model</i></td></tr>
+<tr><th id="308">308</th><td><i>               // 0Fh. All processors are manufactured using the 65 nm process.</i></td></tr>
+<tr><th id="309">309</th><td>    <b>case</b> <var>0x16</var>: <i>// Intel Celeron processor model 16h. All processors are</i></td></tr>
+<tr><th id="310">310</th><td>               <i>// manufactured using the 65 nm process</i></td></tr>
+<tr><th id="311">311</th><td>      <a class="local col3 ref" href="#23CPU" title='CPU' data-ref="23CPU" data-ref-filename="23CPU">CPU</a> = <q>"core2"</q>;</td></tr>
+<tr><th id="312">312</th><td>      *<a class="local col1 ref" href="#21Type" title='Type' data-ref="21Type" data-ref-filename="21Type">Type</a> = <a class="enum" href="#INTEL_CORE2" title='INTEL_CORE2' data-ref="INTEL_CORE2" data-ref-filename="INTEL_CORE2">INTEL_CORE2</a>;</td></tr>
+<tr><th id="313">313</th><td>      <b>break</b>;</td></tr>
+<tr><th id="314">314</th><td>    <b>case</b> <var>0x17</var>: <i>// Intel Core 2 Extreme processor, Intel Xeon processor, model</i></td></tr>
+<tr><th id="315">315</th><td>               <i>// 17h. All processors are manufactured using the 45 nm process.</i></td></tr>
+<tr><th id="316">316</th><td><i>               //</i></td></tr>
+<tr><th id="317">317</th><td><i>               // 45nm: Penryn , Wolfdale, Yorkfield (XE)</i></td></tr>
+<tr><th id="318">318</th><td>    <b>case</b> <var>0x1d</var>: <i>// Intel Xeon processor MP. All processors are manufactured using</i></td></tr>
+<tr><th id="319">319</th><td>               <i>// the 45 nm process.</i></td></tr>
+<tr><th id="320">320</th><td>      <a class="local col3 ref" href="#23CPU" title='CPU' data-ref="23CPU" data-ref-filename="23CPU">CPU</a> = <q>"penryn"</q>;</td></tr>
+<tr><th id="321">321</th><td>      *<a class="local col1 ref" href="#21Type" title='Type' data-ref="21Type" data-ref-filename="21Type">Type</a> = <a class="enum" href="#INTEL_CORE2" title='INTEL_CORE2' data-ref="INTEL_CORE2" data-ref-filename="INTEL_CORE2">INTEL_CORE2</a>;</td></tr>
+<tr><th id="322">322</th><td>      <b>break</b>;</td></tr>
+<tr><th id="323">323</th><td>    <b>case</b> <var>0x1a</var>: <i>// Intel Core i7 processor and Intel Xeon processor. All</i></td></tr>
+<tr><th id="324">324</th><td>               <i>// processors are manufactured using the 45 nm process.</i></td></tr>
+<tr><th id="325">325</th><td>    <b>case</b> <var>0x1e</var>: <i>// Intel(R) Core(TM) i7 CPU         870  @ 2.93GHz.</i></td></tr>
+<tr><th id="326">326</th><td>               <i>// As found in a Summer 2010 model iMac.</i></td></tr>
+<tr><th id="327">327</th><td>    <b>case</b> <var>0x1f</var>:</td></tr>
+<tr><th id="328">328</th><td>    <b>case</b> <var>0x2e</var>:              <i>// Nehalem EX</i></td></tr>
+<tr><th id="329">329</th><td>      <a class="local col3 ref" href="#23CPU" title='CPU' data-ref="23CPU" data-ref-filename="23CPU">CPU</a> = <q>"nehalem"</q>;</td></tr>
+<tr><th id="330">330</th><td>      *<a class="local col1 ref" href="#21Type" title='Type' data-ref="21Type" data-ref-filename="21Type">Type</a> = <a class="enum" href="#INTEL_COREI7" title='INTEL_COREI7' data-ref="INTEL_COREI7" data-ref-filename="INTEL_COREI7">INTEL_COREI7</a>;</td></tr>
+<tr><th id="331">331</th><td>      *<a class="local col2 ref" href="#22Subtype" title='Subtype' data-ref="22Subtype" data-ref-filename="22Subtype">Subtype</a> = <a class="enum" href="#INTEL_COREI7_NEHALEM" title='INTEL_COREI7_NEHALEM' data-ref="INTEL_COREI7_NEHALEM" data-ref-filename="INTEL_COREI7_NEHALEM">INTEL_COREI7_NEHALEM</a>;</td></tr>
+<tr><th id="332">332</th><td>      <b>break</b>;</td></tr>
+<tr><th id="333">333</th><td>    <b>case</b> <var>0x25</var>: <i>// Intel Core i7, laptop version.</i></td></tr>
+<tr><th id="334">334</th><td>    <b>case</b> <var>0x2c</var>: <i>// Intel Core i7 processor and Intel Xeon processor. All</i></td></tr>
+<tr><th id="335">335</th><td>               <i>// processors are manufactured using the 32 nm process.</i></td></tr>
+<tr><th id="336">336</th><td>    <b>case</b> <var>0x2f</var>: <i>// Westmere EX</i></td></tr>
+<tr><th id="337">337</th><td>      <a class="local col3 ref" href="#23CPU" title='CPU' data-ref="23CPU" data-ref-filename="23CPU">CPU</a> = <q>"westmere"</q>;</td></tr>
+<tr><th id="338">338</th><td>      *<a class="local col1 ref" href="#21Type" title='Type' data-ref="21Type" data-ref-filename="21Type">Type</a> = <a class="enum" href="#INTEL_COREI7" title='INTEL_COREI7' data-ref="INTEL_COREI7" data-ref-filename="INTEL_COREI7">INTEL_COREI7</a>;</td></tr>
+<tr><th id="339">339</th><td>      *<a class="local col2 ref" href="#22Subtype" title='Subtype' data-ref="22Subtype" data-ref-filename="22Subtype">Subtype</a> = <a class="enum" href="#INTEL_COREI7_WESTMERE" title='INTEL_COREI7_WESTMERE' data-ref="INTEL_COREI7_WESTMERE" data-ref-filename="INTEL_COREI7_WESTMERE">INTEL_COREI7_WESTMERE</a>;</td></tr>
+<tr><th id="340">340</th><td>      <b>break</b>;</td></tr>
+<tr><th id="341">341</th><td>    <b>case</b> <var>0x2a</var>: <i>// Intel Core i7 processor. All processors are manufactured</i></td></tr>
+<tr><th id="342">342</th><td>               <i>// using the 32 nm process.</i></td></tr>
+<tr><th id="343">343</th><td>    <b>case</b> <var>0x2d</var>:</td></tr>
+<tr><th id="344">344</th><td>      <a class="local col3 ref" href="#23CPU" title='CPU' data-ref="23CPU" data-ref-filename="23CPU">CPU</a> = <q>"sandybridge"</q>;</td></tr>
+<tr><th id="345">345</th><td>      *<a class="local col1 ref" href="#21Type" title='Type' data-ref="21Type" data-ref-filename="21Type">Type</a> = <a class="enum" href="#INTEL_COREI7" title='INTEL_COREI7' data-ref="INTEL_COREI7" data-ref-filename="INTEL_COREI7">INTEL_COREI7</a>;</td></tr>
+<tr><th id="346">346</th><td>      *<a class="local col2 ref" href="#22Subtype" title='Subtype' data-ref="22Subtype" data-ref-filename="22Subtype">Subtype</a> = <a class="enum" href="#INTEL_COREI7_SANDYBRIDGE" title='INTEL_COREI7_SANDYBRIDGE' data-ref="INTEL_COREI7_SANDYBRIDGE" data-ref-filename="INTEL_COREI7_SANDYBRIDGE">INTEL_COREI7_SANDYBRIDGE</a>;</td></tr>
+<tr><th id="347">347</th><td>      <b>break</b>;</td></tr>
+<tr><th id="348">348</th><td>    <b>case</b> <var>0x3a</var>:</td></tr>
+<tr><th id="349">349</th><td>    <b>case</b> <var>0x3e</var>:              <i>// Ivy Bridge EP</i></td></tr>
+<tr><th id="350">350</th><td>      <a class="local col3 ref" href="#23CPU" title='CPU' data-ref="23CPU" data-ref-filename="23CPU">CPU</a> = <q>"ivybridge"</q>;</td></tr>
+<tr><th id="351">351</th><td>      *<a class="local col1 ref" href="#21Type" title='Type' data-ref="21Type" data-ref-filename="21Type">Type</a> = <a class="enum" href="#INTEL_COREI7" title='INTEL_COREI7' data-ref="INTEL_COREI7" data-ref-filename="INTEL_COREI7">INTEL_COREI7</a>;</td></tr>
+<tr><th id="352">352</th><td>      *<a class="local col2 ref" href="#22Subtype" title='Subtype' data-ref="22Subtype" data-ref-filename="22Subtype">Subtype</a> = <a class="enum" href="#INTEL_COREI7_IVYBRIDGE" title='INTEL_COREI7_IVYBRIDGE' data-ref="INTEL_COREI7_IVYBRIDGE" data-ref-filename="INTEL_COREI7_IVYBRIDGE">INTEL_COREI7_IVYBRIDGE</a>;</td></tr>
+<tr><th id="353">353</th><td>      <b>break</b>;</td></tr>
+<tr><th id="354">354</th><td></td></tr>
+<tr><th id="355">355</th><td>    <i>// Haswell:</i></td></tr>
+<tr><th id="356">356</th><td>    <b>case</b> <var>0x3c</var>:</td></tr>
+<tr><th id="357">357</th><td>    <b>case</b> <var>0x3f</var>:</td></tr>
+<tr><th id="358">358</th><td>    <b>case</b> <var>0x45</var>:</td></tr>
+<tr><th id="359">359</th><td>    <b>case</b> <var>0x46</var>:</td></tr>
+<tr><th id="360">360</th><td>      <a class="local col3 ref" href="#23CPU" title='CPU' data-ref="23CPU" data-ref-filename="23CPU">CPU</a> = <q>"haswell"</q>;</td></tr>
+<tr><th id="361">361</th><td>      *<a class="local col1 ref" href="#21Type" title='Type' data-ref="21Type" data-ref-filename="21Type">Type</a> = <a class="enum" href="#INTEL_COREI7" title='INTEL_COREI7' data-ref="INTEL_COREI7" data-ref-filename="INTEL_COREI7">INTEL_COREI7</a>;</td></tr>
+<tr><th id="362">362</th><td>      *<a class="local col2 ref" href="#22Subtype" title='Subtype' data-ref="22Subtype" data-ref-filename="22Subtype">Subtype</a> = <a class="enum" href="#INTEL_COREI7_HASWELL" title='INTEL_COREI7_HASWELL' data-ref="INTEL_COREI7_HASWELL" data-ref-filename="INTEL_COREI7_HASWELL">INTEL_COREI7_HASWELL</a>;</td></tr>
+<tr><th id="363">363</th><td>      <b>break</b>;</td></tr>
+<tr><th id="364">364</th><td></td></tr>
+<tr><th id="365">365</th><td>    <i>// Broadwell:</i></td></tr>
+<tr><th id="366">366</th><td>    <b>case</b> <var>0x3d</var>:</td></tr>
+<tr><th id="367">367</th><td>    <b>case</b> <var>0x47</var>:</td></tr>
+<tr><th id="368">368</th><td>    <b>case</b> <var>0x4f</var>:</td></tr>
+<tr><th id="369">369</th><td>    <b>case</b> <var>0x56</var>:</td></tr>
+<tr><th id="370">370</th><td>      <a class="local col3 ref" href="#23CPU" title='CPU' data-ref="23CPU" data-ref-filename="23CPU">CPU</a> = <q>"broadwell"</q>;</td></tr>
+<tr><th id="371">371</th><td>      *<a class="local col1 ref" href="#21Type" title='Type' data-ref="21Type" data-ref-filename="21Type">Type</a> = <a class="enum" href="#INTEL_COREI7" title='INTEL_COREI7' data-ref="INTEL_COREI7" data-ref-filename="INTEL_COREI7">INTEL_COREI7</a>;</td></tr>
+<tr><th id="372">372</th><td>      *<a class="local col2 ref" href="#22Subtype" title='Subtype' data-ref="22Subtype" data-ref-filename="22Subtype">Subtype</a> = <a class="enum" href="#INTEL_COREI7_BROADWELL" title='INTEL_COREI7_BROADWELL' data-ref="INTEL_COREI7_BROADWELL" data-ref-filename="INTEL_COREI7_BROADWELL">INTEL_COREI7_BROADWELL</a>;</td></tr>
+<tr><th id="373">373</th><td>      <b>break</b>;</td></tr>
+<tr><th id="374">374</th><td></td></tr>
+<tr><th id="375">375</th><td>    <i>// Skylake:</i></td></tr>
+<tr><th id="376">376</th><td>    <b>case</b> <var>0x4e</var>:              <i>// Skylake mobile</i></td></tr>
+<tr><th id="377">377</th><td>    <b>case</b> <var>0x5e</var>:              <i>// Skylake desktop</i></td></tr>
+<tr><th id="378">378</th><td>    <b>case</b> <var>0x8e</var>:              <i>// Kaby Lake mobile</i></td></tr>
+<tr><th id="379">379</th><td>    <b>case</b> <var>0x9e</var>:              <i>// Kaby Lake desktop</i></td></tr>
+<tr><th id="380">380</th><td>    <b>case</b> <var>0xa5</var>:              <i>// Comet Lake-H/S</i></td></tr>
+<tr><th id="381">381</th><td>    <b>case</b> <var>0xa6</var>:              <i>// Comet Lake-U</i></td></tr>
+<tr><th id="382">382</th><td>      <a class="local col3 ref" href="#23CPU" title='CPU' data-ref="23CPU" data-ref-filename="23CPU">CPU</a> = <q>"skylake"</q>;</td></tr>
+<tr><th id="383">383</th><td>      *<a class="local col1 ref" href="#21Type" title='Type' data-ref="21Type" data-ref-filename="21Type">Type</a> = <a class="enum" href="#INTEL_COREI7" title='INTEL_COREI7' data-ref="INTEL_COREI7" data-ref-filename="INTEL_COREI7">INTEL_COREI7</a>;</td></tr>
+<tr><th id="384">384</th><td>      *<a class="local col2 ref" href="#22Subtype" title='Subtype' data-ref="22Subtype" data-ref-filename="22Subtype">Subtype</a> = <a class="enum" href="#INTEL_COREI7_SKYLAKE" title='INTEL_COREI7_SKYLAKE' data-ref="INTEL_COREI7_SKYLAKE" data-ref-filename="INTEL_COREI7_SKYLAKE">INTEL_COREI7_SKYLAKE</a>;</td></tr>
+<tr><th id="385">385</th><td>      <b>break</b>;</td></tr>
+<tr><th id="386">386</th><td></td></tr>
+<tr><th id="387">387</th><td>    <i>// Skylake Xeon:</i></td></tr>
+<tr><th id="388">388</th><td>    <b>case</b> <var>0x55</var>:</td></tr>
+<tr><th id="389">389</th><td>      *<a class="local col1 ref" href="#21Type" title='Type' data-ref="21Type" data-ref-filename="21Type">Type</a> = <a class="enum" href="#INTEL_COREI7" title='INTEL_COREI7' data-ref="INTEL_COREI7" data-ref-filename="INTEL_COREI7">INTEL_COREI7</a>;</td></tr>
+<tr><th id="390">390</th><td>      <b>if</b> (<a class="macro" href="#294" title="(Features[FEATURE_AVX512BF16 / 32] &amp; (1 &lt;&lt; (FEATURE_AVX512BF16 % 32))) != 0" data-ref="_M/testFeature">testFeature</a>(<a class="enum" href="#FEATURE_AVX512BF16" title='FEATURE_AVX512BF16' data-ref="FEATURE_AVX512BF16" data-ref-filename="FEATURE_AVX512BF16">FEATURE_AVX512BF16</a>)) {</td></tr>
+<tr><th id="391">391</th><td>        <a class="local col3 ref" href="#23CPU" title='CPU' data-ref="23CPU" data-ref-filename="23CPU">CPU</a> = <q>"cooperlake"</q>;</td></tr>
+<tr><th id="392">392</th><td>        *<a class="local col2 ref" href="#22Subtype" title='Subtype' data-ref="22Subtype" data-ref-filename="22Subtype">Subtype</a> = <a class="enum" href="#INTEL_COREI7_COOPERLAKE" title='INTEL_COREI7_COOPERLAKE' data-ref="INTEL_COREI7_COOPERLAKE" data-ref-filename="INTEL_COREI7_COOPERLAKE">INTEL_COREI7_COOPERLAKE</a>;</td></tr>
+<tr><th id="393">393</th><td>      } <b>else</b> <b>if</b> (<a class="macro" href="#294" title="(Features[FEATURE_AVX512VNNI / 32] &amp; (1 &lt;&lt; (FEATURE_AVX512VNNI % 32))) != 0" data-ref="_M/testFeature">testFeature</a>(<a class="enum" href="#FEATURE_AVX512VNNI" title='FEATURE_AVX512VNNI' data-ref="FEATURE_AVX512VNNI" data-ref-filename="FEATURE_AVX512VNNI">FEATURE_AVX512VNNI</a>)) {</td></tr>
+<tr><th id="394">394</th><td>        <a class="local col3 ref" href="#23CPU" title='CPU' data-ref="23CPU" data-ref-filename="23CPU">CPU</a> = <q>"cascadelake"</q>;</td></tr>
+<tr><th id="395">395</th><td>        *<a class="local col2 ref" href="#22Subtype" title='Subtype' data-ref="22Subtype" data-ref-filename="22Subtype">Subtype</a> = <a class="enum" href="#INTEL_COREI7_CASCADELAKE" title='INTEL_COREI7_CASCADELAKE' data-ref="INTEL_COREI7_CASCADELAKE" data-ref-filename="INTEL_COREI7_CASCADELAKE">INTEL_COREI7_CASCADELAKE</a>;</td></tr>
+<tr><th id="396">396</th><td>      } <b>else</b> {</td></tr>
+<tr><th id="397">397</th><td>        <a class="local col3 ref" href="#23CPU" title='CPU' data-ref="23CPU" data-ref-filename="23CPU">CPU</a> = <q>"skylake-avx512"</q>;</td></tr>
+<tr><th id="398">398</th><td>        *<a class="local col2 ref" href="#22Subtype" title='Subtype' data-ref="22Subtype" data-ref-filename="22Subtype">Subtype</a> = <a class="enum" href="#INTEL_COREI7_SKYLAKE_AVX512" title='INTEL_COREI7_SKYLAKE_AVX512' data-ref="INTEL_COREI7_SKYLAKE_AVX512" data-ref-filename="INTEL_COREI7_SKYLAKE_AVX512">INTEL_COREI7_SKYLAKE_AVX512</a>;</td></tr>
+<tr><th id="399">399</th><td>      }</td></tr>
+<tr><th id="400">400</th><td>      <b>break</b>;</td></tr>
+<tr><th id="401">401</th><td></td></tr>
+<tr><th id="402">402</th><td>    <i>// Cannonlake:</i></td></tr>
+<tr><th id="403">403</th><td>    <b>case</b> <var>0x66</var>:</td></tr>
+<tr><th id="404">404</th><td>      <a class="local col3 ref" href="#23CPU" title='CPU' data-ref="23CPU" data-ref-filename="23CPU">CPU</a> = <q>"cannonlake"</q>;</td></tr>
+<tr><th id="405">405</th><td>      *<a class="local col1 ref" href="#21Type" title='Type' data-ref="21Type" data-ref-filename="21Type">Type</a> = <a class="enum" href="#INTEL_COREI7" title='INTEL_COREI7' data-ref="INTEL_COREI7" data-ref-filename="INTEL_COREI7">INTEL_COREI7</a>;</td></tr>
+<tr><th id="406">406</th><td>      *<a class="local col2 ref" href="#22Subtype" title='Subtype' data-ref="22Subtype" data-ref-filename="22Subtype">Subtype</a> = <a class="enum" href="#INTEL_COREI7_CANNONLAKE" title='INTEL_COREI7_CANNONLAKE' data-ref="INTEL_COREI7_CANNONLAKE" data-ref-filename="INTEL_COREI7_CANNONLAKE">INTEL_COREI7_CANNONLAKE</a>;</td></tr>
+<tr><th id="407">407</th><td>      <b>break</b>;</td></tr>
+<tr><th id="408">408</th><td></td></tr>
+<tr><th id="409">409</th><td>    <i>// Icelake:</i></td></tr>
+<tr><th id="410">410</th><td>    <b>case</b> <var>0x7d</var>:</td></tr>
+<tr><th id="411">411</th><td>    <b>case</b> <var>0x7e</var>:</td></tr>
+<tr><th id="412">412</th><td>      <a class="local col3 ref" href="#23CPU" title='CPU' data-ref="23CPU" data-ref-filename="23CPU">CPU</a> = <q>"icelake-client"</q>;</td></tr>
+<tr><th id="413">413</th><td>      *<a class="local col1 ref" href="#21Type" title='Type' data-ref="21Type" data-ref-filename="21Type">Type</a> = <a class="enum" href="#INTEL_COREI7" title='INTEL_COREI7' data-ref="INTEL_COREI7" data-ref-filename="INTEL_COREI7">INTEL_COREI7</a>;</td></tr>
+<tr><th id="414">414</th><td>      *<a class="local col2 ref" href="#22Subtype" title='Subtype' data-ref="22Subtype" data-ref-filename="22Subtype">Subtype</a> = <a class="enum" href="#INTEL_COREI7_ICELAKE_CLIENT" title='INTEL_COREI7_ICELAKE_CLIENT' data-ref="INTEL_COREI7_ICELAKE_CLIENT" data-ref-filename="INTEL_COREI7_ICELAKE_CLIENT">INTEL_COREI7_ICELAKE_CLIENT</a>;</td></tr>
+<tr><th id="415">415</th><td>      <b>break</b>;</td></tr>
+<tr><th id="416">416</th><td></td></tr>
+<tr><th id="417">417</th><td>    <i>// Icelake Xeon:</i></td></tr>
+<tr><th id="418">418</th><td>    <b>case</b> <var>0x6a</var>:</td></tr>
+<tr><th id="419">419</th><td>    <b>case</b> <var>0x6c</var>:</td></tr>
+<tr><th id="420">420</th><td>      <a class="local col3 ref" href="#23CPU" title='CPU' data-ref="23CPU" data-ref-filename="23CPU">CPU</a> = <q>"icelake-server"</q>;</td></tr>
+<tr><th id="421">421</th><td>      *<a class="local col1 ref" href="#21Type" title='Type' data-ref="21Type" data-ref-filename="21Type">Type</a> = <a class="enum" href="#INTEL_COREI7" title='INTEL_COREI7' data-ref="INTEL_COREI7" data-ref-filename="INTEL_COREI7">INTEL_COREI7</a>;</td></tr>
+<tr><th id="422">422</th><td>      *<a class="local col2 ref" href="#22Subtype" title='Subtype' data-ref="22Subtype" data-ref-filename="22Subtype">Subtype</a> = <a class="enum" href="#INTEL_COREI7_ICELAKE_SERVER" title='INTEL_COREI7_ICELAKE_SERVER' data-ref="INTEL_COREI7_ICELAKE_SERVER" data-ref-filename="INTEL_COREI7_ICELAKE_SERVER">INTEL_COREI7_ICELAKE_SERVER</a>;</td></tr>
+<tr><th id="423">423</th><td>      <b>break</b>;</td></tr>
+<tr><th id="424">424</th><td></td></tr>
+<tr><th id="425">425</th><td>    <i>// Sapphire Rapids:</i></td></tr>
+<tr><th id="426">426</th><td>    <b>case</b> <var>0x8f</var>:</td></tr>
+<tr><th id="427">427</th><td>      <a class="local col3 ref" href="#23CPU" title='CPU' data-ref="23CPU" data-ref-filename="23CPU">CPU</a> = <q>"sapphirerapids"</q>;</td></tr>
+<tr><th id="428">428</th><td>      *<a class="local col1 ref" href="#21Type" title='Type' data-ref="21Type" data-ref-filename="21Type">Type</a> = <a class="enum" href="#INTEL_COREI7" title='INTEL_COREI7' data-ref="INTEL_COREI7" data-ref-filename="INTEL_COREI7">INTEL_COREI7</a>;</td></tr>
+<tr><th id="429">429</th><td>      *<a class="local col2 ref" href="#22Subtype" title='Subtype' data-ref="22Subtype" data-ref-filename="22Subtype">Subtype</a> = <a class="enum" href="#INTEL_COREI7_SAPPHIRERAPIDS" title='INTEL_COREI7_SAPPHIRERAPIDS' data-ref="INTEL_COREI7_SAPPHIRERAPIDS" data-ref-filename="INTEL_COREI7_SAPPHIRERAPIDS">INTEL_COREI7_SAPPHIRERAPIDS</a>;</td></tr>
+<tr><th id="430">430</th><td>      <b>break</b>;</td></tr>
+<tr><th id="431">431</th><td></td></tr>
+<tr><th id="432">432</th><td>    <b>case</b> <var>0x1c</var>: <i>// Most 45 nm Intel Atom processors</i></td></tr>
+<tr><th id="433">433</th><td>    <b>case</b> <var>0x26</var>: <i>// 45 nm Atom Lincroft</i></td></tr>
+<tr><th id="434">434</th><td>    <b>case</b> <var>0x27</var>: <i>// 32 nm Atom Medfield</i></td></tr>
+<tr><th id="435">435</th><td>    <b>case</b> <var>0x35</var>: <i>// 32 nm Atom Midview</i></td></tr>
+<tr><th id="436">436</th><td>    <b>case</b> <var>0x36</var>: <i>// 32 nm Atom Midview</i></td></tr>
+<tr><th id="437">437</th><td>      <a class="local col3 ref" href="#23CPU" title='CPU' data-ref="23CPU" data-ref-filename="23CPU">CPU</a> = <q>"bonnell"</q>;</td></tr>
+<tr><th id="438">438</th><td>      *<a class="local col1 ref" href="#21Type" title='Type' data-ref="21Type" data-ref-filename="21Type">Type</a> = <a class="enum" href="#INTEL_BONNELL" title='INTEL_BONNELL' data-ref="INTEL_BONNELL" data-ref-filename="INTEL_BONNELL">INTEL_BONNELL</a>;</td></tr>
+<tr><th id="439">439</th><td>      <b>break</b>;</td></tr>
+<tr><th id="440">440</th><td></td></tr>
+<tr><th id="441">441</th><td>    <i>// Atom Silvermont codes from the Intel software optimization guide.</i></td></tr>
+<tr><th id="442">442</th><td>    <b>case</b> <var>0x37</var>:</td></tr>
+<tr><th id="443">443</th><td>    <b>case</b> <var>0x4a</var>:</td></tr>
+<tr><th id="444">444</th><td>    <b>case</b> <var>0x4d</var>:</td></tr>
+<tr><th id="445">445</th><td>    <b>case</b> <var>0x5a</var>:</td></tr>
+<tr><th id="446">446</th><td>    <b>case</b> <var>0x5d</var>:</td></tr>
+<tr><th id="447">447</th><td>    <b>case</b> <var>0x4c</var>: <i>// really airmont</i></td></tr>
+<tr><th id="448">448</th><td>      <a class="local col3 ref" href="#23CPU" title='CPU' data-ref="23CPU" data-ref-filename="23CPU">CPU</a> = <q>"silvermont"</q>;</td></tr>
+<tr><th id="449">449</th><td>      *<a class="local col1 ref" href="#21Type" title='Type' data-ref="21Type" data-ref-filename="21Type">Type</a> = <a class="enum" href="#INTEL_SILVERMONT" title='INTEL_SILVERMONT' data-ref="INTEL_SILVERMONT" data-ref-filename="INTEL_SILVERMONT">INTEL_SILVERMONT</a>;</td></tr>
+<tr><th id="450">450</th><td>      <b>break</b>;</td></tr>
+<tr><th id="451">451</th><td>    <i>// Goldmont:</i></td></tr>
+<tr><th id="452">452</th><td>    <b>case</b> <var>0x5c</var>: <i>// Apollo Lake</i></td></tr>
+<tr><th id="453">453</th><td>    <b>case</b> <var>0x5f</var>: <i>// Denverton</i></td></tr>
+<tr><th id="454">454</th><td>      <a class="local col3 ref" href="#23CPU" title='CPU' data-ref="23CPU" data-ref-filename="23CPU">CPU</a> = <q>"goldmont"</q>;</td></tr>
+<tr><th id="455">455</th><td>      *<a class="local col1 ref" href="#21Type" title='Type' data-ref="21Type" data-ref-filename="21Type">Type</a> = <a class="enum" href="#INTEL_GOLDMONT" title='INTEL_GOLDMONT' data-ref="INTEL_GOLDMONT" data-ref-filename="INTEL_GOLDMONT">INTEL_GOLDMONT</a>;</td></tr>
+<tr><th id="456">456</th><td>      <b>break</b>; <i>// "goldmont"</i></td></tr>
+<tr><th id="457">457</th><td>    <b>case</b> <var>0x7a</var>:</td></tr>
+<tr><th id="458">458</th><td>      <a class="local col3 ref" href="#23CPU" title='CPU' data-ref="23CPU" data-ref-filename="23CPU">CPU</a> = <q>"goldmont-plus"</q>;</td></tr>
+<tr><th id="459">459</th><td>      *<a class="local col1 ref" href="#21Type" title='Type' data-ref="21Type" data-ref-filename="21Type">Type</a> = <a class="enum" href="#INTEL_GOLDMONT_PLUS" title='INTEL_GOLDMONT_PLUS' data-ref="INTEL_GOLDMONT_PLUS" data-ref-filename="INTEL_GOLDMONT_PLUS">INTEL_GOLDMONT_PLUS</a>;</td></tr>
+<tr><th id="460">460</th><td>      <b>break</b>;</td></tr>
+<tr><th id="461">461</th><td>    <b>case</b> <var>0x86</var>:</td></tr>
+<tr><th id="462">462</th><td>      <a class="local col3 ref" href="#23CPU" title='CPU' data-ref="23CPU" data-ref-filename="23CPU">CPU</a> = <q>"tremont"</q>;</td></tr>
+<tr><th id="463">463</th><td>      *<a class="local col1 ref" href="#21Type" title='Type' data-ref="21Type" data-ref-filename="21Type">Type</a> = <a class="enum" href="#INTEL_TREMONT" title='INTEL_TREMONT' data-ref="INTEL_TREMONT" data-ref-filename="INTEL_TREMONT">INTEL_TREMONT</a>;</td></tr>
+<tr><th id="464">464</th><td>      <b>break</b>;</td></tr>
+<tr><th id="465">465</th><td></td></tr>
+<tr><th id="466">466</th><td>    <b>case</b> <var>0x57</var>:</td></tr>
+<tr><th id="467">467</th><td>      <a class="local col3 ref" href="#23CPU" title='CPU' data-ref="23CPU" data-ref-filename="23CPU">CPU</a> = <q>"knl"</q>;</td></tr>
+<tr><th id="468">468</th><td>      *<a class="local col1 ref" href="#21Type" title='Type' data-ref="21Type" data-ref-filename="21Type">Type</a> = <a class="enum" href="#INTEL_KNL" title='INTEL_KNL' data-ref="INTEL_KNL" data-ref-filename="INTEL_KNL">INTEL_KNL</a>;</td></tr>
+<tr><th id="469">469</th><td>      <b>break</b>;</td></tr>
+<tr><th id="470">470</th><td></td></tr>
+<tr><th id="471">471</th><td>    <b>case</b> <var>0x85</var>:</td></tr>
+<tr><th id="472">472</th><td>      <a class="local col3 ref" href="#23CPU" title='CPU' data-ref="23CPU" data-ref-filename="23CPU">CPU</a> = <q>"knm"</q>;</td></tr>
+<tr><th id="473">473</th><td>      *<a class="local col1 ref" href="#21Type" title='Type' data-ref="21Type" data-ref-filename="21Type">Type</a> = <a class="enum" href="#INTEL_KNM" title='INTEL_KNM' data-ref="INTEL_KNM" data-ref-filename="INTEL_KNM">INTEL_KNM</a>;</td></tr>
+<tr><th id="474">474</th><td>      <b>break</b>;</td></tr>
+<tr><th id="475">475</th><td></td></tr>
+<tr><th id="476">476</th><td>    <b>default</b>: <i>// Unknown family 6 CPU.</i></td></tr>
+<tr><th id="477">477</th><td>      <b>break</b>;</td></tr>
+<tr><th id="478">478</th><td>    }</td></tr>
+<tr><th id="479">479</th><td>    <b>break</b>;</td></tr>
+<tr><th id="480">480</th><td>  <b>default</b>:</td></tr>
+<tr><th id="481">481</th><td>    <b>break</b>; <i>// Unknown.</i></td></tr>
+<tr><th id="482">482</th><td>  }</td></tr>
+<tr><th id="483">483</th><td></td></tr>
+<tr><th id="484">484</th><td>  <b>return</b> <a class="local col3 ref" href="#23CPU" title='CPU' data-ref="23CPU" data-ref-filename="23CPU">CPU</a>;</td></tr>
+<tr><th id="485">485</th><td>}</td></tr>
+<tr><th id="486">486</th><td></td></tr>
+<tr><th id="487">487</th><td><em>static</em> <em>const</em> <em>char</em> *</td></tr>
+<tr><th id="488">488</th><td><dfn class="tu decl def fn" id="getAMDProcessorTypeAndSubtype" title='getAMDProcessorTypeAndSubtype' data-type='const char * getAMDProcessorTypeAndSubtype(unsigned int Family, unsigned int Model, const unsigned int * Features, unsigned int * Type, unsigned int * Subtype)' data-ref="getAMDProcessorTypeAndSubtype" data-ref-filename="getAMDProcessorTypeAndSubtype">getAMDProcessorTypeAndSubtype</dfn>(<em>unsigned</em> <dfn class="local col4 decl" id="24Family" title='Family' data-type='unsigned int' data-ref="24Family" data-ref-filename="24Family">Family</dfn>, <em>unsigned</em> <dfn class="local col5 decl" id="25Model" title='Model' data-type='unsigned int' data-ref="25Model" data-ref-filename="25Model">Model</dfn>,</td></tr>
+<tr><th id="489">489</th><td>                              <em>const</em> <em>unsigned</em> *<dfn class="local col6 decl" id="26Features" title='Features' data-type='const unsigned int *' data-ref="26Features" data-ref-filename="26Features">Features</dfn>,</td></tr>
+<tr><th id="490">490</th><td>                              <em>unsigned</em> *<dfn class="local col7 decl" id="27Type" title='Type' data-type='unsigned int *' data-ref="27Type" data-ref-filename="27Type">Type</dfn>, <em>unsigned</em> *<dfn class="local col8 decl" id="28Subtype" title='Subtype' data-type='unsigned int *' data-ref="28Subtype" data-ref-filename="28Subtype">Subtype</dfn>) {</td></tr>
+<tr><th id="491">491</th><td>  <i>// We select CPU strings to match the code in Host.cpp, but we don't use them</i></td></tr>
+<tr><th id="492">492</th><td><i>  // in compiler-rt.</i></td></tr>
+<tr><th id="493">493</th><td>  <em>const</em> <em>char</em> *<dfn class="local col9 decl" id="29CPU" title='CPU' data-type='const char *' data-ref="29CPU" data-ref-filename="29CPU">CPU</dfn> = <var>0</var>;</td></tr>
+<tr><th id="494">494</th><td></td></tr>
+<tr><th id="495">495</th><td>  <b>switch</b> (<a class="local col4 ref" href="#24Family" title='Family' data-ref="24Family" data-ref-filename="24Family">Family</a>) {</td></tr>
+<tr><th id="496">496</th><td>  <b>case</b> <var>16</var>:</td></tr>
+<tr><th id="497">497</th><td>    <a class="local col9 ref" href="#29CPU" title='CPU' data-ref="29CPU" data-ref-filename="29CPU">CPU</a> = <q>"amdfam10"</q>;</td></tr>
+<tr><th id="498">498</th><td>    *<a class="local col7 ref" href="#27Type" title='Type' data-ref="27Type" data-ref-filename="27Type">Type</a> = <a class="enum" href="#AMDFAM10H" title='AMDFAM10H' data-ref="AMDFAM10H" data-ref-filename="AMDFAM10H">AMDFAM10H</a>;</td></tr>
+<tr><th id="499">499</th><td>    <b>switch</b> (<a class="local col5 ref" href="#25Model" title='Model' data-ref="25Model" data-ref-filename="25Model">Model</a>) {</td></tr>
+<tr><th id="500">500</th><td>    <b>case</b> <var>2</var>:</td></tr>
+<tr><th id="501">501</th><td>      *<a class="local col8 ref" href="#28Subtype" title='Subtype' data-ref="28Subtype" data-ref-filename="28Subtype">Subtype</a> = <a class="enum" href="#AMDFAM10H_BARCELONA" title='AMDFAM10H_BARCELONA' data-ref="AMDFAM10H_BARCELONA" data-ref-filename="AMDFAM10H_BARCELONA">AMDFAM10H_BARCELONA</a>;</td></tr>
+<tr><th id="502">502</th><td>      <b>break</b>;</td></tr>
+<tr><th id="503">503</th><td>    <b>case</b> <var>4</var>:</td></tr>
+<tr><th id="504">504</th><td>      *<a class="local col8 ref" href="#28Subtype" title='Subtype' data-ref="28Subtype" data-ref-filename="28Subtype">Subtype</a> = <a class="enum" href="#AMDFAM10H_SHANGHAI" title='AMDFAM10H_SHANGHAI' data-ref="AMDFAM10H_SHANGHAI" data-ref-filename="AMDFAM10H_SHANGHAI">AMDFAM10H_SHANGHAI</a>;</td></tr>
+<tr><th id="505">505</th><td>      <b>break</b>;</td></tr>
+<tr><th id="506">506</th><td>    <b>case</b> <var>8</var>:</td></tr>
+<tr><th id="507">507</th><td>      *<a class="local col8 ref" href="#28Subtype" title='Subtype' data-ref="28Subtype" data-ref-filename="28Subtype">Subtype</a> = <a class="enum" href="#AMDFAM10H_ISTANBUL" title='AMDFAM10H_ISTANBUL' data-ref="AMDFAM10H_ISTANBUL" data-ref-filename="AMDFAM10H_ISTANBUL">AMDFAM10H_ISTANBUL</a>;</td></tr>
+<tr><th id="508">508</th><td>      <b>break</b>;</td></tr>
+<tr><th id="509">509</th><td>    }</td></tr>
+<tr><th id="510">510</th><td>    <b>break</b>;</td></tr>
+<tr><th id="511">511</th><td>  <b>case</b> <var>20</var>:</td></tr>
+<tr><th id="512">512</th><td>    <a class="local col9 ref" href="#29CPU" title='CPU' data-ref="29CPU" data-ref-filename="29CPU">CPU</a> = <q>"btver1"</q>;</td></tr>
+<tr><th id="513">513</th><td>    *<a class="local col7 ref" href="#27Type" title='Type' data-ref="27Type" data-ref-filename="27Type">Type</a> = <a class="enum" href="#AMD_BTVER1" title='AMD_BTVER1' data-ref="AMD_BTVER1" data-ref-filename="AMD_BTVER1">AMD_BTVER1</a>;</td></tr>
+<tr><th id="514">514</th><td>    <b>break</b>;</td></tr>
+<tr><th id="515">515</th><td>  <b>case</b> <var>21</var>:</td></tr>
+<tr><th id="516">516</th><td>    <a class="local col9 ref" href="#29CPU" title='CPU' data-ref="29CPU" data-ref-filename="29CPU">CPU</a> = <q>"bdver1"</q>;</td></tr>
+<tr><th id="517">517</th><td>    *<a class="local col7 ref" href="#27Type" title='Type' data-ref="27Type" data-ref-filename="27Type">Type</a> = <a class="enum" href="#AMDFAM15H" title='AMDFAM15H' data-ref="AMDFAM15H" data-ref-filename="AMDFAM15H">AMDFAM15H</a>;</td></tr>
+<tr><th id="518">518</th><td>    <b>if</b> (<a class="local col5 ref" href="#25Model" title='Model' data-ref="25Model" data-ref-filename="25Model">Model</a> &gt;= <var>0x60</var> &amp;&amp; <a class="local col5 ref" href="#25Model" title='Model' data-ref="25Model" data-ref-filename="25Model">Model</a> &lt;= <var>0x7f</var>) {</td></tr>
+<tr><th id="519">519</th><td>      <a class="local col9 ref" href="#29CPU" title='CPU' data-ref="29CPU" data-ref-filename="29CPU">CPU</a> = <q>"bdver4"</q>;</td></tr>
+<tr><th id="520">520</th><td>      *<a class="local col8 ref" href="#28Subtype" title='Subtype' data-ref="28Subtype" data-ref-filename="28Subtype">Subtype</a> = <a class="enum" href="#AMDFAM15H_BDVER4" title='AMDFAM15H_BDVER4' data-ref="AMDFAM15H_BDVER4" data-ref-filename="AMDFAM15H_BDVER4">AMDFAM15H_BDVER4</a>;</td></tr>
+<tr><th id="521">521</th><td>      <b>break</b>; <i>// 60h-7Fh: Excavator</i></td></tr>
+<tr><th id="522">522</th><td>    }</td></tr>
+<tr><th id="523">523</th><td>    <b>if</b> (<a class="local col5 ref" href="#25Model" title='Model' data-ref="25Model" data-ref-filename="25Model">Model</a> &gt;= <var>0x30</var> &amp;&amp; <a class="local col5 ref" href="#25Model" title='Model' data-ref="25Model" data-ref-filename="25Model">Model</a> &lt;= <var>0x3f</var>) {</td></tr>
+<tr><th id="524">524</th><td>      <a class="local col9 ref" href="#29CPU" title='CPU' data-ref="29CPU" data-ref-filename="29CPU">CPU</a> = <q>"bdver3"</q>;</td></tr>
+<tr><th id="525">525</th><td>      *<a class="local col8 ref" href="#28Subtype" title='Subtype' data-ref="28Subtype" data-ref-filename="28Subtype">Subtype</a> = <a class="enum" href="#AMDFAM15H_BDVER3" title='AMDFAM15H_BDVER3' data-ref="AMDFAM15H_BDVER3" data-ref-filename="AMDFAM15H_BDVER3">AMDFAM15H_BDVER3</a>;</td></tr>
+<tr><th id="526">526</th><td>      <b>break</b>; <i>// 30h-3Fh: Steamroller</i></td></tr>
+<tr><th id="527">527</th><td>    }</td></tr>
+<tr><th id="528">528</th><td>    <b>if</b> ((<a class="local col5 ref" href="#25Model" title='Model' data-ref="25Model" data-ref-filename="25Model">Model</a> &gt;= <var>0x10</var> &amp;&amp; <a class="local col5 ref" href="#25Model" title='Model' data-ref="25Model" data-ref-filename="25Model">Model</a> &lt;= <var>0x1f</var>) || <a class="local col5 ref" href="#25Model" title='Model' data-ref="25Model" data-ref-filename="25Model">Model</a> == <var>0x02</var>) {</td></tr>
+<tr><th id="529">529</th><td>      <a class="local col9 ref" href="#29CPU" title='CPU' data-ref="29CPU" data-ref-filename="29CPU">CPU</a> = <q>"bdver2"</q>;</td></tr>
+<tr><th id="530">530</th><td>      *<a class="local col8 ref" href="#28Subtype" title='Subtype' data-ref="28Subtype" data-ref-filename="28Subtype">Subtype</a> = <a class="enum" href="#AMDFAM15H_BDVER2" title='AMDFAM15H_BDVER2' data-ref="AMDFAM15H_BDVER2" data-ref-filename="AMDFAM15H_BDVER2">AMDFAM15H_BDVER2</a>;</td></tr>
+<tr><th id="531">531</th><td>      <b>break</b>; <i>// 02h, 10h-1Fh: Piledriver</i></td></tr>
+<tr><th id="532">532</th><td>    }</td></tr>
+<tr><th id="533">533</th><td>    <b>if</b> (<a class="local col5 ref" href="#25Model" title='Model' data-ref="25Model" data-ref-filename="25Model">Model</a> &lt;= <var>0x0f</var>) {</td></tr>
+<tr><th id="534">534</th><td>      *<a class="local col8 ref" href="#28Subtype" title='Subtype' data-ref="28Subtype" data-ref-filename="28Subtype">Subtype</a> = <a class="enum" href="#AMDFAM15H_BDVER1" title='AMDFAM15H_BDVER1' data-ref="AMDFAM15H_BDVER1" data-ref-filename="AMDFAM15H_BDVER1">AMDFAM15H_BDVER1</a>;</td></tr>
+<tr><th id="535">535</th><td>      <b>break</b>; <i>// 00h-0Fh: Bulldozer</i></td></tr>
+<tr><th id="536">536</th><td>    }</td></tr>
+<tr><th id="537">537</th><td>    <b>break</b>;</td></tr>
+<tr><th id="538">538</th><td>  <b>case</b> <var>22</var>:</td></tr>
+<tr><th id="539">539</th><td>    <a class="local col9 ref" href="#29CPU" title='CPU' data-ref="29CPU" data-ref-filename="29CPU">CPU</a> = <q>"btver2"</q>;</td></tr>
+<tr><th id="540">540</th><td>    *<a class="local col7 ref" href="#27Type" title='Type' data-ref="27Type" data-ref-filename="27Type">Type</a> = <a class="enum" href="#AMD_BTVER2" title='AMD_BTVER2' data-ref="AMD_BTVER2" data-ref-filename="AMD_BTVER2">AMD_BTVER2</a>;</td></tr>
+<tr><th id="541">541</th><td>    <b>break</b>;</td></tr>
+<tr><th id="542">542</th><td>  <b>case</b> <var>23</var>:</td></tr>
+<tr><th id="543">543</th><td>    <a class="local col9 ref" href="#29CPU" title='CPU' data-ref="29CPU" data-ref-filename="29CPU">CPU</a> = <q>"znver1"</q>;</td></tr>
+<tr><th id="544">544</th><td>    *<a class="local col7 ref" href="#27Type" title='Type' data-ref="27Type" data-ref-filename="27Type">Type</a> = <a class="enum" href="#AMDFAM17H" title='AMDFAM17H' data-ref="AMDFAM17H" data-ref-filename="AMDFAM17H">AMDFAM17H</a>;</td></tr>
+<tr><th id="545">545</th><td>    <b>if</b> ((<a class="local col5 ref" href="#25Model" title='Model' data-ref="25Model" data-ref-filename="25Model">Model</a> &gt;= <var>0x30</var> &amp;&amp; <a class="local col5 ref" href="#25Model" title='Model' data-ref="25Model" data-ref-filename="25Model">Model</a> &lt;= <var>0x3f</var>) || <a class="local col5 ref" href="#25Model" title='Model' data-ref="25Model" data-ref-filename="25Model">Model</a> == <var>0x71</var>) {</td></tr>
+<tr><th id="546">546</th><td>      <a class="local col9 ref" href="#29CPU" title='CPU' data-ref="29CPU" data-ref-filename="29CPU">CPU</a> = <q>"znver2"</q>;</td></tr>
+<tr><th id="547">547</th><td>      *<a class="local col8 ref" href="#28Subtype" title='Subtype' data-ref="28Subtype" data-ref-filename="28Subtype">Subtype</a> = <a class="enum" href="#AMDFAM17H_ZNVER2" title='AMDFAM17H_ZNVER2' data-ref="AMDFAM17H_ZNVER2" data-ref-filename="AMDFAM17H_ZNVER2">AMDFAM17H_ZNVER2</a>;</td></tr>
+<tr><th id="548">548</th><td>      <b>break</b>; <i>// 30h-3fh, 71h: Zen2</i></td></tr>
+<tr><th id="549">549</th><td>    }</td></tr>
+<tr><th id="550">550</th><td>    <b>if</b> (<a class="local col5 ref" href="#25Model" title='Model' data-ref="25Model" data-ref-filename="25Model">Model</a> &lt;= <var>0x0f</var>) {</td></tr>
+<tr><th id="551">551</th><td>      *<a class="local col8 ref" href="#28Subtype" title='Subtype' data-ref="28Subtype" data-ref-filename="28Subtype">Subtype</a> = <a class="enum" href="#AMDFAM17H_ZNVER1" title='AMDFAM17H_ZNVER1' data-ref="AMDFAM17H_ZNVER1" data-ref-filename="AMDFAM17H_ZNVER1">AMDFAM17H_ZNVER1</a>;</td></tr>
+<tr><th id="552">552</th><td>      <b>break</b>; <i>// 00h-0Fh: Zen1</i></td></tr>
+<tr><th id="553">553</th><td>    }</td></tr>
+<tr><th id="554">554</th><td>    <b>break</b>;</td></tr>
+<tr><th id="555">555</th><td>  <b>case</b> <var>25</var>:</td></tr>
+<tr><th id="556">556</th><td>    <a class="local col9 ref" href="#29CPU" title='CPU' data-ref="29CPU" data-ref-filename="29CPU">CPU</a> = <q>"znver3"</q>;</td></tr>
+<tr><th id="557">557</th><td>    *<a class="local col7 ref" href="#27Type" title='Type' data-ref="27Type" data-ref-filename="27Type">Type</a> = <a class="enum" href="#AMDFAM19H" title='AMDFAM19H' data-ref="AMDFAM19H" data-ref-filename="AMDFAM19H">AMDFAM19H</a>;</td></tr>
+<tr><th id="558">558</th><td>    <b>if</b> (<a class="local col5 ref" href="#25Model" title='Model' data-ref="25Model" data-ref-filename="25Model">Model</a> &lt;= <var>0x0f</var>) {</td></tr>
+<tr><th id="559">559</th><td>      *<a class="local col8 ref" href="#28Subtype" title='Subtype' data-ref="28Subtype" data-ref-filename="28Subtype">Subtype</a> = <a class="enum" href="#AMDFAM19H_ZNVER3" title='AMDFAM19H_ZNVER3' data-ref="AMDFAM19H_ZNVER3" data-ref-filename="AMDFAM19H_ZNVER3">AMDFAM19H_ZNVER3</a>;</td></tr>
+<tr><th id="560">560</th><td>      <b>break</b>; <i>// 00h-0Fh: Zen3</i></td></tr>
+<tr><th id="561">561</th><td>    }</td></tr>
+<tr><th id="562">562</th><td>    <b>break</b>;</td></tr>
+<tr><th id="563">563</th><td>  <b>default</b>:</td></tr>
+<tr><th id="564">564</th><td>    <b>break</b>; <i>// Unknown AMD CPU.</i></td></tr>
+<tr><th id="565">565</th><td>  }</td></tr>
+<tr><th id="566">566</th><td></td></tr>
+<tr><th id="567">567</th><td>  <b>return</b> <a class="local col9 ref" href="#29CPU" title='CPU' data-ref="29CPU" data-ref-filename="29CPU">CPU</a>;</td></tr>
+<tr><th id="568">568</th><td>}</td></tr>
+<tr><th id="569">569</th><td></td></tr>
+<tr><th id="570">570</th><td><em>static</em> <em>void</em> <dfn class="tu decl def fn" id="getAvailableFeatures" title='getAvailableFeatures' data-type='void getAvailableFeatures(unsigned int ECX, unsigned int EDX, unsigned int MaxLeaf, unsigned int * Features)' data-ref="getAvailableFeatures" data-ref-filename="getAvailableFeatures">getAvailableFeatures</dfn>(<em>unsigned</em> <dfn class="local col0 decl" id="30ECX" title='ECX' data-type='unsigned int' data-ref="30ECX" data-ref-filename="30ECX">ECX</dfn>, <em>unsigned</em> <dfn class="local col1 decl" id="31EDX" title='EDX' data-type='unsigned int' data-ref="31EDX" data-ref-filename="31EDX">EDX</dfn>, <em>unsigned</em> <dfn class="local col2 decl" id="32MaxLeaf" title='MaxLeaf' data-type='unsigned int' data-ref="32MaxLeaf" data-ref-filename="32MaxLeaf">MaxLeaf</dfn>,</td></tr>
+<tr><th id="571">571</th><td>                                 <em>unsigned</em> *<dfn class="local col3 decl" id="33Features" title='Features' data-type='unsigned int *' data-ref="33Features" data-ref-filename="33Features">Features</dfn>) {</td></tr>
+<tr><th id="572">572</th><td>  <em>unsigned</em> <dfn class="local col4 decl" id="34EAX" title='EAX' data-type='unsigned int' data-ref="34EAX" data-ref-filename="34EAX">EAX</dfn>, <dfn class="local col5 decl" id="35EBX" title='EBX' data-type='unsigned int' data-ref="35EBX" data-ref-filename="35EBX">EBX</dfn>;</td></tr>
+<tr><th id="573">573</th><td></td></tr>
+<tr><th id="574">574</th><td><u>#define <dfn class="macro" id="_M/setFeature" data-ref="_M/setFeature">setFeature</dfn>(F)                                                          \</u></td></tr>
+<tr><th id="575">575</th><td><u>  <a class="local col3 ref" href="#33Features" title='Features' data-ref="33Features" data-ref-filename="33Features">Features</a>[F / 32] |= 1U &lt;&lt; (F % 32)</u></td></tr>
+<tr><th id="576">576</th><td></td></tr>
+<tr><th id="577">577</th><td>  <b>if</b> ((<a class="local col1 ref" href="#31EDX" title='EDX' data-ref="31EDX" data-ref-filename="31EDX">EDX</a> &gt;&gt; <var>15</var>) &amp; <var>1</var>)</td></tr>
+<tr><th id="578">578</th><td>    <a class="macro" href="#574" title="Features[FEATURE_CMOV / 32] |= 1U &lt;&lt; (FEATURE_CMOV % 32)" data-ref="_M/setFeature">setFeature</a>(<a class="enum" href="#FEATURE_CMOV" title='FEATURE_CMOV' data-ref="FEATURE_CMOV" data-ref-filename="FEATURE_CMOV">FEATURE_CMOV</a>);</td></tr>
+<tr><th id="579">579</th><td>  <b>if</b> ((<a class="local col1 ref" href="#31EDX" title='EDX' data-ref="31EDX" data-ref-filename="31EDX">EDX</a> &gt;&gt; <var>23</var>) &amp; <var>1</var>)</td></tr>
+<tr><th id="580">580</th><td>    <a class="macro" href="#574" title="Features[FEATURE_MMX / 32] |= 1U &lt;&lt; (FEATURE_MMX % 32)" data-ref="_M/setFeature">setFeature</a>(<a class="enum" href="#FEATURE_MMX" title='FEATURE_MMX' data-ref="FEATURE_MMX" data-ref-filename="FEATURE_MMX">FEATURE_MMX</a>);</td></tr>
+<tr><th id="581">581</th><td>  <b>if</b> ((<a class="local col1 ref" href="#31EDX" title='EDX' data-ref="31EDX" data-ref-filename="31EDX">EDX</a> &gt;&gt; <var>25</var>) &amp; <var>1</var>)</td></tr>
+<tr><th id="582">582</th><td>    <a class="macro" href="#574" title="Features[FEATURE_SSE / 32] |= 1U &lt;&lt; (FEATURE_SSE % 32)" data-ref="_M/setFeature">setFeature</a>(<a class="enum" href="#FEATURE_SSE" title='FEATURE_SSE' data-ref="FEATURE_SSE" data-ref-filename="FEATURE_SSE">FEATURE_SSE</a>);</td></tr>
+<tr><th id="583">583</th><td>  <b>if</b> ((<a class="local col1 ref" href="#31EDX" title='EDX' data-ref="31EDX" data-ref-filename="31EDX">EDX</a> &gt;&gt; <var>26</var>) &amp; <var>1</var>)</td></tr>
+<tr><th id="584">584</th><td>    <a class="macro" href="#574" title="Features[FEATURE_SSE2 / 32] |= 1U &lt;&lt; (FEATURE_SSE2 % 32)" data-ref="_M/setFeature">setFeature</a>(<a class="enum" href="#FEATURE_SSE2" title='FEATURE_SSE2' data-ref="FEATURE_SSE2" data-ref-filename="FEATURE_SSE2">FEATURE_SSE2</a>);</td></tr>
+<tr><th id="585">585</th><td></td></tr>
+<tr><th id="586">586</th><td>  <b>if</b> ((<a class="local col0 ref" href="#30ECX" title='ECX' data-ref="30ECX" data-ref-filename="30ECX">ECX</a> &gt;&gt; <var>0</var>) &amp; <var>1</var>)</td></tr>
+<tr><th id="587">587</th><td>    <a class="macro" href="#574" title="Features[FEATURE_SSE3 / 32] |= 1U &lt;&lt; (FEATURE_SSE3 % 32)" data-ref="_M/setFeature">setFeature</a>(<a class="enum" href="#FEATURE_SSE3" title='FEATURE_SSE3' data-ref="FEATURE_SSE3" data-ref-filename="FEATURE_SSE3">FEATURE_SSE3</a>);</td></tr>
+<tr><th id="588">588</th><td>  <b>if</b> ((<a class="local col0 ref" href="#30ECX" title='ECX' data-ref="30ECX" data-ref-filename="30ECX">ECX</a> &gt;&gt; <var>1</var>) &amp; <var>1</var>)</td></tr>
+<tr><th id="589">589</th><td>    <a class="macro" href="#574" title="Features[FEATURE_PCLMUL / 32] |= 1U &lt;&lt; (FEATURE_PCLMUL % 32)" data-ref="_M/setFeature">setFeature</a>(<a class="enum" href="#FEATURE_PCLMUL" title='FEATURE_PCLMUL' data-ref="FEATURE_PCLMUL" data-ref-filename="FEATURE_PCLMUL">FEATURE_PCLMUL</a>);</td></tr>
+<tr><th id="590">590</th><td>  <b>if</b> ((<a class="local col0 ref" href="#30ECX" title='ECX' data-ref="30ECX" data-ref-filename="30ECX">ECX</a> &gt;&gt; <var>9</var>) &amp; <var>1</var>)</td></tr>
+<tr><th id="591">591</th><td>    <a class="macro" href="#574" title="Features[FEATURE_SSSE3 / 32] |= 1U &lt;&lt; (FEATURE_SSSE3 % 32)" data-ref="_M/setFeature">setFeature</a>(<a class="enum" href="#FEATURE_SSSE3" title='FEATURE_SSSE3' data-ref="FEATURE_SSSE3" data-ref-filename="FEATURE_SSSE3">FEATURE_SSSE3</a>);</td></tr>
+<tr><th id="592">592</th><td>  <b>if</b> ((<a class="local col0 ref" href="#30ECX" title='ECX' data-ref="30ECX" data-ref-filename="30ECX">ECX</a> &gt;&gt; <var>12</var>) &amp; <var>1</var>)</td></tr>
+<tr><th id="593">593</th><td>    <a class="macro" href="#574" title="Features[FEATURE_FMA / 32] |= 1U &lt;&lt; (FEATURE_FMA % 32)" data-ref="_M/setFeature">setFeature</a>(<a class="enum" href="#FEATURE_FMA" title='FEATURE_FMA' data-ref="FEATURE_FMA" data-ref-filename="FEATURE_FMA">FEATURE_FMA</a>);</td></tr>
+<tr><th id="594">594</th><td>  <b>if</b> ((<a class="local col0 ref" href="#30ECX" title='ECX' data-ref="30ECX" data-ref-filename="30ECX">ECX</a> &gt;&gt; <var>19</var>) &amp; <var>1</var>)</td></tr>
+<tr><th id="595">595</th><td>    <a class="macro" href="#574" title="Features[FEATURE_SSE4_1 / 32] |= 1U &lt;&lt; (FEATURE_SSE4_1 % 32)" data-ref="_M/setFeature">setFeature</a>(<a class="enum" href="#FEATURE_SSE4_1" title='FEATURE_SSE4_1' data-ref="FEATURE_SSE4_1" data-ref-filename="FEATURE_SSE4_1">FEATURE_SSE4_1</a>);</td></tr>
+<tr><th id="596">596</th><td>  <b>if</b> ((<a class="local col0 ref" href="#30ECX" title='ECX' data-ref="30ECX" data-ref-filename="30ECX">ECX</a> &gt;&gt; <var>20</var>) &amp; <var>1</var>)</td></tr>
+<tr><th id="597">597</th><td>    <a class="macro" href="#574" title="Features[FEATURE_SSE4_2 / 32] |= 1U &lt;&lt; (FEATURE_SSE4_2 % 32)" data-ref="_M/setFeature">setFeature</a>(<a class="enum" href="#FEATURE_SSE4_2" title='FEATURE_SSE4_2' data-ref="FEATURE_SSE4_2" data-ref-filename="FEATURE_SSE4_2">FEATURE_SSE4_2</a>);</td></tr>
+<tr><th id="598">598</th><td>  <b>if</b> ((<a class="local col0 ref" href="#30ECX" title='ECX' data-ref="30ECX" data-ref-filename="30ECX">ECX</a> &gt;&gt; <var>23</var>) &amp; <var>1</var>)</td></tr>
+<tr><th id="599">599</th><td>    <a class="macro" href="#574" title="Features[FEATURE_POPCNT / 32] |= 1U &lt;&lt; (FEATURE_POPCNT % 32)" data-ref="_M/setFeature">setFeature</a>(<a class="enum" href="#FEATURE_POPCNT" title='FEATURE_POPCNT' data-ref="FEATURE_POPCNT" data-ref-filename="FEATURE_POPCNT">FEATURE_POPCNT</a>);</td></tr>
+<tr><th id="600">600</th><td>  <b>if</b> ((<a class="local col0 ref" href="#30ECX" title='ECX' data-ref="30ECX" data-ref-filename="30ECX">ECX</a> &gt;&gt; <var>25</var>) &amp; <var>1</var>)</td></tr>
+<tr><th id="601">601</th><td>    <a class="macro" href="#574" title="Features[FEATURE_AES / 32] |= 1U &lt;&lt; (FEATURE_AES % 32)" data-ref="_M/setFeature">setFeature</a>(<a class="enum" href="#FEATURE_AES" title='FEATURE_AES' data-ref="FEATURE_AES" data-ref-filename="FEATURE_AES">FEATURE_AES</a>);</td></tr>
+<tr><th id="602">602</th><td></td></tr>
+<tr><th id="603">603</th><td>  <i>// If CPUID indicates support for XSAVE, XRESTORE and AVX, and XGETBV</i></td></tr>
+<tr><th id="604">604</th><td><i>  // indicates that the AVX registers will be saved and restored on context</i></td></tr>
+<tr><th id="605">605</th><td><i>  // switch, then we have full AVX support.</i></td></tr>
+<tr><th id="606">606</th><td>  <em>const</em> <em>unsigned</em> <dfn class="local col6 decl" id="36AVXBits" title='AVXBits' data-type='const unsigned int' data-ref="36AVXBits" data-ref-filename="36AVXBits">AVXBits</dfn> = (<var>1</var> &lt;&lt; <var>27</var>) | (<var>1</var> &lt;&lt; <var>28</var>);</td></tr>
+<tr><th id="607">607</th><td>  <a class="macro" href="#32" title="int" data-ref="_M/bool">bool</a> <dfn class="local col7 decl" id="37HasAVX" title='HasAVX' data-type='int' data-ref="37HasAVX" data-ref-filename="37HasAVX">HasAVX</dfn> = ((<a class="local col0 ref" href="#30ECX" title='ECX' data-ref="30ECX" data-ref-filename="30ECX">ECX</a> &amp; <a class="local col6 ref" href="#36AVXBits" title='AVXBits' data-ref="36AVXBits" data-ref-filename="36AVXBits">AVXBits</a>) == <a class="local col6 ref" href="#36AVXBits" title='AVXBits' data-ref="36AVXBits" data-ref-filename="36AVXBits">AVXBits</a>) &amp;&amp; !<a class="tu ref fn" href="#getX86XCR0" title='getX86XCR0' data-use='c' data-ref="getX86XCR0" data-ref-filename="getX86XCR0">getX86XCR0</a>(&amp;<a class="local col4 ref" href="#34EAX" title='EAX' data-ref="34EAX" data-ref-filename="34EAX">EAX</a>, &amp;<a class="local col1 ref" href="#31EDX" title='EDX' data-ref="31EDX" data-ref-filename="31EDX">EDX</a>) &amp;&amp;</td></tr>
+<tr><th id="608">608</th><td>                ((<a class="local col4 ref" href="#34EAX" title='EAX' data-ref="34EAX" data-ref-filename="34EAX">EAX</a> &amp; <var>0x6</var>) == <var>0x6</var>);</td></tr>
+<tr><th id="609">609</th><td><u>#<span data-ppcond="609">if</span> defined(<span class="macro" data-ref="_M/__APPLE__">__APPLE__</span>)</u></td></tr>
+<tr><th id="610">610</th><td>  <i>// Darwin lazily saves the AVX512 context on first use: trust that the OS will</i></td></tr>
+<tr><th id="611">611</th><td><i>  // save the AVX512 context if we use AVX512 instructions, even the bit is not</i></td></tr>
+<tr><th id="612">612</th><td><i>  // set right now.</i></td></tr>
+<tr><th id="613">613</th><td>  bool HasAVX512Save = true;</td></tr>
+<tr><th id="614">614</th><td><u>#<span data-ppcond="609">else</span></u></td></tr>
+<tr><th id="615">615</th><td>  <i>// AVX512 requires additional context to be saved by the OS.</i></td></tr>
+<tr><th id="616">616</th><td>  <a class="macro" href="#32" title="int" data-ref="_M/bool">bool</a> <dfn class="local col8 decl" id="38HasAVX512Save" title='HasAVX512Save' data-type='int' data-ref="38HasAVX512Save" data-ref-filename="38HasAVX512Save">HasAVX512Save</dfn> = <a class="local col7 ref" href="#37HasAVX" title='HasAVX' data-ref="37HasAVX" data-ref-filename="37HasAVX">HasAVX</a> &amp;&amp; ((<a class="local col4 ref" href="#34EAX" title='EAX' data-ref="34EAX" data-ref-filename="34EAX">EAX</a> &amp; <var>0xe0</var>) == <var>0xe0</var>);</td></tr>
+<tr><th id="617">617</th><td><u>#<span data-ppcond="609">endif</span></u></td></tr>
+<tr><th id="618">618</th><td></td></tr>
+<tr><th id="619">619</th><td>  <b>if</b> (<a class="local col7 ref" href="#37HasAVX" title='HasAVX' data-ref="37HasAVX" data-ref-filename="37HasAVX">HasAVX</a>)</td></tr>
+<tr><th id="620">620</th><td>    <a class="macro" href="#574" title="Features[FEATURE_AVX / 32] |= 1U &lt;&lt; (FEATURE_AVX % 32)" data-ref="_M/setFeature">setFeature</a>(<a class="enum" href="#FEATURE_AVX" title='FEATURE_AVX' data-ref="FEATURE_AVX" data-ref-filename="FEATURE_AVX">FEATURE_AVX</a>);</td></tr>
+<tr><th id="621">621</th><td></td></tr>
+<tr><th id="622">622</th><td>  <a class="macro" href="#32" title="int" data-ref="_M/bool">bool</a> <dfn class="local col9 decl" id="39HasLeaf7" title='HasLeaf7' data-type='int' data-ref="39HasLeaf7" data-ref-filename="39HasLeaf7">HasLeaf7</dfn> =</td></tr>
+<tr><th id="623">623</th><td>      <a class="local col2 ref" href="#32MaxLeaf" title='MaxLeaf' data-ref="32MaxLeaf" data-ref-filename="32MaxLeaf">MaxLeaf</a> &gt;= <var>0x7</var> &amp;&amp; !<a class="tu ref fn" href="#getX86CpuIDAndInfoEx" title='getX86CpuIDAndInfoEx' data-use='c' data-ref="getX86CpuIDAndInfoEx" data-ref-filename="getX86CpuIDAndInfoEx">getX86CpuIDAndInfoEx</a>(<var>0x7</var>, <var>0x0</var>, &amp;<a class="local col4 ref" href="#34EAX" title='EAX' data-ref="34EAX" data-ref-filename="34EAX">EAX</a>, &amp;<a class="local col5 ref" href="#35EBX" title='EBX' data-ref="35EBX" data-ref-filename="35EBX">EBX</a>, &amp;<a class="local col0 ref" href="#30ECX" title='ECX' data-ref="30ECX" data-ref-filename="30ECX">ECX</a>, &amp;<a class="local col1 ref" href="#31EDX" title='EDX' data-ref="31EDX" data-ref-filename="31EDX">EDX</a>);</td></tr>
+<tr><th id="624">624</th><td></td></tr>
+<tr><th id="625">625</th><td>  <b>if</b> (<a class="local col9 ref" href="#39HasLeaf7" title='HasLeaf7' data-ref="39HasLeaf7" data-ref-filename="39HasLeaf7">HasLeaf7</a> &amp;&amp; ((<a class="local col5 ref" href="#35EBX" title='EBX' data-ref="35EBX" data-ref-filename="35EBX">EBX</a> &gt;&gt; <var>3</var>) &amp; <var>1</var>))</td></tr>
+<tr><th id="626">626</th><td>    <a class="macro" href="#574" title="Features[FEATURE_BMI / 32] |= 1U &lt;&lt; (FEATURE_BMI % 32)" data-ref="_M/setFeature">setFeature</a>(<a class="enum" href="#FEATURE_BMI" title='FEATURE_BMI' data-ref="FEATURE_BMI" data-ref-filename="FEATURE_BMI">FEATURE_BMI</a>);</td></tr>
+<tr><th id="627">627</th><td>  <b>if</b> (<a class="local col9 ref" href="#39HasLeaf7" title='HasLeaf7' data-ref="39HasLeaf7" data-ref-filename="39HasLeaf7">HasLeaf7</a> &amp;&amp; ((<a class="local col5 ref" href="#35EBX" title='EBX' data-ref="35EBX" data-ref-filename="35EBX">EBX</a> &gt;&gt; <var>5</var>) &amp; <var>1</var>) &amp;&amp; <a class="local col7 ref" href="#37HasAVX" title='HasAVX' data-ref="37HasAVX" data-ref-filename="37HasAVX">HasAVX</a>)</td></tr>
+<tr><th id="628">628</th><td>    <a class="macro" href="#574" title="Features[FEATURE_AVX2 / 32] |= 1U &lt;&lt; (FEATURE_AVX2 % 32)" data-ref="_M/setFeature">setFeature</a>(<a class="enum" href="#FEATURE_AVX2" title='FEATURE_AVX2' data-ref="FEATURE_AVX2" data-ref-filename="FEATURE_AVX2">FEATURE_AVX2</a>);</td></tr>
+<tr><th id="629">629</th><td>  <b>if</b> (<a class="local col9 ref" href="#39HasLeaf7" title='HasLeaf7' data-ref="39HasLeaf7" data-ref-filename="39HasLeaf7">HasLeaf7</a> &amp;&amp; ((<a class="local col5 ref" href="#35EBX" title='EBX' data-ref="35EBX" data-ref-filename="35EBX">EBX</a> &gt;&gt; <var>8</var>) &amp; <var>1</var>))</td></tr>
+<tr><th id="630">630</th><td>    <a class="macro" href="#574" title="Features[FEATURE_BMI2 / 32] |= 1U &lt;&lt; (FEATURE_BMI2 % 32)" data-ref="_M/setFeature">setFeature</a>(<a class="enum" href="#FEATURE_BMI2" title='FEATURE_BMI2' data-ref="FEATURE_BMI2" data-ref-filename="FEATURE_BMI2">FEATURE_BMI2</a>);</td></tr>
+<tr><th id="631">631</th><td>  <b>if</b> (<a class="local col9 ref" href="#39HasLeaf7" title='HasLeaf7' data-ref="39HasLeaf7" data-ref-filename="39HasLeaf7">HasLeaf7</a> &amp;&amp; ((<a class="local col5 ref" href="#35EBX" title='EBX' data-ref="35EBX" data-ref-filename="35EBX">EBX</a> &gt;&gt; <var>16</var>) &amp; <var>1</var>) &amp;&amp; <a class="local col8 ref" href="#38HasAVX512Save" title='HasAVX512Save' data-ref="38HasAVX512Save" data-ref-filename="38HasAVX512Save">HasAVX512Save</a>)</td></tr>
+<tr><th id="632">632</th><td>    <a class="macro" href="#574" title="Features[FEATURE_AVX512F / 32] |= 1U &lt;&lt; (FEATURE_AVX512F % 32)" data-ref="_M/setFeature">setFeature</a>(<a class="enum" href="#FEATURE_AVX512F" title='FEATURE_AVX512F' data-ref="FEATURE_AVX512F" data-ref-filename="FEATURE_AVX512F">FEATURE_AVX512F</a>);</td></tr>
+<tr><th id="633">633</th><td>  <b>if</b> (<a class="local col9 ref" href="#39HasLeaf7" title='HasLeaf7' data-ref="39HasLeaf7" data-ref-filename="39HasLeaf7">HasLeaf7</a> &amp;&amp; ((<a class="local col5 ref" href="#35EBX" title='EBX' data-ref="35EBX" data-ref-filename="35EBX">EBX</a> &gt;&gt; <var>17</var>) &amp; <var>1</var>) &amp;&amp; <a class="local col8 ref" href="#38HasAVX512Save" title='HasAVX512Save' data-ref="38HasAVX512Save" data-ref-filename="38HasAVX512Save">HasAVX512Save</a>)</td></tr>
+<tr><th id="634">634</th><td>    <a class="macro" href="#574" title="Features[FEATURE_AVX512DQ / 32] |= 1U &lt;&lt; (FEATURE_AVX512DQ % 32)" data-ref="_M/setFeature">setFeature</a>(<a class="enum" href="#FEATURE_AVX512DQ" title='FEATURE_AVX512DQ' data-ref="FEATURE_AVX512DQ" data-ref-filename="FEATURE_AVX512DQ">FEATURE_AVX512DQ</a>);</td></tr>
+<tr><th id="635">635</th><td>  <b>if</b> (<a class="local col9 ref" href="#39HasLeaf7" title='HasLeaf7' data-ref="39HasLeaf7" data-ref-filename="39HasLeaf7">HasLeaf7</a> &amp;&amp; ((<a class="local col5 ref" href="#35EBX" title='EBX' data-ref="35EBX" data-ref-filename="35EBX">EBX</a> &gt;&gt; <var>21</var>) &amp; <var>1</var>) &amp;&amp; <a class="local col8 ref" href="#38HasAVX512Save" title='HasAVX512Save' data-ref="38HasAVX512Save" data-ref-filename="38HasAVX512Save">HasAVX512Save</a>)</td></tr>
+<tr><th id="636">636</th><td>    <a class="macro" href="#574" title="Features[FEATURE_AVX512IFMA / 32] |= 1U &lt;&lt; (FEATURE_AVX512IFMA % 32)" data-ref="_M/setFeature">setFeature</a>(<a class="enum" href="#FEATURE_AVX512IFMA" title='FEATURE_AVX512IFMA' data-ref="FEATURE_AVX512IFMA" data-ref-filename="FEATURE_AVX512IFMA">FEATURE_AVX512IFMA</a>);</td></tr>
+<tr><th id="637">637</th><td>  <b>if</b> (<a class="local col9 ref" href="#39HasLeaf7" title='HasLeaf7' data-ref="39HasLeaf7" data-ref-filename="39HasLeaf7">HasLeaf7</a> &amp;&amp; ((<a class="local col5 ref" href="#35EBX" title='EBX' data-ref="35EBX" data-ref-filename="35EBX">EBX</a> &gt;&gt; <var>26</var>) &amp; <var>1</var>) &amp;&amp; <a class="local col8 ref" href="#38HasAVX512Save" title='HasAVX512Save' data-ref="38HasAVX512Save" data-ref-filename="38HasAVX512Save">HasAVX512Save</a>)</td></tr>
+<tr><th id="638">638</th><td>    <a class="macro" href="#574" title="Features[FEATURE_AVX512PF / 32] |= 1U &lt;&lt; (FEATURE_AVX512PF % 32)" data-ref="_M/setFeature">setFeature</a>(<a class="enum" href="#FEATURE_AVX512PF" title='FEATURE_AVX512PF' data-ref="FEATURE_AVX512PF" data-ref-filename="FEATURE_AVX512PF">FEATURE_AVX512PF</a>);</td></tr>
+<tr><th id="639">639</th><td>  <b>if</b> (<a class="local col9 ref" href="#39HasLeaf7" title='HasLeaf7' data-ref="39HasLeaf7" data-ref-filename="39HasLeaf7">HasLeaf7</a> &amp;&amp; ((<a class="local col5 ref" href="#35EBX" title='EBX' data-ref="35EBX" data-ref-filename="35EBX">EBX</a> &gt;&gt; <var>27</var>) &amp; <var>1</var>) &amp;&amp; <a class="local col8 ref" href="#38HasAVX512Save" title='HasAVX512Save' data-ref="38HasAVX512Save" data-ref-filename="38HasAVX512Save">HasAVX512Save</a>)</td></tr>
+<tr><th id="640">640</th><td>    <a class="macro" href="#574" title="Features[FEATURE_AVX512ER / 32] |= 1U &lt;&lt; (FEATURE_AVX512ER % 32)" data-ref="_M/setFeature">setFeature</a>(<a class="enum" href="#FEATURE_AVX512ER" title='FEATURE_AVX512ER' data-ref="FEATURE_AVX512ER" data-ref-filename="FEATURE_AVX512ER">FEATURE_AVX512ER</a>);</td></tr>
+<tr><th id="641">641</th><td>  <b>if</b> (<a class="local col9 ref" href="#39HasLeaf7" title='HasLeaf7' data-ref="39HasLeaf7" data-ref-filename="39HasLeaf7">HasLeaf7</a> &amp;&amp; ((<a class="local col5 ref" href="#35EBX" title='EBX' data-ref="35EBX" data-ref-filename="35EBX">EBX</a> &gt;&gt; <var>28</var>) &amp; <var>1</var>) &amp;&amp; <a class="local col8 ref" href="#38HasAVX512Save" title='HasAVX512Save' data-ref="38HasAVX512Save" data-ref-filename="38HasAVX512Save">HasAVX512Save</a>)</td></tr>
+<tr><th id="642">642</th><td>    <a class="macro" href="#574" title="Features[FEATURE_AVX512CD / 32] |= 1U &lt;&lt; (FEATURE_AVX512CD % 32)" data-ref="_M/setFeature">setFeature</a>(<a class="enum" href="#FEATURE_AVX512CD" title='FEATURE_AVX512CD' data-ref="FEATURE_AVX512CD" data-ref-filename="FEATURE_AVX512CD">FEATURE_AVX512CD</a>);</td></tr>
+<tr><th id="643">643</th><td>  <b>if</b> (<a class="local col9 ref" href="#39HasLeaf7" title='HasLeaf7' data-ref="39HasLeaf7" data-ref-filename="39HasLeaf7">HasLeaf7</a> &amp;&amp; ((<a class="local col5 ref" href="#35EBX" title='EBX' data-ref="35EBX" data-ref-filename="35EBX">EBX</a> &gt;&gt; <var>30</var>) &amp; <var>1</var>) &amp;&amp; <a class="local col8 ref" href="#38HasAVX512Save" title='HasAVX512Save' data-ref="38HasAVX512Save" data-ref-filename="38HasAVX512Save">HasAVX512Save</a>)</td></tr>
+<tr><th id="644">644</th><td>    <a class="macro" href="#574" title="Features[FEATURE_AVX512BW / 32] |= 1U &lt;&lt; (FEATURE_AVX512BW % 32)" data-ref="_M/setFeature">setFeature</a>(<a class="enum" href="#FEATURE_AVX512BW" title='FEATURE_AVX512BW' data-ref="FEATURE_AVX512BW" data-ref-filename="FEATURE_AVX512BW">FEATURE_AVX512BW</a>);</td></tr>
+<tr><th id="645">645</th><td>  <b>if</b> (<a class="local col9 ref" href="#39HasLeaf7" title='HasLeaf7' data-ref="39HasLeaf7" data-ref-filename="39HasLeaf7">HasLeaf7</a> &amp;&amp; ((<a class="local col5 ref" href="#35EBX" title='EBX' data-ref="35EBX" data-ref-filename="35EBX">EBX</a> &gt;&gt; <var>31</var>) &amp; <var>1</var>) &amp;&amp; <a class="local col8 ref" href="#38HasAVX512Save" title='HasAVX512Save' data-ref="38HasAVX512Save" data-ref-filename="38HasAVX512Save">HasAVX512Save</a>)</td></tr>
+<tr><th id="646">646</th><td>    <a class="macro" href="#574" title="Features[FEATURE_AVX512VL / 32] |= 1U &lt;&lt; (FEATURE_AVX512VL % 32)" data-ref="_M/setFeature">setFeature</a>(<a class="enum" href="#FEATURE_AVX512VL" title='FEATURE_AVX512VL' data-ref="FEATURE_AVX512VL" data-ref-filename="FEATURE_AVX512VL">FEATURE_AVX512VL</a>);</td></tr>
+<tr><th id="647">647</th><td></td></tr>
+<tr><th id="648">648</th><td>  <b>if</b> (<a class="local col9 ref" href="#39HasLeaf7" title='HasLeaf7' data-ref="39HasLeaf7" data-ref-filename="39HasLeaf7">HasLeaf7</a> &amp;&amp; ((<a class="local col0 ref" href="#30ECX" title='ECX' data-ref="30ECX" data-ref-filename="30ECX">ECX</a> &gt;&gt; <var>1</var>) &amp; <var>1</var>) &amp;&amp; <a class="local col8 ref" href="#38HasAVX512Save" title='HasAVX512Save' data-ref="38HasAVX512Save" data-ref-filename="38HasAVX512Save">HasAVX512Save</a>)</td></tr>
+<tr><th id="649">649</th><td>    <a class="macro" href="#574" title="Features[FEATURE_AVX512VBMI / 32] |= 1U &lt;&lt; (FEATURE_AVX512VBMI % 32)" data-ref="_M/setFeature">setFeature</a>(<a class="enum" href="#FEATURE_AVX512VBMI" title='FEATURE_AVX512VBMI' data-ref="FEATURE_AVX512VBMI" data-ref-filename="FEATURE_AVX512VBMI">FEATURE_AVX512VBMI</a>);</td></tr>
+<tr><th id="650">650</th><td>  <b>if</b> (<a class="local col9 ref" href="#39HasLeaf7" title='HasLeaf7' data-ref="39HasLeaf7" data-ref-filename="39HasLeaf7">HasLeaf7</a> &amp;&amp; ((<a class="local col0 ref" href="#30ECX" title='ECX' data-ref="30ECX" data-ref-filename="30ECX">ECX</a> &gt;&gt; <var>6</var>) &amp; <var>1</var>) &amp;&amp; <a class="local col8 ref" href="#38HasAVX512Save" title='HasAVX512Save' data-ref="38HasAVX512Save" data-ref-filename="38HasAVX512Save">HasAVX512Save</a>)</td></tr>
+<tr><th id="651">651</th><td>    <a class="macro" href="#574" title="Features[FEATURE_AVX512VBMI2 / 32] |= 1U &lt;&lt; (FEATURE_AVX512VBMI2 % 32)" data-ref="_M/setFeature">setFeature</a>(<a class="enum" href="#FEATURE_AVX512VBMI2" title='FEATURE_AVX512VBMI2' data-ref="FEATURE_AVX512VBMI2" data-ref-filename="FEATURE_AVX512VBMI2">FEATURE_AVX512VBMI2</a>);</td></tr>
+<tr><th id="652">652</th><td>  <b>if</b> (<a class="local col9 ref" href="#39HasLeaf7" title='HasLeaf7' data-ref="39HasLeaf7" data-ref-filename="39HasLeaf7">HasLeaf7</a> &amp;&amp; ((<a class="local col0 ref" href="#30ECX" title='ECX' data-ref="30ECX" data-ref-filename="30ECX">ECX</a> &gt;&gt; <var>8</var>) &amp; <var>1</var>))</td></tr>
+<tr><th id="653">653</th><td>    <a class="macro" href="#574" title="Features[FEATURE_GFNI / 32] |= 1U &lt;&lt; (FEATURE_GFNI % 32)" data-ref="_M/setFeature">setFeature</a>(<a class="enum" href="#FEATURE_GFNI" title='FEATURE_GFNI' data-ref="FEATURE_GFNI" data-ref-filename="FEATURE_GFNI">FEATURE_GFNI</a>);</td></tr>
+<tr><th id="654">654</th><td>  <b>if</b> (<a class="local col9 ref" href="#39HasLeaf7" title='HasLeaf7' data-ref="39HasLeaf7" data-ref-filename="39HasLeaf7">HasLeaf7</a> &amp;&amp; ((<a class="local col0 ref" href="#30ECX" title='ECX' data-ref="30ECX" data-ref-filename="30ECX">ECX</a> &gt;&gt; <var>10</var>) &amp; <var>1</var>) &amp;&amp; <a class="local col7 ref" href="#37HasAVX" title='HasAVX' data-ref="37HasAVX" data-ref-filename="37HasAVX">HasAVX</a>)</td></tr>
+<tr><th id="655">655</th><td>    <a class="macro" href="#574" title="Features[FEATURE_VPCLMULQDQ / 32] |= 1U &lt;&lt; (FEATURE_VPCLMULQDQ % 32)" data-ref="_M/setFeature">setFeature</a>(<a class="enum" href="#FEATURE_VPCLMULQDQ" title='FEATURE_VPCLMULQDQ' data-ref="FEATURE_VPCLMULQDQ" data-ref-filename="FEATURE_VPCLMULQDQ">FEATURE_VPCLMULQDQ</a>);</td></tr>
+<tr><th id="656">656</th><td>  <b>if</b> (<a class="local col9 ref" href="#39HasLeaf7" title='HasLeaf7' data-ref="39HasLeaf7" data-ref-filename="39HasLeaf7">HasLeaf7</a> &amp;&amp; ((<a class="local col0 ref" href="#30ECX" title='ECX' data-ref="30ECX" data-ref-filename="30ECX">ECX</a> &gt;&gt; <var>11</var>) &amp; <var>1</var>) &amp;&amp; <a class="local col8 ref" href="#38HasAVX512Save" title='HasAVX512Save' data-ref="38HasAVX512Save" data-ref-filename="38HasAVX512Save">HasAVX512Save</a>)</td></tr>
+<tr><th id="657">657</th><td>    <a class="macro" href="#574" title="Features[FEATURE_AVX512VNNI / 32] |= 1U &lt;&lt; (FEATURE_AVX512VNNI % 32)" data-ref="_M/setFeature">setFeature</a>(<a class="enum" href="#FEATURE_AVX512VNNI" title='FEATURE_AVX512VNNI' data-ref="FEATURE_AVX512VNNI" data-ref-filename="FEATURE_AVX512VNNI">FEATURE_AVX512VNNI</a>);</td></tr>
+<tr><th id="658">658</th><td>  <b>if</b> (<a class="local col9 ref" href="#39HasLeaf7" title='HasLeaf7' data-ref="39HasLeaf7" data-ref-filename="39HasLeaf7">HasLeaf7</a> &amp;&amp; ((<a class="local col0 ref" href="#30ECX" title='ECX' data-ref="30ECX" data-ref-filename="30ECX">ECX</a> &gt;&gt; <var>12</var>) &amp; <var>1</var>) &amp;&amp; <a class="local col8 ref" href="#38HasAVX512Save" title='HasAVX512Save' data-ref="38HasAVX512Save" data-ref-filename="38HasAVX512Save">HasAVX512Save</a>)</td></tr>
+<tr><th id="659">659</th><td>    <a class="macro" href="#574" title="Features[FEATURE_AVX512BITALG / 32] |= 1U &lt;&lt; (FEATURE_AVX512BITALG % 32)" data-ref="_M/setFeature">setFeature</a>(<a class="enum" href="#FEATURE_AVX512BITALG" title='FEATURE_AVX512BITALG' data-ref="FEATURE_AVX512BITALG" data-ref-filename="FEATURE_AVX512BITALG">FEATURE_AVX512BITALG</a>);</td></tr>
+<tr><th id="660">660</th><td>  <b>if</b> (<a class="local col9 ref" href="#39HasLeaf7" title='HasLeaf7' data-ref="39HasLeaf7" data-ref-filename="39HasLeaf7">HasLeaf7</a> &amp;&amp; ((<a class="local col0 ref" href="#30ECX" title='ECX' data-ref="30ECX" data-ref-filename="30ECX">ECX</a> &gt;&gt; <var>14</var>) &amp; <var>1</var>) &amp;&amp; <a class="local col8 ref" href="#38HasAVX512Save" title='HasAVX512Save' data-ref="38HasAVX512Save" data-ref-filename="38HasAVX512Save">HasAVX512Save</a>)</td></tr>
+<tr><th id="661">661</th><td>    <a class="macro" href="#574" title="Features[FEATURE_AVX512VPOPCNTDQ / 32] |= 1U &lt;&lt; (FEATURE_AVX512VPOPCNTDQ % 32)" data-ref="_M/setFeature">setFeature</a>(<a class="enum" href="#FEATURE_AVX512VPOPCNTDQ" title='FEATURE_AVX512VPOPCNTDQ' data-ref="FEATURE_AVX512VPOPCNTDQ" data-ref-filename="FEATURE_AVX512VPOPCNTDQ">FEATURE_AVX512VPOPCNTDQ</a>);</td></tr>
+<tr><th id="662">662</th><td></td></tr>
+<tr><th id="663">663</th><td>  <b>if</b> (<a class="local col9 ref" href="#39HasLeaf7" title='HasLeaf7' data-ref="39HasLeaf7" data-ref-filename="39HasLeaf7">HasLeaf7</a> &amp;&amp; ((<a class="local col1 ref" href="#31EDX" title='EDX' data-ref="31EDX" data-ref-filename="31EDX">EDX</a> &gt;&gt; <var>2</var>) &amp; <var>1</var>) &amp;&amp; <a class="local col8 ref" href="#38HasAVX512Save" title='HasAVX512Save' data-ref="38HasAVX512Save" data-ref-filename="38HasAVX512Save">HasAVX512Save</a>)</td></tr>
+<tr><th id="664">664</th><td>    <a class="macro" href="#574" title="Features[FEATURE_AVX5124VNNIW / 32] |= 1U &lt;&lt; (FEATURE_AVX5124VNNIW % 32)" data-ref="_M/setFeature">setFeature</a>(<a class="enum" href="#FEATURE_AVX5124VNNIW" title='FEATURE_AVX5124VNNIW' data-ref="FEATURE_AVX5124VNNIW" data-ref-filename="FEATURE_AVX5124VNNIW">FEATURE_AVX5124VNNIW</a>);</td></tr>
+<tr><th id="665">665</th><td>  <b>if</b> (<a class="local col9 ref" href="#39HasLeaf7" title='HasLeaf7' data-ref="39HasLeaf7" data-ref-filename="39HasLeaf7">HasLeaf7</a> &amp;&amp; ((<a class="local col1 ref" href="#31EDX" title='EDX' data-ref="31EDX" data-ref-filename="31EDX">EDX</a> &gt;&gt; <var>3</var>) &amp; <var>1</var>) &amp;&amp; <a class="local col8 ref" href="#38HasAVX512Save" title='HasAVX512Save' data-ref="38HasAVX512Save" data-ref-filename="38HasAVX512Save">HasAVX512Save</a>)</td></tr>
+<tr><th id="666">666</th><td>    <a class="macro" href="#574" title="Features[FEATURE_AVX5124FMAPS / 32] |= 1U &lt;&lt; (FEATURE_AVX5124FMAPS % 32)" data-ref="_M/setFeature">setFeature</a>(<a class="enum" href="#FEATURE_AVX5124FMAPS" title='FEATURE_AVX5124FMAPS' data-ref="FEATURE_AVX5124FMAPS" data-ref-filename="FEATURE_AVX5124FMAPS">FEATURE_AVX5124FMAPS</a>);</td></tr>
+<tr><th id="667">667</th><td>  <b>if</b> (<a class="local col9 ref" href="#39HasLeaf7" title='HasLeaf7' data-ref="39HasLeaf7" data-ref-filename="39HasLeaf7">HasLeaf7</a> &amp;&amp; ((<a class="local col1 ref" href="#31EDX" title='EDX' data-ref="31EDX" data-ref-filename="31EDX">EDX</a> &gt;&gt; <var>8</var>) &amp; <var>1</var>) &amp;&amp; <a class="local col8 ref" href="#38HasAVX512Save" title='HasAVX512Save' data-ref="38HasAVX512Save" data-ref-filename="38HasAVX512Save">HasAVX512Save</a>)</td></tr>
+<tr><th id="668">668</th><td>    <a class="macro" href="#574" title="Features[FEATURE_AVX512VP2INTERSECT / 32] |= 1U &lt;&lt; (FEATURE_AVX512VP2INTERSECT % 32)" data-ref="_M/setFeature">setFeature</a>(<a class="enum" href="#FEATURE_AVX512VP2INTERSECT" title='FEATURE_AVX512VP2INTERSECT' data-ref="FEATURE_AVX512VP2INTERSECT" data-ref-filename="FEATURE_AVX512VP2INTERSECT">FEATURE_AVX512VP2INTERSECT</a>);</td></tr>
+<tr><th id="669">669</th><td></td></tr>
+<tr><th id="670">670</th><td>  <a class="macro" href="#32" title="int" data-ref="_M/bool">bool</a> <dfn class="local col0 decl" id="40HasLeaf7Subleaf1" title='HasLeaf7Subleaf1' data-type='int' data-ref="40HasLeaf7Subleaf1" data-ref-filename="40HasLeaf7Subleaf1">HasLeaf7Subleaf1</dfn> =</td></tr>
+<tr><th id="671">671</th><td>      <a class="local col2 ref" href="#32MaxLeaf" title='MaxLeaf' data-ref="32MaxLeaf" data-ref-filename="32MaxLeaf">MaxLeaf</a> &gt;= <var>0x7</var> &amp;&amp; !<a class="tu ref fn" href="#getX86CpuIDAndInfoEx" title='getX86CpuIDAndInfoEx' data-use='c' data-ref="getX86CpuIDAndInfoEx" data-ref-filename="getX86CpuIDAndInfoEx">getX86CpuIDAndInfoEx</a>(<var>0x7</var>, <var>0x1</var>, &amp;<a class="local col4 ref" href="#34EAX" title='EAX' data-ref="34EAX" data-ref-filename="34EAX">EAX</a>, &amp;<a class="local col5 ref" href="#35EBX" title='EBX' data-ref="35EBX" data-ref-filename="35EBX">EBX</a>, &amp;<a class="local col0 ref" href="#30ECX" title='ECX' data-ref="30ECX" data-ref-filename="30ECX">ECX</a>, &amp;<a class="local col1 ref" href="#31EDX" title='EDX' data-ref="31EDX" data-ref-filename="31EDX">EDX</a>);</td></tr>
+<tr><th id="672">672</th><td>  <b>if</b> (<a class="local col0 ref" href="#40HasLeaf7Subleaf1" title='HasLeaf7Subleaf1' data-ref="40HasLeaf7Subleaf1" data-ref-filename="40HasLeaf7Subleaf1">HasLeaf7Subleaf1</a> &amp;&amp; ((<a class="local col4 ref" href="#34EAX" title='EAX' data-ref="34EAX" data-ref-filename="34EAX">EAX</a> &gt;&gt; <var>5</var>) &amp; <var>1</var>) &amp;&amp; <a class="local col8 ref" href="#38HasAVX512Save" title='HasAVX512Save' data-ref="38HasAVX512Save" data-ref-filename="38HasAVX512Save">HasAVX512Save</a>)</td></tr>
+<tr><th id="673">673</th><td>    <a class="macro" href="#574" title="Features[FEATURE_AVX512BF16 / 32] |= 1U &lt;&lt; (FEATURE_AVX512BF16 % 32)" data-ref="_M/setFeature">setFeature</a>(<a class="enum" href="#FEATURE_AVX512BF16" title='FEATURE_AVX512BF16' data-ref="FEATURE_AVX512BF16" data-ref-filename="FEATURE_AVX512BF16">FEATURE_AVX512BF16</a>);</td></tr>
+<tr><th id="674">674</th><td></td></tr>
+<tr><th id="675">675</th><td>  <em>unsigned</em> <dfn class="local col1 decl" id="41MaxExtLevel" title='MaxExtLevel' data-type='unsigned int' data-ref="41MaxExtLevel" data-ref-filename="41MaxExtLevel">MaxExtLevel</dfn>;</td></tr>
+<tr><th id="676">676</th><td>  <a class="tu ref fn" href="#getX86CpuIDAndInfo" title='getX86CpuIDAndInfo' data-use='c' data-ref="getX86CpuIDAndInfo" data-ref-filename="getX86CpuIDAndInfo">getX86CpuIDAndInfo</a>(<var>0x80000000</var>, &amp;<a class="local col1 ref" href="#41MaxExtLevel" title='MaxExtLevel' data-ref="41MaxExtLevel" data-ref-filename="41MaxExtLevel">MaxExtLevel</a>, &amp;<a class="local col5 ref" href="#35EBX" title='EBX' data-ref="35EBX" data-ref-filename="35EBX">EBX</a>, &amp;<a class="local col0 ref" href="#30ECX" title='ECX' data-ref="30ECX" data-ref-filename="30ECX">ECX</a>, &amp;<a class="local col1 ref" href="#31EDX" title='EDX' data-ref="31EDX" data-ref-filename="31EDX">EDX</a>);</td></tr>
+<tr><th id="677">677</th><td></td></tr>
+<tr><th id="678">678</th><td>  <a class="macro" href="#32" title="int" data-ref="_M/bool">bool</a> <dfn class="local col2 decl" id="42HasExtLeaf1" title='HasExtLeaf1' data-type='int' data-ref="42HasExtLeaf1" data-ref-filename="42HasExtLeaf1">HasExtLeaf1</dfn> = <a class="local col1 ref" href="#41MaxExtLevel" title='MaxExtLevel' data-ref="41MaxExtLevel" data-ref-filename="41MaxExtLevel">MaxExtLevel</a> &gt;= <var>0x80000001</var> &amp;&amp;</td></tr>
+<tr><th id="679">679</th><td>                     !<a class="tu ref fn" href="#getX86CpuIDAndInfo" title='getX86CpuIDAndInfo' data-use='c' data-ref="getX86CpuIDAndInfo" data-ref-filename="getX86CpuIDAndInfo">getX86CpuIDAndInfo</a>(<var>0x80000001</var>, &amp;<a class="local col4 ref" href="#34EAX" title='EAX' data-ref="34EAX" data-ref-filename="34EAX">EAX</a>, &amp;<a class="local col5 ref" href="#35EBX" title='EBX' data-ref="35EBX" data-ref-filename="35EBX">EBX</a>, &amp;<a class="local col0 ref" href="#30ECX" title='ECX' data-ref="30ECX" data-ref-filename="30ECX">ECX</a>, &amp;<a class="local col1 ref" href="#31EDX" title='EDX' data-ref="31EDX" data-ref-filename="31EDX">EDX</a>);</td></tr>
+<tr><th id="680">680</th><td>  <b>if</b> (<a class="local col2 ref" href="#42HasExtLeaf1" title='HasExtLeaf1' data-ref="42HasExtLeaf1" data-ref-filename="42HasExtLeaf1">HasExtLeaf1</a> &amp;&amp; ((<a class="local col0 ref" href="#30ECX" title='ECX' data-ref="30ECX" data-ref-filename="30ECX">ECX</a> &gt;&gt; <var>6</var>) &amp; <var>1</var>))</td></tr>
+<tr><th id="681">681</th><td>    <a class="macro" href="#574" title="Features[FEATURE_SSE4_A / 32] |= 1U &lt;&lt; (FEATURE_SSE4_A % 32)" data-ref="_M/setFeature">setFeature</a>(<a class="enum" href="#FEATURE_SSE4_A" title='FEATURE_SSE4_A' data-ref="FEATURE_SSE4_A" data-ref-filename="FEATURE_SSE4_A">FEATURE_SSE4_A</a>);</td></tr>
+<tr><th id="682">682</th><td>  <b>if</b> (<a class="local col2 ref" href="#42HasExtLeaf1" title='HasExtLeaf1' data-ref="42HasExtLeaf1" data-ref-filename="42HasExtLeaf1">HasExtLeaf1</a> &amp;&amp; ((<a class="local col0 ref" href="#30ECX" title='ECX' data-ref="30ECX" data-ref-filename="30ECX">ECX</a> &gt;&gt; <var>11</var>) &amp; <var>1</var>))</td></tr>
+<tr><th id="683">683</th><td>    <a class="macro" href="#574" title="Features[FEATURE_XOP / 32] |= 1U &lt;&lt; (FEATURE_XOP % 32)" data-ref="_M/setFeature">setFeature</a>(<a class="enum" href="#FEATURE_XOP" title='FEATURE_XOP' data-ref="FEATURE_XOP" data-ref-filename="FEATURE_XOP">FEATURE_XOP</a>);</td></tr>
+<tr><th id="684">684</th><td>  <b>if</b> (<a class="local col2 ref" href="#42HasExtLeaf1" title='HasExtLeaf1' data-ref="42HasExtLeaf1" data-ref-filename="42HasExtLeaf1">HasExtLeaf1</a> &amp;&amp; ((<a class="local col0 ref" href="#30ECX" title='ECX' data-ref="30ECX" data-ref-filename="30ECX">ECX</a> &gt;&gt; <var>16</var>) &amp; <var>1</var>))</td></tr>
+<tr><th id="685">685</th><td>    <a class="macro" href="#574" title="Features[FEATURE_FMA4 / 32] |= 1U &lt;&lt; (FEATURE_FMA4 % 32)" data-ref="_M/setFeature">setFeature</a>(<a class="enum" href="#FEATURE_FMA4" title='FEATURE_FMA4' data-ref="FEATURE_FMA4" data-ref-filename="FEATURE_FMA4">FEATURE_FMA4</a>);</td></tr>
+<tr><th id="686">686</th><td><u>#undef <a class="macro" href="#574" data-ref="_M/setFeature">setFeature</a></u></td></tr>
+<tr><th id="687">687</th><td>}</td></tr>
+<tr><th id="688">688</th><td></td></tr>
+<tr><th id="689">689</th><td><u>#<span data-ppcond="689">ifndef</span> <span class="macro" data-ref="_M/_WIN32">_WIN32</span></u></td></tr>
+<tr><th id="690">690</th><td><b>__attribute__</b>((visibility(<q>"hidden"</q>)))</td></tr>
+<tr><th id="691">691</th><td><u>#<span data-ppcond="689">endif</span></u></td></tr>
+<tr><th id="692">692</th><td><em>int</em> <a class="decl fn" href="#__cpu_indicator_init" title='__cpu_indicator_init' data-ref="__cpu_indicator_init" data-ref-filename="__cpu_indicator_init">__cpu_indicator_init</a>(<em>void</em>) <a class="macro" href="#19" title="__attribute__((__constructor__))" data-ref="_M/CONSTRUCTOR_ATTRIBUTE">CONSTRUCTOR_ATTRIBUTE</a>;</td></tr>
+<tr><th id="693">693</th><td></td></tr>
+<tr><th id="694">694</th><td><u>#<span data-ppcond="694">ifndef</span> <span class="macro" data-ref="_M/_WIN32">_WIN32</span></u></td></tr>
+<tr><th id="695">695</th><td><b>__attribute__</b>((visibility(<q>"hidden"</q>)))</td></tr>
+<tr><th id="696">696</th><td><u>#<span data-ppcond="694">endif</span></u></td></tr>
+<tr><th id="697">697</th><td><b>struct</b> <dfn class="type def" id="__processor_model" title='__processor_model' data-ref="__processor_model" data-ref-filename="__processor_model"><a class="type" href="#__processor_model" title='__processor_model' data-ref="__processor_model" data-ref-filename="__processor_model">__processor_model</a></dfn> {</td></tr>
+<tr><th id="698">698</th><td>  <em>unsigned</em> <em>int</em> <dfn class="tu decl field" id="__processor_model::__cpu_vendor" title='__processor_model::__cpu_vendor' data-type='unsigned int' data-ref="__processor_model::__cpu_vendor" data-ref-filename="__processor_model..__cpu_vendor">__cpu_vendor</dfn>;</td></tr>
+<tr><th id="699">699</th><td>  <em>unsigned</em> <em>int</em> <dfn class="tu decl field" id="__processor_model::__cpu_type" title='__processor_model::__cpu_type' data-type='unsigned int' data-ref="__processor_model::__cpu_type" data-ref-filename="__processor_model..__cpu_type">__cpu_type</dfn>;</td></tr>
+<tr><th id="700">700</th><td>  <em>unsigned</em> <em>int</em> <dfn class="tu decl field" id="__processor_model::__cpu_subtype" title='__processor_model::__cpu_subtype' data-type='unsigned int' data-ref="__processor_model::__cpu_subtype" data-ref-filename="__processor_model..__cpu_subtype">__cpu_subtype</dfn>;</td></tr>
+<tr><th id="701">701</th><td>  <em>unsigned</em> <em>int</em> <dfn class="tu decl field" id="__processor_model::__cpu_features" title='__processor_model::__cpu_features' data-type='unsigned int [1]' data-ref="__processor_model::__cpu_features" data-ref-filename="__processor_model..__cpu_features">__cpu_features</dfn>[<var>1</var>];</td></tr>
+<tr><th id="702">702</th><td>} <dfn class="decl def" id="__cpu_model" title='__cpu_model' data-ref="__cpu_model" data-ref-filename="__cpu_model">__cpu_model</dfn> = {<var>0</var>, <var>0</var>, <var>0</var>, {<var>0</var>}};</td></tr>
+<tr><th id="703">703</th><td></td></tr>
+<tr><th id="704">704</th><td><u>#<span data-ppcond="704">ifndef</span> <span class="macro" data-ref="_M/_WIN32">_WIN32</span></u></td></tr>
+<tr><th id="705">705</th><td><b>__attribute__</b>((visibility(<q>"hidden"</q>)))</td></tr>
+<tr><th id="706">706</th><td><u>#<span data-ppcond="704">endif</span></u></td></tr>
+<tr><th id="707">707</th><td><em>unsigned</em> <em>int</em> <dfn class="decl def" id="__cpu_features2" title='__cpu_features2' data-ref="__cpu_features2" data-ref-filename="__cpu_features2">__cpu_features2</dfn> = <var>0</var>;</td></tr>
+<tr><th id="708">708</th><td></td></tr>
+<tr><th id="709">709</th><td><i>// A constructor function that is sets __cpu_model and __cpu_features2 with</i></td></tr>
+<tr><th id="710">710</th><td><i>// the right values.  This needs to run only once.  This constructor is</i></td></tr>
+<tr><th id="711">711</th><td><i>// given the highest priority and it should run before constructors without</i></td></tr>
+<tr><th id="712">712</th><td><i>// the priority set.  However, it still runs after ifunc initializers and</i></td></tr>
+<tr><th id="713">713</th><td><i>// needs to be called explicitly there.</i></td></tr>
+<tr><th id="714">714</th><td></td></tr>
+<tr><th id="715">715</th><td><em>int</em> <a class="macro" href="#19" title="__attribute__((__constructor__))" data-ref="_M/CONSTRUCTOR_ATTRIBUTE">CONSTRUCTOR_ATTRIBUTE</a> <dfn class="decl def fn" id="__cpu_indicator_init" title='__cpu_indicator_init' data-ref="__cpu_indicator_init" data-ref-filename="__cpu_indicator_init">__cpu_indicator_init</dfn>(<em>void</em>) {</td></tr>
+<tr><th id="716">716</th><td>  <em>unsigned</em> <dfn class="local col3 decl" id="43EAX" title='EAX' data-type='unsigned int' data-ref="43EAX" data-ref-filename="43EAX">EAX</dfn>, <dfn class="local col4 decl" id="44EBX" title='EBX' data-type='unsigned int' data-ref="44EBX" data-ref-filename="44EBX">EBX</dfn>, <dfn class="local col5 decl" id="45ECX" title='ECX' data-type='unsigned int' data-ref="45ECX" data-ref-filename="45ECX">ECX</dfn>, <dfn class="local col6 decl" id="46EDX" title='EDX' data-type='unsigned int' data-ref="46EDX" data-ref-filename="46EDX">EDX</dfn>;</td></tr>
+<tr><th id="717">717</th><td>  <em>unsigned</em> <dfn class="local col7 decl" id="47MaxLeaf" title='MaxLeaf' data-type='unsigned int' data-ref="47MaxLeaf" data-ref-filename="47MaxLeaf">MaxLeaf</dfn> = <var>5</var>;</td></tr>
+<tr><th id="718">718</th><td>  <em>unsigned</em> <dfn class="local col8 decl" id="48Vendor" title='Vendor' data-type='unsigned int' data-ref="48Vendor" data-ref-filename="48Vendor">Vendor</dfn>;</td></tr>
+<tr><th id="719">719</th><td>  <em>unsigned</em> <dfn class="local col9 decl" id="49Model" title='Model' data-type='unsigned int' data-ref="49Model" data-ref-filename="49Model">Model</dfn>, <dfn class="local col0 decl" id="50Family" title='Family' data-type='unsigned int' data-ref="50Family" data-ref-filename="50Family">Family</dfn>;</td></tr>
+<tr><th id="720">720</th><td>  <em>unsigned</em> <dfn class="local col1 decl" id="51Features" title='Features' data-type='unsigned int [2]' data-ref="51Features" data-ref-filename="51Features">Features</dfn>[(<a class="enum" href="#CPU_FEATURE_MAX" title='CPU_FEATURE_MAX' data-ref="CPU_FEATURE_MAX" data-ref-filename="CPU_FEATURE_MAX">CPU_FEATURE_MAX</a> + <var>31</var>) / <var>32</var>] = {<var>0</var>};</td></tr>
+<tr><th id="721">721</th><td></td></tr>
+<tr><th id="722">722</th><td>  <i>// This function needs to run just once.</i></td></tr>
+<tr><th id="723">723</th><td>  <b>if</b> (<a class="ref" href="#__cpu_model" title='__cpu_model' data-ref="__cpu_model" data-ref-filename="__cpu_model">__cpu_model</a>.<a class="tu ref field" href="#__processor_model::__cpu_vendor" title='__processor_model::__cpu_vendor' data-use='r' data-ref="__processor_model::__cpu_vendor" data-ref-filename="__processor_model..__cpu_vendor">__cpu_vendor</a>)</td></tr>
+<tr><th id="724">724</th><td>    <b>return</b> <var>0</var>;</td></tr>
+<tr><th id="725">725</th><td></td></tr>
+<tr><th id="726">726</th><td>  <b>if</b> (!<a class="tu ref fn" href="#isCpuIdSupported" title='isCpuIdSupported' data-use='c' data-ref="isCpuIdSupported" data-ref-filename="isCpuIdSupported">isCpuIdSupported</a>() ||</td></tr>
+<tr><th id="727">727</th><td>      <a class="tu ref fn" href="#getX86CpuIDAndInfo" title='getX86CpuIDAndInfo' data-use='c' data-ref="getX86CpuIDAndInfo" data-ref-filename="getX86CpuIDAndInfo">getX86CpuIDAndInfo</a>(<var>0</var>, &amp;<a class="local col7 ref" href="#47MaxLeaf" title='MaxLeaf' data-ref="47MaxLeaf" data-ref-filename="47MaxLeaf">MaxLeaf</a>, &amp;<a class="local col8 ref" href="#48Vendor" title='Vendor' data-ref="48Vendor" data-ref-filename="48Vendor">Vendor</a>, &amp;<a class="local col5 ref" href="#45ECX" title='ECX' data-ref="45ECX" data-ref-filename="45ECX">ECX</a>, &amp;<a class="local col6 ref" href="#46EDX" title='EDX' data-ref="46EDX" data-ref-filename="46EDX">EDX</a>) || <a class="local col7 ref" href="#47MaxLeaf" title='MaxLeaf' data-ref="47MaxLeaf" data-ref-filename="47MaxLeaf">MaxLeaf</a> &lt; <var>1</var>) {</td></tr>
+<tr><th id="728">728</th><td>    <a class="ref" href="#__cpu_model" title='__cpu_model' data-ref="__cpu_model" data-ref-filename="__cpu_model">__cpu_model</a>.<a class="tu ref field" href="#__processor_model::__cpu_vendor" title='__processor_model::__cpu_vendor' data-use='w' data-ref="__processor_model::__cpu_vendor" data-ref-filename="__processor_model..__cpu_vendor">__cpu_vendor</a> = <a class="enum" href="#VENDOR_OTHER" title='VENDOR_OTHER' data-ref="VENDOR_OTHER" data-ref-filename="VENDOR_OTHER">VENDOR_OTHER</a>;</td></tr>
+<tr><th id="729">729</th><td>    <b>return</b> -<var>1</var>;</td></tr>
+<tr><th id="730">730</th><td>  }</td></tr>
+<tr><th id="731">731</th><td></td></tr>
+<tr><th id="732">732</th><td>  <a class="tu ref fn" href="#getX86CpuIDAndInfo" title='getX86CpuIDAndInfo' data-use='c' data-ref="getX86CpuIDAndInfo" data-ref-filename="getX86CpuIDAndInfo">getX86CpuIDAndInfo</a>(<var>1</var>, &amp;<a class="local col3 ref" href="#43EAX" title='EAX' data-ref="43EAX" data-ref-filename="43EAX">EAX</a>, &amp;<a class="local col4 ref" href="#44EBX" title='EBX' data-ref="44EBX" data-ref-filename="44EBX">EBX</a>, &amp;<a class="local col5 ref" href="#45ECX" title='ECX' data-ref="45ECX" data-ref-filename="45ECX">ECX</a>, &amp;<a class="local col6 ref" href="#46EDX" title='EDX' data-ref="46EDX" data-ref-filename="46EDX">EDX</a>);</td></tr>
+<tr><th id="733">733</th><td>  <a class="tu ref fn" href="#detectX86FamilyModel" title='detectX86FamilyModel' data-use='c' data-ref="detectX86FamilyModel" data-ref-filename="detectX86FamilyModel">detectX86FamilyModel</a>(<a class="local col3 ref" href="#43EAX" title='EAX' data-ref="43EAX" data-ref-filename="43EAX">EAX</a>, &amp;<a class="local col0 ref" href="#50Family" title='Family' data-ref="50Family" data-ref-filename="50Family">Family</a>, &amp;<a class="local col9 ref" href="#49Model" title='Model' data-ref="49Model" data-ref-filename="49Model">Model</a>);</td></tr>
+<tr><th id="734">734</th><td></td></tr>
+<tr><th id="735">735</th><td>  <i>// Find available features.</i></td></tr>
+<tr><th id="736">736</th><td>  <a class="tu ref fn" href="#getAvailableFeatures" title='getAvailableFeatures' data-use='c' data-ref="getAvailableFeatures" data-ref-filename="getAvailableFeatures">getAvailableFeatures</a>(<a class="local col5 ref" href="#45ECX" title='ECX' data-ref="45ECX" data-ref-filename="45ECX">ECX</a>, <a class="local col6 ref" href="#46EDX" title='EDX' data-ref="46EDX" data-ref-filename="46EDX">EDX</a>, <a class="local col7 ref" href="#47MaxLeaf" title='MaxLeaf' data-ref="47MaxLeaf" data-ref-filename="47MaxLeaf">MaxLeaf</a>, &amp;<a class="local col1 ref" href="#51Features" title='Features' data-ref="51Features" data-ref-filename="51Features">Features</a>[<var>0</var>]);</td></tr>
+<tr><th id="737">737</th><td></td></tr>
+<tr><th id="738">738</th><td>  <a class="macro" href="../../../../include/assert.h.html#50" title="((void) (0))" data-ref="_M/assert">assert</a>((<b>sizeof</b>(Features)/<b>sizeof</b>(Features[<var>0</var>])) == <var>2</var>);</td></tr>
+<tr><th id="739">739</th><td>  <a class="ref" href="#__cpu_model" title='__cpu_model' data-ref="__cpu_model" data-ref-filename="__cpu_model">__cpu_model</a>.<a class="tu ref field" href="#__processor_model::__cpu_features" title='__processor_model::__cpu_features' data-use='w' data-ref="__processor_model::__cpu_features" data-ref-filename="__processor_model..__cpu_features">__cpu_features</a>[<var>0</var>] = <a class="local col1 ref" href="#51Features" title='Features' data-ref="51Features" data-ref-filename="51Features">Features</a>[<var>0</var>];</td></tr>
+<tr><th id="740">740</th><td>  <a class="ref" href="#__cpu_features2" title='__cpu_features2' data-ref="__cpu_features2" data-ref-filename="__cpu_features2">__cpu_features2</a> = <a class="local col1 ref" href="#51Features" title='Features' data-ref="51Features" data-ref-filename="51Features">Features</a>[<var>1</var>];</td></tr>
+<tr><th id="741">741</th><td></td></tr>
+<tr><th id="742">742</th><td>  <b>if</b> (<a class="local col8 ref" href="#48Vendor" title='Vendor' data-ref="48Vendor" data-ref-filename="48Vendor">Vendor</a> == <a class="enum" href="#SIG_INTEL" title='SIG_INTEL' data-ref="SIG_INTEL" data-ref-filename="SIG_INTEL">SIG_INTEL</a>) {</td></tr>
+<tr><th id="743">743</th><td>    <i>// Get CPU type.</i></td></tr>
+<tr><th id="744">744</th><td>    <a class="tu ref fn" href="#getIntelProcessorTypeAndSubtype" title='getIntelProcessorTypeAndSubtype' data-use='c' data-ref="getIntelProcessorTypeAndSubtype" data-ref-filename="getIntelProcessorTypeAndSubtype">getIntelProcessorTypeAndSubtype</a>(<a class="local col0 ref" href="#50Family" title='Family' data-ref="50Family" data-ref-filename="50Family">Family</a>, <a class="local col9 ref" href="#49Model" title='Model' data-ref="49Model" data-ref-filename="49Model">Model</a>, &amp;<a class="local col1 ref" href="#51Features" title='Features' data-ref="51Features" data-ref-filename="51Features">Features</a>[<var>0</var>],</td></tr>
+<tr><th id="745">745</th><td>                                    &amp;(<a class="ref" href="#__cpu_model" title='__cpu_model' data-ref="__cpu_model" data-ref-filename="__cpu_model">__cpu_model</a>.<a class="tu ref field" href="#__processor_model::__cpu_type" title='__processor_model::__cpu_type' data-use='a' data-ref="__processor_model::__cpu_type" data-ref-filename="__processor_model..__cpu_type">__cpu_type</a>),</td></tr>
+<tr><th id="746">746</th><td>                                    &amp;(<a class="ref" href="#__cpu_model" title='__cpu_model' data-ref="__cpu_model" data-ref-filename="__cpu_model">__cpu_model</a>.<a class="tu ref field" href="#__processor_model::__cpu_subtype" title='__processor_model::__cpu_subtype' data-use='a' data-ref="__processor_model::__cpu_subtype" data-ref-filename="__processor_model..__cpu_subtype">__cpu_subtype</a>));</td></tr>
+<tr><th id="747">747</th><td>    <a class="ref" href="#__cpu_model" title='__cpu_model' data-ref="__cpu_model" data-ref-filename="__cpu_model">__cpu_model</a>.<a class="tu ref field" href="#__processor_model::__cpu_vendor" title='__processor_model::__cpu_vendor' data-use='w' data-ref="__processor_model::__cpu_vendor" data-ref-filename="__processor_model..__cpu_vendor">__cpu_vendor</a> = <a class="enum" href="#VENDOR_INTEL" title='VENDOR_INTEL' data-ref="VENDOR_INTEL" data-ref-filename="VENDOR_INTEL">VENDOR_INTEL</a>;</td></tr>
+<tr><th id="748">748</th><td>  } <b>else</b> <b>if</b> (<a class="local col8 ref" href="#48Vendor" title='Vendor' data-ref="48Vendor" data-ref-filename="48Vendor">Vendor</a> == <a class="enum" href="#SIG_AMD" title='SIG_AMD' data-ref="SIG_AMD" data-ref-filename="SIG_AMD">SIG_AMD</a>) {</td></tr>
+<tr><th id="749">749</th><td>    <i>// Get CPU type.</i></td></tr>
+<tr><th id="750">750</th><td>    <a class="tu ref fn" href="#getAMDProcessorTypeAndSubtype" title='getAMDProcessorTypeAndSubtype' data-use='c' data-ref="getAMDProcessorTypeAndSubtype" data-ref-filename="getAMDProcessorTypeAndSubtype">getAMDProcessorTypeAndSubtype</a>(<a class="local col0 ref" href="#50Family" title='Family' data-ref="50Family" data-ref-filename="50Family">Family</a>, <a class="local col9 ref" href="#49Model" title='Model' data-ref="49Model" data-ref-filename="49Model">Model</a>, &amp;<a class="local col1 ref" href="#51Features" title='Features' data-ref="51Features" data-ref-filename="51Features">Features</a>[<var>0</var>],</td></tr>
+<tr><th id="751">751</th><td>                                  &amp;(<a class="ref" href="#__cpu_model" title='__cpu_model' data-ref="__cpu_model" data-ref-filename="__cpu_model">__cpu_model</a>.<a class="tu ref field" href="#__processor_model::__cpu_type" title='__processor_model::__cpu_type' data-use='a' data-ref="__processor_model::__cpu_type" data-ref-filename="__processor_model..__cpu_type">__cpu_type</a>),</td></tr>
+<tr><th id="752">752</th><td>                                  &amp;(<a class="ref" href="#__cpu_model" title='__cpu_model' data-ref="__cpu_model" data-ref-filename="__cpu_model">__cpu_model</a>.<a class="tu ref field" href="#__processor_model::__cpu_subtype" title='__processor_model::__cpu_subtype' data-use='a' data-ref="__processor_model::__cpu_subtype" data-ref-filename="__processor_model..__cpu_subtype">__cpu_subtype</a>));</td></tr>
+<tr><th id="753">753</th><td>    <a class="ref" href="#__cpu_model" title='__cpu_model' data-ref="__cpu_model" data-ref-filename="__cpu_model">__cpu_model</a>.<a class="tu ref field" href="#__processor_model::__cpu_vendor" title='__processor_model::__cpu_vendor' data-use='w' data-ref="__processor_model::__cpu_vendor" data-ref-filename="__processor_model..__cpu_vendor">__cpu_vendor</a> = <a class="enum" href="#VENDOR_AMD" title='VENDOR_AMD' data-ref="VENDOR_AMD" data-ref-filename="VENDOR_AMD">VENDOR_AMD</a>;</td></tr>
+<tr><th id="754">754</th><td>  } <b>else</b></td></tr>
+<tr><th id="755">755</th><td>    <a class="ref" href="#__cpu_model" title='__cpu_model' data-ref="__cpu_model" data-ref-filename="__cpu_model">__cpu_model</a>.<a class="tu ref field" href="#__processor_model::__cpu_vendor" title='__processor_model::__cpu_vendor' data-use='w' data-ref="__processor_model::__cpu_vendor" data-ref-filename="__processor_model..__cpu_vendor">__cpu_vendor</a> = <a class="enum" href="#VENDOR_OTHER" title='VENDOR_OTHER' data-ref="VENDOR_OTHER" data-ref-filename="VENDOR_OTHER">VENDOR_OTHER</a>;</td></tr>
+<tr><th id="756">756</th><td></td></tr>
+<tr><th id="757">757</th><td>  <a class="macro" href="../../../../include/assert.h.html#50" title="((void) (0))" data-ref="_M/assert">assert</a>(__cpu_model.__cpu_vendor &lt; VENDOR_MAX);</td></tr>
+<tr><th id="758">758</th><td>  <a class="macro" href="../../../../include/assert.h.html#50" title="((void) (0))" data-ref="_M/assert">assert</a>(__cpu_model.__cpu_type &lt; CPU_TYPE_MAX);</td></tr>
+<tr><th id="759">759</th><td>  <a class="macro" href="../../../../include/assert.h.html#50" title="((void) (0))" data-ref="_M/assert">assert</a>(__cpu_model.__cpu_subtype &lt; CPU_SUBTYPE_MAX);</td></tr>
+<tr><th id="760">760</th><td></td></tr>
+<tr><th id="761">761</th><td>  <b>return</b> <var>0</var>;</td></tr>
+<tr><th id="762">762</th><td>}</td></tr>
+<tr><th id="763">763</th><td><u>#<span data-ppcond="26">elif</span> defined(__aarch64__)</u></td></tr>
+<tr><th id="764">764</th><td><i>// LSE support detection for out-of-line atomics</i></td></tr>
+<tr><th id="765">765</th><td><i>// using HWCAP and Auxiliary vector</i></td></tr>
+<tr><th id="766">766</th><td><b>_Bool</b> __aarch64_have_lse_atomics</td></tr>
+<tr><th id="767">767</th><td>    <b>__attribute__</b>((visibility(<q>"hidden"</q>), nocommon));</td></tr>
+<tr><th id="768">768</th><td><u>#if defined(__has_include)</u></td></tr>
+<tr><th id="769">769</th><td><u>#if __has_include(&lt;sys/auxv.h&gt;)</u></td></tr>
+<tr><th id="770">770</th><td><u>#include &lt;sys/auxv.h&gt;</u></td></tr>
+<tr><th id="771">771</th><td><u>#ifndef AT_HWCAP</u></td></tr>
+<tr><th id="772">772</th><td><u>#define AT_HWCAP 16</u></td></tr>
+<tr><th id="773">773</th><td><u>#endif</u></td></tr>
+<tr><th id="774">774</th><td><u>#ifndef HWCAP_ATOMICS</u></td></tr>
+<tr><th id="775">775</th><td><u>#define HWCAP_ATOMICS (1 &lt;&lt; 8)</u></td></tr>
+<tr><th id="776">776</th><td><u>#endif</u></td></tr>
+<tr><th id="777">777</th><td><em>static</em> <em>void</em> CONSTRUCTOR_ATTRIBUTE init_have_lse_atomics(<em>void</em>) {</td></tr>
+<tr><th id="778">778</th><td>  <em>unsigned</em> <em>long</em> hwcap = getauxval(AT_HWCAP);</td></tr>
+<tr><th id="779">779</th><td>  __aarch64_have_lse_atomics = (hwcap &amp; HWCAP_ATOMICS) != <var>0</var>;</td></tr>
+<tr><th id="780">780</th><td>}</td></tr>
+<tr><th id="781">781</th><td><u>#endif // defined(__has_include)</u></td></tr>
+<tr><th id="782">782</th><td><u>#endif // __has_include(&lt;sys/auxv.h&gt;)</u></td></tr>
+<tr><th id="783">783</th><td><u>#<span data-ppcond="26">endif</span> // defined(__aarch64__)</u></td></tr>
+<tr><th id="784">784</th><td></td></tr>
+</table><hr/><p id='footer'>
+Generated on <em>2021-Jul-01</em> from project llvm revision <em>12</em>

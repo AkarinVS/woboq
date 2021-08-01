@@ -1,0 +1,159 @@
+<!doctype html>
+<html>
+<head>
+<meta name="viewport" content="width=device-width, initial-scale=1.0"><title>OptimizedStructLayout.h source code [llvm/llvm/include/llvm/Support/OptimizedStructLayout.h] - Woboq Code Browser</title>
+<meta name="woboq:interestingDefinitions" content="llvm::OptimizedStructLayoutField "/>
+<link rel="stylesheet" href="../../../../.././data/qtcreator.css" title="QtCreator"/>
+<link rel="alternate stylesheet" href="../../../../.././data/kdevelop.css" title="KDevelop"/>
+<script type="text/javascript" src="../../../../.././data/jquery/jquery.min.js"></script>
+<script type="text/javascript" src="../../../../.././data/jquery/jquery-ui.min.js"></script>
+<script>var file = 'llvm/llvm/include/llvm/Support/OptimizedStructLayout.h'; var root_path = '../../../../..'; var data_path = '../../../../.././data'; var ecma_script_api_version = 2;</script>
+<script src='../../../../.././data/codebrowser.js'></script>
+</head>
+<body><div id='header'><h1 id='breadcrumb'><span>Browse the source code of </span><a href='../../../..'>llvm</a>/<a href='../../..'>llvm</a>/<a href='../..'>include</a>/<a href='..'>llvm</a>/<a href='./'>Support</a>/<a href='OptimizedStructLayout.h.html'>OptimizedStructLayout.h</a></h1></div>
+<hr/><div id='content'><table class="code">
+<tr><th id="1">1</th><td><i>//===-- OptimizedStructLayout.h - Struct layout algorithm ---------*- C++ -*-=//</i></td></tr>
+<tr><th id="2">2</th><td><i>//</i></td></tr>
+<tr><th id="3">3</th><td><i>// Part of the LLVM Project, under the Apache License v2.0 with LLVM Exceptions.</i></td></tr>
+<tr><th id="4">4</th><td><i>// See <a href="https://llvm.org/LICENSE.txt">https://llvm.org/LICENSE.txt</a> for license information.</i></td></tr>
+<tr><th id="5">5</th><td><i>// SPDX-License-Identifier: Apache-2.0 WITH LLVM-exception</i></td></tr>
+<tr><th id="6">6</th><td><i>//</i></td></tr>
+<tr><th id="7">7</th><td><i>//===----------------------------------------------------------------------===//</i></td></tr>
+<tr><th id="8">8</th><td><i>///</i></td></tr>
+<tr><th id="9">9</th><td><i>/// This file provides an interface for laying out a sequence of fields</i></td></tr>
+<tr><th id="10">10</th><td><i>/// as a struct in a way that attempts to minimizes the total space</i></td></tr>
+<tr><th id="11">11</th><td><i>/// requirements of the struct while still satisfying the layout</i></td></tr>
+<tr><th id="12">12</th><td><i>/// requirements of the individual fields.  The resulting layout may be</i></td></tr>
+<tr><th id="13">13</th><td><i>/// substantially more compact than simply laying out the fields in their</i></td></tr>
+<tr><th id="14">14</th><td><i>/// original order.</i></td></tr>
+<tr><th id="15">15</th><td><i>///</i></td></tr>
+<tr><th id="16">16</th><td><i>/// Fields may be pre-assigned fixed offsets.  They may also be given sizes</i></td></tr>
+<tr><th id="17">17</th><td><i>/// that are not multiples of their alignments.  There is no currently no</i></td></tr>
+<tr><th id="18">18</th><td><i>/// way to describe that a field has interior padding that other fields may</i></td></tr>
+<tr><th id="19">19</th><td><i>/// be allocated into.</i></td></tr>
+<tr><th id="20">20</th><td><i>///</i></td></tr>
+<tr><th id="21">21</th><td><i>/// This algorithm does not claim to be "optimal" for several reasons:</i></td></tr>
+<tr><th id="22">22</th><td><i>///</i></td></tr>
+<tr><th id="23">23</th><td><i>/// - First, it does not guarantee that the result is minimal in size.</i></td></tr>
+<tr><th id="24">24</th><td><i>///   There is no known efficient algoorithm to achieve minimality for</i></td></tr>
+<tr><th id="25">25</th><td><i>///   unrestricted inputs.  Nonetheless, this algorithm </i></td></tr>
+<tr><th id="26">26</th><td><i>///</i></td></tr>
+<tr><th id="27">27</th><td><i>/// - Second, there are other ways that a struct layout could be optimized</i></td></tr>
+<tr><th id="28">28</th><td><i>///   besides space usage, such as locality.  This layout may have a mixed</i></td></tr>
+<tr><th id="29">29</th><td><i>///   impact on locality: less overall memory may be used, but adjacent</i></td></tr>
+<tr><th id="30">30</th><td><i>///   fields in the original array may be moved further from one another.</i></td></tr>
+<tr><th id="31">31</th><td><i>///</i></td></tr>
+<tr><th id="32">32</th><td><i>//===----------------------------------------------------------------------===//</i></td></tr>
+<tr><th id="33">33</th><td></td></tr>
+<tr><th id="34">34</th><td><u>#<span data-ppcond="34">ifndef</span> <span class="macro" data-ref="_M/LLVM_SUPPORT_OPTIMIZEDSTRUCTLAYOUT_H">LLVM_SUPPORT_OPTIMIZEDSTRUCTLAYOUT_H</span></u></td></tr>
+<tr><th id="35">35</th><td><u>#define <dfn class="macro" id="_M/LLVM_SUPPORT_OPTIMIZEDSTRUCTLAYOUT_H" data-ref="_M/LLVM_SUPPORT_OPTIMIZEDSTRUCTLAYOUT_H">LLVM_SUPPORT_OPTIMIZEDSTRUCTLAYOUT_H</dfn></u></td></tr>
+<tr><th id="36">36</th><td></td></tr>
+<tr><th id="37">37</th><td><u>#include <a href="Alignment.h.html">"llvm/Support/Alignment.h"</a></u></td></tr>
+<tr><th id="38">38</th><td><u>#include <a href="../ADT/ArrayRef.h.html">"llvm/ADT/ArrayRef.h"</a></u></td></tr>
+<tr><th id="39">39</th><td><u>#include &lt;utility&gt;</u></td></tr>
+<tr><th id="40">40</th><td></td></tr>
+<tr><th id="41">41</th><td><b>namespace</b> <span class="namespace">llvm</span> {</td></tr>
+<tr><th id="42">42</th><td></td></tr>
+<tr><th id="43">43</th><td><i class="doc">/// A field in a structure.</i></td></tr>
+<tr><th id="44">44</th><td><b>struct</b> <dfn class="type def" id="llvm::OptimizedStructLayoutField" title='llvm::OptimizedStructLayoutField' data-ref="llvm::OptimizedStructLayoutField" data-ref-filename="llvm..OptimizedStructLayoutField">OptimizedStructLayoutField</dfn> {</td></tr>
+<tr><th id="45">45</th><td>  <i class="doc">/// A special value for Offset indicating that the field can be moved</i></td></tr>
+<tr><th id="46">46</th><td><i class="doc">  /// anywhere.</i></td></tr>
+<tr><th id="47">47</th><td>  <em>static</em> <b>constexpr</b> <a class="typedef" href="../../../../../include/bits/stdint-uintn.h.html#uint64_t" title='uint64_t' data-type='__uint64_t' data-ref="uint64_t" data-ref-filename="uint64_t">uint64_t</a> <dfn class="decl" id="llvm::OptimizedStructLayoutField::FlexibleOffset" title='llvm::OptimizedStructLayoutField::FlexibleOffset' data-ref="llvm::OptimizedStructLayoutField::FlexibleOffset" data-ref-filename="llvm..OptimizedStructLayoutField..FlexibleOffset">FlexibleOffset</dfn> = ~(<a class="typedef" href="../../../../../include/bits/stdint-uintn.h.html#uint64_t" title='uint64_t' data-type='__uint64_t' data-ref="uint64_t" data-ref-filename="uint64_t">uint64_t</a>)<var>0</var>;</td></tr>
+<tr><th id="48">48</th><td></td></tr>
+<tr><th id="49">49</th><td>  <dfn class="decl def fn" id="_ZN4llvm26OptimizedStructLayoutFieldC1EPKvmNS_5AlignEm" title='llvm::OptimizedStructLayoutField::OptimizedStructLayoutField' data-ref="_ZN4llvm26OptimizedStructLayoutFieldC1EPKvmNS_5AlignEm" data-ref-filename="_ZN4llvm26OptimizedStructLayoutFieldC1EPKvmNS_5AlignEm">OptimizedStructLayoutField</dfn>(<em>const</em> <em>void</em> *<dfn class="local col1 decl" id="1Id" title='Id' data-type='const void *' data-ref="1Id" data-ref-filename="1Id">Id</dfn>, <a class="typedef" href="../../../../../include/bits/stdint-uintn.h.html#uint64_t" title='uint64_t' data-type='__uint64_t' data-ref="uint64_t" data-ref-filename="uint64_t">uint64_t</a> <dfn class="local col2 decl" id="2Size" title='Size' data-type='uint64_t' data-ref="2Size" data-ref-filename="2Size">Size</dfn>, <a class="type" href="Alignment.h.html#llvm::Align" title='llvm::Align' data-ref="llvm::Align" data-ref-filename="llvm..Align">Align</a> <dfn class="local col3 decl" id="3Alignment" title='Alignment' data-type='llvm::Align' data-ref="3Alignment" data-ref-filename="3Alignment">Alignment</dfn>,</td></tr>
+<tr><th id="50">50</th><td>                             <a class="typedef" href="../../../../../include/bits/stdint-uintn.h.html#uint64_t" title='uint64_t' data-type='__uint64_t' data-ref="uint64_t" data-ref-filename="uint64_t">uint64_t</a> <dfn class="local col4 decl" id="4FixedOffset" title='FixedOffset' data-type='uint64_t' data-ref="4FixedOffset" data-ref-filename="4FixedOffset">FixedOffset</dfn> = <a class="member" href="#llvm::OptimizedStructLayoutField::FlexibleOffset" title='llvm::OptimizedStructLayoutField::FlexibleOffset' data-ref="llvm::OptimizedStructLayoutField::FlexibleOffset" data-ref-filename="llvm..OptimizedStructLayoutField..FlexibleOffset">FlexibleOffset</a>)</td></tr>
+<tr><th id="51">51</th><td>      : <a class="member field" href="#llvm::OptimizedStructLayoutField::Offset" title='llvm::OptimizedStructLayoutField::Offset' data-ref="llvm::OptimizedStructLayoutField::Offset" data-ref-filename="llvm..OptimizedStructLayoutField..Offset">Offset</a>(<a class="local col4 ref" href="#4FixedOffset" title='FixedOffset' data-ref="4FixedOffset" data-ref-filename="4FixedOffset">FixedOffset</a>), <a class="member field" href="#llvm::OptimizedStructLayoutField::Size" title='llvm::OptimizedStructLayoutField::Size' data-ref="llvm::OptimizedStructLayoutField::Size" data-ref-filename="llvm..OptimizedStructLayoutField..Size">Size</a>(<a class="local col2 ref" href="#2Size" title='Size' data-ref="2Size" data-ref-filename="2Size">Size</a>), <a class="member field" href="#llvm::OptimizedStructLayoutField::Id" title='llvm::OptimizedStructLayoutField::Id' data-ref="llvm::OptimizedStructLayoutField::Id" data-ref-filename="llvm..OptimizedStructLayoutField..Id">Id</a>(<a class="local col1 ref" href="#1Id" title='Id' data-ref="1Id" data-ref-filename="1Id">Id</a>), <a class="member field" href="#llvm::OptimizedStructLayoutField::Alignment" title='llvm::OptimizedStructLayoutField::Alignment' data-ref="llvm::OptimizedStructLayoutField::Alignment" data-ref-filename="llvm..OptimizedStructLayoutField..Alignment">Alignment</a><a class="ref fn" href="Alignment.h.html#_ZN4llvm5AlignC1ERKS0_" title='llvm::Align::Align' data-ref="_ZN4llvm5AlignC1ERKS0_" data-ref-filename="_ZN4llvm5AlignC1ERKS0_">(</a><a class="local col3 ref" href="#3Alignment" title='Alignment' data-ref="3Alignment" data-ref-filename="3Alignment">Alignment</a>) {</td></tr>
+<tr><th id="52">52</th><td>    <a class="macro" href="../../../../../include/assert.h.html#50" title="(static_cast&lt;void&gt; (0))" data-ref="_M/assert">assert</a>(Size &gt; <var>0</var> &amp;&amp; <q>"adding an empty field to the layout"</q>);</td></tr>
+<tr><th id="53">53</th><td>  }</td></tr>
+<tr><th id="54">54</th><td></td></tr>
+<tr><th id="55">55</th><td>  <i class="doc">/// The offset of this field in the final layout.  If this is</i></td></tr>
+<tr><th id="56">56</th><td><i class="doc">  /// initialized to FlexibleOffset, layout will overwrite it with</i></td></tr>
+<tr><th id="57">57</th><td><i class="doc">  /// the assigned offset of the field.</i></td></tr>
+<tr><th id="58">58</th><td>  <a class="typedef" href="../../../../../include/bits/stdint-uintn.h.html#uint64_t" title='uint64_t' data-type='__uint64_t' data-ref="uint64_t" data-ref-filename="uint64_t">uint64_t</a> <dfn class="decl field" id="llvm::OptimizedStructLayoutField::Offset" title='llvm::OptimizedStructLayoutField::Offset' data-ref="llvm::OptimizedStructLayoutField::Offset" data-ref-filename="llvm..OptimizedStructLayoutField..Offset">Offset</dfn>;</td></tr>
+<tr><th id="59">59</th><td></td></tr>
+<tr><th id="60">60</th><td>  <i class="doc">/// The required size of this field in bytes.  Does not have to be</i></td></tr>
+<tr><th id="61">61</th><td><i class="doc">  /// a multiple of Alignment.  Must be non-zero.</i></td></tr>
+<tr><th id="62">62</th><td>  <a class="typedef" href="../../../../../include/bits/stdint-uintn.h.html#uint64_t" title='uint64_t' data-type='__uint64_t' data-ref="uint64_t" data-ref-filename="uint64_t">uint64_t</a> <dfn class="decl field" id="llvm::OptimizedStructLayoutField::Size" title='llvm::OptimizedStructLayoutField::Size' data-ref="llvm::OptimizedStructLayoutField::Size" data-ref-filename="llvm..OptimizedStructLayoutField..Size">Size</dfn>;</td></tr>
+<tr><th id="63">63</th><td></td></tr>
+<tr><th id="64">64</th><td>  <i class="doc">/// A opaque value which uniquely identifies this field.</i></td></tr>
+<tr><th id="65">65</th><td>  <em>const</em> <em>void</em> *<dfn class="decl field" id="llvm::OptimizedStructLayoutField::Id" title='llvm::OptimizedStructLayoutField::Id' data-ref="llvm::OptimizedStructLayoutField::Id" data-ref-filename="llvm..OptimizedStructLayoutField..Id">Id</dfn>;</td></tr>
+<tr><th id="66">66</th><td></td></tr>
+<tr><th id="67">67</th><td>  <i class="doc">/// Private scratch space for the algorithm.  The implementation</i></td></tr>
+<tr><th id="68">68</th><td><i class="doc">  /// must treat this as uninitialized memory on entry.</i></td></tr>
+<tr><th id="69">69</th><td>  <em>void</em> *<dfn class="decl field" id="llvm::OptimizedStructLayoutField::Scratch" title='llvm::OptimizedStructLayoutField::Scratch' data-ref="llvm::OptimizedStructLayoutField::Scratch" data-ref-filename="llvm..OptimizedStructLayoutField..Scratch">Scratch</dfn>;</td></tr>
+<tr><th id="70">70</th><td></td></tr>
+<tr><th id="71">71</th><td>  <i class="doc">/// The required alignment of this field.</i></td></tr>
+<tr><th id="72">72</th><td>  <a class="type" href="Alignment.h.html#llvm::Align" title='llvm::Align' data-ref="llvm::Align" data-ref-filename="llvm..Align">Align</a> <dfn class="decl field" id="llvm::OptimizedStructLayoutField::Alignment" title='llvm::OptimizedStructLayoutField::Alignment' data-ref="llvm::OptimizedStructLayoutField::Alignment" data-ref-filename="llvm..OptimizedStructLayoutField..Alignment">Alignment</dfn>;</td></tr>
+<tr><th id="73">73</th><td></td></tr>
+<tr><th id="74">74</th><td>  <i class="doc">/// Return true if this field has been assigned a fixed offset.</i></td></tr>
+<tr><th id="75">75</th><td><i class="doc">  /// After layout, this will be true of all the fields.</i></td></tr>
+<tr><th id="76">76</th><td>  <em>bool</em> <dfn class="decl def fn" id="_ZNK4llvm26OptimizedStructLayoutField14hasFixedOffsetEv" title='llvm::OptimizedStructLayoutField::hasFixedOffset' data-ref="_ZNK4llvm26OptimizedStructLayoutField14hasFixedOffsetEv" data-ref-filename="_ZNK4llvm26OptimizedStructLayoutField14hasFixedOffsetEv">hasFixedOffset</dfn>() <em>const</em> {</td></tr>
+<tr><th id="77">77</th><td>    <b>return</b> (<a class="member field" href="#llvm::OptimizedStructLayoutField::Offset" title='llvm::OptimizedStructLayoutField::Offset' data-ref="llvm::OptimizedStructLayoutField::Offset" data-ref-filename="llvm..OptimizedStructLayoutField..Offset">Offset</a> != <a class="member" href="#llvm::OptimizedStructLayoutField::FlexibleOffset" title='llvm::OptimizedStructLayoutField::FlexibleOffset' data-ref="llvm::OptimizedStructLayoutField::FlexibleOffset" data-ref-filename="llvm..OptimizedStructLayoutField..FlexibleOffset">FlexibleOffset</a>);</td></tr>
+<tr><th id="78">78</th><td>  }</td></tr>
+<tr><th id="79">79</th><td></td></tr>
+<tr><th id="80">80</th><td>  <i class="doc">/// Given that this field has a fixed offset, return the offset</i></td></tr>
+<tr><th id="81">81</th><td><i class="doc">  /// of the first byte following it.</i></td></tr>
+<tr><th id="82">82</th><td>  <a class="typedef" href="../../../../../include/bits/stdint-uintn.h.html#uint64_t" title='uint64_t' data-type='__uint64_t' data-ref="uint64_t" data-ref-filename="uint64_t">uint64_t</a> <dfn class="decl def fn" id="_ZNK4llvm26OptimizedStructLayoutField12getEndOffsetEv" title='llvm::OptimizedStructLayoutField::getEndOffset' data-ref="_ZNK4llvm26OptimizedStructLayoutField12getEndOffsetEv" data-ref-filename="_ZNK4llvm26OptimizedStructLayoutField12getEndOffsetEv">getEndOffset</dfn>() <em>const</em> {</td></tr>
+<tr><th id="83">83</th><td>    <a class="macro" href="../../../../../include/assert.h.html#50" title="(static_cast&lt;void&gt; (0))" data-ref="_M/assert">assert</a>(hasFixedOffset());</td></tr>
+<tr><th id="84">84</th><td>    <b>return</b> <a class="member field" href="#llvm::OptimizedStructLayoutField::Offset" title='llvm::OptimizedStructLayoutField::Offset' data-ref="llvm::OptimizedStructLayoutField::Offset" data-ref-filename="llvm..OptimizedStructLayoutField..Offset">Offset</a> + <a class="member field" href="#llvm::OptimizedStructLayoutField::Size" title='llvm::OptimizedStructLayoutField::Size' data-ref="llvm::OptimizedStructLayoutField::Size" data-ref-filename="llvm..OptimizedStructLayoutField..Size">Size</a>;</td></tr>
+<tr><th id="85">85</th><td>  }</td></tr>
+<tr><th id="86">86</th><td>};</td></tr>
+<tr><th id="87">87</th><td></td></tr>
+<tr><th id="88">88</th><td><i class="doc">/// Compute a layout for a struct containing the given fields, making a</i></td></tr>
+<tr><th id="89">89</th><td><i class="doc">/// best-effort attempt to minimize the amount of space required.</i></td></tr>
+<tr><th id="90">90</th><td><i class="doc">///</i></td></tr>
+<tr><th id="91">91</th><td><i class="doc">/// Two features are supported which require a more careful solution</i></td></tr>
+<tr><th id="92">92</th><td><i class="doc">/// than the well-known "sort by decreasing alignment" solution:</i></td></tr>
+<tr><th id="93">93</th><td><i class="doc">///</i></td></tr>
+<tr><th id="94">94</th><td><i class="doc">/// - Fields may be assigned a fixed offset in the layout.  If there are</i></td></tr>
+<tr><th id="95">95</th><td><i class="doc">///   gaps among the fixed-offset fields, the algorithm may attempt</i></td></tr>
+<tr><th id="96">96</th><td><i class="doc">///   to allocate flexible-offset fields into those gaps.  If that's</i></td></tr>
+<tr><th id="97">97</th><td><i class="doc">///   undesirable, the caller should "block out" those gaps by e.g.</i></td></tr>
+<tr><th id="98">98</th><td><i class="doc">///   just creating a single fixed-offset field that represents the</i></td></tr>
+<tr><th id="99">99</th><td><i class="doc">///   entire "header".</i></td></tr>
+<tr><th id="100">100</th><td><i class="doc">///</i></td></tr>
+<tr><th id="101">101</th><td><i class="doc">/// - The size of a field is not required to be a multiple of, or even</i></td></tr>
+<tr><th id="102">102</th><td><i class="doc">///   greater than, the field's required alignment.  The only constraint</i></td></tr>
+<tr><th id="103">103</th><td><i class="doc">///   on fields is that they must not be zero-sized.</i></td></tr>
+<tr><th id="104">104</th><td><i class="doc">///</i></td></tr>
+<tr><th id="105">105</th><td><i class="doc">/// To simplify the implementation, any fixed-offset fields in the</i></td></tr>
+<tr><th id="106">106</th><td><i class="doc">/// layout must appear at the start of the field array, and they must</i></td></tr>
+<tr><th id="107">107</th><td><i class="doc">/// be ordered by increasing offset.</i></td></tr>
+<tr><th id="108">108</th><td><i class="doc">///</i></td></tr>
+<tr><th id="109">109</th><td><i class="doc">/// The algorithm will produce a guaranteed-minimal layout with no</i></td></tr>
+<tr><th id="110">110</th><td><i class="doc">/// interior padding in the following "C-style" case:</i></td></tr>
+<tr><th id="111">111</th><td><i class="doc">///</i></td></tr>
+<tr><th id="112">112</th><td><i class="doc">/// - every field's size is a multiple of its required alignment and</i></td></tr>
+<tr><th id="113">113</th><td><i class="doc">/// - either no fields have initially fixed offsets, or the fixed-offset</i></td></tr>
+<tr><th id="114">114</th><td><i class="doc">///   fields have no interior padding and end at an offset that is at</i></td></tr>
+<tr><th id="115">115</th><td><i class="doc">///   least as aligned as all the flexible-offset fields.</i></td></tr>
+<tr><th id="116">116</th><td><i class="doc">///</i></td></tr>
+<tr><th id="117">117</th><td><i class="doc">/// Otherwise, while the algorithm will make a best-effort attempt to</i></td></tr>
+<tr><th id="118">118</th><td><i class="doc">/// avoid padding, it cannot guarantee a minimal layout, as there is</i></td></tr>
+<tr><th id="119">119</th><td><i class="doc">/// no known efficient algorithm for doing so.</i></td></tr>
+<tr><th id="120">120</th><td><i class="doc">///</i></td></tr>
+<tr><th id="121">121</th><td><i class="doc">/// The layout produced by this algorithm may not be stable across LLVM</i></td></tr>
+<tr><th id="122">122</th><td><i class="doc">/// releases.  Do not use this anywhere where ABI stability is required.</i></td></tr>
+<tr><th id="123">123</th><td><i class="doc">///</i></td></tr>
+<tr><th id="124">124</th><td><i class="doc">/// Flexible-offset fields with the same size and alignment will be ordered</i></td></tr>
+<tr><th id="125">125</th><td><i class="doc">/// the same way they were in the initial array.  Otherwise the current</i></td></tr>
+<tr><th id="126">126</th><td><i class="doc">/// algorithm makes no effort to preserve the initial order of</i></td></tr>
+<tr><th id="127">127</th><td><i class="doc">/// flexible-offset fields.</i></td></tr>
+<tr><th id="128">128</th><td><i class="doc">///</i></td></tr>
+<tr><th id="129">129</th><td><i class="doc">/// On return, all fields will have been assigned a fixed offset, and the</i></td></tr>
+<tr><th id="130">130</th><td><i class="doc">/// array will be sorted in order of ascending offsets.  Note that this</i></td></tr>
+<tr><th id="131">131</th><td><i class="doc">/// means that the fixed-offset fields may no longer form a strict prefix</i></td></tr>
+<tr><th id="132">132</th><td><i class="doc">/// if there's any padding before they end.</i></td></tr>
+<tr><th id="133">133</th><td><i class="doc">///</i></td></tr>
+<tr><th id="134">134</th><td><i class="doc">/// The return value is the total size of the struct and its required</i></td></tr>
+<tr><th id="135">135</th><td><i class="doc">/// alignment.  Note that the total size is not rounded up to a multiple</i></td></tr>
+<tr><th id="136">136</th><td><i class="doc">/// of the required alignment; clients which require this can do so easily.</i></td></tr>
+<tr><th id="137">137</th><td><span class="namespace">std::</span><span class='type' title='std::pair' data-ref="std::pair" data-ref-filename="std..pair">pair</span>&lt;<a class="typedef" href="../../../../../include/bits/stdint-uintn.h.html#uint64_t" title='uint64_t' data-type='__uint64_t' data-ref="uint64_t" data-ref-filename="uint64_t">uint64_t</a>, <a class="type" href="Alignment.h.html#llvm::Align" title='llvm::Align' data-ref="llvm::Align" data-ref-filename="llvm..Align">Align</a>&gt; <a class="decl fn" href="../../../lib/Support/OptimizedStructLayout.cpp.html#_ZN4llvm28performOptimizedStructLayoutENS_15MutableArrayRefINS_26OptimizedStructLayoutFieldEEE" title='llvm::performOptimizedStructLayout' data-ref="_ZN4llvm28performOptimizedStructLayoutENS_15MutableArrayRefINS_26OptimizedStructLayoutFieldEEE" data-ref-filename="_ZN4llvm28performOptimizedStructLayoutENS_15MutableArrayRefINS_26OptimizedStructLayoutFieldEEE" id="_ZN4llvm28performOptimizedStructLayoutENS_15MutableArrayRefINS_26OptimizedStructLayoutFieldEEE">performOptimizedStructLayout</a>(</td></tr>
+<tr><th id="138">138</th><td>                        <a class="type" href="../ADT/ArrayRef.h.html#llvm::MutableArrayRef" title='llvm::MutableArrayRef' data-ref="llvm::MutableArrayRef" data-ref-filename="llvm..MutableArrayRef">MutableArrayRef</a>&lt;<a class="type" href="#llvm::OptimizedStructLayoutField" title='llvm::OptimizedStructLayoutField' data-ref="llvm::OptimizedStructLayoutField" data-ref-filename="llvm..OptimizedStructLayoutField">OptimizedStructLayoutField</a>&gt; <dfn class="local col5 decl" id="5Fields" title='Fields' data-type='MutableArrayRef&lt;llvm::OptimizedStructLayoutField&gt;' data-ref="5Fields" data-ref-filename="5Fields">Fields</dfn>);</td></tr>
+<tr><th id="139">139</th><td></td></tr>
+<tr><th id="140">140</th><td>} <i>// namespace llvm</i></td></tr>
+<tr><th id="141">141</th><td></td></tr>
+<tr><th id="142">142</th><td><u>#<span data-ppcond="34">endif</span></u></td></tr>
+<tr><th id="143">143</th><td></td></tr>
+</table><hr/><p id='footer'>
+Generated while processing <a href='../../../lib/Support/OptimizedStructLayout.cpp.html'>llvm/llvm/lib/Support/OptimizedStructLayout.cpp</a><br/>Generated on <em>2021-Jul-01</em> from project llvm revision <em>12</em>

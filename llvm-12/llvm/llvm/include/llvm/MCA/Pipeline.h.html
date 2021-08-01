@@ -1,0 +1,93 @@
+<!doctype html>
+<html>
+<head>
+<meta name="viewport" content="width=device-width, initial-scale=1.0"><title>Pipeline.h source code [llvm/llvm/include/llvm/MCA/Pipeline.h] - Woboq Code Browser</title>
+<meta name="woboq:interestingDefinitions" content="llvm::mca::Pipeline "/>
+<link rel="stylesheet" href="../../../../.././data/qtcreator.css" title="QtCreator"/>
+<link rel="alternate stylesheet" href="../../../../.././data/kdevelop.css" title="KDevelop"/>
+<script type="text/javascript" src="../../../../.././data/jquery/jquery.min.js"></script>
+<script type="text/javascript" src="../../../../.././data/jquery/jquery-ui.min.js"></script>
+<script>var file = 'llvm/llvm/include/llvm/MCA/Pipeline.h'; var root_path = '../../../../..'; var data_path = '../../../../.././data'; var ecma_script_api_version = 2;</script>
+<script src='../../../../.././data/codebrowser.js'></script>
+</head>
+<body><div id='header'><h1 id='breadcrumb'><span>Browse the source code of </span><a href='../../../..'>llvm</a>/<a href='../../..'>llvm</a>/<a href='../..'>include</a>/<a href='..'>llvm</a>/<a href='./'>MCA</a>/<a href='Pipeline.h.html'>Pipeline.h</a></h1></div>
+<hr/><div id='content'><table class="code">
+<tr><th id="1">1</th><td><i>//===--------------------- Pipeline.h ---------------------------*- C++ -*-===//</i></td></tr>
+<tr><th id="2">2</th><td><i>//</i></td></tr>
+<tr><th id="3">3</th><td><i>// Part of the LLVM Project, under the Apache License v2.0 with LLVM Exceptions.</i></td></tr>
+<tr><th id="4">4</th><td><i>// See <a href="https://llvm.org/LICENSE.txt">https://llvm.org/LICENSE.txt</a> for license information.</i></td></tr>
+<tr><th id="5">5</th><td><i>// SPDX-License-Identifier: Apache-2.0 WITH LLVM-exception</i></td></tr>
+<tr><th id="6">6</th><td><i>//</i></td></tr>
+<tr><th id="7">7</th><td><i>//===----------------------------------------------------------------------===//</i></td></tr>
+<tr><th id="8">8</th><td><i>/// \file</i></td></tr>
+<tr><th id="9">9</th><td><i>///</i></td></tr>
+<tr><th id="10">10</th><td><i>/// This file implements an ordered container of stages that simulate the</i></td></tr>
+<tr><th id="11">11</th><td><i>/// pipeline of a hardware backend.</i></td></tr>
+<tr><th id="12">12</th><td><i>///</i></td></tr>
+<tr><th id="13">13</th><td><i>//===----------------------------------------------------------------------===//</i></td></tr>
+<tr><th id="14">14</th><td></td></tr>
+<tr><th id="15">15</th><td><u>#<span data-ppcond="15">ifndef</span> <span class="macro" data-ref="_M/LLVM_MCA_PIPELINE_H">LLVM_MCA_PIPELINE_H</span></u></td></tr>
+<tr><th id="16">16</th><td><u>#define <dfn class="macro" id="_M/LLVM_MCA_PIPELINE_H" data-ref="_M/LLVM_MCA_PIPELINE_H">LLVM_MCA_PIPELINE_H</dfn></u></td></tr>
+<tr><th id="17">17</th><td></td></tr>
+<tr><th id="18">18</th><td><u>#include <a href="Stages/Stage.h.html">"llvm/MCA/Stages/Stage.h"</a></u></td></tr>
+<tr><th id="19">19</th><td><u>#include <a href="../Support/Error.h.html">"llvm/Support/Error.h"</a></u></td></tr>
+<tr><th id="20">20</th><td></td></tr>
+<tr><th id="21">21</th><td><b>namespace</b> <span class="namespace">llvm</span> {</td></tr>
+<tr><th id="22">22</th><td><b>namespace</b> <span class="namespace">mca</span> {</td></tr>
+<tr><th id="23">23</th><td></td></tr>
+<tr><th id="24">24</th><td><b>class</b> <a class="type" href="HWEventListener.h.html#llvm::mca::HWEventListener" title='llvm::mca::HWEventListener' data-ref="llvm::mca::HWEventListener" data-ref-filename="llvm..mca..HWEventListener" id="llvm::mca::HWEventListener">HWEventListener</a>;</td></tr>
+<tr><th id="25">25</th><td></td></tr>
+<tr><th id="26">26</th><td><i class="doc">/// A pipeline for a specific subtarget.</i></td></tr>
+<tr><th id="27">27</th><td><i class="doc">///</i></td></tr>
+<tr><th id="28">28</th><td><i class="doc">/// It emulates an out-of-order execution of instructions. Instructions are</i></td></tr>
+<tr><th id="29">29</th><td><i class="doc">/// fetched from a MCInst sequence managed by an initial 'Fetch' stage.</i></td></tr>
+<tr><th id="30">30</th><td><i class="doc">/// Instructions are firstly fetched, then dispatched to the schedulers, and</i></td></tr>
+<tr><th id="31">31</th><td><i class="doc">/// then executed.</i></td></tr>
+<tr><th id="32">32</th><td><i class="doc">///</i></td></tr>
+<tr><th id="33">33</th><td><i class="doc">/// This class tracks the lifetime of an instruction from the moment where</i></td></tr>
+<tr><th id="34">34</th><td><i class="doc">/// it gets dispatched to the schedulers, to the moment where it finishes</i></td></tr>
+<tr><th id="35">35</th><td><i class="doc">/// executing and register writes are architecturally committed.</i></td></tr>
+<tr><th id="36">36</th><td><i class="doc">/// In particular, it monitors changes in the state of every instruction</i></td></tr>
+<tr><th id="37">37</th><td><i class="doc">/// in flight.</i></td></tr>
+<tr><th id="38">38</th><td><i class="doc">///</i></td></tr>
+<tr><th id="39">39</th><td><i class="doc">/// Instructions are executed in a loop of iterations. The number of iterations</i></td></tr>
+<tr><th id="40">40</th><td><i class="doc">/// is defined by the SourceMgr object, which is managed by the initial stage</i></td></tr>
+<tr><th id="41">41</th><td><i class="doc">/// of the instruction pipeline.</i></td></tr>
+<tr><th id="42">42</th><td><i class="doc">///</i></td></tr>
+<tr><th id="43">43</th><td><i class="doc">/// The Pipeline entry point is method 'run()' which executes cycles in a loop</i></td></tr>
+<tr><th id="44">44</th><td><i class="doc">/// until there are new instructions to dispatch, and not every instruction</i></td></tr>
+<tr><th id="45">45</th><td><i class="doc">/// has been retired.</i></td></tr>
+<tr><th id="46">46</th><td><i class="doc">///</i></td></tr>
+<tr><th id="47">47</th><td><i class="doc">/// Internally, the Pipeline collects statistical information in the form of</i></td></tr>
+<tr><th id="48">48</th><td><i class="doc">/// histograms. For example, it tracks how the dispatch group size changes</i></td></tr>
+<tr><th id="49">49</th><td><i class="doc">/// over time.</i></td></tr>
+<tr><th id="50">50</th><td><b>class</b> <dfn class="type def" id="llvm::mca::Pipeline" title='llvm::mca::Pipeline' data-ref="llvm::mca::Pipeline" data-ref-filename="llvm..mca..Pipeline">Pipeline</dfn> {</td></tr>
+<tr><th id="51">51</th><td>  <dfn class="decl def fn" id="_ZN4llvm3mca8PipelineC1ERKS1_" title='llvm::mca::Pipeline::Pipeline' data-ref="_ZN4llvm3mca8PipelineC1ERKS1_" data-ref-filename="_ZN4llvm3mca8PipelineC1ERKS1_">Pipeline</dfn>(<em>const</em> <a class="type" href="#llvm::mca::Pipeline" title='llvm::mca::Pipeline' data-ref="llvm::mca::Pipeline" data-ref-filename="llvm..mca..Pipeline">Pipeline</a> &amp;<dfn class="local col9 decl" id="109P" title='P' data-type='const llvm::mca::Pipeline &amp;' data-ref="109P" data-ref-filename="109P">P</dfn>) = <b>delete</b>;</td></tr>
+<tr><th id="52">52</th><td>  <a class="type" href="#llvm::mca::Pipeline" title='llvm::mca::Pipeline' data-ref="llvm::mca::Pipeline" data-ref-filename="llvm..mca..Pipeline">Pipeline</a> &amp;<dfn class="decl def fn" id="_ZN4llvm3mca8PipelineaSERKS1_" title='llvm::mca::Pipeline::operator=' data-ref="_ZN4llvm3mca8PipelineaSERKS1_" data-ref-filename="_ZN4llvm3mca8PipelineaSERKS1_"><b>operator</b>=</dfn>(<em>const</em> <a class="type" href="#llvm::mca::Pipeline" title='llvm::mca::Pipeline' data-ref="llvm::mca::Pipeline" data-ref-filename="llvm..mca..Pipeline">Pipeline</a> &amp;<dfn class="local col0 decl" id="110P" title='P' data-type='const llvm::mca::Pipeline &amp;' data-ref="110P" data-ref-filename="110P">P</dfn>) = <b>delete</b>;</td></tr>
+<tr><th id="53">53</th><td></td></tr>
+<tr><th id="54">54</th><td>  <i class="doc">/// An ordered list of stages that define this instruction pipeline.</i></td></tr>
+<tr><th id="55">55</th><td>  <a class="type" href="../ADT/SmallVector.h.html#llvm::SmallVector" title='llvm::SmallVector' data-ref="llvm::SmallVector" data-ref-filename="llvm..SmallVector">SmallVector</a>&lt;<span class="namespace">std::</span><span class='type' title='std::unique_ptr' data-ref="std::unique_ptr" data-ref-filename="std..unique_ptr">unique_ptr</span>&lt;<a class="type" href="Stages/Stage.h.html#llvm::mca::Stage" title='llvm::mca::Stage' data-ref="llvm::mca::Stage" data-ref-filename="llvm..mca..Stage">Stage</a>&gt;, <var>8</var>&gt; <dfn class="decl field" id="llvm::mca::Pipeline::Stages" title='llvm::mca::Pipeline::Stages' data-ref="llvm::mca::Pipeline::Stages" data-ref-filename="llvm..mca..Pipeline..Stages">Stages</dfn>;</td></tr>
+<tr><th id="56">56</th><td>  <span class="namespace">std::</span><span class='type' title='std::set' data-ref="std::set" data-ref-filename="std..set">set</span>&lt;<a class="type" href="HWEventListener.h.html#llvm::mca::HWEventListener" title='llvm::mca::HWEventListener' data-ref="llvm::mca::HWEventListener" data-ref-filename="llvm..mca..HWEventListener">HWEventListener</a> *&gt; <dfn class="decl field" id="llvm::mca::Pipeline::Listeners" title='llvm::mca::Pipeline::Listeners' data-ref="llvm::mca::Pipeline::Listeners" data-ref-filename="llvm..mca..Pipeline..Listeners">Listeners</dfn>;</td></tr>
+<tr><th id="57">57</th><td>  <em>unsigned</em> <dfn class="decl field" id="llvm::mca::Pipeline::Cycles" title='llvm::mca::Pipeline::Cycles' data-ref="llvm::mca::Pipeline::Cycles" data-ref-filename="llvm..mca..Pipeline..Cycles">Cycles</dfn>;</td></tr>
+<tr><th id="58">58</th><td></td></tr>
+<tr><th id="59">59</th><td>  <a class="type" href="../Support/Error.h.html#llvm::Error" title='llvm::Error' data-ref="llvm::Error" data-ref-filename="llvm..Error">Error</a> <dfn class="decl fn" id="_ZN4llvm3mca8Pipeline8runCycleEv" title='llvm::mca::Pipeline::runCycle' data-ref="_ZN4llvm3mca8Pipeline8runCycleEv" data-ref-filename="_ZN4llvm3mca8Pipeline8runCycleEv">runCycle</dfn>();</td></tr>
+<tr><th id="60">60</th><td>  <em>bool</em> <dfn class="decl fn" id="_ZN4llvm3mca8Pipeline16hasWorkToProcessEv" title='llvm::mca::Pipeline::hasWorkToProcess' data-ref="_ZN4llvm3mca8Pipeline16hasWorkToProcessEv" data-ref-filename="_ZN4llvm3mca8Pipeline16hasWorkToProcessEv">hasWorkToProcess</dfn>();</td></tr>
+<tr><th id="61">61</th><td>  <em>void</em> <dfn class="decl fn" id="_ZN4llvm3mca8Pipeline16notifyCycleBeginEv" title='llvm::mca::Pipeline::notifyCycleBegin' data-ref="_ZN4llvm3mca8Pipeline16notifyCycleBeginEv" data-ref-filename="_ZN4llvm3mca8Pipeline16notifyCycleBeginEv">notifyCycleBegin</dfn>();</td></tr>
+<tr><th id="62">62</th><td>  <em>void</em> <dfn class="decl fn" id="_ZN4llvm3mca8Pipeline14notifyCycleEndEv" title='llvm::mca::Pipeline::notifyCycleEnd' data-ref="_ZN4llvm3mca8Pipeline14notifyCycleEndEv" data-ref-filename="_ZN4llvm3mca8Pipeline14notifyCycleEndEv">notifyCycleEnd</dfn>();</td></tr>
+<tr><th id="63">63</th><td></td></tr>
+<tr><th id="64">64</th><td><b>public</b>:</td></tr>
+<tr><th id="65">65</th><td>  <dfn class="decl def fn" id="_ZN4llvm3mca8PipelineC1Ev" title='llvm::mca::Pipeline::Pipeline' data-ref="_ZN4llvm3mca8PipelineC1Ev" data-ref-filename="_ZN4llvm3mca8PipelineC1Ev">Pipeline</dfn>() : <a class="member field" href="#llvm::mca::Pipeline::Cycles" title='llvm::mca::Pipeline::Cycles' data-ref="llvm::mca::Pipeline::Cycles" data-ref-filename="llvm..mca..Pipeline..Cycles">Cycles</a>(<var>0</var>) {}</td></tr>
+<tr><th id="66">66</th><td>  <em>void</em> <dfn class="decl fn" id="_ZN4llvm3mca8Pipeline11appendStageESt10unique_ptrINS0_5StageESt14default_deleteIS3_EE" title='llvm::mca::Pipeline::appendStage' data-ref="_ZN4llvm3mca8Pipeline11appendStageESt10unique_ptrINS0_5StageESt14default_deleteIS3_EE" data-ref-filename="_ZN4llvm3mca8Pipeline11appendStageESt10unique_ptrINS0_5StageESt14default_deleteIS3_EE">appendStage</dfn>(<span class="namespace">std::</span><span class='type' title='std::unique_ptr' data-ref="std::unique_ptr" data-ref-filename="std..unique_ptr">unique_ptr</span>&lt;<a class="type" href="Stages/Stage.h.html#llvm::mca::Stage" title='llvm::mca::Stage' data-ref="llvm::mca::Stage" data-ref-filename="llvm..mca..Stage">Stage</a>&gt; <dfn class="local col1 decl" id="111S" title='S' data-type='std::unique_ptr&lt;Stage&gt;' data-ref="111S" data-ref-filename="111S">S</dfn>);</td></tr>
+<tr><th id="67">67</th><td></td></tr>
+<tr><th id="68">68</th><td>  <i class="doc">/// Returns the total number of simulated cycles.</i></td></tr>
+<tr><th id="69">69</th><td>  <a class="type" href="../Support/raw_ostream.h.html#llvm::Expected" title='llvm::Expected' data-ref="llvm::Expected" data-ref-filename="llvm..Expected">Expected</a>&lt;<em>unsigned</em>&gt; <dfn class="decl fn" id="_ZN4llvm3mca8Pipeline3runEv" title='llvm::mca::Pipeline::run' data-ref="_ZN4llvm3mca8Pipeline3runEv" data-ref-filename="_ZN4llvm3mca8Pipeline3runEv">run</dfn>();</td></tr>
+<tr><th id="70">70</th><td></td></tr>
+<tr><th id="71">71</th><td>  <em>void</em> <dfn class="decl fn" id="_ZN4llvm3mca8Pipeline16addEventListenerEPNS0_15HWEventListenerE" title='llvm::mca::Pipeline::addEventListener' data-ref="_ZN4llvm3mca8Pipeline16addEventListenerEPNS0_15HWEventListenerE" data-ref-filename="_ZN4llvm3mca8Pipeline16addEventListenerEPNS0_15HWEventListenerE">addEventListener</dfn>(<a class="type" href="HWEventListener.h.html#llvm::mca::HWEventListener" title='llvm::mca::HWEventListener' data-ref="llvm::mca::HWEventListener" data-ref-filename="llvm..mca..HWEventListener">HWEventListener</a> *<dfn class="local col2 decl" id="112Listener" title='Listener' data-type='llvm::mca::HWEventListener *' data-ref="112Listener" data-ref-filename="112Listener">Listener</dfn>);</td></tr>
+<tr><th id="72">72</th><td>};</td></tr>
+<tr><th id="73">73</th><td>} <i>// namespace mca</i></td></tr>
+<tr><th id="74">74</th><td>} <i>// namespace llvm</i></td></tr>
+<tr><th id="75">75</th><td></td></tr>
+<tr><th id="76">76</th><td><u>#<span data-ppcond="15">endif</span> // LLVM_MCA_PIPELINE_H</u></td></tr>
+<tr><th id="77">77</th><td></td></tr>
+</table><hr/><p id='footer'>
+Generated while processing <a href='../../../lib/MCA/Context.cpp.html'>llvm/llvm/lib/MCA/Context.cpp</a><br/>Generated on <em>2021-Jul-01</em> from project llvm revision <em>12</em>

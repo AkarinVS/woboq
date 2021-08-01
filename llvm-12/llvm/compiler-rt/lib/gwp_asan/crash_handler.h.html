@@ -1,0 +1,141 @@
+<!doctype html>
+<html>
+<head>
+<meta name="viewport" content="width=device-width, initial-scale=1.0"><title>crash_handler.h source code [llvm/compiler-rt/lib/gwp_asan/crash_handler.h] - Woboq Code Browser</title>
+<link rel="stylesheet" href="../../../.././data/qtcreator.css" title="QtCreator"/>
+<link rel="alternate stylesheet" href="../../../.././data/kdevelop.css" title="KDevelop"/>
+<script type="text/javascript" src="../../../.././data/jquery/jquery.min.js"></script>
+<script type="text/javascript" src="../../../.././data/jquery/jquery-ui.min.js"></script>
+<script>var file = 'llvm/compiler-rt/lib/gwp_asan/crash_handler.h'; var root_path = '../../../..'; var data_path = '../../../.././data'; var ecma_script_api_version = 2;</script>
+<script src='../../../.././data/codebrowser.js'></script>
+</head>
+<body><div id='header'><h1 id='breadcrumb'><span>Browse the source code of </span><a href='../../..'>llvm</a>/<a href='../..'>compiler-rt</a>/<a href='..'>lib</a>/<a href='./'>gwp_asan</a>/<a href='crash_handler.h.html'>crash_handler.h</a></h1></div>
+<hr/><div id='content'><table class="code">
+<tr><th id="1">1</th><td><i>//===-- crash_handler.h -----------------------------------------*- C++ -*-===//</i></td></tr>
+<tr><th id="2">2</th><td><i>//</i></td></tr>
+<tr><th id="3">3</th><td><i>// Part of the LLVM Project, under the Apache License v2.0 with LLVM Exceptions.</i></td></tr>
+<tr><th id="4">4</th><td><i>// See <a href="https://llvm.org/LICENSE.txt">https://llvm.org/LICENSE.txt</a> for license information.</i></td></tr>
+<tr><th id="5">5</th><td><i>// SPDX-License-Identifier: Apache-2.0 WITH LLVM-exception</i></td></tr>
+<tr><th id="6">6</th><td><i>//</i></td></tr>
+<tr><th id="7">7</th><td><i>//===----------------------------------------------------------------------===//</i></td></tr>
+<tr><th id="8">8</th><td><i></i></td></tr>
+<tr><th id="9">9</th><td><i>// This file contains interface functions that can be called by an in-process or</i></td></tr>
+<tr><th id="10">10</th><td><i>// out-of-process crash handler after the process has terminated. Functions in</i></td></tr>
+<tr><th id="11">11</th><td><i>// this interface are never thread safe. For an in-process crash handler, the</i></td></tr>
+<tr><th id="12">12</th><td><i>// handler should call GuardedPoolAllocator::disable() to stop any other threads</i></td></tr>
+<tr><th id="13">13</th><td><i>// from retrieving new GWP-ASan allocations, which may corrupt the metadata.</i></td></tr>
+<tr><th id="14">14</th><td><u>#<span data-ppcond="14">ifndef</span> <span class="macro" data-ref="_M/GWP_ASAN_INTERFACE_H_">GWP_ASAN_INTERFACE_H_</span></u></td></tr>
+<tr><th id="15">15</th><td><u>#define <dfn class="macro" id="_M/GWP_ASAN_INTERFACE_H_" data-ref="_M/GWP_ASAN_INTERFACE_H_">GWP_ASAN_INTERFACE_H_</dfn></u></td></tr>
+<tr><th id="16">16</th><td></td></tr>
+<tr><th id="17">17</th><td><u>#include <a href="common.h.html">"gwp_asan/common.h"</a></u></td></tr>
+<tr><th id="18">18</th><td></td></tr>
+<tr><th id="19">19</th><td><u>#<span data-ppcond="19">ifdef</span> <span class="macro" data-ref="_M/__cplusplus">__cplusplus</span></u></td></tr>
+<tr><th id="20">20</th><td><b>extern</b> <q>"C"</q> {</td></tr>
+<tr><th id="21">21</th><td><u>#<span data-ppcond="19">endif</span></u></td></tr>
+<tr><th id="22">22</th><td></td></tr>
+<tr><th id="23">23</th><td><i>// When a process crashes, there are three possible outcomes:</i></td></tr>
+<tr><th id="24">24</th><td><i>//  1. The crash is unrelated to GWP-ASan - in which case this function returns</i></td></tr>
+<tr><th id="25">25</th><td><i>//     false.</i></td></tr>
+<tr><th id="26">26</th><td><i>//  2. The crash is internally detected within GWP-ASan itself (e.g. a</i></td></tr>
+<tr><th id="27">27</th><td><i>//     double-free bug is caught in GuardedPoolAllocator::deallocate(), and</i></td></tr>
+<tr><th id="28">28</th><td><i>//     GWP-ASan will terminate the process). In this case - this function</i></td></tr>
+<tr><th id="29">29</th><td><i>//     returns true.</i></td></tr>
+<tr><th id="30">30</th><td><i>//  3. The crash is caused by a memory error at `AccessPtr` that's caught by the</i></td></tr>
+<tr><th id="31">31</th><td><i>//     system, but GWP-ASan is responsible for the allocation. In this case -</i></td></tr>
+<tr><th id="32">32</th><td><i>//     the function also returns true.</i></td></tr>
+<tr><th id="33">33</th><td><i>// This function takes an optional `AccessPtr` parameter. If the pointer that</i></td></tr>
+<tr><th id="34">34</th><td><i>// was attempted to be accessed is available, you should provide it here. In the</i></td></tr>
+<tr><th id="35">35</th><td><i>// case of some internally-detected errors, the crash may manifest as an abort</i></td></tr>
+<tr><th id="36">36</th><td><i>// or trap may or may not have an associated pointer. In these cases, the</i></td></tr>
+<tr><th id="37">37</th><td><i>// pointer can be obtained by a call to __gwp_asan_get_internal_crash_address.</i></td></tr>
+<tr><th id="38">38</th><td><em>bool</em> <dfn class="decl fn" id="__gwp_asan_error_is_mine" title='__gwp_asan_error_is_mine' data-ref="__gwp_asan_error_is_mine" data-ref-filename="__gwp_asan_error_is_mine">__gwp_asan_error_is_mine</dfn>(<em>const</em> <span class="namespace">gwp_asan::</span><a class="type" href="common.h.html#gwp_asan::AllocatorState" title='gwp_asan::AllocatorState' data-ref="gwp_asan::AllocatorState" data-ref-filename="gwp_asan..AllocatorState">AllocatorState</a> *<dfn class="local col1 decl" id="1State" title='State' data-type='const gwp_asan::AllocatorState *' data-ref="1State" data-ref-filename="1State">State</dfn>,</td></tr>
+<tr><th id="39">39</th><td>                              <a class="typedef" href="../../../../include/stdint.h.html#uintptr_t" title='uintptr_t' data-type='unsigned int' data-ref="uintptr_t" data-ref-filename="uintptr_t">uintptr_t</a> <dfn class="local col2 decl" id="2ErrorPtr" title='ErrorPtr' data-type='uintptr_t' data-ref="2ErrorPtr" data-ref-filename="2ErrorPtr">ErrorPtr</dfn> = <var>0u</var>);</td></tr>
+<tr><th id="40">40</th><td></td></tr>
+<tr><th id="41">41</th><td><i>// Diagnose and return the type of error that occurred at `ErrorPtr`. If</i></td></tr>
+<tr><th id="42">42</th><td><i>// `ErrorPtr` is unrelated to GWP-ASan, or if the error type cannot be deduced,</i></td></tr>
+<tr><th id="43">43</th><td><i>// this function returns Error::UNKNOWN.</i></td></tr>
+<tr><th id="44">44</th><td><span class="namespace">gwp_asan::</span><a class="type" href="common.h.html#gwp_asan::Error" title='gwp_asan::Error' data-ref="gwp_asan::Error" data-ref-filename="gwp_asan..Error">Error</a></td></tr>
+<tr><th id="45">45</th><td><dfn class="decl fn" id="__gwp_asan_diagnose_error" title='__gwp_asan_diagnose_error' data-ref="__gwp_asan_diagnose_error" data-ref-filename="__gwp_asan_diagnose_error">__gwp_asan_diagnose_error</dfn>(<em>const</em> <span class="namespace">gwp_asan::</span><a class="type" href="common.h.html#gwp_asan::AllocatorState" title='gwp_asan::AllocatorState' data-ref="gwp_asan::AllocatorState" data-ref-filename="gwp_asan..AllocatorState">AllocatorState</a> *<dfn class="local col3 decl" id="3State" title='State' data-type='const gwp_asan::AllocatorState *' data-ref="3State" data-ref-filename="3State">State</dfn>,</td></tr>
+<tr><th id="46">46</th><td>                          <em>const</em> <span class="namespace">gwp_asan::</span><a class="type" href="common.h.html#gwp_asan::AllocationMetadata" title='gwp_asan::AllocationMetadata' data-ref="gwp_asan::AllocationMetadata" data-ref-filename="gwp_asan..AllocationMetadata">AllocationMetadata</a> *<dfn class="local col4 decl" id="4Metadata" title='Metadata' data-type='const gwp_asan::AllocationMetadata *' data-ref="4Metadata" data-ref-filename="4Metadata">Metadata</dfn>,</td></tr>
+<tr><th id="47">47</th><td>                          <a class="typedef" href="../../../../include/stdint.h.html#uintptr_t" title='uintptr_t' data-type='unsigned int' data-ref="uintptr_t" data-ref-filename="uintptr_t">uintptr_t</a> <dfn class="local col5 decl" id="5ErrorPtr" title='ErrorPtr' data-type='uintptr_t' data-ref="5ErrorPtr" data-ref-filename="5ErrorPtr">ErrorPtr</dfn>);</td></tr>
+<tr><th id="48">48</th><td></td></tr>
+<tr><th id="49">49</th><td><i>// For internally-detected errors (double free, invalid free), this function</i></td></tr>
+<tr><th id="50">50</th><td><i>// returns the pointer that the error occurred at. If the error is unrelated to</i></td></tr>
+<tr><th id="51">51</th><td><i>// GWP-ASan, or if the error was caused by a non-internally detected failure,</i></td></tr>
+<tr><th id="52">52</th><td><i>// this function returns zero.</i></td></tr>
+<tr><th id="53">53</th><td><a class="typedef" href="../../../../include/stdint.h.html#uintptr_t" title='uintptr_t' data-type='unsigned int' data-ref="uintptr_t" data-ref-filename="uintptr_t">uintptr_t</a></td></tr>
+<tr><th id="54">54</th><td><dfn class="decl fn" id="__gwp_asan_get_internal_crash_address" title='__gwp_asan_get_internal_crash_address' data-ref="__gwp_asan_get_internal_crash_address" data-ref-filename="__gwp_asan_get_internal_crash_address">__gwp_asan_get_internal_crash_address</dfn>(<em>const</em> <span class="namespace">gwp_asan::</span><a class="type" href="common.h.html#gwp_asan::AllocatorState" title='gwp_asan::AllocatorState' data-ref="gwp_asan::AllocatorState" data-ref-filename="gwp_asan..AllocatorState">AllocatorState</a> *<dfn class="local col6 decl" id="6State" title='State' data-type='const gwp_asan::AllocatorState *' data-ref="6State" data-ref-filename="6State">State</dfn>);</td></tr>
+<tr><th id="55">55</th><td></td></tr>
+<tr><th id="56">56</th><td><i>// Returns a pointer to the metadata for the allocation that's responsible for</i></td></tr>
+<tr><th id="57">57</th><td><i>// the crash. This metadata should not be dereferenced directly due to API</i></td></tr>
+<tr><th id="58">58</th><td><i>// compatibility issues, but should be instead passed to functions below for</i></td></tr>
+<tr><th id="59">59</th><td><i>// information retrieval. Returns nullptr if there is no metadata available for</i></td></tr>
+<tr><th id="60">60</th><td><i>// this crash.</i></td></tr>
+<tr><th id="61">61</th><td><em>const</em> <span class="namespace">gwp_asan::</span><a class="type" href="common.h.html#gwp_asan::AllocationMetadata" title='gwp_asan::AllocationMetadata' data-ref="gwp_asan::AllocationMetadata" data-ref-filename="gwp_asan..AllocationMetadata">AllocationMetadata</a> *</td></tr>
+<tr><th id="62">62</th><td><dfn class="decl fn" id="__gwp_asan_get_metadata" title='__gwp_asan_get_metadata' data-ref="__gwp_asan_get_metadata" data-ref-filename="__gwp_asan_get_metadata">__gwp_asan_get_metadata</dfn>(<em>const</em> <span class="namespace">gwp_asan::</span><a class="type" href="common.h.html#gwp_asan::AllocatorState" title='gwp_asan::AllocatorState' data-ref="gwp_asan::AllocatorState" data-ref-filename="gwp_asan..AllocatorState">AllocatorState</a> *<dfn class="local col7 decl" id="7State" title='State' data-type='const gwp_asan::AllocatorState *' data-ref="7State" data-ref-filename="7State">State</dfn>,</td></tr>
+<tr><th id="63">63</th><td>                        <em>const</em> <span class="namespace">gwp_asan::</span><a class="type" href="common.h.html#gwp_asan::AllocationMetadata" title='gwp_asan::AllocationMetadata' data-ref="gwp_asan::AllocationMetadata" data-ref-filename="gwp_asan..AllocationMetadata">AllocationMetadata</a> *<dfn class="local col8 decl" id="8Metadata" title='Metadata' data-type='const gwp_asan::AllocationMetadata *' data-ref="8Metadata" data-ref-filename="8Metadata">Metadata</dfn>,</td></tr>
+<tr><th id="64">64</th><td>                        <a class="typedef" href="../../../../include/stdint.h.html#uintptr_t" title='uintptr_t' data-type='unsigned int' data-ref="uintptr_t" data-ref-filename="uintptr_t">uintptr_t</a> <dfn class="local col9 decl" id="9ErrorPtr" title='ErrorPtr' data-type='uintptr_t' data-ref="9ErrorPtr" data-ref-filename="9ErrorPtr">ErrorPtr</dfn>);</td></tr>
+<tr><th id="65">65</th><td></td></tr>
+<tr><th id="66">66</th><td><i>// +---------------------------------------------------------------------------+</i></td></tr>
+<tr><th id="67">67</th><td><i>// | Error Information Functions                                               |</i></td></tr>
+<tr><th id="68">68</th><td><i>// +---------------------------------------------------------------------------+</i></td></tr>
+<tr><th id="69">69</th><td><i>// Functions below return information about the type of error that was caught by</i></td></tr>
+<tr><th id="70">70</th><td><i>// GWP-ASan, or information about the allocation that caused the error. These</i></td></tr>
+<tr><th id="71">71</th><td><i>// functions generally take an `AllocationMeta` argument, which should be</i></td></tr>
+<tr><th id="72">72</th><td><i>// retrieved via. __gwp_asan_get_metadata.</i></td></tr>
+<tr><th id="73">73</th><td><i></i></td></tr>
+<tr><th id="74">74</th><td><i>// Returns the start of the allocation whose metadata is in `AllocationMeta`.</i></td></tr>
+<tr><th id="75">75</th><td><a class="typedef" href="../../../../include/stdint.h.html#uintptr_t" title='uintptr_t' data-type='unsigned int' data-ref="uintptr_t" data-ref-filename="uintptr_t">uintptr_t</a> <dfn class="decl fn" id="__gwp_asan_get_allocation_address" title='__gwp_asan_get_allocation_address' data-ref="__gwp_asan_get_allocation_address" data-ref-filename="__gwp_asan_get_allocation_address">__gwp_asan_get_allocation_address</dfn>(</td></tr>
+<tr><th id="76">76</th><td>    <em>const</em> <span class="namespace">gwp_asan::</span><a class="type" href="common.h.html#gwp_asan::AllocationMetadata" title='gwp_asan::AllocationMetadata' data-ref="gwp_asan::AllocationMetadata" data-ref-filename="gwp_asan..AllocationMetadata">AllocationMetadata</a> *<dfn class="local col0 decl" id="10AllocationMeta" title='AllocationMeta' data-type='const gwp_asan::AllocationMetadata *' data-ref="10AllocationMeta" data-ref-filename="10AllocationMeta">AllocationMeta</dfn>);</td></tr>
+<tr><th id="77">77</th><td></td></tr>
+<tr><th id="78">78</th><td><i>// Returns the size of the allocation whose metadata is in `AllocationMeta`</i></td></tr>
+<tr><th id="79">79</th><td><span class='typedef' title='size_t' data-type='unsigned int' data-ref="size_t" data-ref-filename="size_t">size_t</span> <dfn class="decl fn" id="__gwp_asan_get_allocation_size" title='__gwp_asan_get_allocation_size' data-ref="__gwp_asan_get_allocation_size" data-ref-filename="__gwp_asan_get_allocation_size">__gwp_asan_get_allocation_size</dfn>(</td></tr>
+<tr><th id="80">80</th><td>    <em>const</em> <span class="namespace">gwp_asan::</span><a class="type" href="common.h.html#gwp_asan::AllocationMetadata" title='gwp_asan::AllocationMetadata' data-ref="gwp_asan::AllocationMetadata" data-ref-filename="gwp_asan..AllocationMetadata">AllocationMetadata</a> *<dfn class="local col1 decl" id="11AllocationMeta" title='AllocationMeta' data-type='const gwp_asan::AllocationMetadata *' data-ref="11AllocationMeta" data-ref-filename="11AllocationMeta">AllocationMeta</dfn>);</td></tr>
+<tr><th id="81">81</th><td></td></tr>
+<tr><th id="82">82</th><td><i>// Returns the Thread ID that allocated the memory that caused the error at</i></td></tr>
+<tr><th id="83">83</th><td><i>// `ErrorPtr`. This function may not be called if __gwp_asan_has_metadata()</i></td></tr>
+<tr><th id="84">84</th><td><i>// returns false.</i></td></tr>
+<tr><th id="85">85</th><td><a class="typedef" href="../../../../include/bits/stdint-uintn.h.html#uint64_t" title='uint64_t' data-type='__uint64_t' data-ref="uint64_t" data-ref-filename="uint64_t">uint64_t</a> <dfn class="decl fn" id="__gwp_asan_get_allocation_thread_id" title='__gwp_asan_get_allocation_thread_id' data-ref="__gwp_asan_get_allocation_thread_id" data-ref-filename="__gwp_asan_get_allocation_thread_id">__gwp_asan_get_allocation_thread_id</dfn>(</td></tr>
+<tr><th id="86">86</th><td>    <em>const</em> <span class="namespace">gwp_asan::</span><a class="type" href="common.h.html#gwp_asan::AllocationMetadata" title='gwp_asan::AllocationMetadata' data-ref="gwp_asan::AllocationMetadata" data-ref-filename="gwp_asan..AllocationMetadata">AllocationMetadata</a> *<dfn class="local col2 decl" id="12AllocationMeta" title='AllocationMeta' data-type='const gwp_asan::AllocationMetadata *' data-ref="12AllocationMeta" data-ref-filename="12AllocationMeta">AllocationMeta</dfn>);</td></tr>
+<tr><th id="87">87</th><td></td></tr>
+<tr><th id="88">88</th><td><i>// Retrieve the allocation trace for the allocation whose metadata is in</i></td></tr>
+<tr><th id="89">89</th><td><i>// `AllocationMeta`, and place it into the provided `Buffer` that has at least</i></td></tr>
+<tr><th id="90">90</th><td><i>// `BufferLen` elements. This function returns the number of frames that would</i></td></tr>
+<tr><th id="91">91</th><td><i>// have been written into `Buffer` if the space was available (i.e. however many</i></td></tr>
+<tr><th id="92">92</th><td><i>// frames were stored by GWP-ASan). A return value greater than `BufferLen`</i></td></tr>
+<tr><th id="93">93</th><td><i>// indicates that the trace was truncated when storing to `Buffer`.</i></td></tr>
+<tr><th id="94">94</th><td><span class='typedef' title='size_t' data-type='unsigned int' data-ref="size_t" data-ref-filename="size_t">size_t</span> <dfn class="decl fn" id="__gwp_asan_get_allocation_trace" title='__gwp_asan_get_allocation_trace' data-ref="__gwp_asan_get_allocation_trace" data-ref-filename="__gwp_asan_get_allocation_trace">__gwp_asan_get_allocation_trace</dfn>(</td></tr>
+<tr><th id="95">95</th><td>    <em>const</em> <span class="namespace">gwp_asan::</span><a class="type" href="common.h.html#gwp_asan::AllocationMetadata" title='gwp_asan::AllocationMetadata' data-ref="gwp_asan::AllocationMetadata" data-ref-filename="gwp_asan..AllocationMetadata">AllocationMetadata</a> *<dfn class="local col3 decl" id="13AllocationMeta" title='AllocationMeta' data-type='const gwp_asan::AllocationMetadata *' data-ref="13AllocationMeta" data-ref-filename="13AllocationMeta">AllocationMeta</dfn>, <a class="typedef" href="../../../../include/stdint.h.html#uintptr_t" title='uintptr_t' data-type='unsigned int' data-ref="uintptr_t" data-ref-filename="uintptr_t">uintptr_t</a> *<dfn class="local col4 decl" id="14Buffer" title='Buffer' data-type='uintptr_t *' data-ref="14Buffer" data-ref-filename="14Buffer">Buffer</dfn>,</td></tr>
+<tr><th id="96">96</th><td>    <span class='typedef' title='size_t' data-type='unsigned int' data-ref="size_t" data-ref-filename="size_t">size_t</span> <dfn class="local col5 decl" id="15BufferLen" title='BufferLen' data-type='size_t' data-ref="15BufferLen" data-ref-filename="15BufferLen">BufferLen</dfn>);</td></tr>
+<tr><th id="97">97</th><td></td></tr>
+<tr><th id="98">98</th><td><i>// Returns whether the allocation whose metadata is in `AllocationMeta` has been</i></td></tr>
+<tr><th id="99">99</th><td><i>// deallocated. This function may not be called if __gwp_asan_has_metadata()</i></td></tr>
+<tr><th id="100">100</th><td><i>// returns false.</i></td></tr>
+<tr><th id="101">101</th><td><em>bool</em> <dfn class="decl fn" id="__gwp_asan_is_deallocated" title='__gwp_asan_is_deallocated' data-ref="__gwp_asan_is_deallocated" data-ref-filename="__gwp_asan_is_deallocated">__gwp_asan_is_deallocated</dfn>(</td></tr>
+<tr><th id="102">102</th><td>    <em>const</em> <span class="namespace">gwp_asan::</span><a class="type" href="common.h.html#gwp_asan::AllocationMetadata" title='gwp_asan::AllocationMetadata' data-ref="gwp_asan::AllocationMetadata" data-ref-filename="gwp_asan..AllocationMetadata">AllocationMetadata</a> *<dfn class="local col6 decl" id="16AllocationMeta" title='AllocationMeta' data-type='const gwp_asan::AllocationMetadata *' data-ref="16AllocationMeta" data-ref-filename="16AllocationMeta">AllocationMeta</dfn>);</td></tr>
+<tr><th id="103">103</th><td></td></tr>
+<tr><th id="104">104</th><td><i>// Returns the Thread ID that deallocated the memory whose metadata is in</i></td></tr>
+<tr><th id="105">105</th><td><i>// `AllocationMeta`. This function may not be called if</i></td></tr>
+<tr><th id="106">106</th><td><i>// __gwp_asan_is_deallocated() returns false.</i></td></tr>
+<tr><th id="107">107</th><td><a class="typedef" href="../../../../include/bits/stdint-uintn.h.html#uint64_t" title='uint64_t' data-type='__uint64_t' data-ref="uint64_t" data-ref-filename="uint64_t">uint64_t</a> <dfn class="decl fn" id="__gwp_asan_get_deallocation_thread_id" title='__gwp_asan_get_deallocation_thread_id' data-ref="__gwp_asan_get_deallocation_thread_id" data-ref-filename="__gwp_asan_get_deallocation_thread_id">__gwp_asan_get_deallocation_thread_id</dfn>(</td></tr>
+<tr><th id="108">108</th><td>    <em>const</em> <span class="namespace">gwp_asan::</span><a class="type" href="common.h.html#gwp_asan::AllocationMetadata" title='gwp_asan::AllocationMetadata' data-ref="gwp_asan::AllocationMetadata" data-ref-filename="gwp_asan..AllocationMetadata">AllocationMetadata</a> *<dfn class="local col7 decl" id="17AllocationMeta" title='AllocationMeta' data-type='const gwp_asan::AllocationMetadata *' data-ref="17AllocationMeta" data-ref-filename="17AllocationMeta">AllocationMeta</dfn>);</td></tr>
+<tr><th id="109">109</th><td></td></tr>
+<tr><th id="110">110</th><td><i>// Retrieve the deallocation trace for the allocation whose metadata is in</i></td></tr>
+<tr><th id="111">111</th><td><i>// `AllocationMeta`, and place it into the provided `Buffer` that has at least</i></td></tr>
+<tr><th id="112">112</th><td><i>// `BufferLen` elements. This function returns the number of frames that would</i></td></tr>
+<tr><th id="113">113</th><td><i>// have been written into `Buffer` if the space was available (i.e. however many</i></td></tr>
+<tr><th id="114">114</th><td><i>// frames were stored by GWP-ASan). A return value greater than `BufferLen`</i></td></tr>
+<tr><th id="115">115</th><td><i>// indicates that the trace was truncated when storing to `Buffer`. This</i></td></tr>
+<tr><th id="116">116</th><td><i>// function may not be called if __gwp_asan_is_deallocated() returns false.</i></td></tr>
+<tr><th id="117">117</th><td><span class='typedef' title='size_t' data-type='unsigned int' data-ref="size_t" data-ref-filename="size_t">size_t</span> <dfn class="decl fn" id="__gwp_asan_get_deallocation_trace" title='__gwp_asan_get_deallocation_trace' data-ref="__gwp_asan_get_deallocation_trace" data-ref-filename="__gwp_asan_get_deallocation_trace">__gwp_asan_get_deallocation_trace</dfn>(</td></tr>
+<tr><th id="118">118</th><td>    <em>const</em> <span class="namespace">gwp_asan::</span><a class="type" href="common.h.html#gwp_asan::AllocationMetadata" title='gwp_asan::AllocationMetadata' data-ref="gwp_asan::AllocationMetadata" data-ref-filename="gwp_asan..AllocationMetadata">AllocationMetadata</a> *<dfn class="local col8 decl" id="18AllocationMeta" title='AllocationMeta' data-type='const gwp_asan::AllocationMetadata *' data-ref="18AllocationMeta" data-ref-filename="18AllocationMeta">AllocationMeta</dfn>, <a class="typedef" href="../../../../include/stdint.h.html#uintptr_t" title='uintptr_t' data-type='unsigned int' data-ref="uintptr_t" data-ref-filename="uintptr_t">uintptr_t</a> *<dfn class="local col9 decl" id="19Buffer" title='Buffer' data-type='uintptr_t *' data-ref="19Buffer" data-ref-filename="19Buffer">Buffer</dfn>,</td></tr>
+<tr><th id="119">119</th><td>    <span class='typedef' title='size_t' data-type='unsigned int' data-ref="size_t" data-ref-filename="size_t">size_t</span> <dfn class="local col0 decl" id="20BufferLen" title='BufferLen' data-type='size_t' data-ref="20BufferLen" data-ref-filename="20BufferLen">BufferLen</dfn>);</td></tr>
+<tr><th id="120">120</th><td></td></tr>
+<tr><th id="121">121</th><td><u>#<span data-ppcond="121">ifdef</span> <span class="macro" data-ref="_M/__cplusplus">__cplusplus</span></u></td></tr>
+<tr><th id="122">122</th><td>} <i>// extern "C"</i></td></tr>
+<tr><th id="123">123</th><td><u>#<span data-ppcond="121">endif</span></u></td></tr>
+<tr><th id="124">124</th><td></td></tr>
+<tr><th id="125">125</th><td><u>#<span data-ppcond="14">endif</span> // GWP_ASAN_INTERFACE_H_</u></td></tr>
+<tr><th id="126">126</th><td></td></tr>
+</table><hr/><p id='footer'>
+Generated while processing <a href='optional/segv_handler_posix.cpp.html'>llvm/compiler-rt/lib/gwp_asan/optional/segv_handler_posix.cpp</a><br/>Generated on <em>2021-Jul-01</em> from project llvm revision <em>12</em>

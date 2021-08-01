@@ -1,0 +1,156 @@
+<def f='llvm/llvm/include/llvm/DebugInfo/GSYM/FunctionInfo.h' l='88' ll='185'/>
+<use f='llvm/llvm/include/llvm/DebugInfo/GSYM/FunctionInfo.h' l='133' c='_ZN4llvm4gsym12FunctionInfo6decodeERNS_13DataExtractorEm'/>
+<use f='llvm/llvm/include/llvm/DebugInfo/GSYM/FunctionInfo.h' l='187' c='_ZN4llvm4gsymeqERKNS0_12FunctionInfoES3_'/>
+<use f='llvm/llvm/include/llvm/DebugInfo/GSYM/FunctionInfo.h' l='187' c='_ZN4llvm4gsymeqERKNS0_12FunctionInfoES3_'/>
+<use f='llvm/llvm/include/llvm/DebugInfo/GSYM/FunctionInfo.h' l='191' c='_ZN4llvm4gsymneERKNS0_12FunctionInfoES3_'/>
+<use f='llvm/llvm/include/llvm/DebugInfo/GSYM/FunctionInfo.h' l='191' c='_ZN4llvm4gsymneERKNS0_12FunctionInfoES3_'/>
+<use f='llvm/llvm/include/llvm/DebugInfo/GSYM/FunctionInfo.h' l='199' c='_ZN4llvm4gsymltERKNS0_12FunctionInfoES3_'/>
+<use f='llvm/llvm/include/llvm/DebugInfo/GSYM/FunctionInfo.h' l='199' c='_ZN4llvm4gsymltERKNS0_12FunctionInfoES3_'/>
+<use f='llvm/llvm/include/llvm/DebugInfo/GSYM/FunctionInfo.h' l='211' c='_ZN4llvm4gsymlsERNS_11raw_ostreamERKNS0_12FunctionInfoE'/>
+<use f='llvm/llvm/include/llvm/DebugInfo/GSYM/GsymCreator.h' l='137'/>
+<use f='llvm/llvm/include/llvm/DebugInfo/GSYM/GsymCreator.h' l='198' c='_ZN4llvm4gsym11GsymCreator15addFunctionInfoEONS0_12FunctionInfoE'/>
+<use f='llvm/llvm/include/llvm/DebugInfo/GSYM/GsymCreator.h' l='223' c='_ZN4llvm4gsym11GsymCreator19forEachFunctionInfoERKSt8functionIFbRNS0_12FunctionInfoEEE'/>
+<use f='llvm/llvm/include/llvm/DebugInfo/GSYM/GsymCreator.h' l='230' c='_ZNK4llvm4gsym11GsymCreator19forEachFunctionInfoERKSt8functionIFbRKNS0_12FunctionInfoEEE'/>
+<use f='llvm/llvm/include/llvm/DebugInfo/GSYM/GsymReader.h' l='110' c='_ZNK4llvm4gsym10GsymReader15getFunctionInfoEm'/>
+<use f='llvm/llvm/include/llvm/DebugInfo/GSYM/GsymReader.h' l='163' c='_ZN4llvm4gsym10GsymReader4dumpERNS_11raw_ostreamERKNS0_12FunctionInfoE'/>
+<use f='llvm/llvm/lib/DebugInfo/GSYM/DwarfTransformer.cpp' l='208' c='_ZL15parseInlineInfoRN4llvm4gsym11GsymCreatorERNS0_6CUInfoENS_8DWARFDieEjRNS0_12FunctionInfoERNS0_10InlineInfoE'/>
+<use f='llvm/llvm/lib/DebugInfo/GSYM/DwarfTransformer.cpp' l='251' c='_ZL24convertFunctionLineTableRN4llvm11raw_ostreamERNS_4gsym6CUInfoENS_8DWARFDieERNS2_11GsymCreatorERNS2_12FunctionInfoE'/>
+<use f='llvm/llvm/lib/DebugInfo/GSYM/DwarfTransformer.cpp' l='402' c='_ZN4llvm4gsym16DwarfTransformer9handleDieERNS_11raw_ostreamERNS0_6CUInfoENS_8DWARFDieE'/>
+<size>128</size>
+<doc f='llvm/llvm/include/llvm/DebugInfo/GSYM/FunctionInfo.h' l='26'>/// Function information in GSYM files encodes information for one contiguous
+/// address range. If a function has discontiguous address ranges, they will
+/// need to be encoded using multiple FunctionInfo objects.
+///
+/// ENCODING
+///
+/// The function information gets the function start address as an argument
+/// to the FunctionInfo::decode(...) function. This information is calculated
+/// from the GSYM header and an address offset from the GSYM address offsets
+/// table. The encoded FunctionInfo information must be aligned to a 4 byte
+/// boundary.
+///
+/// The encoded data for a FunctionInfo starts with fixed data that all
+/// function info objects have:
+///
+/// ENCODING  NAME        DESCRIPTION
+/// ========= =========== ====================================================
+/// uint32_t  Size        The size in bytes of this function.
+/// uint32_t  Name        The string table offset of the function name.
+///
+/// The optional data in a FunctionInfo object follows this fixed information
+/// and consists of a stream of tuples that consist of:
+///
+/// ENCODING  NAME        DESCRIPTION
+/// ========= =========== ====================================================
+/// uint32_t  InfoType    An &quot;InfoType&quot; enumeration that describes the type
+///                       of optional data that is encoded.
+/// uint32_t  InfoLength  The size in bytes of the encoded data that
+///                       immediately follows this length if this value is
+///                       greater than zero.
+/// uint8_t[] InfoData    Encoded bytes that represent the data for the
+///                       &quot;InfoType&quot;. These bytes are only present if
+///                       &quot;InfoLength&quot; is greater than zero.
+///
+/// The &quot;InfoType&quot; is an enumeration:
+///
+///   enum InfoType {
+///     EndOfList = 0u,
+///     LineTableInfo = 1u,
+///     InlineInfo = 2u
+///   };
+///
+/// This stream of tuples is terminated by a &quot;InfoType&quot; whose value is
+/// InfoType::EndOfList and a zero for &quot;InfoLength&quot;. This signifies the end of
+/// the optional information list. This format allows us to add new optional
+/// information data to a FunctionInfo object over time and allows older
+/// clients to still parse the format and skip over any data that they don&apos;t
+/// understand or want to parse.
+///
+/// So the function information encoding essientially looks like:
+///
+/// struct {
+///   uint32_t Size;
+///   uint32_t Name;
+///   struct {
+///     uint32_t InfoType;
+///     uint32_t InfoLength;
+///     uint8_t InfoData[InfoLength];
+///   }[N];
+/// }
+///
+/// Where &quot;N&quot; is the number of tuples.</doc>
+<mbr r='llvm::gsym::FunctionInfo::Range' o='0' t='llvm::gsym::AddressRange'/>
+<mbr r='llvm::gsym::FunctionInfo::Name' o='128' t='uint32_t'/>
+<mbr r='llvm::gsym::FunctionInfo::OptLineTable' o='192' t='llvm::Optional&lt;LineTable&gt;'/>
+<mbr r='llvm::gsym::FunctionInfo::Inline' o='448' t='llvm::Optional&lt;InlineInfo&gt;'/>
+<fun r='_ZN4llvm4gsym12FunctionInfoC1Emmj'/>
+<fun r='_ZNK4llvm4gsym12FunctionInfo11hasRichInfoEv'/>
+<fun r='_ZNK4llvm4gsym12FunctionInfo7isValidEv'/>
+<fun r='_ZN4llvm4gsym12FunctionInfo6decodeERNS_13DataExtractorEm'/>
+<fun r='_ZNK4llvm4gsym12FunctionInfo6encodeERNS0_10FileWriterE'/>
+<fun r='_ZN4llvm4gsym12FunctionInfo6lookupERNS_13DataExtractorERKNS0_10GsymReaderEmm'/>
+<fun r='_ZNK4llvm4gsym12FunctionInfo12startAddressEv'/>
+<fun r='_ZNK4llvm4gsym12FunctionInfo10endAddressEv'/>
+<fun r='_ZNK4llvm4gsym12FunctionInfo4sizeEv'/>
+<fun r='_ZN4llvm4gsym12FunctionInfo15setStartAddressEm'/>
+<fun r='_ZN4llvm4gsym12FunctionInfo13setEndAddressEm'/>
+<fun r='_ZN4llvm4gsym12FunctionInfo7setSizeEm'/>
+<fun r='_ZN4llvm4gsym12FunctionInfo5clearEv'/>
+<use f='llvm/llvm/lib/DebugInfo/GSYM/FunctionInfo.cpp' l='27' c='_ZN4llvm4gsymlsERNS_11raw_ostreamERKNS0_12FunctionInfoE'/>
+<use f='llvm/llvm/lib/DebugInfo/GSYM/FunctionInfo.cpp' l='36' c='_ZN4llvm4gsym12FunctionInfo6decodeERNS_13DataExtractorEm'/>
+<use f='llvm/llvm/lib/DebugInfo/GSYM/FunctionInfo.cpp' l='38' c='_ZN4llvm4gsym12FunctionInfo6decodeERNS_13DataExtractorEm'/>
+<size>128</size>
+<fun r='_ZN4llvm4gsym12FunctionInfo6decodeERNS_13DataExtractorEm'/>
+<fun r='_ZNK4llvm4gsym12FunctionInfo6encodeERNS0_10FileWriterE'/>
+<fun r='_ZN4llvm4gsym12FunctionInfo6lookupERNS_13DataExtractorERKNS0_10GsymReaderEmm'/>
+<use f='llvm/llvm/lib/DebugInfo/GSYM/GsymCreator.cpp' l='282' c='_ZN4llvm4gsym11GsymCreator15addFunctionInfoEONS0_12FunctionInfoE'/>
+<use f='llvm/llvm/lib/DebugInfo/GSYM/GsymCreator.cpp' l='289' c='_ZN4llvm4gsym11GsymCreator19forEachFunctionInfoERKSt8functionIFbRNS0_12FunctionInfoEEE'/>
+<use f='llvm/llvm/lib/DebugInfo/GSYM/GsymCreator.cpp' l='298' c='_ZNK4llvm4gsym11GsymCreator19forEachFunctionInfoERKSt8functionIFbRKNS0_12FunctionInfoEEE'/>
+<size>128</size>
+<use f='llvm/llvm/lib/DebugInfo/GSYM/GsymReader.cpp' l='257' c='_ZNK4llvm4gsym10GsymReader15getFunctionInfoEm'/>
+<use f='llvm/llvm/lib/DebugInfo/GSYM/GsymReader.cpp' l='349' c='_ZN4llvm4gsym10GsymReader4dumpERNS_11raw_ostreamERKNS0_12FunctionInfoE'/>
+<size>128</size>
+<use f='llvm/llvm/lib/DebugInfo/GSYM/ObjectFileTransformer.cpp' l='111' c='_ZN4llvm4gsym21ObjectFileTransformer7convertERKNS_6object10ObjectFileERNS_11raw_ostreamERNS0_11GsymCreatorE'/>
+<size>128</size>
+<use f='llvm/llvm/unittests/DebugInfo/GSYM/GSYMTest.cpp' l='87' c='_ZN30GSYMTest_TestFunctionInfo_Test8TestBodyEv'/>
+<use f='llvm/llvm/unittests/DebugInfo/GSYM/GSYMTest.cpp' l='94' c='_ZN30GSYMTest_TestFunctionInfo_Test8TestBodyEv'/>
+<use f='llvm/llvm/unittests/DebugInfo/GSYM/GSYMTest.cpp' l='109' c='_ZN30GSYMTest_TestFunctionInfo_Test8TestBodyEv'/>
+<use f='llvm/llvm/unittests/DebugInfo/GSYM/GSYMTest.cpp' l='110' c='_ZN30GSYMTest_TestFunctionInfo_Test8TestBodyEv'/>
+<use f='llvm/llvm/unittests/DebugInfo/GSYM/GSYMTest.cpp' l='111' c='_ZN30GSYMTest_TestFunctionInfo_Test8TestBodyEv'/>
+<use f='llvm/llvm/unittests/DebugInfo/GSYM/GSYMTest.cpp' l='136' c='_ZN30GSYMTest_TestFunctionInfo_Test8TestBodyEv'/>
+<use f='llvm/llvm/unittests/DebugInfo/GSYM/GSYMTest.cpp' l='137' c='_ZN30GSYMTest_TestFunctionInfo_Test8TestBodyEv'/>
+<use f='llvm/llvm/unittests/DebugInfo/GSYM/GSYMTest.cpp' l='144' c='_ZN30GSYMTest_TestFunctionInfo_Test8TestBodyEv'/>
+<use f='llvm/llvm/unittests/DebugInfo/GSYM/GSYMTest.cpp' l='154' c='_ZN30GSYMTest_TestFunctionInfo_Test8TestBodyEv'/>
+<use f='llvm/llvm/unittests/DebugInfo/GSYM/GSYMTest.cpp' l='160' c='_ZN30GSYMTest_TestFunctionInfo_Test8TestBodyEv'/>
+<use f='llvm/llvm/unittests/DebugInfo/GSYM/GSYMTest.cpp' l='171' c='_ZL27TestFunctionInfoDecodeErrorN4llvm7support10endiannessENS_9StringRefEmNSt7__cxx1112basic_stringIcSt11char_traitsIcESaIcEEE'/>
+<use f='llvm/llvm/unittests/DebugInfo/GSYM/GSYMTest.cpp' l='210' c='_ZL27TestFunctionInfoEncodeErrorN4llvm7support10endiannessERKNS_4gsym12FunctionInfoENSt7__cxx1112basic_stringIcSt11char_traitsIcESaIcEEE'/>
+<use f='llvm/llvm/unittests/DebugInfo/GSYM/GSYMTest.cpp' l='225' c='_ZN42GSYMTest_TestFunctionInfoEncodeErrors_Test8TestBodyEv'/>
+<use f='llvm/llvm/unittests/DebugInfo/GSYM/GSYMTest.cpp' l='229' c='_ZN42GSYMTest_TestFunctionInfoEncodeErrors_Test8TestBodyEv'/>
+<use f='llvm/llvm/unittests/DebugInfo/GSYM/GSYMTest.cpp' l='236' c='_ZN42GSYMTest_TestFunctionInfoEncodeErrors_Test8TestBodyEv'/>
+<use f='llvm/llvm/unittests/DebugInfo/GSYM/GSYMTest.cpp' l='245' c='_ZL28TestFunctionInfoEncodeDecodeN4llvm7support10endiannessERKNS_4gsym12FunctionInfoE'/>
+<use f='llvm/llvm/unittests/DebugInfo/GSYM/GSYMTest.cpp' l='257' c='_ZL28TestFunctionInfoEncodeDecodeN4llvm7support10endiannessERKNS_4gsym12FunctionInfoE'/>
+<use f='llvm/llvm/unittests/DebugInfo/GSYM/GSYMTest.cpp' l='265' c='_ZL8AddLinesmjRN4llvm4gsym12FunctionInfoE'/>
+<use f='llvm/llvm/unittests/DebugInfo/GSYM/GSYMTest.cpp' l='276' c='_ZL9AddInlinemmRN4llvm4gsym12FunctionInfoE'/>
+<use f='llvm/llvm/unittests/DebugInfo/GSYM/GSYMTest.cpp' l='294' c='_ZN38GSYMTest_TestFunctionInfoEncoding_Test8TestBodyEv'/>
+<use f='llvm/llvm/unittests/DebugInfo/GSYM/GSYMTest.cpp' l='300' c='_ZN38GSYMTest_TestFunctionInfoEncoding_Test8TestBodyEv'/>
+<use f='llvm/llvm/unittests/DebugInfo/GSYM/GSYMTest.cpp' l='307' c='_ZN38GSYMTest_TestFunctionInfoEncoding_Test8TestBodyEv'/>
+<use f='llvm/llvm/unittests/DebugInfo/GSYM/GSYMTest.cpp' l='314' c='_ZN38GSYMTest_TestFunctionInfoEncoding_Test8TestBodyEv'/>
+<use f='llvm/llvm/unittests/DebugInfo/GSYM/GSYMTest.cpp' l='1084' c='_ZN41GSYMTest_TestGsymCreatorEncodeErrors_Test8TestBodyEv'/>
+<use f='llvm/llvm/unittests/DebugInfo/GSYM/GSYMTest.cpp' l='1102' c='_ZN41GSYMTest_TestGsymCreatorEncodeErrors_Test8TestBodyEv'/>
+<use f='llvm/llvm/unittests/DebugInfo/GSYM/GSYMTest.cpp' l='1110' c='_ZN41GSYMTest_TestGsymCreatorEncodeErrors_Test8TestBodyEv'/>
+<use f='llvm/llvm/unittests/DebugInfo/GSYM/GSYMTest.cpp' l='1122' c='_ZL7CompareRKN4llvm4gsym11GsymCreatorERKNS0_10GsymReaderE'/>
+<use f='llvm/llvm/unittests/DebugInfo/GSYM/GSYMTest.cpp' l='1159' c='_ZN45GSYMTest_TestGsymCreator1ByteAddrOffsets_Test8TestBodyEv'/>
+<use f='llvm/llvm/unittests/DebugInfo/GSYM/GSYMTest.cpp' l='1160' c='_ZN45GSYMTest_TestGsymCreator1ByteAddrOffsets_Test8TestBodyEv'/>
+<use f='llvm/llvm/unittests/DebugInfo/GSYM/GSYMTest.cpp' l='1185' c='_ZN45GSYMTest_TestGsymCreator2ByteAddrOffsets_Test8TestBodyEv'/>
+<use f='llvm/llvm/unittests/DebugInfo/GSYM/GSYMTest.cpp' l='1186' c='_ZN45GSYMTest_TestGsymCreator2ByteAddrOffsets_Test8TestBodyEv'/>
+<use f='llvm/llvm/unittests/DebugInfo/GSYM/GSYMTest.cpp' l='1211' c='_ZN45GSYMTest_TestGsymCreator4ByteAddrOffsets_Test8TestBodyEv'/>
+<use f='llvm/llvm/unittests/DebugInfo/GSYM/GSYMTest.cpp' l='1212' c='_ZN45GSYMTest_TestGsymCreator4ByteAddrOffsets_Test8TestBodyEv'/>
+<use f='llvm/llvm/unittests/DebugInfo/GSYM/GSYMTest.cpp' l='1237' c='_ZN45GSYMTest_TestGsymCreator8ByteAddrOffsets_Test8TestBodyEv'/>
+<use f='llvm/llvm/unittests/DebugInfo/GSYM/GSYMTest.cpp' l='1238' c='_ZN45GSYMTest_TestGsymCreator8ByteAddrOffsets_Test8TestBodyEv'/>
+<use f='llvm/llvm/unittests/DebugInfo/GSYM/GSYMTest.cpp' l='1256' c='_ZL18VerifyFunctionInfoRKN4llvm4gsym10GsymReaderEmRKNS0_12FunctionInfoE'/>
+<use f='llvm/llvm/unittests/DebugInfo/GSYM/GSYMTest.cpp' l='1280' c='_ZN28GSYMTest_TestGsymReader_Test8TestBodyEv'/>
+<use f='llvm/llvm/unittests/DebugInfo/GSYM/GSYMTest.cpp' l='1281' c='_ZN28GSYMTest_TestGsymReader_Test8TestBodyEv'/>
+<use f='llvm/llvm/unittests/DebugInfo/GSYM/GSYMTest.cpp' l='1293' c='_ZN28GSYMTest_TestGsymReader_Test8TestBodyEv'/>
+<use f='llvm/llvm/unittests/DebugInfo/GSYM/GSYMTest.cpp' l='1300' c='_ZN28GSYMTest_TestGsymReader_Test8TestBodyEv'/>
+<use f='llvm/llvm/unittests/DebugInfo/GSYM/GSYMTest.cpp' l='1316' c='_ZN29GSYMTest_TestGsymLookups_Test8TestBodyEv'/>
+<size>128</size>

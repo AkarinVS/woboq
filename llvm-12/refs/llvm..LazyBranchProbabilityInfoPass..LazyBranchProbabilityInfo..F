@@ -1,0 +1,4 @@
+<use f='llvm/llvm/include/llvm/Analysis/LazyBranchProbabilityInfo.h' l='60' u='w' c='_ZN4llvm29LazyBranchProbabilityInfoPass25LazyBranchProbabilityInfoC1EPKNS_8FunctionEPKNS_8LoopInfoEPKNS_17TargetLibraryInfoE'/>
+<use f='llvm/llvm/include/llvm/Analysis/LazyBranchProbabilityInfo.h' l='66' u='r' c='_ZN4llvm29LazyBranchProbabilityInfoPass25LazyBranchProbabilityInfo13getCalculatedEv'/>
+<dec f='llvm/llvm/include/llvm/Analysis/LazyBranchProbabilityInfo.h' l='79' type='const llvm::Function *'/>
+<offset>2048</offset>

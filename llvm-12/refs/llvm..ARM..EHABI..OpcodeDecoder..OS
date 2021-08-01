@@ -1,0 +1,25 @@
+<dec f='llvm/llvm/tools/llvm-readobj/ARMEHABIPrinter.h' l='29' type='llvm::raw_ostream &amp;'/>
+<use f='llvm/llvm/tools/llvm-readobj/ARMEHABIPrinter.h' l='65' u='w' c='_ZN4llvm3ARM5EHABI13OpcodeDecoderC1ERNS_13ScopedPrinterE'/>
+<use f='llvm/llvm/tools/llvm-readobj/ARMEHABIPrinter.h' l='120' u='m' c='_ZN4llvm3ARM5EHABI13OpcodeDecoder24Decode_1000iiii_iiiiiiiiEPKhRj'/>
+<use f='llvm/llvm/tools/llvm-readobj/ARMEHABIPrinter.h' l='142' u='m' c='_ZN4llvm3ARM5EHABI13OpcodeDecoder15Decode_10100nnnEPKhRj'/>
+<use f='llvm/llvm/tools/llvm-readobj/ARMEHABIPrinter.h' l='149' u='m' c='_ZN4llvm3ARM5EHABI13OpcodeDecoder15Decode_10101nnnEPKhRj'/>
+<use f='llvm/llvm/tools/llvm-readobj/ARMEHABIPrinter.h' l='166' u='m' c='_ZN4llvm3ARM5EHABI13OpcodeDecoder24Decode_10110001_0000iiiiEPKhRj'/>
+<use f='llvm/llvm/tools/llvm-readobj/ARMEHABIPrinter.h' l='177' u='m' c='_ZN4llvm3ARM5EHABI13OpcodeDecoder23Decode_10110010_uleb128EPKhRj'/>
+<use f='llvm/llvm/tools/llvm-readobj/ARMEHABIPrinter.h' l='183' u='m' c='_ZN4llvm3ARM5EHABI13OpcodeDecoder23Decode_10110010_uleb128EPKhRj'/>
+<use f='llvm/llvm/tools/llvm-readobj/ARMEHABIPrinter.h' l='193' u='m' c='_ZN4llvm3ARM5EHABI13OpcodeDecoder24Decode_10110011_ssssccccEPKhRj'/>
+<use f='llvm/llvm/tools/llvm-readobj/ARMEHABIPrinter.h' l='205' u='m' c='_ZN4llvm3ARM5EHABI13OpcodeDecoder15Decode_10111nnnEPKhRj'/>
+<use f='llvm/llvm/tools/llvm-readobj/ARMEHABIPrinter.h' l='215' u='m' c='_ZN4llvm3ARM5EHABI13OpcodeDecoder24Decode_11000110_ssssccccEPKhRj'/>
+<use f='llvm/llvm/tools/llvm-readobj/ARMEHABIPrinter.h' l='226' u='m' c='_ZN4llvm3ARM5EHABI13OpcodeDecoder24Decode_11000111_0000iiiiEPKhRj'/>
+<use f='llvm/llvm/tools/llvm-readobj/ARMEHABIPrinter.h' l='236' u='m' c='_ZN4llvm3ARM5EHABI13OpcodeDecoder24Decode_11001000_ssssccccEPKhRj'/>
+<use f='llvm/llvm/tools/llvm-readobj/ARMEHABIPrinter.h' l='246' u='m' c='_ZN4llvm3ARM5EHABI13OpcodeDecoder24Decode_11001001_ssssccccEPKhRj'/>
+<use f='llvm/llvm/tools/llvm-readobj/ARMEHABIPrinter.h' l='258' u='m' c='_ZN4llvm3ARM5EHABI13OpcodeDecoder15Decode_11000nnnEPKhRj'/>
+<use f='llvm/llvm/tools/llvm-readobj/ARMEHABIPrinter.h' l='265' u='m' c='_ZN4llvm3ARM5EHABI13OpcodeDecoder15Decode_11010nnnEPKhRj'/>
+<use f='llvm/llvm/tools/llvm-readobj/ARMEHABIPrinter.h' l='279' u='m' c='_ZN4llvm3ARM5EHABI13OpcodeDecoder8PrintGPREt'/>
+<use f='llvm/llvm/tools/llvm-readobj/ARMEHABIPrinter.h' l='284' u='m' c='_ZN4llvm3ARM5EHABI13OpcodeDecoder8PrintGPREt'/>
+<use f='llvm/llvm/tools/llvm-readobj/ARMEHABIPrinter.h' l='285' u='m' c='_ZN4llvm3ARM5EHABI13OpcodeDecoder8PrintGPREt'/>
+<use f='llvm/llvm/tools/llvm-readobj/ARMEHABIPrinter.h' l='289' u='m' c='_ZN4llvm3ARM5EHABI13OpcodeDecoder8PrintGPREt'/>
+<use f='llvm/llvm/tools/llvm-readobj/ARMEHABIPrinter.h' l='293' u='m' c='_ZN4llvm3ARM5EHABI13OpcodeDecoder14PrintRegistersEjNS_9StringRefE'/>
+<use f='llvm/llvm/tools/llvm-readobj/ARMEHABIPrinter.h' l='298' u='m' c='_ZN4llvm3ARM5EHABI13OpcodeDecoder14PrintRegistersEjNS_9StringRefE'/>
+<use f='llvm/llvm/tools/llvm-readobj/ARMEHABIPrinter.h' l='299' u='m' c='_ZN4llvm3ARM5EHABI13OpcodeDecoder14PrintRegistersEjNS_9StringRefE'/>
+<use f='llvm/llvm/tools/llvm-readobj/ARMEHABIPrinter.h' l='303' u='m' c='_ZN4llvm3ARM5EHABI13OpcodeDecoder14PrintRegistersEjNS_9StringRefE'/>
+<offset>64</offset>

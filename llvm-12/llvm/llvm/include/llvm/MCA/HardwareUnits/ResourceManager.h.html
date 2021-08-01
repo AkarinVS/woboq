@@ -1,0 +1,464 @@
+<!doctype html>
+<html>
+<head>
+<meta name="viewport" content="width=device-width, initial-scale=1.0"><title>ResourceManager.h source code [llvm/llvm/include/llvm/MCA/HardwareUnits/ResourceManager.h] - Woboq Code Browser</title>
+<meta name="woboq:interestingDefinitions" content="llvm::mca::DefaultResourceStrategy,llvm::mca::ResourceManager,llvm::mca::ResourceState,llvm::mca::ResourceStateEvent,llvm::mca::ResourceStrategy "/>
+<link rel="stylesheet" href="../../../../../.././data/qtcreator.css" title="QtCreator"/>
+<link rel="alternate stylesheet" href="../../../../../.././data/kdevelop.css" title="KDevelop"/>
+<script type="text/javascript" src="../../../../../.././data/jquery/jquery.min.js"></script>
+<script type="text/javascript" src="../../../../../.././data/jquery/jquery-ui.min.js"></script>
+<script>var file = 'llvm/llvm/include/llvm/MCA/HardwareUnits/ResourceManager.h'; var root_path = '../../../../../..'; var data_path = '../../../../../.././data'; var ecma_script_api_version = 2;</script>
+<script src='../../../../../.././data/codebrowser.js'></script>
+</head>
+<body><div id='header'><h1 id='breadcrumb'><span>Browse the source code of </span><a href='../../../../..'>llvm</a>/<a href='../../../..'>llvm</a>/<a href='../../..'>include</a>/<a href='../..'>llvm</a>/<a href='..'>MCA</a>/<a href='./'>HardwareUnits</a>/<a href='ResourceManager.h.html'>ResourceManager.h</a></h1></div>
+<hr/><div id='content'><table class="code">
+<tr><th id="1">1</th><td><i>//===--------------------- ResourceManager.h --------------------*- C++ -*-===//</i></td></tr>
+<tr><th id="2">2</th><td><i>//</i></td></tr>
+<tr><th id="3">3</th><td><i>// Part of the LLVM Project, under the Apache License v2.0 with LLVM Exceptions.</i></td></tr>
+<tr><th id="4">4</th><td><i>// See <a href="https://llvm.org/LICENSE.txt">https://llvm.org/LICENSE.txt</a> for license information.</i></td></tr>
+<tr><th id="5">5</th><td><i>// SPDX-License-Identifier: Apache-2.0 WITH LLVM-exception</i></td></tr>
+<tr><th id="6">6</th><td><i>//</i></td></tr>
+<tr><th id="7">7</th><td><i>//===----------------------------------------------------------------------===//</i></td></tr>
+<tr><th id="8">8</th><td><i>/// \file</i></td></tr>
+<tr><th id="9">9</th><td><i>///</i></td></tr>
+<tr><th id="10">10</th><td><i>/// The classes here represent processor resource units and their management</i></td></tr>
+<tr><th id="11">11</th><td><i>/// strategy.  These classes are managed by the Scheduler.</i></td></tr>
+<tr><th id="12">12</th><td><i>///</i></td></tr>
+<tr><th id="13">13</th><td><i>//===----------------------------------------------------------------------===//</i></td></tr>
+<tr><th id="14">14</th><td></td></tr>
+<tr><th id="15">15</th><td><u>#<span data-ppcond="15">ifndef</span> <span class="macro" data-ref="_M/LLVM_MCA_RESOURCE_MANAGER_H">LLVM_MCA_RESOURCE_MANAGER_H</span></u></td></tr>
+<tr><th id="16">16</th><td><u>#define <dfn class="macro" id="_M/LLVM_MCA_RESOURCE_MANAGER_H" data-ref="_M/LLVM_MCA_RESOURCE_MANAGER_H">LLVM_MCA_RESOURCE_MANAGER_H</dfn></u></td></tr>
+<tr><th id="17">17</th><td></td></tr>
+<tr><th id="18">18</th><td><u>#include <a href="../../ADT/DenseMap.h.html">"llvm/ADT/DenseMap.h"</a></u></td></tr>
+<tr><th id="19">19</th><td><u>#include <a href="../../ADT/SmallVector.h.html">"llvm/ADT/SmallVector.h"</a></u></td></tr>
+<tr><th id="20">20</th><td><u>#include <a href="../../MC/MCSchedule.h.html">"llvm/MC/MCSchedule.h"</a></u></td></tr>
+<tr><th id="21">21</th><td><u>#include <a href="../Instruction.h.html">"llvm/MCA/Instruction.h"</a></u></td></tr>
+<tr><th id="22">22</th><td><u>#include <a href="../Support.h.html">"llvm/MCA/Support.h"</a></u></td></tr>
+<tr><th id="23">23</th><td></td></tr>
+<tr><th id="24">24</th><td><b>namespace</b> <span class="namespace">llvm</span> {</td></tr>
+<tr><th id="25">25</th><td><b>namespace</b> <span class="namespace">mca</span> {</td></tr>
+<tr><th id="26">26</th><td></td></tr>
+<tr><th id="27">27</th><td><i class="doc">/// Used to notify the internal state of a processor resource.</i></td></tr>
+<tr><th id="28">28</th><td><i class="doc">///</i></td></tr>
+<tr><th id="29">29</th><td><i class="doc">/// A processor resource is available if it is not reserved, and there are</i></td></tr>
+<tr><th id="30">30</th><td><i class="doc">/// available slots in the buffer.  A processor resource is unavailable if it</i></td></tr>
+<tr><th id="31">31</th><td><i class="doc">/// is either reserved, or the associated buffer is full. A processor resource</i></td></tr>
+<tr><th id="32">32</th><td><i class="doc">/// with a buffer size of -1 is always available if it is not reserved.</i></td></tr>
+<tr><th id="33">33</th><td><i class="doc">///</i></td></tr>
+<tr><th id="34">34</th><td><i class="doc">/// Values of type ResourceStateEvent are returned by method</i></td></tr>
+<tr><th id="35">35</th><td><i class="doc">/// ResourceManager::canBeDispatched()</i></td></tr>
+<tr><th id="36">36</th><td><i class="doc">///</i></td></tr>
+<tr><th id="37">37</th><td><i class="doc">/// The naming convention for resource state events is:</i></td></tr>
+<tr><th id="38">38</th><td><i class="doc">///  * Event names start with prefix RS_</i></td></tr>
+<tr><th id="39">39</th><td><i class="doc">///  * Prefix RS_ is followed by a string describing the actual resource state.</i></td></tr>
+<tr><th id="40">40</th><td><b>enum</b> <dfn class="type def" id="llvm::mca::ResourceStateEvent" title='llvm::mca::ResourceStateEvent' data-ref="llvm::mca::ResourceStateEvent" data-ref-filename="llvm..mca..ResourceStateEvent">ResourceStateEvent</dfn> {</td></tr>
+<tr><th id="41">41</th><td>  <dfn class="enum" id="llvm::mca::RS_BUFFER_AVAILABLE" title='llvm::mca::RS_BUFFER_AVAILABLE' data-ref="llvm::mca::RS_BUFFER_AVAILABLE" data-ref-filename="llvm..mca..RS_BUFFER_AVAILABLE">RS_BUFFER_AVAILABLE</dfn>,</td></tr>
+<tr><th id="42">42</th><td>  <dfn class="enum" id="llvm::mca::RS_BUFFER_UNAVAILABLE" title='llvm::mca::RS_BUFFER_UNAVAILABLE' data-ref="llvm::mca::RS_BUFFER_UNAVAILABLE" data-ref-filename="llvm..mca..RS_BUFFER_UNAVAILABLE">RS_BUFFER_UNAVAILABLE</dfn>,</td></tr>
+<tr><th id="43">43</th><td>  <dfn class="enum" id="llvm::mca::RS_RESERVED" title='llvm::mca::RS_RESERVED' data-ref="llvm::mca::RS_RESERVED" data-ref-filename="llvm..mca..RS_RESERVED">RS_RESERVED</dfn></td></tr>
+<tr><th id="44">44</th><td>};</td></tr>
+<tr><th id="45">45</th><td></td></tr>
+<tr><th id="46">46</th><td><i class="doc">/// Resource allocation strategy used by hardware scheduler resources.</i></td></tr>
+<tr><th id="47">47</th><td><b>class</b> <dfn class="type def" id="llvm::mca::ResourceStrategy" title='llvm::mca::ResourceStrategy' data-ref="llvm::mca::ResourceStrategy" data-ref-filename="llvm..mca..ResourceStrategy">ResourceStrategy</dfn> {</td></tr>
+<tr><th id="48">48</th><td>  <dfn class="decl def fn" id="_ZN4llvm3mca16ResourceStrategyC1ERKS1_" title='llvm::mca::ResourceStrategy::ResourceStrategy' data-ref="_ZN4llvm3mca16ResourceStrategyC1ERKS1_" data-ref-filename="_ZN4llvm3mca16ResourceStrategyC1ERKS1_">ResourceStrategy</dfn>(<em>const</em> <a class="type" href="#llvm::mca::ResourceStrategy" title='llvm::mca::ResourceStrategy' data-ref="llvm::mca::ResourceStrategy" data-ref-filename="llvm..mca..ResourceStrategy">ResourceStrategy</a> &amp;) = <b>delete</b>;</td></tr>
+<tr><th id="49">49</th><td>  <a class="type" href="#llvm::mca::ResourceStrategy" title='llvm::mca::ResourceStrategy' data-ref="llvm::mca::ResourceStrategy" data-ref-filename="llvm..mca..ResourceStrategy">ResourceStrategy</a> &amp;<dfn class="decl def fn" id="_ZN4llvm3mca16ResourceStrategyaSERKS1_" title='llvm::mca::ResourceStrategy::operator=' data-ref="_ZN4llvm3mca16ResourceStrategyaSERKS1_" data-ref-filename="_ZN4llvm3mca16ResourceStrategyaSERKS1_"><b>operator</b>=</dfn>(<em>const</em> <a class="type" href="#llvm::mca::ResourceStrategy" title='llvm::mca::ResourceStrategy' data-ref="llvm::mca::ResourceStrategy" data-ref-filename="llvm..mca..ResourceStrategy">ResourceStrategy</a> &amp;) = <b>delete</b>;</td></tr>
+<tr><th id="50">50</th><td></td></tr>
+<tr><th id="51">51</th><td><b>public</b>:</td></tr>
+<tr><th id="52">52</th><td>  <dfn class="decl def fn" id="_ZN4llvm3mca16ResourceStrategyC1Ev" title='llvm::mca::ResourceStrategy::ResourceStrategy' data-ref="_ZN4llvm3mca16ResourceStrategyC1Ev" data-ref-filename="_ZN4llvm3mca16ResourceStrategyC1Ev">ResourceStrategy</dfn>() {}</td></tr>
+<tr><th id="53">53</th><td>  <b>virtual</b> <dfn class="virtual decl fn" id="_ZN4llvm3mca16ResourceStrategyD1Ev" title='llvm::mca::ResourceStrategy::~ResourceStrategy' data-ref="_ZN4llvm3mca16ResourceStrategyD1Ev" data-ref-filename="_ZN4llvm3mca16ResourceStrategyD1Ev">~ResourceStrategy</dfn>();</td></tr>
+<tr><th id="54">54</th><td></td></tr>
+<tr><th id="55">55</th><td>  <i class="doc">/// Selects a processor resource unit from a ReadyMask.</i></td></tr>
+<tr><th id="56">56</th><td>  <b>virtual</b> <a class="typedef" href="../../../../../../include/bits/stdint-uintn.h.html#uint64_t" title='uint64_t' data-type='__uint64_t' data-ref="uint64_t" data-ref-filename="uint64_t">uint64_t</a> <dfn class="virtual decl fn" id="_ZN4llvm3mca16ResourceStrategy6selectEm" title='llvm::mca::ResourceStrategy::select' data-ref="_ZN4llvm3mca16ResourceStrategy6selectEm" data-ref-filename="_ZN4llvm3mca16ResourceStrategy6selectEm">select</dfn>(<a class="typedef" href="../../../../../../include/bits/stdint-uintn.h.html#uint64_t" title='uint64_t' data-type='__uint64_t' data-ref="uint64_t" data-ref-filename="uint64_t">uint64_t</a> <dfn class="local col7 decl" id="207ReadyMask" title='ReadyMask' data-type='uint64_t' data-ref="207ReadyMask" data-ref-filename="207ReadyMask">ReadyMask</dfn>) = <var>0</var>;</td></tr>
+<tr><th id="57">57</th><td></td></tr>
+<tr><th id="58">58</th><td>  <i class="doc">/// Called by the ResourceManager when a processor resource group, or a</i></td></tr>
+<tr><th id="59">59</th><td><i class="doc">  /// processor resource with multiple units has become unavailable.</i></td></tr>
+<tr><th id="60">60</th><td><i class="doc">  ///</i></td></tr>
+<tr><th id="61">61</th><td><i class="doc">  /// The default strategy uses this information to bias its selection logic.</i></td></tr>
+<tr><th id="62">62</th><td>  <b>virtual</b> <em>void</em> <dfn class="virtual decl def fn" id="_ZN4llvm3mca16ResourceStrategy4usedEm" title='llvm::mca::ResourceStrategy::used' data-ref="_ZN4llvm3mca16ResourceStrategy4usedEm" data-ref-filename="_ZN4llvm3mca16ResourceStrategy4usedEm">used</dfn>(<a class="typedef" href="../../../../../../include/bits/stdint-uintn.h.html#uint64_t" title='uint64_t' data-type='__uint64_t' data-ref="uint64_t" data-ref-filename="uint64_t">uint64_t</a> <dfn class="local col8 decl" id="208ResourceMask" title='ResourceMask' data-type='uint64_t' data-ref="208ResourceMask" data-ref-filename="208ResourceMask">ResourceMask</dfn>) {}</td></tr>
+<tr><th id="63">63</th><td>};</td></tr>
+<tr><th id="64">64</th><td></td></tr>
+<tr><th id="65">65</th><td><i class="doc">/// Default resource allocation strategy used by processor resource groups and</i></td></tr>
+<tr><th id="66">66</th><td><i class="doc">/// processor resources with multiple units.</i></td></tr>
+<tr><th id="67">67</th><td><b>class</b> <dfn class="type def" id="llvm::mca::DefaultResourceStrategy" title='llvm::mca::DefaultResourceStrategy' data-ref="llvm::mca::DefaultResourceStrategy" data-ref-filename="llvm..mca..DefaultResourceStrategy">DefaultResourceStrategy</dfn> final : <b>public</b> <a class="type" href="#llvm::mca::ResourceStrategy" title='llvm::mca::ResourceStrategy' data-ref="llvm::mca::ResourceStrategy" data-ref-filename="llvm..mca..ResourceStrategy">ResourceStrategy</a> {</td></tr>
+<tr><th id="68">68</th><td>  <i class="doc">/// A Mask of resource unit identifiers.</i></td></tr>
+<tr><th id="69">69</th><td><i class="doc">  ///</i></td></tr>
+<tr><th id="70">70</th><td><i class="doc">  /// There is one bit set for every available resource unit.</i></td></tr>
+<tr><th id="71">71</th><td><i class="doc">  /// It defaults to the value of field ResourceSizeMask in ResourceState.</i></td></tr>
+<tr><th id="72">72</th><td>  <em>const</em> <a class="typedef" href="../../../../../../include/bits/stdint-uintn.h.html#uint64_t" title='uint64_t' data-type='__uint64_t' data-ref="uint64_t" data-ref-filename="uint64_t">uint64_t</a> <dfn class="decl field" id="llvm::mca::DefaultResourceStrategy::ResourceUnitMask" title='llvm::mca::DefaultResourceStrategy::ResourceUnitMask' data-ref="llvm::mca::DefaultResourceStrategy::ResourceUnitMask" data-ref-filename="llvm..mca..DefaultResourceStrategy..ResourceUnitMask">ResourceUnitMask</dfn>;</td></tr>
+<tr><th id="73">73</th><td></td></tr>
+<tr><th id="74">74</th><td>  <i class="doc">/// A simple round-robin selector for processor resource units.</i></td></tr>
+<tr><th id="75">75</th><td><i class="doc">  /// Each bit of this mask identifies a sub resource within a group.</i></td></tr>
+<tr><th id="76">76</th><td><i class="doc">  ///</i></td></tr>
+<tr><th id="77">77</th><td><i class="doc">  /// As an example, lets assume that this is a default policy for a</i></td></tr>
+<tr><th id="78">78</th><td><i class="doc">  /// processor resource group composed by the following three units:</i></td></tr>
+<tr><th id="79">79</th><td><i class="doc">  ///   ResourceA -- 0b001</i></td></tr>
+<tr><th id="80">80</th><td><i class="doc">  ///   ResourceB -- 0b010</i></td></tr>
+<tr><th id="81">81</th><td><i class="doc">  ///   ResourceC -- 0b100</i></td></tr>
+<tr><th id="82">82</th><td><i class="doc">  ///</i></td></tr>
+<tr><th id="83">83</th><td><i class="doc">  /// Field NextInSequenceMask is used to select the next unit from the set of</i></td></tr>
+<tr><th id="84">84</th><td><i class="doc">  /// resource units. It defaults to the value of field `ResourceUnitMasks` (in</i></td></tr>
+<tr><th id="85">85</th><td><i class="doc">  /// this example, it defaults to mask '0b111').</i></td></tr>
+<tr><th id="86">86</th><td><i class="doc">  ///</i></td></tr>
+<tr><th id="87">87</th><td><i class="doc">  /// The round-robin selector would firstly select 'ResourceC', then</i></td></tr>
+<tr><th id="88">88</th><td><i class="doc">  /// 'ResourceB', and eventually 'ResourceA'.  When a resource R is used, the</i></td></tr>
+<tr><th id="89">89</th><td><i class="doc">  /// corresponding bit in NextInSequenceMask is cleared.  For example, if</i></td></tr>
+<tr><th id="90">90</th><td><i class="doc">  /// 'ResourceC' is selected, then the new value of NextInSequenceMask becomes</i></td></tr>
+<tr><th id="91">91</th><td><i class="doc">  /// 0xb011.</i></td></tr>
+<tr><th id="92">92</th><td><i class="doc">  ///</i></td></tr>
+<tr><th id="93">93</th><td><i class="doc">  /// When NextInSequenceMask becomes zero, it is automatically reset to the</i></td></tr>
+<tr><th id="94">94</th><td><i class="doc">  /// default value (i.e. ResourceUnitMask).</i></td></tr>
+<tr><th id="95">95</th><td>  <a class="typedef" href="../../../../../../include/bits/stdint-uintn.h.html#uint64_t" title='uint64_t' data-type='__uint64_t' data-ref="uint64_t" data-ref-filename="uint64_t">uint64_t</a> <dfn class="decl field" id="llvm::mca::DefaultResourceStrategy::NextInSequenceMask" title='llvm::mca::DefaultResourceStrategy::NextInSequenceMask' data-ref="llvm::mca::DefaultResourceStrategy::NextInSequenceMask" data-ref-filename="llvm..mca..DefaultResourceStrategy..NextInSequenceMask">NextInSequenceMask</dfn>;</td></tr>
+<tr><th id="96">96</th><td></td></tr>
+<tr><th id="97">97</th><td>  <i class="doc">/// This field is used to track resource units that are used (i.e. selected)</i></td></tr>
+<tr><th id="98">98</th><td><i class="doc">  /// by other groups other than the one associated with this strategy object.</i></td></tr>
+<tr><th id="99">99</th><td><i class="doc">  ///</i></td></tr>
+<tr><th id="100">100</th><td><i class="doc">  /// In LLVM processor resource groups are allowed to partially (or fully)</i></td></tr>
+<tr><th id="101">101</th><td><i class="doc">  /// overlap. That means, a same unit may be visible to multiple groups.</i></td></tr>
+<tr><th id="102">102</th><td><i class="doc">  /// This field keeps track of uses that have originated from outside of</i></td></tr>
+<tr><th id="103">103</th><td><i class="doc">  /// this group. The idea is to bias the selection strategy, so that resources</i></td></tr>
+<tr><th id="104">104</th><td><i class="doc">  /// that haven't been used by other groups get prioritized.</i></td></tr>
+<tr><th id="105">105</th><td><i class="doc">  ///</i></td></tr>
+<tr><th id="106">106</th><td><i class="doc">  /// The end goal is to (try to) keep the resource distribution as much uniform</i></td></tr>
+<tr><th id="107">107</th><td><i class="doc">  /// as possible. By construction, this mask only tracks one-level of resource</i></td></tr>
+<tr><th id="108">108</th><td><i class="doc">  /// usage. Therefore, this strategy is expected to be less accurate when same</i></td></tr>
+<tr><th id="109">109</th><td><i class="doc">  /// units are used multiple times by other groups within a single round of</i></td></tr>
+<tr><th id="110">110</th><td><i class="doc">  /// select.</i></td></tr>
+<tr><th id="111">111</th><td><i class="doc">  ///</i></td></tr>
+<tr><th id="112">112</th><td><i class="doc">  /// Note: an LRU selector would have a better accuracy at the cost of being</i></td></tr>
+<tr><th id="113">113</th><td><i class="doc">  /// slightly more expensive (mostly in terms of runtime cost). Methods</i></td></tr>
+<tr><th id="114">114</th><td><i class="doc">  /// 'select' and 'used', are always in the hot execution path of llvm-mca.</i></td></tr>
+<tr><th id="115">115</th><td><i class="doc">  /// Therefore, a slow implementation of 'select' would have a negative impact</i></td></tr>
+<tr><th id="116">116</th><td><i class="doc">  /// on the overall performance of the tool.</i></td></tr>
+<tr><th id="117">117</th><td>  <a class="typedef" href="../../../../../../include/bits/stdint-uintn.h.html#uint64_t" title='uint64_t' data-type='__uint64_t' data-ref="uint64_t" data-ref-filename="uint64_t">uint64_t</a> <dfn class="decl field" id="llvm::mca::DefaultResourceStrategy::RemovedFromNextInSequence" title='llvm::mca::DefaultResourceStrategy::RemovedFromNextInSequence' data-ref="llvm::mca::DefaultResourceStrategy::RemovedFromNextInSequence" data-ref-filename="llvm..mca..DefaultResourceStrategy..RemovedFromNextInSequence">RemovedFromNextInSequence</dfn>;</td></tr>
+<tr><th id="118">118</th><td></td></tr>
+<tr><th id="119">119</th><td><b>public</b>:</td></tr>
+<tr><th id="120">120</th><td>  <dfn class="decl def fn" id="_ZN4llvm3mca23DefaultResourceStrategyC1Em" title='llvm::mca::DefaultResourceStrategy::DefaultResourceStrategy' data-ref="_ZN4llvm3mca23DefaultResourceStrategyC1Em" data-ref-filename="_ZN4llvm3mca23DefaultResourceStrategyC1Em">DefaultResourceStrategy</dfn>(<a class="typedef" href="../../../../../../include/bits/stdint-uintn.h.html#uint64_t" title='uint64_t' data-type='__uint64_t' data-ref="uint64_t" data-ref-filename="uint64_t">uint64_t</a> <dfn class="local col9 decl" id="209UnitMask" title='UnitMask' data-type='uint64_t' data-ref="209UnitMask" data-ref-filename="209UnitMask">UnitMask</dfn>)</td></tr>
+<tr><th id="121">121</th><td>      : <a class="type" href="#llvm::mca::ResourceStrategy" title='llvm::mca::ResourceStrategy' data-ref="llvm::mca::ResourceStrategy" data-ref-filename="llvm..mca..ResourceStrategy">ResourceStrategy</a><a class="ref fn" href="#_ZN4llvm3mca16ResourceStrategyC1Ev" title='llvm::mca::ResourceStrategy::ResourceStrategy' data-ref="_ZN4llvm3mca16ResourceStrategyC1Ev" data-ref-filename="_ZN4llvm3mca16ResourceStrategyC1Ev">(</a>), <a class="member field" href="#llvm::mca::DefaultResourceStrategy::ResourceUnitMask" title='llvm::mca::DefaultResourceStrategy::ResourceUnitMask' data-ref="llvm::mca::DefaultResourceStrategy::ResourceUnitMask" data-ref-filename="llvm..mca..DefaultResourceStrategy..ResourceUnitMask">ResourceUnitMask</a>(<a class="local col9 ref" href="#209UnitMask" title='UnitMask' data-ref="209UnitMask" data-ref-filename="209UnitMask">UnitMask</a>),</td></tr>
+<tr><th id="122">122</th><td>        <a class="member field" href="#llvm::mca::DefaultResourceStrategy::NextInSequenceMask" title='llvm::mca::DefaultResourceStrategy::NextInSequenceMask' data-ref="llvm::mca::DefaultResourceStrategy::NextInSequenceMask" data-ref-filename="llvm..mca..DefaultResourceStrategy..NextInSequenceMask">NextInSequenceMask</a>(<a class="local col9 ref" href="#209UnitMask" title='UnitMask' data-ref="209UnitMask" data-ref-filename="209UnitMask">UnitMask</a>), <a class="member field" href="#llvm::mca::DefaultResourceStrategy::RemovedFromNextInSequence" title='llvm::mca::DefaultResourceStrategy::RemovedFromNextInSequence' data-ref="llvm::mca::DefaultResourceStrategy::RemovedFromNextInSequence" data-ref-filename="llvm..mca..DefaultResourceStrategy..RemovedFromNextInSequence">RemovedFromNextInSequence</a>(<var>0</var>) {}</td></tr>
+<tr><th id="123">123</th><td>  <b>virtual</b> <dfn class="virtual decl def fn" id="_ZN4llvm3mca23DefaultResourceStrategyD1Ev" title='llvm::mca::DefaultResourceStrategy::~DefaultResourceStrategy' data-ref="_ZN4llvm3mca23DefaultResourceStrategyD1Ev" data-ref-filename="_ZN4llvm3mca23DefaultResourceStrategyD1Ev">~DefaultResourceStrategy</dfn>() = <b>default</b>;</td></tr>
+<tr><th id="124">124</th><td></td></tr>
+<tr><th id="125">125</th><td>  <a class="typedef" href="../../../../../../include/bits/stdint-uintn.h.html#uint64_t" title='uint64_t' data-type='__uint64_t' data-ref="uint64_t" data-ref-filename="uint64_t">uint64_t</a> <dfn class="virtual decl fn" id="_ZN4llvm3mca23DefaultResourceStrategy6selectEm" title='llvm::mca::DefaultResourceStrategy::select' data-ref="_ZN4llvm3mca23DefaultResourceStrategy6selectEm" data-ref-filename="_ZN4llvm3mca23DefaultResourceStrategy6selectEm">select</dfn>(<a class="typedef" href="../../../../../../include/bits/stdint-uintn.h.html#uint64_t" title='uint64_t' data-type='__uint64_t' data-ref="uint64_t" data-ref-filename="uint64_t">uint64_t</a> <dfn class="local col0 decl" id="210ReadyMask" title='ReadyMask' data-type='uint64_t' data-ref="210ReadyMask" data-ref-filename="210ReadyMask">ReadyMask</dfn>) override;</td></tr>
+<tr><th id="126">126</th><td>  <em>void</em> <dfn class="virtual decl fn" id="_ZN4llvm3mca23DefaultResourceStrategy4usedEm" title='llvm::mca::DefaultResourceStrategy::used' data-ref="_ZN4llvm3mca23DefaultResourceStrategy4usedEm" data-ref-filename="_ZN4llvm3mca23DefaultResourceStrategy4usedEm">used</dfn>(<a class="typedef" href="../../../../../../include/bits/stdint-uintn.h.html#uint64_t" title='uint64_t' data-type='__uint64_t' data-ref="uint64_t" data-ref-filename="uint64_t">uint64_t</a> <dfn class="local col1 decl" id="211Mask" title='Mask' data-type='uint64_t' data-ref="211Mask" data-ref-filename="211Mask">Mask</dfn>) override;</td></tr>
+<tr><th id="127">127</th><td>};</td></tr>
+<tr><th id="128">128</th><td></td></tr>
+<tr><th id="129">129</th><td><i class="doc">/// A processor resource descriptor.</i></td></tr>
+<tr><th id="130">130</th><td><i class="doc">///</i></td></tr>
+<tr><th id="131">131</th><td><i class="doc">/// There is an instance of this class for every processor resource defined by</i></td></tr>
+<tr><th id="132">132</th><td><i class="doc">/// the machine scheduling model.</i></td></tr>
+<tr><th id="133">133</th><td><i class="doc">/// Objects of class ResourceState dynamically track the usage of processor</i></td></tr>
+<tr><th id="134">134</th><td><i class="doc">/// resource units.</i></td></tr>
+<tr><th id="135">135</th><td><b>class</b> <dfn class="type def" id="llvm::mca::ResourceState" title='llvm::mca::ResourceState' data-ref="llvm::mca::ResourceState" data-ref-filename="llvm..mca..ResourceState">ResourceState</dfn> {</td></tr>
+<tr><th id="136">136</th><td>  <i class="doc">/// An index to the MCProcResourceDesc entry in the processor model.</i></td></tr>
+<tr><th id="137">137</th><td>  <em>const</em> <em>unsigned</em> <dfn class="decl field" id="llvm::mca::ResourceState::ProcResourceDescIndex" title='llvm::mca::ResourceState::ProcResourceDescIndex' data-ref="llvm::mca::ResourceState::ProcResourceDescIndex" data-ref-filename="llvm..mca..ResourceState..ProcResourceDescIndex">ProcResourceDescIndex</dfn>;</td></tr>
+<tr><th id="138">138</th><td>  <i class="doc">/// A resource mask. This is generated by the tool with the help of</i></td></tr>
+<tr><th id="139">139</th><td><i class="doc">  /// function `mca::computeProcResourceMasks' (see Support.h).</i></td></tr>
+<tr><th id="140">140</th><td><i class="doc">  ///</i></td></tr>
+<tr><th id="141">141</th><td><i class="doc">  /// Field ResourceMask only has one bit set if this resource state describes a</i></td></tr>
+<tr><th id="142">142</th><td><i class="doc">  /// processor resource unit (i.e. this is not a group). That means, we can</i></td></tr>
+<tr><th id="143">143</th><td><i class="doc">  /// quickly check if a resource is a group by simply counting the number of</i></td></tr>
+<tr><th id="144">144</th><td><i class="doc">  /// bits that are set in the mask.</i></td></tr>
+<tr><th id="145">145</th><td><i class="doc">  ///</i></td></tr>
+<tr><th id="146">146</th><td><i class="doc">  /// The most significant bit of a mask (MSB) uniquely identifies a resource.</i></td></tr>
+<tr><th id="147">147</th><td><i class="doc">  /// Remaining bits are used to describe the composition of a group (Group).</i></td></tr>
+<tr><th id="148">148</th><td><i class="doc">  ///</i></td></tr>
+<tr><th id="149">149</th><td><i class="doc">  /// Example (little endian):</i></td></tr>
+<tr><th id="150">150</th><td><i class="doc">  ///            Resource |  Mask      |  MSB       |  Group</i></td></tr>
+<tr><th id="151">151</th><td><i class="doc">  ///            ---------+------------+------------+------------</i></td></tr>
+<tr><th id="152">152</th><td><i class="doc">  ///            A        |  0b000001  |  0b000001  |  0b000000</i></td></tr>
+<tr><th id="153">153</th><td><i class="doc">  ///                     |            |            |</i></td></tr>
+<tr><th id="154">154</th><td><i class="doc">  ///            B        |  0b000010  |  0b000010  |  0b000000</i></td></tr>
+<tr><th id="155">155</th><td><i class="doc">  ///                     |            |            |</i></td></tr>
+<tr><th id="156">156</th><td><i class="doc">  ///            C        |  0b010000  |  0b010000  |  0b000000</i></td></tr>
+<tr><th id="157">157</th><td><i class="doc">  ///                     |            |            |</i></td></tr>
+<tr><th id="158">158</th><td><i class="doc">  ///            D        |  0b110010  |  0b100000  |  0b010010</i></td></tr>
+<tr><th id="159">159</th><td><i class="doc">  ///</i></td></tr>
+<tr><th id="160">160</th><td><i class="doc">  /// In this example, resources A, B and C are processor resource units.</i></td></tr>
+<tr><th id="161">161</th><td><i class="doc">  /// Only resource D is a group resource, and it contains resources B and C.</i></td></tr>
+<tr><th id="162">162</th><td><i class="doc">  /// That is because MSB(B) and MSB(C) are both contained within Group(D).</i></td></tr>
+<tr><th id="163">163</th><td>  <em>const</em> <a class="typedef" href="../../../../../../include/bits/stdint-uintn.h.html#uint64_t" title='uint64_t' data-type='__uint64_t' data-ref="uint64_t" data-ref-filename="uint64_t">uint64_t</a> <dfn class="decl field" id="llvm::mca::ResourceState::ResourceMask" title='llvm::mca::ResourceState::ResourceMask' data-ref="llvm::mca::ResourceState::ResourceMask" data-ref-filename="llvm..mca..ResourceState..ResourceMask">ResourceMask</dfn>;</td></tr>
+<tr><th id="164">164</th><td></td></tr>
+<tr><th id="165">165</th><td>  <i class="doc">/// A ProcResource can have multiple units.</i></td></tr>
+<tr><th id="166">166</th><td><i class="doc">  ///</i></td></tr>
+<tr><th id="167">167</th><td><i class="doc">  /// For processor resource groups this field is a mask of contained resource</i></td></tr>
+<tr><th id="168">168</th><td><i class="doc">  /// units. It is obtained from ResourceMask by clearing the highest set bit.</i></td></tr>
+<tr><th id="169">169</th><td><i class="doc">  /// The number of resource units in a group can be simply computed as the</i></td></tr>
+<tr><th id="170">170</th><td><i class="doc">  /// population count of this field.</i></td></tr>
+<tr><th id="171">171</th><td><i class="doc">  ///</i></td></tr>
+<tr><th id="172">172</th><td><i class="doc">  /// For normal (i.e. non-group) resources, the number of bits set in this mask</i></td></tr>
+<tr><th id="173">173</th><td><i class="doc">  /// is equivalent to the number of units declared by the processor model (see</i></td></tr>
+<tr><th id="174">174</th><td><i class="doc">  /// field 'NumUnits' in 'ProcResourceUnits').</i></td></tr>
+<tr><th id="175">175</th><td>  <a class="typedef" href="../../../../../../include/bits/stdint-uintn.h.html#uint64_t" title='uint64_t' data-type='__uint64_t' data-ref="uint64_t" data-ref-filename="uint64_t">uint64_t</a> <dfn class="decl field" id="llvm::mca::ResourceState::ResourceSizeMask" title='llvm::mca::ResourceState::ResourceSizeMask' data-ref="llvm::mca::ResourceState::ResourceSizeMask" data-ref-filename="llvm..mca..ResourceState..ResourceSizeMask">ResourceSizeMask</dfn>;</td></tr>
+<tr><th id="176">176</th><td></td></tr>
+<tr><th id="177">177</th><td>  <i class="doc">/// A mask of ready units.</i></td></tr>
+<tr><th id="178">178</th><td>  <a class="typedef" href="../../../../../../include/bits/stdint-uintn.h.html#uint64_t" title='uint64_t' data-type='__uint64_t' data-ref="uint64_t" data-ref-filename="uint64_t">uint64_t</a> <dfn class="decl field" id="llvm::mca::ResourceState::ReadyMask" title='llvm::mca::ResourceState::ReadyMask' data-ref="llvm::mca::ResourceState::ReadyMask" data-ref-filename="llvm..mca..ResourceState..ReadyMask">ReadyMask</dfn>;</td></tr>
+<tr><th id="179">179</th><td></td></tr>
+<tr><th id="180">180</th><td>  <i class="doc">/// Buffered resources will have this field set to a positive number different</i></td></tr>
+<tr><th id="181">181</th><td><i class="doc">  /// than zero. A buffered resource behaves like a reservation station</i></td></tr>
+<tr><th id="182">182</th><td><i class="doc">  /// implementing its own buffer for out-of-order execution.</i></td></tr>
+<tr><th id="183">183</th><td><i class="doc">  ///</i></td></tr>
+<tr><th id="184">184</th><td><i class="doc">  /// A BufferSize of 1 is used by scheduler resources that force in-order</i></td></tr>
+<tr><th id="185">185</th><td><i class="doc">  /// execution.</i></td></tr>
+<tr><th id="186">186</th><td><i class="doc">  ///</i></td></tr>
+<tr><th id="187">187</th><td><i class="doc">  /// A BufferSize of 0 is used to model in-order issue/dispatch resources.</i></td></tr>
+<tr><th id="188">188</th><td><i class="doc">  /// Since in-order issue/dispatch resources don't implement buffers, dispatch</i></td></tr>
+<tr><th id="189">189</th><td><i class="doc">  /// events coincide with issue events.</i></td></tr>
+<tr><th id="190">190</th><td><i class="doc">  /// Also, no other instruction ca be dispatched/issue while this resource is</i></td></tr>
+<tr><th id="191">191</th><td><i class="doc">  /// in use. Only when all the "resource cycles" are consumed (after the issue</i></td></tr>
+<tr><th id="192">192</th><td><i class="doc">  /// event), a new instruction ca be dispatched.</i></td></tr>
+<tr><th id="193">193</th><td>  <em>const</em> <em>int</em> <dfn class="decl field" id="llvm::mca::ResourceState::BufferSize" title='llvm::mca::ResourceState::BufferSize' data-ref="llvm::mca::ResourceState::BufferSize" data-ref-filename="llvm..mca..ResourceState..BufferSize">BufferSize</dfn>;</td></tr>
+<tr><th id="194">194</th><td></td></tr>
+<tr><th id="195">195</th><td>  <i class="doc">/// Available slots in the buffer (zero, if this is not a buffered resource).</i></td></tr>
+<tr><th id="196">196</th><td>  <em>unsigned</em> <dfn class="decl field" id="llvm::mca::ResourceState::AvailableSlots" title='llvm::mca::ResourceState::AvailableSlots' data-ref="llvm::mca::ResourceState::AvailableSlots" data-ref-filename="llvm..mca..ResourceState..AvailableSlots">AvailableSlots</dfn>;</td></tr>
+<tr><th id="197">197</th><td></td></tr>
+<tr><th id="198">198</th><td>  <i class="doc">/// This field is set if this resource is currently reserved.</i></td></tr>
+<tr><th id="199">199</th><td><i class="doc">  ///</i></td></tr>
+<tr><th id="200">200</th><td><i class="doc">  /// Resources can be reserved for a number of cycles.</i></td></tr>
+<tr><th id="201">201</th><td><i class="doc">  /// Instructions can still be dispatched to reserved resources. However,</i></td></tr>
+<tr><th id="202">202</th><td><i class="doc">  /// istructions dispatched to a reserved resource cannot be issued to the</i></td></tr>
+<tr><th id="203">203</th><td><i class="doc">  /// underlying units (i.e. pipelines) until the resource is released.</i></td></tr>
+<tr><th id="204">204</th><td>  <em>bool</em> <dfn class="decl field" id="llvm::mca::ResourceState::Unavailable" title='llvm::mca::ResourceState::Unavailable' data-ref="llvm::mca::ResourceState::Unavailable" data-ref-filename="llvm..mca..ResourceState..Unavailable">Unavailable</dfn>;</td></tr>
+<tr><th id="205">205</th><td></td></tr>
+<tr><th id="206">206</th><td>  <em>const</em> <em>bool</em> <dfn class="decl field" id="llvm::mca::ResourceState::IsAGroup" title='llvm::mca::ResourceState::IsAGroup' data-ref="llvm::mca::ResourceState::IsAGroup" data-ref-filename="llvm..mca..ResourceState..IsAGroup">IsAGroup</dfn>;</td></tr>
+<tr><th id="207">207</th><td></td></tr>
+<tr><th id="208">208</th><td>  <i class="doc">/// Checks for the availability of unit 'SubResMask' in the group.</i></td></tr>
+<tr><th id="209">209</th><td>  <em>bool</em> <dfn class="decl def fn" id="_ZNK4llvm3mca13ResourceState18isSubResourceReadyEm" title='llvm::mca::ResourceState::isSubResourceReady' data-ref="_ZNK4llvm3mca13ResourceState18isSubResourceReadyEm" data-ref-filename="_ZNK4llvm3mca13ResourceState18isSubResourceReadyEm">isSubResourceReady</dfn>(<a class="typedef" href="../../../../../../include/bits/stdint-uintn.h.html#uint64_t" title='uint64_t' data-type='__uint64_t' data-ref="uint64_t" data-ref-filename="uint64_t">uint64_t</a> <dfn class="local col2 decl" id="212SubResMask" title='SubResMask' data-type='uint64_t' data-ref="212SubResMask" data-ref-filename="212SubResMask">SubResMask</dfn>) <em>const</em> {</td></tr>
+<tr><th id="210">210</th><td>    <b>return</b> <a class="member field" href="#llvm::mca::ResourceState::ReadyMask" title='llvm::mca::ResourceState::ReadyMask' data-ref="llvm::mca::ResourceState::ReadyMask" data-ref-filename="llvm..mca..ResourceState..ReadyMask">ReadyMask</a> &amp; <a class="local col2 ref" href="#212SubResMask" title='SubResMask' data-ref="212SubResMask" data-ref-filename="212SubResMask">SubResMask</a>;</td></tr>
+<tr><th id="211">211</th><td>  }</td></tr>
+<tr><th id="212">212</th><td></td></tr>
+<tr><th id="213">213</th><td><b>public</b>:</td></tr>
+<tr><th id="214">214</th><td>  <dfn class="decl fn" id="_ZN4llvm3mca13ResourceStateC1ERKNS_18MCProcResourceDescEjm" title='llvm::mca::ResourceState::ResourceState' data-ref="_ZN4llvm3mca13ResourceStateC1ERKNS_18MCProcResourceDescEjm" data-ref-filename="_ZN4llvm3mca13ResourceStateC1ERKNS_18MCProcResourceDescEjm">ResourceState</dfn>(<em>const</em> <a class="type" href="../../MC/MCSchedule.h.html#llvm::MCProcResourceDesc" title='llvm::MCProcResourceDesc' data-ref="llvm::MCProcResourceDesc" data-ref-filename="llvm..MCProcResourceDesc">MCProcResourceDesc</a> &amp;<dfn class="local col3 decl" id="213Desc" title='Desc' data-type='const llvm::MCProcResourceDesc &amp;' data-ref="213Desc" data-ref-filename="213Desc">Desc</dfn>, <em>unsigned</em> <dfn class="local col4 decl" id="214Index" title='Index' data-type='unsigned int' data-ref="214Index" data-ref-filename="214Index">Index</dfn>, <a class="typedef" href="../../../../../../include/bits/stdint-uintn.h.html#uint64_t" title='uint64_t' data-type='__uint64_t' data-ref="uint64_t" data-ref-filename="uint64_t">uint64_t</a> <dfn class="local col5 decl" id="215Mask" title='Mask' data-type='uint64_t' data-ref="215Mask" data-ref-filename="215Mask">Mask</dfn>);</td></tr>
+<tr><th id="215">215</th><td></td></tr>
+<tr><th id="216">216</th><td>  <em>unsigned</em> <dfn class="decl def fn" id="_ZNK4llvm3mca13ResourceState17getProcResourceIDEv" title='llvm::mca::ResourceState::getProcResourceID' data-ref="_ZNK4llvm3mca13ResourceState17getProcResourceIDEv" data-ref-filename="_ZNK4llvm3mca13ResourceState17getProcResourceIDEv">getProcResourceID</dfn>() <em>const</em> { <b>return</b> <a class="member field" href="#llvm::mca::ResourceState::ProcResourceDescIndex" title='llvm::mca::ResourceState::ProcResourceDescIndex' data-ref="llvm::mca::ResourceState::ProcResourceDescIndex" data-ref-filename="llvm..mca..ResourceState..ProcResourceDescIndex">ProcResourceDescIndex</a>; }</td></tr>
+<tr><th id="217">217</th><td>  <a class="typedef" href="../../../../../../include/bits/stdint-uintn.h.html#uint64_t" title='uint64_t' data-type='__uint64_t' data-ref="uint64_t" data-ref-filename="uint64_t">uint64_t</a> <dfn class="decl def fn" id="_ZNK4llvm3mca13ResourceState15getResourceMaskEv" title='llvm::mca::ResourceState::getResourceMask' data-ref="_ZNK4llvm3mca13ResourceState15getResourceMaskEv" data-ref-filename="_ZNK4llvm3mca13ResourceState15getResourceMaskEv">getResourceMask</dfn>() <em>const</em> { <b>return</b> <a class="member field" href="#llvm::mca::ResourceState::ResourceMask" title='llvm::mca::ResourceState::ResourceMask' data-ref="llvm::mca::ResourceState::ResourceMask" data-ref-filename="llvm..mca..ResourceState..ResourceMask">ResourceMask</a>; }</td></tr>
+<tr><th id="218">218</th><td>  <a class="typedef" href="../../../../../../include/bits/stdint-uintn.h.html#uint64_t" title='uint64_t' data-type='__uint64_t' data-ref="uint64_t" data-ref-filename="uint64_t">uint64_t</a> <dfn class="decl def fn" id="_ZNK4llvm3mca13ResourceState12getReadyMaskEv" title='llvm::mca::ResourceState::getReadyMask' data-ref="_ZNK4llvm3mca13ResourceState12getReadyMaskEv" data-ref-filename="_ZNK4llvm3mca13ResourceState12getReadyMaskEv">getReadyMask</dfn>() <em>const</em> { <b>return</b> <a class="member field" href="#llvm::mca::ResourceState::ReadyMask" title='llvm::mca::ResourceState::ReadyMask' data-ref="llvm::mca::ResourceState::ReadyMask" data-ref-filename="llvm..mca..ResourceState..ReadyMask">ReadyMask</a>; }</td></tr>
+<tr><th id="219">219</th><td>  <em>int</em> <dfn class="decl def fn" id="_ZNK4llvm3mca13ResourceState13getBufferSizeEv" title='llvm::mca::ResourceState::getBufferSize' data-ref="_ZNK4llvm3mca13ResourceState13getBufferSizeEv" data-ref-filename="_ZNK4llvm3mca13ResourceState13getBufferSizeEv">getBufferSize</dfn>() <em>const</em> { <b>return</b> <a class="member field" href="#llvm::mca::ResourceState::BufferSize" title='llvm::mca::ResourceState::BufferSize' data-ref="llvm::mca::ResourceState::BufferSize" data-ref-filename="llvm..mca..ResourceState..BufferSize">BufferSize</a>; }</td></tr>
+<tr><th id="220">220</th><td></td></tr>
+<tr><th id="221">221</th><td>  <em>bool</em> <dfn class="decl def fn" id="_ZNK4llvm3mca13ResourceState10isBufferedEv" title='llvm::mca::ResourceState::isBuffered' data-ref="_ZNK4llvm3mca13ResourceState10isBufferedEv" data-ref-filename="_ZNK4llvm3mca13ResourceState10isBufferedEv">isBuffered</dfn>() <em>const</em> { <b>return</b> <a class="member field" href="#llvm::mca::ResourceState::BufferSize" title='llvm::mca::ResourceState::BufferSize' data-ref="llvm::mca::ResourceState::BufferSize" data-ref-filename="llvm..mca..ResourceState..BufferSize">BufferSize</a> &gt; <var>0</var>; }</td></tr>
+<tr><th id="222">222</th><td>  <em>bool</em> <dfn class="decl def fn" id="_ZNK4llvm3mca13ResourceState9isInOrderEv" title='llvm::mca::ResourceState::isInOrder' data-ref="_ZNK4llvm3mca13ResourceState9isInOrderEv" data-ref-filename="_ZNK4llvm3mca13ResourceState9isInOrderEv">isInOrder</dfn>() <em>const</em> { <b>return</b> <a class="member field" href="#llvm::mca::ResourceState::BufferSize" title='llvm::mca::ResourceState::BufferSize' data-ref="llvm::mca::ResourceState::BufferSize" data-ref-filename="llvm..mca..ResourceState..BufferSize">BufferSize</a> == <var>1</var>; }</td></tr>
+<tr><th id="223">223</th><td></td></tr>
+<tr><th id="224">224</th><td>  <i class="doc">/// Returns true if this is an in-order dispatch/issue resource.</i></td></tr>
+<tr><th id="225">225</th><td>  <em>bool</em> <dfn class="decl def fn" id="_ZNK4llvm3mca13ResourceState17isADispatchHazardEv" title='llvm::mca::ResourceState::isADispatchHazard' data-ref="_ZNK4llvm3mca13ResourceState17isADispatchHazardEv" data-ref-filename="_ZNK4llvm3mca13ResourceState17isADispatchHazardEv">isADispatchHazard</dfn>() <em>const</em> { <b>return</b> <a class="member field" href="#llvm::mca::ResourceState::BufferSize" title='llvm::mca::ResourceState::BufferSize' data-ref="llvm::mca::ResourceState::BufferSize" data-ref-filename="llvm..mca..ResourceState..BufferSize">BufferSize</a> == <var>0</var>; }</td></tr>
+<tr><th id="226">226</th><td>  <em>bool</em> <dfn class="decl def fn" id="_ZNK4llvm3mca13ResourceState10isReservedEv" title='llvm::mca::ResourceState::isReserved' data-ref="_ZNK4llvm3mca13ResourceState10isReservedEv" data-ref-filename="_ZNK4llvm3mca13ResourceState10isReservedEv">isReserved</dfn>() <em>const</em> { <b>return</b> <a class="member field" href="#llvm::mca::ResourceState::Unavailable" title='llvm::mca::ResourceState::Unavailable' data-ref="llvm::mca::ResourceState::Unavailable" data-ref-filename="llvm..mca..ResourceState..Unavailable">Unavailable</a>; }</td></tr>
+<tr><th id="227">227</th><td></td></tr>
+<tr><th id="228">228</th><td>  <em>void</em> <dfn class="decl def fn" id="_ZN4llvm3mca13ResourceState11setReservedEv" title='llvm::mca::ResourceState::setReserved' data-ref="_ZN4llvm3mca13ResourceState11setReservedEv" data-ref-filename="_ZN4llvm3mca13ResourceState11setReservedEv">setReserved</dfn>() { <a class="member field" href="#llvm::mca::ResourceState::Unavailable" title='llvm::mca::ResourceState::Unavailable' data-ref="llvm::mca::ResourceState::Unavailable" data-ref-filename="llvm..mca..ResourceState..Unavailable">Unavailable</a> = <b>true</b>; }</td></tr>
+<tr><th id="229">229</th><td>  <em>void</em> <dfn class="decl def fn" id="_ZN4llvm3mca13ResourceState13clearReservedEv" title='llvm::mca::ResourceState::clearReserved' data-ref="_ZN4llvm3mca13ResourceState13clearReservedEv" data-ref-filename="_ZN4llvm3mca13ResourceState13clearReservedEv">clearReserved</dfn>() { <a class="member field" href="#llvm::mca::ResourceState::Unavailable" title='llvm::mca::ResourceState::Unavailable' data-ref="llvm::mca::ResourceState::Unavailable" data-ref-filename="llvm..mca..ResourceState..Unavailable">Unavailable</a> = <b>false</b>; }</td></tr>
+<tr><th id="230">230</th><td></td></tr>
+<tr><th id="231">231</th><td>  <i class="doc">/// Returs true if this resource is not reserved, and if there are at least</i></td></tr>
+<tr><th id="232">232</th><td><i class="doc">  /// `NumUnits` available units.</i></td></tr>
+<tr><th id="233">233</th><td>  <em>bool</em> <dfn class="decl fn" id="_ZNK4llvm3mca13ResourceState7isReadyEj" title='llvm::mca::ResourceState::isReady' data-ref="_ZNK4llvm3mca13ResourceState7isReadyEj" data-ref-filename="_ZNK4llvm3mca13ResourceState7isReadyEj">isReady</dfn>(<em>unsigned</em> <dfn class="local col6 decl" id="216NumUnits" title='NumUnits' data-type='unsigned int' data-ref="216NumUnits" data-ref-filename="216NumUnits">NumUnits</dfn> = <var>1</var>) <em>const</em>;</td></tr>
+<tr><th id="234">234</th><td></td></tr>
+<tr><th id="235">235</th><td>  <em>bool</em> <dfn class="decl def fn" id="_ZNK4llvm3mca13ResourceState16isAResourceGroupEv" title='llvm::mca::ResourceState::isAResourceGroup' data-ref="_ZNK4llvm3mca13ResourceState16isAResourceGroupEv" data-ref-filename="_ZNK4llvm3mca13ResourceState16isAResourceGroupEv">isAResourceGroup</dfn>() <em>const</em> { <b>return</b> <a class="member field" href="#llvm::mca::ResourceState::IsAGroup" title='llvm::mca::ResourceState::IsAGroup' data-ref="llvm::mca::ResourceState::IsAGroup" data-ref-filename="llvm..mca..ResourceState..IsAGroup">IsAGroup</a>; }</td></tr>
+<tr><th id="236">236</th><td></td></tr>
+<tr><th id="237">237</th><td>  <em>bool</em> <dfn class="decl def fn" id="_ZNK4llvm3mca13ResourceState16containsResourceEm" title='llvm::mca::ResourceState::containsResource' data-ref="_ZNK4llvm3mca13ResourceState16containsResourceEm" data-ref-filename="_ZNK4llvm3mca13ResourceState16containsResourceEm">containsResource</dfn>(<a class="typedef" href="../../../../../../include/bits/stdint-uintn.h.html#uint64_t" title='uint64_t' data-type='__uint64_t' data-ref="uint64_t" data-ref-filename="uint64_t">uint64_t</a> <dfn class="local col7 decl" id="217ID" title='ID' data-type='uint64_t' data-ref="217ID" data-ref-filename="217ID">ID</dfn>) <em>const</em> { <b>return</b> <a class="member field" href="#llvm::mca::ResourceState::ResourceMask" title='llvm::mca::ResourceState::ResourceMask' data-ref="llvm::mca::ResourceState::ResourceMask" data-ref-filename="llvm..mca..ResourceState..ResourceMask">ResourceMask</a> &amp; <a class="local col7 ref" href="#217ID" title='ID' data-ref="217ID" data-ref-filename="217ID">ID</a>; }</td></tr>
+<tr><th id="238">238</th><td></td></tr>
+<tr><th id="239">239</th><td>  <em>void</em> <dfn class="decl def fn" id="_ZN4llvm3mca13ResourceState21markSubResourceAsUsedEm" title='llvm::mca::ResourceState::markSubResourceAsUsed' data-ref="_ZN4llvm3mca13ResourceState21markSubResourceAsUsedEm" data-ref-filename="_ZN4llvm3mca13ResourceState21markSubResourceAsUsedEm">markSubResourceAsUsed</dfn>(<a class="typedef" href="../../../../../../include/bits/stdint-uintn.h.html#uint64_t" title='uint64_t' data-type='__uint64_t' data-ref="uint64_t" data-ref-filename="uint64_t">uint64_t</a> <dfn class="local col8 decl" id="218ID" title='ID' data-type='uint64_t' data-ref="218ID" data-ref-filename="218ID">ID</dfn>) {</td></tr>
+<tr><th id="240">240</th><td>    <a class="macro" href="../../../../../../include/assert.h.html#50" title="(static_cast&lt;void&gt; (0))" data-ref="_M/assert">assert</a>(isSubResourceReady(ID));</td></tr>
+<tr><th id="241">241</th><td>    <a class="member field" href="#llvm::mca::ResourceState::ReadyMask" title='llvm::mca::ResourceState::ReadyMask' data-ref="llvm::mca::ResourceState::ReadyMask" data-ref-filename="llvm..mca..ResourceState..ReadyMask">ReadyMask</a> ^= <a class="local col8 ref" href="#218ID" title='ID' data-ref="218ID" data-ref-filename="218ID">ID</a>;</td></tr>
+<tr><th id="242">242</th><td>  }</td></tr>
+<tr><th id="243">243</th><td></td></tr>
+<tr><th id="244">244</th><td>  <em>void</em> <dfn class="decl def fn" id="_ZN4llvm3mca13ResourceState18releaseSubResourceEm" title='llvm::mca::ResourceState::releaseSubResource' data-ref="_ZN4llvm3mca13ResourceState18releaseSubResourceEm" data-ref-filename="_ZN4llvm3mca13ResourceState18releaseSubResourceEm">releaseSubResource</dfn>(<a class="typedef" href="../../../../../../include/bits/stdint-uintn.h.html#uint64_t" title='uint64_t' data-type='__uint64_t' data-ref="uint64_t" data-ref-filename="uint64_t">uint64_t</a> <dfn class="local col9 decl" id="219ID" title='ID' data-type='uint64_t' data-ref="219ID" data-ref-filename="219ID">ID</dfn>) {</td></tr>
+<tr><th id="245">245</th><td>    <a class="macro" href="../../../../../../include/assert.h.html#50" title="(static_cast&lt;void&gt; (0))" data-ref="_M/assert">assert</a>(!isSubResourceReady(ID));</td></tr>
+<tr><th id="246">246</th><td>    <a class="member field" href="#llvm::mca::ResourceState::ReadyMask" title='llvm::mca::ResourceState::ReadyMask' data-ref="llvm::mca::ResourceState::ReadyMask" data-ref-filename="llvm..mca..ResourceState..ReadyMask">ReadyMask</a> ^= <a class="local col9 ref" href="#219ID" title='ID' data-ref="219ID" data-ref-filename="219ID">ID</a>;</td></tr>
+<tr><th id="247">247</th><td>  }</td></tr>
+<tr><th id="248">248</th><td></td></tr>
+<tr><th id="249">249</th><td>  <em>unsigned</em> <dfn class="decl def fn" id="_ZNK4llvm3mca13ResourceState11getNumUnitsEv" title='llvm::mca::ResourceState::getNumUnits' data-ref="_ZNK4llvm3mca13ResourceState11getNumUnitsEv" data-ref-filename="_ZNK4llvm3mca13ResourceState11getNumUnitsEv">getNumUnits</dfn>() <em>const</em> {</td></tr>
+<tr><th id="250">250</th><td>    <b>return</b> <a class="member fn" href="#_ZNK4llvm3mca13ResourceState16isAResourceGroupEv" title='llvm::mca::ResourceState::isAResourceGroup' data-ref="_ZNK4llvm3mca13ResourceState16isAResourceGroupEv" data-ref-filename="_ZNK4llvm3mca13ResourceState16isAResourceGroupEv">isAResourceGroup</a>() ? <var>1U</var> : <a class="ref fn" href="../../Support/MathExtras.h.html#_ZN4llvm15countPopulationET_" title='llvm::countPopulation' data-ref="_ZN4llvm15countPopulationET_" data-ref-filename="_ZN4llvm15countPopulationET_">countPopulation</a>(<a class="member field" href="#llvm::mca::ResourceState::ResourceSizeMask" title='llvm::mca::ResourceState::ResourceSizeMask' data-ref="llvm::mca::ResourceState::ResourceSizeMask" data-ref-filename="llvm..mca..ResourceState..ResourceSizeMask">ResourceSizeMask</a>);</td></tr>
+<tr><th id="251">251</th><td>  }</td></tr>
+<tr><th id="252">252</th><td></td></tr>
+<tr><th id="253">253</th><td>  <i class="doc">/// Checks if there is an available slot in the resource buffer.</i></td></tr>
+<tr><th id="254">254</th><td><i class="doc">  ///</i></td></tr>
+<tr><th id="255">255</th><td><i class="doc">  /// Returns RS_BUFFER_AVAILABLE if this is not a buffered resource, or if</i></td></tr>
+<tr><th id="256">256</th><td><i class="doc">  /// there is a slot available.</i></td></tr>
+<tr><th id="257">257</th><td><i class="doc">  ///</i></td></tr>
+<tr><th id="258">258</th><td><i class="doc">  /// Returns RS_RESERVED if this buffered resource is a dispatch hazard, and it</i></td></tr>
+<tr><th id="259">259</th><td><i class="doc">  /// is reserved.</i></td></tr>
+<tr><th id="260">260</th><td><i class="doc">  ///</i></td></tr>
+<tr><th id="261">261</th><td><i class="doc">  /// Returns RS_BUFFER_UNAVAILABLE if there are no available slots.</i></td></tr>
+<tr><th id="262">262</th><td>  <a class="type" href="#llvm::mca::ResourceStateEvent" title='llvm::mca::ResourceStateEvent' data-ref="llvm::mca::ResourceStateEvent" data-ref-filename="llvm..mca..ResourceStateEvent">ResourceStateEvent</a> <dfn class="decl fn" id="_ZNK4llvm3mca13ResourceState17isBufferAvailableEv" title='llvm::mca::ResourceState::isBufferAvailable' data-ref="_ZNK4llvm3mca13ResourceState17isBufferAvailableEv" data-ref-filename="_ZNK4llvm3mca13ResourceState17isBufferAvailableEv">isBufferAvailable</dfn>() <em>const</em>;</td></tr>
+<tr><th id="263">263</th><td></td></tr>
+<tr><th id="264">264</th><td>  <i class="doc">/// Reserve a buffer slot.</i></td></tr>
+<tr><th id="265">265</th><td><i class="doc">  ///</i></td></tr>
+<tr><th id="266">266</th><td><i class="doc">  /// Returns true if the buffer is not full.</i></td></tr>
+<tr><th id="267">267</th><td><i class="doc">  /// It always returns true if BufferSize is set to zero.</i></td></tr>
+<tr><th id="268">268</th><td>  <em>bool</em> <dfn class="decl def fn" id="_ZN4llvm3mca13ResourceState13reserveBufferEv" title='llvm::mca::ResourceState::reserveBuffer' data-ref="_ZN4llvm3mca13ResourceState13reserveBufferEv" data-ref-filename="_ZN4llvm3mca13ResourceState13reserveBufferEv">reserveBuffer</dfn>() {</td></tr>
+<tr><th id="269">269</th><td>    <b>if</b> (<a class="member field" href="#llvm::mca::ResourceState::BufferSize" title='llvm::mca::ResourceState::BufferSize' data-ref="llvm::mca::ResourceState::BufferSize" data-ref-filename="llvm..mca..ResourceState..BufferSize">BufferSize</a> &lt;= <var>0</var>)</td></tr>
+<tr><th id="270">270</th><td>      <b>return</b> <b>true</b>;</td></tr>
+<tr><th id="271">271</th><td></td></tr>
+<tr><th id="272">272</th><td>    --<a class="member field" href="#llvm::mca::ResourceState::AvailableSlots" title='llvm::mca::ResourceState::AvailableSlots' data-ref="llvm::mca::ResourceState::AvailableSlots" data-ref-filename="llvm..mca..ResourceState..AvailableSlots">AvailableSlots</a>;</td></tr>
+<tr><th id="273">273</th><td>    <a class="macro" href="../../../../../../include/assert.h.html#50" title="(static_cast&lt;void&gt; (0))" data-ref="_M/assert">assert</a>(AvailableSlots &lt;= <b>static_cast</b>&lt;<em>unsigned</em>&gt;(BufferSize));</td></tr>
+<tr><th id="274">274</th><td>    <b>return</b> <a class="member field" href="#llvm::mca::ResourceState::AvailableSlots" title='llvm::mca::ResourceState::AvailableSlots' data-ref="llvm::mca::ResourceState::AvailableSlots" data-ref-filename="llvm..mca..ResourceState..AvailableSlots">AvailableSlots</a>;</td></tr>
+<tr><th id="275">275</th><td>  }</td></tr>
+<tr><th id="276">276</th><td></td></tr>
+<tr><th id="277">277</th><td>  <i class="doc">/// Releases a slot in the buffer.</i></td></tr>
+<tr><th id="278">278</th><td>  <em>void</em> <dfn class="decl def fn" id="_ZN4llvm3mca13ResourceState13releaseBufferEv" title='llvm::mca::ResourceState::releaseBuffer' data-ref="_ZN4llvm3mca13ResourceState13releaseBufferEv" data-ref-filename="_ZN4llvm3mca13ResourceState13releaseBufferEv">releaseBuffer</dfn>() {</td></tr>
+<tr><th id="279">279</th><td>    <i>// Ignore dispatch hazards or invalid buffer sizes.</i></td></tr>
+<tr><th id="280">280</th><td>    <b>if</b> (<a class="member field" href="#llvm::mca::ResourceState::BufferSize" title='llvm::mca::ResourceState::BufferSize' data-ref="llvm::mca::ResourceState::BufferSize" data-ref-filename="llvm..mca..ResourceState..BufferSize">BufferSize</a> &lt;= <var>0</var>)</td></tr>
+<tr><th id="281">281</th><td>      <b>return</b>;</td></tr>
+<tr><th id="282">282</th><td></td></tr>
+<tr><th id="283">283</th><td>    ++<a class="member field" href="#llvm::mca::ResourceState::AvailableSlots" title='llvm::mca::ResourceState::AvailableSlots' data-ref="llvm::mca::ResourceState::AvailableSlots" data-ref-filename="llvm..mca..ResourceState..AvailableSlots">AvailableSlots</a>;</td></tr>
+<tr><th id="284">284</th><td>    <a class="macro" href="../../../../../../include/assert.h.html#50" title="(static_cast&lt;void&gt; (0))" data-ref="_M/assert">assert</a>(AvailableSlots &lt;= <b>static_cast</b>&lt;<em>unsigned</em>&gt;(BufferSize));</td></tr>
+<tr><th id="285">285</th><td>  }</td></tr>
+<tr><th id="286">286</th><td></td></tr>
+<tr><th id="287">287</th><td><u>#<span data-ppcond="287">ifndef</span> <span class="macro" data-ref="_M/NDEBUG">NDEBUG</span></u></td></tr>
+<tr><th id="288">288</th><td>  <em>void</em> dump() <em>const</em>;</td></tr>
+<tr><th id="289">289</th><td><u>#<span data-ppcond="287">endif</span></u></td></tr>
+<tr><th id="290">290</th><td>};</td></tr>
+<tr><th id="291">291</th><td></td></tr>
+<tr><th id="292">292</th><td><i class="doc">/// A resource unit identifier.</i></td></tr>
+<tr><th id="293">293</th><td><i class="doc">///</i></td></tr>
+<tr><th id="294">294</th><td><i class="doc">/// This is used to identify a specific processor resource unit using a pair</i></td></tr>
+<tr><th id="295">295</th><td><i class="doc">/// of indices where the 'first' index is a processor resource mask, and the</i></td></tr>
+<tr><th id="296">296</th><td><i class="doc">/// 'second' index is an index for a "sub-resource" (i.e. unit).</i></td></tr>
+<tr><th id="297">297</th><td><b>typedef</b> <span class="namespace">std::</span><span class='type' title='std::pair' data-ref="std::pair" data-ref-filename="std..pair">pair</span>&lt;<a class="typedef" href="../../../../../../include/bits/stdint-uintn.h.html#uint64_t" title='uint64_t' data-type='__uint64_t' data-ref="uint64_t" data-ref-filename="uint64_t">uint64_t</a>, <a class="typedef" href="../../../../../../include/bits/stdint-uintn.h.html#uint64_t" title='uint64_t' data-type='__uint64_t' data-ref="uint64_t" data-ref-filename="uint64_t">uint64_t</a>&gt; <dfn class="typedef" id="llvm::mca::ResourceRef" title='llvm::mca::ResourceRef' data-type='std::pair&lt;uint64_t, uint64_t&gt;' data-ref="llvm::mca::ResourceRef" data-ref-filename="llvm..mca..ResourceRef">ResourceRef</dfn>;</td></tr>
+<tr><th id="298">298</th><td></td></tr>
+<tr><th id="299">299</th><td><i>// First: a MCProcResourceDesc index identifying a buffered resource.</i></td></tr>
+<tr><th id="300">300</th><td><i>// Second: max number of buffer entries used in this resource.</i></td></tr>
+<tr><th id="301">301</th><td><b>typedef</b> <span class="namespace">std::</span><span class='type' title='std::pair' data-ref="std::pair" data-ref-filename="std..pair">pair</span>&lt;<em>unsigned</em>, <em>unsigned</em>&gt; <dfn class="typedef" id="llvm::mca::BufferUsageEntry" title='llvm::mca::BufferUsageEntry' data-type='std::pair&lt;unsigned int, unsigned int&gt;' data-ref="llvm::mca::BufferUsageEntry" data-ref-filename="llvm..mca..BufferUsageEntry">BufferUsageEntry</dfn>;</td></tr>
+<tr><th id="302">302</th><td></td></tr>
+<tr><th id="303">303</th><td><i class="doc">/// A resource manager for processor resource units and groups.</i></td></tr>
+<tr><th id="304">304</th><td><i class="doc">///</i></td></tr>
+<tr><th id="305">305</th><td><i class="doc">/// This class owns all the ResourceState objects, and it is responsible for</i></td></tr>
+<tr><th id="306">306</th><td><i class="doc">/// acting on requests from a Scheduler by updating the internal state of</i></td></tr>
+<tr><th id="307">307</th><td><i class="doc">/// ResourceState objects.</i></td></tr>
+<tr><th id="308">308</th><td><i class="doc">/// This class doesn't know about instruction itineraries and functional units.</i></td></tr>
+<tr><th id="309">309</th><td><i class="doc">/// In future, it can be extended to support itineraries too through the same</i></td></tr>
+<tr><th id="310">310</th><td><i class="doc">/// public interface.</i></td></tr>
+<tr><th id="311">311</th><td><b>class</b> <dfn class="type def" id="llvm::mca::ResourceManager" title='llvm::mca::ResourceManager' data-ref="llvm::mca::ResourceManager" data-ref-filename="llvm..mca..ResourceManager">ResourceManager</dfn> {</td></tr>
+<tr><th id="312">312</th><td>  <i>// Set of resources available on the subtarget.</i></td></tr>
+<tr><th id="313">313</th><td><i>  //</i></td></tr>
+<tr><th id="314">314</th><td><i>  // There is an instance of ResourceState for every resource declared by the</i></td></tr>
+<tr><th id="315">315</th><td><i>  // target scheduling model.</i></td></tr>
+<tr><th id="316">316</th><td><i>  //</i></td></tr>
+<tr><th id="317">317</th><td><i>  // Elements of this vector are ordered by resource kind. In particular,</i></td></tr>
+<tr><th id="318">318</th><td><i>  // resource units take precedence over resource groups.</i></td></tr>
+<tr><th id="319">319</th><td><i>  //</i></td></tr>
+<tr><th id="320">320</th><td><i>  // The index of a processor resource in this vector depends on the value of</i></td></tr>
+<tr><th id="321">321</th><td><i>  // its mask (see the description of field ResourceState::ResourceMask).  In</i></td></tr>
+<tr><th id="322">322</th><td><i>  // particular, it is computed as the position of the most significant bit set</i></td></tr>
+<tr><th id="323">323</th><td><i>  // (MSB) in the mask plus one (since we want to ignore the invalid resource</i></td></tr>
+<tr><th id="324">324</th><td><i>  // descriptor at index zero).</i></td></tr>
+<tr><th id="325">325</th><td><i>  //</i></td></tr>
+<tr><th id="326">326</th><td><i>  // Example (little endian):</i></td></tr>
+<tr><th id="327">327</th><td><i>  //</i></td></tr>
+<tr><th id="328">328</th><td><i>  //             Resource | Mask    |  MSB    | Index</i></td></tr>
+<tr><th id="329">329</th><td><i>  //             ---------+---------+---------+-------</i></td></tr>
+<tr><th id="330">330</th><td><i>  //                 A    | 0b00001 | 0b00001 |   1</i></td></tr>
+<tr><th id="331">331</th><td><i>  //                      |         |         |</i></td></tr>
+<tr><th id="332">332</th><td><i>  //                 B    | 0b00100 | 0b00100 |   3</i></td></tr>
+<tr><th id="333">333</th><td><i>  //                      |         |         |</i></td></tr>
+<tr><th id="334">334</th><td><i>  //                 C    | 0b10010 | 0b10000 |   5</i></td></tr>
+<tr><th id="335">335</th><td><i>  //</i></td></tr>
+<tr><th id="336">336</th><td><i>  //</i></td></tr>
+<tr><th id="337">337</th><td><i>  // The same index is also used to address elements within vector `Strategies`</i></td></tr>
+<tr><th id="338">338</th><td><i>  // and vector `Resource2Groups`.</i></td></tr>
+<tr><th id="339">339</th><td>  <span class="namespace">std::</span><span class='type' title='std::vector' data-ref="std::vector" data-ref-filename="std..vector">vector</span>&lt;<span class="namespace">std::</span><span class='type' title='std::unique_ptr' data-ref="std::unique_ptr" data-ref-filename="std..unique_ptr">unique_ptr</span>&lt;<a class="type" href="#llvm::mca::ResourceState" title='llvm::mca::ResourceState' data-ref="llvm::mca::ResourceState" data-ref-filename="llvm..mca..ResourceState">ResourceState</a>&gt;&gt; <dfn class="decl field" id="llvm::mca::ResourceManager::Resources" title='llvm::mca::ResourceManager::Resources' data-ref="llvm::mca::ResourceManager::Resources" data-ref-filename="llvm..mca..ResourceManager..Resources">Resources</dfn>;</td></tr>
+<tr><th id="340">340</th><td>  <span class="namespace">std::</span><span class='type' title='std::vector' data-ref="std::vector" data-ref-filename="std..vector">vector</span>&lt;<span class="namespace">std::</span><span class='type' title='std::unique_ptr' data-ref="std::unique_ptr" data-ref-filename="std..unique_ptr">unique_ptr</span>&lt;<a class="type" href="#llvm::mca::ResourceStrategy" title='llvm::mca::ResourceStrategy' data-ref="llvm::mca::ResourceStrategy" data-ref-filename="llvm..mca..ResourceStrategy">ResourceStrategy</a>&gt;&gt; <dfn class="decl field" id="llvm::mca::ResourceManager::Strategies" title='llvm::mca::ResourceManager::Strategies' data-ref="llvm::mca::ResourceManager::Strategies" data-ref-filename="llvm..mca..ResourceManager..Strategies">Strategies</dfn>;</td></tr>
+<tr><th id="341">341</th><td></td></tr>
+<tr><th id="342">342</th><td>  <i>// Used to quickly identify groups that own a particular resource unit.</i></td></tr>
+<tr><th id="343">343</th><td>  <span class="namespace">std::</span><span class='type' title='std::vector' data-ref="std::vector" data-ref-filename="std..vector">vector</span>&lt;<a class="typedef" href="../../../../../../include/bits/stdint-uintn.h.html#uint64_t" title='uint64_t' data-type='__uint64_t' data-ref="uint64_t" data-ref-filename="uint64_t">uint64_t</a>&gt; <dfn class="decl field" id="llvm::mca::ResourceManager::Resource2Groups" title='llvm::mca::ResourceManager::Resource2Groups' data-ref="llvm::mca::ResourceManager::Resource2Groups" data-ref-filename="llvm..mca..ResourceManager..Resource2Groups">Resource2Groups</dfn>;</td></tr>
+<tr><th id="344">344</th><td></td></tr>
+<tr><th id="345">345</th><td>  <i>// A table that maps processor resource IDs to processor resource masks.</i></td></tr>
+<tr><th id="346">346</th><td>  <a class="type" href="../../ADT/SmallVector.h.html#llvm::SmallVector" title='llvm::SmallVector' data-ref="llvm::SmallVector" data-ref-filename="llvm..SmallVector">SmallVector</a>&lt;<a class="typedef" href="../../../../../../include/bits/stdint-uintn.h.html#uint64_t" title='uint64_t' data-type='__uint64_t' data-ref="uint64_t" data-ref-filename="uint64_t">uint64_t</a>, <var>8</var>&gt; <dfn class="decl field" id="llvm::mca::ResourceManager::ProcResID2Mask" title='llvm::mca::ResourceManager::ProcResID2Mask' data-ref="llvm::mca::ResourceManager::ProcResID2Mask" data-ref-filename="llvm..mca..ResourceManager..ProcResID2Mask">ProcResID2Mask</dfn>;</td></tr>
+<tr><th id="347">347</th><td></td></tr>
+<tr><th id="348">348</th><td>  <i>// A table that maps resource indices to actual processor resource IDs in the</i></td></tr>
+<tr><th id="349">349</th><td><i>  // scheduling model.</i></td></tr>
+<tr><th id="350">350</th><td>  <a class="type" href="../../ADT/SmallVector.h.html#llvm::SmallVector" title='llvm::SmallVector' data-ref="llvm::SmallVector" data-ref-filename="llvm..SmallVector">SmallVector</a>&lt;<em>unsigned</em>, <var>8</var>&gt; <dfn class="decl field" id="llvm::mca::ResourceManager::ResIndex2ProcResID" title='llvm::mca::ResourceManager::ResIndex2ProcResID' data-ref="llvm::mca::ResourceManager::ResIndex2ProcResID" data-ref-filename="llvm..mca..ResourceManager..ResIndex2ProcResID">ResIndex2ProcResID</dfn>;</td></tr>
+<tr><th id="351">351</th><td></td></tr>
+<tr><th id="352">352</th><td>  <i>// Keeps track of which resources are busy, and how many cycles are left</i></td></tr>
+<tr><th id="353">353</th><td><i>  // before those become usable again.</i></td></tr>
+<tr><th id="354">354</th><td>  <a class="type" href="../../ADT/DenseMap.h.html#llvm::SmallDenseMap" title='llvm::SmallDenseMap' data-ref="llvm::SmallDenseMap" data-ref-filename="llvm..SmallDenseMap">SmallDenseMap</a>&lt;<a class="typedef" href="#llvm::mca::ResourceRef" title='llvm::mca::ResourceRef' data-type='std::pair&lt;uint64_t, uint64_t&gt;' data-ref="llvm::mca::ResourceRef" data-ref-filename="llvm..mca..ResourceRef">ResourceRef</a>, <em>unsigned</em>&gt; <dfn class="decl field" id="llvm::mca::ResourceManager::BusyResources" title='llvm::mca::ResourceManager::BusyResources' data-ref="llvm::mca::ResourceManager::BusyResources" data-ref-filename="llvm..mca..ResourceManager..BusyResources">BusyResources</dfn>;</td></tr>
+<tr><th id="355">355</th><td></td></tr>
+<tr><th id="356">356</th><td>  <i>// Set of processor resource units available on the target.</i></td></tr>
+<tr><th id="357">357</th><td>  <a class="typedef" href="../../../../../../include/bits/stdint-uintn.h.html#uint64_t" title='uint64_t' data-type='__uint64_t' data-ref="uint64_t" data-ref-filename="uint64_t">uint64_t</a> <dfn class="decl field" id="llvm::mca::ResourceManager::ProcResUnitMask" title='llvm::mca::ResourceManager::ProcResUnitMask' data-ref="llvm::mca::ResourceManager::ProcResUnitMask" data-ref-filename="llvm..mca..ResourceManager..ProcResUnitMask">ProcResUnitMask</dfn>;</td></tr>
+<tr><th id="358">358</th><td></td></tr>
+<tr><th id="359">359</th><td>  <i>// Set of processor resource units that are available during this cycle.</i></td></tr>
+<tr><th id="360">360</th><td>  <a class="typedef" href="../../../../../../include/bits/stdint-uintn.h.html#uint64_t" title='uint64_t' data-type='__uint64_t' data-ref="uint64_t" data-ref-filename="uint64_t">uint64_t</a> <dfn class="decl field" id="llvm::mca::ResourceManager::AvailableProcResUnits" title='llvm::mca::ResourceManager::AvailableProcResUnits' data-ref="llvm::mca::ResourceManager::AvailableProcResUnits" data-ref-filename="llvm..mca..ResourceManager..AvailableProcResUnits">AvailableProcResUnits</dfn>;</td></tr>
+<tr><th id="361">361</th><td></td></tr>
+<tr><th id="362">362</th><td>  <i>// Set of processor resources that are currently reserved.</i></td></tr>
+<tr><th id="363">363</th><td>  <a class="typedef" href="../../../../../../include/bits/stdint-uintn.h.html#uint64_t" title='uint64_t' data-type='__uint64_t' data-ref="uint64_t" data-ref-filename="uint64_t">uint64_t</a> <dfn class="decl field" id="llvm::mca::ResourceManager::ReservedResourceGroups" title='llvm::mca::ResourceManager::ReservedResourceGroups' data-ref="llvm::mca::ResourceManager::ReservedResourceGroups" data-ref-filename="llvm..mca..ResourceManager..ReservedResourceGroups">ReservedResourceGroups</dfn>;</td></tr>
+<tr><th id="364">364</th><td></td></tr>
+<tr><th id="365">365</th><td>  <i>// Set of unavailable scheduler buffer resources. This is used internally to</i></td></tr>
+<tr><th id="366">366</th><td><i>  // speedup `canBeDispatched()` queries.</i></td></tr>
+<tr><th id="367">367</th><td>  <a class="typedef" href="../../../../../../include/bits/stdint-uintn.h.html#uint64_t" title='uint64_t' data-type='__uint64_t' data-ref="uint64_t" data-ref-filename="uint64_t">uint64_t</a> <dfn class="decl field" id="llvm::mca::ResourceManager::AvailableBuffers" title='llvm::mca::ResourceManager::AvailableBuffers' data-ref="llvm::mca::ResourceManager::AvailableBuffers" data-ref-filename="llvm..mca..ResourceManager..AvailableBuffers">AvailableBuffers</dfn>;</td></tr>
+<tr><th id="368">368</th><td></td></tr>
+<tr><th id="369">369</th><td>  <i>// Set of dispatch hazard buffer resources that are currently unavailable.</i></td></tr>
+<tr><th id="370">370</th><td>  <a class="typedef" href="../../../../../../include/bits/stdint-uintn.h.html#uint64_t" title='uint64_t' data-type='__uint64_t' data-ref="uint64_t" data-ref-filename="uint64_t">uint64_t</a> <dfn class="decl field" id="llvm::mca::ResourceManager::ReservedBuffers" title='llvm::mca::ResourceManager::ReservedBuffers' data-ref="llvm::mca::ResourceManager::ReservedBuffers" data-ref-filename="llvm..mca..ResourceManager..ReservedBuffers">ReservedBuffers</dfn>;</td></tr>
+<tr><th id="371">371</th><td></td></tr>
+<tr><th id="372">372</th><td>  <i>// Returns the actual resource unit that will be used.</i></td></tr>
+<tr><th id="373">373</th><td>  <a class="typedef" href="#llvm::mca::ResourceRef" title='llvm::mca::ResourceRef' data-type='std::pair&lt;uint64_t, uint64_t&gt;' data-ref="llvm::mca::ResourceRef" data-ref-filename="llvm..mca..ResourceRef">ResourceRef</a> <dfn class="decl fn" id="_ZN4llvm3mca15ResourceManager10selectPipeEm" title='llvm::mca::ResourceManager::selectPipe' data-ref="_ZN4llvm3mca15ResourceManager10selectPipeEm" data-ref-filename="_ZN4llvm3mca15ResourceManager10selectPipeEm">selectPipe</dfn>(<a class="typedef" href="../../../../../../include/bits/stdint-uintn.h.html#uint64_t" title='uint64_t' data-type='__uint64_t' data-ref="uint64_t" data-ref-filename="uint64_t">uint64_t</a> <dfn class="local col0 decl" id="220ResourceID" title='ResourceID' data-type='uint64_t' data-ref="220ResourceID" data-ref-filename="220ResourceID">ResourceID</dfn>);</td></tr>
+<tr><th id="374">374</th><td></td></tr>
+<tr><th id="375">375</th><td>  <em>void</em> <dfn class="decl fn" id="_ZN4llvm3mca15ResourceManager3useERKSt4pairImmE" title='llvm::mca::ResourceManager::use' data-ref="_ZN4llvm3mca15ResourceManager3useERKSt4pairImmE" data-ref-filename="_ZN4llvm3mca15ResourceManager3useERKSt4pairImmE">use</dfn>(<em>const</em> <a class="typedef" href="#llvm::mca::ResourceRef" title='llvm::mca::ResourceRef' data-type='std::pair&lt;uint64_t, uint64_t&gt;' data-ref="llvm::mca::ResourceRef" data-ref-filename="llvm..mca..ResourceRef">ResourceRef</a> &amp;<dfn class="local col1 decl" id="221RR" title='RR' data-type='const llvm::mca::ResourceRef &amp;' data-ref="221RR" data-ref-filename="221RR">RR</dfn>);</td></tr>
+<tr><th id="376">376</th><td>  <em>void</em> <dfn class="decl fn" id="_ZN4llvm3mca15ResourceManager7releaseERKSt4pairImmE" title='llvm::mca::ResourceManager::release' data-ref="_ZN4llvm3mca15ResourceManager7releaseERKSt4pairImmE" data-ref-filename="_ZN4llvm3mca15ResourceManager7releaseERKSt4pairImmE">release</dfn>(<em>const</em> <a class="typedef" href="#llvm::mca::ResourceRef" title='llvm::mca::ResourceRef' data-type='std::pair&lt;uint64_t, uint64_t&gt;' data-ref="llvm::mca::ResourceRef" data-ref-filename="llvm..mca..ResourceRef">ResourceRef</a> &amp;<dfn class="local col2 decl" id="222RR" title='RR' data-type='const llvm::mca::ResourceRef &amp;' data-ref="222RR" data-ref-filename="222RR">RR</dfn>);</td></tr>
+<tr><th id="377">377</th><td></td></tr>
+<tr><th id="378">378</th><td>  <em>unsigned</em> <dfn class="decl fn" id="_ZNK4llvm3mca15ResourceManager11getNumUnitsEm" title='llvm::mca::ResourceManager::getNumUnits' data-ref="_ZNK4llvm3mca15ResourceManager11getNumUnitsEm" data-ref-filename="_ZNK4llvm3mca15ResourceManager11getNumUnitsEm">getNumUnits</dfn>(<a class="typedef" href="../../../../../../include/bits/stdint-uintn.h.html#uint64_t" title='uint64_t' data-type='__uint64_t' data-ref="uint64_t" data-ref-filename="uint64_t">uint64_t</a> <dfn class="local col3 decl" id="223ResourceID" title='ResourceID' data-type='uint64_t' data-ref="223ResourceID" data-ref-filename="223ResourceID">ResourceID</dfn>) <em>const</em>;</td></tr>
+<tr><th id="379">379</th><td></td></tr>
+<tr><th id="380">380</th><td>  <i>// Overrides the selection strategy for the processor resource with the given</i></td></tr>
+<tr><th id="381">381</th><td><i>  // mask.</i></td></tr>
+<tr><th id="382">382</th><td>  <em>void</em> <dfn class="decl fn" id="_ZN4llvm3mca15ResourceManager21setCustomStrategyImplESt10unique_ptrINS0_16ResourceStrategyESt14default_deleteIS3_EEm" title='llvm::mca::ResourceManager::setCustomStrategyImpl' data-ref="_ZN4llvm3mca15ResourceManager21setCustomStrategyImplESt10unique_ptrINS0_16ResourceStrategyESt14default_deleteIS3_EEm" data-ref-filename="_ZN4llvm3mca15ResourceManager21setCustomStrategyImplESt10unique_ptrINS0_16ResourceStrategyESt14default_deleteIS3_EEm">setCustomStrategyImpl</dfn>(<span class="namespace">std::</span><span class='type' title='std::unique_ptr' data-ref="std::unique_ptr" data-ref-filename="std..unique_ptr">unique_ptr</span>&lt;<a class="type" href="#llvm::mca::ResourceStrategy" title='llvm::mca::ResourceStrategy' data-ref="llvm::mca::ResourceStrategy" data-ref-filename="llvm..mca..ResourceStrategy">ResourceStrategy</a>&gt; <dfn class="local col4 decl" id="224S" title='S' data-type='std::unique_ptr&lt;ResourceStrategy&gt;' data-ref="224S" data-ref-filename="224S">S</dfn>,</td></tr>
+<tr><th id="383">383</th><td>                             <a class="typedef" href="../../../../../../include/bits/stdint-uintn.h.html#uint64_t" title='uint64_t' data-type='__uint64_t' data-ref="uint64_t" data-ref-filename="uint64_t">uint64_t</a> <dfn class="local col5 decl" id="225ResourceMask" title='ResourceMask' data-type='uint64_t' data-ref="225ResourceMask" data-ref-filename="225ResourceMask">ResourceMask</dfn>);</td></tr>
+<tr><th id="384">384</th><td></td></tr>
+<tr><th id="385">385</th><td><b>public</b>:</td></tr>
+<tr><th id="386">386</th><td>  <dfn class="decl fn" id="_ZN4llvm3mca15ResourceManagerC1ERKNS_12MCSchedModelE" title='llvm::mca::ResourceManager::ResourceManager' data-ref="_ZN4llvm3mca15ResourceManagerC1ERKNS_12MCSchedModelE" data-ref-filename="_ZN4llvm3mca15ResourceManagerC1ERKNS_12MCSchedModelE">ResourceManager</dfn>(<em>const</em> <a class="type" href="../../MC/MCSchedule.h.html#llvm::MCSchedModel" title='llvm::MCSchedModel' data-ref="llvm::MCSchedModel" data-ref-filename="llvm..MCSchedModel">MCSchedModel</a> &amp;<dfn class="local col6 decl" id="226SM" title='SM' data-type='const llvm::MCSchedModel &amp;' data-ref="226SM" data-ref-filename="226SM">SM</dfn>);</td></tr>
+<tr><th id="387">387</th><td>  <b>virtual</b> <dfn class="virtual decl def fn" id="_ZN4llvm3mca15ResourceManagerD1Ev" title='llvm::mca::ResourceManager::~ResourceManager' data-ref="_ZN4llvm3mca15ResourceManagerD1Ev" data-ref-filename="_ZN4llvm3mca15ResourceManagerD1Ev">~ResourceManager</dfn>() = <b>default</b>;</td></tr>
+<tr><th id="388">388</th><td></td></tr>
+<tr><th id="389">389</th><td>  <i>// Overrides the selection strategy for the resource at index ResourceID in</i></td></tr>
+<tr><th id="390">390</th><td><i>  // the MCProcResourceDesc table.</i></td></tr>
+<tr><th id="391">391</th><td>  <em>void</em> <dfn class="decl def fn" id="_ZN4llvm3mca15ResourceManager17setCustomStrategyESt10unique_ptrINS0_16ResourceStrategyESt14default_deleteIS3_EEj" title='llvm::mca::ResourceManager::setCustomStrategy' data-ref="_ZN4llvm3mca15ResourceManager17setCustomStrategyESt10unique_ptrINS0_16ResourceStrategyESt14default_deleteIS3_EEj" data-ref-filename="_ZN4llvm3mca15ResourceManager17setCustomStrategyESt10unique_ptrINS0_16ResourceStrategyESt14default_deleteIS3_EEj">setCustomStrategy</dfn>(<span class="namespace">std::</span><span class='type' title='std::unique_ptr' data-ref="std::unique_ptr" data-ref-filename="std..unique_ptr">unique_ptr</span>&lt;<a class="type" href="#llvm::mca::ResourceStrategy" title='llvm::mca::ResourceStrategy' data-ref="llvm::mca::ResourceStrategy" data-ref-filename="llvm..mca..ResourceStrategy">ResourceStrategy</a>&gt; <dfn class="local col7 decl" id="227S" title='S' data-type='std::unique_ptr&lt;ResourceStrategy&gt;' data-ref="227S" data-ref-filename="227S">S</dfn>,</td></tr>
+<tr><th id="392">392</th><td>                         <em>unsigned</em> <dfn class="local col8 decl" id="228ResourceID" title='ResourceID' data-type='unsigned int' data-ref="228ResourceID" data-ref-filename="228ResourceID">ResourceID</dfn>) {</td></tr>
+<tr><th id="393">393</th><td>    <a class="macro" href="../../../../../../include/assert.h.html#50" title="(static_cast&lt;void&gt; (0))" data-ref="_M/assert">assert</a>(ResourceID &lt; ProcResID2Mask.size() &amp;&amp;</td></tr>
+<tr><th id="394">394</th><td>           <q>"Invalid resource index in input!"</q>);</td></tr>
+<tr><th id="395">395</th><td>    <b>return</b> <a class="member fn" href="#_ZN4llvm3mca15ResourceManager21setCustomStrategyImplESt10unique_ptrINS0_16ResourceStrategyESt14default_deleteIS3_EEm" title='llvm::mca::ResourceManager::setCustomStrategyImpl' data-ref="_ZN4llvm3mca15ResourceManager21setCustomStrategyImplESt10unique_ptrINS0_16ResourceStrategyESt14default_deleteIS3_EEm" data-ref-filename="_ZN4llvm3mca15ResourceManager21setCustomStrategyImplESt10unique_ptrINS0_16ResourceStrategyESt14default_deleteIS3_EEm">setCustomStrategyImpl</a>(<span class='ref fn fake' title='std::unique_ptr::unique_ptr&lt;_Tp, _Dp&gt;' data-ref="_ZNSt10unique_ptrC1EOSt10unique_ptrIT_T0_E" data-ref-filename="_ZNSt10unique_ptrC1EOSt10unique_ptrIT_T0_E"></span><span class="namespace">std::</span><span class='ref fn' title='std::move' data-ref="_ZSt4moveOT_" data-ref-filename="_ZSt4moveOT_">move</span>(<span class='refarg'><a class="local col7 ref" href="#227S" title='S' data-ref="227S" data-ref-filename="227S">S</a></span>), <a class="member field" href="#llvm::mca::ResourceManager::ProcResID2Mask" title='llvm::mca::ResourceManager::ProcResID2Mask' data-ref="llvm::mca::ResourceManager::ProcResID2Mask" data-ref-filename="llvm..mca..ResourceManager..ProcResID2Mask">ProcResID2Mask</a><a class="ref fn" href="../../ADT/SmallVector.h.html#_ZN4llvm25SmallVectorTemplateCommonixEm" title='llvm::SmallVectorTemplateCommon::operator[]' data-ref="_ZN4llvm25SmallVectorTemplateCommonixEm" data-ref-filename="_ZN4llvm25SmallVectorTemplateCommonixEm">[<a class="local col8 ref" href="#228ResourceID" title='ResourceID' data-ref="228ResourceID" data-ref-filename="228ResourceID">ResourceID</a>]</a>);</td></tr>
+<tr><th id="396">396</th><td>  }</td></tr>
+<tr><th id="397">397</th><td></td></tr>
+<tr><th id="398">398</th><td>  <i>// Returns RS_BUFFER_AVAILABLE if buffered resources are not reserved, and if</i></td></tr>
+<tr><th id="399">399</th><td><i>  // there are enough available slots in the buffers.</i></td></tr>
+<tr><th id="400">400</th><td>  <a class="type" href="#llvm::mca::ResourceStateEvent" title='llvm::mca::ResourceStateEvent' data-ref="llvm::mca::ResourceStateEvent" data-ref-filename="llvm..mca..ResourceStateEvent">ResourceStateEvent</a> <dfn class="decl fn" id="_ZNK4llvm3mca15ResourceManager15canBeDispatchedEm" title='llvm::mca::ResourceManager::canBeDispatched' data-ref="_ZNK4llvm3mca15ResourceManager15canBeDispatchedEm" data-ref-filename="_ZNK4llvm3mca15ResourceManager15canBeDispatchedEm">canBeDispatched</dfn>(<a class="typedef" href="../../../../../../include/bits/stdint-uintn.h.html#uint64_t" title='uint64_t' data-type='__uint64_t' data-ref="uint64_t" data-ref-filename="uint64_t">uint64_t</a> <dfn class="local col9 decl" id="229ConsumedBuffers" title='ConsumedBuffers' data-type='uint64_t' data-ref="229ConsumedBuffers" data-ref-filename="229ConsumedBuffers">ConsumedBuffers</dfn>) <em>const</em>;</td></tr>
+<tr><th id="401">401</th><td></td></tr>
+<tr><th id="402">402</th><td>  <i>// Return the processor resource identifier associated to this Mask.</i></td></tr>
+<tr><th id="403">403</th><td>  <em>unsigned</em> <dfn class="decl fn" id="_ZNK4llvm3mca15ResourceManager19resolveResourceMaskEm" title='llvm::mca::ResourceManager::resolveResourceMask' data-ref="_ZNK4llvm3mca15ResourceManager19resolveResourceMaskEm" data-ref-filename="_ZNK4llvm3mca15ResourceManager19resolveResourceMaskEm">resolveResourceMask</dfn>(<a class="typedef" href="../../../../../../include/bits/stdint-uintn.h.html#uint64_t" title='uint64_t' data-type='__uint64_t' data-ref="uint64_t" data-ref-filename="uint64_t">uint64_t</a> <dfn class="local col0 decl" id="230Mask" title='Mask' data-type='uint64_t' data-ref="230Mask" data-ref-filename="230Mask">Mask</dfn>) <em>const</em>;</td></tr>
+<tr><th id="404">404</th><td></td></tr>
+<tr><th id="405">405</th><td>  <i>// Acquires a slot from every buffered resource in mask `ConsumedBuffers`.</i></td></tr>
+<tr><th id="406">406</th><td><i>  // Units that are dispatch hazards (i.e. BufferSize=0) are marked as reserved.</i></td></tr>
+<tr><th id="407">407</th><td>  <em>void</em> <dfn class="decl fn" id="_ZN4llvm3mca15ResourceManager14reserveBuffersEm" title='llvm::mca::ResourceManager::reserveBuffers' data-ref="_ZN4llvm3mca15ResourceManager14reserveBuffersEm" data-ref-filename="_ZN4llvm3mca15ResourceManager14reserveBuffersEm">reserveBuffers</dfn>(<a class="typedef" href="../../../../../../include/bits/stdint-uintn.h.html#uint64_t" title='uint64_t' data-type='__uint64_t' data-ref="uint64_t" data-ref-filename="uint64_t">uint64_t</a> <dfn class="local col1 decl" id="231ConsumedBuffers" title='ConsumedBuffers' data-type='uint64_t' data-ref="231ConsumedBuffers" data-ref-filename="231ConsumedBuffers">ConsumedBuffers</dfn>);</td></tr>
+<tr><th id="408">408</th><td></td></tr>
+<tr><th id="409">409</th><td>  <i>// Releases a slot from every buffered resource in mask `ConsumedBuffers`.</i></td></tr>
+<tr><th id="410">410</th><td><i>  // ConsumedBuffers is a bitmask of previously acquired buffers (using method</i></td></tr>
+<tr><th id="411">411</th><td><i>  // `reserveBuffers`). Units that are dispatch hazards (i.e. BufferSize=0) are</i></td></tr>
+<tr><th id="412">412</th><td><i>  // not automatically unreserved by this method.</i></td></tr>
+<tr><th id="413">413</th><td>  <em>void</em> <dfn class="decl fn" id="_ZN4llvm3mca15ResourceManager14releaseBuffersEm" title='llvm::mca::ResourceManager::releaseBuffers' data-ref="_ZN4llvm3mca15ResourceManager14releaseBuffersEm" data-ref-filename="_ZN4llvm3mca15ResourceManager14releaseBuffersEm">releaseBuffers</dfn>(<a class="typedef" href="../../../../../../include/bits/stdint-uintn.h.html#uint64_t" title='uint64_t' data-type='__uint64_t' data-ref="uint64_t" data-ref-filename="uint64_t">uint64_t</a> <dfn class="local col2 decl" id="232ConsumedBuffers" title='ConsumedBuffers' data-type='uint64_t' data-ref="232ConsumedBuffers" data-ref-filename="232ConsumedBuffers">ConsumedBuffers</dfn>);</td></tr>
+<tr><th id="414">414</th><td></td></tr>
+<tr><th id="415">415</th><td>  <i>// Reserve a processor resource. A reserved resource is not available for</i></td></tr>
+<tr><th id="416">416</th><td><i>  // instruction issue until it is released.</i></td></tr>
+<tr><th id="417">417</th><td>  <em>void</em> <dfn class="decl fn" id="_ZN4llvm3mca15ResourceManager15reserveResourceEm" title='llvm::mca::ResourceManager::reserveResource' data-ref="_ZN4llvm3mca15ResourceManager15reserveResourceEm" data-ref-filename="_ZN4llvm3mca15ResourceManager15reserveResourceEm">reserveResource</dfn>(<a class="typedef" href="../../../../../../include/bits/stdint-uintn.h.html#uint64_t" title='uint64_t' data-type='__uint64_t' data-ref="uint64_t" data-ref-filename="uint64_t">uint64_t</a> <dfn class="local col3 decl" id="233ResourceID" title='ResourceID' data-type='uint64_t' data-ref="233ResourceID" data-ref-filename="233ResourceID">ResourceID</dfn>);</td></tr>
+<tr><th id="418">418</th><td></td></tr>
+<tr><th id="419">419</th><td>  <i>// Release a previously reserved processor resource.</i></td></tr>
+<tr><th id="420">420</th><td>  <em>void</em> <dfn class="decl fn" id="_ZN4llvm3mca15ResourceManager15releaseResourceEm" title='llvm::mca::ResourceManager::releaseResource' data-ref="_ZN4llvm3mca15ResourceManager15releaseResourceEm" data-ref-filename="_ZN4llvm3mca15ResourceManager15releaseResourceEm">releaseResource</dfn>(<a class="typedef" href="../../../../../../include/bits/stdint-uintn.h.html#uint64_t" title='uint64_t' data-type='__uint64_t' data-ref="uint64_t" data-ref-filename="uint64_t">uint64_t</a> <dfn class="local col4 decl" id="234ResourceID" title='ResourceID' data-type='uint64_t' data-ref="234ResourceID" data-ref-filename="234ResourceID">ResourceID</dfn>);</td></tr>
+<tr><th id="421">421</th><td></td></tr>
+<tr><th id="422">422</th><td>  <i>// Returns a zero mask if resources requested by Desc are all available during</i></td></tr>
+<tr><th id="423">423</th><td><i>  // this cycle. It returns a non-zero mask value only if there are unavailable</i></td></tr>
+<tr><th id="424">424</th><td><i>  // processor resources; each bit set in the mask represents a busy processor</i></td></tr>
+<tr><th id="425">425</th><td><i>  // resource unit or a reserved processor resource group.</i></td></tr>
+<tr><th id="426">426</th><td>  <a class="typedef" href="../../../../../../include/bits/stdint-uintn.h.html#uint64_t" title='uint64_t' data-type='__uint64_t' data-ref="uint64_t" data-ref-filename="uint64_t">uint64_t</a> <dfn class="decl fn" id="_ZNK4llvm3mca15ResourceManager17checkAvailabilityERKNS0_9InstrDescE" title='llvm::mca::ResourceManager::checkAvailability' data-ref="_ZNK4llvm3mca15ResourceManager17checkAvailabilityERKNS0_9InstrDescE" data-ref-filename="_ZNK4llvm3mca15ResourceManager17checkAvailabilityERKNS0_9InstrDescE">checkAvailability</dfn>(<em>const</em> <a class="type" href="../Instruction.h.html#llvm::mca::InstrDesc" title='llvm::mca::InstrDesc' data-ref="llvm::mca::InstrDesc" data-ref-filename="llvm..mca..InstrDesc">InstrDesc</a> &amp;<dfn class="local col5 decl" id="235Desc" title='Desc' data-type='const llvm::mca::InstrDesc &amp;' data-ref="235Desc" data-ref-filename="235Desc">Desc</dfn>) <em>const</em>;</td></tr>
+<tr><th id="427">427</th><td></td></tr>
+<tr><th id="428">428</th><td>  <a class="typedef" href="../../../../../../include/bits/stdint-uintn.h.html#uint64_t" title='uint64_t' data-type='__uint64_t' data-ref="uint64_t" data-ref-filename="uint64_t">uint64_t</a> <dfn class="decl def fn" id="_ZNK4llvm3mca15ResourceManager18getProcResUnitMaskEv" title='llvm::mca::ResourceManager::getProcResUnitMask' data-ref="_ZNK4llvm3mca15ResourceManager18getProcResUnitMaskEv" data-ref-filename="_ZNK4llvm3mca15ResourceManager18getProcResUnitMaskEv">getProcResUnitMask</dfn>() <em>const</em> { <b>return</b> <a class="member field" href="#llvm::mca::ResourceManager::ProcResUnitMask" title='llvm::mca::ResourceManager::ProcResUnitMask' data-ref="llvm::mca::ResourceManager::ProcResUnitMask" data-ref-filename="llvm..mca..ResourceManager..ProcResUnitMask">ProcResUnitMask</a>; }</td></tr>
+<tr><th id="429">429</th><td>  <a class="typedef" href="../../../../../../include/bits/stdint-uintn.h.html#uint64_t" title='uint64_t' data-type='__uint64_t' data-ref="uint64_t" data-ref-filename="uint64_t">uint64_t</a> <dfn class="decl def fn" id="_ZNK4llvm3mca15ResourceManager24getAvailableProcResUnitsEv" title='llvm::mca::ResourceManager::getAvailableProcResUnits' data-ref="_ZNK4llvm3mca15ResourceManager24getAvailableProcResUnitsEv" data-ref-filename="_ZNK4llvm3mca15ResourceManager24getAvailableProcResUnitsEv">getAvailableProcResUnits</dfn>() <em>const</em> { <b>return</b> <a class="member field" href="#llvm::mca::ResourceManager::AvailableProcResUnits" title='llvm::mca::ResourceManager::AvailableProcResUnits' data-ref="llvm::mca::ResourceManager::AvailableProcResUnits" data-ref-filename="llvm..mca..ResourceManager..AvailableProcResUnits">AvailableProcResUnits</a>; }</td></tr>
+<tr><th id="430">430</th><td></td></tr>
+<tr><th id="431">431</th><td>  <em>void</em> <dfn class="decl fn" id="_ZN4llvm3mca15ResourceManager16issueInstructionERKNS0_9InstrDescERNS_15SmallVectorImplISt4pairIS6_ImmENS0_14ResourceCyclesEEEE" title='llvm::mca::ResourceManager::issueInstruction' data-ref="_ZN4llvm3mca15ResourceManager16issueInstructionERKNS0_9InstrDescERNS_15SmallVectorImplISt4pairIS6_ImmENS0_14ResourceCyclesEEEE" data-ref-filename="_ZN4llvm3mca15ResourceManager16issueInstructionERKNS0_9InstrDescERNS_15SmallVectorImplISt4pairIS6_ImmENS0_14ResourceCyclesEEEE">issueInstruction</dfn>(</td></tr>
+<tr><th id="432">432</th><td>      <em>const</em> <a class="type" href="../Instruction.h.html#llvm::mca::InstrDesc" title='llvm::mca::InstrDesc' data-ref="llvm::mca::InstrDesc" data-ref-filename="llvm..mca..InstrDesc">InstrDesc</a> &amp;<dfn class="local col6 decl" id="236Desc" title='Desc' data-type='const llvm::mca::InstrDesc &amp;' data-ref="236Desc" data-ref-filename="236Desc">Desc</dfn>,</td></tr>
+<tr><th id="433">433</th><td>      <a class="type" href="../../ADT/APInt.h.html#llvm::SmallVectorImpl" title='llvm::SmallVectorImpl' data-ref="llvm::SmallVectorImpl" data-ref-filename="llvm..SmallVectorImpl">SmallVectorImpl</a>&lt;<span class="namespace">std::</span><span class='type' title='std::pair' data-ref="std::pair" data-ref-filename="std..pair">pair</span>&lt;<a class="typedef" href="#llvm::mca::ResourceRef" title='llvm::mca::ResourceRef' data-type='std::pair&lt;uint64_t, uint64_t&gt;' data-ref="llvm::mca::ResourceRef" data-ref-filename="llvm..mca..ResourceRef">ResourceRef</a>, <a class="type" href="../Support.h.html#llvm::mca::ResourceCycles" title='llvm::mca::ResourceCycles' data-ref="llvm::mca::ResourceCycles" data-ref-filename="llvm..mca..ResourceCycles">ResourceCycles</a>&gt;&gt; &amp;<dfn class="local col7 decl" id="237Pipes" title='Pipes' data-type='SmallVectorImpl&lt;std::pair&lt;ResourceRef, ResourceCycles&gt; &gt; &amp;' data-ref="237Pipes" data-ref-filename="237Pipes">Pipes</dfn>);</td></tr>
+<tr><th id="434">434</th><td></td></tr>
+<tr><th id="435">435</th><td>  <em>void</em> <dfn class="decl fn" id="_ZN4llvm3mca15ResourceManager10cycleEventERNS_15SmallVectorImplISt4pairImmEEE" title='llvm::mca::ResourceManager::cycleEvent' data-ref="_ZN4llvm3mca15ResourceManager10cycleEventERNS_15SmallVectorImplISt4pairImmEEE" data-ref-filename="_ZN4llvm3mca15ResourceManager10cycleEventERNS_15SmallVectorImplISt4pairImmEEE">cycleEvent</dfn>(<a class="type" href="../../ADT/APInt.h.html#llvm::SmallVectorImpl" title='llvm::SmallVectorImpl' data-ref="llvm::SmallVectorImpl" data-ref-filename="llvm..SmallVectorImpl">SmallVectorImpl</a>&lt;<a class="typedef" href="#llvm::mca::ResourceRef" title='llvm::mca::ResourceRef' data-type='std::pair&lt;uint64_t, uint64_t&gt;' data-ref="llvm::mca::ResourceRef" data-ref-filename="llvm..mca..ResourceRef">ResourceRef</a>&gt; &amp;<dfn class="local col8 decl" id="238ResourcesFreed" title='ResourcesFreed' data-type='SmallVectorImpl&lt;llvm::mca::ResourceRef&gt; &amp;' data-ref="238ResourcesFreed" data-ref-filename="238ResourcesFreed">ResourcesFreed</dfn>);</td></tr>
+<tr><th id="436">436</th><td></td></tr>
+<tr><th id="437">437</th><td><u>#<span data-ppcond="437">ifndef</span> <span class="macro" data-ref="_M/NDEBUG">NDEBUG</span></u></td></tr>
+<tr><th id="438">438</th><td>  <em>void</em> dump() <em>const</em> {</td></tr>
+<tr><th id="439">439</th><td>    <b>for</b> (<em>const</em> std::unique_ptr&lt;ResourceState&gt; &amp;Resource : Resources)</td></tr>
+<tr><th id="440">440</th><td>      Resource-&gt;dump();</td></tr>
+<tr><th id="441">441</th><td>  }</td></tr>
+<tr><th id="442">442</th><td><u>#<span data-ppcond="437">endif</span></u></td></tr>
+<tr><th id="443">443</th><td>};</td></tr>
+<tr><th id="444">444</th><td>} <i>// namespace mca</i></td></tr>
+<tr><th id="445">445</th><td>} <i>// namespace llvm</i></td></tr>
+<tr><th id="446">446</th><td></td></tr>
+<tr><th id="447">447</th><td><u>#<span data-ppcond="15">endif</span> // LLVM_MCA_RESOURCE_MANAGER_H</u></td></tr>
+<tr><th id="448">448</th><td></td></tr>
+</table><hr/><p id='footer'>
+Generated while processing <a href='../../../../lib/MCA/Context.cpp.html'>llvm/llvm/lib/MCA/Context.cpp</a><br/>Generated on <em>2021-Jul-01</em> from project llvm revision <em>12</em>

@@ -1,0 +1,90 @@
+<!doctype html>
+<html>
+<head>
+<meta name="viewport" content="width=device-width, initial-scale=1.0"><title>MachineBranchProbabilityInfo.h source code [llvm/llvm/include/llvm/CodeGen/MachineBranchProbabilityInfo.h] - Woboq Code Browser</title>
+<meta name="woboq:interestingDefinitions" content="llvm::MachineBranchProbabilityInfo "/>
+<link rel="stylesheet" href="../../../../.././data/qtcreator.css" title="QtCreator"/>
+<link rel="alternate stylesheet" href="../../../../.././data/kdevelop.css" title="KDevelop"/>
+<script type="text/javascript" src="../../../../.././data/jquery/jquery.min.js"></script>
+<script type="text/javascript" src="../../../../.././data/jquery/jquery-ui.min.js"></script>
+<script>var file = 'llvm/llvm/include/llvm/CodeGen/MachineBranchProbabilityInfo.h'; var root_path = '../../../../..'; var data_path = '../../../../.././data'; var ecma_script_api_version = 2;</script>
+<script src='../../../../.././data/codebrowser.js'></script>
+</head>
+<body><div id='header'><h1 id='breadcrumb'><span>Browse the source code of </span><a href='../../../..'>llvm</a>/<a href='../../..'>llvm</a>/<a href='../..'>include</a>/<a href='..'>llvm</a>/<a href='./'>CodeGen</a>/<a href='MachineBranchProbabilityInfo.h.html'>MachineBranchProbabilityInfo.h</a></h1></div>
+<hr/><div id='content'><table class="code">
+<tr><th id="1">1</th><td><i>//=- MachineBranchProbabilityInfo.h - Branch Probability Analysis -*- C++ -*-=//</i></td></tr>
+<tr><th id="2">2</th><td><i>//</i></td></tr>
+<tr><th id="3">3</th><td><i>// Part of the LLVM Project, under the Apache License v2.0 with LLVM Exceptions.</i></td></tr>
+<tr><th id="4">4</th><td><i>// See <a href="https://llvm.org/LICENSE.txt">https://llvm.org/LICENSE.txt</a> for license information.</i></td></tr>
+<tr><th id="5">5</th><td><i>// SPDX-License-Identifier: Apache-2.0 WITH LLVM-exception</i></td></tr>
+<tr><th id="6">6</th><td><i>//</i></td></tr>
+<tr><th id="7">7</th><td><i>//===----------------------------------------------------------------------===//</i></td></tr>
+<tr><th id="8">8</th><td><i>//</i></td></tr>
+<tr><th id="9">9</th><td><i>// This pass is used to evaluate branch probabilties on machine basic blocks.</i></td></tr>
+<tr><th id="10">10</th><td><i>//</i></td></tr>
+<tr><th id="11">11</th><td><i>//===----------------------------------------------------------------------===//</i></td></tr>
+<tr><th id="12">12</th><td></td></tr>
+<tr><th id="13">13</th><td><u>#<span data-ppcond="13">ifndef</span> <span class="macro" data-ref="_M/LLVM_CODEGEN_MACHINEBRANCHPROBABILITYINFO_H">LLVM_CODEGEN_MACHINEBRANCHPROBABILITYINFO_H</span></u></td></tr>
+<tr><th id="14">14</th><td><u>#define <dfn class="macro" id="_M/LLVM_CODEGEN_MACHINEBRANCHPROBABILITYINFO_H" data-ref="_M/LLVM_CODEGEN_MACHINEBRANCHPROBABILITYINFO_H">LLVM_CODEGEN_MACHINEBRANCHPROBABILITYINFO_H</dfn></u></td></tr>
+<tr><th id="15">15</th><td></td></tr>
+<tr><th id="16">16</th><td><u>#include <a href="MachineBasicBlock.h.html">"llvm/CodeGen/MachineBasicBlock.h"</a></u></td></tr>
+<tr><th id="17">17</th><td><u>#include <a href="../Pass.h.html">"llvm/Pass.h"</a></u></td></tr>
+<tr><th id="18">18</th><td><u>#include <a href="../Support/BranchProbability.h.html">"llvm/Support/BranchProbability.h"</a></u></td></tr>
+<tr><th id="19">19</th><td><u>#include &lt;climits&gt;</u></td></tr>
+<tr><th id="20">20</th><td><u>#include &lt;numeric&gt;</u></td></tr>
+<tr><th id="21">21</th><td></td></tr>
+<tr><th id="22">22</th><td><b>namespace</b> <span class="namespace">llvm</span> {</td></tr>
+<tr><th id="23">23</th><td></td></tr>
+<tr><th id="24">24</th><td><b>class</b> <dfn class="type def" id="llvm::MachineBranchProbabilityInfo" title='llvm::MachineBranchProbabilityInfo' data-ref="llvm::MachineBranchProbabilityInfo" data-ref-filename="llvm..MachineBranchProbabilityInfo">MachineBranchProbabilityInfo</dfn> : <b>public</b> <a class="type" href="../Pass.h.html#llvm::ImmutablePass" title='llvm::ImmutablePass' data-ref="llvm::ImmutablePass" data-ref-filename="llvm..ImmutablePass">ImmutablePass</a> {</td></tr>
+<tr><th id="25">25</th><td>  <b>virtual</b> <em>void</em> <dfn class="virtual decl fn" id="_ZN4llvm28MachineBranchProbabilityInfo6anchorEv" title='llvm::MachineBranchProbabilityInfo::anchor' data-ref="_ZN4llvm28MachineBranchProbabilityInfo6anchorEv" data-ref-filename="_ZN4llvm28MachineBranchProbabilityInfo6anchorEv">anchor</dfn>();</td></tr>
+<tr><th id="26">26</th><td></td></tr>
+<tr><th id="27">27</th><td>  <i>// Default weight value. Used when we don't have information about the edge.</i></td></tr>
+<tr><th id="28">28</th><td><i>  // TODO: DEFAULT_WEIGHT makes sense during static predication, when none of</i></td></tr>
+<tr><th id="29">29</th><td><i>  // the successors have a weight yet. But it doesn't make sense when providing</i></td></tr>
+<tr><th id="30">30</th><td><i>  // weight to an edge that may have siblings with non-zero weights. This can</i></td></tr>
+<tr><th id="31">31</th><td><i>  // be handled various ways, but it's probably fine for an edge with unknown</i></td></tr>
+<tr><th id="32">32</th><td><i>  // weight to just "inherit" the non-zero weight of an adjacent successor.</i></td></tr>
+<tr><th id="33">33</th><td>  <em>static</em> <em>const</em> <a class="typedef" href="../../../../../include/bits/stdint-uintn.h.html#uint32_t" title='uint32_t' data-type='__uint32_t' data-ref="uint32_t" data-ref-filename="uint32_t">uint32_t</a> <dfn class="decl" id="llvm::MachineBranchProbabilityInfo::DEFAULT_WEIGHT" title='llvm::MachineBranchProbabilityInfo::DEFAULT_WEIGHT' data-ref="llvm::MachineBranchProbabilityInfo::DEFAULT_WEIGHT" data-ref-filename="llvm..MachineBranchProbabilityInfo..DEFAULT_WEIGHT">DEFAULT_WEIGHT</dfn> = <var>16</var>;</td></tr>
+<tr><th id="34">34</th><td></td></tr>
+<tr><th id="35">35</th><td><b>public</b>:</td></tr>
+<tr><th id="36">36</th><td>  <em>static</em> <em>char</em> <dfn class="decl" id="llvm::MachineBranchProbabilityInfo::ID" title='llvm::MachineBranchProbabilityInfo::ID' data-ref="llvm::MachineBranchProbabilityInfo::ID" data-ref-filename="llvm..MachineBranchProbabilityInfo..ID">ID</dfn>;</td></tr>
+<tr><th id="37">37</th><td></td></tr>
+<tr><th id="38">38</th><td>  <dfn class="decl fn" id="_ZN4llvm28MachineBranchProbabilityInfoC1Ev" title='llvm::MachineBranchProbabilityInfo::MachineBranchProbabilityInfo' data-ref="_ZN4llvm28MachineBranchProbabilityInfoC1Ev" data-ref-filename="_ZN4llvm28MachineBranchProbabilityInfoC1Ev">MachineBranchProbabilityInfo</dfn>();</td></tr>
+<tr><th id="39">39</th><td></td></tr>
+<tr><th id="40">40</th><td>  <em>void</em> <dfn class="virtual decl def fn" id="_ZNK4llvm28MachineBranchProbabilityInfo16getAnalysisUsageERNS_13AnalysisUsageE" title='llvm::MachineBranchProbabilityInfo::getAnalysisUsage' data-ref="_ZNK4llvm28MachineBranchProbabilityInfo16getAnalysisUsageERNS_13AnalysisUsageE" data-ref-filename="_ZNK4llvm28MachineBranchProbabilityInfo16getAnalysisUsageERNS_13AnalysisUsageE">getAnalysisUsage</dfn>(<a class="type" href="../PassAnalysisSupport.h.html#llvm::AnalysisUsage" title='llvm::AnalysisUsage' data-ref="llvm::AnalysisUsage" data-ref-filename="llvm..AnalysisUsage">AnalysisUsage</a> &amp;<dfn class="local col8 decl" id="68AU" title='AU' data-type='llvm::AnalysisUsage &amp;' data-ref="68AU" data-ref-filename="68AU">AU</dfn>) <em>const</em> override {</td></tr>
+<tr><th id="41">41</th><td>    <a class="local col8 ref" href="#68AU" title='AU' data-ref="68AU" data-ref-filename="68AU">AU</a>.<a class="ref fn" href="../PassAnalysisSupport.h.html#_ZN4llvm13AnalysisUsage15setPreservesAllEv" title='llvm::AnalysisUsage::setPreservesAll' data-ref="_ZN4llvm13AnalysisUsage15setPreservesAllEv" data-ref-filename="_ZN4llvm13AnalysisUsage15setPreservesAllEv">setPreservesAll</a>();</td></tr>
+<tr><th id="42">42</th><td>  }</td></tr>
+<tr><th id="43">43</th><td></td></tr>
+<tr><th id="44">44</th><td>  <i>// Return edge probability.</i></td></tr>
+<tr><th id="45">45</th><td>  <a class="type" href="../Support/BranchProbability.h.html#llvm::BranchProbability" title='llvm::BranchProbability' data-ref="llvm::BranchProbability" data-ref-filename="llvm..BranchProbability">BranchProbability</a> <dfn class="decl fn" id="_ZNK4llvm28MachineBranchProbabilityInfo18getEdgeProbabilityEPKNS_17MachineBasicBlockES3_" title='llvm::MachineBranchProbabilityInfo::getEdgeProbability' data-ref="_ZNK4llvm28MachineBranchProbabilityInfo18getEdgeProbabilityEPKNS_17MachineBasicBlockES3_" data-ref-filename="_ZNK4llvm28MachineBranchProbabilityInfo18getEdgeProbabilityEPKNS_17MachineBasicBlockES3_">getEdgeProbability</dfn>(<em>const</em> <a class="type" href="MachineBasicBlock.h.html#llvm::MachineBasicBlock" title='llvm::MachineBasicBlock' data-ref="llvm::MachineBasicBlock" data-ref-filename="llvm..MachineBasicBlock">MachineBasicBlock</a> *<dfn class="local col9 decl" id="69Src" title='Src' data-type='const llvm::MachineBasicBlock *' data-ref="69Src" data-ref-filename="69Src">Src</dfn>,</td></tr>
+<tr><th id="46">46</th><td>                                       <em>const</em> <a class="type" href="MachineBasicBlock.h.html#llvm::MachineBasicBlock" title='llvm::MachineBasicBlock' data-ref="llvm::MachineBasicBlock" data-ref-filename="llvm..MachineBasicBlock">MachineBasicBlock</a> *<dfn class="local col0 decl" id="70Dst" title='Dst' data-type='const llvm::MachineBasicBlock *' data-ref="70Dst" data-ref-filename="70Dst">Dst</dfn>) <em>const</em>;</td></tr>
+<tr><th id="47">47</th><td></td></tr>
+<tr><th id="48">48</th><td>  <i>// Same as above, but using a const_succ_iterator from Src. This is faster</i></td></tr>
+<tr><th id="49">49</th><td><i>  // when the iterator is already available.</i></td></tr>
+<tr><th id="50">50</th><td>  <a class="type" href="../Support/BranchProbability.h.html#llvm::BranchProbability" title='llvm::BranchProbability' data-ref="llvm::BranchProbability" data-ref-filename="llvm..BranchProbability">BranchProbability</a></td></tr>
+<tr><th id="51">51</th><td>  <dfn class="decl fn" id="_ZNK4llvm28MachineBranchProbabilityInfo18getEdgeProbabilityEPKNS_17MachineBasicBlockEN9__gnu_cxx17__normal_iteratorIPKPS1_St6vectorIS6_SaIS6_EEEE" title='llvm::MachineBranchProbabilityInfo::getEdgeProbability' data-ref="_ZNK4llvm28MachineBranchProbabilityInfo18getEdgeProbabilityEPKNS_17MachineBasicBlockEN9__gnu_cxx17__normal_iteratorIPKPS1_St6vectorIS6_SaIS6_EEEE" data-ref-filename="_ZNK4llvm28MachineBranchProbabilityInfo18getEdgeProbabilityEPKNS_17MachineBasicBlockEN9__gnu_cxx17__normal_iteratorIPKPS1_St6vectorIS6_SaIS6_EEEE">getEdgeProbability</dfn>(<em>const</em> <a class="type" href="MachineBasicBlock.h.html#llvm::MachineBasicBlock" title='llvm::MachineBasicBlock' data-ref="llvm::MachineBasicBlock" data-ref-filename="llvm..MachineBasicBlock">MachineBasicBlock</a> *<dfn class="local col1 decl" id="71Src" title='Src' data-type='const llvm::MachineBasicBlock *' data-ref="71Src" data-ref-filename="71Src">Src</dfn>,</td></tr>
+<tr><th id="52">52</th><td>                     <a class="type" href="MachineBasicBlock.h.html#llvm::MachineBasicBlock" title='llvm::MachineBasicBlock' data-ref="llvm::MachineBasicBlock" data-ref-filename="llvm..MachineBasicBlock">MachineBasicBlock</a>::<a class="typedef" href="MachineBasicBlock.h.html#llvm::MachineBasicBlock::const_succ_iterator" title='llvm::MachineBasicBlock::const_succ_iterator' data-type='std::vector&lt;MachineBasicBlock *&gt;::const_iterator' data-ref="llvm::MachineBasicBlock::const_succ_iterator" data-ref-filename="llvm..MachineBasicBlock..const_succ_iterator">const_succ_iterator</a> <dfn class="local col2 decl" id="72Dst" title='Dst' data-type='MachineBasicBlock::const_succ_iterator' data-ref="72Dst" data-ref-filename="72Dst">Dst</dfn>) <em>const</em>;</td></tr>
+<tr><th id="53">53</th><td></td></tr>
+<tr><th id="54">54</th><td>  <i>// A 'Hot' edge is an edge which probability is &gt;= 80%.</i></td></tr>
+<tr><th id="55">55</th><td>  <em>bool</em> <dfn class="decl fn" id="_ZNK4llvm28MachineBranchProbabilityInfo9isEdgeHotEPKNS_17MachineBasicBlockES3_" title='llvm::MachineBranchProbabilityInfo::isEdgeHot' data-ref="_ZNK4llvm28MachineBranchProbabilityInfo9isEdgeHotEPKNS_17MachineBasicBlockES3_" data-ref-filename="_ZNK4llvm28MachineBranchProbabilityInfo9isEdgeHotEPKNS_17MachineBasicBlockES3_">isEdgeHot</dfn>(<em>const</em> <a class="type" href="MachineBasicBlock.h.html#llvm::MachineBasicBlock" title='llvm::MachineBasicBlock' data-ref="llvm::MachineBasicBlock" data-ref-filename="llvm..MachineBasicBlock">MachineBasicBlock</a> *<dfn class="local col3 decl" id="73Src" title='Src' data-type='const llvm::MachineBasicBlock *' data-ref="73Src" data-ref-filename="73Src">Src</dfn>,</td></tr>
+<tr><th id="56">56</th><td>                 <em>const</em> <a class="type" href="MachineBasicBlock.h.html#llvm::MachineBasicBlock" title='llvm::MachineBasicBlock' data-ref="llvm::MachineBasicBlock" data-ref-filename="llvm..MachineBasicBlock">MachineBasicBlock</a> *<dfn class="local col4 decl" id="74Dst" title='Dst' data-type='const llvm::MachineBasicBlock *' data-ref="74Dst" data-ref-filename="74Dst">Dst</dfn>) <em>const</em>;</td></tr>
+<tr><th id="57">57</th><td></td></tr>
+<tr><th id="58">58</th><td>  <i>// Return a hot successor for the block BB or null if there isn't one.</i></td></tr>
+<tr><th id="59">59</th><td><i>  // NB: This routine's complexity is linear on the number of successors.</i></td></tr>
+<tr><th id="60">60</th><td>  <a class="type" href="MachineBasicBlock.h.html#llvm::MachineBasicBlock" title='llvm::MachineBasicBlock' data-ref="llvm::MachineBasicBlock" data-ref-filename="llvm..MachineBasicBlock">MachineBasicBlock</a> *<dfn class="decl fn" id="_ZNK4llvm28MachineBranchProbabilityInfo10getHotSuccEPNS_17MachineBasicBlockE" title='llvm::MachineBranchProbabilityInfo::getHotSucc' data-ref="_ZNK4llvm28MachineBranchProbabilityInfo10getHotSuccEPNS_17MachineBasicBlockE" data-ref-filename="_ZNK4llvm28MachineBranchProbabilityInfo10getHotSuccEPNS_17MachineBasicBlockE">getHotSucc</dfn>(<a class="type" href="MachineBasicBlock.h.html#llvm::MachineBasicBlock" title='llvm::MachineBasicBlock' data-ref="llvm::MachineBasicBlock" data-ref-filename="llvm..MachineBasicBlock">MachineBasicBlock</a> *<dfn class="local col5 decl" id="75MBB" title='MBB' data-type='llvm::MachineBasicBlock *' data-ref="75MBB" data-ref-filename="75MBB">MBB</dfn>) <em>const</em>;</td></tr>
+<tr><th id="61">61</th><td></td></tr>
+<tr><th id="62">62</th><td>  <i>// Print value between 0 (0% probability) and 1 (100% probability),</i></td></tr>
+<tr><th id="63">63</th><td><i>  // however the value is never equal to 0, and can be 1 only iff SRC block</i></td></tr>
+<tr><th id="64">64</th><td><i>  // has only one successor.</i></td></tr>
+<tr><th id="65">65</th><td>  <a class="type" href="../Support/raw_ostream.h.html#llvm::raw_ostream" title='llvm::raw_ostream' data-ref="llvm::raw_ostream" data-ref-filename="llvm..raw_ostream">raw_ostream</a> &amp;<dfn class="decl fn" id="_ZNK4llvm28MachineBranchProbabilityInfo20printEdgeProbabilityERNS_11raw_ostreamEPKNS_17MachineBasicBlockES5_" title='llvm::MachineBranchProbabilityInfo::printEdgeProbability' data-ref="_ZNK4llvm28MachineBranchProbabilityInfo20printEdgeProbabilityERNS_11raw_ostreamEPKNS_17MachineBasicBlockES5_" data-ref-filename="_ZNK4llvm28MachineBranchProbabilityInfo20printEdgeProbabilityERNS_11raw_ostreamEPKNS_17MachineBasicBlockES5_">printEdgeProbability</dfn>(<a class="type" href="../Support/raw_ostream.h.html#llvm::raw_ostream" title='llvm::raw_ostream' data-ref="llvm::raw_ostream" data-ref-filename="llvm..raw_ostream">raw_ostream</a> &amp;<dfn class="local col6 decl" id="76OS" title='OS' data-type='llvm::raw_ostream &amp;' data-ref="76OS" data-ref-filename="76OS">OS</dfn>,</td></tr>
+<tr><th id="66">66</th><td>                                    <em>const</em> <a class="type" href="MachineBasicBlock.h.html#llvm::MachineBasicBlock" title='llvm::MachineBasicBlock' data-ref="llvm::MachineBasicBlock" data-ref-filename="llvm..MachineBasicBlock">MachineBasicBlock</a> *<dfn class="local col7 decl" id="77Src" title='Src' data-type='const llvm::MachineBasicBlock *' data-ref="77Src" data-ref-filename="77Src">Src</dfn>,</td></tr>
+<tr><th id="67">67</th><td>                                    <em>const</em> <a class="type" href="MachineBasicBlock.h.html#llvm::MachineBasicBlock" title='llvm::MachineBasicBlock' data-ref="llvm::MachineBasicBlock" data-ref-filename="llvm..MachineBasicBlock">MachineBasicBlock</a> *<dfn class="local col8 decl" id="78Dst" title='Dst' data-type='const llvm::MachineBasicBlock *' data-ref="78Dst" data-ref-filename="78Dst">Dst</dfn>) <em>const</em>;</td></tr>
+<tr><th id="68">68</th><td>};</td></tr>
+<tr><th id="69">69</th><td></td></tr>
+<tr><th id="70">70</th><td>}</td></tr>
+<tr><th id="71">71</th><td></td></tr>
+<tr><th id="72">72</th><td></td></tr>
+<tr><th id="73">73</th><td><u>#<span data-ppcond="13">endif</span></u></td></tr>
+<tr><th id="74">74</th><td></td></tr>
+</table><hr/><p id='footer'>
+Generated while processing <a href='../../../lib/CodeGen/BranchFolding.cpp.html'>llvm/llvm/lib/CodeGen/BranchFolding.cpp</a><br/>Generated on <em>2021-Jul-01</em> from project llvm revision <em>12</em>

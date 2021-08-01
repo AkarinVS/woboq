@@ -1,0 +1,4 @@
+<dec f='llvm/clang/include/clang/StaticAnalyzer/Core/BugReporter/BugReporter.h' l='129' type='clang::ento::BugReport::Kind'/>
+<use f='llvm/clang/include/clang/StaticAnalyzer/Core/BugReporter/BugReporter.h' l='143' u='w' c='_ZN5clang4ento9BugReportC1ENS1_4KindERKNS0_7BugTypeEN4llvm9StringRefES7_'/>
+<use f='llvm/clang/include/clang/StaticAnalyzer/Core/BugReporter/BugReporter.h' l='149' u='r' c='_ZNK5clang4ento9BugReport7getKindEv'/>
+<offset>64</offset>

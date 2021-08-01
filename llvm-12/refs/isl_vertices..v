@@ -1,0 +1,32 @@
+<dec f='llvm/polly/lib/External/isl/isl_vertices_private.h' l='41' type='struct isl_vertex *'/>
+<use f='llvm/polly/lib/External/isl/isl_bernstein.c' l='121' u='r' c='is_tight'/>
+<use f='llvm/polly/lib/External/isl/isl_bernstein.c' l='313' u='r' c='bernstein_coefficients_cell'/>
+<offset>192</offset>
+<use f='llvm/polly/lib/External/isl/isl_vertices.c' l='49' u='r' c='isl_vertices_free'/>
+<use f='llvm/polly/lib/External/isl/isl_vertices.c' l='50' u='r' c='isl_vertices_free'/>
+<use f='llvm/polly/lib/External/isl/isl_vertices.c' l='52' u='r' c='isl_vertices_free'/>
+<use f='llvm/polly/lib/External/isl/isl_vertices.c' l='97' u='w' c='vertices_from_list'/>
+<use f='llvm/polly/lib/External/isl/isl_vertices.c' l='98' u='r' c='vertices_from_list'/>
+<use f='llvm/polly/lib/External/isl/isl_vertices.c' l='104' u='r' c='vertices_from_list'/>
+<use f='llvm/polly/lib/External/isl/isl_vertices.c' l='207' u='w' c='vertices_0D'/>
+<use f='llvm/polly/lib/External/isl/isl_vertices.c' l='208' u='r' c='vertices_0D'/>
+<use f='llvm/polly/lib/External/isl/isl_vertices.c' l='211' u='r' c='vertices_0D'/>
+<use f='llvm/polly/lib/External/isl/isl_vertices.c' l='212' u='r' c='vertices_0D'/>
+<use f='llvm/polly/lib/External/isl/isl_vertices.c' l='213' u='r' c='vertices_0D'/>
+<use f='llvm/polly/lib/External/isl/isl_vertices.c' l='213' u='r' c='vertices_0D'/>
+<use f='llvm/polly/lib/External/isl/isl_vertices.c' l='224' u='r' c='vertices_0D'/>
+<use f='llvm/polly/lib/External/isl/isl_vertices.c' l='896' u='r' c='compute_chambers'/>
+<use f='llvm/polly/lib/External/isl/isl_vertices.c' l='901' u='r' c='compute_chambers'/>
+<use f='llvm/polly/lib/External/isl/isl_vertices.c' l='928' u='r' c='compute_chambers'/>
+<use f='llvm/polly/lib/External/isl/isl_vertices.c' l='934' u='r' c='compute_chambers'/>
+<use f='llvm/polly/lib/External/isl/isl_vertices.c' l='963' u='r' c='compute_chambers'/>
+<use f='llvm/polly/lib/External/isl/isl_vertices.c' l='964' u='r' c='compute_chambers'/>
+<use f='llvm/polly/lib/External/isl/isl_vertices.c' l='999' u='r' c='isl_vertex_get_domain'/>
+<use f='llvm/polly/lib/External/isl/isl_vertices.c' l='1020' u='r' c='isl_vertex_get_expr'/>
+<use f='llvm/polly/lib/External/isl/isl_vertices.c' l='1359' u='r' c='isl_morph_vertices'/>
+<use f='llvm/polly/lib/External/isl/isl_vertices.c' l='1360' u='r' c='isl_morph_vertices'/>
+<use f='llvm/polly/lib/External/isl/isl_vertices.c' l='1361' u='r' c='isl_morph_vertices'/>
+<use f='llvm/polly/lib/External/isl/isl_vertices.c' l='1362' u='r' c='isl_morph_vertices'/>
+<use f='llvm/polly/lib/External/isl/isl_vertices.c' l='1363' u='r' c='isl_morph_vertices'/>
+<use f='llvm/polly/lib/External/isl/isl_vertices.c' l='1484' u='r' c='triangulate'/>
+<use f='llvm/polly/lib/External/isl/isl_vertices.c' l='1498' u='r' c='triangulate'/>

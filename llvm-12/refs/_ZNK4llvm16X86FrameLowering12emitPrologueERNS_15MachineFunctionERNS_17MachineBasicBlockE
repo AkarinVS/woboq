@@ -1,0 +1,84 @@
+<dec f='llvm/llvm/lib/Target/X86/X86FrameLowering.h' l='73' type='void llvm::X86FrameLowering::emitPrologue(llvm::MachineFunction &amp; MF, llvm::MachineBasicBlock &amp; MBB) const'/>
+<doc f='llvm/llvm/lib/Target/X86/X86FrameLowering.h' l='71'>/// emitProlog/emitEpilog - These methods insert prolog and epilog code into
+  /// the function.</doc>
+<inh f='llvm/llvm/include/llvm/CodeGen/TargetFrameLowering.h' l='207' c='_ZNK4llvm19TargetFrameLowering12emitPrologueERNS_15MachineFunctionERNS_17MachineBasicBlockE'/>
+<def f='llvm/llvm/lib/Target/X86/X86FrameLowering.cpp' l='1289' ll='1825' type='void llvm::X86FrameLowering::emitPrologue(llvm::MachineFunction &amp; MF, llvm::MachineBasicBlock &amp; MBB) const'/>
+<doc f='llvm/llvm/lib/Target/X86/X86FrameLowering.cpp' l='1209'>/*
+  Here&apos;s a gist of what gets emitted:
+
+  ; Establish frame pointer, if needed
+  [if needs FP]
+      push  %rbp
+      .cfi_def_cfa_offset 16
+      .cfi_offset %rbp, -16
+      .seh_pushreg %rpb
+      mov  %rsp, %rbp
+      .cfi_def_cfa_register %rbp
+
+  ; Spill general-purpose registers
+  [for all callee-saved GPRs]
+      pushq %&lt;reg&gt;
+      [if not needs FP]
+         .cfi_def_cfa_offset (offset from RETADDR)
+      .seh_pushreg %&lt;reg&gt;
+
+  ; If the required stack alignment &gt; default stack alignment
+  ; rsp needs to be re-aligned.  This creates a &quot;re-alignment gap&quot;
+  ; of unknown size in the stack frame.
+  [if stack needs re-alignment]
+      and  $MASK, %rsp
+
+  ; Allocate space for locals
+  [if target is Windows and allocated space &gt; 4096 bytes]
+      ; Windows needs special care for allocations larger
+      ; than one page.
+      mov $NNN, %rax
+      call ___chkstk_ms/___chkstk
+      sub  %rax, %rsp
+  [else]
+      sub  $NNN, %rsp
+
+  [if needs FP]
+      .seh_stackalloc (size of XMM spill slots)
+      .seh_setframe %rbp, SEHFrameOffset ; = size of all spill slots
+  [else]
+      .seh_stackalloc NNN
+
+  ; Spill XMMs
+  ; Note, that while only Windows 64 ABI specifies XMMs as callee-preserved,
+  ; they may get spilled on any platform, if the current function
+  ; calls @llvm.eh.unwind.init
+  [if needs FP]
+      [for all callee-saved XMM registers]
+          movaps  %&lt;xmm reg&gt;, -MMM(%rbp)
+      [for all callee-saved XMM registers]
+          .seh_savexmm %&lt;xmm reg&gt;, (-MMM + SEHFrameOffset)
+              ; i.e. the offset relative to (%rbp - SEHFrameOffset)
+  [else]
+      [for all callee-saved XMM registers]
+          movaps  %&lt;xmm reg&gt;, KKK(%rsp)
+      [for all callee-saved XMM registers]
+          .seh_savexmm %&lt;xmm reg&gt;, KKK
+
+  .seh_endprologue
+
+  [if needs base pointer]
+      mov  %rsp, %rbx
+      [if needs to restore base pointer]
+          mov %rsp, -MMM(%rbp)
+
+  ; Emit CFI info
+  [if needs FP]
+      [for all callee-saved registers]
+          .cfi_offset %&lt;reg&gt;, (offset from %rbp)
+  [else]
+       .cfi_def_cfa_offset (offset from RETADDR)
+      [for all callee-saved registers]
+          .cfi_offset %&lt;reg&gt;, (offset from %rsp)
+
+  Notes:
+  - .seh directives are emitted only for Windows 64 ABI
+  - .cv_fpo directives are emitted on win32 when emitting CodeView
+  - .cfi directives are emitted for all other ABIs
+  - for 32-bit code, substitute %e?? registers for %r??
+*/</doc>

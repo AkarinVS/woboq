@@ -1,0 +1,233 @@
+<!doctype html>
+<html>
+<head>
+<meta name="viewport" content="width=device-width, initial-scale=1.0"><title>timers.cc source code [llvm/llvm/utils/benchmark/src/timers.cc] - Woboq Code Browser</title>
+<link rel="stylesheet" href="../../../../.././data/qtcreator.css" title="QtCreator"/>
+<link rel="alternate stylesheet" href="../../../../.././data/kdevelop.css" title="KDevelop"/>
+<script type="text/javascript" src="../../../../.././data/jquery/jquery.min.js"></script>
+<script type="text/javascript" src="../../../../.././data/jquery/jquery-ui.min.js"></script>
+<script>var file = 'llvm/llvm/utils/benchmark/src/timers.cc'; var root_path = '../../../../..'; var data_path = '../../../../.././data'; var ecma_script_api_version = 2;</script>
+<script src='../../../../.././data/codebrowser.js'></script>
+</head>
+<body><div id='header'><h1 id='breadcrumb'><span>Browse the source code of </span><a href='../../../..'>llvm</a>/<a href='../../..'>llvm</a>/<a href='../..'>utils</a>/<a href='..'>benchmark</a>/<a href='./'>src</a>/<a href='timers.cc.html'>timers.cc</a></h1></div>
+<hr/><div id='content'><table class="code">
+<tr><th id="1">1</th><td><i>// Copyright 2015 Google Inc. All rights reserved.</i></td></tr>
+<tr><th id="2">2</th><td><i>//</i></td></tr>
+<tr><th id="3">3</th><td><i>// Licensed under the Apache License, Version 2.0 (the "License");</i></td></tr>
+<tr><th id="4">4</th><td><i>// you may not use this file except in compliance with the License.</i></td></tr>
+<tr><th id="5">5</th><td><i>// You may obtain a copy of the License at</i></td></tr>
+<tr><th id="6">6</th><td><i>//</i></td></tr>
+<tr><th id="7">7</th><td><i>//     <a href="http://www.apache.org/licenses/LICENSE-2.0">http://www.apache.org/licenses/LICENSE-2.0</a></i></td></tr>
+<tr><th id="8">8</th><td><i>//</i></td></tr>
+<tr><th id="9">9</th><td><i>// Unless required by applicable law or agreed to in writing, software</i></td></tr>
+<tr><th id="10">10</th><td><i>// distributed under the License is distributed on an "AS IS" BASIS,</i></td></tr>
+<tr><th id="11">11</th><td><i>// WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.</i></td></tr>
+<tr><th id="12">12</th><td><i>// See the License for the specific language governing permissions and</i></td></tr>
+<tr><th id="13">13</th><td><i>// limitations under the License.</i></td></tr>
+<tr><th id="14">14</th><td></td></tr>
+<tr><th id="15">15</th><td><u>#include <a href="timers.h.html">"timers.h"</a></u></td></tr>
+<tr><th id="16">16</th><td><u>#include <a href="internal_macros.h.html">"internal_macros.h"</a></u></td></tr>
+<tr><th id="17">17</th><td></td></tr>
+<tr><th id="18">18</th><td><u>#<span data-ppcond="18">ifdef</span> <span class="macro" data-ref="_M/BENCHMARK_OS_WINDOWS">BENCHMARK_OS_WINDOWS</span></u></td></tr>
+<tr><th id="19">19</th><td><u>#include &lt;shlwapi.h&gt;</u></td></tr>
+<tr><th id="20">20</th><td><u>#undef StrCat  // Don't let StrCat in string_util.h be renamed to lstrcatA</u></td></tr>
+<tr><th id="21">21</th><td><u>#include &lt;versionhelpers.h&gt;</u></td></tr>
+<tr><th id="22">22</th><td><u>#include &lt;windows.h&gt;</u></td></tr>
+<tr><th id="23">23</th><td><u>#<span data-ppcond="18">else</span></u></td></tr>
+<tr><th id="24">24</th><td><u>#include <a href="../../../../../include/fcntl.h.html">&lt;fcntl.h&gt;</a></u></td></tr>
+<tr><th id="25">25</th><td><u>#<span data-ppcond="25">ifndef</span> <span class="macro" data-ref="_M/BENCHMARK_OS_FUCHSIA">BENCHMARK_OS_FUCHSIA</span></u></td></tr>
+<tr><th id="26">26</th><td><u>#include <a href="../../../../../include/sys/resource.h.html">&lt;sys/resource.h&gt;</a></u></td></tr>
+<tr><th id="27">27</th><td><u>#<span data-ppcond="25">endif</span></u></td></tr>
+<tr><th id="28">28</th><td><u>#include <a href="../../../../../include/sys/time.h.html">&lt;sys/time.h&gt;</a></u></td></tr>
+<tr><th id="29">29</th><td><u>#include <a href="../../../../../include/sys/types.h.html">&lt;sys/types.h&gt;</a>  // this header must be included before 'sys/sysctl.h' to avoid compilation error on FreeBSD</u></td></tr>
+<tr><th id="30">30</th><td><u>#include <a href="../../../../../include/unistd.h.html">&lt;unistd.h&gt;</a></u></td></tr>
+<tr><th id="31">31</th><td><u>#<span data-ppcond="31">if</span> defined <span class="macro" data-ref="_M/BENCHMARK_OS_FREEBSD">BENCHMARK_OS_FREEBSD</span> || defined <span class="macro" data-ref="_M/BENCHMARK_OS_MACOSX">BENCHMARK_OS_MACOSX</span></u></td></tr>
+<tr><th id="32">32</th><td><u>#include &lt;sys/sysctl.h&gt;</u></td></tr>
+<tr><th id="33">33</th><td><u>#<span data-ppcond="31">endif</span></u></td></tr>
+<tr><th id="34">34</th><td><u>#<span data-ppcond="34">if</span> defined(<span class="macro" data-ref="_M/BENCHMARK_OS_MACOSX">BENCHMARK_OS_MACOSX</span>)</u></td></tr>
+<tr><th id="35">35</th><td><u>#include &lt;mach/mach_init.h&gt;</u></td></tr>
+<tr><th id="36">36</th><td><u>#include &lt;mach/mach_port.h&gt;</u></td></tr>
+<tr><th id="37">37</th><td><u>#include &lt;mach/thread_act.h&gt;</u></td></tr>
+<tr><th id="38">38</th><td><u>#<span data-ppcond="34">endif</span></u></td></tr>
+<tr><th id="39">39</th><td><u>#<span data-ppcond="18">endif</span></u></td></tr>
+<tr><th id="40">40</th><td></td></tr>
+<tr><th id="41">41</th><td><u>#<span data-ppcond="41">ifdef</span> <span class="macro" data-ref="_M/BENCHMARK_OS_EMSCRIPTEN">BENCHMARK_OS_EMSCRIPTEN</span></u></td></tr>
+<tr><th id="42">42</th><td><u>#include &lt;emscripten.h&gt;</u></td></tr>
+<tr><th id="43">43</th><td><u>#<span data-ppcond="41">endif</span></u></td></tr>
+<tr><th id="44">44</th><td></td></tr>
+<tr><th id="45">45</th><td><u>#include &lt;cerrno&gt;</u></td></tr>
+<tr><th id="46">46</th><td><u>#include &lt;cstdint&gt;</u></td></tr>
+<tr><th id="47">47</th><td><u>#include &lt;cstdio&gt;</u></td></tr>
+<tr><th id="48">48</th><td><u>#include &lt;cstdlib&gt;</u></td></tr>
+<tr><th id="49">49</th><td><u>#include &lt;cstring&gt;</u></td></tr>
+<tr><th id="50">50</th><td><u>#include &lt;ctime&gt;</u></td></tr>
+<tr><th id="51">51</th><td><u>#include &lt;iostream&gt;</u></td></tr>
+<tr><th id="52">52</th><td><u>#include &lt;limits&gt;</u></td></tr>
+<tr><th id="53">53</th><td><u>#include &lt;mutex&gt;</u></td></tr>
+<tr><th id="54">54</th><td></td></tr>
+<tr><th id="55">55</th><td><u>#include <a href="check.h.html">"check.h"</a></u></td></tr>
+<tr><th id="56">56</th><td><u>#include <a href="log.h.html">"log.h"</a></u></td></tr>
+<tr><th id="57">57</th><td><u>#include <a href="sleep.h.html">"sleep.h"</a></u></td></tr>
+<tr><th id="58">58</th><td><u>#include <a href="string_util.h.html">"string_util.h"</a></u></td></tr>
+<tr><th id="59">59</th><td></td></tr>
+<tr><th id="60">60</th><td><b>namespace</b> <span class="namespace">benchmark</span> {</td></tr>
+<tr><th id="61">61</th><td></td></tr>
+<tr><th id="62">62</th><td><i>// Suppress unused warnings on helper functions.</i></td></tr>
+<tr><th id="63">63</th><td><u>#<span data-ppcond="63">if</span> defined(<span class="macro" data-ref="_M/__GNUC__">__GNUC__</span>)</u></td></tr>
+<tr><th id="64">64</th><td><u>#pragma GCC diagnostic ignored "-Wunused-function"</u></td></tr>
+<tr><th id="65">65</th><td><u>#<span data-ppcond="63">endif</span></u></td></tr>
+<tr><th id="66">66</th><td></td></tr>
+<tr><th id="67">67</th><td><b>namespace</b> {</td></tr>
+<tr><th id="68">68</th><td><u>#<span data-ppcond="68">if</span> defined(<span class="macro" data-ref="_M/BENCHMARK_OS_WINDOWS">BENCHMARK_OS_WINDOWS</span>)</u></td></tr>
+<tr><th id="69">69</th><td><em>double</em> MakeTime(FILETIME <em>const</em>&amp; kernel_time, FILETIME <em>const</em>&amp; user_time) {</td></tr>
+<tr><th id="70">70</th><td>  ULARGE_INTEGER kernel;</td></tr>
+<tr><th id="71">71</th><td>  ULARGE_INTEGER user;</td></tr>
+<tr><th id="72">72</th><td>  kernel.HighPart = kernel_time.dwHighDateTime;</td></tr>
+<tr><th id="73">73</th><td>  kernel.LowPart = kernel_time.dwLowDateTime;</td></tr>
+<tr><th id="74">74</th><td>  user.HighPart = user_time.dwHighDateTime;</td></tr>
+<tr><th id="75">75</th><td>  user.LowPart = user_time.dwLowDateTime;</td></tr>
+<tr><th id="76">76</th><td>  <b>return</b> (<b>static_cast</b>&lt;<em>double</em>&gt;(kernel.QuadPart) +</td></tr>
+<tr><th id="77">77</th><td>          <b>static_cast</b>&lt;<em>double</em>&gt;(user.QuadPart)) *</td></tr>
+<tr><th id="78">78</th><td>         <var>1e-7</var>;</td></tr>
+<tr><th id="79">79</th><td>}</td></tr>
+<tr><th id="80">80</th><td><u>#<span data-ppcond="68">elif</span> !defined(<span class="macro" data-ref="_M/BENCHMARK_OS_FUCHSIA">BENCHMARK_OS_FUCHSIA</span>)</u></td></tr>
+<tr><th id="81">81</th><td><em>double</em> <dfn class="tu decl def fn" id="_ZN9benchmark12_GLOBAL__N_18MakeTimeERK6rusage" title='benchmark::(anonymous namespace)::MakeTime' data-type='double benchmark::(anonymous namespace)::MakeTime(const struct rusage &amp; ru)' data-ref="_ZN9benchmark12_GLOBAL__N_18MakeTimeERK6rusage" data-ref-filename="_ZN9benchmark12_GLOBAL__N_18MakeTimeERK6rusage">MakeTime</dfn>(<b>struct</b> <a class="type" href="../../../../../include/bits/types/struct_rusage.h.html#rusage" title='rusage' data-ref="rusage" data-ref-filename="rusage">rusage</a> <em>const</em>&amp; <dfn class="local col1 decl" id="1ru" title='ru' data-type='const struct rusage &amp;' data-ref="1ru" data-ref-filename="1ru">ru</dfn>) {</td></tr>
+<tr><th id="82">82</th><td>  <b>return</b> (<b>static_cast</b>&lt;<em>double</em>&gt;(<a class="local col1 ref" href="#1ru" title='ru' data-ref="1ru" data-ref-filename="1ru">ru</a>.<a class="ref field" href="../../../../../include/bits/types/struct_rusage.h.html#rusage::ru_utime" title='rusage::ru_utime' data-ref="rusage::ru_utime" data-ref-filename="rusage..ru_utime">ru_utime</a>.<a class="ref field" href="../../../../../include/bits/types/struct_timeval.h.html#timeval::tv_sec" title='timeval::tv_sec' data-ref="timeval::tv_sec" data-ref-filename="timeval..tv_sec">tv_sec</a>) +</td></tr>
+<tr><th id="83">83</th><td>          <b>static_cast</b>&lt;<em>double</em>&gt;(<a class="local col1 ref" href="#1ru" title='ru' data-ref="1ru" data-ref-filename="1ru">ru</a>.<a class="ref field" href="../../../../../include/bits/types/struct_rusage.h.html#rusage::ru_utime" title='rusage::ru_utime' data-ref="rusage::ru_utime" data-ref-filename="rusage..ru_utime">ru_utime</a>.<a class="ref field" href="../../../../../include/bits/types/struct_timeval.h.html#timeval::tv_usec" title='timeval::tv_usec' data-ref="timeval::tv_usec" data-ref-filename="timeval..tv_usec">tv_usec</a>) * <var>1e-6</var> +</td></tr>
+<tr><th id="84">84</th><td>          <b>static_cast</b>&lt;<em>double</em>&gt;(<a class="local col1 ref" href="#1ru" title='ru' data-ref="1ru" data-ref-filename="1ru">ru</a>.<a class="ref field" href="../../../../../include/bits/types/struct_rusage.h.html#rusage::ru_stime" title='rusage::ru_stime' data-ref="rusage::ru_stime" data-ref-filename="rusage..ru_stime">ru_stime</a>.<a class="ref field" href="../../../../../include/bits/types/struct_timeval.h.html#timeval::tv_sec" title='timeval::tv_sec' data-ref="timeval::tv_sec" data-ref-filename="timeval..tv_sec">tv_sec</a>) +</td></tr>
+<tr><th id="85">85</th><td>          <b>static_cast</b>&lt;<em>double</em>&gt;(<a class="local col1 ref" href="#1ru" title='ru' data-ref="1ru" data-ref-filename="1ru">ru</a>.<a class="ref field" href="../../../../../include/bits/types/struct_rusage.h.html#rusage::ru_stime" title='rusage::ru_stime' data-ref="rusage::ru_stime" data-ref-filename="rusage..ru_stime">ru_stime</a>.<a class="ref field" href="../../../../../include/bits/types/struct_timeval.h.html#timeval::tv_usec" title='timeval::tv_usec' data-ref="timeval::tv_usec" data-ref-filename="timeval..tv_usec">tv_usec</a>) * <var>1e-6</var>);</td></tr>
+<tr><th id="86">86</th><td>}</td></tr>
+<tr><th id="87">87</th><td><u>#<span data-ppcond="68">endif</span></u></td></tr>
+<tr><th id="88">88</th><td><u>#<span data-ppcond="88">if</span> defined(<span class="macro" data-ref="_M/BENCHMARK_OS_MACOSX">BENCHMARK_OS_MACOSX</span>)</u></td></tr>
+<tr><th id="89">89</th><td><em>double</em> MakeTime(thread_basic_info_data_t <em>const</em>&amp; info) {</td></tr>
+<tr><th id="90">90</th><td>  <b>return</b> (<b>static_cast</b>&lt;<em>double</em>&gt;(info.user_time.seconds) +</td></tr>
+<tr><th id="91">91</th><td>          <b>static_cast</b>&lt;<em>double</em>&gt;(info.user_time.microseconds) * <var>1e-6</var> +</td></tr>
+<tr><th id="92">92</th><td>          <b>static_cast</b>&lt;<em>double</em>&gt;(info.system_time.seconds) +</td></tr>
+<tr><th id="93">93</th><td>          <b>static_cast</b>&lt;<em>double</em>&gt;(info.system_time.microseconds) * <var>1e-6</var>);</td></tr>
+<tr><th id="94">94</th><td>}</td></tr>
+<tr><th id="95">95</th><td><u>#<span data-ppcond="88">endif</span></u></td></tr>
+<tr><th id="96">96</th><td><u>#<span data-ppcond="96">if</span> defined(<a class="macro" href="../../../../../include/bits/time.h.html#50" data-ref="_M/CLOCK_PROCESS_CPUTIME_ID">CLOCK_PROCESS_CPUTIME_ID</a>) || defined(<a class="macro" href="../../../../../include/bits/time.h.html#52" data-ref="_M/CLOCK_THREAD_CPUTIME_ID">CLOCK_THREAD_CPUTIME_ID</a>)</u></td></tr>
+<tr><th id="97">97</th><td><em>double</em> <dfn class="tu decl def fn" id="_ZN9benchmark12_GLOBAL__N_18MakeTimeERK8timespec" title='benchmark::(anonymous namespace)::MakeTime' data-type='double benchmark::(anonymous namespace)::MakeTime(const struct timespec &amp; ts)' data-ref="_ZN9benchmark12_GLOBAL__N_18MakeTimeERK8timespec" data-ref-filename="_ZN9benchmark12_GLOBAL__N_18MakeTimeERK8timespec">MakeTime</dfn>(<b>struct</b> <a class="type" href="../../../../../include/bits/types/struct_timespec.h.html#timespec" title='timespec' data-ref="timespec" data-ref-filename="timespec">timespec</a> <em>const</em>&amp; <dfn class="local col2 decl" id="2ts" title='ts' data-type='const struct timespec &amp;' data-ref="2ts" data-ref-filename="2ts">ts</dfn>) {</td></tr>
+<tr><th id="98">98</th><td>  <b>return</b> <a class="local col2 ref" href="#2ts" title='ts' data-ref="2ts" data-ref-filename="2ts">ts</a>.<a class="ref field" href="../../../../../include/bits/types/struct_timespec.h.html#timespec::tv_sec" title='timespec::tv_sec' data-ref="timespec::tv_sec" data-ref-filename="timespec..tv_sec">tv_sec</a> + (<b>static_cast</b>&lt;<em>double</em>&gt;(<a class="local col2 ref" href="#2ts" title='ts' data-ref="2ts" data-ref-filename="2ts">ts</a>.<a class="ref field" href="../../../../../include/bits/types/struct_timespec.h.html#timespec::tv_nsec" title='timespec::tv_nsec' data-ref="timespec::tv_nsec" data-ref-filename="timespec..tv_nsec">tv_nsec</a>) * <var>1e-9</var>);</td></tr>
+<tr><th id="99">99</th><td>}</td></tr>
+<tr><th id="100">100</th><td><u>#<span data-ppcond="96">endif</span></u></td></tr>
+<tr><th id="101">101</th><td></td></tr>
+<tr><th id="102">102</th><td><a class="macro" href="internal_macros.h.html#25" title="[[noreturn]]" data-ref="_M/BENCHMARK_NORETURN">BENCHMARK_NORETURN</a> <em>static</em> <em>void</em> <dfn class="tu decl def fn" id="_ZN9benchmark12_GLOBAL__N_115DiagnoseAndExitEPKc" title='benchmark::(anonymous namespace)::DiagnoseAndExit' data-type='void benchmark::(anonymous namespace)::DiagnoseAndExit(const char * msg)' data-ref="_ZN9benchmark12_GLOBAL__N_115DiagnoseAndExitEPKc" data-ref-filename="_ZN9benchmark12_GLOBAL__N_115DiagnoseAndExitEPKc">DiagnoseAndExit</dfn>(<em>const</em> <em>char</em>* <dfn class="local col3 decl" id="3msg" title='msg' data-type='const char *' data-ref="3msg" data-ref-filename="3msg">msg</dfn>) {</td></tr>
+<tr><th id="103">103</th><td>  <span class="namespace">std::</span><span class='ref' title='std::cerr' data-ref="std::cerr" data-ref-filename="std..cerr">cerr</span> <span class='ref fn' title='std::operator&lt;&lt;' data-ref="_ZStlsRSt13basic_ostreamIcT_EPKc" data-ref-filename="_ZStlsRSt13basic_ostreamIcT_EPKc">&lt;&lt;</span> <q>"ERROR: "</q> <span class='ref fn' title='std::operator&lt;&lt;' data-ref="_ZStlsRSt13basic_ostreamIcT_EPKc" data-ref-filename="_ZStlsRSt13basic_ostreamIcT_EPKc">&lt;&lt;</span> <a class="local col3 ref" href="#3msg" title='msg' data-ref="3msg" data-ref-filename="3msg">msg</a> <span class='ref fn' title='std::basic_ostream::operator&lt;&lt;' data-ref="_ZNSt13basic_ostreamlsEPFRSt13basic_ostreamIT_T0_ES5_E" data-ref-filename="_ZNSt13basic_ostreamlsEPFRSt13basic_ostreamIT_T0_ES5_E">&lt;&lt;</span> <span class="namespace">std::</span><span class='ref fn' title='std::endl' data-ref="_ZSt4endlRSt13basic_ostreamIT_T0_E" data-ref-filename="_ZSt4endlRSt13basic_ostreamIT_T0_E">endl</span>;</td></tr>
+<tr><th id="104">104</th><td>  <span class="namespace">std::</span><a class="ref fn" href="../../../../../include/stdlib.h.html#exit" title='exit' data-ref="exit" data-ref-filename="exit">exit</a>(<a class="macro" href="../../../../../include/stdlib.h.html#91" title="1" data-ref="_M/EXIT_FAILURE">EXIT_FAILURE</a>);</td></tr>
+<tr><th id="105">105</th><td>}</td></tr>
+<tr><th id="106">106</th><td></td></tr>
+<tr><th id="107">107</th><td>}  <i>// end namespace</i></td></tr>
+<tr><th id="108">108</th><td></td></tr>
+<tr><th id="109">109</th><td><em>double</em> <dfn class="decl def fn" id="_ZN9benchmark15ProcessCPUUsageEv" title='benchmark::ProcessCPUUsage' data-ref="_ZN9benchmark15ProcessCPUUsageEv" data-ref-filename="_ZN9benchmark15ProcessCPUUsageEv">ProcessCPUUsage</dfn>() {</td></tr>
+<tr><th id="110">110</th><td><u>#<span data-ppcond="110">if</span> defined(<span class="macro" data-ref="_M/BENCHMARK_OS_WINDOWS">BENCHMARK_OS_WINDOWS</span>)</u></td></tr>
+<tr><th id="111">111</th><td>  HANDLE proc = GetCurrentProcess();</td></tr>
+<tr><th id="112">112</th><td>  FILETIME creation_time;</td></tr>
+<tr><th id="113">113</th><td>  FILETIME exit_time;</td></tr>
+<tr><th id="114">114</th><td>  FILETIME kernel_time;</td></tr>
+<tr><th id="115">115</th><td>  FILETIME user_time;</td></tr>
+<tr><th id="116">116</th><td>  <b>if</b> (GetProcessTimes(proc, &amp;creation_time, &amp;exit_time, &amp;kernel_time,</td></tr>
+<tr><th id="117">117</th><td>                      &amp;user_time))</td></tr>
+<tr><th id="118">118</th><td>    <b>return</b> MakeTime(kernel_time, user_time);</td></tr>
+<tr><th id="119">119</th><td>  DiagnoseAndExit(<q>"GetProccessTimes() failed"</q>);</td></tr>
+<tr><th id="120">120</th><td><u>#<span data-ppcond="110">elif</span> defined(<span class="macro" data-ref="_M/BENCHMARK_OS_EMSCRIPTEN">BENCHMARK_OS_EMSCRIPTEN</span>)</u></td></tr>
+<tr><th id="121">121</th><td>  <i>// clock_gettime(CLOCK_PROCESS_CPUTIME_ID, ...) returns 0 on Emscripten.</i></td></tr>
+<tr><th id="122">122</th><td><i>  // Use Emscripten-specific API. Reported CPU time would be exactly the</i></td></tr>
+<tr><th id="123">123</th><td><i>  // same as total time, but this is ok because there aren't long-latency</i></td></tr>
+<tr><th id="124">124</th><td><i>  // syncronous system calls in Emscripten.</i></td></tr>
+<tr><th id="125">125</th><td>  <b>return</b> emscripten_get_now() * <var>1e-3</var>;</td></tr>
+<tr><th id="126">126</th><td><u>#<span data-ppcond="110">elif</span> defined(<a class="macro" href="../../../../../include/bits/time.h.html#50" data-ref="_M/CLOCK_PROCESS_CPUTIME_ID">CLOCK_PROCESS_CPUTIME_ID</a>) &amp;&amp; !defined(<span class="macro" data-ref="_M/BENCHMARK_OS_MACOSX">BENCHMARK_OS_MACOSX</span>)</u></td></tr>
+<tr><th id="127">127</th><td>  <i>// FIXME We want to use clock_gettime, but its not available in MacOS 10.11. See</i></td></tr>
+<tr><th id="128">128</th><td><i>  // <a href="https://github.com/google/benchmark/pull/292">https://github.com/google/benchmark/pull/292</a></i></td></tr>
+<tr><th id="129">129</th><td>  <b>struct</b> <a class="type" href="../../../../../include/bits/types/struct_timespec.h.html#timespec" title='timespec' data-ref="timespec" data-ref-filename="timespec">timespec</a> <a class="ref fn fake" href="../../../../../include/bits/types/struct_timespec.h.html#10" title='timespec::timespec' data-ref="_ZN8timespecC1Ev" data-ref-filename="_ZN8timespecC1Ev"></a><dfn class="local col4 decl" id="4spec" title='spec' data-type='struct timespec' data-ref="4spec" data-ref-filename="4spec">spec</dfn>;</td></tr>
+<tr><th id="130">130</th><td>  <b>if</b> (<a class="ref fn" href="../../../../../include/time.h.html#clock_gettime" title='clock_gettime' data-ref="clock_gettime" data-ref-filename="clock_gettime">clock_gettime</a>(<a class="macro" href="../../../../../include/bits/time.h.html#50" title="2" data-ref="_M/CLOCK_PROCESS_CPUTIME_ID">CLOCK_PROCESS_CPUTIME_ID</a>, &amp;<a class="local col4 ref" href="#4spec" title='spec' data-ref="4spec" data-ref-filename="4spec">spec</a>) == <var>0</var>)</td></tr>
+<tr><th id="131">131</th><td>    <b>return</b> <a class="tu ref fn" href="#_ZN9benchmark12_GLOBAL__N_18MakeTimeERK8timespec" title='benchmark::(anonymous namespace)::MakeTime' data-use='c' data-ref="_ZN9benchmark12_GLOBAL__N_18MakeTimeERK8timespec" data-ref-filename="_ZN9benchmark12_GLOBAL__N_18MakeTimeERK8timespec">MakeTime</a>(<a class="local col4 ref" href="#4spec" title='spec' data-ref="4spec" data-ref-filename="4spec">spec</a>);</td></tr>
+<tr><th id="132">132</th><td>  <a class="tu ref fn" href="#_ZN9benchmark12_GLOBAL__N_115DiagnoseAndExitEPKc" title='benchmark::(anonymous namespace)::DiagnoseAndExit' data-use='c' data-ref="_ZN9benchmark12_GLOBAL__N_115DiagnoseAndExitEPKc" data-ref-filename="_ZN9benchmark12_GLOBAL__N_115DiagnoseAndExitEPKc">DiagnoseAndExit</a>(<q>"clock_gettime(CLOCK_PROCESS_CPUTIME_ID, ...) failed"</q>);</td></tr>
+<tr><th id="133">133</th><td><u>#<span data-ppcond="110">else</span></u></td></tr>
+<tr><th id="134">134</th><td>  <b>struct</b> rusage ru;</td></tr>
+<tr><th id="135">135</th><td>  <b>if</b> (getrusage(RUSAGE_SELF, &amp;ru) == <var>0</var>) <b>return</b> MakeTime(ru);</td></tr>
+<tr><th id="136">136</th><td>  DiagnoseAndExit(<q>"getrusage(RUSAGE_SELF, ...) failed"</q>);</td></tr>
+<tr><th id="137">137</th><td><u>#<span data-ppcond="110">endif</span></u></td></tr>
+<tr><th id="138">138</th><td>}</td></tr>
+<tr><th id="139">139</th><td></td></tr>
+<tr><th id="140">140</th><td><em>double</em> <dfn class="decl def fn" id="_ZN9benchmark14ThreadCPUUsageEv" title='benchmark::ThreadCPUUsage' data-ref="_ZN9benchmark14ThreadCPUUsageEv" data-ref-filename="_ZN9benchmark14ThreadCPUUsageEv">ThreadCPUUsage</dfn>() {</td></tr>
+<tr><th id="141">141</th><td><u>#<span data-ppcond="141">if</span> defined(<span class="macro" data-ref="_M/BENCHMARK_OS_WINDOWS">BENCHMARK_OS_WINDOWS</span>)</u></td></tr>
+<tr><th id="142">142</th><td>  HANDLE this_thread = GetCurrentThread();</td></tr>
+<tr><th id="143">143</th><td>  FILETIME creation_time;</td></tr>
+<tr><th id="144">144</th><td>  FILETIME exit_time;</td></tr>
+<tr><th id="145">145</th><td>  FILETIME kernel_time;</td></tr>
+<tr><th id="146">146</th><td>  FILETIME user_time;</td></tr>
+<tr><th id="147">147</th><td>  GetThreadTimes(this_thread, &amp;creation_time, &amp;exit_time, &amp;kernel_time,</td></tr>
+<tr><th id="148">148</th><td>                 &amp;user_time);</td></tr>
+<tr><th id="149">149</th><td>  <b>return</b> MakeTime(kernel_time, user_time);</td></tr>
+<tr><th id="150">150</th><td><u>#<span data-ppcond="141">elif</span> defined(<span class="macro" data-ref="_M/BENCHMARK_OS_MACOSX">BENCHMARK_OS_MACOSX</span>)</u></td></tr>
+<tr><th id="151">151</th><td>  <i>// FIXME We want to use clock_gettime, but its not available in MacOS 10.11. See</i></td></tr>
+<tr><th id="152">152</th><td><i>  // <a href="https://github.com/google/benchmark/pull/292">https://github.com/google/benchmark/pull/292</a></i></td></tr>
+<tr><th id="153">153</th><td>  mach_msg_type_number_t count = THREAD_BASIC_INFO_COUNT;</td></tr>
+<tr><th id="154">154</th><td>  thread_basic_info_data_t info;</td></tr>
+<tr><th id="155">155</th><td>  mach_port_t thread = pthread_mach_thread_np(pthread_self());</td></tr>
+<tr><th id="156">156</th><td>  <b>if</b> (thread_info(thread, THREAD_BASIC_INFO, (thread_info_t)&amp;info, &amp;count) ==</td></tr>
+<tr><th id="157">157</th><td>      KERN_SUCCESS) {</td></tr>
+<tr><th id="158">158</th><td>    <b>return</b> MakeTime(info);</td></tr>
+<tr><th id="159">159</th><td>  }</td></tr>
+<tr><th id="160">160</th><td>  DiagnoseAndExit(<q>"ThreadCPUUsage() failed when evaluating thread_info"</q>);</td></tr>
+<tr><th id="161">161</th><td><u>#<span data-ppcond="141">elif</span> defined(<span class="macro" data-ref="_M/BENCHMARK_OS_EMSCRIPTEN">BENCHMARK_OS_EMSCRIPTEN</span>)</u></td></tr>
+<tr><th id="162">162</th><td>  <i>// Emscripten doesn't support traditional threads</i></td></tr>
+<tr><th id="163">163</th><td>  <b>return</b> ProcessCPUUsage();</td></tr>
+<tr><th id="164">164</th><td><u>#<span data-ppcond="141">elif</span> defined(<span class="macro" data-ref="_M/BENCHMARK_OS_RTEMS">BENCHMARK_OS_RTEMS</span>)</u></td></tr>
+<tr><th id="165">165</th><td>  <i>// RTEMS doesn't support CLOCK_THREAD_CPUTIME_ID. See</i></td></tr>
+<tr><th id="166">166</th><td><i>  // <a href="https://github.com/RTEMS/rtems/blob/master/cpukit/posix/src/clockgettime.c">https://github.com/RTEMS/rtems/blob/master/cpukit/posix/src/clockgettime.c</a></i></td></tr>
+<tr><th id="167">167</th><td>  <b>return</b> ProcessCPUUsage();</td></tr>
+<tr><th id="168">168</th><td><u>#<span data-ppcond="141">elif</span> defined(<span class="macro" data-ref="_M/BENCHMARK_OS_SOLARIS">BENCHMARK_OS_SOLARIS</span>)</u></td></tr>
+<tr><th id="169">169</th><td>  <b>struct</b> rusage ru;</td></tr>
+<tr><th id="170">170</th><td>  <b>if</b> (getrusage(RUSAGE_LWP, &amp;ru) == <var>0</var>) <b>return</b> MakeTime(ru);</td></tr>
+<tr><th id="171">171</th><td>  DiagnoseAndExit(<q>"getrusage(RUSAGE_LWP, ...) failed"</q>);</td></tr>
+<tr><th id="172">172</th><td><u>#<span data-ppcond="141">elif</span> defined(<a class="macro" href="../../../../../include/bits/time.h.html#52" data-ref="_M/CLOCK_THREAD_CPUTIME_ID">CLOCK_THREAD_CPUTIME_ID</a>)</u></td></tr>
+<tr><th id="173">173</th><td>  <b>struct</b> <a class="type" href="../../../../../include/bits/types/struct_timespec.h.html#timespec" title='timespec' data-ref="timespec" data-ref-filename="timespec">timespec</a> <a class="ref fn fake" href="../../../../../include/bits/types/struct_timespec.h.html#10" title='timespec::timespec' data-ref="_ZN8timespecC1Ev" data-ref-filename="_ZN8timespecC1Ev"></a><dfn class="local col5 decl" id="5ts" title='ts' data-type='struct timespec' data-ref="5ts" data-ref-filename="5ts">ts</dfn>;</td></tr>
+<tr><th id="174">174</th><td>  <b>if</b> (<a class="ref fn" href="../../../../../include/time.h.html#clock_gettime" title='clock_gettime' data-ref="clock_gettime" data-ref-filename="clock_gettime">clock_gettime</a>(<a class="macro" href="../../../../../include/bits/time.h.html#52" title="3" data-ref="_M/CLOCK_THREAD_CPUTIME_ID">CLOCK_THREAD_CPUTIME_ID</a>, &amp;<a class="local col5 ref" href="#5ts" title='ts' data-ref="5ts" data-ref-filename="5ts">ts</a>) == <var>0</var>) <b>return</b> <a class="tu ref fn" href="#_ZN9benchmark12_GLOBAL__N_18MakeTimeERK8timespec" title='benchmark::(anonymous namespace)::MakeTime' data-use='c' data-ref="_ZN9benchmark12_GLOBAL__N_18MakeTimeERK8timespec" data-ref-filename="_ZN9benchmark12_GLOBAL__N_18MakeTimeERK8timespec">MakeTime</a>(<a class="local col5 ref" href="#5ts" title='ts' data-ref="5ts" data-ref-filename="5ts">ts</a>);</td></tr>
+<tr><th id="175">175</th><td>  <a class="tu ref fn" href="#_ZN9benchmark12_GLOBAL__N_115DiagnoseAndExitEPKc" title='benchmark::(anonymous namespace)::DiagnoseAndExit' data-use='c' data-ref="_ZN9benchmark12_GLOBAL__N_115DiagnoseAndExitEPKc" data-ref-filename="_ZN9benchmark12_GLOBAL__N_115DiagnoseAndExitEPKc">DiagnoseAndExit</a>(<q>"clock_gettime(CLOCK_THREAD_CPUTIME_ID, ...) failed"</q>);</td></tr>
+<tr><th id="176">176</th><td><u>#<span data-ppcond="141">else</span></u></td></tr>
+<tr><th id="177">177</th><td><u>#error Per-thread timing is not available on your system.</u></td></tr>
+<tr><th id="178">178</th><td><u>#<span data-ppcond="141">endif</span></u></td></tr>
+<tr><th id="179">179</th><td>}</td></tr>
+<tr><th id="180">180</th><td></td></tr>
+<tr><th id="181">181</th><td><b>namespace</b> {</td></tr>
+<tr><th id="182">182</th><td></td></tr>
+<tr><th id="183">183</th><td><span class="namespace">std::</span><span class='typedef' title='std::string' data-type='basic_string&lt;char&gt;' data-ref="std::string" data-ref-filename="std..string">string</span> <dfn class="tu decl def fn" id="_ZN9benchmark12_GLOBAL__N_114DateTimeStringB5cxx11Eb" title='benchmark::(anonymous namespace)::DateTimeString' data-type='std::string benchmark::(anonymous namespace)::DateTimeString(bool local)' data-ref="_ZN9benchmark12_GLOBAL__N_114DateTimeStringB5cxx11Eb" data-ref-filename="_ZN9benchmark12_GLOBAL__N_114DateTimeStringB5cxx11Eb">DateTimeString</dfn>(<em>bool</em> <dfn class="local col6 decl" id="6local" title='local' data-type='bool' data-ref="6local" data-ref-filename="6local">local</dfn>) {</td></tr>
+<tr><th id="184">184</th><td>  <b>typedef</b> <span class="namespace">std::chrono::</span><span class='type' title='std::chrono::_V2::system_clock' data-ref="std::chrono::_V2::system_clock" data-ref-filename="std..chrono.._V2..system_clock">system_clock</span> <dfn class="local col7 typedef" id="7Clock" title='Clock' data-type='std::chrono::system_clock' data-ref="7Clock" data-ref-filename="7Clock">Clock</dfn>;</td></tr>
+<tr><th id="185">185</th><td>  <span class="namespace">std::</span><a class="typedef" href="../../../../../include/bits/types/time_t.h.html#time_t" title='time_t' data-type='__time_t' data-ref="time_t" data-ref-filename="time_t">time_t</a> <dfn class="local col8 decl" id="8now" title='now' data-type='std::time_t' data-ref="8now" data-ref-filename="8now">now</dfn> = <a class="local col7 typedef" href="#7Clock" title='Clock' data-type='std::chrono::system_clock' data-ref="7Clock" data-ref-filename="7Clock">Clock</a>::<span class='ref fn' title='std::chrono::_V2::system_clock::to_time_t' data-ref="_ZNSt6chrono3_V212system_clock9to_time_tERKNS_10time_pointIS1_NS_8durationIlSt5ratioILl1ELl1000000000EEEEEE" data-ref-filename="_ZNSt6chrono3_V212system_clock9to_time_tERKNS_10time_pointIS1_NS_8durationIlSt5ratioILl1ELl1000000000EEEEEE">to_time_t</span>(<a class="local col7 typedef" href="#7Clock" title='Clock' data-type='std::chrono::system_clock' data-ref="7Clock" data-ref-filename="7Clock">Clock</a>::<span class='ref fn' title='std::chrono::_V2::system_clock::now' data-ref="_ZNSt6chrono3_V212system_clock3nowEv" data-ref-filename="_ZNSt6chrono3_V212system_clock3nowEv">now</span>());</td></tr>
+<tr><th id="186">186</th><td>  <em>const</em> <span class="namespace">std::</span><span class='typedef' title='std::size_t' data-type='unsigned long' data-ref="std::size_t" data-ref-filename="std..size_t">size_t</span> <dfn class="local col9 decl" id="9kStorageSize" title='kStorageSize' data-type='const std::size_t' data-ref="9kStorageSize" data-ref-filename="9kStorageSize">kStorageSize</dfn> = <var>128</var>;</td></tr>
+<tr><th id="187">187</th><td>  <em>char</em> <dfn class="local col0 decl" id="10storage" title='storage' data-type='char [128]' data-ref="10storage" data-ref-filename="10storage">storage</dfn>[<a class="local col9 ref" href="#9kStorageSize" title='kStorageSize' data-ref="9kStorageSize" data-ref-filename="9kStorageSize">kStorageSize</a>];</td></tr>
+<tr><th id="188">188</th><td>  <span class="namespace">std::</span><span class='typedef' title='std::size_t' data-type='unsigned long' data-ref="std::size_t" data-ref-filename="std..size_t">size_t</span> <dfn class="local col1 decl" id="11written" title='written' data-type='std::size_t' data-ref="11written" data-ref-filename="11written">written</dfn>;</td></tr>
+<tr><th id="189">189</th><td></td></tr>
+<tr><th id="190">190</th><td>  <b>if</b> (<a class="local col6 ref" href="#6local" title='local' data-ref="6local" data-ref-filename="6local">local</a>) {</td></tr>
+<tr><th id="191">191</th><td><u>#<span data-ppcond="191">if</span> defined(<span class="macro" data-ref="_M/BENCHMARK_OS_WINDOWS">BENCHMARK_OS_WINDOWS</span>)</u></td></tr>
+<tr><th id="192">192</th><td>    written =</td></tr>
+<tr><th id="193">193</th><td>        std::strftime(storage, <b>sizeof</b>(storage), <q>"%x %X"</q>, ::localtime(&amp;now));</td></tr>
+<tr><th id="194">194</th><td><u>#<span data-ppcond="191">else</span></u></td></tr>
+<tr><th id="195">195</th><td>    <span class="namespace">std::</span><a class="type" href="../../../../../include/bits/types/struct_tm.h.html#tm" title='tm' data-ref="tm" data-ref-filename="tm">tm</a> <a class="ref fn fake" href="../../../../../include/bits/types/struct_tm.h.html#7" title='tm::tm' data-ref="_ZN2tmC1Ev" data-ref-filename="_ZN2tmC1Ev"></a><dfn class="local col2 decl" id="12timeinfo" title='timeinfo' data-type='std::tm' data-ref="12timeinfo" data-ref-filename="12timeinfo">timeinfo</dfn>;</td></tr>
+<tr><th id="196">196</th><td>    ::<a class="ref fn" href="../../../../../include/time.h.html#localtime_r" title='localtime_r' data-ref="localtime_r" data-ref-filename="localtime_r">localtime_r</a>(&amp;<a class="local col8 ref" href="#8now" title='now' data-ref="8now" data-ref-filename="8now">now</a>, &amp;<a class="local col2 ref" href="#12timeinfo" title='timeinfo' data-ref="12timeinfo" data-ref-filename="12timeinfo">timeinfo</a>);</td></tr>
+<tr><th id="197">197</th><td>    <a class="local col1 ref" href="#11written" title='written' data-ref="11written" data-ref-filename="11written">written</a> = <span class="namespace">std::</span><a class="ref fn" href="../../../../../include/time.h.html#strftime" title='strftime' data-ref="strftime" data-ref-filename="strftime">strftime</a>(<a class="local col0 ref" href="#10storage" title='storage' data-ref="10storage" data-ref-filename="10storage">storage</a>, <b>sizeof</b>(<a class="local col0 ref" href="#10storage" title='storage' data-ref="10storage" data-ref-filename="10storage">storage</a>), <q>"%F %T"</q>, &amp;<a class="local col2 ref" href="#12timeinfo" title='timeinfo' data-ref="12timeinfo" data-ref-filename="12timeinfo">timeinfo</a>);</td></tr>
+<tr><th id="198">198</th><td><u>#<span data-ppcond="191">endif</span></u></td></tr>
+<tr><th id="199">199</th><td>  } <b>else</b> {</td></tr>
+<tr><th id="200">200</th><td><u>#<span data-ppcond="200">if</span> defined(<span class="macro" data-ref="_M/BENCHMARK_OS_WINDOWS">BENCHMARK_OS_WINDOWS</span>)</u></td></tr>
+<tr><th id="201">201</th><td>    written = std::strftime(storage, <b>sizeof</b>(storage), <q>"%x %X"</q>, ::gmtime(&amp;now));</td></tr>
+<tr><th id="202">202</th><td><u>#<span data-ppcond="200">else</span></u></td></tr>
+<tr><th id="203">203</th><td>    <span class="namespace">std::</span><a class="type" href="../../../../../include/bits/types/struct_tm.h.html#tm" title='tm' data-ref="tm" data-ref-filename="tm">tm</a> <a class="ref fn fake" href="../../../../../include/bits/types/struct_tm.h.html#7" title='tm::tm' data-ref="_ZN2tmC1Ev" data-ref-filename="_ZN2tmC1Ev"></a><dfn class="local col3 decl" id="13timeinfo" title='timeinfo' data-type='std::tm' data-ref="13timeinfo" data-ref-filename="13timeinfo">timeinfo</dfn>;</td></tr>
+<tr><th id="204">204</th><td>    ::<a class="ref fn" href="../../../../../include/time.h.html#gmtime_r" title='gmtime_r' data-ref="gmtime_r" data-ref-filename="gmtime_r">gmtime_r</a>(&amp;<a class="local col8 ref" href="#8now" title='now' data-ref="8now" data-ref-filename="8now">now</a>, &amp;<a class="local col3 ref" href="#13timeinfo" title='timeinfo' data-ref="13timeinfo" data-ref-filename="13timeinfo">timeinfo</a>);</td></tr>
+<tr><th id="205">205</th><td>    <a class="local col1 ref" href="#11written" title='written' data-ref="11written" data-ref-filename="11written">written</a> = <span class="namespace">std::</span><a class="ref fn" href="../../../../../include/time.h.html#strftime" title='strftime' data-ref="strftime" data-ref-filename="strftime">strftime</a>(<a class="local col0 ref" href="#10storage" title='storage' data-ref="10storage" data-ref-filename="10storage">storage</a>, <b>sizeof</b>(<a class="local col0 ref" href="#10storage" title='storage' data-ref="10storage" data-ref-filename="10storage">storage</a>), <q>"%F %T"</q>, &amp;<a class="local col3 ref" href="#13timeinfo" title='timeinfo' data-ref="13timeinfo" data-ref-filename="13timeinfo">timeinfo</a>);</td></tr>
+<tr><th id="206">206</th><td><u>#<span data-ppcond="200">endif</span></u></td></tr>
+<tr><th id="207">207</th><td>  }</td></tr>
+<tr><th id="208">208</th><td>  <a class="macro" href="check.h.html#62" title="::benchmark::internal::GetNullLogInstance()" data-ref="_M/CHECK">CHECK</a>(written &lt; kStorageSize);</td></tr>
+<tr><th id="209">209</th><td>  ((<em>void</em>)<a class="local col1 ref" href="#11written" title='written' data-ref="11written" data-ref-filename="11written">written</a>);  <i>// prevent unused variable in optimized mode.</i></td></tr>
+<tr><th id="210">210</th><td>  <b>return</b> <span class="namespace">std::</span><span class='typedef' title='std::string' data-type='basic_string&lt;char&gt;' data-ref="std::string" data-ref-filename="std..string">string</span><span class='ref fn' title='std::__cxx11::basic_string::basic_string&lt;_CharT, _Traits, _Alloc&gt;' data-ref="_ZNSt7__cxx1112basic_stringC1EPKT_RKT1_" data-ref-filename="_ZNSt7__cxx1112basic_stringC1EPKT_RKT1_">(</span><a class="local col0 ref" href="#10storage" title='storage' data-ref="10storage" data-ref-filename="10storage">storage</a>);</td></tr>
+<tr><th id="211">211</th><td>}</td></tr>
+<tr><th id="212">212</th><td></td></tr>
+<tr><th id="213">213</th><td>}  <i>// end namespace</i></td></tr>
+<tr><th id="214">214</th><td></td></tr>
+<tr><th id="215">215</th><td><span class="namespace">std::</span><span class='typedef' title='std::string' data-type='basic_string&lt;char&gt;' data-ref="std::string" data-ref-filename="std..string">string</span> <dfn class="decl def fn" id="_ZN9benchmark19LocalDateTimeStringB5cxx11Ev" title='benchmark::LocalDateTimeString' data-ref="_ZN9benchmark19LocalDateTimeStringB5cxx11Ev" data-ref-filename="_ZN9benchmark19LocalDateTimeStringB5cxx11Ev">LocalDateTimeString</dfn>() { <b>return</b> <a class="tu ref fn" href="#_ZN9benchmark12_GLOBAL__N_114DateTimeStringB5cxx11Eb" title='benchmark::(anonymous namespace)::DateTimeString' data-use='c' data-ref="_ZN9benchmark12_GLOBAL__N_114DateTimeStringB5cxx11Eb" data-ref-filename="_ZN9benchmark12_GLOBAL__N_114DateTimeStringB5cxx11Eb">DateTimeString</a>(<b>true</b>); }</td></tr>
+<tr><th id="216">216</th><td></td></tr>
+<tr><th id="217">217</th><td>}  <i>// end namespace benchmark</i></td></tr>
+<tr><th id="218">218</th><td></td></tr>
+</table><hr/><p id='footer'>
+Generated on <em>2021-Jul-01</em> from project llvm revision <em>12</em>

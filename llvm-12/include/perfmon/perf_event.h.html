@@ -1,0 +1,636 @@
+<!doctype html>
+<html>
+<head>
+<meta name="viewport" content="width=device-width, initial-scale=1.0"><title>perf_event.h source code [include/perfmon/perf_event.h] - Woboq Code Browser</title>
+<link rel="stylesheet" href="../.././data/qtcreator.css" title="QtCreator"/>
+<link rel="alternate stylesheet" href="../.././data/kdevelop.css" title="KDevelop"/>
+<script type="text/javascript" src="../.././data/jquery/jquery.min.js"></script>
+<script type="text/javascript" src="../.././data/jquery/jquery-ui.min.js"></script>
+<script>var file = 'include/perfmon/perf_event.h'; var root_path = '../..'; var data_path = '../.././data'; var ecma_script_api_version = 2;</script>
+<script src='../.././data/codebrowser.js'></script>
+</head>
+<body><div id='header'><h1 id='breadcrumb'><span>Browse the source code of </span><a href='..'>include</a>/<a href='./'>perfmon</a>/<a href='perf_event.h.html'>perf_event.h</a></h1></div>
+<hr/><div id='content'><table class="code">
+<tr><th id="1">1</th><td><i>/*</i></td></tr>
+<tr><th id="2">2</th><td><i> * Copyright (c) 2011 Google, Inc</i></td></tr>
+<tr><th id="3">3</th><td><i> * Contributed by Stephane Eranian &lt;eranian@google.com&gt;</i></td></tr>
+<tr><th id="4">4</th><td><i> *</i></td></tr>
+<tr><th id="5">5</th><td><i> * Permission is hereby granted, free of charge, to any person obtaining a copy</i></td></tr>
+<tr><th id="6">6</th><td><i> * of this software and associated documentation files (the "Software"), to deal</i></td></tr>
+<tr><th id="7">7</th><td><i> * in the Software without restriction, including without limitation the rights</i></td></tr>
+<tr><th id="8">8</th><td><i> * to use, copy, modify, merge, publish, distribute, sublicense, and/or sell copies</i></td></tr>
+<tr><th id="9">9</th><td><i> * of the Software, and to permit persons to whom the Software is furnished to do so,</i></td></tr>
+<tr><th id="10">10</th><td><i> * subject to the following conditions:</i></td></tr>
+<tr><th id="11">11</th><td><i> *</i></td></tr>
+<tr><th id="12">12</th><td><i> * The above copyright notice and this permission notice shall be included in all</i></td></tr>
+<tr><th id="13">13</th><td><i> * copies or substantial portions of the Software.</i></td></tr>
+<tr><th id="14">14</th><td><i> *</i></td></tr>
+<tr><th id="15">15</th><td><i> * THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR IMPLIED,</i></td></tr>
+<tr><th id="16">16</th><td><i> * INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY, FITNESS FOR A</i></td></tr>
+<tr><th id="17">17</th><td><i> * PARTICULAR PURPOSE AND NONINFRINGEMENT. IN NO EVENT SHALL THE AUTHORS OR COPYRIGHT</i></td></tr>
+<tr><th id="18">18</th><td><i> * HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER LIABILITY, WHETHER IN AN ACTION OF</i></td></tr>
+<tr><th id="19">19</th><td><i> * CONTRACT, TORT OR OTHERWISE, ARISING FROM, OUT OF OR IN CONNECTION WITH THE SOFTWARE</i></td></tr>
+<tr><th id="20">20</th><td><i> * OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.</i></td></tr>
+<tr><th id="21">21</th><td><i> */</i></td></tr>
+<tr><th id="22">22</th><td><u>#<span data-ppcond="22">ifndef</span> <span class="macro" data-ref="_M/__PERFMON_PERF_EVENT_H__">__PERFMON_PERF_EVENT_H__</span></u></td></tr>
+<tr><th id="23">23</th><td><u>#define <dfn class="macro" id="_M/__PERFMON_PERF_EVENT_H__" data-ref="_M/__PERFMON_PERF_EVENT_H__">__PERFMON_PERF_EVENT_H__</dfn></u></td></tr>
+<tr><th id="24">24</th><td></td></tr>
+<tr><th id="25">25</th><td><u>#pragma GCC visibility push(default)</u></td></tr>
+<tr><th id="26">26</th><td></td></tr>
+<tr><th id="27">27</th><td><u>#include <a href="../sys/types.h.html">&lt;sys/types.h&gt;</a></u></td></tr>
+<tr><th id="28">28</th><td><u>#include <a href="../unistd.h.html">&lt;unistd.h&gt;</a>		/* for syscall numbers */</u></td></tr>
+<tr><th id="29">29</th><td><u>#include &lt;inttypes.h&gt;</u></td></tr>
+<tr><th id="30">30</th><td><u>#include <a href="../sys/syscall.h.html">&lt;sys/syscall.h&gt;</a>	/* for syscall stub macros */</u></td></tr>
+<tr><th id="31">31</th><td><u>#include <a href="../sys/ioctl.h.html">&lt;sys/ioctl.h&gt;</a>		/* for _IO */</u></td></tr>
+<tr><th id="32">32</th><td><u>#include <a href="../sys/prctl.h.html">&lt;sys/prctl.h&gt;</a>		/* for prctl() comamnds */</u></td></tr>
+<tr><th id="33">33</th><td></td></tr>
+<tr><th id="34">34</th><td><u>#<span data-ppcond="34">ifdef</span> <span class="macro" data-ref="_M/__cplusplus">__cplusplus</span></u></td></tr>
+<tr><th id="35">35</th><td><b>extern</b> <q>"C"</q> {</td></tr>
+<tr><th id="36">36</th><td><u>#<span data-ppcond="34">endif</span></u></td></tr>
+<tr><th id="37">37</th><td><i>/*</i></td></tr>
+<tr><th id="38">38</th><td><i> * avoid clashes with actual kernel header file</i></td></tr>
+<tr><th id="39">39</th><td><i> */</i></td></tr>
+<tr><th id="40">40</th><td><u>#<span data-ppcond="40">if</span> !(defined(<span class="macro" data-ref="_M/_LINUX_PERF_EVENT_H">_LINUX_PERF_EVENT_H</span>) || defined(<span class="macro" data-ref="_M/_UAPI_LINUX_PERF_EVENT_H">_UAPI_LINUX_PERF_EVENT_H</span>))</u></td></tr>
+<tr><th id="41">41</th><td></td></tr>
+<tr><th id="42">42</th><td><i>/*</i></td></tr>
+<tr><th id="43">43</th><td><i> * attr-&gt;type field values</i></td></tr>
+<tr><th id="44">44</th><td><i> */</i></td></tr>
+<tr><th id="45">45</th><td><b>enum</b> <dfn class="type def" id="perf_type_id" title='perf_type_id' data-ref="perf_type_id" data-ref-filename="perf_type_id">perf_type_id</dfn> {</td></tr>
+<tr><th id="46">46</th><td>	<dfn class="enum" id="PERF_TYPE_HARDWARE" title='PERF_TYPE_HARDWARE' data-ref="PERF_TYPE_HARDWARE" data-ref-filename="PERF_TYPE_HARDWARE">PERF_TYPE_HARDWARE</dfn>	= <var>0</var>,</td></tr>
+<tr><th id="47">47</th><td>	<dfn class="enum" id="PERF_TYPE_SOFTWARE" title='PERF_TYPE_SOFTWARE' data-ref="PERF_TYPE_SOFTWARE" data-ref-filename="PERF_TYPE_SOFTWARE">PERF_TYPE_SOFTWARE</dfn>	= <var>1</var>,</td></tr>
+<tr><th id="48">48</th><td>	<dfn class="enum" id="PERF_TYPE_TRACEPOINT" title='PERF_TYPE_TRACEPOINT' data-ref="PERF_TYPE_TRACEPOINT" data-ref-filename="PERF_TYPE_TRACEPOINT">PERF_TYPE_TRACEPOINT</dfn>	= <var>2</var>,</td></tr>
+<tr><th id="49">49</th><td>	<dfn class="enum" id="PERF_TYPE_HW_CACHE" title='PERF_TYPE_HW_CACHE' data-ref="PERF_TYPE_HW_CACHE" data-ref-filename="PERF_TYPE_HW_CACHE">PERF_TYPE_HW_CACHE</dfn>	= <var>3</var>,</td></tr>
+<tr><th id="50">50</th><td>	<dfn class="enum" id="PERF_TYPE_RAW" title='PERF_TYPE_RAW' data-ref="PERF_TYPE_RAW" data-ref-filename="PERF_TYPE_RAW">PERF_TYPE_RAW</dfn>		= <var>4</var>,</td></tr>
+<tr><th id="51">51</th><td>	<dfn class="enum" id="PERF_TYPE_BREAKPOINT" title='PERF_TYPE_BREAKPOINT' data-ref="PERF_TYPE_BREAKPOINT" data-ref-filename="PERF_TYPE_BREAKPOINT">PERF_TYPE_BREAKPOINT</dfn>	= <var>5</var>,</td></tr>
+<tr><th id="52">52</th><td>	<dfn class="enum" id="PERF_TYPE_MAX" title='PERF_TYPE_MAX' data-ref="PERF_TYPE_MAX" data-ref-filename="PERF_TYPE_MAX">PERF_TYPE_MAX</dfn></td></tr>
+<tr><th id="53">53</th><td>};</td></tr>
+<tr><th id="54">54</th><td></td></tr>
+<tr><th id="55">55</th><td><i>/*</i></td></tr>
+<tr><th id="56">56</th><td><i> * attr-&gt;config values for generic HW PMU events</i></td></tr>
+<tr><th id="57">57</th><td><i> *</i></td></tr>
+<tr><th id="58">58</th><td><i> * they get mapped onto actual events by the kernel</i></td></tr>
+<tr><th id="59">59</th><td><i> */</i></td></tr>
+<tr><th id="60">60</th><td><b>enum</b> <dfn class="type def" id="perf_hw_id" title='perf_hw_id' data-ref="perf_hw_id" data-ref-filename="perf_hw_id">perf_hw_id</dfn> {</td></tr>
+<tr><th id="61">61</th><td>	<dfn class="enum" id="PERF_COUNT_HW_CPU_CYCLES" title='PERF_COUNT_HW_CPU_CYCLES' data-ref="PERF_COUNT_HW_CPU_CYCLES" data-ref-filename="PERF_COUNT_HW_CPU_CYCLES">PERF_COUNT_HW_CPU_CYCLES</dfn>		= <var>0</var>,</td></tr>
+<tr><th id="62">62</th><td>	<dfn class="enum" id="PERF_COUNT_HW_INSTRUCTIONS" title='PERF_COUNT_HW_INSTRUCTIONS' data-ref="PERF_COUNT_HW_INSTRUCTIONS" data-ref-filename="PERF_COUNT_HW_INSTRUCTIONS">PERF_COUNT_HW_INSTRUCTIONS</dfn>		= <var>1</var>,</td></tr>
+<tr><th id="63">63</th><td>	<dfn class="enum" id="PERF_COUNT_HW_CACHE_REFERENCES" title='PERF_COUNT_HW_CACHE_REFERENCES' data-ref="PERF_COUNT_HW_CACHE_REFERENCES" data-ref-filename="PERF_COUNT_HW_CACHE_REFERENCES">PERF_COUNT_HW_CACHE_REFERENCES</dfn>		= <var>2</var>,</td></tr>
+<tr><th id="64">64</th><td>	<dfn class="enum" id="PERF_COUNT_HW_CACHE_MISSES" title='PERF_COUNT_HW_CACHE_MISSES' data-ref="PERF_COUNT_HW_CACHE_MISSES" data-ref-filename="PERF_COUNT_HW_CACHE_MISSES">PERF_COUNT_HW_CACHE_MISSES</dfn>		= <var>3</var>,</td></tr>
+<tr><th id="65">65</th><td>	<dfn class="enum" id="PERF_COUNT_HW_BRANCH_INSTRUCTIONS" title='PERF_COUNT_HW_BRANCH_INSTRUCTIONS' data-ref="PERF_COUNT_HW_BRANCH_INSTRUCTIONS" data-ref-filename="PERF_COUNT_HW_BRANCH_INSTRUCTIONS">PERF_COUNT_HW_BRANCH_INSTRUCTIONS</dfn>	= <var>4</var>,</td></tr>
+<tr><th id="66">66</th><td>	<dfn class="enum" id="PERF_COUNT_HW_BRANCH_MISSES" title='PERF_COUNT_HW_BRANCH_MISSES' data-ref="PERF_COUNT_HW_BRANCH_MISSES" data-ref-filename="PERF_COUNT_HW_BRANCH_MISSES">PERF_COUNT_HW_BRANCH_MISSES</dfn>		= <var>5</var>,</td></tr>
+<tr><th id="67">67</th><td>	<dfn class="enum" id="PERF_COUNT_HW_BUS_CYCLES" title='PERF_COUNT_HW_BUS_CYCLES' data-ref="PERF_COUNT_HW_BUS_CYCLES" data-ref-filename="PERF_COUNT_HW_BUS_CYCLES">PERF_COUNT_HW_BUS_CYCLES</dfn>		= <var>6</var>,</td></tr>
+<tr><th id="68">68</th><td>	<dfn class="enum" id="PERF_COUNT_HW_STALLED_CYCLES_FRONTEND" title='PERF_COUNT_HW_STALLED_CYCLES_FRONTEND' data-ref="PERF_COUNT_HW_STALLED_CYCLES_FRONTEND" data-ref-filename="PERF_COUNT_HW_STALLED_CYCLES_FRONTEND">PERF_COUNT_HW_STALLED_CYCLES_FRONTEND</dfn>	= <var>7</var>,</td></tr>
+<tr><th id="69">69</th><td>	<dfn class="enum" id="PERF_COUNT_HW_STALLED_CYCLES_BACKEND" title='PERF_COUNT_HW_STALLED_CYCLES_BACKEND' data-ref="PERF_COUNT_HW_STALLED_CYCLES_BACKEND" data-ref-filename="PERF_COUNT_HW_STALLED_CYCLES_BACKEND">PERF_COUNT_HW_STALLED_CYCLES_BACKEND</dfn>	= <var>8</var>,</td></tr>
+<tr><th id="70">70</th><td>	<dfn class="enum" id="PERF_COUNT_HW_REF_CPU_CYCLES" title='PERF_COUNT_HW_REF_CPU_CYCLES' data-ref="PERF_COUNT_HW_REF_CPU_CYCLES" data-ref-filename="PERF_COUNT_HW_REF_CPU_CYCLES">PERF_COUNT_HW_REF_CPU_CYCLES</dfn>		= <var>9</var>,</td></tr>
+<tr><th id="71">71</th><td>	<dfn class="enum" id="PERF_COUNT_HW_MAX" title='PERF_COUNT_HW_MAX' data-ref="PERF_COUNT_HW_MAX" data-ref-filename="PERF_COUNT_HW_MAX">PERF_COUNT_HW_MAX</dfn></td></tr>
+<tr><th id="72">72</th><td>};</td></tr>
+<tr><th id="73">73</th><td></td></tr>
+<tr><th id="74">74</th><td><i>/*</i></td></tr>
+<tr><th id="75">75</th><td><i> * attr-&gt;config values for generic HW cache events</i></td></tr>
+<tr><th id="76">76</th><td><i> *</i></td></tr>
+<tr><th id="77">77</th><td><i> * they get mapped onto actual events by the kernel</i></td></tr>
+<tr><th id="78">78</th><td><i> */</i></td></tr>
+<tr><th id="79">79</th><td><b>enum</b> <dfn class="type def" id="perf_hw_cache_id" title='perf_hw_cache_id' data-ref="perf_hw_cache_id" data-ref-filename="perf_hw_cache_id">perf_hw_cache_id</dfn> {</td></tr>
+<tr><th id="80">80</th><td>	<dfn class="enum" id="PERF_COUNT_HW_CACHE_L1D" title='PERF_COUNT_HW_CACHE_L1D' data-ref="PERF_COUNT_HW_CACHE_L1D" data-ref-filename="PERF_COUNT_HW_CACHE_L1D">PERF_COUNT_HW_CACHE_L1D</dfn>		= <var>0</var>,</td></tr>
+<tr><th id="81">81</th><td>	<dfn class="enum" id="PERF_COUNT_HW_CACHE_L1I" title='PERF_COUNT_HW_CACHE_L1I' data-ref="PERF_COUNT_HW_CACHE_L1I" data-ref-filename="PERF_COUNT_HW_CACHE_L1I">PERF_COUNT_HW_CACHE_L1I</dfn>		= <var>1</var>,</td></tr>
+<tr><th id="82">82</th><td>	<dfn class="enum" id="PERF_COUNT_HW_CACHE_LL" title='PERF_COUNT_HW_CACHE_LL' data-ref="PERF_COUNT_HW_CACHE_LL" data-ref-filename="PERF_COUNT_HW_CACHE_LL">PERF_COUNT_HW_CACHE_LL</dfn>		= <var>2</var>,</td></tr>
+<tr><th id="83">83</th><td>	<dfn class="enum" id="PERF_COUNT_HW_CACHE_DTLB" title='PERF_COUNT_HW_CACHE_DTLB' data-ref="PERF_COUNT_HW_CACHE_DTLB" data-ref-filename="PERF_COUNT_HW_CACHE_DTLB">PERF_COUNT_HW_CACHE_DTLB</dfn>	= <var>3</var>,</td></tr>
+<tr><th id="84">84</th><td>	<dfn class="enum" id="PERF_COUNT_HW_CACHE_ITLB" title='PERF_COUNT_HW_CACHE_ITLB' data-ref="PERF_COUNT_HW_CACHE_ITLB" data-ref-filename="PERF_COUNT_HW_CACHE_ITLB">PERF_COUNT_HW_CACHE_ITLB</dfn>	= <var>4</var>,</td></tr>
+<tr><th id="85">85</th><td>	<dfn class="enum" id="PERF_COUNT_HW_CACHE_BPU" title='PERF_COUNT_HW_CACHE_BPU' data-ref="PERF_COUNT_HW_CACHE_BPU" data-ref-filename="PERF_COUNT_HW_CACHE_BPU">PERF_COUNT_HW_CACHE_BPU</dfn>		= <var>5</var>,</td></tr>
+<tr><th id="86">86</th><td>	<dfn class="enum" id="PERF_COUNT_HW_CACHE_NODE" title='PERF_COUNT_HW_CACHE_NODE' data-ref="PERF_COUNT_HW_CACHE_NODE" data-ref-filename="PERF_COUNT_HW_CACHE_NODE">PERF_COUNT_HW_CACHE_NODE</dfn>	= <var>6</var>,</td></tr>
+<tr><th id="87">87</th><td>	<dfn class="enum" id="PERF_COUNT_HW_CACHE_MAX" title='PERF_COUNT_HW_CACHE_MAX' data-ref="PERF_COUNT_HW_CACHE_MAX" data-ref-filename="PERF_COUNT_HW_CACHE_MAX">PERF_COUNT_HW_CACHE_MAX</dfn></td></tr>
+<tr><th id="88">88</th><td>};</td></tr>
+<tr><th id="89">89</th><td></td></tr>
+<tr><th id="90">90</th><td><b>enum</b> <dfn class="type def" id="perf_hw_cache_op_id" title='perf_hw_cache_op_id' data-ref="perf_hw_cache_op_id" data-ref-filename="perf_hw_cache_op_id">perf_hw_cache_op_id</dfn> {</td></tr>
+<tr><th id="91">91</th><td>	<dfn class="enum" id="PERF_COUNT_HW_CACHE_OP_READ" title='PERF_COUNT_HW_CACHE_OP_READ' data-ref="PERF_COUNT_HW_CACHE_OP_READ" data-ref-filename="PERF_COUNT_HW_CACHE_OP_READ">PERF_COUNT_HW_CACHE_OP_READ</dfn>		= <var>0</var>,</td></tr>
+<tr><th id="92">92</th><td>	<dfn class="enum" id="PERF_COUNT_HW_CACHE_OP_WRITE" title='PERF_COUNT_HW_CACHE_OP_WRITE' data-ref="PERF_COUNT_HW_CACHE_OP_WRITE" data-ref-filename="PERF_COUNT_HW_CACHE_OP_WRITE">PERF_COUNT_HW_CACHE_OP_WRITE</dfn>		= <var>1</var>,</td></tr>
+<tr><th id="93">93</th><td>	<dfn class="enum" id="PERF_COUNT_HW_CACHE_OP_PREFETCH" title='PERF_COUNT_HW_CACHE_OP_PREFETCH' data-ref="PERF_COUNT_HW_CACHE_OP_PREFETCH" data-ref-filename="PERF_COUNT_HW_CACHE_OP_PREFETCH">PERF_COUNT_HW_CACHE_OP_PREFETCH</dfn>		= <var>2</var>,</td></tr>
+<tr><th id="94">94</th><td>	<dfn class="enum" id="PERF_COUNT_HW_CACHE_OP_MAX" title='PERF_COUNT_HW_CACHE_OP_MAX' data-ref="PERF_COUNT_HW_CACHE_OP_MAX" data-ref-filename="PERF_COUNT_HW_CACHE_OP_MAX">PERF_COUNT_HW_CACHE_OP_MAX</dfn></td></tr>
+<tr><th id="95">95</th><td>};</td></tr>
+<tr><th id="96">96</th><td></td></tr>
+<tr><th id="97">97</th><td><b>enum</b> <dfn class="type def" id="perf_hw_cache_op_result_id" title='perf_hw_cache_op_result_id' data-ref="perf_hw_cache_op_result_id" data-ref-filename="perf_hw_cache_op_result_id">perf_hw_cache_op_result_id</dfn> {</td></tr>
+<tr><th id="98">98</th><td>	<dfn class="enum" id="PERF_COUNT_HW_CACHE_RESULT_ACCESS" title='PERF_COUNT_HW_CACHE_RESULT_ACCESS' data-ref="PERF_COUNT_HW_CACHE_RESULT_ACCESS" data-ref-filename="PERF_COUNT_HW_CACHE_RESULT_ACCESS">PERF_COUNT_HW_CACHE_RESULT_ACCESS</dfn>	= <var>0</var>,</td></tr>
+<tr><th id="99">99</th><td>	<dfn class="enum" id="PERF_COUNT_HW_CACHE_RESULT_MISS" title='PERF_COUNT_HW_CACHE_RESULT_MISS' data-ref="PERF_COUNT_HW_CACHE_RESULT_MISS" data-ref-filename="PERF_COUNT_HW_CACHE_RESULT_MISS">PERF_COUNT_HW_CACHE_RESULT_MISS</dfn>		= <var>1</var>,</td></tr>
+<tr><th id="100">100</th><td>	<dfn class="enum" id="PERF_COUNT_HW_CACHE_RESULT_MAX" title='PERF_COUNT_HW_CACHE_RESULT_MAX' data-ref="PERF_COUNT_HW_CACHE_RESULT_MAX" data-ref-filename="PERF_COUNT_HW_CACHE_RESULT_MAX">PERF_COUNT_HW_CACHE_RESULT_MAX</dfn></td></tr>
+<tr><th id="101">101</th><td>};</td></tr>
+<tr><th id="102">102</th><td></td></tr>
+<tr><th id="103">103</th><td><i>/*</i></td></tr>
+<tr><th id="104">104</th><td><i> * attr-&gt;config values for SW events</i></td></tr>
+<tr><th id="105">105</th><td><i> */</i></td></tr>
+<tr><th id="106">106</th><td><b>enum</b> <dfn class="type def" id="perf_sw_ids" title='perf_sw_ids' data-ref="perf_sw_ids" data-ref-filename="perf_sw_ids">perf_sw_ids</dfn> {</td></tr>
+<tr><th id="107">107</th><td>	<dfn class="enum" id="PERF_COUNT_SW_CPU_CLOCK" title='PERF_COUNT_SW_CPU_CLOCK' data-ref="PERF_COUNT_SW_CPU_CLOCK" data-ref-filename="PERF_COUNT_SW_CPU_CLOCK">PERF_COUNT_SW_CPU_CLOCK</dfn>			= <var>0</var>,</td></tr>
+<tr><th id="108">108</th><td>	<dfn class="enum" id="PERF_COUNT_SW_TASK_CLOCK" title='PERF_COUNT_SW_TASK_CLOCK' data-ref="PERF_COUNT_SW_TASK_CLOCK" data-ref-filename="PERF_COUNT_SW_TASK_CLOCK">PERF_COUNT_SW_TASK_CLOCK</dfn>		= <var>1</var>,</td></tr>
+<tr><th id="109">109</th><td>	<dfn class="enum" id="PERF_COUNT_SW_PAGE_FAULTS" title='PERF_COUNT_SW_PAGE_FAULTS' data-ref="PERF_COUNT_SW_PAGE_FAULTS" data-ref-filename="PERF_COUNT_SW_PAGE_FAULTS">PERF_COUNT_SW_PAGE_FAULTS</dfn>		= <var>2</var>,</td></tr>
+<tr><th id="110">110</th><td>	<dfn class="enum" id="PERF_COUNT_SW_CONTEXT_SWITCHES" title='PERF_COUNT_SW_CONTEXT_SWITCHES' data-ref="PERF_COUNT_SW_CONTEXT_SWITCHES" data-ref-filename="PERF_COUNT_SW_CONTEXT_SWITCHES">PERF_COUNT_SW_CONTEXT_SWITCHES</dfn>		= <var>3</var>,</td></tr>
+<tr><th id="111">111</th><td>	<dfn class="enum" id="PERF_COUNT_SW_CPU_MIGRATIONS" title='PERF_COUNT_SW_CPU_MIGRATIONS' data-ref="PERF_COUNT_SW_CPU_MIGRATIONS" data-ref-filename="PERF_COUNT_SW_CPU_MIGRATIONS">PERF_COUNT_SW_CPU_MIGRATIONS</dfn>		= <var>4</var>,</td></tr>
+<tr><th id="112">112</th><td>	<dfn class="enum" id="PERF_COUNT_SW_PAGE_FAULTS_MIN" title='PERF_COUNT_SW_PAGE_FAULTS_MIN' data-ref="PERF_COUNT_SW_PAGE_FAULTS_MIN" data-ref-filename="PERF_COUNT_SW_PAGE_FAULTS_MIN">PERF_COUNT_SW_PAGE_FAULTS_MIN</dfn>		= <var>5</var>,</td></tr>
+<tr><th id="113">113</th><td>	<dfn class="enum" id="PERF_COUNT_SW_PAGE_FAULTS_MAJ" title='PERF_COUNT_SW_PAGE_FAULTS_MAJ' data-ref="PERF_COUNT_SW_PAGE_FAULTS_MAJ" data-ref-filename="PERF_COUNT_SW_PAGE_FAULTS_MAJ">PERF_COUNT_SW_PAGE_FAULTS_MAJ</dfn>		= <var>6</var>,</td></tr>
+<tr><th id="114">114</th><td>	<dfn class="enum" id="PERF_COUNT_SW_ALIGNMENT_FAULTS" title='PERF_COUNT_SW_ALIGNMENT_FAULTS' data-ref="PERF_COUNT_SW_ALIGNMENT_FAULTS" data-ref-filename="PERF_COUNT_SW_ALIGNMENT_FAULTS">PERF_COUNT_SW_ALIGNMENT_FAULTS</dfn>		= <var>7</var>,</td></tr>
+<tr><th id="115">115</th><td>	<dfn class="enum" id="PERF_COUNT_SW_EMULATION_FAULTS" title='PERF_COUNT_SW_EMULATION_FAULTS' data-ref="PERF_COUNT_SW_EMULATION_FAULTS" data-ref-filename="PERF_COUNT_SW_EMULATION_FAULTS">PERF_COUNT_SW_EMULATION_FAULTS</dfn>		= <var>8</var>,</td></tr>
+<tr><th id="116">116</th><td>	<dfn class="enum" id="PERF_COUNT_SW_DUMMY" title='PERF_COUNT_SW_DUMMY' data-ref="PERF_COUNT_SW_DUMMY" data-ref-filename="PERF_COUNT_SW_DUMMY">PERF_COUNT_SW_DUMMY</dfn>			= <var>9</var>,</td></tr>
+<tr><th id="117">117</th><td>	<dfn class="enum" id="PERF_COUNT_SW_BPF_OUTPUT" title='PERF_COUNT_SW_BPF_OUTPUT' data-ref="PERF_COUNT_SW_BPF_OUTPUT" data-ref-filename="PERF_COUNT_SW_BPF_OUTPUT">PERF_COUNT_SW_BPF_OUTPUT</dfn>		= <var>10</var>,</td></tr>
+<tr><th id="118">118</th><td>	<dfn class="enum" id="PERF_COUNT_SW_MAX" title='PERF_COUNT_SW_MAX' data-ref="PERF_COUNT_SW_MAX" data-ref-filename="PERF_COUNT_SW_MAX">PERF_COUNT_SW_MAX</dfn></td></tr>
+<tr><th id="119">119</th><td>};</td></tr>
+<tr><th id="120">120</th><td></td></tr>
+<tr><th id="121">121</th><td><i>/*</i></td></tr>
+<tr><th id="122">122</th><td><i> * attr-&gt;sample_type values</i></td></tr>
+<tr><th id="123">123</th><td><i> */</i></td></tr>
+<tr><th id="124">124</th><td><b>enum</b> <dfn class="type def" id="perf_event_sample_format" title='perf_event_sample_format' data-ref="perf_event_sample_format" data-ref-filename="perf_event_sample_format">perf_event_sample_format</dfn> {</td></tr>
+<tr><th id="125">125</th><td>	<dfn class="enum" id="PERF_SAMPLE_IP" title='PERF_SAMPLE_IP' data-ref="PERF_SAMPLE_IP" data-ref-filename="PERF_SAMPLE_IP">PERF_SAMPLE_IP</dfn>			= <var>1U</var> &lt;&lt; <var>0</var>,</td></tr>
+<tr><th id="126">126</th><td>	<dfn class="enum" id="PERF_SAMPLE_TID" title='PERF_SAMPLE_TID' data-ref="PERF_SAMPLE_TID" data-ref-filename="PERF_SAMPLE_TID">PERF_SAMPLE_TID</dfn>			= <var>1U</var> &lt;&lt; <var>1</var>,</td></tr>
+<tr><th id="127">127</th><td>	<dfn class="enum" id="PERF_SAMPLE_TIME" title='PERF_SAMPLE_TIME' data-ref="PERF_SAMPLE_TIME" data-ref-filename="PERF_SAMPLE_TIME">PERF_SAMPLE_TIME</dfn>		= <var>1U</var> &lt;&lt; <var>2</var>,</td></tr>
+<tr><th id="128">128</th><td>	<dfn class="enum" id="PERF_SAMPLE_ADDR" title='PERF_SAMPLE_ADDR' data-ref="PERF_SAMPLE_ADDR" data-ref-filename="PERF_SAMPLE_ADDR">PERF_SAMPLE_ADDR</dfn>		= <var>1U</var> &lt;&lt; <var>3</var>,</td></tr>
+<tr><th id="129">129</th><td>	<dfn class="enum" id="PERF_SAMPLE_READ" title='PERF_SAMPLE_READ' data-ref="PERF_SAMPLE_READ" data-ref-filename="PERF_SAMPLE_READ">PERF_SAMPLE_READ</dfn>		= <var>1U</var> &lt;&lt; <var>4</var>,</td></tr>
+<tr><th id="130">130</th><td>	<dfn class="enum" id="PERF_SAMPLE_CALLCHAIN" title='PERF_SAMPLE_CALLCHAIN' data-ref="PERF_SAMPLE_CALLCHAIN" data-ref-filename="PERF_SAMPLE_CALLCHAIN">PERF_SAMPLE_CALLCHAIN</dfn>		= <var>1U</var> &lt;&lt; <var>5</var>,</td></tr>
+<tr><th id="131">131</th><td>	<dfn class="enum" id="PERF_SAMPLE_ID" title='PERF_SAMPLE_ID' data-ref="PERF_SAMPLE_ID" data-ref-filename="PERF_SAMPLE_ID">PERF_SAMPLE_ID</dfn>			= <var>1U</var> &lt;&lt; <var>6</var>,</td></tr>
+<tr><th id="132">132</th><td>	<dfn class="enum" id="PERF_SAMPLE_CPU" title='PERF_SAMPLE_CPU' data-ref="PERF_SAMPLE_CPU" data-ref-filename="PERF_SAMPLE_CPU">PERF_SAMPLE_CPU</dfn>			= <var>1U</var> &lt;&lt; <var>7</var>,</td></tr>
+<tr><th id="133">133</th><td>	<dfn class="enum" id="PERF_SAMPLE_PERIOD" title='PERF_SAMPLE_PERIOD' data-ref="PERF_SAMPLE_PERIOD" data-ref-filename="PERF_SAMPLE_PERIOD">PERF_SAMPLE_PERIOD</dfn>		= <var>1U</var> &lt;&lt; <var>8</var>,</td></tr>
+<tr><th id="134">134</th><td>	<dfn class="enum" id="PERF_SAMPLE_STREAM_ID" title='PERF_SAMPLE_STREAM_ID' data-ref="PERF_SAMPLE_STREAM_ID" data-ref-filename="PERF_SAMPLE_STREAM_ID">PERF_SAMPLE_STREAM_ID</dfn>		= <var>1U</var> &lt;&lt; <var>9</var>,</td></tr>
+<tr><th id="135">135</th><td>	<dfn class="enum" id="PERF_SAMPLE_RAW" title='PERF_SAMPLE_RAW' data-ref="PERF_SAMPLE_RAW" data-ref-filename="PERF_SAMPLE_RAW">PERF_SAMPLE_RAW</dfn>			= <var>1U</var> &lt;&lt; <var>10</var>,</td></tr>
+<tr><th id="136">136</th><td>	<dfn class="enum" id="PERF_SAMPLE_BRANCH_STACK" title='PERF_SAMPLE_BRANCH_STACK' data-ref="PERF_SAMPLE_BRANCH_STACK" data-ref-filename="PERF_SAMPLE_BRANCH_STACK">PERF_SAMPLE_BRANCH_STACK</dfn>	= <var>1U</var> &lt;&lt; <var>11</var>,</td></tr>
+<tr><th id="137">137</th><td>	<dfn class="enum" id="PERF_SAMPLE_REGS_USER" title='PERF_SAMPLE_REGS_USER' data-ref="PERF_SAMPLE_REGS_USER" data-ref-filename="PERF_SAMPLE_REGS_USER">PERF_SAMPLE_REGS_USER</dfn>		= <var>1U</var> &lt;&lt; <var>12</var>,</td></tr>
+<tr><th id="138">138</th><td>	<dfn class="enum" id="PERF_SAMPLE_STACK_USER" title='PERF_SAMPLE_STACK_USER' data-ref="PERF_SAMPLE_STACK_USER" data-ref-filename="PERF_SAMPLE_STACK_USER">PERF_SAMPLE_STACK_USER</dfn>		= <var>1U</var> &lt;&lt; <var>13</var>,</td></tr>
+<tr><th id="139">139</th><td>	<dfn class="enum" id="PERF_SAMPLE_WEIGHT" title='PERF_SAMPLE_WEIGHT' data-ref="PERF_SAMPLE_WEIGHT" data-ref-filename="PERF_SAMPLE_WEIGHT">PERF_SAMPLE_WEIGHT</dfn>		= <var>1U</var> &lt;&lt; <var>14</var>,</td></tr>
+<tr><th id="140">140</th><td>	<dfn class="enum" id="PERF_SAMPLE_DATA_SRC" title='PERF_SAMPLE_DATA_SRC' data-ref="PERF_SAMPLE_DATA_SRC" data-ref-filename="PERF_SAMPLE_DATA_SRC">PERF_SAMPLE_DATA_SRC</dfn>		= <var>1U</var> &lt;&lt; <var>15</var>,</td></tr>
+<tr><th id="141">141</th><td>	<dfn class="enum" id="PERF_SAMPLE_IDENTIFIER" title='PERF_SAMPLE_IDENTIFIER' data-ref="PERF_SAMPLE_IDENTIFIER" data-ref-filename="PERF_SAMPLE_IDENTIFIER">PERF_SAMPLE_IDENTIFIER</dfn>		= <var>1U</var> &lt;&lt; <var>16</var>,</td></tr>
+<tr><th id="142">142</th><td>	<dfn class="enum" id="PERF_SAMPLE_TRANSACTION" title='PERF_SAMPLE_TRANSACTION' data-ref="PERF_SAMPLE_TRANSACTION" data-ref-filename="PERF_SAMPLE_TRANSACTION">PERF_SAMPLE_TRANSACTION</dfn>		= <var>1U</var> &lt;&lt; <var>17</var>,</td></tr>
+<tr><th id="143">143</th><td>	<dfn class="enum" id="PERF_SAMPLE_REGS_INTR" title='PERF_SAMPLE_REGS_INTR' data-ref="PERF_SAMPLE_REGS_INTR" data-ref-filename="PERF_SAMPLE_REGS_INTR">PERF_SAMPLE_REGS_INTR</dfn>		= <var>1U</var> &lt;&lt; <var>18</var>,</td></tr>
+<tr><th id="144">144</th><td>	<dfn class="enum" id="PERF_SAMPLE_PHYS_ADDR" title='PERF_SAMPLE_PHYS_ADDR' data-ref="PERF_SAMPLE_PHYS_ADDR" data-ref-filename="PERF_SAMPLE_PHYS_ADDR">PERF_SAMPLE_PHYS_ADDR</dfn>		= <var>1U</var> &lt;&lt; <var>19</var>,</td></tr>
+<tr><th id="145">145</th><td>	<dfn class="enum" id="PERF_SAMPLE_MAX" title='PERF_SAMPLE_MAX' data-ref="PERF_SAMPLE_MAX" data-ref-filename="PERF_SAMPLE_MAX">PERF_SAMPLE_MAX</dfn>			= <var>1U</var> &lt;&lt; <var>19</var>,</td></tr>
+<tr><th id="146">146</th><td>};</td></tr>
+<tr><th id="147">147</th><td><b>enum</b> {</td></tr>
+<tr><th id="148">148</th><td>	<dfn class="enum" id="PERF_TXN_ELISION" title='PERF_TXN_ELISION' data-ref="PERF_TXN_ELISION" data-ref-filename="PERF_TXN_ELISION">PERF_TXN_ELISION</dfn>        = (<var>1</var> &lt;&lt; <var>0</var>),</td></tr>
+<tr><th id="149">149</th><td>	<dfn class="enum" id="PERF_TXN_TRANSACTION" title='PERF_TXN_TRANSACTION' data-ref="PERF_TXN_TRANSACTION" data-ref-filename="PERF_TXN_TRANSACTION">PERF_TXN_TRANSACTION</dfn>    = (<var>1</var> &lt;&lt; <var>1</var>),</td></tr>
+<tr><th id="150">150</th><td>	<dfn class="enum" id="PERF_TXN_SYNC" title='PERF_TXN_SYNC' data-ref="PERF_TXN_SYNC" data-ref-filename="PERF_TXN_SYNC">PERF_TXN_SYNC</dfn>           = (<var>1</var> &lt;&lt; <var>2</var>),</td></tr>
+<tr><th id="151">151</th><td>	<dfn class="enum" id="PERF_TXN_ASYNC" title='PERF_TXN_ASYNC' data-ref="PERF_TXN_ASYNC" data-ref-filename="PERF_TXN_ASYNC">PERF_TXN_ASYNC</dfn>          = (<var>1</var> &lt;&lt; <var>3</var>),</td></tr>
+<tr><th id="152">152</th><td>	<dfn class="enum" id="PERF_TXN_RETRY" title='PERF_TXN_RETRY' data-ref="PERF_TXN_RETRY" data-ref-filename="PERF_TXN_RETRY">PERF_TXN_RETRY</dfn>          = (<var>1</var> &lt;&lt; <var>4</var>),</td></tr>
+<tr><th id="153">153</th><td>	<dfn class="enum" id="PERF_TXN_CONFLICT" title='PERF_TXN_CONFLICT' data-ref="PERF_TXN_CONFLICT" data-ref-filename="PERF_TXN_CONFLICT">PERF_TXN_CONFLICT</dfn>       = (<var>1</var> &lt;&lt; <var>5</var>),</td></tr>
+<tr><th id="154">154</th><td>	<dfn class="enum" id="PERF_TXN_CAPACITY_WRITE" title='PERF_TXN_CAPACITY_WRITE' data-ref="PERF_TXN_CAPACITY_WRITE" data-ref-filename="PERF_TXN_CAPACITY_WRITE">PERF_TXN_CAPACITY_WRITE</dfn> = (<var>1</var> &lt;&lt; <var>6</var>),</td></tr>
+<tr><th id="155">155</th><td>	<dfn class="enum" id="PERF_TXN_CAPACITY_READ" title='PERF_TXN_CAPACITY_READ' data-ref="PERF_TXN_CAPACITY_READ" data-ref-filename="PERF_TXN_CAPACITY_READ">PERF_TXN_CAPACITY_READ</dfn>  = (<var>1</var> &lt;&lt; <var>7</var>),</td></tr>
+<tr><th id="156">156</th><td>	<dfn class="enum" id="PERF_TXN_MAX" title='PERF_TXN_MAX' data-ref="PERF_TXN_MAX" data-ref-filename="PERF_TXN_MAX">PERF_TXN_MAX</dfn>	        = (<var>1</var> &lt;&lt; <var>8</var>),</td></tr>
+<tr><th id="157">157</th><td>	<dfn class="enum" id="PERF_TXN_ABORT_MASK" title='PERF_TXN_ABORT_MASK' data-ref="PERF_TXN_ABORT_MASK" data-ref-filename="PERF_TXN_ABORT_MASK">PERF_TXN_ABORT_MASK</dfn>     = (<var>0xffffffffULL</var> &lt;&lt; <var>32</var>),</td></tr>
+<tr><th id="158">158</th><td>	<dfn class="enum" id="PERF_TXN_ABORT_SHIFT" title='PERF_TXN_ABORT_SHIFT' data-ref="PERF_TXN_ABORT_SHIFT" data-ref-filename="PERF_TXN_ABORT_SHIFT">PERF_TXN_ABORT_SHIFT</dfn>    = <var>32</var>,</td></tr>
+<tr><th id="159">159</th><td>};</td></tr>
+<tr><th id="160">160</th><td></td></tr>
+<tr><th id="161">161</th><td><i>/*</i></td></tr>
+<tr><th id="162">162</th><td><i> * branch_sample_type values</i></td></tr>
+<tr><th id="163">163</th><td><i> */</i></td></tr>
+<tr><th id="164">164</th><td><b>enum</b> <dfn class="type def" id="perf_branch_sample_type_shift" title='perf_branch_sample_type_shift' data-ref="perf_branch_sample_type_shift" data-ref-filename="perf_branch_sample_type_shift">perf_branch_sample_type_shift</dfn> {</td></tr>
+<tr><th id="165">165</th><td>	<dfn class="enum" id="PERF_SAMPLE_BRANCH_USER_SHIFT" title='PERF_SAMPLE_BRANCH_USER_SHIFT' data-ref="PERF_SAMPLE_BRANCH_USER_SHIFT" data-ref-filename="PERF_SAMPLE_BRANCH_USER_SHIFT">PERF_SAMPLE_BRANCH_USER_SHIFT</dfn>		= <var>0</var>,</td></tr>
+<tr><th id="166">166</th><td>	<dfn class="enum" id="PERF_SAMPLE_BRANCH_KERNEL_SHIFT" title='PERF_SAMPLE_BRANCH_KERNEL_SHIFT' data-ref="PERF_SAMPLE_BRANCH_KERNEL_SHIFT" data-ref-filename="PERF_SAMPLE_BRANCH_KERNEL_SHIFT">PERF_SAMPLE_BRANCH_KERNEL_SHIFT</dfn>		= <var>1</var>,</td></tr>
+<tr><th id="167">167</th><td>	<dfn class="enum" id="PERF_SAMPLE_BRANCH_HV_SHIFT" title='PERF_SAMPLE_BRANCH_HV_SHIFT' data-ref="PERF_SAMPLE_BRANCH_HV_SHIFT" data-ref-filename="PERF_SAMPLE_BRANCH_HV_SHIFT">PERF_SAMPLE_BRANCH_HV_SHIFT</dfn>		= <var>2</var>,</td></tr>
+<tr><th id="168">168</th><td>	<dfn class="enum" id="PERF_SAMPLE_BRANCH_ANY_SHIFT" title='PERF_SAMPLE_BRANCH_ANY_SHIFT' data-ref="PERF_SAMPLE_BRANCH_ANY_SHIFT" data-ref-filename="PERF_SAMPLE_BRANCH_ANY_SHIFT">PERF_SAMPLE_BRANCH_ANY_SHIFT</dfn>		= <var>3</var>,</td></tr>
+<tr><th id="169">169</th><td>	<dfn class="enum" id="PERF_SAMPLE_BRANCH_ANY_CALL_SHIFT" title='PERF_SAMPLE_BRANCH_ANY_CALL_SHIFT' data-ref="PERF_SAMPLE_BRANCH_ANY_CALL_SHIFT" data-ref-filename="PERF_SAMPLE_BRANCH_ANY_CALL_SHIFT">PERF_SAMPLE_BRANCH_ANY_CALL_SHIFT</dfn>	= <var>4</var>,</td></tr>
+<tr><th id="170">170</th><td>	<dfn class="enum" id="PERF_SAMPLE_BRANCH_ANY_RETURN_SHIFT" title='PERF_SAMPLE_BRANCH_ANY_RETURN_SHIFT' data-ref="PERF_SAMPLE_BRANCH_ANY_RETURN_SHIFT" data-ref-filename="PERF_SAMPLE_BRANCH_ANY_RETURN_SHIFT">PERF_SAMPLE_BRANCH_ANY_RETURN_SHIFT</dfn>	= <var>5</var>,</td></tr>
+<tr><th id="171">171</th><td>	<dfn class="enum" id="PERF_SAMPLE_BRANCH_IND_CALL_SHIFT" title='PERF_SAMPLE_BRANCH_IND_CALL_SHIFT' data-ref="PERF_SAMPLE_BRANCH_IND_CALL_SHIFT" data-ref-filename="PERF_SAMPLE_BRANCH_IND_CALL_SHIFT">PERF_SAMPLE_BRANCH_IND_CALL_SHIFT</dfn>	= <var>6</var>,</td></tr>
+<tr><th id="172">172</th><td>	<dfn class="enum" id="PERF_SAMPLE_BRANCH_ABORT_TX_SHIFT" title='PERF_SAMPLE_BRANCH_ABORT_TX_SHIFT' data-ref="PERF_SAMPLE_BRANCH_ABORT_TX_SHIFT" data-ref-filename="PERF_SAMPLE_BRANCH_ABORT_TX_SHIFT">PERF_SAMPLE_BRANCH_ABORT_TX_SHIFT</dfn>	= <var>7</var>,</td></tr>
+<tr><th id="173">173</th><td>	<dfn class="enum" id="PERF_SAMPLE_BRANCH_IN_TX_SHIFT" title='PERF_SAMPLE_BRANCH_IN_TX_SHIFT' data-ref="PERF_SAMPLE_BRANCH_IN_TX_SHIFT" data-ref-filename="PERF_SAMPLE_BRANCH_IN_TX_SHIFT">PERF_SAMPLE_BRANCH_IN_TX_SHIFT</dfn>		= <var>8</var>,</td></tr>
+<tr><th id="174">174</th><td>	<dfn class="enum" id="PERF_SAMPLE_BRANCH_NO_TX_SHIFT" title='PERF_SAMPLE_BRANCH_NO_TX_SHIFT' data-ref="PERF_SAMPLE_BRANCH_NO_TX_SHIFT" data-ref-filename="PERF_SAMPLE_BRANCH_NO_TX_SHIFT">PERF_SAMPLE_BRANCH_NO_TX_SHIFT</dfn>		= <var>9</var>,</td></tr>
+<tr><th id="175">175</th><td>	<dfn class="enum" id="PERF_SAMPLE_BRANCH_COND_SHIFT" title='PERF_SAMPLE_BRANCH_COND_SHIFT' data-ref="PERF_SAMPLE_BRANCH_COND_SHIFT" data-ref-filename="PERF_SAMPLE_BRANCH_COND_SHIFT">PERF_SAMPLE_BRANCH_COND_SHIFT</dfn>		= <var>10</var>,</td></tr>
+<tr><th id="176">176</th><td>	<dfn class="enum" id="PERF_SAMPLE_BRANCH_CALL_STACK_SHIFT" title='PERF_SAMPLE_BRANCH_CALL_STACK_SHIFT' data-ref="PERF_SAMPLE_BRANCH_CALL_STACK_SHIFT" data-ref-filename="PERF_SAMPLE_BRANCH_CALL_STACK_SHIFT">PERF_SAMPLE_BRANCH_CALL_STACK_SHIFT</dfn>	= <var>11</var>,</td></tr>
+<tr><th id="177">177</th><td>	<dfn class="enum" id="PERF_SAMPLE_BRANCH_IND_JUMP_SHIFT" title='PERF_SAMPLE_BRANCH_IND_JUMP_SHIFT' data-ref="PERF_SAMPLE_BRANCH_IND_JUMP_SHIFT" data-ref-filename="PERF_SAMPLE_BRANCH_IND_JUMP_SHIFT">PERF_SAMPLE_BRANCH_IND_JUMP_SHIFT</dfn>	= <var>12</var>,</td></tr>
+<tr><th id="178">178</th><td>	<dfn class="enum" id="PERF_SAMPLE_BRANCH_CALL_SHIFT" title='PERF_SAMPLE_BRANCH_CALL_SHIFT' data-ref="PERF_SAMPLE_BRANCH_CALL_SHIFT" data-ref-filename="PERF_SAMPLE_BRANCH_CALL_SHIFT">PERF_SAMPLE_BRANCH_CALL_SHIFT</dfn>		= <var>13</var>,</td></tr>
+<tr><th id="179">179</th><td>	<dfn class="enum" id="PERF_SAMPLE_BRANCH_NO_FLAGS_SHIFT" title='PERF_SAMPLE_BRANCH_NO_FLAGS_SHIFT' data-ref="PERF_SAMPLE_BRANCH_NO_FLAGS_SHIFT" data-ref-filename="PERF_SAMPLE_BRANCH_NO_FLAGS_SHIFT">PERF_SAMPLE_BRANCH_NO_FLAGS_SHIFT</dfn>	= <var>14</var>,</td></tr>
+<tr><th id="180">180</th><td>	<dfn class="enum" id="PERF_SAMPLE_BRANCH_NO_CYCLES_SHIFT" title='PERF_SAMPLE_BRANCH_NO_CYCLES_SHIFT' data-ref="PERF_SAMPLE_BRANCH_NO_CYCLES_SHIFT" data-ref-filename="PERF_SAMPLE_BRANCH_NO_CYCLES_SHIFT">PERF_SAMPLE_BRANCH_NO_CYCLES_SHIFT</dfn>	= <var>15</var>,</td></tr>
+<tr><th id="181">181</th><td>	<dfn class="enum" id="PERF_SAMPLE_BRANCH_TYPE_SAVE_SHIFT" title='PERF_SAMPLE_BRANCH_TYPE_SAVE_SHIFT' data-ref="PERF_SAMPLE_BRANCH_TYPE_SAVE_SHIFT" data-ref-filename="PERF_SAMPLE_BRANCH_TYPE_SAVE_SHIFT">PERF_SAMPLE_BRANCH_TYPE_SAVE_SHIFT</dfn>	= <var>16</var>,</td></tr>
+<tr><th id="182">182</th><td></td></tr>
+<tr><th id="183">183</th><td>	<dfn class="enum" id="PERF_SAMPLE_BRANCH_MAX_SHIFT" title='PERF_SAMPLE_BRANCH_MAX_SHIFT' data-ref="PERF_SAMPLE_BRANCH_MAX_SHIFT" data-ref-filename="PERF_SAMPLE_BRANCH_MAX_SHIFT">PERF_SAMPLE_BRANCH_MAX_SHIFT</dfn>		<i>/* non-ABI */</i></td></tr>
+<tr><th id="184">184</th><td>};</td></tr>
+<tr><th id="185">185</th><td></td></tr>
+<tr><th id="186">186</th><td><b>enum</b> <dfn class="type def" id="perf_branch_sample_type" title='perf_branch_sample_type' data-ref="perf_branch_sample_type" data-ref-filename="perf_branch_sample_type">perf_branch_sample_type</dfn> {</td></tr>
+<tr><th id="187">187</th><td>	<dfn class="enum" id="PERF_SAMPLE_BRANCH_USER" title='PERF_SAMPLE_BRANCH_USER' data-ref="PERF_SAMPLE_BRANCH_USER" data-ref-filename="PERF_SAMPLE_BRANCH_USER">PERF_SAMPLE_BRANCH_USER</dfn>		= <var>1U</var> &lt;&lt; <a class="enum" href="#PERF_SAMPLE_BRANCH_USER_SHIFT" title='PERF_SAMPLE_BRANCH_USER_SHIFT' data-ref="PERF_SAMPLE_BRANCH_USER_SHIFT" data-ref-filename="PERF_SAMPLE_BRANCH_USER_SHIFT">PERF_SAMPLE_BRANCH_USER_SHIFT</a>,</td></tr>
+<tr><th id="188">188</th><td>	<dfn class="enum" id="PERF_SAMPLE_BRANCH_KERNEL" title='PERF_SAMPLE_BRANCH_KERNEL' data-ref="PERF_SAMPLE_BRANCH_KERNEL" data-ref-filename="PERF_SAMPLE_BRANCH_KERNEL">PERF_SAMPLE_BRANCH_KERNEL</dfn>	= <var>1U</var> &lt;&lt; <a class="enum" href="#PERF_SAMPLE_BRANCH_KERNEL_SHIFT" title='PERF_SAMPLE_BRANCH_KERNEL_SHIFT' data-ref="PERF_SAMPLE_BRANCH_KERNEL_SHIFT" data-ref-filename="PERF_SAMPLE_BRANCH_KERNEL_SHIFT">PERF_SAMPLE_BRANCH_KERNEL_SHIFT</a>,</td></tr>
+<tr><th id="189">189</th><td>	<dfn class="enum" id="PERF_SAMPLE_BRANCH_HV" title='PERF_SAMPLE_BRANCH_HV' data-ref="PERF_SAMPLE_BRANCH_HV" data-ref-filename="PERF_SAMPLE_BRANCH_HV">PERF_SAMPLE_BRANCH_HV</dfn>		= <var>1U</var> &lt;&lt; <a class="enum" href="#PERF_SAMPLE_BRANCH_HV_SHIFT" title='PERF_SAMPLE_BRANCH_HV_SHIFT' data-ref="PERF_SAMPLE_BRANCH_HV_SHIFT" data-ref-filename="PERF_SAMPLE_BRANCH_HV_SHIFT">PERF_SAMPLE_BRANCH_HV_SHIFT</a>,</td></tr>
+<tr><th id="190">190</th><td></td></tr>
+<tr><th id="191">191</th><td>	<dfn class="enum" id="PERF_SAMPLE_BRANCH_ANY" title='PERF_SAMPLE_BRANCH_ANY' data-ref="PERF_SAMPLE_BRANCH_ANY" data-ref-filename="PERF_SAMPLE_BRANCH_ANY">PERF_SAMPLE_BRANCH_ANY</dfn>		= <var>1U</var> &lt;&lt; <a class="enum" href="#PERF_SAMPLE_BRANCH_ANY_SHIFT" title='PERF_SAMPLE_BRANCH_ANY_SHIFT' data-ref="PERF_SAMPLE_BRANCH_ANY_SHIFT" data-ref-filename="PERF_SAMPLE_BRANCH_ANY_SHIFT">PERF_SAMPLE_BRANCH_ANY_SHIFT</a>,</td></tr>
+<tr><th id="192">192</th><td>	<dfn class="enum" id="PERF_SAMPLE_BRANCH_ANY_CALL" title='PERF_SAMPLE_BRANCH_ANY_CALL' data-ref="PERF_SAMPLE_BRANCH_ANY_CALL" data-ref-filename="PERF_SAMPLE_BRANCH_ANY_CALL">PERF_SAMPLE_BRANCH_ANY_CALL</dfn>	= <var>1U</var> &lt;&lt; <a class="enum" href="#PERF_SAMPLE_BRANCH_ANY_CALL_SHIFT" title='PERF_SAMPLE_BRANCH_ANY_CALL_SHIFT' data-ref="PERF_SAMPLE_BRANCH_ANY_CALL_SHIFT" data-ref-filename="PERF_SAMPLE_BRANCH_ANY_CALL_SHIFT">PERF_SAMPLE_BRANCH_ANY_CALL_SHIFT</a>,</td></tr>
+<tr><th id="193">193</th><td>	<dfn class="enum" id="PERF_SAMPLE_BRANCH_ANY_RETURN" title='PERF_SAMPLE_BRANCH_ANY_RETURN' data-ref="PERF_SAMPLE_BRANCH_ANY_RETURN" data-ref-filename="PERF_SAMPLE_BRANCH_ANY_RETURN">PERF_SAMPLE_BRANCH_ANY_RETURN</dfn>	= <var>1U</var> &lt;&lt; <a class="enum" href="#PERF_SAMPLE_BRANCH_ANY_RETURN_SHIFT" title='PERF_SAMPLE_BRANCH_ANY_RETURN_SHIFT' data-ref="PERF_SAMPLE_BRANCH_ANY_RETURN_SHIFT" data-ref-filename="PERF_SAMPLE_BRANCH_ANY_RETURN_SHIFT">PERF_SAMPLE_BRANCH_ANY_RETURN_SHIFT</a>,</td></tr>
+<tr><th id="194">194</th><td>	<dfn class="enum" id="PERF_SAMPLE_BRANCH_IND_CALL" title='PERF_SAMPLE_BRANCH_IND_CALL' data-ref="PERF_SAMPLE_BRANCH_IND_CALL" data-ref-filename="PERF_SAMPLE_BRANCH_IND_CALL">PERF_SAMPLE_BRANCH_IND_CALL</dfn>	= <var>1U</var> &lt;&lt; <a class="enum" href="#PERF_SAMPLE_BRANCH_IND_CALL_SHIFT" title='PERF_SAMPLE_BRANCH_IND_CALL_SHIFT' data-ref="PERF_SAMPLE_BRANCH_IND_CALL_SHIFT" data-ref-filename="PERF_SAMPLE_BRANCH_IND_CALL_SHIFT">PERF_SAMPLE_BRANCH_IND_CALL_SHIFT</a>,</td></tr>
+<tr><th id="195">195</th><td>	<dfn class="enum" id="PERF_SAMPLE_BRANCH_ABORT_TX" title='PERF_SAMPLE_BRANCH_ABORT_TX' data-ref="PERF_SAMPLE_BRANCH_ABORT_TX" data-ref-filename="PERF_SAMPLE_BRANCH_ABORT_TX">PERF_SAMPLE_BRANCH_ABORT_TX</dfn>	= <var>1U</var> &lt;&lt; <a class="enum" href="#PERF_SAMPLE_BRANCH_ABORT_TX_SHIFT" title='PERF_SAMPLE_BRANCH_ABORT_TX_SHIFT' data-ref="PERF_SAMPLE_BRANCH_ABORT_TX_SHIFT" data-ref-filename="PERF_SAMPLE_BRANCH_ABORT_TX_SHIFT">PERF_SAMPLE_BRANCH_ABORT_TX_SHIFT</a>,</td></tr>
+<tr><th id="196">196</th><td>	<dfn class="enum" id="PERF_SAMPLE_BRANCH_IN_TX" title='PERF_SAMPLE_BRANCH_IN_TX' data-ref="PERF_SAMPLE_BRANCH_IN_TX" data-ref-filename="PERF_SAMPLE_BRANCH_IN_TX">PERF_SAMPLE_BRANCH_IN_TX</dfn>	= <var>1U</var> &lt;&lt; <a class="enum" href="#PERF_SAMPLE_BRANCH_IN_TX_SHIFT" title='PERF_SAMPLE_BRANCH_IN_TX_SHIFT' data-ref="PERF_SAMPLE_BRANCH_IN_TX_SHIFT" data-ref-filename="PERF_SAMPLE_BRANCH_IN_TX_SHIFT">PERF_SAMPLE_BRANCH_IN_TX_SHIFT</a>,</td></tr>
+<tr><th id="197">197</th><td>	<dfn class="enum" id="PERF_SAMPLE_BRANCH_NO_TX" title='PERF_SAMPLE_BRANCH_NO_TX' data-ref="PERF_SAMPLE_BRANCH_NO_TX" data-ref-filename="PERF_SAMPLE_BRANCH_NO_TX">PERF_SAMPLE_BRANCH_NO_TX</dfn>	= <var>1U</var> &lt;&lt; <a class="enum" href="#PERF_SAMPLE_BRANCH_NO_TX_SHIFT" title='PERF_SAMPLE_BRANCH_NO_TX_SHIFT' data-ref="PERF_SAMPLE_BRANCH_NO_TX_SHIFT" data-ref-filename="PERF_SAMPLE_BRANCH_NO_TX_SHIFT">PERF_SAMPLE_BRANCH_NO_TX_SHIFT</a>,</td></tr>
+<tr><th id="198">198</th><td>	<dfn class="enum" id="PERF_SAMPLE_BRANCH_COND" title='PERF_SAMPLE_BRANCH_COND' data-ref="PERF_SAMPLE_BRANCH_COND" data-ref-filename="PERF_SAMPLE_BRANCH_COND">PERF_SAMPLE_BRANCH_COND</dfn>		= <var>1U</var> &lt;&lt; <a class="enum" href="#PERF_SAMPLE_BRANCH_COND_SHIFT" title='PERF_SAMPLE_BRANCH_COND_SHIFT' data-ref="PERF_SAMPLE_BRANCH_COND_SHIFT" data-ref-filename="PERF_SAMPLE_BRANCH_COND_SHIFT">PERF_SAMPLE_BRANCH_COND_SHIFT</a>,</td></tr>
+<tr><th id="199">199</th><td></td></tr>
+<tr><th id="200">200</th><td>	<dfn class="enum" id="PERF_SAMPLE_BRANCH_CALL_STACK" title='PERF_SAMPLE_BRANCH_CALL_STACK' data-ref="PERF_SAMPLE_BRANCH_CALL_STACK" data-ref-filename="PERF_SAMPLE_BRANCH_CALL_STACK">PERF_SAMPLE_BRANCH_CALL_STACK</dfn>	= <var>1U</var> &lt;&lt; <a class="enum" href="#PERF_SAMPLE_BRANCH_CALL_STACK_SHIFT" title='PERF_SAMPLE_BRANCH_CALL_STACK_SHIFT' data-ref="PERF_SAMPLE_BRANCH_CALL_STACK_SHIFT" data-ref-filename="PERF_SAMPLE_BRANCH_CALL_STACK_SHIFT">PERF_SAMPLE_BRANCH_CALL_STACK_SHIFT</a>,</td></tr>
+<tr><th id="201">201</th><td>	<dfn class="enum" id="PERF_SAMPLE_BRANCH_IND_JUMP" title='PERF_SAMPLE_BRANCH_IND_JUMP' data-ref="PERF_SAMPLE_BRANCH_IND_JUMP" data-ref-filename="PERF_SAMPLE_BRANCH_IND_JUMP">PERF_SAMPLE_BRANCH_IND_JUMP</dfn>	= <var>1U</var> &lt;&lt; <a class="enum" href="#PERF_SAMPLE_BRANCH_IND_JUMP_SHIFT" title='PERF_SAMPLE_BRANCH_IND_JUMP_SHIFT' data-ref="PERF_SAMPLE_BRANCH_IND_JUMP_SHIFT" data-ref-filename="PERF_SAMPLE_BRANCH_IND_JUMP_SHIFT">PERF_SAMPLE_BRANCH_IND_JUMP_SHIFT</a>,</td></tr>
+<tr><th id="202">202</th><td>	<dfn class="enum" id="PERF_SAMPLE_BRANCH_CALL" title='PERF_SAMPLE_BRANCH_CALL' data-ref="PERF_SAMPLE_BRANCH_CALL" data-ref-filename="PERF_SAMPLE_BRANCH_CALL">PERF_SAMPLE_BRANCH_CALL</dfn>		= <var>1U</var> &lt;&lt; <a class="enum" href="#PERF_SAMPLE_BRANCH_IND_CALL_SHIFT" title='PERF_SAMPLE_BRANCH_IND_CALL_SHIFT' data-ref="PERF_SAMPLE_BRANCH_IND_CALL_SHIFT" data-ref-filename="PERF_SAMPLE_BRANCH_IND_CALL_SHIFT">PERF_SAMPLE_BRANCH_IND_CALL_SHIFT</a>,</td></tr>
+<tr><th id="203">203</th><td>	<dfn class="enum" id="PERF_SAMPLE_BRANCH_NO_FLAGS" title='PERF_SAMPLE_BRANCH_NO_FLAGS' data-ref="PERF_SAMPLE_BRANCH_NO_FLAGS" data-ref-filename="PERF_SAMPLE_BRANCH_NO_FLAGS">PERF_SAMPLE_BRANCH_NO_FLAGS</dfn>	= <var>1U</var> &lt;&lt; <a class="enum" href="#PERF_SAMPLE_BRANCH_NO_FLAGS_SHIFT" title='PERF_SAMPLE_BRANCH_NO_FLAGS_SHIFT' data-ref="PERF_SAMPLE_BRANCH_NO_FLAGS_SHIFT" data-ref-filename="PERF_SAMPLE_BRANCH_NO_FLAGS_SHIFT">PERF_SAMPLE_BRANCH_NO_FLAGS_SHIFT</a>,</td></tr>
+<tr><th id="204">204</th><td>	<dfn class="enum" id="PERF_SAMPLE_BRANCH_NO_CYCLES" title='PERF_SAMPLE_BRANCH_NO_CYCLES' data-ref="PERF_SAMPLE_BRANCH_NO_CYCLES" data-ref-filename="PERF_SAMPLE_BRANCH_NO_CYCLES">PERF_SAMPLE_BRANCH_NO_CYCLES</dfn>	= <var>1U</var> &lt;&lt; <a class="enum" href="#PERF_SAMPLE_BRANCH_NO_CYCLES_SHIFT" title='PERF_SAMPLE_BRANCH_NO_CYCLES_SHIFT' data-ref="PERF_SAMPLE_BRANCH_NO_CYCLES_SHIFT" data-ref-filename="PERF_SAMPLE_BRANCH_NO_CYCLES_SHIFT">PERF_SAMPLE_BRANCH_NO_CYCLES_SHIFT</a>,</td></tr>
+<tr><th id="205">205</th><td>	<dfn class="enum" id="PERF_SAMPLE_BRANCH_TYPE_SAVE" title='PERF_SAMPLE_BRANCH_TYPE_SAVE' data-ref="PERF_SAMPLE_BRANCH_TYPE_SAVE" data-ref-filename="PERF_SAMPLE_BRANCH_TYPE_SAVE">PERF_SAMPLE_BRANCH_TYPE_SAVE</dfn>	= <var>1U</var> &lt;&lt; <a class="enum" href="#PERF_SAMPLE_BRANCH_TYPE_SAVE_SHIFT" title='PERF_SAMPLE_BRANCH_TYPE_SAVE_SHIFT' data-ref="PERF_SAMPLE_BRANCH_TYPE_SAVE_SHIFT" data-ref-filename="PERF_SAMPLE_BRANCH_TYPE_SAVE_SHIFT">PERF_SAMPLE_BRANCH_TYPE_SAVE_SHIFT</a>,</td></tr>
+<tr><th id="206">206</th><td></td></tr>
+<tr><th id="207">207</th><td>	<dfn class="enum" id="PERF_SAMPLE_BRANCH_MAX" title='PERF_SAMPLE_BRANCH_MAX' data-ref="PERF_SAMPLE_BRANCH_MAX" data-ref-filename="PERF_SAMPLE_BRANCH_MAX">PERF_SAMPLE_BRANCH_MAX</dfn>		= <var>1U</var> &lt;&lt; <a class="enum" href="#PERF_SAMPLE_BRANCH_MAX_SHIFT" title='PERF_SAMPLE_BRANCH_MAX_SHIFT' data-ref="PERF_SAMPLE_BRANCH_MAX_SHIFT" data-ref-filename="PERF_SAMPLE_BRANCH_MAX_SHIFT">PERF_SAMPLE_BRANCH_MAX_SHIFT</a>,</td></tr>
+<tr><th id="208">208</th><td>};</td></tr>
+<tr><th id="209">209</th><td></td></tr>
+<tr><th id="210">210</th><td><b>enum</b> <dfn class="type def" id="perf_sample_regs_abi" title='perf_sample_regs_abi' data-ref="perf_sample_regs_abi" data-ref-filename="perf_sample_regs_abi">perf_sample_regs_abi</dfn> {</td></tr>
+<tr><th id="211">211</th><td>	<dfn class="enum" id="PERF_SAMPLE_REGS_ABI_NONE" title='PERF_SAMPLE_REGS_ABI_NONE' data-ref="PERF_SAMPLE_REGS_ABI_NONE" data-ref-filename="PERF_SAMPLE_REGS_ABI_NONE">PERF_SAMPLE_REGS_ABI_NONE</dfn>	= <var>0</var>,</td></tr>
+<tr><th id="212">212</th><td>	<dfn class="enum" id="PERF_SAMPLE_REGS_ABI_32" title='PERF_SAMPLE_REGS_ABI_32' data-ref="PERF_SAMPLE_REGS_ABI_32" data-ref-filename="PERF_SAMPLE_REGS_ABI_32">PERF_SAMPLE_REGS_ABI_32</dfn>		= <var>1</var>,</td></tr>
+<tr><th id="213">213</th><td>	<dfn class="enum" id="PERF_SAMPLE_REGS_ABI_64" title='PERF_SAMPLE_REGS_ABI_64' data-ref="PERF_SAMPLE_REGS_ABI_64" data-ref-filename="PERF_SAMPLE_REGS_ABI_64">PERF_SAMPLE_REGS_ABI_64</dfn>		= <var>2</var>,</td></tr>
+<tr><th id="214">214</th><td>};</td></tr>
+<tr><th id="215">215</th><td></td></tr>
+<tr><th id="216">216</th><td><i>/*</i></td></tr>
+<tr><th id="217">217</th><td><i> * attr-&gt;read_format values</i></td></tr>
+<tr><th id="218">218</th><td><i> */</i></td></tr>
+<tr><th id="219">219</th><td><b>enum</b> <dfn class="type def" id="perf_event_read_format" title='perf_event_read_format' data-ref="perf_event_read_format" data-ref-filename="perf_event_read_format">perf_event_read_format</dfn> {</td></tr>
+<tr><th id="220">220</th><td>	<dfn class="enum" id="PERF_FORMAT_TOTAL_TIME_ENABLED" title='PERF_FORMAT_TOTAL_TIME_ENABLED' data-ref="PERF_FORMAT_TOTAL_TIME_ENABLED" data-ref-filename="PERF_FORMAT_TOTAL_TIME_ENABLED">PERF_FORMAT_TOTAL_TIME_ENABLED</dfn>	= <var>1U</var> &lt;&lt; <var>0</var>,</td></tr>
+<tr><th id="221">221</th><td>	<dfn class="enum" id="PERF_FORMAT_TOTAL_TIME_RUNNING" title='PERF_FORMAT_TOTAL_TIME_RUNNING' data-ref="PERF_FORMAT_TOTAL_TIME_RUNNING" data-ref-filename="PERF_FORMAT_TOTAL_TIME_RUNNING">PERF_FORMAT_TOTAL_TIME_RUNNING</dfn>	= <var>1U</var> &lt;&lt; <var>1</var>,</td></tr>
+<tr><th id="222">222</th><td>	<dfn class="enum" id="PERF_FORMAT_ID" title='PERF_FORMAT_ID' data-ref="PERF_FORMAT_ID" data-ref-filename="PERF_FORMAT_ID">PERF_FORMAT_ID</dfn>			= <var>1U</var> &lt;&lt; <var>2</var>,</td></tr>
+<tr><th id="223">223</th><td>	<dfn class="enum" id="PERF_FORMAT_GROUP" title='PERF_FORMAT_GROUP' data-ref="PERF_FORMAT_GROUP" data-ref-filename="PERF_FORMAT_GROUP">PERF_FORMAT_GROUP</dfn>		= <var>1U</var> &lt;&lt; <var>3</var>,</td></tr>
+<tr><th id="224">224</th><td>	<dfn class="enum" id="PERF_FORMAT_MAX" title='PERF_FORMAT_MAX' data-ref="PERF_FORMAT_MAX" data-ref-filename="PERF_FORMAT_MAX">PERF_FORMAT_MAX</dfn>			= <var>1U</var> &lt;&lt; <var>4</var>,</td></tr>
+<tr><th id="225">225</th><td>};</td></tr>
+<tr><th id="226">226</th><td></td></tr>
+<tr><th id="227">227</th><td><u>#define <dfn class="macro" id="_M/PERF_ATTR_SIZE_VER0" data-ref="_M/PERF_ATTR_SIZE_VER0">PERF_ATTR_SIZE_VER0</dfn>	64	/* sizeof first published struct */</u></td></tr>
+<tr><th id="228">228</th><td><u>#define <dfn class="macro" id="_M/PERF_ATTR_SIZE_VER1" data-ref="_M/PERF_ATTR_SIZE_VER1">PERF_ATTR_SIZE_VER1</dfn>	72	/* add: config2 */</u></td></tr>
+<tr><th id="229">229</th><td><u>#define <dfn class="macro" id="_M/PERF_ATTR_SIZE_VER2" data-ref="_M/PERF_ATTR_SIZE_VER2">PERF_ATTR_SIZE_VER2</dfn>	80	/* add: branch_sample_type */</u></td></tr>
+<tr><th id="230">230</th><td><u>#define <dfn class="macro" id="_M/PERF_ATTR_SIZE_VER3" data-ref="_M/PERF_ATTR_SIZE_VER3">PERF_ATTR_SIZE_VER3</dfn>	96	/* add: sample_regs_user */</u></td></tr>
+<tr><th id="231">231</th><td>					<i>/* add: sample_stack_user */</i></td></tr>
+<tr><th id="232">232</th><td><u>#define <dfn class="macro" id="_M/PERF_ATTR_SIZE_VER4" data-ref="_M/PERF_ATTR_SIZE_VER4">PERF_ATTR_SIZE_VER4</dfn>	104	/* add: sample_regs_intr */</u></td></tr>
+<tr><th id="233">233</th><td><u>#define <dfn class="macro" id="_M/PERF_ATTR_SIZE_VER5" data-ref="_M/PERF_ATTR_SIZE_VER5">PERF_ATTR_SIZE_VER5</dfn>	112	/* add: aux_watermark */</u></td></tr>
+<tr><th id="234">234</th><td></td></tr>
+<tr><th id="235">235</th><td></td></tr>
+<tr><th id="236">236</th><td><i>/*</i></td></tr>
+<tr><th id="237">237</th><td><i> * SWIG doesn't deal well with anonymous nested structures</i></td></tr>
+<tr><th id="238">238</th><td><i> * so we add names for the nested structure only when swig</i></td></tr>
+<tr><th id="239">239</th><td><i> * is used.</i></td></tr>
+<tr><th id="240">240</th><td><i> */</i></td></tr>
+<tr><th id="241">241</th><td><u>#<span data-ppcond="241">ifdef</span> <span class="macro" data-ref="_M/SWIG">SWIG</span></u></td></tr>
+<tr><th id="242">242</th><td><u>#define SWIG_NAME(x) x</u></td></tr>
+<tr><th id="243">243</th><td><u>#<span data-ppcond="241">else</span></u></td></tr>
+<tr><th id="244">244</th><td><u>#define <dfn class="macro" id="_M/SWIG_NAME" data-ref="_M/SWIG_NAME">SWIG_NAME</dfn>(x)</u></td></tr>
+<tr><th id="245">245</th><td><u>#<span data-ppcond="241">endif</span> /* SWIG */</u></td></tr>
+<tr><th id="246">246</th><td></td></tr>
+<tr><th id="247">247</th><td><i>/*</i></td></tr>
+<tr><th id="248">248</th><td><i> * perf_event_attr struct passed to perf_event_open()</i></td></tr>
+<tr><th id="249">249</th><td><i> */</i></td></tr>
+<tr><th id="250">250</th><td><b>typedef</b> <b>struct</b> <dfn class="type def" id="perf_event_attr" title='perf_event_attr' data-ref="perf_event_attr" data-ref-filename="perf_event_attr"><a class="type" href="#perf_event_attr" title='perf_event_attr' data-ref="perf_event_attr" data-ref-filename="perf_event_attr">perf_event_attr</a></dfn> {</td></tr>
+<tr><th id="251">251</th><td>	<a class="typedef" href="../bits/stdint-uintn.h.html#uint32_t" title='uint32_t' data-type='__uint32_t' data-ref="uint32_t" data-ref-filename="uint32_t">uint32_t</a>	<dfn class="decl field" id="perf_event_attr::type" title='perf_event_attr::type' data-ref="perf_event_attr::type" data-ref-filename="perf_event_attr..type">type</dfn>;</td></tr>
+<tr><th id="252">252</th><td>	<a class="typedef" href="../bits/stdint-uintn.h.html#uint32_t" title='uint32_t' data-type='__uint32_t' data-ref="uint32_t" data-ref-filename="uint32_t">uint32_t</a>	<dfn class="decl field" id="perf_event_attr::size" title='perf_event_attr::size' data-ref="perf_event_attr::size" data-ref-filename="perf_event_attr..size">size</dfn>;</td></tr>
+<tr><th id="253">253</th><td>	<a class="typedef" href="../bits/stdint-uintn.h.html#uint64_t" title='uint64_t' data-type='__uint64_t' data-ref="uint64_t" data-ref-filename="uint64_t">uint64_t</a>	<dfn class="decl field" id="perf_event_attr::config" title='perf_event_attr::config' data-ref="perf_event_attr::config" data-ref-filename="perf_event_attr..config">config</dfn>;</td></tr>
+<tr><th id="254">254</th><td></td></tr>
+<tr><th id="255">255</th><td>	<b>union</b> {</td></tr>
+<tr><th id="256">256</th><td>		<a class="typedef" href="../bits/stdint-uintn.h.html#uint64_t" title='uint64_t' data-type='__uint64_t' data-ref="uint64_t" data-ref-filename="uint64_t">uint64_t</a>	<dfn class="decl field" id="perf_event_attr::(anonymous)::sample_period" title='perf_event_attr::(anonymous union)::sample_period' data-ref="perf_event_attr::(anonymous)::sample_period" data-ref-filename="perf_event_attr..(anonymous)..sample_period">sample_period</dfn>;</td></tr>
+<tr><th id="257">257</th><td>		<a class="typedef" href="../bits/stdint-uintn.h.html#uint64_t" title='uint64_t' data-type='__uint64_t' data-ref="uint64_t" data-ref-filename="uint64_t">uint64_t</a>	<dfn class="decl field" id="perf_event_attr::(anonymous)::sample_freq" title='perf_event_attr::(anonymous union)::sample_freq' data-ref="perf_event_attr::(anonymous)::sample_freq" data-ref-filename="perf_event_attr..(anonymous)..sample_freq">sample_freq</dfn>;</td></tr>
+<tr><th id="258">258</th><td>	} <a class="macro" href="#244" title="" data-ref="_M/SWIG_NAME">SWIG_NAME</a>(sample);</td></tr>
+<tr><th id="259">259</th><td></td></tr>
+<tr><th id="260">260</th><td>	<a class="typedef" href="../bits/stdint-uintn.h.html#uint64_t" title='uint64_t' data-type='__uint64_t' data-ref="uint64_t" data-ref-filename="uint64_t">uint64_t</a>	<dfn class="decl field" id="perf_event_attr::sample_type" title='perf_event_attr::sample_type' data-ref="perf_event_attr::sample_type" data-ref-filename="perf_event_attr..sample_type">sample_type</dfn>;</td></tr>
+<tr><th id="261">261</th><td>	<a class="typedef" href="../bits/stdint-uintn.h.html#uint64_t" title='uint64_t' data-type='__uint64_t' data-ref="uint64_t" data-ref-filename="uint64_t">uint64_t</a>	<dfn class="decl field" id="perf_event_attr::read_format" title='perf_event_attr::read_format' data-ref="perf_event_attr::read_format" data-ref-filename="perf_event_attr..read_format">read_format</dfn>;</td></tr>
+<tr><th id="262">262</th><td></td></tr>
+<tr><th id="263">263</th><td>	<a class="typedef" href="../bits/stdint-uintn.h.html#uint64_t" title='uint64_t' data-type='__uint64_t' data-ref="uint64_t" data-ref-filename="uint64_t">uint64_t</a>	<dfn class="decl field" id="perf_event_attr::disabled" title='perf_event_attr::disabled' data-ref="perf_event_attr::disabled" data-ref-filename="perf_event_attr..disabled">disabled</dfn>       :  <var>1</var>,</td></tr>
+<tr><th id="264">264</th><td>			<dfn class="decl field" id="perf_event_attr::inherit" title='perf_event_attr::inherit' data-ref="perf_event_attr::inherit" data-ref-filename="perf_event_attr..inherit">inherit</dfn>	       :  <var>1</var>,</td></tr>
+<tr><th id="265">265</th><td>			<dfn class="decl field" id="perf_event_attr::pinned" title='perf_event_attr::pinned' data-ref="perf_event_attr::pinned" data-ref-filename="perf_event_attr..pinned">pinned</dfn>	       :  <var>1</var>,</td></tr>
+<tr><th id="266">266</th><td>			<dfn class="decl field" id="perf_event_attr::exclusive" title='perf_event_attr::exclusive' data-ref="perf_event_attr::exclusive" data-ref-filename="perf_event_attr..exclusive">exclusive</dfn>      :  <var>1</var>,</td></tr>
+<tr><th id="267">267</th><td>			<dfn class="decl field" id="perf_event_attr::exclude_user" title='perf_event_attr::exclude_user' data-ref="perf_event_attr::exclude_user" data-ref-filename="perf_event_attr..exclude_user">exclude_user</dfn>   :  <var>1</var>,</td></tr>
+<tr><th id="268">268</th><td>			<dfn class="decl field" id="perf_event_attr::exclude_kernel" title='perf_event_attr::exclude_kernel' data-ref="perf_event_attr::exclude_kernel" data-ref-filename="perf_event_attr..exclude_kernel">exclude_kernel</dfn> :  <var>1</var>,</td></tr>
+<tr><th id="269">269</th><td>			<dfn class="decl field" id="perf_event_attr::exclude_hv" title='perf_event_attr::exclude_hv' data-ref="perf_event_attr::exclude_hv" data-ref-filename="perf_event_attr..exclude_hv">exclude_hv</dfn>     :  <var>1</var>,</td></tr>
+<tr><th id="270">270</th><td>			<dfn class="decl field" id="perf_event_attr::exclude_idle" title='perf_event_attr::exclude_idle' data-ref="perf_event_attr::exclude_idle" data-ref-filename="perf_event_attr..exclude_idle">exclude_idle</dfn>   :  <var>1</var>,</td></tr>
+<tr><th id="271">271</th><td>			<dfn class="decl field" id="perf_event_attr::mmap" title='perf_event_attr::mmap' data-ref="perf_event_attr::mmap" data-ref-filename="perf_event_attr..mmap">mmap</dfn>           :  <var>1</var>,</td></tr>
+<tr><th id="272">272</th><td>			<dfn class="decl field" id="perf_event_attr::comm" title='perf_event_attr::comm' data-ref="perf_event_attr::comm" data-ref-filename="perf_event_attr..comm">comm</dfn>	       :  <var>1</var>,</td></tr>
+<tr><th id="273">273</th><td>			<dfn class="decl field" id="perf_event_attr::freq" title='perf_event_attr::freq' data-ref="perf_event_attr::freq" data-ref-filename="perf_event_attr..freq">freq</dfn>           :  <var>1</var>,</td></tr>
+<tr><th id="274">274</th><td>			<dfn class="decl field" id="perf_event_attr::inherit_stat" title='perf_event_attr::inherit_stat' data-ref="perf_event_attr::inherit_stat" data-ref-filename="perf_event_attr..inherit_stat">inherit_stat</dfn>   :  <var>1</var>,</td></tr>
+<tr><th id="275">275</th><td>			<dfn class="decl field" id="perf_event_attr::enable_on_exec" title='perf_event_attr::enable_on_exec' data-ref="perf_event_attr::enable_on_exec" data-ref-filename="perf_event_attr..enable_on_exec">enable_on_exec</dfn> :  <var>1</var>,</td></tr>
+<tr><th id="276">276</th><td>			<dfn class="decl field" id="perf_event_attr::task" title='perf_event_attr::task' data-ref="perf_event_attr::task" data-ref-filename="perf_event_attr..task">task</dfn>           :  <var>1</var>,</td></tr>
+<tr><th id="277">277</th><td>			<dfn class="decl field" id="perf_event_attr::watermark" title='perf_event_attr::watermark' data-ref="perf_event_attr::watermark" data-ref-filename="perf_event_attr..watermark">watermark</dfn>      :  <var>1</var>,</td></tr>
+<tr><th id="278">278</th><td>			<dfn class="decl field" id="perf_event_attr::precise_ip" title='perf_event_attr::precise_ip' data-ref="perf_event_attr::precise_ip" data-ref-filename="perf_event_attr..precise_ip">precise_ip</dfn>     :  <var>2</var>,</td></tr>
+<tr><th id="279">279</th><td>			<dfn class="decl field" id="perf_event_attr::mmap_data" title='perf_event_attr::mmap_data' data-ref="perf_event_attr::mmap_data" data-ref-filename="perf_event_attr..mmap_data">mmap_data</dfn>      :  <var>1</var>,</td></tr>
+<tr><th id="280">280</th><td>			<dfn class="decl field" id="perf_event_attr::sample_id_all" title='perf_event_attr::sample_id_all' data-ref="perf_event_attr::sample_id_all" data-ref-filename="perf_event_attr..sample_id_all">sample_id_all</dfn>  :  <var>1</var>,</td></tr>
+<tr><th id="281">281</th><td>			<dfn class="decl field" id="perf_event_attr::exclude_host" title='perf_event_attr::exclude_host' data-ref="perf_event_attr::exclude_host" data-ref-filename="perf_event_attr..exclude_host">exclude_host</dfn>   :  <var>1</var>,</td></tr>
+<tr><th id="282">282</th><td>			<dfn class="decl field" id="perf_event_attr::exclude_guest" title='perf_event_attr::exclude_guest' data-ref="perf_event_attr::exclude_guest" data-ref-filename="perf_event_attr..exclude_guest">exclude_guest</dfn>  :  <var>1</var>,</td></tr>
+<tr><th id="283">283</th><td>			<dfn class="decl field" id="perf_event_attr::exclude_callchain_kernel" title='perf_event_attr::exclude_callchain_kernel' data-ref="perf_event_attr::exclude_callchain_kernel" data-ref-filename="perf_event_attr..exclude_callchain_kernel">exclude_callchain_kernel</dfn> : <var>1</var>,</td></tr>
+<tr><th id="284">284</th><td>			<dfn class="decl field" id="perf_event_attr::exclude_callchain_user" title='perf_event_attr::exclude_callchain_user' data-ref="perf_event_attr::exclude_callchain_user" data-ref-filename="perf_event_attr..exclude_callchain_user">exclude_callchain_user</dfn>   : <var>1</var>,</td></tr>
+<tr><th id="285">285</th><td>			<dfn class="decl field" id="perf_event_attr::mmap2" title='perf_event_attr::mmap2' data-ref="perf_event_attr::mmap2" data-ref-filename="perf_event_attr..mmap2">mmap2</dfn>          :  <var>1</var>,</td></tr>
+<tr><th id="286">286</th><td>			<dfn class="decl field" id="perf_event_attr::comm_exec" title='perf_event_attr::comm_exec' data-ref="perf_event_attr::comm_exec" data-ref-filename="perf_event_attr..comm_exec">comm_exec</dfn>      :  <var>1</var>,</td></tr>
+<tr><th id="287">287</th><td>			<dfn class="decl field" id="perf_event_attr::use_clockid" title='perf_event_attr::use_clockid' data-ref="perf_event_attr::use_clockid" data-ref-filename="perf_event_attr..use_clockid">use_clockid</dfn>    :  <var>1</var>,</td></tr>
+<tr><th id="288">288</th><td>			<dfn class="decl field" id="perf_event_attr::context_switch" title='perf_event_attr::context_switch' data-ref="perf_event_attr::context_switch" data-ref-filename="perf_event_attr..context_switch">context_switch</dfn> :  <var>1</var>,</td></tr>
+<tr><th id="289">289</th><td>			<dfn class="decl field" id="perf_event_attr::write_backward" title='perf_event_attr::write_backward' data-ref="perf_event_attr::write_backward" data-ref-filename="perf_event_attr..write_backward">write_backward</dfn> :  <var>1</var>,</td></tr>
+<tr><th id="290">290</th><td>			<dfn class="decl field" id="perf_event_attr::namespaces" title='perf_event_attr::namespaces' data-ref="perf_event_attr::namespaces" data-ref-filename="perf_event_attr..namespaces">namespaces</dfn>     :  <var>1</var>,</td></tr>
+<tr><th id="291">291</th><td>			<dfn class="decl field" id="perf_event_attr::__reserved_1" title='perf_event_attr::__reserved_1' data-ref="perf_event_attr::__reserved_1" data-ref-filename="perf_event_attr..__reserved_1">__reserved_1</dfn>   : <var>35</var>;</td></tr>
+<tr><th id="292">292</th><td></td></tr>
+<tr><th id="293">293</th><td>	<b>union</b> {</td></tr>
+<tr><th id="294">294</th><td>		<a class="typedef" href="../bits/stdint-uintn.h.html#uint32_t" title='uint32_t' data-type='__uint32_t' data-ref="uint32_t" data-ref-filename="uint32_t">uint32_t</a>	<dfn class="decl field" id="perf_event_attr::(anonymous)::wakeup_events" title='perf_event_attr::(anonymous union)::wakeup_events' data-ref="perf_event_attr::(anonymous)::wakeup_events" data-ref-filename="perf_event_attr..(anonymous)..wakeup_events">wakeup_events</dfn>;</td></tr>
+<tr><th id="295">295</th><td>		<a class="typedef" href="../bits/stdint-uintn.h.html#uint32_t" title='uint32_t' data-type='__uint32_t' data-ref="uint32_t" data-ref-filename="uint32_t">uint32_t</a>	<dfn class="decl field" id="perf_event_attr::(anonymous)::wakeup_watermark" title='perf_event_attr::(anonymous union)::wakeup_watermark' data-ref="perf_event_attr::(anonymous)::wakeup_watermark" data-ref-filename="perf_event_attr..(anonymous)..wakeup_watermark">wakeup_watermark</dfn>;</td></tr>
+<tr><th id="296">296</th><td>	} <a class="macro" href="#244" title="" data-ref="_M/SWIG_NAME">SWIG_NAME</a>(wakeup);</td></tr>
+<tr><th id="297">297</th><td></td></tr>
+<tr><th id="298">298</th><td>	<a class="typedef" href="../bits/stdint-uintn.h.html#uint32_t" title='uint32_t' data-type='__uint32_t' data-ref="uint32_t" data-ref-filename="uint32_t">uint32_t</a>        <dfn class="decl field" id="perf_event_attr::bp_type" title='perf_event_attr::bp_type' data-ref="perf_event_attr::bp_type" data-ref-filename="perf_event_attr..bp_type">bp_type</dfn>;</td></tr>
+<tr><th id="299">299</th><td>	<b>union</b> {</td></tr>
+<tr><th id="300">300</th><td>		<a class="typedef" href="../bits/stdint-uintn.h.html#uint64_t" title='uint64_t' data-type='__uint64_t' data-ref="uint64_t" data-ref-filename="uint64_t">uint64_t</a>        <dfn class="decl field" id="perf_event_attr::(anonymous)::bp_addr" title='perf_event_attr::(anonymous union)::bp_addr' data-ref="perf_event_attr::(anonymous)::bp_addr" data-ref-filename="perf_event_attr..(anonymous)..bp_addr">bp_addr</dfn>;</td></tr>
+<tr><th id="301">301</th><td>		<a class="typedef" href="../bits/stdint-uintn.h.html#uint64_t" title='uint64_t' data-type='__uint64_t' data-ref="uint64_t" data-ref-filename="uint64_t">uint64_t</a>	<dfn class="decl field" id="perf_event_attr::(anonymous)::config1" title='perf_event_attr::(anonymous union)::config1' data-ref="perf_event_attr::(anonymous)::config1" data-ref-filename="perf_event_attr..(anonymous)..config1">config1</dfn>; <i>/* extend config */</i></td></tr>
+<tr><th id="302">302</th><td>	} <a class="macro" href="#244" title="" data-ref="_M/SWIG_NAME">SWIG_NAME</a>(bpa);</td></tr>
+<tr><th id="303">303</th><td>	<b>union</b> {</td></tr>
+<tr><th id="304">304</th><td>		<a class="typedef" href="../bits/stdint-uintn.h.html#uint64_t" title='uint64_t' data-type='__uint64_t' data-ref="uint64_t" data-ref-filename="uint64_t">uint64_t</a>        <dfn class="decl field" id="perf_event_attr::(anonymous)::bp_len" title='perf_event_attr::(anonymous union)::bp_len' data-ref="perf_event_attr::(anonymous)::bp_len" data-ref-filename="perf_event_attr..(anonymous)..bp_len">bp_len</dfn>;</td></tr>
+<tr><th id="305">305</th><td>		<a class="typedef" href="../bits/stdint-uintn.h.html#uint64_t" title='uint64_t' data-type='__uint64_t' data-ref="uint64_t" data-ref-filename="uint64_t">uint64_t</a>	<dfn class="decl field" id="perf_event_attr::(anonymous)::config2" title='perf_event_attr::(anonymous union)::config2' data-ref="perf_event_attr::(anonymous)::config2" data-ref-filename="perf_event_attr..(anonymous)..config2">config2</dfn>; <i>/* extend config1 */</i></td></tr>
+<tr><th id="306">306</th><td>	} <a class="macro" href="#244" title="" data-ref="_M/SWIG_NAME">SWIG_NAME</a>(bpb);</td></tr>
+<tr><th id="307">307</th><td>	<a class="typedef" href="../bits/stdint-uintn.h.html#uint64_t" title='uint64_t' data-type='__uint64_t' data-ref="uint64_t" data-ref-filename="uint64_t">uint64_t</a> <dfn class="decl field" id="perf_event_attr::branch_sample_type" title='perf_event_attr::branch_sample_type' data-ref="perf_event_attr::branch_sample_type" data-ref-filename="perf_event_attr..branch_sample_type">branch_sample_type</dfn>;</td></tr>
+<tr><th id="308">308</th><td>	<a class="typedef" href="../bits/stdint-uintn.h.html#uint64_t" title='uint64_t' data-type='__uint64_t' data-ref="uint64_t" data-ref-filename="uint64_t">uint64_t</a> <dfn class="decl field" id="perf_event_attr::sample_regs_user" title='perf_event_attr::sample_regs_user' data-ref="perf_event_attr::sample_regs_user" data-ref-filename="perf_event_attr..sample_regs_user">sample_regs_user</dfn>;</td></tr>
+<tr><th id="309">309</th><td>	<a class="typedef" href="../bits/stdint-uintn.h.html#uint32_t" title='uint32_t' data-type='__uint32_t' data-ref="uint32_t" data-ref-filename="uint32_t">uint32_t</a> <dfn class="decl field" id="perf_event_attr::sample_stack_user" title='perf_event_attr::sample_stack_user' data-ref="perf_event_attr::sample_stack_user" data-ref-filename="perf_event_attr..sample_stack_user">sample_stack_user</dfn>;</td></tr>
+<tr><th id="310">310</th><td>	<a class="typedef" href="../bits/stdint-intn.h.html#int32_t" title='int32_t' data-type='__int32_t' data-ref="int32_t" data-ref-filename="int32_t">int32_t</a>  <dfn class="decl field" id="perf_event_attr::clockid" title='perf_event_attr::clockid' data-ref="perf_event_attr::clockid" data-ref-filename="perf_event_attr..clockid">clockid</dfn>;</td></tr>
+<tr><th id="311">311</th><td>	<a class="typedef" href="../bits/stdint-uintn.h.html#uint64_t" title='uint64_t' data-type='__uint64_t' data-ref="uint64_t" data-ref-filename="uint64_t">uint64_t</a> <dfn class="decl field" id="perf_event_attr::sample_regs_intr" title='perf_event_attr::sample_regs_intr' data-ref="perf_event_attr::sample_regs_intr" data-ref-filename="perf_event_attr..sample_regs_intr">sample_regs_intr</dfn>;</td></tr>
+<tr><th id="312">312</th><td>	<a class="typedef" href="../bits/stdint-uintn.h.html#uint32_t" title='uint32_t' data-type='__uint32_t' data-ref="uint32_t" data-ref-filename="uint32_t">uint32_t</a> <dfn class="decl field" id="perf_event_attr::aux_watermark" title='perf_event_attr::aux_watermark' data-ref="perf_event_attr::aux_watermark" data-ref-filename="perf_event_attr..aux_watermark">aux_watermark</dfn>;</td></tr>
+<tr><th id="313">313</th><td>	<a class="typedef" href="../bits/stdint-uintn.h.html#uint32_t" title='uint32_t' data-type='__uint32_t' data-ref="uint32_t" data-ref-filename="uint32_t">uint32_t</a> <dfn class="decl field" id="perf_event_attr::__reserved_2" title='perf_event_attr::__reserved_2' data-ref="perf_event_attr::__reserved_2" data-ref-filename="perf_event_attr..__reserved_2">__reserved_2</dfn>;</td></tr>
+<tr><th id="314">314</th><td>} <dfn class="typedef" id="perf_event_attr_t" title='perf_event_attr_t' data-type='struct perf_event_attr' data-ref="perf_event_attr_t" data-ref-filename="perf_event_attr_t">perf_event_attr_t</dfn>;</td></tr>
+<tr><th id="315">315</th><td></td></tr>
+<tr><th id="316">316</th><td><b>struct</b> <dfn class="type def" id="perf_branch_entry" title='perf_branch_entry' data-ref="perf_branch_entry" data-ref-filename="perf_branch_entry">perf_branch_entry</dfn> {</td></tr>
+<tr><th id="317">317</th><td>	<a class="typedef" href="../bits/stdint-uintn.h.html#uint64_t" title='uint64_t' data-type='__uint64_t' data-ref="uint64_t" data-ref-filename="uint64_t">uint64_t</a>	<dfn class="decl field" id="perf_branch_entry::from" title='perf_branch_entry::from' data-ref="perf_branch_entry::from" data-ref-filename="perf_branch_entry..from">from</dfn>;</td></tr>
+<tr><th id="318">318</th><td>	<a class="typedef" href="../bits/stdint-uintn.h.html#uint64_t" title='uint64_t' data-type='__uint64_t' data-ref="uint64_t" data-ref-filename="uint64_t">uint64_t</a>	<dfn class="decl field" id="perf_branch_entry::to" title='perf_branch_entry::to' data-ref="perf_branch_entry::to" data-ref-filename="perf_branch_entry..to">to</dfn>;</td></tr>
+<tr><th id="319">319</th><td>	<a class="typedef" href="../bits/stdint-uintn.h.html#uint64_t" title='uint64_t' data-type='__uint64_t' data-ref="uint64_t" data-ref-filename="uint64_t">uint64_t</a>	<dfn class="decl field" id="perf_branch_entry::mispred" title='perf_branch_entry::mispred' data-ref="perf_branch_entry::mispred" data-ref-filename="perf_branch_entry..mispred">mispred</dfn>:<var>1</var>,  <i>/* target mispredicted */</i></td></tr>
+<tr><th id="320">320</th><td>			<dfn class="decl field" id="perf_branch_entry::predicted" title='perf_branch_entry::predicted' data-ref="perf_branch_entry::predicted" data-ref-filename="perf_branch_entry..predicted">predicted</dfn>:<var>1</var>,<i>/* target predicted */</i></td></tr>
+<tr><th id="321">321</th><td>			<dfn class="decl field" id="perf_branch_entry::in_tx" title='perf_branch_entry::in_tx' data-ref="perf_branch_entry::in_tx" data-ref-filename="perf_branch_entry..in_tx">in_tx</dfn>:<var>1</var>,    <i>/* in transaction */</i></td></tr>
+<tr><th id="322">322</th><td>			<dfn class="decl field" id="perf_branch_entry::abort" title='perf_branch_entry::abort' data-ref="perf_branch_entry::abort" data-ref-filename="perf_branch_entry..abort">abort</dfn>:<var>1</var>,    <i>/* transaction abort */</i></td></tr>
+<tr><th id="323">323</th><td>			<dfn class="decl field" id="perf_branch_entry::cycles" title='perf_branch_entry::cycles' data-ref="perf_branch_entry::cycles" data-ref-filename="perf_branch_entry..cycles">cycles</dfn>:<var>16</var>,  <i>/* cycle count to last branch */</i></td></tr>
+<tr><th id="324">324</th><td>			<dfn class="decl field" id="perf_branch_entry::type" title='perf_branch_entry::type' data-ref="perf_branch_entry::type" data-ref-filename="perf_branch_entry..type">type</dfn>:<var>4</var>,     <i>/* branch type */</i></td></tr>
+<tr><th id="325">325</th><td>			<dfn class="decl field" id="perf_branch_entry::reserved" title='perf_branch_entry::reserved' data-ref="perf_branch_entry::reserved" data-ref-filename="perf_branch_entry..reserved">reserved</dfn>:<var>40</var>;</td></tr>
+<tr><th id="326">326</th><td>};</td></tr>
+<tr><th id="327">327</th><td></td></tr>
+<tr><th id="328">328</th><td><i>/*</i></td></tr>
+<tr><th id="329">329</th><td><i> * branch stack layout:</i></td></tr>
+<tr><th id="330">330</th><td><i> *  nr: number of taken branches stored in entries[]</i></td></tr>
+<tr><th id="331">331</th><td><i> *</i></td></tr>
+<tr><th id="332">332</th><td><i> * Note that nr can vary from sample to sample</i></td></tr>
+<tr><th id="333">333</th><td><i> * branches (to, from) are stored from most recent</i></td></tr>
+<tr><th id="334">334</th><td><i> * to least recent, i.e., entries[0] contains the most</i></td></tr>
+<tr><th id="335">335</th><td><i> * recent branch.</i></td></tr>
+<tr><th id="336">336</th><td><i> */</i></td></tr>
+<tr><th id="337">337</th><td><b>struct</b> <dfn class="type def" id="perf_branch_stack" title='perf_branch_stack' data-ref="perf_branch_stack" data-ref-filename="perf_branch_stack">perf_branch_stack</dfn> {</td></tr>
+<tr><th id="338">338</th><td>	<a class="typedef" href="../bits/stdint-uintn.h.html#uint64_t" title='uint64_t' data-type='__uint64_t' data-ref="uint64_t" data-ref-filename="uint64_t">uint64_t</a>			<dfn class="decl field" id="perf_branch_stack::nr" title='perf_branch_stack::nr' data-ref="perf_branch_stack::nr" data-ref-filename="perf_branch_stack..nr">nr</dfn>;</td></tr>
+<tr><th id="339">339</th><td>	<b>struct</b> <a class="type" href="#perf_branch_entry" title='perf_branch_entry' data-ref="perf_branch_entry" data-ref-filename="perf_branch_entry">perf_branch_entry</a>        <dfn class="decl field" id="perf_branch_stack::entries" title='perf_branch_stack::entries' data-ref="perf_branch_stack::entries" data-ref-filename="perf_branch_stack..entries">entries</dfn>[<var>0</var>];</td></tr>
+<tr><th id="340">340</th><td>};</td></tr>
+<tr><th id="341">341</th><td></td></tr>
+<tr><th id="342">342</th><td><i>/*</i></td></tr>
+<tr><th id="343">343</th><td><i> * perf_events ioctl commands, use with event fd</i></td></tr>
+<tr><th id="344">344</th><td><i> */</i></td></tr>
+<tr><th id="345">345</th><td><u>#define <dfn class="macro" id="_M/PERF_EVENT_IOC_ENABLE" data-ref="_M/PERF_EVENT_IOC_ENABLE">PERF_EVENT_IOC_ENABLE</dfn>		_IO ('$', 0)</u></td></tr>
+<tr><th id="346">346</th><td><u>#define <dfn class="macro" id="_M/PERF_EVENT_IOC_DISABLE" data-ref="_M/PERF_EVENT_IOC_DISABLE">PERF_EVENT_IOC_DISABLE</dfn>		_IO ('$', 1)</u></td></tr>
+<tr><th id="347">347</th><td><u>#define <dfn class="macro" id="_M/PERF_EVENT_IOC_REFRESH" data-ref="_M/PERF_EVENT_IOC_REFRESH">PERF_EVENT_IOC_REFRESH</dfn>		_IO ('$', 2)</u></td></tr>
+<tr><th id="348">348</th><td><u>#define <dfn class="macro" id="_M/PERF_EVENT_IOC_RESET" data-ref="_M/PERF_EVENT_IOC_RESET">PERF_EVENT_IOC_RESET</dfn>		_IO ('$', 3)</u></td></tr>
+<tr><th id="349">349</th><td><u>#define <dfn class="macro" id="_M/PERF_EVENT_IOC_PERIOD" data-ref="_M/PERF_EVENT_IOC_PERIOD">PERF_EVENT_IOC_PERIOD</dfn>		_IOW('$', 4, uint64_t)</u></td></tr>
+<tr><th id="350">350</th><td><u>#define <dfn class="macro" id="_M/PERF_EVENT_IOC_SET_OUTPUT" data-ref="_M/PERF_EVENT_IOC_SET_OUTPUT">PERF_EVENT_IOC_SET_OUTPUT</dfn>	_IO ('$', 5)</u></td></tr>
+<tr><th id="351">351</th><td><u>#define <dfn class="macro" id="_M/PERF_EVENT_IOC_SET_FILTER" data-ref="_M/PERF_EVENT_IOC_SET_FILTER">PERF_EVENT_IOC_SET_FILTER</dfn>	_IOW('$', 6, char *)</u></td></tr>
+<tr><th id="352">352</th><td><u>#define <dfn class="macro" id="_M/PERF_EVENT_IOC_ID" data-ref="_M/PERF_EVENT_IOC_ID">PERF_EVENT_IOC_ID</dfn>		_IOR('$', 7, uint64_t *)</u></td></tr>
+<tr><th id="353">353</th><td><u>#define <dfn class="macro" id="_M/PERF_EVENT_IOC_SET_BPF" data-ref="_M/PERF_EVENT_IOC_SET_BPF">PERF_EVENT_IOC_SET_BPF</dfn>		_IOW('$', 8, uint32_t)</u></td></tr>
+<tr><th id="354">354</th><td><u>#define <dfn class="macro" id="_M/PERF_EVENT_IOC_PAUSE_OUTPUT" data-ref="_M/PERF_EVENT_IOC_PAUSE_OUTPUT">PERF_EVENT_IOC_PAUSE_OUTPUT</dfn>	_IOW('$', 9, __u32)</u></td></tr>
+<tr><th id="355">355</th><td></td></tr>
+<tr><th id="356">356</th><td><i>/*</i></td></tr>
+<tr><th id="357">357</th><td><i> * ioctl() 3rd argument</i></td></tr>
+<tr><th id="358">358</th><td><i> */</i></td></tr>
+<tr><th id="359">359</th><td><b>enum</b> <dfn class="type def" id="perf_event_ioc_flags" title='perf_event_ioc_flags' data-ref="perf_event_ioc_flags" data-ref-filename="perf_event_ioc_flags">perf_event_ioc_flags</dfn> {</td></tr>
+<tr><th id="360">360</th><td>	<dfn class="enum" id="PERF_IOC_FLAG_GROUP" title='PERF_IOC_FLAG_GROUP' data-ref="PERF_IOC_FLAG_GROUP" data-ref-filename="PERF_IOC_FLAG_GROUP">PERF_IOC_FLAG_GROUP</dfn>	= <var>1U</var> &lt;&lt; <var>0</var>,</td></tr>
+<tr><th id="361">361</th><td>};</td></tr>
+<tr><th id="362">362</th><td></td></tr>
+<tr><th id="363">363</th><td><i>/*</i></td></tr>
+<tr><th id="364">364</th><td><i> * mmapped sampling buffer layout</i></td></tr>
+<tr><th id="365">365</th><td><i> * occupies a 4kb page</i></td></tr>
+<tr><th id="366">366</th><td><i> */</i></td></tr>
+<tr><th id="367">367</th><td><b>struct</b> <dfn class="type def" id="perf_event_mmap_page" title='perf_event_mmap_page' data-ref="perf_event_mmap_page" data-ref-filename="perf_event_mmap_page">perf_event_mmap_page</dfn> {</td></tr>
+<tr><th id="368">368</th><td>	<a class="typedef" href="../bits/stdint-uintn.h.html#uint32_t" title='uint32_t' data-type='__uint32_t' data-ref="uint32_t" data-ref-filename="uint32_t">uint32_t</a>	<dfn class="decl field" id="perf_event_mmap_page::version" title='perf_event_mmap_page::version' data-ref="perf_event_mmap_page::version" data-ref-filename="perf_event_mmap_page..version">version</dfn>;</td></tr>
+<tr><th id="369">369</th><td>	<a class="typedef" href="../bits/stdint-uintn.h.html#uint32_t" title='uint32_t' data-type='__uint32_t' data-ref="uint32_t" data-ref-filename="uint32_t">uint32_t</a>	<dfn class="decl field" id="perf_event_mmap_page::compat_version" title='perf_event_mmap_page::compat_version' data-ref="perf_event_mmap_page::compat_version" data-ref-filename="perf_event_mmap_page..compat_version">compat_version</dfn>;</td></tr>
+<tr><th id="370">370</th><td>	<a class="typedef" href="../bits/stdint-uintn.h.html#uint32_t" title='uint32_t' data-type='__uint32_t' data-ref="uint32_t" data-ref-filename="uint32_t">uint32_t</a>	<dfn class="decl field" id="perf_event_mmap_page::lock" title='perf_event_mmap_page::lock' data-ref="perf_event_mmap_page::lock" data-ref-filename="perf_event_mmap_page..lock">lock</dfn>;</td></tr>
+<tr><th id="371">371</th><td>	<a class="typedef" href="../bits/stdint-uintn.h.html#uint32_t" title='uint32_t' data-type='__uint32_t' data-ref="uint32_t" data-ref-filename="uint32_t">uint32_t</a>	<dfn class="decl field" id="perf_event_mmap_page::index" title='perf_event_mmap_page::index' data-ref="perf_event_mmap_page::index" data-ref-filename="perf_event_mmap_page..index">index</dfn>;</td></tr>
+<tr><th id="372">372</th><td>	<a class="typedef" href="../bits/stdint-intn.h.html#int64_t" title='int64_t' data-type='__int64_t' data-ref="int64_t" data-ref-filename="int64_t">int64_t</a>		<dfn class="decl field" id="perf_event_mmap_page::offset" title='perf_event_mmap_page::offset' data-ref="perf_event_mmap_page::offset" data-ref-filename="perf_event_mmap_page..offset">offset</dfn>;</td></tr>
+<tr><th id="373">373</th><td>	<a class="typedef" href="../bits/stdint-uintn.h.html#uint64_t" title='uint64_t' data-type='__uint64_t' data-ref="uint64_t" data-ref-filename="uint64_t">uint64_t</a>	<dfn class="decl field" id="perf_event_mmap_page::time_enabled" title='perf_event_mmap_page::time_enabled' data-ref="perf_event_mmap_page::time_enabled" data-ref-filename="perf_event_mmap_page..time_enabled">time_enabled</dfn>;</td></tr>
+<tr><th id="374">374</th><td>	<a class="typedef" href="../bits/stdint-uintn.h.html#uint64_t" title='uint64_t' data-type='__uint64_t' data-ref="uint64_t" data-ref-filename="uint64_t">uint64_t</a>	<dfn class="decl field" id="perf_event_mmap_page::time_running" title='perf_event_mmap_page::time_running' data-ref="perf_event_mmap_page::time_running" data-ref-filename="perf_event_mmap_page..time_running">time_running</dfn>;</td></tr>
+<tr><th id="375">375</th><td>	<b>union</b> {</td></tr>
+<tr><th id="376">376</th><td>		<a class="typedef" href="../bits/stdint-uintn.h.html#uint64_t" title='uint64_t' data-type='__uint64_t' data-ref="uint64_t" data-ref-filename="uint64_t">uint64_t</a> <dfn class="decl field" id="perf_event_mmap_page::(anonymous)::capabilities" title='perf_event_mmap_page::(anonymous union)::capabilities' data-ref="perf_event_mmap_page::(anonymous)::capabilities" data-ref-filename="perf_event_mmap_page..(anonymous)..capabilities">capabilities</dfn>;</td></tr>
+<tr><th id="377">377</th><td>		<b>struct</b> {</td></tr>
+<tr><th id="378">378</th><td>			<a class="typedef" href="../bits/stdint-uintn.h.html#uint64_t" title='uint64_t' data-type='__uint64_t' data-ref="uint64_t" data-ref-filename="uint64_t">uint64_t</a> <dfn class="decl field" id="perf_event_mmap_page::(anonymousunion)::(anonymous)::cap_bit0" title='perf_event_mmap_page::(anonymous union)::(anonymous struct)::cap_bit0' data-ref="perf_event_mmap_page::(anonymousunion)::(anonymous)::cap_bit0" data-ref-filename="perf_event_mmap_page..(anonymousunion)..(anonymous)..cap_bit0">cap_bit0</dfn>:<var>1</var>,</td></tr>
+<tr><th id="379">379</th><td>				 <dfn class="decl field" id="perf_event_mmap_page::(anonymousunion)::(anonymous)::cap_bit0_is_deprecated" title='perf_event_mmap_page::(anonymous union)::(anonymous struct)::cap_bit0_is_deprecated' data-ref="perf_event_mmap_page::(anonymousunion)::(anonymous)::cap_bit0_is_deprecated" data-ref-filename="perf_event_mmap_page..(anonymousunion)..(anonymous)..cap_bit0_is_deprecated">cap_bit0_is_deprecated</dfn>:<var>1</var>,</td></tr>
+<tr><th id="380">380</th><td>				 <dfn class="decl field" id="perf_event_mmap_page::(anonymousunion)::(anonymous)::cap_usr_rdpmc" title='perf_event_mmap_page::(anonymous union)::(anonymous struct)::cap_usr_rdpmc' data-ref="perf_event_mmap_page::(anonymousunion)::(anonymous)::cap_usr_rdpmc" data-ref-filename="perf_event_mmap_page..(anonymousunion)..(anonymous)..cap_usr_rdpmc">cap_usr_rdpmc</dfn>:<var>1</var>,</td></tr>
+<tr><th id="381">381</th><td>				 <dfn class="decl field" id="perf_event_mmap_page::(anonymousunion)::(anonymous)::cap_user_time" title='perf_event_mmap_page::(anonymous union)::(anonymous struct)::cap_user_time' data-ref="perf_event_mmap_page::(anonymousunion)::(anonymous)::cap_user_time" data-ref-filename="perf_event_mmap_page..(anonymousunion)..(anonymous)..cap_user_time">cap_user_time</dfn>:<var>1</var>,</td></tr>
+<tr><th id="382">382</th><td>				 <dfn class="decl field" id="perf_event_mmap_page::(anonymousunion)::(anonymous)::cap_user_time_zero" title='perf_event_mmap_page::(anonymous union)::(anonymous struct)::cap_user_time_zero' data-ref="perf_event_mmap_page::(anonymousunion)::(anonymous)::cap_user_time_zero" data-ref-filename="perf_event_mmap_page..(anonymousunion)..(anonymous)..cap_user_time_zero">cap_user_time_zero</dfn>:<var>1</var>,</td></tr>
+<tr><th id="383">383</th><td>				 <dfn class="decl field" id="perf_event_mmap_page::(anonymousunion)::(anonymous)::cap_____res" title='perf_event_mmap_page::(anonymous union)::(anonymous struct)::cap_____res' data-ref="perf_event_mmap_page::(anonymousunion)::(anonymous)::cap_____res" data-ref-filename="perf_event_mmap_page..(anonymousunion)..(anonymous)..cap_____res">cap_____res</dfn>:<var>59</var>;</td></tr>
+<tr><th id="384">384</th><td>		} <a class="macro" href="#244" title="" data-ref="_M/SWIG_NAME">SWIG_NAME</a>(rdmap_cap_s);</td></tr>
+<tr><th id="385">385</th><td>	} <a class="macro" href="#244" title="" data-ref="_M/SWIG_NAME">SWIG_NAME</a>(rdmap_cap_u);</td></tr>
+<tr><th id="386">386</th><td>	<a class="typedef" href="../bits/stdint-uintn.h.html#uint16_t" title='uint16_t' data-type='__uint16_t' data-ref="uint16_t" data-ref-filename="uint16_t">uint16_t</a>	<dfn class="decl field" id="perf_event_mmap_page::pmc_width" title='perf_event_mmap_page::pmc_width' data-ref="perf_event_mmap_page::pmc_width" data-ref-filename="perf_event_mmap_page..pmc_width">pmc_width</dfn>;</td></tr>
+<tr><th id="387">387</th><td>	<a class="typedef" href="../bits/stdint-uintn.h.html#uint16_t" title='uint16_t' data-type='__uint16_t' data-ref="uint16_t" data-ref-filename="uint16_t">uint16_t</a>	<dfn class="decl field" id="perf_event_mmap_page::time_shift" title='perf_event_mmap_page::time_shift' data-ref="perf_event_mmap_page::time_shift" data-ref-filename="perf_event_mmap_page..time_shift">time_shift</dfn>;</td></tr>
+<tr><th id="388">388</th><td>	<a class="typedef" href="../bits/stdint-uintn.h.html#uint32_t" title='uint32_t' data-type='__uint32_t' data-ref="uint32_t" data-ref-filename="uint32_t">uint32_t</a>	<dfn class="decl field" id="perf_event_mmap_page::time_mult" title='perf_event_mmap_page::time_mult' data-ref="perf_event_mmap_page::time_mult" data-ref-filename="perf_event_mmap_page..time_mult">time_mult</dfn>;</td></tr>
+<tr><th id="389">389</th><td>	<a class="typedef" href="../bits/stdint-uintn.h.html#uint64_t" title='uint64_t' data-type='__uint64_t' data-ref="uint64_t" data-ref-filename="uint64_t">uint64_t</a>	<dfn class="decl field" id="perf_event_mmap_page::time_offset" title='perf_event_mmap_page::time_offset' data-ref="perf_event_mmap_page::time_offset" data-ref-filename="perf_event_mmap_page..time_offset">time_offset</dfn>;</td></tr>
+<tr><th id="390">390</th><td></td></tr>
+<tr><th id="391">391</th><td>	<a class="typedef" href="../bits/stdint-uintn.h.html#uint64_t" title='uint64_t' data-type='__uint64_t' data-ref="uint64_t" data-ref-filename="uint64_t">uint64_t</a>	<dfn class="decl field" id="perf_event_mmap_page::time_zero" title='perf_event_mmap_page::time_zero' data-ref="perf_event_mmap_page::time_zero" data-ref-filename="perf_event_mmap_page..time_zero">time_zero</dfn>;</td></tr>
+<tr><th id="392">392</th><td>	<a class="typedef" href="../bits/stdint-uintn.h.html#uint32_t" title='uint32_t' data-type='__uint32_t' data-ref="uint32_t" data-ref-filename="uint32_t">uint32_t</a>	<dfn class="decl field" id="perf_event_mmap_page::size" title='perf_event_mmap_page::size' data-ref="perf_event_mmap_page::size" data-ref-filename="perf_event_mmap_page..size">size</dfn>;</td></tr>
+<tr><th id="393">393</th><td>	<a class="typedef" href="../bits/stdint-uintn.h.html#uint8_t" title='uint8_t' data-type='__uint8_t' data-ref="uint8_t" data-ref-filename="uint8_t">uint8_t</a>		<dfn class="decl field" id="perf_event_mmap_page::__reserved" title='perf_event_mmap_page::__reserved' data-ref="perf_event_mmap_page::__reserved" data-ref-filename="perf_event_mmap_page..__reserved">__reserved</dfn>[<var>118</var>*<var>8</var>+<var>4</var>];</td></tr>
+<tr><th id="394">394</th><td></td></tr>
+<tr><th id="395">395</th><td>	<a class="typedef" href="../bits/stdint-uintn.h.html#uint64_t" title='uint64_t' data-type='__uint64_t' data-ref="uint64_t" data-ref-filename="uint64_t">uint64_t</a>  	<dfn class="decl field" id="perf_event_mmap_page::data_head" title='perf_event_mmap_page::data_head' data-ref="perf_event_mmap_page::data_head" data-ref-filename="perf_event_mmap_page..data_head">data_head</dfn>;</td></tr>
+<tr><th id="396">396</th><td>	<a class="typedef" href="../bits/stdint-uintn.h.html#uint64_t" title='uint64_t' data-type='__uint64_t' data-ref="uint64_t" data-ref-filename="uint64_t">uint64_t</a>	<dfn class="decl field" id="perf_event_mmap_page::data_tail" title='perf_event_mmap_page::data_tail' data-ref="perf_event_mmap_page::data_tail" data-ref-filename="perf_event_mmap_page..data_tail">data_tail</dfn>;</td></tr>
+<tr><th id="397">397</th><td>	<a class="typedef" href="../bits/stdint-uintn.h.html#uint64_t" title='uint64_t' data-type='__uint64_t' data-ref="uint64_t" data-ref-filename="uint64_t">uint64_t</a>  	<dfn class="decl field" id="perf_event_mmap_page::data_offset" title='perf_event_mmap_page::data_offset' data-ref="perf_event_mmap_page::data_offset" data-ref-filename="perf_event_mmap_page..data_offset">data_offset</dfn>;</td></tr>
+<tr><th id="398">398</th><td>	<a class="typedef" href="../bits/stdint-uintn.h.html#uint64_t" title='uint64_t' data-type='__uint64_t' data-ref="uint64_t" data-ref-filename="uint64_t">uint64_t</a>  	<dfn class="decl field" id="perf_event_mmap_page::data_size" title='perf_event_mmap_page::data_size' data-ref="perf_event_mmap_page::data_size" data-ref-filename="perf_event_mmap_page..data_size">data_size</dfn>;</td></tr>
+<tr><th id="399">399</th><td>	<a class="typedef" href="../bits/stdint-uintn.h.html#uint64_t" title='uint64_t' data-type='__uint64_t' data-ref="uint64_t" data-ref-filename="uint64_t">uint64_t</a>	<dfn class="decl field" id="perf_event_mmap_page::aux_head" title='perf_event_mmap_page::aux_head' data-ref="perf_event_mmap_page::aux_head" data-ref-filename="perf_event_mmap_page..aux_head">aux_head</dfn>;</td></tr>
+<tr><th id="400">400</th><td>	<a class="typedef" href="../bits/stdint-uintn.h.html#uint64_t" title='uint64_t' data-type='__uint64_t' data-ref="uint64_t" data-ref-filename="uint64_t">uint64_t</a>	<dfn class="decl field" id="perf_event_mmap_page::aux_tail" title='perf_event_mmap_page::aux_tail' data-ref="perf_event_mmap_page::aux_tail" data-ref-filename="perf_event_mmap_page..aux_tail">aux_tail</dfn>;</td></tr>
+<tr><th id="401">401</th><td>	<a class="typedef" href="../bits/stdint-uintn.h.html#uint64_t" title='uint64_t' data-type='__uint64_t' data-ref="uint64_t" data-ref-filename="uint64_t">uint64_t</a>	<dfn class="decl field" id="perf_event_mmap_page::aux_offset" title='perf_event_mmap_page::aux_offset' data-ref="perf_event_mmap_page::aux_offset" data-ref-filename="perf_event_mmap_page..aux_offset">aux_offset</dfn>;</td></tr>
+<tr><th id="402">402</th><td>	<a class="typedef" href="../bits/stdint-uintn.h.html#uint64_t" title='uint64_t' data-type='__uint64_t' data-ref="uint64_t" data-ref-filename="uint64_t">uint64_t</a>	<dfn class="decl field" id="perf_event_mmap_page::aux_size" title='perf_event_mmap_page::aux_size' data-ref="perf_event_mmap_page::aux_size" data-ref-filename="perf_event_mmap_page..aux_size">aux_size</dfn>;</td></tr>
+<tr><th id="403">403</th><td>};</td></tr>
+<tr><th id="404">404</th><td></td></tr>
+<tr><th id="405">405</th><td><i>/*</i></td></tr>
+<tr><th id="406">406</th><td><i> * sampling buffer event header</i></td></tr>
+<tr><th id="407">407</th><td><i> */</i></td></tr>
+<tr><th id="408">408</th><td><b>struct</b> <dfn class="type def" id="perf_event_header" title='perf_event_header' data-ref="perf_event_header" data-ref-filename="perf_event_header">perf_event_header</dfn> {</td></tr>
+<tr><th id="409">409</th><td>	<a class="typedef" href="../bits/stdint-uintn.h.html#uint32_t" title='uint32_t' data-type='__uint32_t' data-ref="uint32_t" data-ref-filename="uint32_t">uint32_t</a>	<dfn class="decl field" id="perf_event_header::type" title='perf_event_header::type' data-ref="perf_event_header::type" data-ref-filename="perf_event_header..type">type</dfn>;</td></tr>
+<tr><th id="410">410</th><td>	<a class="typedef" href="../bits/stdint-uintn.h.html#uint16_t" title='uint16_t' data-type='__uint16_t' data-ref="uint16_t" data-ref-filename="uint16_t">uint16_t</a>	<dfn class="decl field" id="perf_event_header::misc" title='perf_event_header::misc' data-ref="perf_event_header::misc" data-ref-filename="perf_event_header..misc">misc</dfn>;</td></tr>
+<tr><th id="411">411</th><td>	<a class="typedef" href="../bits/stdint-uintn.h.html#uint16_t" title='uint16_t' data-type='__uint16_t' data-ref="uint16_t" data-ref-filename="uint16_t">uint16_t</a>	<dfn class="decl field" id="perf_event_header::size" title='perf_event_header::size' data-ref="perf_event_header::size" data-ref-filename="perf_event_header..size">size</dfn>;</td></tr>
+<tr><th id="412">412</th><td>};</td></tr>
+<tr><th id="413">413</th><td></td></tr>
+<tr><th id="414">414</th><td><i>/*</i></td></tr>
+<tr><th id="415">415</th><td><i> * event header misc field values</i></td></tr>
+<tr><th id="416">416</th><td><i> */</i></td></tr>
+<tr><th id="417">417</th><td><u>#define <dfn class="macro" id="_M/PERF_EVENT_MISC_CPUMODE_MASK" data-ref="_M/PERF_EVENT_MISC_CPUMODE_MASK">PERF_EVENT_MISC_CPUMODE_MASK</dfn>	(3 &lt;&lt; 0)</u></td></tr>
+<tr><th id="418">418</th><td><u>#define <dfn class="macro" id="_M/PERF_EVENT_MISC_CPUMODE_UNKNOWN" data-ref="_M/PERF_EVENT_MISC_CPUMODE_UNKNOWN">PERF_EVENT_MISC_CPUMODE_UNKNOWN</dfn>	(0 &lt;&lt; 0)</u></td></tr>
+<tr><th id="419">419</th><td><u>#define <dfn class="macro" id="_M/PERF_EVENT_MISC_KERNEL" data-ref="_M/PERF_EVENT_MISC_KERNEL">PERF_EVENT_MISC_KERNEL</dfn>		(1 &lt;&lt; 0)</u></td></tr>
+<tr><th id="420">420</th><td><u>#define <dfn class="macro" id="_M/PERF_EVENT_MISC_USER" data-ref="_M/PERF_EVENT_MISC_USER">PERF_EVENT_MISC_USER</dfn>		(2 &lt;&lt; 0)</u></td></tr>
+<tr><th id="421">421</th><td><u>#define <dfn class="macro" id="_M/PERF_EVENT_MISC_HYPERVISOR" data-ref="_M/PERF_EVENT_MISC_HYPERVISOR">PERF_EVENT_MISC_HYPERVISOR</dfn>	(3 &lt;&lt; 0)</u></td></tr>
+<tr><th id="422">422</th><td><u>#define <dfn class="macro" id="_M/PERF_RECORD_MISC_GUEST_KERNEL" data-ref="_M/PERF_RECORD_MISC_GUEST_KERNEL">PERF_RECORD_MISC_GUEST_KERNEL</dfn>	(4 &lt;&lt; 0)</u></td></tr>
+<tr><th id="423">423</th><td><u>#define <dfn class="macro" id="_M/PERF_RECORD_MISC_GUEST_USER" data-ref="_M/PERF_RECORD_MISC_GUEST_USER">PERF_RECORD_MISC_GUEST_USER</dfn>	(5 &lt;&lt; 0)</u></td></tr>
+<tr><th id="424">424</th><td></td></tr>
+<tr><th id="425">425</th><td><u>#define <dfn class="macro" id="_M/PERF_RECORD_MISC_PROC_MAP_PARSE_TIMEOUT" data-ref="_M/PERF_RECORD_MISC_PROC_MAP_PARSE_TIMEOUT">PERF_RECORD_MISC_PROC_MAP_PARSE_TIMEOUT</dfn>	(1 &lt;&lt; 12)</u></td></tr>
+<tr><th id="426">426</th><td><u>#define <dfn class="macro" id="_M/PERF_RECORD_MISC_MMAP_DATA" data-ref="_M/PERF_RECORD_MISC_MMAP_DATA">PERF_RECORD_MISC_MMAP_DATA</dfn>		(1 &lt;&lt; 13)</u></td></tr>
+<tr><th id="427">427</th><td><u>#define <dfn class="macro" id="_M/PERF_RECORD_MISC_COMM_EXEC" data-ref="_M/PERF_RECORD_MISC_COMM_EXEC">PERF_RECORD_MISC_COMM_EXEC</dfn>		(1 &lt;&lt; 13)</u></td></tr>
+<tr><th id="428">428</th><td><u>#define <dfn class="macro" id="_M/PERF_RECORD_MISC_EXACT" data-ref="_M/PERF_RECORD_MISC_EXACT">PERF_RECORD_MISC_EXACT</dfn>			(1 &lt;&lt; 14)</u></td></tr>
+<tr><th id="429">429</th><td><u>#define <dfn class="macro" id="_M/PERF_RECORD_MISC_EXACT_IP" data-ref="_M/PERF_RECORD_MISC_EXACT_IP">PERF_RECORD_MISC_EXACT_IP</dfn>               (1 &lt;&lt; 14)</u></td></tr>
+<tr><th id="430">430</th><td><u>#define <dfn class="macro" id="_M/PERF_RECORD_MISC_EXT_RESERVED" data-ref="_M/PERF_RECORD_MISC_EXT_RESERVED">PERF_RECORD_MISC_EXT_RESERVED</dfn>		(1 &lt;&lt; 15)</u></td></tr>
+<tr><th id="431">431</th><td></td></tr>
+<tr><th id="432">432</th><td><i>/*</i></td></tr>
+<tr><th id="433">433</th><td><i> * header-&gt;type values</i></td></tr>
+<tr><th id="434">434</th><td><i> */</i></td></tr>
+<tr><th id="435">435</th><td><b>enum</b> <dfn class="type def" id="perf_event_type" title='perf_event_type' data-ref="perf_event_type" data-ref-filename="perf_event_type">perf_event_type</dfn> {</td></tr>
+<tr><th id="436">436</th><td>	<dfn class="enum" id="PERF_RECORD_MMAP" title='PERF_RECORD_MMAP' data-ref="PERF_RECORD_MMAP" data-ref-filename="PERF_RECORD_MMAP">PERF_RECORD_MMAP</dfn>		= <var>1</var>,</td></tr>
+<tr><th id="437">437</th><td>	<dfn class="enum" id="PERF_RECORD_LOST" title='PERF_RECORD_LOST' data-ref="PERF_RECORD_LOST" data-ref-filename="PERF_RECORD_LOST">PERF_RECORD_LOST</dfn>		= <var>2</var>,</td></tr>
+<tr><th id="438">438</th><td>	<dfn class="enum" id="PERF_RECORD_COMM" title='PERF_RECORD_COMM' data-ref="PERF_RECORD_COMM" data-ref-filename="PERF_RECORD_COMM">PERF_RECORD_COMM</dfn>		= <var>3</var>,</td></tr>
+<tr><th id="439">439</th><td>	<dfn class="enum" id="PERF_RECORD_EXIT" title='PERF_RECORD_EXIT' data-ref="PERF_RECORD_EXIT" data-ref-filename="PERF_RECORD_EXIT">PERF_RECORD_EXIT</dfn>		= <var>4</var>,</td></tr>
+<tr><th id="440">440</th><td>	<dfn class="enum" id="PERF_RECORD_THROTTLE" title='PERF_RECORD_THROTTLE' data-ref="PERF_RECORD_THROTTLE" data-ref-filename="PERF_RECORD_THROTTLE">PERF_RECORD_THROTTLE</dfn>		= <var>5</var>,</td></tr>
+<tr><th id="441">441</th><td>	<dfn class="enum" id="PERF_RECORD_UNTHROTTLE" title='PERF_RECORD_UNTHROTTLE' data-ref="PERF_RECORD_UNTHROTTLE" data-ref-filename="PERF_RECORD_UNTHROTTLE">PERF_RECORD_UNTHROTTLE</dfn>		= <var>6</var>,</td></tr>
+<tr><th id="442">442</th><td>	<dfn class="enum" id="PERF_RECORD_FORK" title='PERF_RECORD_FORK' data-ref="PERF_RECORD_FORK" data-ref-filename="PERF_RECORD_FORK">PERF_RECORD_FORK</dfn>		= <var>7</var>,</td></tr>
+<tr><th id="443">443</th><td>	<dfn class="enum" id="PERF_RECORD_READ" title='PERF_RECORD_READ' data-ref="PERF_RECORD_READ" data-ref-filename="PERF_RECORD_READ">PERF_RECORD_READ</dfn>		= <var>8</var>,</td></tr>
+<tr><th id="444">444</th><td>	<dfn class="enum" id="PERF_RECORD_SAMPLE" title='PERF_RECORD_SAMPLE' data-ref="PERF_RECORD_SAMPLE" data-ref-filename="PERF_RECORD_SAMPLE">PERF_RECORD_SAMPLE</dfn>		= <var>9</var>,</td></tr>
+<tr><th id="445">445</th><td>	<dfn class="enum" id="PERF_RECORD_MMAP2" title='PERF_RECORD_MMAP2' data-ref="PERF_RECORD_MMAP2" data-ref-filename="PERF_RECORD_MMAP2">PERF_RECORD_MMAP2</dfn>		= <var>10</var>,</td></tr>
+<tr><th id="446">446</th><td>	<dfn class="enum" id="PERF_RECORD_AUX" title='PERF_RECORD_AUX' data-ref="PERF_RECORD_AUX" data-ref-filename="PERF_RECORD_AUX">PERF_RECORD_AUX</dfn>			= <var>11</var>,</td></tr>
+<tr><th id="447">447</th><td>	<dfn class="enum" id="PERF_RECORD_ITRACE_START" title='PERF_RECORD_ITRACE_START' data-ref="PERF_RECORD_ITRACE_START" data-ref-filename="PERF_RECORD_ITRACE_START">PERF_RECORD_ITRACE_START</dfn>	= <var>12</var>,</td></tr>
+<tr><th id="448">448</th><td>	<dfn class="enum" id="PERF_RECORD_LOST_SAMPLES" title='PERF_RECORD_LOST_SAMPLES' data-ref="PERF_RECORD_LOST_SAMPLES" data-ref-filename="PERF_RECORD_LOST_SAMPLES">PERF_RECORD_LOST_SAMPLES</dfn>	= <var>13</var>,</td></tr>
+<tr><th id="449">449</th><td>	<dfn class="enum" id="PERF_RECORD_SWITCH" title='PERF_RECORD_SWITCH' data-ref="PERF_RECORD_SWITCH" data-ref-filename="PERF_RECORD_SWITCH">PERF_RECORD_SWITCH</dfn>		= <var>14</var>,</td></tr>
+<tr><th id="450">450</th><td>	<dfn class="enum" id="PERF_RECORD_SWITCH_CPU_WIDE" title='PERF_RECORD_SWITCH_CPU_WIDE' data-ref="PERF_RECORD_SWITCH_CPU_WIDE" data-ref-filename="PERF_RECORD_SWITCH_CPU_WIDE">PERF_RECORD_SWITCH_CPU_WIDE</dfn>	= <var>15</var>,</td></tr>
+<tr><th id="451">451</th><td>	<dfn class="enum" id="PERF_RECORD_NAMESPACES" title='PERF_RECORD_NAMESPACES' data-ref="PERF_RECORD_NAMESPACES" data-ref-filename="PERF_RECORD_NAMESPACES">PERF_RECORD_NAMESPACES</dfn>		= <var>16</var>,</td></tr>
+<tr><th id="452">452</th><td>	<dfn class="enum" id="PERF_RECORD_MAX" title='PERF_RECORD_MAX' data-ref="PERF_RECORD_MAX" data-ref-filename="PERF_RECORD_MAX">PERF_RECORD_MAX</dfn></td></tr>
+<tr><th id="453">453</th><td>};</td></tr>
+<tr><th id="454">454</th><td></td></tr>
+<tr><th id="455">455</th><td><b>enum</b> <dfn class="type def" id="perf_callchain_context" title='perf_callchain_context' data-ref="perf_callchain_context" data-ref-filename="perf_callchain_context">perf_callchain_context</dfn> {</td></tr>
+<tr><th id="456">456</th><td>	<dfn class="enum" id="PERF_CONTEXT_HV" title='PERF_CONTEXT_HV' data-ref="PERF_CONTEXT_HV" data-ref-filename="PERF_CONTEXT_HV">PERF_CONTEXT_HV</dfn>			= (<a class="typedef" href="../bits/stdint-uintn.h.html#uint64_t" title='uint64_t' data-type='__uint64_t' data-ref="uint64_t" data-ref-filename="uint64_t">uint64_t</a>)-<var>32</var>,</td></tr>
+<tr><th id="457">457</th><td>	<dfn class="enum" id="PERF_CONTEXT_KERNEL" title='PERF_CONTEXT_KERNEL' data-ref="PERF_CONTEXT_KERNEL" data-ref-filename="PERF_CONTEXT_KERNEL">PERF_CONTEXT_KERNEL</dfn>		= (<a class="typedef" href="../bits/stdint-uintn.h.html#uint64_t" title='uint64_t' data-type='__uint64_t' data-ref="uint64_t" data-ref-filename="uint64_t">uint64_t</a>)-<var>128</var>,</td></tr>
+<tr><th id="458">458</th><td>	<dfn class="enum" id="PERF_CONTEXT_USER" title='PERF_CONTEXT_USER' data-ref="PERF_CONTEXT_USER" data-ref-filename="PERF_CONTEXT_USER">PERF_CONTEXT_USER</dfn>		= (<a class="typedef" href="../bits/stdint-uintn.h.html#uint64_t" title='uint64_t' data-type='__uint64_t' data-ref="uint64_t" data-ref-filename="uint64_t">uint64_t</a>)-<var>512</var>,</td></tr>
+<tr><th id="459">459</th><td></td></tr>
+<tr><th id="460">460</th><td>	<dfn class="enum" id="PERF_CONTEXT_GUEST" title='PERF_CONTEXT_GUEST' data-ref="PERF_CONTEXT_GUEST" data-ref-filename="PERF_CONTEXT_GUEST">PERF_CONTEXT_GUEST</dfn>		= (<a class="typedef" href="../bits/stdint-uintn.h.html#uint64_t" title='uint64_t' data-type='__uint64_t' data-ref="uint64_t" data-ref-filename="uint64_t">uint64_t</a>)-<var>2048</var>,</td></tr>
+<tr><th id="461">461</th><td>	<dfn class="enum" id="PERF_CONTEXT_GUEST_KERNEL" title='PERF_CONTEXT_GUEST_KERNEL' data-ref="PERF_CONTEXT_GUEST_KERNEL" data-ref-filename="PERF_CONTEXT_GUEST_KERNEL">PERF_CONTEXT_GUEST_KERNEL</dfn>	= (<a class="typedef" href="../bits/stdint-uintn.h.html#uint64_t" title='uint64_t' data-type='__uint64_t' data-ref="uint64_t" data-ref-filename="uint64_t">uint64_t</a>)-<var>2176</var>,</td></tr>
+<tr><th id="462">462</th><td>	<dfn class="enum" id="PERF_CONTEXT_GUEST_USER" title='PERF_CONTEXT_GUEST_USER' data-ref="PERF_CONTEXT_GUEST_USER" data-ref-filename="PERF_CONTEXT_GUEST_USER">PERF_CONTEXT_GUEST_USER</dfn>		= (<a class="typedef" href="../bits/stdint-uintn.h.html#uint64_t" title='uint64_t' data-type='__uint64_t' data-ref="uint64_t" data-ref-filename="uint64_t">uint64_t</a>)-<var>2560</var>,</td></tr>
+<tr><th id="463">463</th><td></td></tr>
+<tr><th id="464">464</th><td>	<dfn class="enum" id="PERF_CONTEXT_MAX" title='PERF_CONTEXT_MAX' data-ref="PERF_CONTEXT_MAX" data-ref-filename="PERF_CONTEXT_MAX">PERF_CONTEXT_MAX</dfn>		= (<a class="typedef" href="../bits/stdint-uintn.h.html#uint64_t" title='uint64_t' data-type='__uint64_t' data-ref="uint64_t" data-ref-filename="uint64_t">uint64_t</a>)-<var>4095</var>,</td></tr>
+<tr><th id="465">465</th><td>};</td></tr>
+<tr><th id="466">466</th><td></td></tr>
+<tr><th id="467">467</th><td><u>#define <dfn class="macro" id="_M/PERF_AUX_FLAG_TRUNCATED" data-ref="_M/PERF_AUX_FLAG_TRUNCATED">PERF_AUX_FLAG_TRUNCATED</dfn>		0x01</u></td></tr>
+<tr><th id="468">468</th><td><u>#define <dfn class="macro" id="_M/PERF_AUX_FLAG_OVERWRITE" data-ref="_M/PERF_AUX_FLAG_OVERWRITE">PERF_AUX_FLAG_OVERWRITE</dfn>		0x02</u></td></tr>
+<tr><th id="469">469</th><td></td></tr>
+<tr><th id="470">470</th><td><i>/*</i></td></tr>
+<tr><th id="471">471</th><td><i> * flags for perf_event_open()</i></td></tr>
+<tr><th id="472">472</th><td><i> */</i></td></tr>
+<tr><th id="473">473</th><td><u>#define <dfn class="macro" id="_M/PERF_FLAG_FD_NO_GROUP" data-ref="_M/PERF_FLAG_FD_NO_GROUP">PERF_FLAG_FD_NO_GROUP</dfn>	(1U &lt;&lt; 0)</u></td></tr>
+<tr><th id="474">474</th><td><u>#define <dfn class="macro" id="_M/PERF_FLAG_FD_OUTPUT" data-ref="_M/PERF_FLAG_FD_OUTPUT">PERF_FLAG_FD_OUTPUT</dfn>	(1U &lt;&lt; 1)</u></td></tr>
+<tr><th id="475">475</th><td><u>#define <dfn class="macro" id="_M/PERF_FLAG_PID_CGROUP" data-ref="_M/PERF_FLAG_PID_CGROUP">PERF_FLAG_PID_CGROUP</dfn>	(1U &lt;&lt; 2)</u></td></tr>
+<tr><th id="476">476</th><td><u>#define <dfn class="macro" id="_M/PERF_FLAG_FD_CLOEXEC" data-ref="_M/PERF_FLAG_FD_CLOEXEC">PERF_FLAG_FD_CLOEXEC</dfn>		(1UL &lt;&lt; 3)</u></td></tr>
+<tr><th id="477">477</th><td></td></tr>
+<tr><th id="478">478</th><td><u>#<span data-ppcond="40">endif</span> /* _LINUX_PERF_EVENT_H */</u></td></tr>
+<tr><th id="479">479</th><td></td></tr>
+<tr><th id="480">480</th><td><u>#<span data-ppcond="480">ifndef</span> <a class="macro" href="../asm/unistd_64.h.html#302" data-ref="_M/__NR_perf_event_open">__NR_perf_event_open</a></u></td></tr>
+<tr><th id="481">481</th><td><u>#ifdef __x86_64__</u></td></tr>
+<tr><th id="482">482</th><td><u># define __NR_perf_event_open	298</u></td></tr>
+<tr><th id="483">483</th><td><u>#endif</u></td></tr>
+<tr><th id="484">484</th><td></td></tr>
+<tr><th id="485">485</th><td><u>#ifdef __i386__</u></td></tr>
+<tr><th id="486">486</th><td><u># define __NR_perf_event_open 336</u></td></tr>
+<tr><th id="487">487</th><td><u>#endif</u></td></tr>
+<tr><th id="488">488</th><td></td></tr>
+<tr><th id="489">489</th><td><u>#ifdef __powerpc__</u></td></tr>
+<tr><th id="490">490</th><td><u># define __NR_perf_event_open 319</u></td></tr>
+<tr><th id="491">491</th><td><u>#endif</u></td></tr>
+<tr><th id="492">492</th><td></td></tr>
+<tr><th id="493">493</th><td><u>#ifdef __s390__</u></td></tr>
+<tr><th id="494">494</th><td><u># define __NR_perf_event_open 331</u></td></tr>
+<tr><th id="495">495</th><td><u>#endif</u></td></tr>
+<tr><th id="496">496</th><td></td></tr>
+<tr><th id="497">497</th><td><u>#ifdef __arm__</u></td></tr>
+<tr><th id="498">498</th><td><u>#if defined(__ARM_EABI__) || defined(__thumb__)</u></td></tr>
+<tr><th id="499">499</th><td><u># define __NR_perf_event_open 364</u></td></tr>
+<tr><th id="500">500</th><td><u>#else</u></td></tr>
+<tr><th id="501">501</th><td><u># define __NR_perf_event_open (0x900000+364)</u></td></tr>
+<tr><th id="502">502</th><td><u>#endif</u></td></tr>
+<tr><th id="503">503</th><td><u>#endif</u></td></tr>
+<tr><th id="504">504</th><td></td></tr>
+<tr><th id="505">505</th><td><u>#ifdef __mips__</u></td></tr>
+<tr><th id="506">506</th><td><u>#if _MIPS_SIM == _MIPS_SIM_ABI32</u></td></tr>
+<tr><th id="507">507</th><td><u># define __NR_perf_event_open __NR_Linux + 333</u></td></tr>
+<tr><th id="508">508</th><td><u>#elif _MIPS_SIM == _MIPS_SIM_ABI64</u></td></tr>
+<tr><th id="509">509</th><td><u># define __NR_perf_event_open __NR_Linux + 292</u></td></tr>
+<tr><th id="510">510</th><td><u>#else /* if _MIPS_SIM == MIPS_SIM_NABI32 */</u></td></tr>
+<tr><th id="511">511</th><td><u># define __NR_perf_event_open __NR_Linux + 296</u></td></tr>
+<tr><th id="512">512</th><td><u>#endif</u></td></tr>
+<tr><th id="513">513</th><td><u>#endif</u></td></tr>
+<tr><th id="514">514</th><td><u>#<span data-ppcond="480">endif</span> /* __NR_perf_event_open */</u></td></tr>
+<tr><th id="515">515</th><td></td></tr>
+<tr><th id="516">516</th><td><i>/*</i></td></tr>
+<tr><th id="517">517</th><td><i> * perf_event_open() syscall stub</i></td></tr>
+<tr><th id="518">518</th><td><i> */</i></td></tr>
+<tr><th id="519">519</th><td><em>static</em> <b>inline</b> <em>int</em></td></tr>
+<tr><th id="520">520</th><td><dfn class="decl def fn" id="_ZL15perf_event_openP15perf_event_attriiim" title='perf_event_open' data-ref="_ZL15perf_event_openP15perf_event_attriiim" data-ref-filename="_ZL15perf_event_openP15perf_event_attriiim">perf_event_open</dfn>(</td></tr>
+<tr><th id="521">521</th><td>	<b>struct</b> <a class="type" href="#perf_event_attr" title='perf_event_attr' data-ref="perf_event_attr" data-ref-filename="perf_event_attr">perf_event_attr</a>		*<dfn class="local col1 decl" id="1hw_event_uptr" title='hw_event_uptr' data-type='struct perf_event_attr *' data-ref="1hw_event_uptr" data-ref-filename="1hw_event_uptr">hw_event_uptr</dfn>,</td></tr>
+<tr><th id="522">522</th><td>	<a class="typedef" href="../sys/types.h.html#pid_t" title='pid_t' data-type='__pid_t' data-ref="pid_t" data-ref-filename="pid_t">pid_t</a>				<dfn class="local col2 decl" id="2pid" title='pid' data-type='pid_t' data-ref="2pid" data-ref-filename="2pid">pid</dfn>,</td></tr>
+<tr><th id="523">523</th><td>	<em>int</em>				<dfn class="local col3 decl" id="3cpu" title='cpu' data-type='int' data-ref="3cpu" data-ref-filename="3cpu">cpu</dfn>,</td></tr>
+<tr><th id="524">524</th><td>	<em>int</em>				<dfn class="local col4 decl" id="4group_fd" title='group_fd' data-type='int' data-ref="4group_fd" data-ref-filename="4group_fd">group_fd</dfn>,</td></tr>
+<tr><th id="525">525</th><td>	<em>unsigned</em> <em>long</em>			<dfn class="local col5 decl" id="5flags" title='flags' data-type='unsigned long' data-ref="5flags" data-ref-filename="5flags">flags</dfn>)</td></tr>
+<tr><th id="526">526</th><td>{</td></tr>
+<tr><th id="527">527</th><td>	<b>return</b> <a class="ref fn" href="../unistd.h.html#syscall" title='syscall' data-ref="syscall" data-ref-filename="syscall">syscall</a>(</td></tr>
+<tr><th id="528">528</th><td>		<a class="macro" href="../asm/unistd_64.h.html#302" title="298" data-ref="_M/__NR_perf_event_open">__NR_perf_event_open</a>, <a class="local col1 ref" href="#1hw_event_uptr" title='hw_event_uptr' data-ref="1hw_event_uptr" data-ref-filename="1hw_event_uptr">hw_event_uptr</a>, <a class="local col2 ref" href="#2pid" title='pid' data-ref="2pid" data-ref-filename="2pid">pid</a>, <a class="local col3 ref" href="#3cpu" title='cpu' data-ref="3cpu" data-ref-filename="3cpu">cpu</a>, <a class="local col4 ref" href="#4group_fd" title='group_fd' data-ref="4group_fd" data-ref-filename="4group_fd">group_fd</a>, <a class="local col5 ref" href="#5flags" title='flags' data-ref="5flags" data-ref-filename="5flags">flags</a>);</td></tr>
+<tr><th id="529">529</th><td>}</td></tr>
+<tr><th id="530">530</th><td></td></tr>
+<tr><th id="531">531</th><td><i>/*</i></td></tr>
+<tr><th id="532">532</th><td><i> * compensate for some distros which do not</i></td></tr>
+<tr><th id="533">533</th><td><i> * have recent enough linux/prctl.h</i></td></tr>
+<tr><th id="534">534</th><td><i> */</i></td></tr>
+<tr><th id="535">535</th><td><u>#<span data-ppcond="535">ifndef</span> <a class="macro" href="../linux/prctl.h.html#91" data-ref="_M/PR_TASK_PERF_EVENTS_DISABLE">PR_TASK_PERF_EVENTS_DISABLE</a></u></td></tr>
+<tr><th id="536">536</th><td><u>#define PR_TASK_PERF_EVENTS_ENABLE	32</u></td></tr>
+<tr><th id="537">537</th><td><u>#define PR_TASK_PERF_EVENTS_DISABLE	31</u></td></tr>
+<tr><th id="538">538</th><td><u>#<span data-ppcond="535">endif</span></u></td></tr>
+<tr><th id="539">539</th><td></td></tr>
+<tr><th id="540">540</th><td><i>/* handle case of older system perf_event.h included before this file */</i></td></tr>
+<tr><th id="541">541</th><td><u>#<span data-ppcond="541">ifndef</span> <span class="macro" data-ref="_M/PERF_MEM_OP_NA">PERF_MEM_OP_NA</span></u></td></tr>
+<tr><th id="542">542</th><td></td></tr>
+<tr><th id="543">543</th><td><b>union</b> <dfn class="type def" id="perf_mem_data_src" title='perf_mem_data_src' data-ref="perf_mem_data_src" data-ref-filename="perf_mem_data_src">perf_mem_data_src</dfn> {</td></tr>
+<tr><th id="544">544</th><td>	<a class="typedef" href="../bits/stdint-uintn.h.html#uint64_t" title='uint64_t' data-type='__uint64_t' data-ref="uint64_t" data-ref-filename="uint64_t">uint64_t</a> <dfn class="decl field" id="perf_mem_data_src::val" title='perf_mem_data_src::val' data-ref="perf_mem_data_src::val" data-ref-filename="perf_mem_data_src..val">val</dfn>;</td></tr>
+<tr><th id="545">545</th><td>	<b>struct</b> {</td></tr>
+<tr><th id="546">546</th><td>		<a class="typedef" href="../bits/stdint-uintn.h.html#uint64_t" title='uint64_t' data-type='__uint64_t' data-ref="uint64_t" data-ref-filename="uint64_t">uint64_t</a>   <dfn class="decl field" id="perf_mem_data_src::(anonymous)::mem_op" title='perf_mem_data_src::(anonymous struct)::mem_op' data-ref="perf_mem_data_src::(anonymous)::mem_op" data-ref-filename="perf_mem_data_src..(anonymous)..mem_op">mem_op</dfn>:<var>5</var>,	<i>/* type of opcode */</i></td></tr>
+<tr><th id="547">547</th><td>			   <dfn class="decl field" id="perf_mem_data_src::(anonymous)::mem_lvl" title='perf_mem_data_src::(anonymous struct)::mem_lvl' data-ref="perf_mem_data_src::(anonymous)::mem_lvl" data-ref-filename="perf_mem_data_src..(anonymous)..mem_lvl">mem_lvl</dfn>:<var>14</var>,	<i>/* memory hierarchy level */</i></td></tr>
+<tr><th id="548">548</th><td>			   <dfn class="decl field" id="perf_mem_data_src::(anonymous)::mem_snoop" title='perf_mem_data_src::(anonymous struct)::mem_snoop' data-ref="perf_mem_data_src::(anonymous)::mem_snoop" data-ref-filename="perf_mem_data_src..(anonymous)..mem_snoop">mem_snoop</dfn>:<var>5</var>,	<i>/* snoop mode */</i></td></tr>
+<tr><th id="549">549</th><td>			   <dfn class="decl field" id="perf_mem_data_src::(anonymous)::mem_lock" title='perf_mem_data_src::(anonymous struct)::mem_lock' data-ref="perf_mem_data_src::(anonymous)::mem_lock" data-ref-filename="perf_mem_data_src..(anonymous)..mem_lock">mem_lock</dfn>:<var>2</var>,	<i>/* lock instr */</i></td></tr>
+<tr><th id="550">550</th><td>			   <dfn class="decl field" id="perf_mem_data_src::(anonymous)::mem_dtlb" title='perf_mem_data_src::(anonymous struct)::mem_dtlb' data-ref="perf_mem_data_src::(anonymous)::mem_dtlb" data-ref-filename="perf_mem_data_src..(anonymous)..mem_dtlb">mem_dtlb</dfn>:<var>7</var>,	<i>/* tlb access */</i></td></tr>
+<tr><th id="551">551</th><td>			   <dfn class="decl field" id="perf_mem_data_src::(anonymous)::mem_rsvd" title='perf_mem_data_src::(anonymous struct)::mem_rsvd' data-ref="perf_mem_data_src::(anonymous)::mem_rsvd" data-ref-filename="perf_mem_data_src..(anonymous)..mem_rsvd">mem_rsvd</dfn>:<var>31</var>;</td></tr>
+<tr><th id="552">552</th><td>	};</td></tr>
+<tr><th id="553">553</th><td>};</td></tr>
+<tr><th id="554">554</th><td></td></tr>
+<tr><th id="555">555</th><td><i>/* type of opcode (load/store/prefetch,code) */</i></td></tr>
+<tr><th id="556">556</th><td><u>#define <dfn class="macro" id="_M/PERF_MEM_OP_NA" data-ref="_M/PERF_MEM_OP_NA">PERF_MEM_OP_NA</dfn>		0x01 /* not available */</u></td></tr>
+<tr><th id="557">557</th><td><u>#define <dfn class="macro" id="_M/PERF_MEM_OP_LOAD" data-ref="_M/PERF_MEM_OP_LOAD">PERF_MEM_OP_LOAD</dfn>	0x02 /* load instruction */</u></td></tr>
+<tr><th id="558">558</th><td><u>#define <dfn class="macro" id="_M/PERF_MEM_OP_STORE" data-ref="_M/PERF_MEM_OP_STORE">PERF_MEM_OP_STORE</dfn>	0x04 /* store instruction */</u></td></tr>
+<tr><th id="559">559</th><td><u>#define <dfn class="macro" id="_M/PERF_MEM_OP_PFETCH" data-ref="_M/PERF_MEM_OP_PFETCH">PERF_MEM_OP_PFETCH</dfn>	0x08 /* prefetch */</u></td></tr>
+<tr><th id="560">560</th><td><u>#define <dfn class="macro" id="_M/PERF_MEM_OP_EXEC" data-ref="_M/PERF_MEM_OP_EXEC">PERF_MEM_OP_EXEC</dfn>	0x10 /* code (execution) */</u></td></tr>
+<tr><th id="561">561</th><td><u>#define <dfn class="macro" id="_M/PERF_MEM_OP_SHIFT" data-ref="_M/PERF_MEM_OP_SHIFT">PERF_MEM_OP_SHIFT</dfn>	0</u></td></tr>
+<tr><th id="562">562</th><td></td></tr>
+<tr><th id="563">563</th><td><i>/* memory hierarchy (memory level, hit or miss) */</i></td></tr>
+<tr><th id="564">564</th><td><u>#define <dfn class="macro" id="_M/PERF_MEM_LVL_NA" data-ref="_M/PERF_MEM_LVL_NA">PERF_MEM_LVL_NA</dfn>		0x01  /* not available */</u></td></tr>
+<tr><th id="565">565</th><td><u>#define <dfn class="macro" id="_M/PERF_MEM_LVL_HIT" data-ref="_M/PERF_MEM_LVL_HIT">PERF_MEM_LVL_HIT</dfn>	0x02  /* hit level */</u></td></tr>
+<tr><th id="566">566</th><td><u>#define <dfn class="macro" id="_M/PERF_MEM_LVL_MISS" data-ref="_M/PERF_MEM_LVL_MISS">PERF_MEM_LVL_MISS</dfn>	0x04  /* miss level  */</u></td></tr>
+<tr><th id="567">567</th><td><u>#define <dfn class="macro" id="_M/PERF_MEM_LVL_L1" data-ref="_M/PERF_MEM_LVL_L1">PERF_MEM_LVL_L1</dfn>		0x08  /* L1 */</u></td></tr>
+<tr><th id="568">568</th><td><u>#define <dfn class="macro" id="_M/PERF_MEM_LVL_LFB" data-ref="_M/PERF_MEM_LVL_LFB">PERF_MEM_LVL_LFB</dfn>	0x10  /* Line Fill Buffer */</u></td></tr>
+<tr><th id="569">569</th><td><u>#define <dfn class="macro" id="_M/PERF_MEM_LVL_L2" data-ref="_M/PERF_MEM_LVL_L2">PERF_MEM_LVL_L2</dfn>		0x20  /* L2 */</u></td></tr>
+<tr><th id="570">570</th><td><u>#define <dfn class="macro" id="_M/PERF_MEM_LVL_L3" data-ref="_M/PERF_MEM_LVL_L3">PERF_MEM_LVL_L3</dfn>		0x40  /* L3 */</u></td></tr>
+<tr><th id="571">571</th><td><u>#define <dfn class="macro" id="_M/PERF_MEM_LVL_LOC_RAM" data-ref="_M/PERF_MEM_LVL_LOC_RAM">PERF_MEM_LVL_LOC_RAM</dfn>	0x80  /* Local DRAM */</u></td></tr>
+<tr><th id="572">572</th><td><u>#define <dfn class="macro" id="_M/PERF_MEM_LVL_REM_RAM1" data-ref="_M/PERF_MEM_LVL_REM_RAM1">PERF_MEM_LVL_REM_RAM1</dfn>	0x100 /* Remote DRAM (1 hop) */</u></td></tr>
+<tr><th id="573">573</th><td><u>#define <dfn class="macro" id="_M/PERF_MEM_LVL_REM_RAM2" data-ref="_M/PERF_MEM_LVL_REM_RAM2">PERF_MEM_LVL_REM_RAM2</dfn>	0x200 /* Remote DRAM (2 hops) */</u></td></tr>
+<tr><th id="574">574</th><td><u>#define <dfn class="macro" id="_M/PERF_MEM_LVL_REM_CCE1" data-ref="_M/PERF_MEM_LVL_REM_CCE1">PERF_MEM_LVL_REM_CCE1</dfn>	0x400 /* Remote Cache (1 hop) */</u></td></tr>
+<tr><th id="575">575</th><td><u>#define <dfn class="macro" id="_M/PERF_MEM_LVL_REM_CCE2" data-ref="_M/PERF_MEM_LVL_REM_CCE2">PERF_MEM_LVL_REM_CCE2</dfn>	0x800 /* Remote Cache (2 hops) */</u></td></tr>
+<tr><th id="576">576</th><td><u>#define <dfn class="macro" id="_M/PERF_MEM_LVL_IO" data-ref="_M/PERF_MEM_LVL_IO">PERF_MEM_LVL_IO</dfn>		0x1000 /* I/O memory */</u></td></tr>
+<tr><th id="577">577</th><td><u>#define <dfn class="macro" id="_M/PERF_MEM_LVL_UNC" data-ref="_M/PERF_MEM_LVL_UNC">PERF_MEM_LVL_UNC</dfn>	0x2000 /* Uncached memory */</u></td></tr>
+<tr><th id="578">578</th><td><u>#define <dfn class="macro" id="_M/PERF_MEM_LVL_SHIFT" data-ref="_M/PERF_MEM_LVL_SHIFT">PERF_MEM_LVL_SHIFT</dfn>	5</u></td></tr>
+<tr><th id="579">579</th><td></td></tr>
+<tr><th id="580">580</th><td><u>#define <dfn class="macro" id="_M/PERF_MEM_REMOTE_REMOTE" data-ref="_M/PERF_MEM_REMOTE_REMOTE">PERF_MEM_REMOTE_REMOTE</dfn>	0x01  /* Remote */</u></td></tr>
+<tr><th id="581">581</th><td><u>#define <dfn class="macro" id="_M/PERF_MEM_REMOTE_SHIFT" data-ref="_M/PERF_MEM_REMOTE_SHIFT">PERF_MEM_REMOTE_SHIFT</dfn>	37</u></td></tr>
+<tr><th id="582">582</th><td></td></tr>
+<tr><th id="583">583</th><td><i>/* snoop mode */</i></td></tr>
+<tr><th id="584">584</th><td><u>#define <dfn class="macro" id="_M/PERF_MEM_SNOOP_NA" data-ref="_M/PERF_MEM_SNOOP_NA">PERF_MEM_SNOOP_NA</dfn>	0x01 /* not available */</u></td></tr>
+<tr><th id="585">585</th><td><u>#define <dfn class="macro" id="_M/PERF_MEM_SNOOP_NONE" data-ref="_M/PERF_MEM_SNOOP_NONE">PERF_MEM_SNOOP_NONE</dfn>	0x02 /* no snoop */</u></td></tr>
+<tr><th id="586">586</th><td><u>#define <dfn class="macro" id="_M/PERF_MEM_SNOOP_HIT" data-ref="_M/PERF_MEM_SNOOP_HIT">PERF_MEM_SNOOP_HIT</dfn>	0x04 /* snoop hit */</u></td></tr>
+<tr><th id="587">587</th><td><u>#define <dfn class="macro" id="_M/PERF_MEM_SNOOP_MISS" data-ref="_M/PERF_MEM_SNOOP_MISS">PERF_MEM_SNOOP_MISS</dfn>	0x08 /* snoop miss */</u></td></tr>
+<tr><th id="588">588</th><td><u>#define <dfn class="macro" id="_M/PERF_MEM_SNOOP_HITM" data-ref="_M/PERF_MEM_SNOOP_HITM">PERF_MEM_SNOOP_HITM</dfn>	0x10 /* snoop hit modified */</u></td></tr>
+<tr><th id="589">589</th><td><u>#define <dfn class="macro" id="_M/PERF_MEM_SNOOP_SHIFT" data-ref="_M/PERF_MEM_SNOOP_SHIFT">PERF_MEM_SNOOP_SHIFT</dfn>	19</u></td></tr>
+<tr><th id="590">590</th><td></td></tr>
+<tr><th id="591">591</th><td><u>#define <dfn class="macro" id="_M/PERF_MEM_SNOOPX_FWD" data-ref="_M/PERF_MEM_SNOOPX_FWD">PERF_MEM_SNOOPX_FWD</dfn>	0x01 /* forward */</u></td></tr>
+<tr><th id="592">592</th><td><u>#define <dfn class="macro" id="_M/PERF_MEM_SNOOPX_SHIFT" data-ref="_M/PERF_MEM_SNOOPX_SHIFT">PERF_MEM_SNOOPX_SHIFT</dfn>	37</u></td></tr>
+<tr><th id="593">593</th><td></td></tr>
+<tr><th id="594">594</th><td><i>/* locked instruction */</i></td></tr>
+<tr><th id="595">595</th><td><u>#define <dfn class="macro" id="_M/PERF_MEM_LOCK_NA" data-ref="_M/PERF_MEM_LOCK_NA">PERF_MEM_LOCK_NA</dfn>	0x01 /* not available */</u></td></tr>
+<tr><th id="596">596</th><td><u>#define <dfn class="macro" id="_M/PERF_MEM_LOCK_LOCKED" data-ref="_M/PERF_MEM_LOCK_LOCKED">PERF_MEM_LOCK_LOCKED</dfn>	0x02 /* locked transaction */</u></td></tr>
+<tr><th id="597">597</th><td><u>#define <dfn class="macro" id="_M/PERF_MEM_LOCK_SHIFT" data-ref="_M/PERF_MEM_LOCK_SHIFT">PERF_MEM_LOCK_SHIFT</dfn>	24</u></td></tr>
+<tr><th id="598">598</th><td></td></tr>
+<tr><th id="599">599</th><td><i>/* TLB access */</i></td></tr>
+<tr><th id="600">600</th><td><u>#define <dfn class="macro" id="_M/PERF_MEM_TLB_NA" data-ref="_M/PERF_MEM_TLB_NA">PERF_MEM_TLB_NA</dfn>		0x01 /* not available */</u></td></tr>
+<tr><th id="601">601</th><td><u>#define <dfn class="macro" id="_M/PERF_MEM_TLB_HIT" data-ref="_M/PERF_MEM_TLB_HIT">PERF_MEM_TLB_HIT</dfn>	0x02 /* hit level */</u></td></tr>
+<tr><th id="602">602</th><td><u>#define <dfn class="macro" id="_M/PERF_MEM_TLB_MISS" data-ref="_M/PERF_MEM_TLB_MISS">PERF_MEM_TLB_MISS</dfn>	0x04 /* miss level */</u></td></tr>
+<tr><th id="603">603</th><td><u>#define <dfn class="macro" id="_M/PERF_MEM_TLB_L1" data-ref="_M/PERF_MEM_TLB_L1">PERF_MEM_TLB_L1</dfn>		0x08 /* L1 */</u></td></tr>
+<tr><th id="604">604</th><td><u>#define <dfn class="macro" id="_M/PERF_MEM_TLB_L2" data-ref="_M/PERF_MEM_TLB_L2">PERF_MEM_TLB_L2</dfn>		0x10 /* L2 */</u></td></tr>
+<tr><th id="605">605</th><td><u>#define <dfn class="macro" id="_M/PERF_MEM_TLB_WK" data-ref="_M/PERF_MEM_TLB_WK">PERF_MEM_TLB_WK</dfn>		0x20 /* Hardware Walker*/</u></td></tr>
+<tr><th id="606">606</th><td><u>#define <dfn class="macro" id="_M/PERF_MEM_TLB_OS" data-ref="_M/PERF_MEM_TLB_OS">PERF_MEM_TLB_OS</dfn>		0x40 /* OS fault handler */</u></td></tr>
+<tr><th id="607">607</th><td><u>#define <dfn class="macro" id="_M/PERF_MEM_TLB_SHIFT" data-ref="_M/PERF_MEM_TLB_SHIFT">PERF_MEM_TLB_SHIFT</dfn>	26</u></td></tr>
+<tr><th id="608">608</th><td></td></tr>
+<tr><th id="609">609</th><td><u>#define <dfn class="macro" id="_M/PERF_MEM_S" data-ref="_M/PERF_MEM_S">PERF_MEM_S</dfn>(a, s) \</u></td></tr>
+<tr><th id="610">610</th><td><u>	(((u64)PERF_MEM_##a##_##s) &lt;&lt; PERF_MEM_##a##_SHIFT)</u></td></tr>
+<tr><th id="611">611</th><td></td></tr>
+<tr><th id="612">612</th><td><u>#<span data-ppcond="541">endif</span> /* PERF_MEM_OP_NA */</u></td></tr>
+<tr><th id="613">613</th><td></td></tr>
+<tr><th id="614">614</th><td><u>#<span data-ppcond="614">ifdef</span> <span class="macro" data-ref="_M/__cplusplus">__cplusplus</span> /* extern C */</u></td></tr>
+<tr><th id="615">615</th><td>}</td></tr>
+<tr><th id="616">616</th><td><u>#<span data-ppcond="614">endif</span></u></td></tr>
+<tr><th id="617">617</th><td></td></tr>
+<tr><th id="618">618</th><td><u>#pragma GCC visibility pop</u></td></tr>
+<tr><th id="619">619</th><td></td></tr>
+<tr><th id="620">620</th><td><u>#<span data-ppcond="22">endif</span> /* __PERFMON_PERF_EVENT_H__ */</u></td></tr>
+<tr><th id="621">621</th><td></td></tr>
+</table><hr/><p id='footer'>
+Generated while processing <a href='../../llvm/llvm/tools/llvm-exegesis/lib/PerfHelper.cpp.html'>llvm/llvm/tools/llvm-exegesis/lib/PerfHelper.cpp</a><br/>Generated on <em>2021-Jul-01</em> from project include

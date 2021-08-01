@@ -1,0 +1,102 @@
+<!doctype html>
+<html>
+<head>
+<meta name="viewport" content="width=device-width, initial-scale=1.0"><title>sanitizer_unwind_win.cpp source code [llvm/compiler-rt/lib/sanitizer_common/sanitizer_unwind_win.cpp] - Woboq Code Browser</title>
+<link rel="stylesheet" href="../../../.././data/qtcreator.css" title="QtCreator"/>
+<link rel="alternate stylesheet" href="../../../.././data/kdevelop.css" title="KDevelop"/>
+<script type="text/javascript" src="../../../.././data/jquery/jquery.min.js"></script>
+<script type="text/javascript" src="../../../.././data/jquery/jquery-ui.min.js"></script>
+<script>var file = 'llvm/compiler-rt/lib/sanitizer_common/sanitizer_unwind_win.cpp'; var root_path = '../../../..'; var data_path = '../../../.././data'; var ecma_script_api_version = 2;</script>
+<script src='../../../.././data/codebrowser.js'></script>
+</head>
+<body><div id='header'><h1 id='breadcrumb'><span>Browse the source code of </span><a href='../../..'>llvm</a>/<a href='../..'>compiler-rt</a>/<a href='..'>lib</a>/<a href='./'>sanitizer_common</a>/<a href='sanitizer_unwind_win.cpp.html'>sanitizer_unwind_win.cpp</a></h1></div>
+<hr/><div id='content'><table class="code">
+<tr><th id="1">1</th><td><i>//===-- sanitizer_unwind_win.cpp ------------------------------------------===//</i></td></tr>
+<tr><th id="2">2</th><td><i>//</i></td></tr>
+<tr><th id="3">3</th><td><i>// Part of the LLVM Project, under the Apache License v2.0 with LLVM Exceptions.</i></td></tr>
+<tr><th id="4">4</th><td><i>// See <a href="https://llvm.org/LICENSE.txt">https://llvm.org/LICENSE.txt</a> for license information.</i></td></tr>
+<tr><th id="5">5</th><td><i>// SPDX-License-Identifier: Apache-2.0 WITH LLVM-exception</i></td></tr>
+<tr><th id="6">6</th><td><i>//</i></td></tr>
+<tr><th id="7">7</th><td><i>//===----------------------------------------------------------------------===//</i></td></tr>
+<tr><th id="8">8</th><td><i>//</i></td></tr>
+<tr><th id="9">9</th><td><i>/// Sanitizer unwind Windows specific functions.</i></td></tr>
+<tr><th id="10">10</th><td><i>//</i></td></tr>
+<tr><th id="11">11</th><td><i>//===----------------------------------------------------------------------===//</i></td></tr>
+<tr><th id="12">12</th><td></td></tr>
+<tr><th id="13">13</th><td><u>#include <a href="sanitizer_platform.h.html">"sanitizer_platform.h"</a></u></td></tr>
+<tr><th id="14">14</th><td><u>#<span data-ppcond="14">if</span> <a class="macro" href="sanitizer_platform.h.html#93" title="0" data-ref="_M/SANITIZER_WINDOWS">SANITIZER_WINDOWS</a></u></td></tr>
+<tr><th id="15">15</th><td></td></tr>
+<tr><th id="16">16</th><td><u>#define WIN32_LEAN_AND_MEAN</u></td></tr>
+<tr><th id="17">17</th><td><u>#define NOGDI</u></td></tr>
+<tr><th id="18">18</th><td><u>#include &lt;windows.h&gt;</u></td></tr>
+<tr><th id="19">19</th><td></td></tr>
+<tr><th id="20">20</th><td><u>#include "sanitizer_dbghelp.h"  // for StackWalk64</u></td></tr>
+<tr><th id="21">21</th><td><u>#include "sanitizer_stacktrace.h"</u></td></tr>
+<tr><th id="22">22</th><td><u>#include "sanitizer_symbolizer.h"  // for InitializeDbgHelpIfNeeded</u></td></tr>
+<tr><th id="23">23</th><td></td></tr>
+<tr><th id="24">24</th><td><b>using</b> <b>namespace</b> __sanitizer;</td></tr>
+<tr><th id="25">25</th><td></td></tr>
+<tr><th id="26">26</th><td><u>#if !SANITIZER_GO</u></td></tr>
+<tr><th id="27">27</th><td><em>void</em> BufferedStackTrace::UnwindSlow(uptr pc, u32 max_depth) {</td></tr>
+<tr><th id="28">28</th><td>  CHECK_GE(max_depth, <var>2</var>);</td></tr>
+<tr><th id="29">29</th><td>  <i>// FIXME: CaptureStackBackTrace might be too slow for us.</i></td></tr>
+<tr><th id="30">30</th><td><i>  // FIXME: Compare with StackWalk64.</i></td></tr>
+<tr><th id="31">31</th><td><i>  // FIXME: Look at LLVMUnhandledExceptionFilter in Signals.inc</i></td></tr>
+<tr><th id="32">32</th><td>  size = CaptureStackBackTrace(<var>1</var>, Min(max_depth, kStackTraceMax),</td></tr>
+<tr><th id="33">33</th><td>    (<em>void</em> **)&amp;trace_buffer[<var>0</var>], <var>0</var>);</td></tr>
+<tr><th id="34">34</th><td>  <b>if</b> (size == <var>0</var>)</td></tr>
+<tr><th id="35">35</th><td>    <b>return</b>;</td></tr>
+<tr><th id="36">36</th><td></td></tr>
+<tr><th id="37">37</th><td>  <i>// Skip the RTL frames by searching for the PC in the stacktrace.</i></td></tr>
+<tr><th id="38">38</th><td>  uptr pc_location = LocatePcInTrace(pc);</td></tr>
+<tr><th id="39">39</th><td>  PopStackFrames(pc_location);</td></tr>
+<tr><th id="40">40</th><td></td></tr>
+<tr><th id="41">41</th><td>  <i>// Replace the first frame with the PC because the frame in the</i></td></tr>
+<tr><th id="42">42</th><td><i>  // stacktrace might be incorrect.</i></td></tr>
+<tr><th id="43">43</th><td>  trace_buffer[<var>0</var>] = pc;</td></tr>
+<tr><th id="44">44</th><td>}</td></tr>
+<tr><th id="45">45</th><td></td></tr>
+<tr><th id="46">46</th><td><u>#ifdef __clang__</u></td></tr>
+<tr><th id="47">47</th><td><u>#pragma clang diagnostic push</u></td></tr>
+<tr><th id="48">48</th><td><u>#pragma clang diagnostic ignored "-Wframe-larger-than="</u></td></tr>
+<tr><th id="49">49</th><td><u>#endif</u></td></tr>
+<tr><th id="50">50</th><td><em>void</em> BufferedStackTrace::UnwindSlow(uptr pc, <em>void</em> *context, u32 max_depth) {</td></tr>
+<tr><th id="51">51</th><td>  CHECK(context);</td></tr>
+<tr><th id="52">52</th><td>  CHECK_GE(max_depth, <var>2</var>);</td></tr>
+<tr><th id="53">53</th><td>  CONTEXT ctx = *(CONTEXT *)context;</td></tr>
+<tr><th id="54">54</th><td>  STACKFRAME64 stack_frame;</td></tr>
+<tr><th id="55">55</th><td>  memset(&amp;stack_frame, <var>0</var>, <b>sizeof</b>(stack_frame));</td></tr>
+<tr><th id="56">56</th><td></td></tr>
+<tr><th id="57">57</th><td>  InitializeDbgHelpIfNeeded();</td></tr>
+<tr><th id="58">58</th><td></td></tr>
+<tr><th id="59">59</th><td>  size = <var>0</var>;</td></tr>
+<tr><th id="60">60</th><td><u>#if defined(_WIN64)</u></td></tr>
+<tr><th id="61">61</th><td>  <em>int</em> machine_type = IMAGE_FILE_MACHINE_AMD64;</td></tr>
+<tr><th id="62">62</th><td>  stack_frame.AddrPC.Offset = ctx.Rip;</td></tr>
+<tr><th id="63">63</th><td>  stack_frame.AddrFrame.Offset = ctx.Rbp;</td></tr>
+<tr><th id="64">64</th><td>  stack_frame.AddrStack.Offset = ctx.Rsp;</td></tr>
+<tr><th id="65">65</th><td><u>#else</u></td></tr>
+<tr><th id="66">66</th><td>  <em>int</em> machine_type = IMAGE_FILE_MACHINE_I386;</td></tr>
+<tr><th id="67">67</th><td>  stack_frame.AddrPC.Offset = ctx.Eip;</td></tr>
+<tr><th id="68">68</th><td>  stack_frame.AddrFrame.Offset = ctx.Ebp;</td></tr>
+<tr><th id="69">69</th><td>  stack_frame.AddrStack.Offset = ctx.Esp;</td></tr>
+<tr><th id="70">70</th><td><u>#endif</u></td></tr>
+<tr><th id="71">71</th><td>  stack_frame.AddrPC.Mode = AddrModeFlat;</td></tr>
+<tr><th id="72">72</th><td>  stack_frame.AddrFrame.Mode = AddrModeFlat;</td></tr>
+<tr><th id="73">73</th><td>  stack_frame.AddrStack.Mode = AddrModeFlat;</td></tr>
+<tr><th id="74">74</th><td>  <b>while</b> (StackWalk64(machine_type, GetCurrentProcess(), GetCurrentThread(),</td></tr>
+<tr><th id="75">75</th><td>    &amp;stack_frame, &amp;ctx, NULL, SymFunctionTableAccess64,</td></tr>
+<tr><th id="76">76</th><td>    SymGetModuleBase64, NULL) &amp;&amp;</td></tr>
+<tr><th id="77">77</th><td>    size &lt; Min(max_depth, kStackTraceMax)) {</td></tr>
+<tr><th id="78">78</th><td>    trace_buffer[size++] = (uptr)stack_frame.AddrPC.Offset;</td></tr>
+<tr><th id="79">79</th><td>  }</td></tr>
+<tr><th id="80">80</th><td>}</td></tr>
+<tr><th id="81">81</th><td><u>#ifdef __clang__</u></td></tr>
+<tr><th id="82">82</th><td><u>#pragma clang diagnostic pop</u></td></tr>
+<tr><th id="83">83</th><td><u>#endif</u></td></tr>
+<tr><th id="84">84</th><td><u>#endif  // #if !SANITIZER_GO</u></td></tr>
+<tr><th id="85">85</th><td></td></tr>
+<tr><th id="86">86</th><td><u>#<span data-ppcond="14">endif</span>  // SANITIZER_WINDOWS</u></td></tr>
+<tr><th id="87">87</th><td></td></tr>
+</table><hr/><p id='footer'>
+Generated on <em>2021-Jul-01</em> from project llvm revision <em>12</em>

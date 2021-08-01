@@ -1,0 +1,22 @@
+<dec f='llvm/llvm/include/llvm/TableGen/Record.h' l='730' type='llvm::Init *'/>
+<use f='llvm/llvm/include/llvm/TableGen/Record.h' l='733' u='w' c='_ZN4llvm8UnOpInitC1ENS0_7UnaryOpEPNS_4InitEPNS_5RecTyE'/>
+<use f='llvm/llvm/include/llvm/TableGen/Record.h' l='762' u='r' c='_ZNK4llvm8UnOpInit10getOperandEv'/>
+<offset>256</offset>
+<use f='llvm/llvm/lib/TableGen/Record.cpp' l='685' u='r' c='_ZNK4llvm8UnOpInit4FoldEPNS_6RecordEb'/>
+<use f='llvm/llvm/lib/TableGen/Record.cpp' l='688' u='r' c='_ZNK4llvm8UnOpInit4FoldEPNS_6RecordEb'/>
+<use f='llvm/llvm/lib/TableGen/Record.cpp' l='692' u='r' c='_ZNK4llvm8UnOpInit4FoldEPNS_6RecordEb'/>
+<use f='llvm/llvm/lib/TableGen/Record.cpp' l='696' u='r' c='_ZNK4llvm8UnOpInit4FoldEPNS_6RecordEb'/>
+<use f='llvm/llvm/lib/TableGen/Record.cpp' l='731' u='r' c='_ZNK4llvm8UnOpInit4FoldEPNS_6RecordEb'/>
+<use f='llvm/llvm/lib/TableGen/Record.cpp' l='737' u='r' c='_ZNK4llvm8UnOpInit4FoldEPNS_6RecordEb'/>
+<use f='llvm/llvm/lib/TableGen/Record.cpp' l='742' u='r' c='_ZNK4llvm8UnOpInit4FoldEPNS_6RecordEb'/>
+<use f='llvm/llvm/lib/TableGen/Record.cpp' l='749' u='r' c='_ZNK4llvm8UnOpInit4FoldEPNS_6RecordEb'/>
+<use f='llvm/llvm/lib/TableGen/Record.cpp' l='758' u='r' c='_ZNK4llvm8UnOpInit4FoldEPNS_6RecordEb'/>
+<use f='llvm/llvm/lib/TableGen/Record.cpp' l='760' u='r' c='_ZNK4llvm8UnOpInit4FoldEPNS_6RecordEb'/>
+<use f='llvm/llvm/lib/TableGen/Record.cpp' l='762' u='r' c='_ZNK4llvm8UnOpInit4FoldEPNS_6RecordEb'/>
+<use f='llvm/llvm/lib/TableGen/Record.cpp' l='767' u='r' c='_ZNK4llvm8UnOpInit4FoldEPNS_6RecordEb'/>
+<use f='llvm/llvm/lib/TableGen/Record.cpp' l='769' u='r' c='_ZNK4llvm8UnOpInit4FoldEPNS_6RecordEb'/>
+<use f='llvm/llvm/lib/TableGen/Record.cpp' l='771' u='r' c='_ZNK4llvm8UnOpInit4FoldEPNS_6RecordEb'/>
+<use f='llvm/llvm/lib/TableGen/Record.cpp' l='776' u='r' c='_ZNK4llvm8UnOpInit4FoldEPNS_6RecordEb'/>
+<use f='llvm/llvm/lib/TableGen/Record.cpp' l='794' u='r' c='_ZNK4llvm8UnOpInit17resolveReferencesERNS_8ResolverE'/>
+<use f='llvm/llvm/lib/TableGen/Record.cpp' l='796' u='r' c='_ZNK4llvm8UnOpInit17resolveReferencesERNS_8ResolverE'/>
+<use f='llvm/llvm/lib/TableGen/Record.cpp' l='813' u='r' c='_ZNK4llvm8UnOpInit11getAsStringB5cxx11Ev'/>

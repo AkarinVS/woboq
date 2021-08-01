@@ -1,0 +1,181 @@
+<!doctype html>
+<html>
+<head>
+<meta name="viewport" content="width=device-width, initial-scale=1.0"><title>Debug.cpp source code [llvm/llvm/lib/Support/Debug.cpp] - Woboq Code Browser</title>
+<link rel="stylesheet" href="../../../.././data/qtcreator.css" title="QtCreator"/>
+<link rel="alternate stylesheet" href="../../../.././data/kdevelop.css" title="KDevelop"/>
+<script type="text/javascript" src="../../../.././data/jquery/jquery.min.js"></script>
+<script type="text/javascript" src="../../../.././data/jquery/jquery-ui.min.js"></script>
+<script>var file = 'llvm/llvm/lib/Support/Debug.cpp'; var root_path = '../../../..'; var data_path = '../../../.././data'; var ecma_script_api_version = 2;</script>
+<script src='../../../.././data/codebrowser.js'></script>
+</head>
+<body><div id='header'><h1 id='breadcrumb'><span>Browse the source code of </span><a href='../../..'>llvm</a>/<a href='../..'>llvm</a>/<a href='..'>lib</a>/<a href='./'>Support</a>/<a href='Debug.cpp.html'>Debug.cpp</a></h1></div>
+<hr/><div id='content'><table class="code">
+<tr><th id="1">1</th><td><i>//===-- Debug.cpp - An easy way to add debug output to your code ----------===//</i></td></tr>
+<tr><th id="2">2</th><td><i>//</i></td></tr>
+<tr><th id="3">3</th><td><i>// Part of the LLVM Project, under the Apache License v2.0 with LLVM Exceptions.</i></td></tr>
+<tr><th id="4">4</th><td><i>// See <a href="https://llvm.org/LICENSE.txt">https://llvm.org/LICENSE.txt</a> for license information.</i></td></tr>
+<tr><th id="5">5</th><td><i>// SPDX-License-Identifier: Apache-2.0 WITH LLVM-exception</i></td></tr>
+<tr><th id="6">6</th><td><i>//</i></td></tr>
+<tr><th id="7">7</th><td><i>//===----------------------------------------------------------------------===//</i></td></tr>
+<tr><th id="8">8</th><td><i>//</i></td></tr>
+<tr><th id="9">9</th><td><i>// This file implements a handy way of adding debugging information to your</i></td></tr>
+<tr><th id="10">10</th><td><i>// code, without it being enabled all of the time, and without having to add</i></td></tr>
+<tr><th id="11">11</th><td><i>// command line options to enable it.</i></td></tr>
+<tr><th id="12">12</th><td><i>//</i></td></tr>
+<tr><th id="13">13</th><td><i>// In particular, just wrap your code with the LLVM_DEBUG() macro, and it will</i></td></tr>
+<tr><th id="14">14</th><td><i>// be enabled automatically if you specify '-debug' on the command-line.</i></td></tr>
+<tr><th id="15">15</th><td><i>// Alternatively, you can also use the SET_DEBUG_TYPE("foo") macro to specify</i></td></tr>
+<tr><th id="16">16</th><td><i>// that your debug code belongs to class "foo".  Then, on the command line, you</i></td></tr>
+<tr><th id="17">17</th><td><i>// can specify '-debug-only=foo' to enable JUST the debug information for the</i></td></tr>
+<tr><th id="18">18</th><td><i>// foo class.</i></td></tr>
+<tr><th id="19">19</th><td><i>//</i></td></tr>
+<tr><th id="20">20</th><td><i>// When compiling without assertions, the -debug-* options and all code in</i></td></tr>
+<tr><th id="21">21</th><td><i>// LLVM_DEBUG() statements disappears, so it does not affect the runtime of the</i></td></tr>
+<tr><th id="22">22</th><td><i>// code.</i></td></tr>
+<tr><th id="23">23</th><td><i>//</i></td></tr>
+<tr><th id="24">24</th><td><i>//===----------------------------------------------------------------------===//</i></td></tr>
+<tr><th id="25">25</th><td></td></tr>
+<tr><th id="26">26</th><td><u>#include <a href="../../include/llvm/Support/Debug.h.html">"llvm/Support/Debug.h"</a></u></td></tr>
+<tr><th id="27">27</th><td><u>#include <a href="../../include/llvm/Support/CommandLine.h.html">"llvm/Support/CommandLine.h"</a></u></td></tr>
+<tr><th id="28">28</th><td><u>#include <a href="../../include/llvm/Support/ManagedStatic.h.html">"llvm/Support/ManagedStatic.h"</a></u></td></tr>
+<tr><th id="29">29</th><td><u>#include <a href="../../include/llvm/Support/Signals.h.html">"llvm/Support/Signals.h"</a></u></td></tr>
+<tr><th id="30">30</th><td><u>#include <a href="../../include/llvm/Support/circular_raw_ostream.h.html">"llvm/Support/circular_raw_ostream.h"</a></u></td></tr>
+<tr><th id="31">31</th><td><u>#include <a href="../../include/llvm/Support/raw_ostream.h.html">"llvm/Support/raw_ostream.h"</a></u></td></tr>
+<tr><th id="32">32</th><td></td></tr>
+<tr><th id="33">33</th><td><u>#undef <a class="macro" href="../../include/llvm/Support/Debug.h.html#69" data-ref="_M/isCurrentDebugType">isCurrentDebugType</a></u></td></tr>
+<tr><th id="34">34</th><td><u>#undef <a class="macro" href="../../include/llvm/Support/Debug.h.html#70" data-ref="_M/setCurrentDebugType">setCurrentDebugType</a></u></td></tr>
+<tr><th id="35">35</th><td><u>#undef <a class="macro" href="../../include/llvm/Support/Debug.h.html#71" data-ref="_M/setCurrentDebugTypes">setCurrentDebugTypes</a></u></td></tr>
+<tr><th id="36">36</th><td></td></tr>
+<tr><th id="37">37</th><td><b>using</b> <b>namespace</b> <span class="namespace">llvm</span>;</td></tr>
+<tr><th id="38">38</th><td></td></tr>
+<tr><th id="39">39</th><td><i>// Even though LLVM might be built with NDEBUG, define symbols that the code</i></td></tr>
+<tr><th id="40">40</th><td><i>// built without NDEBUG can depend on via the llvm/Support/Debug.h header.</i></td></tr>
+<tr><th id="41">41</th><td><b>namespace</b> <span class="namespace">llvm</span> {</td></tr>
+<tr><th id="42">42</th><td><i class="doc">/// Exported boolean set by the -debug option.</i></td></tr>
+<tr><th id="43">43</th><td><em>bool</em> <dfn class="decl def" id="llvm::DebugFlag" title='llvm::DebugFlag' data-ref="llvm::DebugFlag" data-ref-filename="llvm..DebugFlag">DebugFlag</dfn> = <b>false</b>;</td></tr>
+<tr><th id="44">44</th><td></td></tr>
+<tr><th id="45">45</th><td><em>static</em> <a class="type" href="../../include/llvm/Support/ManagedStatic.h.html#llvm::ManagedStatic" title='llvm::ManagedStatic' data-ref="llvm::ManagedStatic" data-ref-filename="llvm..ManagedStatic">ManagedStatic</a>&lt;<span class="namespace">std::</span><span class='type' title='std::vector' data-ref="std::vector" data-ref-filename="std..vector">vector</span>&lt;<span class="namespace">std::</span><span class='typedef' title='std::string' data-type='basic_string&lt;char&gt;' data-ref="std::string" data-ref-filename="std..string">string</span>&gt;&gt; <a class="ref fn fake" href="../../include/llvm/Support/ManagedStatic.h.html#83" title='llvm::ManagedStatic&lt;std::vector&lt;std::__cxx11::basic_string&lt;char&gt;, std::allocator&lt;std::__cxx11::basic_string&lt;char&gt; &gt; &gt;, llvm::object_creator&lt;std::vector&lt;std::__cxx11::basic_string&lt;char&gt;, std::allocator&lt;std::__cxx11::basic_string&lt;char&gt; &gt; &gt; &gt;, llvm::object_deleter&lt;std::vector&lt;std::__cxx11::basic_string&lt;char&gt;, std::allocator&lt;std::__cxx11::basic_string&lt;char&gt; &gt; &gt; &gt; &gt;::ManagedStatic' data-ref="_ZN4llvm13ManagedStaticISt6vectorINSt7__cxx1112basic_stringIcSt11char_traitsIcESaIcEEESaIS7_EENS_14object_creatorIS9_EENS_14object_deleterIS9_EEEC1Ev" data-ref-filename="_ZN4llvm13ManagedStaticISt6vectorINSt7__cxx1112basic_stringIcSt11char_traitsIcESaIcEEESaIS7_EENS_14object_creatorIS9_EENS_14object_deleterIS9_EEEC1Ev"></a><dfn class="tu decl def" id="llvm::CurrentDebugType" title='llvm::CurrentDebugType' data-type='ManagedStatic&lt;std::vector&lt;std::string&gt; &gt;' data-ref="llvm::CurrentDebugType" data-ref-filename="llvm..CurrentDebugType">CurrentDebugType</dfn>;</td></tr>
+<tr><th id="46">46</th><td></td></tr>
+<tr><th id="47">47</th><td><i class="doc">/// Return true if the specified string is the debug type</i></td></tr>
+<tr><th id="48">48</th><td><i class="doc">/// specified on the command line, or if none was specified on the command line</i></td></tr>
+<tr><th id="49">49</th><td><i class="doc">/// with the -debug-only=X option.</i></td></tr>
+<tr><th id="50">50</th><td><em>bool</em> <dfn class="decl def fn" id="_ZN4llvm18isCurrentDebugTypeEPKc" title='llvm::isCurrentDebugType' data-ref="_ZN4llvm18isCurrentDebugTypeEPKc" data-ref-filename="_ZN4llvm18isCurrentDebugTypeEPKc">isCurrentDebugType</dfn>(<em>const</em> <em>char</em> *<dfn class="local col9 decl" id="9DebugType" title='DebugType' data-type='const char *' data-ref="9DebugType" data-ref-filename="9DebugType">DebugType</dfn>) {</td></tr>
+<tr><th id="51">51</th><td>  <b>if</b> (<a class="tu ref" href="#llvm::CurrentDebugType" title='llvm::CurrentDebugType' data-use='m' data-ref="llvm::CurrentDebugType" data-ref-filename="llvm..CurrentDebugType">CurrentDebugType</a><a class="ref fn" href="../../include/llvm/Support/ManagedStatic.h.html#_ZN4llvm13ManagedStaticptEv" title='llvm::ManagedStatic::operator-&gt;' data-ref="_ZN4llvm13ManagedStaticptEv" data-ref-filename="_ZN4llvm13ManagedStaticptEv">-&gt;</a><span class='ref fn' title='std::vector::empty' data-ref="_ZNKSt6vector5emptyEv" data-ref-filename="_ZNKSt6vector5emptyEv">empty</span>())</td></tr>
+<tr><th id="52">52</th><td>    <b>return</b> <b>true</b>;</td></tr>
+<tr><th id="53">53</th><td>  <i>// See if DebugType is in list. Note: do not use find() as that forces us to</i></td></tr>
+<tr><th id="54">54</th><td><i>  // unnecessarily create an std::string instance.</i></td></tr>
+<tr><th id="55">55</th><td>  <b>for</b> (<em>auto</em> &amp;<dfn class="local col0 decl" id="10d" title='d' data-type='std::__cxx11::basic_string&lt;char&gt; &amp;' data-ref="10d" data-ref-filename="10d">d</dfn> : <a class="ref fn" href="../../include/llvm/Support/ManagedStatic.h.html#_ZN4llvm13ManagedStaticdeEv" title='llvm::ManagedStatic::operator*' data-ref="_ZN4llvm13ManagedStaticdeEv" data-ref-filename="_ZN4llvm13ManagedStaticdeEv">*</a><a class="tu ref" href="#llvm::CurrentDebugType" title='llvm::CurrentDebugType' data-use='m' data-ref="llvm::CurrentDebugType" data-ref-filename="llvm..CurrentDebugType">CurrentDebugType</a>) {</td></tr>
+<tr><th id="56">56</th><td>    <b>if</b> (<a class="local col0 ref" href="#10d" title='d' data-ref="10d" data-ref-filename="10d">d</a> <span class='ref fn' title='std::operator==' data-ref="_ZSteqRKNSt7__cxx1112basic_stringIT_T0_T1_EEPKS1_" data-ref-filename="_ZSteqRKNSt7__cxx1112basic_stringIT_T0_T1_EEPKS1_">==</span> <a class="local col9 ref" href="#9DebugType" title='DebugType' data-ref="9DebugType" data-ref-filename="9DebugType">DebugType</a>)</td></tr>
+<tr><th id="57">57</th><td>      <b>return</b> <b>true</b>;</td></tr>
+<tr><th id="58">58</th><td>  }</td></tr>
+<tr><th id="59">59</th><td>  <b>return</b> <b>false</b>;</td></tr>
+<tr><th id="60">60</th><td>}</td></tr>
+<tr><th id="61">61</th><td></td></tr>
+<tr><th id="62">62</th><td><i class="doc">/// Set the current debug type, as if the -debug-only=X</i></td></tr>
+<tr><th id="63">63</th><td><i class="doc">/// option were specified.  Note that DebugFlag also needs to be set to true for</i></td></tr>
+<tr><th id="64">64</th><td><i class="doc">/// debug output to be produced.</i></td></tr>
+<tr><th id="65">65</th><td><i class="doc">///</i></td></tr>
+<tr><th id="66">66</th><td><em>void</em> <a class="decl fn" href="#_ZN4llvm20setCurrentDebugTypesEPPKcj" title='llvm::setCurrentDebugTypes' data-ref="_ZN4llvm20setCurrentDebugTypesEPPKcj" data-ref-filename="_ZN4llvm20setCurrentDebugTypesEPPKcj">setCurrentDebugTypes</a>(<em>const</em> <em>char</em> **<dfn class="local col1 decl" id="11Types" title='Types' data-type='const char **' data-ref="11Types" data-ref-filename="11Types">Types</dfn>, <em>unsigned</em> <dfn class="local col2 decl" id="12Count" title='Count' data-type='unsigned int' data-ref="12Count" data-ref-filename="12Count">Count</dfn>);</td></tr>
+<tr><th id="67">67</th><td></td></tr>
+<tr><th id="68">68</th><td><em>void</em> <dfn class="decl def fn" id="_ZN4llvm19setCurrentDebugTypeEPKc" title='llvm::setCurrentDebugType' data-ref="_ZN4llvm19setCurrentDebugTypeEPKc" data-ref-filename="_ZN4llvm19setCurrentDebugTypeEPKc">setCurrentDebugType</dfn>(<em>const</em> <em>char</em> *<dfn class="local col3 decl" id="13Type" title='Type' data-type='const char *' data-ref="13Type" data-ref-filename="13Type">Type</dfn>) {</td></tr>
+<tr><th id="69">69</th><td>  <a class="ref fn" href="#_ZN4llvm20setCurrentDebugTypesEPPKcj" title='llvm::setCurrentDebugTypes' data-ref="_ZN4llvm20setCurrentDebugTypesEPPKcj" data-ref-filename="_ZN4llvm20setCurrentDebugTypesEPPKcj">setCurrentDebugTypes</a>(&amp;<a class="local col3 ref" href="#13Type" title='Type' data-ref="13Type" data-ref-filename="13Type">Type</a>, <var>1</var>);</td></tr>
+<tr><th id="70">70</th><td>}</td></tr>
+<tr><th id="71">71</th><td></td></tr>
+<tr><th id="72">72</th><td><em>void</em> <dfn class="decl def fn" id="_ZN4llvm20setCurrentDebugTypesEPPKcj" title='llvm::setCurrentDebugTypes' data-ref="_ZN4llvm20setCurrentDebugTypesEPPKcj" data-ref-filename="_ZN4llvm20setCurrentDebugTypesEPPKcj">setCurrentDebugTypes</dfn>(<em>const</em> <em>char</em> **<dfn class="local col4 decl" id="14Types" title='Types' data-type='const char **' data-ref="14Types" data-ref-filename="14Types">Types</dfn>, <em>unsigned</em> <dfn class="local col5 decl" id="15Count" title='Count' data-type='unsigned int' data-ref="15Count" data-ref-filename="15Count">Count</dfn>) {</td></tr>
+<tr><th id="73">73</th><td>  <a class="tu ref" href="#llvm::CurrentDebugType" title='llvm::CurrentDebugType' data-use='m' data-ref="llvm::CurrentDebugType" data-ref-filename="llvm..CurrentDebugType">CurrentDebugType</a><a class="ref fn" href="../../include/llvm/Support/ManagedStatic.h.html#_ZN4llvm13ManagedStaticptEv" title='llvm::ManagedStatic::operator-&gt;' data-ref="_ZN4llvm13ManagedStaticptEv" data-ref-filename="_ZN4llvm13ManagedStaticptEv">-&gt;</a><span class='ref fn' title='std::vector::clear' data-ref="_ZNSt6vector5clearEv" data-ref-filename="_ZNSt6vector5clearEv">clear</span>();</td></tr>
+<tr><th id="74">74</th><td>  <b>for</b> (<span class='typedef' title='size_t' data-type='unsigned long' data-ref="size_t" data-ref-filename="size_t">size_t</span> <dfn class="local col6 decl" id="16T" title='T' data-type='size_t' data-ref="16T" data-ref-filename="16T">T</dfn> = <var>0</var>; <a class="local col6 ref" href="#16T" title='T' data-ref="16T" data-ref-filename="16T">T</a> &lt; <a class="local col5 ref" href="#15Count" title='Count' data-ref="15Count" data-ref-filename="15Count">Count</a>; ++<a class="local col6 ref" href="#16T" title='T' data-ref="16T" data-ref-filename="16T">T</a>)</td></tr>
+<tr><th id="75">75</th><td>    <a class="tu ref" href="#llvm::CurrentDebugType" title='llvm::CurrentDebugType' data-use='m' data-ref="llvm::CurrentDebugType" data-ref-filename="llvm..CurrentDebugType">CurrentDebugType</a><a class="ref fn" href="../../include/llvm/Support/ManagedStatic.h.html#_ZN4llvm13ManagedStaticptEv" title='llvm::ManagedStatic::operator-&gt;' data-ref="_ZN4llvm13ManagedStaticptEv" data-ref-filename="_ZN4llvm13ManagedStaticptEv">-&gt;</a><span class='ref fn' title='std::vector::push_back' data-ref="_ZNSt6vector9push_backEOT_" data-ref-filename="_ZNSt6vector9push_backEOT_">push_back</span>(<span class='ref fn fake' title='std::__cxx11::basic_string::basic_string&lt;_CharT, _Traits, _Alloc&gt;' data-ref="_ZNSt7__cxx1112basic_stringC1EPKT_RKT1_" data-ref-filename="_ZNSt7__cxx1112basic_stringC1EPKT_RKT1_"></span><a class="local col4 ref" href="#14Types" title='Types' data-ref="14Types" data-ref-filename="14Types">Types</a>[<a class="local col6 ref" href="#16T" title='T' data-ref="16T" data-ref-filename="16T">T</a>]);</td></tr>
+<tr><th id="76">76</th><td>}</td></tr>
+<tr><th id="77">77</th><td>} <i>// namespace llvm</i></td></tr>
+<tr><th id="78">78</th><td></td></tr>
+<tr><th id="79">79</th><td><i>// All Debug.h functionality is a no-op in NDEBUG mode.</i></td></tr>
+<tr><th id="80">80</th><td><u>#<span data-ppcond="80">ifndef</span> <span class="macro" data-ref="_M/NDEBUG">NDEBUG</span></u></td></tr>
+<tr><th id="81">81</th><td></td></tr>
+<tr><th id="82">82</th><td><i>// -debug - Command line option to enable the DEBUG statements in the passes.</i></td></tr>
+<tr><th id="83">83</th><td><i>// This flag may only be enabled in debug builds.</i></td></tr>
+<tr><th id="84">84</th><td><em>static</em> cl::opt&lt;<em>bool</em>, <b>true</b>&gt;</td></tr>
+<tr><th id="85">85</th><td>Debug(<q>"debug"</q>, cl::desc(<q>"Enable debug output"</q>), cl::Hidden,</td></tr>
+<tr><th id="86">86</th><td>      cl::location(DebugFlag));</td></tr>
+<tr><th id="87">87</th><td></td></tr>
+<tr><th id="88">88</th><td><i>// -debug-buffer-size - Buffer the last N characters of debug output</i></td></tr>
+<tr><th id="89">89</th><td><i>//until program termination.</i></td></tr>
+<tr><th id="90">90</th><td><em>static</em> cl::opt&lt;<em>unsigned</em>&gt;</td></tr>
+<tr><th id="91">91</th><td>DebugBufferSize(<q>"debug-buffer-size"</q>,</td></tr>
+<tr><th id="92">92</th><td>                cl::desc(<q>"Buffer the last N characters of debug output "</q></td></tr>
+<tr><th id="93">93</th><td>                         <q>"until program termination. "</q></td></tr>
+<tr><th id="94">94</th><td>                         <q>"[default 0 -- immediate print-out]"</q>),</td></tr>
+<tr><th id="95">95</th><td>                cl::Hidden,</td></tr>
+<tr><th id="96">96</th><td>                cl::init(<var>0</var>));</td></tr>
+<tr><th id="97">97</th><td></td></tr>
+<tr><th id="98">98</th><td><b>namespace</b> {</td></tr>
+<tr><th id="99">99</th><td></td></tr>
+<tr><th id="100">100</th><td><b>struct</b> DebugOnlyOpt {</td></tr>
+<tr><th id="101">101</th><td>  <em>void</em> <b>operator</b>=(<em>const</em> std::string &amp;Val) <em>const</em> {</td></tr>
+<tr><th id="102">102</th><td>    <b>if</b> (Val.empty())</td></tr>
+<tr><th id="103">103</th><td>      <b>return</b>;</td></tr>
+<tr><th id="104">104</th><td>    DebugFlag = <b>true</b>;</td></tr>
+<tr><th id="105">105</th><td>    SmallVector&lt;StringRef,<var>8</var>&gt; dbgTypes;</td></tr>
+<tr><th id="106">106</th><td>    StringRef(Val).split(dbgTypes, <kbd>','</kbd>, -<var>1</var>, <b>false</b>);</td></tr>
+<tr><th id="107">107</th><td>    <b>for</b> (<em>auto</em> dbgType : dbgTypes)</td></tr>
+<tr><th id="108">108</th><td>      CurrentDebugType-&gt;push_back(std::string(dbgType));</td></tr>
+<tr><th id="109">109</th><td>  }</td></tr>
+<tr><th id="110">110</th><td>};</td></tr>
+<tr><th id="111">111</th><td></td></tr>
+<tr><th id="112">112</th><td>}</td></tr>
+<tr><th id="113">113</th><td></td></tr>
+<tr><th id="114">114</th><td><em>static</em> DebugOnlyOpt DebugOnlyOptLoc;</td></tr>
+<tr><th id="115">115</th><td></td></tr>
+<tr><th id="116">116</th><td><em>static</em> cl::opt&lt;DebugOnlyOpt, <b>true</b>, cl::parser&lt;std::string&gt; &gt;</td></tr>
+<tr><th id="117">117</th><td>DebugOnly(<q>"debug-only"</q>, cl::desc(<q>"Enable a specific type of debug output (comma separated list of types)"</q>),</td></tr>
+<tr><th id="118">118</th><td>          cl::Hidden, cl::ZeroOrMore, cl::value_desc(<q>"debug string"</q>),</td></tr>
+<tr><th id="119">119</th><td>          cl::location(DebugOnlyOptLoc), cl::ValueRequired);</td></tr>
+<tr><th id="120">120</th><td><i>// Signal handlers - dump debug output on termination.</i></td></tr>
+<tr><th id="121">121</th><td><em>static</em> <em>void</em> debug_user_sig_handler(<em>void</em> *Cookie) {</td></tr>
+<tr><th id="122">122</th><td>  <i>// This is a bit sneaky.  Since this is under #ifndef NDEBUG, we</i></td></tr>
+<tr><th id="123">123</th><td><i>  // know that debug mode is enabled and dbgs() really is a</i></td></tr>
+<tr><th id="124">124</th><td><i>  // circular_raw_ostream.  If NDEBUG is defined, then dbgs() ==</i></td></tr>
+<tr><th id="125">125</th><td><i>  // errs() but this will never be invoked.</i></td></tr>
+<tr><th id="126">126</th><td>  llvm::circular_raw_ostream &amp;dbgout =</td></tr>
+<tr><th id="127">127</th><td>      <b>static_cast</b>&lt;circular_raw_ostream &amp;&gt;(llvm::dbgs());</td></tr>
+<tr><th id="128">128</th><td>  dbgout.flushBufferWithBanner();</td></tr>
+<tr><th id="129">129</th><td>}</td></tr>
+<tr><th id="130">130</th><td></td></tr>
+<tr><th id="131">131</th><td><i class="doc">/// dbgs - Return a circular-buffered debug stream.</i></td></tr>
+<tr><th id="132">132</th><td>raw_ostream &amp;llvm::dbgs() {</td></tr>
+<tr><th id="133">133</th><td>  <i>// Do one-time initialization in a thread-safe way.</i></td></tr>
+<tr><th id="134">134</th><td>  <em>static</em> <b>struct</b> dbgstream {</td></tr>
+<tr><th id="135">135</th><td>    circular_raw_ostream strm;</td></tr>
+<tr><th id="136">136</th><td></td></tr>
+<tr><th id="137">137</th><td>    dbgstream() :</td></tr>
+<tr><th id="138">138</th><td>        strm(errs(), <q>"*** Debug Log Output ***\n"</q>,</td></tr>
+<tr><th id="139">139</th><td>             (!EnableDebugBuffering || !DebugFlag) ? <var>0</var> : DebugBufferSize) {</td></tr>
+<tr><th id="140">140</th><td>      <b>if</b> (EnableDebugBuffering &amp;&amp; DebugFlag &amp;&amp; DebugBufferSize != <var>0</var>)</td></tr>
+<tr><th id="141">141</th><td>        <i>// TODO: Add a handler for SIGUSER1-type signals so the user can</i></td></tr>
+<tr><th id="142">142</th><td><i>        // force a debug dump.</i></td></tr>
+<tr><th id="143">143</th><td>        sys::AddSignalHandler(&amp;debug_user_sig_handler, <b>nullptr</b>);</td></tr>
+<tr><th id="144">144</th><td>      <i>// Otherwise we've already set the debug stream buffer size to</i></td></tr>
+<tr><th id="145">145</th><td><i>      // zero, disabling buffering so it will output directly to errs().</i></td></tr>
+<tr><th id="146">146</th><td>    }</td></tr>
+<tr><th id="147">147</th><td>  } thestrm;</td></tr>
+<tr><th id="148">148</th><td></td></tr>
+<tr><th id="149">149</th><td>  <b>return</b> thestrm.strm;</td></tr>
+<tr><th id="150">150</th><td>}</td></tr>
+<tr><th id="151">151</th><td></td></tr>
+<tr><th id="152">152</th><td><u>#<span data-ppcond="80">else</span></u></td></tr>
+<tr><th id="153">153</th><td><i>// Avoid "has no symbols" warning.</i></td></tr>
+<tr><th id="154">154</th><td><b>namespace</b> <span class="namespace">llvm</span> {</td></tr>
+<tr><th id="155">155</th><td>  <i class="doc">/// dbgs - Return errs().</i></td></tr>
+<tr><th id="156">156</th><td>  <a class="type" href="../../include/llvm/Support/raw_ostream.h.html#llvm::raw_ostream" title='llvm::raw_ostream' data-ref="llvm::raw_ostream" data-ref-filename="llvm..raw_ostream">raw_ostream</a> &amp;<dfn class="decl def fn" id="_ZN4llvm4dbgsEv" title='llvm::dbgs' data-ref="_ZN4llvm4dbgsEv" data-ref-filename="_ZN4llvm4dbgsEv">dbgs</dfn>() {</td></tr>
+<tr><th id="157">157</th><td>    <b>return</b> <a class="ref fn" href="../../include/llvm/Support/raw_ostream.h.html#_ZN4llvm4errsEv" title='llvm::errs' data-ref="_ZN4llvm4errsEv" data-ref-filename="_ZN4llvm4errsEv">errs</a>();</td></tr>
+<tr><th id="158">158</th><td>  }</td></tr>
+<tr><th id="159">159</th><td>}</td></tr>
+<tr><th id="160">160</th><td></td></tr>
+<tr><th id="161">161</th><td><u>#<span data-ppcond="80">endif</span></u></td></tr>
+<tr><th id="162">162</th><td></td></tr>
+<tr><th id="163">163</th><td><i class="doc">/// EnableDebugBuffering - Turn on signal handler installation.</i></td></tr>
+<tr><th id="164">164</th><td><i class="doc">///</i></td></tr>
+<tr><th id="165">165</th><td><em>bool</em> <span class="namespace">llvm::</span><dfn class="decl def" id="llvm::EnableDebugBuffering" title='llvm::EnableDebugBuffering' data-ref="llvm::EnableDebugBuffering" data-ref-filename="llvm..EnableDebugBuffering">EnableDebugBuffering</dfn> = <b>false</b>;</td></tr>
+<tr><th id="166">166</th><td></td></tr>
+</table><hr/><p id='footer'>
+Generated on <em>2021-Jul-01</em> from project llvm revision <em>12</em>

@@ -1,0 +1,20 @@
+<dec f='llvm/llvm/tools/llvm-readobj/Win64EHDumper.h' l='24' type='llvm::ScopedPrinter &amp;'/>
+<use f='llvm/llvm/tools/llvm-readobj/Win64EHDumper.h' l='55' u='w' c='_ZN4llvm7Win64EH6DumperC1ERNS_13ScopedPrinterE'/>
+<offset>0</offset>
+<use f='llvm/llvm/tools/llvm-readobj/Win64EHDumper.cpp' l='207' u='m' c='_ZN4llvm7Win64EH6Dumper25printRuntimeFunctionEntryERKNS1_7ContextEPKNS_6object12coff_sectionEmRKNS0_15RuntimeFunctionE'/>
+<use f='llvm/llvm/tools/llvm-readobj/Win64EHDumper.cpp' l='209' u='m' c='_ZN4llvm7Win64EH6Dumper25printRuntimeFunctionEntryERKNS1_7ContextEPKNS_6object12coff_sectionEmRKNS0_15RuntimeFunctionE'/>
+<use f='llvm/llvm/tools/llvm-readobj/Win64EHDumper.cpp' l='211' u='m' c='_ZN4llvm7Win64EH6Dumper25printRuntimeFunctionEntryERKNS1_7ContextEPKNS_6object12coff_sectionEmRKNS0_15RuntimeFunctionE'/>
+<use f='llvm/llvm/tools/llvm-readobj/Win64EHDumper.cpp' l='221' u='m' c='_ZN4llvm7Win64EH6Dumper15printUnwindCodeERKNS0_10UnwindInfoENS_8ArrayRefINS0_10UnwindCodeEEE'/>
+<use f='llvm/llvm/tools/llvm-readobj/Win64EHDumper.cpp' l='277' u='a' c='_ZN4llvm7Win64EH6Dumper15printUnwindInfoERKNS1_7ContextEPKNS_6object12coff_sectionElRKNS0_10UnwindInfoE'/>
+<use f='llvm/llvm/tools/llvm-readobj/Win64EHDumper.cpp' l='278' u='m' c='_ZN4llvm7Win64EH6Dumper15printUnwindInfoERKNS1_7ContextEPKNS_6object12coff_sectionElRKNS0_10UnwindInfoE'/>
+<use f='llvm/llvm/tools/llvm-readobj/Win64EHDumper.cpp' l='279' u='m' c='_ZN4llvm7Win64EH6Dumper15printUnwindInfoERKNS1_7ContextEPKNS_6object12coff_sectionElRKNS0_10UnwindInfoE'/>
+<use f='llvm/llvm/tools/llvm-readobj/Win64EHDumper.cpp' l='280' u='m' c='_ZN4llvm7Win64EH6Dumper15printUnwindInfoERKNS1_7ContextEPKNS_6object12coff_sectionElRKNS0_10UnwindInfoE'/>
+<use f='llvm/llvm/tools/llvm-readobj/Win64EHDumper.cpp' l='282' u='m' c='_ZN4llvm7Win64EH6Dumper15printUnwindInfoERKNS1_7ContextEPKNS_6object12coff_sectionElRKNS0_10UnwindInfoE'/>
+<use f='llvm/llvm/tools/llvm-readobj/Win64EHDumper.cpp' l='284' u='m' c='_ZN4llvm7Win64EH6Dumper15printUnwindInfoERKNS1_7ContextEPKNS_6object12coff_sectionElRKNS0_10UnwindInfoE'/>
+<use f='llvm/llvm/tools/llvm-readobj/Win64EHDumper.cpp' l='286' u='m' c='_ZN4llvm7Win64EH6Dumper15printUnwindInfoERKNS1_7ContextEPKNS_6object12coff_sectionElRKNS0_10UnwindInfoE'/>
+<use f='llvm/llvm/tools/llvm-readobj/Win64EHDumper.cpp' l='287' u='m' c='_ZN4llvm7Win64EH6Dumper15printUnwindInfoERKNS1_7ContextEPKNS_6object12coff_sectionElRKNS0_10UnwindInfoE'/>
+<use f='llvm/llvm/tools/llvm-readobj/Win64EHDumper.cpp' l='290' u='m' c='_ZN4llvm7Win64EH6Dumper15printUnwindInfoERKNS1_7ContextEPKNS_6object12coff_sectionElRKNS0_10UnwindInfoE'/>
+<use f='llvm/llvm/tools/llvm-readobj/Win64EHDumper.cpp' l='292' u='a' c='_ZN4llvm7Win64EH6Dumper15printUnwindInfoERKNS1_7ContextEPKNS_6object12coff_sectionElRKNS0_10UnwindInfoE'/>
+<use f='llvm/llvm/tools/llvm-readobj/Win64EHDumper.cpp' l='308' u='m' c='_ZN4llvm7Win64EH6Dumper15printUnwindInfoERKNS1_7ContextEPKNS_6object12coff_sectionElRKNS0_10UnwindInfoE'/>
+<use f='llvm/llvm/tools/llvm-readobj/Win64EHDumper.cpp' l='313' u='a' c='_ZN4llvm7Win64EH6Dumper15printUnwindInfoERKNS1_7ContextEPKNS_6object12coff_sectionElRKNS0_10UnwindInfoE'/>
+<use f='llvm/llvm/tools/llvm-readobj/Win64EHDumper.cpp' l='323' u='a' c='_ZN4llvm7Win64EH6Dumper20printRuntimeFunctionERKNS1_7ContextEPKNS_6object12coff_sectionEmRKNS0_15RuntimeFunctionE'/>

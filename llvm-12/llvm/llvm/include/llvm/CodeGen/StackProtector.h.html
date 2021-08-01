@@ -1,0 +1,138 @@
+<!doctype html>
+<html>
+<head>
+<meta name="viewport" content="width=device-width, initial-scale=1.0"><title>StackProtector.h source code [llvm/llvm/include/llvm/CodeGen/StackProtector.h] - Woboq Code Browser</title>
+<meta name="woboq:interestingDefinitions" content="llvm::StackProtector "/>
+<link rel="stylesheet" href="../../../../.././data/qtcreator.css" title="QtCreator"/>
+<link rel="alternate stylesheet" href="../../../../.././data/kdevelop.css" title="KDevelop"/>
+<script type="text/javascript" src="../../../../.././data/jquery/jquery.min.js"></script>
+<script type="text/javascript" src="../../../../.././data/jquery/jquery-ui.min.js"></script>
+<script>var file = 'llvm/llvm/include/llvm/CodeGen/StackProtector.h'; var root_path = '../../../../..'; var data_path = '../../../../.././data'; var ecma_script_api_version = 2;</script>
+<script src='../../../../.././data/codebrowser.js'></script>
+</head>
+<body><div id='header'><h1 id='breadcrumb'><span>Browse the source code of </span><a href='../../../..'>llvm</a>/<a href='../../..'>llvm</a>/<a href='../..'>include</a>/<a href='..'>llvm</a>/<a href='./'>CodeGen</a>/<a href='StackProtector.h.html'>StackProtector.h</a></h1></div>
+<hr/><div id='content'><table class="code">
+<tr><th id="1">1</th><td><i>//===- StackProtector.h - Stack Protector Insertion -------------*- C++ -*-===//</i></td></tr>
+<tr><th id="2">2</th><td><i>//</i></td></tr>
+<tr><th id="3">3</th><td><i>// Part of the LLVM Project, under the Apache License v2.0 with LLVM Exceptions.</i></td></tr>
+<tr><th id="4">4</th><td><i>// See <a href="https://llvm.org/LICENSE.txt">https://llvm.org/LICENSE.txt</a> for license information.</i></td></tr>
+<tr><th id="5">5</th><td><i>// SPDX-License-Identifier: Apache-2.0 WITH LLVM-exception</i></td></tr>
+<tr><th id="6">6</th><td><i>//</i></td></tr>
+<tr><th id="7">7</th><td><i>//===----------------------------------------------------------------------===//</i></td></tr>
+<tr><th id="8">8</th><td><i>//</i></td></tr>
+<tr><th id="9">9</th><td><i>// This pass inserts stack protectors into functions which need them. A variable</i></td></tr>
+<tr><th id="10">10</th><td><i>// with a random value in it is stored onto the stack before the local variables</i></td></tr>
+<tr><th id="11">11</th><td><i>// are allocated. Upon exiting the block, the stored value is checked. If it's</i></td></tr>
+<tr><th id="12">12</th><td><i>// changed, then there was some sort of violation and the program aborts.</i></td></tr>
+<tr><th id="13">13</th><td><i>//</i></td></tr>
+<tr><th id="14">14</th><td><i>//===----------------------------------------------------------------------===//</i></td></tr>
+<tr><th id="15">15</th><td></td></tr>
+<tr><th id="16">16</th><td><u>#<span data-ppcond="16">ifndef</span> <span class="macro" data-ref="_M/LLVM_CODEGEN_STACKPROTECTOR_H">LLVM_CODEGEN_STACKPROTECTOR_H</span></u></td></tr>
+<tr><th id="17">17</th><td><u>#define <dfn class="macro" id="_M/LLVM_CODEGEN_STACKPROTECTOR_H" data-ref="_M/LLVM_CODEGEN_STACKPROTECTOR_H">LLVM_CODEGEN_STACKPROTECTOR_H</dfn></u></td></tr>
+<tr><th id="18">18</th><td></td></tr>
+<tr><th id="19">19</th><td><u>#include <a href="../ADT/SmallPtrSet.h.html">"llvm/ADT/SmallPtrSet.h"</a></u></td></tr>
+<tr><th id="20">20</th><td><u>#include <a href="../ADT/Triple.h.html">"llvm/ADT/Triple.h"</a></u></td></tr>
+<tr><th id="21">21</th><td><u>#include <a href="MachineFrameInfo.h.html">"llvm/CodeGen/MachineFrameInfo.h"</a></u></td></tr>
+<tr><th id="22">22</th><td><u>#include <a href="../IR/Instructions.h.html">"llvm/IR/Instructions.h"</a></u></td></tr>
+<tr><th id="23">23</th><td><u>#include <a href="../IR/ValueMap.h.html">"llvm/IR/ValueMap.h"</a></u></td></tr>
+<tr><th id="24">24</th><td><u>#include <a href="../Pass.h.html">"llvm/Pass.h"</a></u></td></tr>
+<tr><th id="25">25</th><td></td></tr>
+<tr><th id="26">26</th><td><b>namespace</b> <span class="namespace">llvm</span> {</td></tr>
+<tr><th id="27">27</th><td></td></tr>
+<tr><th id="28">28</th><td><b>class</b> <a class="type" href="../IR/BasicBlock.h.html#llvm::BasicBlock" title='llvm::BasicBlock' data-ref="llvm::BasicBlock" data-ref-filename="llvm..BasicBlock" id="llvm::BasicBlock">BasicBlock</a>;</td></tr>
+<tr><th id="29">29</th><td><b>class</b> <a class="type" href="../Analysis/BranchProbabilityInfo.h.html#llvm::DominatorTree" title='llvm::DominatorTree' data-ref="llvm::DominatorTree" data-ref-filename="llvm..DominatorTree" id="llvm::DominatorTree">DominatorTree</a>;</td></tr>
+<tr><th id="30">30</th><td><b>class</b> <a class="type" href="../IR/Function.h.html#llvm::Function" title='llvm::Function' data-ref="llvm::Function" data-ref-filename="llvm..Function" id="llvm::Function">Function</a>;</td></tr>
+<tr><th id="31">31</th><td><b>class</b> <a class="type" href="../IR/Instruction.h.html#llvm::Instruction" title='llvm::Instruction' data-ref="llvm::Instruction" data-ref-filename="llvm..Instruction" id="llvm::Instruction">Instruction</a>;</td></tr>
+<tr><th id="32">32</th><td><b>class</b> <a class="type" href="../IR/Module.h.html#llvm::Module" title='llvm::Module' data-ref="llvm::Module" data-ref-filename="llvm..Module" id="llvm::Module">Module</a>;</td></tr>
+<tr><th id="33">33</th><td><b>class</b> <a class="type" href="TargetLowering.h.html#llvm::TargetLoweringBase" title='llvm::TargetLoweringBase' data-ref="llvm::TargetLoweringBase" data-ref-filename="llvm..TargetLoweringBase" id="llvm::TargetLoweringBase">TargetLoweringBase</a>;</td></tr>
+<tr><th id="34">34</th><td><b>class</b> <a class="type" href="../Target/TargetMachine.h.html#llvm::TargetMachine" title='llvm::TargetMachine' data-ref="llvm::TargetMachine" data-ref-filename="llvm..TargetMachine" id="llvm::TargetMachine">TargetMachine</a>;</td></tr>
+<tr><th id="35">35</th><td><b>class</b> <a class="type" href="../IR/Type.h.html#llvm::Type" title='llvm::Type' data-ref="llvm::Type" data-ref-filename="llvm..Type" id="llvm::Type">Type</a>;</td></tr>
+<tr><th id="36">36</th><td></td></tr>
+<tr><th id="37">37</th><td><b>class</b> <dfn class="type def" id="llvm::StackProtector" title='llvm::StackProtector' data-ref="llvm::StackProtector" data-ref-filename="llvm..StackProtector">StackProtector</dfn> : <b>public</b> <a class="type" href="../Pass.h.html#llvm::FunctionPass" title='llvm::FunctionPass' data-ref="llvm::FunctionPass" data-ref-filename="llvm..FunctionPass">FunctionPass</a> {</td></tr>
+<tr><th id="38">38</th><td><b>private</b>:</td></tr>
+<tr><th id="39">39</th><td>  <i class="doc">/// A mapping of AllocaInsts to their required SSP layout.</i></td></tr>
+<tr><th id="40">40</th><td>  <b>using</b> <dfn class="typedef" id="llvm::StackProtector::SSPLayoutMap" title='llvm::StackProtector::SSPLayoutMap' data-type='DenseMap&lt;const llvm::AllocaInst *, MachineFrameInfo::SSPLayoutKind&gt;' data-ref="llvm::StackProtector::SSPLayoutMap" data-ref-filename="llvm..StackProtector..SSPLayoutMap">SSPLayoutMap</dfn> = <a class="type" href="../ADT/DenseMap.h.html#llvm::DenseMap" title='llvm::DenseMap' data-ref="llvm::DenseMap" data-ref-filename="llvm..DenseMap">DenseMap</a>&lt;<em>const</em> <a class="type" href="../IR/Instructions.h.html#llvm::AllocaInst" title='llvm::AllocaInst' data-ref="llvm::AllocaInst" data-ref-filename="llvm..AllocaInst">AllocaInst</a> *,</td></tr>
+<tr><th id="41">41</th><td>                                <a class="type" href="MachineFrameInfo.h.html#llvm::MachineFrameInfo" title='llvm::MachineFrameInfo' data-ref="llvm::MachineFrameInfo" data-ref-filename="llvm..MachineFrameInfo">MachineFrameInfo</a>::<a class="type" href="MachineFrameInfo.h.html#llvm::MachineFrameInfo::SSPLayoutKind" title='llvm::MachineFrameInfo::SSPLayoutKind' data-ref="llvm::MachineFrameInfo::SSPLayoutKind" data-ref-filename="llvm..MachineFrameInfo..SSPLayoutKind">SSPLayoutKind</a>&gt;;</td></tr>
+<tr><th id="42">42</th><td></td></tr>
+<tr><th id="43">43</th><td>  <em>const</em> <a class="type" href="../Target/TargetMachine.h.html#llvm::TargetMachine" title='llvm::TargetMachine' data-ref="llvm::TargetMachine" data-ref-filename="llvm..TargetMachine">TargetMachine</a> *<dfn class="decl field" id="llvm::StackProtector::TM" title='llvm::StackProtector::TM' data-ref="llvm::StackProtector::TM" data-ref-filename="llvm..StackProtector..TM">TM</dfn> = <b>nullptr</b>;</td></tr>
+<tr><th id="44">44</th><td></td></tr>
+<tr><th id="45">45</th><td>  <i class="doc">/// TLI - Keep a pointer of a TargetLowering to consult for determining</i></td></tr>
+<tr><th id="46">46</th><td><i class="doc">  /// target type sizes.</i></td></tr>
+<tr><th id="47">47</th><td>  <em>const</em> <a class="type" href="TargetLowering.h.html#llvm::TargetLoweringBase" title='llvm::TargetLoweringBase' data-ref="llvm::TargetLoweringBase" data-ref-filename="llvm..TargetLoweringBase">TargetLoweringBase</a> *<dfn class="decl field" id="llvm::StackProtector::TLI" title='llvm::StackProtector::TLI' data-ref="llvm::StackProtector::TLI" data-ref-filename="llvm..StackProtector..TLI">TLI</dfn> = <b>nullptr</b>;</td></tr>
+<tr><th id="48">48</th><td>  <a class="type" href="../ADT/Triple.h.html#llvm::Triple" title='llvm::Triple' data-ref="llvm::Triple" data-ref-filename="llvm..Triple">Triple</a> <dfn class="decl field" id="llvm::StackProtector::Trip" title='llvm::StackProtector::Trip' data-ref="llvm::StackProtector::Trip" data-ref-filename="llvm..StackProtector..Trip">Trip</dfn>;</td></tr>
+<tr><th id="49">49</th><td></td></tr>
+<tr><th id="50">50</th><td>  <a class="type" href="../IR/Function.h.html#llvm::Function" title='llvm::Function' data-ref="llvm::Function" data-ref-filename="llvm..Function">Function</a> *<dfn class="decl field" id="llvm::StackProtector::F" title='llvm::StackProtector::F' data-ref="llvm::StackProtector::F" data-ref-filename="llvm..StackProtector..F">F</dfn>;</td></tr>
+<tr><th id="51">51</th><td>  <a class="type" href="../IR/Module.h.html#llvm::Module" title='llvm::Module' data-ref="llvm::Module" data-ref-filename="llvm..Module">Module</a> *<dfn class="decl field" id="llvm::StackProtector::M" title='llvm::StackProtector::M' data-ref="llvm::StackProtector::M" data-ref-filename="llvm..StackProtector..M">M</dfn>;</td></tr>
+<tr><th id="52">52</th><td></td></tr>
+<tr><th id="53">53</th><td>  <a class="type" href="../Analysis/BranchProbabilityInfo.h.html#llvm::DominatorTree" title='llvm::DominatorTree' data-ref="llvm::DominatorTree" data-ref-filename="llvm..DominatorTree">DominatorTree</a> *<dfn class="decl field" id="llvm::StackProtector::DT" title='llvm::StackProtector::DT' data-ref="llvm::StackProtector::DT" data-ref-filename="llvm..StackProtector..DT">DT</dfn>;</td></tr>
+<tr><th id="54">54</th><td></td></tr>
+<tr><th id="55">55</th><td>  <i class="doc">/// Layout - Mapping of allocations to the required SSPLayoutKind.</i></td></tr>
+<tr><th id="56">56</th><td><i class="doc">  /// StackProtector analysis will update this map when determining if an</i></td></tr>
+<tr><th id="57">57</th><td><i class="doc">  /// AllocaInst triggers a stack protector.</i></td></tr>
+<tr><th id="58">58</th><td>  <a class="typedef" href="#llvm::StackProtector::SSPLayoutMap" title='llvm::StackProtector::SSPLayoutMap' data-type='DenseMap&lt;const llvm::AllocaInst *, MachineFrameInfo::SSPLayoutKind&gt;' data-ref="llvm::StackProtector::SSPLayoutMap" data-ref-filename="llvm..StackProtector..SSPLayoutMap">SSPLayoutMap</a> <dfn class="decl field" id="llvm::StackProtector::Layout" title='llvm::StackProtector::Layout' data-ref="llvm::StackProtector::Layout" data-ref-filename="llvm..StackProtector..Layout">Layout</dfn>;</td></tr>
+<tr><th id="59">59</th><td></td></tr>
+<tr><th id="60">60</th><td>  <i class="doc">/// The minimum size of buffers that will receive stack smashing</i></td></tr>
+<tr><th id="61">61</th><td><i class="doc">  /// protection when -fstack-protection is used.</i></td></tr>
+<tr><th id="62">62</th><td>  <em>unsigned</em> <dfn class="decl field" id="llvm::StackProtector::SSPBufferSize" title='llvm::StackProtector::SSPBufferSize' data-ref="llvm::StackProtector::SSPBufferSize" data-ref-filename="llvm..StackProtector..SSPBufferSize">SSPBufferSize</dfn> = <var>0</var>;</td></tr>
+<tr><th id="63">63</th><td></td></tr>
+<tr><th id="64">64</th><td>  <i class="doc">/// VisitedPHIs - The set of PHI nodes visited when determining</i></td></tr>
+<tr><th id="65">65</th><td><i class="doc">  /// if a variable's reference has been taken.  This set</i></td></tr>
+<tr><th id="66">66</th><td><i class="doc">  /// is maintained to ensure we don't visit the same PHI node multiple</i></td></tr>
+<tr><th id="67">67</th><td><i class="doc">  /// times.</i></td></tr>
+<tr><th id="68">68</th><td>  <a class="type" href="../ADT/SmallPtrSet.h.html#llvm::SmallPtrSet" title='llvm::SmallPtrSet' data-ref="llvm::SmallPtrSet" data-ref-filename="llvm..SmallPtrSet">SmallPtrSet</a>&lt;<em>const</em> <a class="type" href="../IR/Instructions.h.html#llvm::PHINode" title='llvm::PHINode' data-ref="llvm::PHINode" data-ref-filename="llvm..PHINode">PHINode</a> *, <var>16</var>&gt; <dfn class="decl field" id="llvm::StackProtector::VisitedPHIs" title='llvm::StackProtector::VisitedPHIs' data-ref="llvm::StackProtector::VisitedPHIs" data-ref-filename="llvm..StackProtector..VisitedPHIs">VisitedPHIs</dfn>;</td></tr>
+<tr><th id="69">69</th><td></td></tr>
+<tr><th id="70">70</th><td>  <i>// A prologue is generated.</i></td></tr>
+<tr><th id="71">71</th><td>  <em>bool</em> <dfn class="decl field" id="llvm::StackProtector::HasPrologue" title='llvm::StackProtector::HasPrologue' data-ref="llvm::StackProtector::HasPrologue" data-ref-filename="llvm..StackProtector..HasPrologue">HasPrologue</dfn> = <b>false</b>;</td></tr>
+<tr><th id="72">72</th><td></td></tr>
+<tr><th id="73">73</th><td>  <i>// IR checking code is generated.</i></td></tr>
+<tr><th id="74">74</th><td>  <em>bool</em> <dfn class="decl field" id="llvm::StackProtector::HasIRCheck" title='llvm::StackProtector::HasIRCheck' data-ref="llvm::StackProtector::HasIRCheck" data-ref-filename="llvm..StackProtector..HasIRCheck">HasIRCheck</dfn> = <b>false</b>;</td></tr>
+<tr><th id="75">75</th><td></td></tr>
+<tr><th id="76">76</th><td>  <i class="doc">/// InsertStackProtectors - Insert code into the prologue and epilogue of</i></td></tr>
+<tr><th id="77">77</th><td><i class="doc">  /// the function.</i></td></tr>
+<tr><th id="78">78</th><td><i class="doc">  ///</i></td></tr>
+<tr><th id="79">79</th><td><i class="doc">  ///  - The prologue code loads and stores the stack guard onto the stack.</i></td></tr>
+<tr><th id="80">80</th><td><i class="doc">  ///  - The epilogue checks the value stored in the prologue against the</i></td></tr>
+<tr><th id="81">81</th><td><i class="doc">  ///    original value. It calls __stack_chk_fail if they differ.</i></td></tr>
+<tr><th id="82">82</th><td>  <em>bool</em> <dfn class="decl fn" id="_ZN4llvm14StackProtector21InsertStackProtectorsEv" title='llvm::StackProtector::InsertStackProtectors' data-ref="_ZN4llvm14StackProtector21InsertStackProtectorsEv" data-ref-filename="_ZN4llvm14StackProtector21InsertStackProtectorsEv">InsertStackProtectors</dfn>();</td></tr>
+<tr><th id="83">83</th><td></td></tr>
+<tr><th id="84">84</th><td>  <i class="doc">/// CreateFailBB - Create a basic block to jump to when the stack protector</i></td></tr>
+<tr><th id="85">85</th><td><i class="doc">  /// check fails.</i></td></tr>
+<tr><th id="86">86</th><td>  <a class="type" href="../IR/BasicBlock.h.html#llvm::BasicBlock" title='llvm::BasicBlock' data-ref="llvm::BasicBlock" data-ref-filename="llvm..BasicBlock">BasicBlock</a> *<dfn class="decl fn" id="_ZN4llvm14StackProtector12CreateFailBBEv" title='llvm::StackProtector::CreateFailBB' data-ref="_ZN4llvm14StackProtector12CreateFailBBEv" data-ref-filename="_ZN4llvm14StackProtector12CreateFailBBEv">CreateFailBB</dfn>();</td></tr>
+<tr><th id="87">87</th><td></td></tr>
+<tr><th id="88">88</th><td>  <i class="doc">/// ContainsProtectableArray - Check whether the type either is an array or</i></td></tr>
+<tr><th id="89">89</th><td><i class="doc">  /// contains an array of sufficient size so that we need stack protectors</i></td></tr>
+<tr><th id="90">90</th><td><i class="doc">  /// for it.</i></td></tr>
+<tr><th id="91">91</th><td><i class="doc">  /// <span class="command">\param</span> [out] <span class="arg">IsLarge</span> is set to true if a protectable array is found and</i></td></tr>
+<tr><th id="92">92</th><td><i class="doc">  /// it is "large" ( &gt;= ssp-buffer-size).  In the case of a structure with</i></td></tr>
+<tr><th id="93">93</th><td><i class="doc">  /// multiple arrays, this gets set if any of them is large.</i></td></tr>
+<tr><th id="94">94</th><td>  <em>bool</em> <dfn class="decl fn" id="_ZNK4llvm14StackProtector24ContainsProtectableArrayEPNS_4TypeERbbb" title='llvm::StackProtector::ContainsProtectableArray' data-ref="_ZNK4llvm14StackProtector24ContainsProtectableArrayEPNS_4TypeERbbb" data-ref-filename="_ZNK4llvm14StackProtector24ContainsProtectableArrayEPNS_4TypeERbbb">ContainsProtectableArray</dfn>(<a class="type" href="../IR/Type.h.html#llvm::Type" title='llvm::Type' data-ref="llvm::Type" data-ref-filename="llvm..Type">Type</a> *<dfn class="local col2 decl" id="422Ty" title='Ty' data-type='llvm::Type *' data-ref="422Ty" data-ref-filename="422Ty">Ty</dfn>, <em>bool</em> &amp;<dfn class="local col3 decl" id="423IsLarge" title='IsLarge' data-type='bool &amp;' data-ref="423IsLarge" data-ref-filename="423IsLarge">IsLarge</dfn>, <em>bool</em> <dfn class="local col4 decl" id="424Strong" title='Strong' data-type='bool' data-ref="424Strong" data-ref-filename="424Strong">Strong</dfn> = <b>false</b>,</td></tr>
+<tr><th id="95">95</th><td>                                <em>bool</em> <dfn class="local col5 decl" id="425InStruct" title='InStruct' data-type='bool' data-ref="425InStruct" data-ref-filename="425InStruct">InStruct</dfn> = <b>false</b>) <em>const</em>;</td></tr>
+<tr><th id="96">96</th><td></td></tr>
+<tr><th id="97">97</th><td>  <i class="doc">/// Check whether a stack allocation has its address taken.</i></td></tr>
+<tr><th id="98">98</th><td>  <em>bool</em> <dfn class="decl fn" id="_ZN4llvm14StackProtector15HasAddressTakenEPKNS_11InstructionEm" title='llvm::StackProtector::HasAddressTaken' data-ref="_ZN4llvm14StackProtector15HasAddressTakenEPKNS_11InstructionEm" data-ref-filename="_ZN4llvm14StackProtector15HasAddressTakenEPKNS_11InstructionEm">HasAddressTaken</dfn>(<em>const</em> <a class="type" href="../IR/Instruction.h.html#llvm::Instruction" title='llvm::Instruction' data-ref="llvm::Instruction" data-ref-filename="llvm..Instruction">Instruction</a> *<dfn class="local col6 decl" id="426AI" title='AI' data-type='const llvm::Instruction *' data-ref="426AI" data-ref-filename="426AI">AI</dfn>, <a class="typedef" href="../../../../../include/bits/stdint-uintn.h.html#uint64_t" title='uint64_t' data-type='__uint64_t' data-ref="uint64_t" data-ref-filename="uint64_t">uint64_t</a> <dfn class="local col7 decl" id="427AllocSize" title='AllocSize' data-type='uint64_t' data-ref="427AllocSize" data-ref-filename="427AllocSize">AllocSize</dfn>);</td></tr>
+<tr><th id="99">99</th><td></td></tr>
+<tr><th id="100">100</th><td>  <i class="doc">/// RequiresStackProtector - Check whether or not this function needs a</i></td></tr>
+<tr><th id="101">101</th><td><i class="doc">  /// stack protector based upon the stack protector level.</i></td></tr>
+<tr><th id="102">102</th><td>  <em>bool</em> <dfn class="decl fn" id="_ZN4llvm14StackProtector22RequiresStackProtectorEv" title='llvm::StackProtector::RequiresStackProtector' data-ref="_ZN4llvm14StackProtector22RequiresStackProtectorEv" data-ref-filename="_ZN4llvm14StackProtector22RequiresStackProtectorEv">RequiresStackProtector</dfn>();</td></tr>
+<tr><th id="103">103</th><td></td></tr>
+<tr><th id="104">104</th><td><b>public</b>:</td></tr>
+<tr><th id="105">105</th><td>  <em>static</em> <em>char</em> <dfn class="decl" id="llvm::StackProtector::ID" title='llvm::StackProtector::ID' data-ref="llvm::StackProtector::ID" data-ref-filename="llvm..StackProtector..ID">ID</dfn>; <i>// Pass identification, replacement for typeid.</i></td></tr>
+<tr><th id="106">106</th><td></td></tr>
+<tr><th id="107">107</th><td>  <dfn class="decl fn" id="_ZN4llvm14StackProtectorC1Ev" title='llvm::StackProtector::StackProtector' data-ref="_ZN4llvm14StackProtectorC1Ev" data-ref-filename="_ZN4llvm14StackProtectorC1Ev">StackProtector</dfn>();</td></tr>
+<tr><th id="108">108</th><td></td></tr>
+<tr><th id="109">109</th><td>  <em>void</em> <dfn class="virtual decl fn" id="_ZNK4llvm14StackProtector16getAnalysisUsageERNS_13AnalysisUsageE" title='llvm::StackProtector::getAnalysisUsage' data-ref="_ZNK4llvm14StackProtector16getAnalysisUsageERNS_13AnalysisUsageE" data-ref-filename="_ZNK4llvm14StackProtector16getAnalysisUsageERNS_13AnalysisUsageE">getAnalysisUsage</dfn>(<a class="type" href="../PassAnalysisSupport.h.html#llvm::AnalysisUsage" title='llvm::AnalysisUsage' data-ref="llvm::AnalysisUsage" data-ref-filename="llvm..AnalysisUsage">AnalysisUsage</a> &amp;<dfn class="local col8 decl" id="428AU" title='AU' data-type='llvm::AnalysisUsage &amp;' data-ref="428AU" data-ref-filename="428AU">AU</dfn>) <em>const</em> override;</td></tr>
+<tr><th id="110">110</th><td></td></tr>
+<tr><th id="111">111</th><td>  <i>// Return true if StackProtector is supposed to be handled by SelectionDAG.</i></td></tr>
+<tr><th id="112">112</th><td>  <em>bool</em> <dfn class="decl fn" id="_ZNK4llvm14StackProtector17shouldEmitSDCheckERKNS_10BasicBlockE" title='llvm::StackProtector::shouldEmitSDCheck' data-ref="_ZNK4llvm14StackProtector17shouldEmitSDCheckERKNS_10BasicBlockE" data-ref-filename="_ZNK4llvm14StackProtector17shouldEmitSDCheckERKNS_10BasicBlockE">shouldEmitSDCheck</dfn>(<em>const</em> <a class="type" href="../IR/BasicBlock.h.html#llvm::BasicBlock" title='llvm::BasicBlock' data-ref="llvm::BasicBlock" data-ref-filename="llvm..BasicBlock">BasicBlock</a> &amp;<dfn class="local col9 decl" id="429BB" title='BB' data-type='const llvm::BasicBlock &amp;' data-ref="429BB" data-ref-filename="429BB">BB</dfn>) <em>const</em>;</td></tr>
+<tr><th id="113">113</th><td></td></tr>
+<tr><th id="114">114</th><td>  <em>bool</em> <dfn class="virtual decl fn" id="_ZN4llvm14StackProtector13runOnFunctionERNS_8FunctionE" title='llvm::StackProtector::runOnFunction' data-ref="_ZN4llvm14StackProtector13runOnFunctionERNS_8FunctionE" data-ref-filename="_ZN4llvm14StackProtector13runOnFunctionERNS_8FunctionE">runOnFunction</dfn>(<a class="type" href="../IR/Function.h.html#llvm::Function" title='llvm::Function' data-ref="llvm::Function" data-ref-filename="llvm..Function">Function</a> &amp;<dfn class="local col0 decl" id="430Fn" title='Fn' data-type='llvm::Function &amp;' data-ref="430Fn" data-ref-filename="430Fn">Fn</dfn>) override;</td></tr>
+<tr><th id="115">115</th><td></td></tr>
+<tr><th id="116">116</th><td>  <em>void</em> <dfn class="decl fn" id="_ZNK4llvm14StackProtector22copyToMachineFrameInfoERNS_16MachineFrameInfoE" title='llvm::StackProtector::copyToMachineFrameInfo' data-ref="_ZNK4llvm14StackProtector22copyToMachineFrameInfoERNS_16MachineFrameInfoE" data-ref-filename="_ZNK4llvm14StackProtector22copyToMachineFrameInfoERNS_16MachineFrameInfoE">copyToMachineFrameInfo</dfn>(<a class="type" href="MachineFrameInfo.h.html#llvm::MachineFrameInfo" title='llvm::MachineFrameInfo' data-ref="llvm::MachineFrameInfo" data-ref-filename="llvm..MachineFrameInfo">MachineFrameInfo</a> &amp;<dfn class="local col1 decl" id="431MFI" title='MFI' data-type='llvm::MachineFrameInfo &amp;' data-ref="431MFI" data-ref-filename="431MFI">MFI</dfn>) <em>const</em>;</td></tr>
+<tr><th id="117">117</th><td>};</td></tr>
+<tr><th id="118">118</th><td></td></tr>
+<tr><th id="119">119</th><td>} <i>// end namespace llvm</i></td></tr>
+<tr><th id="120">120</th><td></td></tr>
+<tr><th id="121">121</th><td><u>#<span data-ppcond="16">endif</span> // LLVM_CODEGEN_STACKPROTECTOR_H</u></td></tr>
+<tr><th id="122">122</th><td></td></tr>
+</table><hr/><p id='footer'>
+Generated while processing <a href='../../../lib/CodeGen/GlobalISel/IRTranslator.cpp.html'>llvm/llvm/lib/CodeGen/GlobalISel/IRTranslator.cpp</a><br/>Generated on <em>2021-Jul-01</em> from project llvm revision <em>12</em>

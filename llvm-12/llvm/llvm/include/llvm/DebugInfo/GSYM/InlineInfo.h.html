@@ -1,0 +1,199 @@
+<!doctype html>
+<html>
+<head>
+<meta name="viewport" content="width=device-width, initial-scale=1.0"><title>InlineInfo.h source code [llvm/llvm/include/llvm/DebugInfo/GSYM/InlineInfo.h] - Woboq Code Browser</title>
+<meta name="woboq:interestingDefinitions" content="llvm::gsym::InlineInfo "/>
+<link rel="stylesheet" href="../../../../../.././data/qtcreator.css" title="QtCreator"/>
+<link rel="alternate stylesheet" href="../../../../../.././data/kdevelop.css" title="KDevelop"/>
+<script type="text/javascript" src="../../../../../.././data/jquery/jquery.min.js"></script>
+<script type="text/javascript" src="../../../../../.././data/jquery/jquery-ui.min.js"></script>
+<script>var file = 'llvm/llvm/include/llvm/DebugInfo/GSYM/InlineInfo.h'; var root_path = '../../../../../..'; var data_path = '../../../../../.././data'; var ecma_script_api_version = 2;</script>
+<script src='../../../../../.././data/codebrowser.js'></script>
+</head>
+<body><div id='header'><h1 id='breadcrumb'><span>Browse the source code of </span><a href='../../../../..'>llvm</a>/<a href='../../../..'>llvm</a>/<a href='../../..'>include</a>/<a href='../..'>llvm</a>/<a href='..'>DebugInfo</a>/<a href='./'>GSYM</a>/<a href='InlineInfo.h.html'>InlineInfo.h</a></h1></div>
+<hr/><div id='content'><table class="code">
+<tr><th id="1">1</th><td><i>//===- InlineInfo.h ---------------------------------------------*- C++ -*-===//</i></td></tr>
+<tr><th id="2">2</th><td><i>//</i></td></tr>
+<tr><th id="3">3</th><td><i>// Part of the LLVM Project, under the Apache License v2.0 with LLVM Exceptions.</i></td></tr>
+<tr><th id="4">4</th><td><i>// See <a href="https://llvm.org/LICENSE.txt">https://llvm.org/LICENSE.txt</a> for license information.</i></td></tr>
+<tr><th id="5">5</th><td><i>// SPDX-License-Identifier: Apache-2.0 WITH LLVM-exception</i></td></tr>
+<tr><th id="6">6</th><td><i>//</i></td></tr>
+<tr><th id="7">7</th><td><i>//===----------------------------------------------------------------------===//</i></td></tr>
+<tr><th id="8">8</th><td></td></tr>
+<tr><th id="9">9</th><td><u>#<span data-ppcond="9">ifndef</span> <span class="macro" data-ref="_M/LLVM_DEBUGINFO_GSYM_INLINEINFO_H">LLVM_DEBUGINFO_GSYM_INLINEINFO_H</span></u></td></tr>
+<tr><th id="10">10</th><td><u>#define <dfn class="macro" id="_M/LLVM_DEBUGINFO_GSYM_INLINEINFO_H" data-ref="_M/LLVM_DEBUGINFO_GSYM_INLINEINFO_H">LLVM_DEBUGINFO_GSYM_INLINEINFO_H</dfn></u></td></tr>
+<tr><th id="11">11</th><td></td></tr>
+<tr><th id="12">12</th><td><u>#include <a href="../../ADT/Optional.h.html">"llvm/ADT/Optional.h"</a></u></td></tr>
+<tr><th id="13">13</th><td><u>#include <a href="LineEntry.h.html">"llvm/DebugInfo/GSYM/LineEntry.h"</a></u></td></tr>
+<tr><th id="14">14</th><td><u>#include <a href="LookupResult.h.html">"llvm/DebugInfo/GSYM/LookupResult.h"</a></u></td></tr>
+<tr><th id="15">15</th><td><u>#include <a href="Range.h.html">"llvm/DebugInfo/GSYM/Range.h"</a></u></td></tr>
+<tr><th id="16">16</th><td><u>#include <a href="../../Support/Error.h.html">"llvm/Support/Error.h"</a></u></td></tr>
+<tr><th id="17">17</th><td><u>#include &lt;stdint.h&gt;</u></td></tr>
+<tr><th id="18">18</th><td><u>#include &lt;vector&gt;</u></td></tr>
+<tr><th id="19">19</th><td></td></tr>
+<tr><th id="20">20</th><td></td></tr>
+<tr><th id="21">21</th><td><b>namespace</b> <span class="namespace">llvm</span> {</td></tr>
+<tr><th id="22">22</th><td><b>class</b> <a class="type" href="../../Support/raw_ostream.h.html#llvm::raw_ostream" title='llvm::raw_ostream' data-ref="llvm::raw_ostream" data-ref-filename="llvm..raw_ostream" id="llvm::raw_ostream">raw_ostream</a>;</td></tr>
+<tr><th id="23">23</th><td></td></tr>
+<tr><th id="24">24</th><td><b>namespace</b> <span class="namespace">gsym</span> {</td></tr>
+<tr><th id="25">25</th><td></td></tr>
+<tr><th id="26">26</th><td><b>class</b> <a class="type" href="GsymReader.h.html#llvm::gsym::GsymReader" title='llvm::gsym::GsymReader' data-ref="llvm::gsym::GsymReader" data-ref-filename="llvm..gsym..GsymReader" id="llvm::gsym::GsymReader">GsymReader</a>;</td></tr>
+<tr><th id="27">27</th><td><i class="doc">/// Inline information stores the name of the inline function along with</i></td></tr>
+<tr><th id="28">28</th><td><i class="doc">/// an array of address ranges. It also stores the call file and call line</i></td></tr>
+<tr><th id="29">29</th><td><i class="doc">/// that called this inline function. This allows us to unwind inline call</i></td></tr>
+<tr><th id="30">30</th><td><i class="doc">/// stacks back to the inline or concrete function that called this</i></td></tr>
+<tr><th id="31">31</th><td><i class="doc">/// function. Inlined functions contained in this function are stored in the</i></td></tr>
+<tr><th id="32">32</th><td><i class="doc">/// "Children" variable. All address ranges must be sorted and all address</i></td></tr>
+<tr><th id="33">33</th><td><i class="doc">/// ranges of all children must be contained in the ranges of this function.</i></td></tr>
+<tr><th id="34">34</th><td><i class="doc">/// Any clients that encode information will need to ensure the ranges are</i></td></tr>
+<tr><th id="35">35</th><td><i class="doc">/// all contined correctly or lookups could fail. Add ranges in these objects</i></td></tr>
+<tr><th id="36">36</th><td><i class="doc">/// must be contained in the top level FunctionInfo address ranges as well.</i></td></tr>
+<tr><th id="37">37</th><td><i class="doc">///</i></td></tr>
+<tr><th id="38">38</th><td><i class="doc">/// ENCODING</i></td></tr>
+<tr><th id="39">39</th><td><i class="doc">///</i></td></tr>
+<tr><th id="40">40</th><td><i class="doc">/// When saved to disk, the inline info encodes all ranges to be relative to</i></td></tr>
+<tr><th id="41">41</th><td><i class="doc">/// a parent address range. This will be the FunctionInfo's start address if</i></td></tr>
+<tr><th id="42">42</th><td><i class="doc">/// the InlineInfo is directly contained in a FunctionInfo, or a the start</i></td></tr>
+<tr><th id="43">43</th><td><i class="doc">/// address of the containing parent InlineInfo's first "Ranges" member. This</i></td></tr>
+<tr><th id="44">44</th><td><i class="doc">/// allows address ranges to be efficiently encoded using ULEB128 encodings as</i></td></tr>
+<tr><th id="45">45</th><td><i class="doc">/// we encode the offset and size of each range instead of full addresses. This</i></td></tr>
+<tr><th id="46">46</th><td><i class="doc">/// also makes any encoded addresses easy to relocate as we just need to</i></td></tr>
+<tr><th id="47">47</th><td><i class="doc">/// relocate the FunctionInfo's start address.</i></td></tr>
+<tr><th id="48">48</th><td><i class="doc">///</i></td></tr>
+<tr><th id="49">49</th><td><i class="doc">/// - The AddressRanges member "Ranges" is encoded using an appropriate base</i></td></tr>
+<tr><th id="50">50</th><td><i class="doc">///   address as described above.</i></td></tr>
+<tr><th id="51">51</th><td><i class="doc">/// - UINT8 boolean value that specifies if the InlineInfo object has children.</i></td></tr>
+<tr><th id="52">52</th><td><i class="doc">/// - UINT32 string table offset that points to the name of the inline</i></td></tr>
+<tr><th id="53">53</th><td><i class="doc">///   function.</i></td></tr>
+<tr><th id="54">54</th><td><i class="doc">/// - ULEB128 integer that specifies the file of the call site that called</i></td></tr>
+<tr><th id="55">55</th><td><i class="doc">///   this function.</i></td></tr>
+<tr><th id="56">56</th><td><i class="doc">/// - ULEB128 integer that specifies the source line of the call site that</i></td></tr>
+<tr><th id="57">57</th><td><i class="doc">///   called this function.</i></td></tr>
+<tr><th id="58">58</th><td><i class="doc">/// - if this object has children, enocode each child InlineInfo using the</i></td></tr>
+<tr><th id="59">59</th><td><i class="doc">///   the first address range's start address as the base address.</i></td></tr>
+<tr><th id="60">60</th><td><i class="doc">///</i></td></tr>
+<tr><th id="61">61</th><td><b>struct</b> <dfn class="type def" id="llvm::gsym::InlineInfo" title='llvm::gsym::InlineInfo' data-ref="llvm::gsym::InlineInfo" data-ref-filename="llvm..gsym..InlineInfo">InlineInfo</dfn> {</td></tr>
+<tr><th id="62">62</th><td></td></tr>
+<tr><th id="63">63</th><td>  <a class="typedef" href="../../../../../../include/bits/stdint-uintn.h.html#uint32_t" title='uint32_t' data-type='__uint32_t' data-ref="uint32_t" data-ref-filename="uint32_t">uint32_t</a> <dfn class="decl field" id="llvm::gsym::InlineInfo::Name" title='llvm::gsym::InlineInfo::Name' data-ref="llvm::gsym::InlineInfo::Name" data-ref-filename="llvm..gsym..InlineInfo..Name">Name</dfn>; <i class="doc">///&lt; String table offset in the string table.</i></td></tr>
+<tr><th id="64">64</th><td>  <a class="typedef" href="../../../../../../include/bits/stdint-uintn.h.html#uint32_t" title='uint32_t' data-type='__uint32_t' data-ref="uint32_t" data-ref-filename="uint32_t">uint32_t</a> <dfn class="decl field" id="llvm::gsym::InlineInfo::CallFile" title='llvm::gsym::InlineInfo::CallFile' data-ref="llvm::gsym::InlineInfo::CallFile" data-ref-filename="llvm..gsym..InlineInfo..CallFile">CallFile</dfn>; <i class="doc">///&lt; 1 based file index in the file table.</i></td></tr>
+<tr><th id="65">65</th><td>  <a class="typedef" href="../../../../../../include/bits/stdint-uintn.h.html#uint32_t" title='uint32_t' data-type='__uint32_t' data-ref="uint32_t" data-ref-filename="uint32_t">uint32_t</a> <dfn class="decl field" id="llvm::gsym::InlineInfo::CallLine" title='llvm::gsym::InlineInfo::CallLine' data-ref="llvm::gsym::InlineInfo::CallLine" data-ref-filename="llvm..gsym..InlineInfo..CallLine">CallLine</dfn>; <i class="doc">///&lt; Source line number.</i></td></tr>
+<tr><th id="66">66</th><td>  <a class="type" href="Range.h.html#llvm::gsym::AddressRanges" title='llvm::gsym::AddressRanges' data-ref="llvm::gsym::AddressRanges" data-ref-filename="llvm..gsym..AddressRanges">AddressRanges</a> <dfn class="decl field" id="llvm::gsym::InlineInfo::Ranges" title='llvm::gsym::InlineInfo::Ranges' data-ref="llvm::gsym::InlineInfo::Ranges" data-ref-filename="llvm..gsym..InlineInfo..Ranges">Ranges</dfn>;</td></tr>
+<tr><th id="67">67</th><td>  <span class="namespace">std::</span><span class='type' title='std::vector' data-ref="std::vector" data-ref-filename="std..vector">vector</span>&lt;<a class="type" href="#llvm::gsym::InlineInfo" title='llvm::gsym::InlineInfo' data-ref="llvm::gsym::InlineInfo" data-ref-filename="llvm..gsym..InlineInfo">InlineInfo</a>&gt; <dfn class="decl field" id="llvm::gsym::InlineInfo::Children" title='llvm::gsym::InlineInfo::Children' data-ref="llvm::gsym::InlineInfo::Children" data-ref-filename="llvm..gsym..InlineInfo..Children">Children</dfn>;</td></tr>
+<tr><th id="68">68</th><td>  <dfn class="decl def fn" id="_ZN4llvm4gsym10InlineInfoC1Ev" title='llvm::gsym::InlineInfo::InlineInfo' data-ref="_ZN4llvm4gsym10InlineInfoC1Ev" data-ref-filename="_ZN4llvm4gsym10InlineInfoC1Ev">InlineInfo</dfn>() : <a class="member field" href="#llvm::gsym::InlineInfo::Name" title='llvm::gsym::InlineInfo::Name' data-ref="llvm::gsym::InlineInfo::Name" data-ref-filename="llvm..gsym..InlineInfo..Name">Name</a>(<var>0</var>), <a class="member field" href="#llvm::gsym::InlineInfo::CallFile" title='llvm::gsym::InlineInfo::CallFile' data-ref="llvm::gsym::InlineInfo::CallFile" data-ref-filename="llvm..gsym..InlineInfo..CallFile">CallFile</a>(<var>0</var>), <a class="member field" href="#llvm::gsym::InlineInfo::CallLine" title='llvm::gsym::InlineInfo::CallLine' data-ref="llvm::gsym::InlineInfo::CallLine" data-ref-filename="llvm..gsym..InlineInfo..CallLine">CallLine</a>(<var>0</var>) {}</td></tr>
+<tr><th id="69">69</th><td>  <em>void</em> <dfn class="decl def fn" id="_ZN4llvm4gsym10InlineInfo5clearEv" title='llvm::gsym::InlineInfo::clear' data-ref="_ZN4llvm4gsym10InlineInfo5clearEv" data-ref-filename="_ZN4llvm4gsym10InlineInfo5clearEv">clear</dfn>() {</td></tr>
+<tr><th id="70">70</th><td>    <a class="member field" href="#llvm::gsym::InlineInfo::Name" title='llvm::gsym::InlineInfo::Name' data-ref="llvm::gsym::InlineInfo::Name" data-ref-filename="llvm..gsym..InlineInfo..Name">Name</a> = <var>0</var>;</td></tr>
+<tr><th id="71">71</th><td>    <a class="member field" href="#llvm::gsym::InlineInfo::CallFile" title='llvm::gsym::InlineInfo::CallFile' data-ref="llvm::gsym::InlineInfo::CallFile" data-ref-filename="llvm..gsym..InlineInfo..CallFile">CallFile</a> = <var>0</var>;</td></tr>
+<tr><th id="72">72</th><td>    <a class="member field" href="#llvm::gsym::InlineInfo::CallLine" title='llvm::gsym::InlineInfo::CallLine' data-ref="llvm::gsym::InlineInfo::CallLine" data-ref-filename="llvm..gsym..InlineInfo..CallLine">CallLine</a> = <var>0</var>;</td></tr>
+<tr><th id="73">73</th><td>    <a class="member field" href="#llvm::gsym::InlineInfo::Ranges" title='llvm::gsym::InlineInfo::Ranges' data-ref="llvm::gsym::InlineInfo::Ranges" data-ref-filename="llvm..gsym..InlineInfo..Ranges">Ranges</a>.<a class="ref fn" href="Range.h.html#_ZN4llvm4gsym13AddressRanges5clearEv" title='llvm::gsym::AddressRanges::clear' data-ref="_ZN4llvm4gsym13AddressRanges5clearEv" data-ref-filename="_ZN4llvm4gsym13AddressRanges5clearEv">clear</a>();</td></tr>
+<tr><th id="74">74</th><td>    <a class="member field" href="#llvm::gsym::InlineInfo::Children" title='llvm::gsym::InlineInfo::Children' data-ref="llvm::gsym::InlineInfo::Children" data-ref-filename="llvm..gsym..InlineInfo..Children">Children</a>.<span class='ref fn' title='std::vector::clear' data-ref="_ZNSt6vector5clearEv" data-ref-filename="_ZNSt6vector5clearEv">clear</span>();</td></tr>
+<tr><th id="75">75</th><td>  }</td></tr>
+<tr><th id="76">76</th><td>  <em>bool</em> <dfn class="decl def fn" id="_ZNK4llvm4gsym10InlineInfo7isValidEv" title='llvm::gsym::InlineInfo::isValid' data-ref="_ZNK4llvm4gsym10InlineInfo7isValidEv" data-ref-filename="_ZNK4llvm4gsym10InlineInfo7isValidEv">isValid</dfn>() <em>const</em> { <b>return</b> !<a class="member field" href="#llvm::gsym::InlineInfo::Ranges" title='llvm::gsym::InlineInfo::Ranges' data-ref="llvm::gsym::InlineInfo::Ranges" data-ref-filename="llvm..gsym..InlineInfo..Ranges">Ranges</a>.<a class="ref fn" href="Range.h.html#_ZNK4llvm4gsym13AddressRanges5emptyEv" title='llvm::gsym::AddressRanges::empty' data-ref="_ZNK4llvm4gsym13AddressRanges5emptyEv" data-ref-filename="_ZNK4llvm4gsym13AddressRanges5emptyEv">empty</a>(); }</td></tr>
+<tr><th id="77">77</th><td></td></tr>
+<tr><th id="78">78</th><td>  <b>using</b> <dfn class="typedef" id="llvm::gsym::InlineInfo::InlineArray" title='llvm::gsym::InlineInfo::InlineArray' data-type='std::vector&lt;const InlineInfo *&gt;' data-ref="llvm::gsym::InlineInfo::InlineArray" data-ref-filename="llvm..gsym..InlineInfo..InlineArray">InlineArray</dfn> = <span class="namespace">std::</span><span class='type' title='std::vector' data-ref="std::vector" data-ref-filename="std..vector">vector</span>&lt;<em>const</em> <a class="type" href="#llvm::gsym::InlineInfo" title='llvm::gsym::InlineInfo' data-ref="llvm::gsym::InlineInfo" data-ref-filename="llvm..gsym..InlineInfo">InlineInfo</a> *&gt;;</td></tr>
+<tr><th id="79">79</th><td></td></tr>
+<tr><th id="80">80</th><td>  <i class="doc">/// Lookup a single address within the inline info data.</i></td></tr>
+<tr><th id="81">81</th><td><i class="doc">  ///</i></td></tr>
+<tr><th id="82">82</th><td><i class="doc">  /// Clients have the option to decode an entire InlineInfo object (using</i></td></tr>
+<tr><th id="83">83</th><td><i class="doc">  /// InlineInfo::decode() ) or just find the matching inline info using this</i></td></tr>
+<tr><th id="84">84</th><td><i class="doc">  /// function. The benefit of using this function is that only the information</i></td></tr>
+<tr><th id="85">85</th><td><i class="doc">  /// needed for the lookup will be extracted, other info can be skipped and</i></td></tr>
+<tr><th id="86">86</th><td><i class="doc">  /// parsing can stop as soon as the deepest match is found. This allows</i></td></tr>
+<tr><th id="87">87</th><td><i class="doc">  /// symbolication tools to be fast and efficient and avoid allocation costs</i></td></tr>
+<tr><th id="88">88</th><td><i class="doc">  /// when doing lookups.</i></td></tr>
+<tr><th id="89">89</th><td><i class="doc">  ///</i></td></tr>
+<tr><th id="90">90</th><td><i class="doc">  /// This function will augment the SourceLocations array<span class="command"> \a</span> <span class="arg">SrcLocs</span> with any</i></td></tr>
+<tr><th id="91">91</th><td><i class="doc">  /// inline information that pertains to<span class="command"> \a</span> <span class="arg">Addr.</span> If no inline information</i></td></tr>
+<tr><th id="92">92</th><td><i class="doc">  /// exists for<span class="command"> \a</span> <span class="arg">Addr,</span> then<span class="command"> \a</span> <span class="arg">SrcLocs</span> will be left untouched. If there is</i></td></tr>
+<tr><th id="93">93</th><td><i class="doc">  /// inline information for<span class="command"> \a</span> <span class="arg">Addr,</span> then<span class="command"> \a</span> <span class="arg">SrcLocs</span> will be modifiied to</i></td></tr>
+<tr><th id="94">94</th><td><i class="doc">  /// contain the deepest most inline function's SourceLocation at index zero</i></td></tr>
+<tr><th id="95">95</th><td><i class="doc">  /// in the array and proceed up the the concrete function source file and</i></td></tr>
+<tr><th id="96">96</th><td><i class="doc">  /// line at the end of the array.</i></td></tr>
+<tr><th id="97">97</th><td><i class="doc">  ///</i></td></tr>
+<tr><th id="98">98</th><td><i class="doc">  /// <span class="command">\param</span> <span class="arg">GR</span> The GSYM reader that contains the string and file table that</i></td></tr>
+<tr><th id="99">99</th><td><i class="doc">  /// will be used to fill in the source locations.</i></td></tr>
+<tr><th id="100">100</th><td><i class="doc">  ///</i></td></tr>
+<tr><th id="101">101</th><td><i class="doc">  /// <span class="command">\param</span> <span class="arg">Data</span> The binary stream to read the data from. This object must</i></td></tr>
+<tr><th id="102">102</th><td><i class="doc">  /// have the data for the LineTable object starting at offset zero. The data</i></td></tr>
+<tr><th id="103">103</th><td><i class="doc">  /// can contain more data than needed.</i></td></tr>
+<tr><th id="104">104</th><td><i class="doc">  ///</i></td></tr>
+<tr><th id="105">105</th><td><i class="doc">  /// <span class="command">\param</span> <span class="arg">BaseAddr</span> The base address to use when decoding the line table.</i></td></tr>
+<tr><th id="106">106</th><td><i class="doc">  /// This will be the FunctionInfo's start address and will be used to</i></td></tr>
+<tr><th id="107">107</th><td><i class="doc">  /// decode the correct addresses for the inline information.</i></td></tr>
+<tr><th id="108">108</th><td><i class="doc">  ///</i></td></tr>
+<tr><th id="109">109</th><td><i class="doc">  /// <span class="command">\param</span> <span class="arg">Addr</span> The address to lookup.</i></td></tr>
+<tr><th id="110">110</th><td><i class="doc">  ///</i></td></tr>
+<tr><th id="111">111</th><td><i class="doc">  /// <span class="command">\param</span> <span class="arg">SrcLocs</span> The inline source locations that matches<span class="command"> \a</span> <span class="arg">Addr.</span> This</i></td></tr>
+<tr><th id="112">112</th><td><i class="doc">  ///                array must be initialized with the matching line entry</i></td></tr>
+<tr><th id="113">113</th><td><i class="doc">  ///                from the line table upon entry. The name of the concrete</i></td></tr>
+<tr><th id="114">114</th><td><i class="doc">  ///                function must be supplied since it will get pushed to</i></td></tr>
+<tr><th id="115">115</th><td><i class="doc">  ///                the last SourceLocation entry and the inline information</i></td></tr>
+<tr><th id="116">116</th><td><i class="doc">  ///                will fill in the source file and line from the inline</i></td></tr>
+<tr><th id="117">117</th><td><i class="doc">  ///                information.</i></td></tr>
+<tr><th id="118">118</th><td><i class="doc">  ///</i></td></tr>
+<tr><th id="119">119</th><td><i class="doc">  /// <span class="command">\returns</span> An error if the inline information is corrupt, or</i></td></tr>
+<tr><th id="120">120</th><td><i class="doc">  ///          Error::success() for all other cases, even when no information</i></td></tr>
+<tr><th id="121">121</th><td><i class="doc">  ///          is added to<span class="command"> \a</span> <span class="arg">SrcLocs.</span></i></td></tr>
+<tr><th id="122">122</th><td>  <em>static</em> <span class="namespace">llvm::</span><a class="type" href="../../Support/Error.h.html#llvm::Error" title='llvm::Error' data-ref="llvm::Error" data-ref-filename="llvm..Error">Error</a> <dfn class="decl fn" id="_ZN4llvm4gsym10InlineInfo6lookupERKNS0_10GsymReaderERNS_13DataExtractorEmmRSt6vectorINS0_14SourceLocationESaIS8_EE" title='llvm::gsym::InlineInfo::lookup' data-ref="_ZN4llvm4gsym10InlineInfo6lookupERKNS0_10GsymReaderERNS_13DataExtractorEmmRSt6vectorINS0_14SourceLocationESaIS8_EE" data-ref-filename="_ZN4llvm4gsym10InlineInfo6lookupERKNS0_10GsymReaderERNS_13DataExtractorEmmRSt6vectorINS0_14SourceLocationESaIS8_EE">lookup</dfn>(<em>const</em> <a class="type" href="GsymReader.h.html#llvm::gsym::GsymReader" title='llvm::gsym::GsymReader' data-ref="llvm::gsym::GsymReader" data-ref-filename="llvm..gsym..GsymReader">GsymReader</a> &amp;<dfn class="local col8 decl" id="58GR" title='GR' data-type='const llvm::gsym::GsymReader &amp;' data-ref="58GR" data-ref-filename="58GR">GR</dfn>, <a class="type" href="../../Support/DataExtractor.h.html#llvm::DataExtractor" title='llvm::DataExtractor' data-ref="llvm::DataExtractor" data-ref-filename="llvm..DataExtractor">DataExtractor</a> &amp;<dfn class="local col9 decl" id="59Data" title='Data' data-type='llvm::DataExtractor &amp;' data-ref="59Data" data-ref-filename="59Data">Data</dfn>,</td></tr>
+<tr><th id="123">123</th><td>                            <a class="typedef" href="../../../../../../include/bits/stdint-uintn.h.html#uint64_t" title='uint64_t' data-type='__uint64_t' data-ref="uint64_t" data-ref-filename="uint64_t">uint64_t</a> <dfn class="local col0 decl" id="60BaseAddr" title='BaseAddr' data-type='uint64_t' data-ref="60BaseAddr" data-ref-filename="60BaseAddr">BaseAddr</dfn>, <a class="typedef" href="../../../../../../include/bits/stdint-uintn.h.html#uint64_t" title='uint64_t' data-type='__uint64_t' data-ref="uint64_t" data-ref-filename="uint64_t">uint64_t</a> <dfn class="local col1 decl" id="61Addr" title='Addr' data-type='uint64_t' data-ref="61Addr" data-ref-filename="61Addr">Addr</dfn>,</td></tr>
+<tr><th id="124">124</th><td>                            <a class="typedef" href="LookupResult.h.html#llvm::gsym::SourceLocations" title='llvm::gsym::SourceLocations' data-type='std::vector&lt;SourceLocation&gt;' data-ref="llvm::gsym::SourceLocations" data-ref-filename="llvm..gsym..SourceLocations">SourceLocations</a> &amp;<dfn class="local col2 decl" id="62SrcLocs" title='SrcLocs' data-type='llvm::gsym::SourceLocations &amp;' data-ref="62SrcLocs" data-ref-filename="62SrcLocs">SrcLocs</dfn>);</td></tr>
+<tr><th id="125">125</th><td></td></tr>
+<tr><th id="126">126</th><td>  <i class="doc">/// Lookup an address in the InlineInfo object</i></td></tr>
+<tr><th id="127">127</th><td><i class="doc">  ///</i></td></tr>
+<tr><th id="128">128</th><td><i class="doc">  /// This function is used to symbolicate an inline call stack and can</i></td></tr>
+<tr><th id="129">129</th><td><i class="doc">  /// turn one address in the program into one or more inline call stacks</i></td></tr>
+<tr><th id="130">130</th><td><i class="doc">  /// and have the stack trace show the original call site from</i></td></tr>
+<tr><th id="131">131</th><td><i class="doc">  /// non-inlined code.</i></td></tr>
+<tr><th id="132">132</th><td><i class="doc">  ///</i></td></tr>
+<tr><th id="133">133</th><td><i class="doc">  /// <span class="command">\param</span> <span class="arg">Addr</span> the address to lookup</i></td></tr>
+<tr><th id="134">134</th><td><i class="doc">  ///</i></td></tr>
+<tr><th id="135">135</th><td><i class="doc">  /// <span class="command">\returns</span> optional vector of InlineInfo objects that describe the</i></td></tr>
+<tr><th id="136">136</th><td><i class="doc">  /// inline call stack for a given address, false otherwise.</i></td></tr>
+<tr><th id="137">137</th><td>  <span class="namespace">llvm::</span><a class="type" href="../../ADT/APInt.h.html#llvm::Optional" title='llvm::Optional' data-ref="llvm::Optional" data-ref-filename="llvm..Optional">Optional</a>&lt;<a class="typedef" href="#llvm::gsym::InlineInfo::InlineArray" title='llvm::gsym::InlineInfo::InlineArray' data-type='std::vector&lt;const InlineInfo *&gt;' data-ref="llvm::gsym::InlineInfo::InlineArray" data-ref-filename="llvm..gsym..InlineInfo..InlineArray">InlineArray</a>&gt; <dfn class="decl fn" id="_ZNK4llvm4gsym10InlineInfo14getInlineStackEm" title='llvm::gsym::InlineInfo::getInlineStack' data-ref="_ZNK4llvm4gsym10InlineInfo14getInlineStackEm" data-ref-filename="_ZNK4llvm4gsym10InlineInfo14getInlineStackEm">getInlineStack</dfn>(<a class="typedef" href="../../../../../../include/bits/stdint-uintn.h.html#uint64_t" title='uint64_t' data-type='__uint64_t' data-ref="uint64_t" data-ref-filename="uint64_t">uint64_t</a> <dfn class="local col3 decl" id="63Addr" title='Addr' data-type='uint64_t' data-ref="63Addr" data-ref-filename="63Addr">Addr</dfn>) <em>const</em>;</td></tr>
+<tr><th id="138">138</th><td></td></tr>
+<tr><th id="139">139</th><td>  <i class="doc">/// Decode an InlineInfo object from a binary data stream.</i></td></tr>
+<tr><th id="140">140</th><td><i class="doc">  ///</i></td></tr>
+<tr><th id="141">141</th><td><i class="doc">  /// <span class="command">\param</span> <span class="arg">Data</span> The binary stream to read the data from. This object must</i></td></tr>
+<tr><th id="142">142</th><td><i class="doc">  /// have the data for the InlineInfo object starting at offset zero. The data</i></td></tr>
+<tr><th id="143">143</th><td><i class="doc">  /// can contain more data than needed.</i></td></tr>
+<tr><th id="144">144</th><td><i class="doc">  ///</i></td></tr>
+<tr><th id="145">145</th><td><i class="doc">  /// <span class="command">\param</span> <span class="arg">BaseAddr</span> The base address to use when decoding all address ranges.</i></td></tr>
+<tr><th id="146">146</th><td><i class="doc">  /// This will be the FunctionInfo's start address if this object is directly</i></td></tr>
+<tr><th id="147">147</th><td><i class="doc">  /// contained in a FunctionInfo object, or the start address of the first</i></td></tr>
+<tr><th id="148">148</th><td><i class="doc">  /// address range in an InlineInfo object of this object is a child of</i></td></tr>
+<tr><th id="149">149</th><td><i class="doc">  /// another InlineInfo object.</i></td></tr>
+<tr><th id="150">150</th><td><i class="doc">  /// <span class="command">\returns</span> An InlineInfo or an error describing the issue that was</i></td></tr>
+<tr><th id="151">151</th><td><i class="doc">  /// encountered during decoding.</i></td></tr>
+<tr><th id="152">152</th><td>  <em>static</em> <span class="namespace">llvm::</span><a class="type" href="../../Support/raw_ostream.h.html#llvm::Expected" title='llvm::Expected' data-ref="llvm::Expected" data-ref-filename="llvm..Expected">Expected</a>&lt;<a class="type" href="#llvm::gsym::InlineInfo" title='llvm::gsym::InlineInfo' data-ref="llvm::gsym::InlineInfo" data-ref-filename="llvm..gsym..InlineInfo">InlineInfo</a>&gt; <dfn class="decl fn" id="_ZN4llvm4gsym10InlineInfo6decodeERNS_13DataExtractorEm" title='llvm::gsym::InlineInfo::decode' data-ref="_ZN4llvm4gsym10InlineInfo6decodeERNS_13DataExtractorEm" data-ref-filename="_ZN4llvm4gsym10InlineInfo6decodeERNS_13DataExtractorEm">decode</dfn>(<a class="type" href="../../Support/DataExtractor.h.html#llvm::DataExtractor" title='llvm::DataExtractor' data-ref="llvm::DataExtractor" data-ref-filename="llvm..DataExtractor">DataExtractor</a> &amp;<dfn class="local col4 decl" id="64Data" title='Data' data-type='llvm::DataExtractor &amp;' data-ref="64Data" data-ref-filename="64Data">Data</dfn>,</td></tr>
+<tr><th id="153">153</th><td>                                           <a class="typedef" href="../../../../../../include/bits/stdint-uintn.h.html#uint64_t" title='uint64_t' data-type='__uint64_t' data-ref="uint64_t" data-ref-filename="uint64_t">uint64_t</a> <dfn class="local col5 decl" id="65BaseAddr" title='BaseAddr' data-type='uint64_t' data-ref="65BaseAddr" data-ref-filename="65BaseAddr">BaseAddr</dfn>);</td></tr>
+<tr><th id="154">154</th><td></td></tr>
+<tr><th id="155">155</th><td>  <i class="doc">/// Encode this InlineInfo object into FileWriter stream.</i></td></tr>
+<tr><th id="156">156</th><td><i class="doc">  ///</i></td></tr>
+<tr><th id="157">157</th><td><i class="doc">  /// <span class="command">\param</span> <span class="arg">O</span> The binary stream to write the data to at the current file</i></td></tr>
+<tr><th id="158">158</th><td><i class="doc">  /// position.</i></td></tr>
+<tr><th id="159">159</th><td><i class="doc">  ///</i></td></tr>
+<tr><th id="160">160</th><td><i class="doc">  /// <span class="command">\param</span> <span class="arg">BaseAddr</span> The base address to use when encoding all address ranges.</i></td></tr>
+<tr><th id="161">161</th><td><i class="doc">  /// This will be the FunctionInfo's start address if this object is directly</i></td></tr>
+<tr><th id="162">162</th><td><i class="doc">  /// contained in a FunctionInfo object, or the start address of the first</i></td></tr>
+<tr><th id="163">163</th><td><i class="doc">  /// address range in an InlineInfo object of this object is a child of</i></td></tr>
+<tr><th id="164">164</th><td><i class="doc">  /// another InlineInfo object.</i></td></tr>
+<tr><th id="165">165</th><td><i class="doc">  ///</i></td></tr>
+<tr><th id="166">166</th><td><i class="doc">  /// <span class="command">\returns</span> An error object that indicates success or failure or the</i></td></tr>
+<tr><th id="167">167</th><td><i class="doc">  /// encoding process.</i></td></tr>
+<tr><th id="168">168</th><td>  <span class="namespace">llvm::</span><a class="type" href="../../Support/Error.h.html#llvm::Error" title='llvm::Error' data-ref="llvm::Error" data-ref-filename="llvm..Error">Error</a> <dfn class="decl fn" id="_ZNK4llvm4gsym10InlineInfo6encodeERNS0_10FileWriterEm" title='llvm::gsym::InlineInfo::encode' data-ref="_ZNK4llvm4gsym10InlineInfo6encodeERNS0_10FileWriterEm" data-ref-filename="_ZNK4llvm4gsym10InlineInfo6encodeERNS0_10FileWriterEm">encode</dfn>(<a class="type" href="Range.h.html#llvm::gsym::FileWriter" title='llvm::gsym::FileWriter' data-ref="llvm::gsym::FileWriter" data-ref-filename="llvm..gsym..FileWriter">FileWriter</a> &amp;<dfn class="local col6 decl" id="66O" title='O' data-type='llvm::gsym::FileWriter &amp;' data-ref="66O" data-ref-filename="66O">O</dfn>, <a class="typedef" href="../../../../../../include/bits/stdint-uintn.h.html#uint64_t" title='uint64_t' data-type='__uint64_t' data-ref="uint64_t" data-ref-filename="uint64_t">uint64_t</a> <dfn class="local col7 decl" id="67BaseAddr" title='BaseAddr' data-type='uint64_t' data-ref="67BaseAddr" data-ref-filename="67BaseAddr">BaseAddr</dfn>) <em>const</em>;</td></tr>
+<tr><th id="169">169</th><td>};</td></tr>
+<tr><th id="170">170</th><td></td></tr>
+<tr><th id="171">171</th><td><b>inline</b> <em>bool</em> <dfn class="decl def fn" id="_ZN4llvm4gsymeqERKNS0_10InlineInfoES3_" title='llvm::gsym::operator==' data-ref="_ZN4llvm4gsymeqERKNS0_10InlineInfoES3_" data-ref-filename="_ZN4llvm4gsymeqERKNS0_10InlineInfoES3_"><b>operator</b>==</dfn>(<em>const</em> <a class="type" href="#llvm::gsym::InlineInfo" title='llvm::gsym::InlineInfo' data-ref="llvm::gsym::InlineInfo" data-ref-filename="llvm..gsym..InlineInfo">InlineInfo</a> &amp;<dfn class="local col8 decl" id="68LHS" title='LHS' data-type='const llvm::gsym::InlineInfo &amp;' data-ref="68LHS" data-ref-filename="68LHS">LHS</dfn>, <em>const</em> <a class="type" href="#llvm::gsym::InlineInfo" title='llvm::gsym::InlineInfo' data-ref="llvm::gsym::InlineInfo" data-ref-filename="llvm..gsym..InlineInfo">InlineInfo</a> &amp;<dfn class="local col9 decl" id="69RHS" title='RHS' data-type='const llvm::gsym::InlineInfo &amp;' data-ref="69RHS" data-ref-filename="69RHS">RHS</dfn>) {</td></tr>
+<tr><th id="172">172</th><td>  <b>return</b> <a class="local col8 ref" href="#68LHS" title='LHS' data-ref="68LHS" data-ref-filename="68LHS">LHS</a>.<a class="ref field" href="#llvm::gsym::InlineInfo::Name" title='llvm::gsym::InlineInfo::Name' data-ref="llvm::gsym::InlineInfo::Name" data-ref-filename="llvm..gsym..InlineInfo..Name">Name</a> == <a class="local col9 ref" href="#69RHS" title='RHS' data-ref="69RHS" data-ref-filename="69RHS">RHS</a>.<a class="ref field" href="#llvm::gsym::InlineInfo::Name" title='llvm::gsym::InlineInfo::Name' data-ref="llvm::gsym::InlineInfo::Name" data-ref-filename="llvm..gsym..InlineInfo..Name">Name</a> &amp;&amp; <a class="local col8 ref" href="#68LHS" title='LHS' data-ref="68LHS" data-ref-filename="68LHS">LHS</a>.<a class="ref field" href="#llvm::gsym::InlineInfo::CallFile" title='llvm::gsym::InlineInfo::CallFile' data-ref="llvm::gsym::InlineInfo::CallFile" data-ref-filename="llvm..gsym..InlineInfo..CallFile">CallFile</a> == <a class="local col9 ref" href="#69RHS" title='RHS' data-ref="69RHS" data-ref-filename="69RHS">RHS</a>.<a class="ref field" href="#llvm::gsym::InlineInfo::CallFile" title='llvm::gsym::InlineInfo::CallFile' data-ref="llvm::gsym::InlineInfo::CallFile" data-ref-filename="llvm..gsym..InlineInfo..CallFile">CallFile</a> &amp;&amp;</td></tr>
+<tr><th id="173">173</th><td>         <a class="local col8 ref" href="#68LHS" title='LHS' data-ref="68LHS" data-ref-filename="68LHS">LHS</a>.<a class="ref field" href="#llvm::gsym::InlineInfo::CallLine" title='llvm::gsym::InlineInfo::CallLine' data-ref="llvm::gsym::InlineInfo::CallLine" data-ref-filename="llvm..gsym..InlineInfo..CallLine">CallLine</a> == <a class="local col9 ref" href="#69RHS" title='RHS' data-ref="69RHS" data-ref-filename="69RHS">RHS</a>.<a class="ref field" href="#llvm::gsym::InlineInfo::CallLine" title='llvm::gsym::InlineInfo::CallLine' data-ref="llvm::gsym::InlineInfo::CallLine" data-ref-filename="llvm..gsym..InlineInfo..CallLine">CallLine</a> &amp;&amp; <a class="local col8 ref" href="#68LHS" title='LHS' data-ref="68LHS" data-ref-filename="68LHS">LHS</a>.<a class="ref field" href="#llvm::gsym::InlineInfo::Ranges" title='llvm::gsym::InlineInfo::Ranges' data-ref="llvm::gsym::InlineInfo::Ranges" data-ref-filename="llvm..gsym..InlineInfo..Ranges">Ranges</a> <a class="ref fn" href="Range.h.html#_ZNK4llvm4gsym13AddressRangeseqERKS1_" title='llvm::gsym::AddressRanges::operator==' data-ref="_ZNK4llvm4gsym13AddressRangeseqERKS1_" data-ref-filename="_ZNK4llvm4gsym13AddressRangeseqERKS1_">==</a> <a class="local col9 ref" href="#69RHS" title='RHS' data-ref="69RHS" data-ref-filename="69RHS">RHS</a>.<a class="ref field" href="#llvm::gsym::InlineInfo::Ranges" title='llvm::gsym::InlineInfo::Ranges' data-ref="llvm::gsym::InlineInfo::Ranges" data-ref-filename="llvm..gsym..InlineInfo..Ranges">Ranges</a> &amp;&amp;</td></tr>
+<tr><th id="174">174</th><td>         <a class="local col8 ref" href="#68LHS" title='LHS' data-ref="68LHS" data-ref-filename="68LHS">LHS</a>.<a class="ref field" href="#llvm::gsym::InlineInfo::Children" title='llvm::gsym::InlineInfo::Children' data-ref="llvm::gsym::InlineInfo::Children" data-ref-filename="llvm..gsym..InlineInfo..Children">Children</a> <span class='ref fn' title='std::operator==' data-ref="_ZSteqRKSt6vectorIT_T0_ES4_" data-ref-filename="_ZSteqRKSt6vectorIT_T0_ES4_">==</span> <a class="local col9 ref" href="#69RHS" title='RHS' data-ref="69RHS" data-ref-filename="69RHS">RHS</a>.<a class="ref field" href="#llvm::gsym::InlineInfo::Children" title='llvm::gsym::InlineInfo::Children' data-ref="llvm::gsym::InlineInfo::Children" data-ref-filename="llvm..gsym..InlineInfo..Children">Children</a>;</td></tr>
+<tr><th id="175">175</th><td>}</td></tr>
+<tr><th id="176">176</th><td></td></tr>
+<tr><th id="177">177</th><td><a class="type" href="../../Support/raw_ostream.h.html#llvm::raw_ostream" title='llvm::raw_ostream' data-ref="llvm::raw_ostream" data-ref-filename="llvm..raw_ostream">raw_ostream</a> &amp;<dfn class="decl fn" id="_ZN4llvm4gsymlsERNS_11raw_ostreamERKNS0_10InlineInfoE" title='llvm::gsym::operator&lt;&lt;' data-ref="_ZN4llvm4gsymlsERNS_11raw_ostreamERKNS0_10InlineInfoE" data-ref-filename="_ZN4llvm4gsymlsERNS_11raw_ostreamERKNS0_10InlineInfoE"><b>operator</b>&lt;&lt;</dfn>(<a class="type" href="../../Support/raw_ostream.h.html#llvm::raw_ostream" title='llvm::raw_ostream' data-ref="llvm::raw_ostream" data-ref-filename="llvm..raw_ostream">raw_ostream</a> &amp;<dfn class="local col0 decl" id="70OS" title='OS' data-type='llvm::raw_ostream &amp;' data-ref="70OS" data-ref-filename="70OS">OS</dfn>, <em>const</em> <a class="type" href="#llvm::gsym::InlineInfo" title='llvm::gsym::InlineInfo' data-ref="llvm::gsym::InlineInfo" data-ref-filename="llvm..gsym..InlineInfo">InlineInfo</a> &amp;<dfn class="local col1 decl" id="71FI" title='FI' data-type='const llvm::gsym::InlineInfo &amp;' data-ref="71FI" data-ref-filename="71FI">FI</dfn>);</td></tr>
+<tr><th id="178">178</th><td></td></tr>
+<tr><th id="179">179</th><td>} <i>// namespace gsym</i></td></tr>
+<tr><th id="180">180</th><td>} <i>// namespace llvm</i></td></tr>
+<tr><th id="181">181</th><td></td></tr>
+<tr><th id="182">182</th><td><u>#<span data-ppcond="9">endif</span> // #ifndef LLVM_DEBUGINFO_GSYM_INLINEINFO_H</u></td></tr>
+<tr><th id="183">183</th><td></td></tr>
+</table><hr/><p id='footer'>
+Generated while processing <a href='../../../../lib/DebugInfo/GSYM/DwarfTransformer.cpp.html'>llvm/llvm/lib/DebugInfo/GSYM/DwarfTransformer.cpp</a><br/>Generated on <em>2021-Jul-01</em> from project llvm revision <em>12</em>

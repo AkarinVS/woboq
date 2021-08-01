@@ -1,0 +1,183 @@
+<inh f='llvm/clang/include/clang/Basic/Diagnostic.h' l='1668' c='clang::DiagnosticConsumer'/>
+<inh f='llvm/clang/include/clang/Lex/Preprocessor.h' l='2393' c='clang::CommentHandler'/>
+<def f='llvm/clang/include/clang/Frontend/VerifyDiagnosticConsumer.h' l='186' ll='327'/>
+<use f='llvm/clang/lib/Frontend/CompilerInstance.cpp' l='296' c='_ZN5clang16CompilerInstance17createDiagnosticsEPNS_17DiagnosticOptionsEPNS_18DiagnosticConsumerEbPKNS_14CodeGenOptionsE'/>
+<size>240</size>
+<doc f='llvm/clang/include/clang/Frontend/VerifyDiagnosticConsumer.h' l='33'>/// VerifyDiagnosticConsumer - Create a diagnostic client which will use
+/// markers in the input source to check that all the emitted diagnostics match
+/// those expected.
+///
+/// INVOKING THE DIAGNOSTIC CHECKER:
+///
+/// VerifyDiagnosticConsumer is typically invoked via the &quot;-verify&quot; option to
+/// &quot;clang -cc1&quot;.  &quot;-verify&quot; is equivalent to &quot;-verify=expected&quot;, so all
+/// diagnostics are typically specified with the prefix &quot;expected&quot;.  For
+/// example:
+///
+/// \code
+///   int A = B; // expected-error {{use of undeclared identifier &apos;B&apos;}}
+/// \endcode
+///
+/// Custom prefixes can be specified as a comma-separated sequence.  Each
+/// prefix must start with a letter and contain only alphanumeric characters,
+/// hyphens, and underscores.  For example, given just &quot;-verify=foo,bar&quot;,
+/// the above diagnostic would be ignored, but the following diagnostics would
+/// be recognized:
+///
+/// \code
+///   int A = B; // foo-error {{use of undeclared identifier &apos;B&apos;}}
+///   int C = D; // bar-error {{use of undeclared identifier &apos;D&apos;}}
+/// \endcode
+///
+/// Multiple occurrences accumulate prefixes.  For example,
+/// &quot;-verify -verify=foo,bar -verify=baz&quot; is equivalent to
+/// &quot;-verify=expected,foo,bar,baz&quot;.
+///
+/// SPECIFYING DIAGNOSTICS:
+///
+/// Indicating that a line expects an error or a warning is simple. Put a
+/// comment on the line that has the diagnostic, use:
+///
+/// \code
+///   expected-{error,warning,remark,note}
+/// \endcode
+///
+/// to tag if it&apos;s an expected error, remark or warning, and place the expected
+/// text between {{ and }} markers. The full text doesn&apos;t have to be included,
+/// only enough to ensure that the correct diagnostic was emitted.
+///
+/// Here&apos;s an example:
+///
+/// \code
+///   int A = B; // expected-error {{use of undeclared identifier &apos;B&apos;}}
+/// \endcode
+///
+/// You can place as many diagnostics on one line as you wish. To make the code
+/// more readable, you can use slash-newline to separate out the diagnostics.
+///
+/// Alternatively, it is possible to specify the line on which the diagnostic
+/// should appear by appending &quot;@&lt;line&gt;&quot; to &quot;expected-&lt;type&gt;&quot;, for example:
+///
+/// \code
+///   #warning some text
+///   // expected-warning@10 {{some text}}
+/// \endcode
+///
+/// The line number may be absolute (as above), or relative to the current
+/// line by prefixing the number with either &apos;+&apos; or &apos;-&apos;.
+///
+/// If the diagnostic is generated in a separate file, for example in a shared
+/// header file, it may be beneficial to be able to declare the file in which
+/// the diagnostic will appear, rather than placing the expected-* directive in
+/// the actual file itself.  This can be done using the following syntax:
+///
+/// \code
+///   // expected-error@path/include.h:15 {{error message}}
+/// \endcode
+///
+/// The path can be absolute or relative and the same search paths will be used
+/// as for #include directives.  The line number in an external file may be
+/// substituted with &apos;*&apos; meaning that any line number will match (useful where
+/// the included file is, for example, a system header where the actual line
+/// number may change and is not critical).
+///
+/// As an alternative to specifying a fixed line number, the location of a
+/// diagnostic can instead be indicated by a marker of the form &quot;#&lt;marker&gt;&quot;.
+/// Markers are specified by including them in a comment, and then referenced
+/// by appending the marker to the diagnostic with &quot;@#&lt;marker&gt;&quot;:
+///
+/// \code
+///   #warning some text  // #1
+///   // expected-warning@#1 {{some text}}
+/// \endcode
+///
+/// The name of a marker used in a directive must be unique within the
+/// compilation.
+///
+/// The simple syntax above allows each specification to match exactly one
+/// error.  You can use the extended syntax to customize this. The extended
+/// syntax is &quot;expected-&lt;type&gt; &lt;n&gt; {{diag text}}&quot;, where \&lt;type&gt; is one of
+/// &quot;error&quot;, &quot;warning&quot; or &quot;note&quot;, and \&lt;n&gt; is a positive integer. This allows
+/// the diagnostic to appear as many times as specified. Example:
+///
+/// \code
+///   void f(); // expected-note 2 {{previous declaration is here}}
+/// \endcode
+///
+/// Where the diagnostic is expected to occur a minimum number of times, this
+/// can be specified by appending a &apos;+&apos; to the number. Example:
+///
+/// \code
+///   void f(); // expected-note 0+ {{previous declaration is here}}
+///   void g(); // expected-note 1+ {{previous declaration is here}}
+/// \endcode
+///
+/// In the first example, the diagnostic becomes optional, i.e. it will be
+/// swallowed if it occurs, but will not generate an error if it does not
+/// occur.  In the second example, the diagnostic must occur at least once.
+/// As a short-hand, &quot;one or more&quot; can be specified simply by &apos;+&apos;. Example:
+///
+/// \code
+///   void g(); // expected-note + {{previous declaration is here}}
+/// \endcode
+///
+/// A range can also be specified by &quot;&lt;n&gt;-&lt;m&gt;&quot;.  Example:
+///
+/// \code
+///   void f(); // expected-note 0-1 {{previous declaration is here}}
+/// \endcode
+///
+/// In this example, the diagnostic may appear only once, if at all.
+///
+/// Regex matching mode may be selected by appending &apos;-re&apos; to type and
+/// including regexes wrapped in double curly braces in the directive, such as:
+///
+/// \code
+///   expected-error-re {{format specifies type &apos;wchar_t **&apos; (aka &apos;{{.+}}&apos;)}}
+/// \endcode
+///
+/// Examples matching error: &quot;variable has incomplete type &apos;struct s&apos;&quot;
+///
+/// \code
+///   // expected-error {{variable has incomplete type &apos;struct s&apos;}}
+///   // expected-error {{variable has incomplete type}}
+///
+///   // expected-error-re {{variable has type &apos;struct {{.}}&apos;}}
+///   // expected-error-re {{variable has type &apos;struct {{.*}}&apos;}}
+///   // expected-error-re {{variable has type &apos;struct {{(.*)}}&apos;}}
+///   // expected-error-re {{variable has type &apos;struct{{[[:space:]](.*)}}&apos;}}
+/// \endcode
+///
+/// VerifyDiagnosticConsumer expects at least one expected-* directive to
+/// be found inside the source code.  If no diagnostics are expected the
+/// following directive can be used to indicate this:
+///
+/// \code
+///   // expected-no-diagnostics
+/// \endcode
+///</doc>
+<mbr r='clang::VerifyDiagnosticConsumer::Diags' o='192' t='clang::DiagnosticsEngine &amp;'/>
+<mbr r='clang::VerifyDiagnosticConsumer::PrimaryClient' o='256' t='clang::DiagnosticConsumer *'/>
+<mbr r='clang::VerifyDiagnosticConsumer::PrimaryClientOwner' o='320' t='std::unique_ptr&lt;DiagnosticConsumer&gt;'/>
+<mbr r='clang::VerifyDiagnosticConsumer::Buffer' o='384' t='std::unique_ptr&lt;TextDiagnosticBuffer&gt;'/>
+<mbr r='clang::VerifyDiagnosticConsumer::Markers' o='448' t='std::unique_ptr&lt;MarkerTracker&gt;'/>
+<mbr r='clang::VerifyDiagnosticConsumer::CurrentPreprocessor' o='512' t='const clang::Preprocessor *'/>
+<mbr r='clang::VerifyDiagnosticConsumer::LangOpts' o='576' t='const clang::LangOptions *'/>
+<mbr r='clang::VerifyDiagnosticConsumer::SrcManager' o='640' t='clang::SourceManager *'/>
+<mbr r='clang::VerifyDiagnosticConsumer::ActiveSourceFiles' o='704' t='unsigned int'/>
+<mbr r='clang::VerifyDiagnosticConsumer::Status' o='736' t='clang::VerifyDiagnosticConsumer::DirectiveStatus'/>
+<mbr r='clang::VerifyDiagnosticConsumer::ED' o='768' t='clang::VerifyDiagnosticConsumer::ExpectedData'/>
+<fun r='_ZN5clang24VerifyDiagnosticConsumer16CheckDiagnosticsEv'/>
+<fun r='_ZN5clang24VerifyDiagnosticConsumer16setSourceManagerERNS_13SourceManagerE'/>
+<mbr r='clang::VerifyDiagnosticConsumer::ParsedFiles' o='1536' t='clang::VerifyDiagnosticConsumer::ParsedFilesMap'/>
+<mbr r='clang::VerifyDiagnosticConsumer::UnparsedFiles' o='1728' t='clang::VerifyDiagnosticConsumer::UnparsedFilesMap'/>
+<fun r='_ZN5clang24VerifyDiagnosticConsumerC1ERNS_17DiagnosticsEngineE'/>
+<fun r='_ZN5clang24VerifyDiagnosticConsumerD1Ev'/>
+<fun r='_ZN5clang24VerifyDiagnosticConsumer15BeginSourceFileERKNS_11LangOptionsEPKNS_12PreprocessorE'/>
+<fun r='_ZN5clang24VerifyDiagnosticConsumer13EndSourceFileEv'/>
+<fun r='_ZN5clang24VerifyDiagnosticConsumer22UpdateParsedFileStatusERNS_13SourceManagerENS_6FileIDENS0_12ParsedStatusE'/>
+<fun r='_ZN5clang24VerifyDiagnosticConsumer13HandleCommentERNS_12PreprocessorENS_11SourceRangeE'/>
+<fun r='_ZN5clang24VerifyDiagnosticConsumer16HandleDiagnosticENS_17DiagnosticsEngine5LevelERKNS_10DiagnosticE'/>
+<use f='llvm/clang/tools/arcmt-test/arcmt-test.cpp' l='117' c='_ZL17checkForMigrationN4llvm9StringRefENS_8ArrayRefIPKcEE'/>
+<use f='llvm/clang/tools/arcmt-test/arcmt-test.cpp' l='119' c='_ZL17checkForMigrationN4llvm9StringRefENS_8ArrayRefIPKcEE'/>
+<size>240</size>

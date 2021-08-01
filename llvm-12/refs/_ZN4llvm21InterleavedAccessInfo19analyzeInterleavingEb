@@ -1,0 +1,44 @@
+<dec f='llvm/llvm/include/llvm/Analysis/VectorUtils.h' l='748' type='void llvm::InterleavedAccessInfo::analyzeInterleaving(bool EnableMaskedInterleavedGroup)'/>
+<doc f='llvm/llvm/include/llvm/Analysis/VectorUtils.h' l='744'>/// Analyze the interleaved accesses and collect them in interleave
+  /// groups. Substitute symbolic strides using \p Strides.
+  /// Consider also predicated loads/stores in the analysis if
+  /// \p EnableMaskedInterleavedGroup is true.</doc>
+<def f='llvm/llvm/lib/Analysis/VectorUtils.cpp' l='1020' ll='1258' type='void llvm::InterleavedAccessInfo::analyzeInterleaving(bool EnablePredicatedInterleavedMemAccesses)'/>
+<doc f='llvm/llvm/lib/Analysis/VectorUtils.cpp' l='984'>// Analyze interleaved accesses and collect them into interleaved load and
+// store groups.
+//
+// When generating code for an interleaved load group, we effectively hoist all
+// loads in the group to the location of the first load in program order. When
+// generating code for an interleaved store group, we sink all stores to the
+// location of the last store. This code motion can change the order of load
+// and store instructions and may break dependences.
+//
+// The code generation strategy mentioned above ensures that we won&apos;t violate
+// any write-after-read (WAR) dependences.
+//
+// E.g., for the WAR dependence:  a = A[i];      // (1)
+//                                A[i] = b;      // (2)
+//
+// The store group of (2) is always inserted at or below (2), and the load
+// group of (1) is always inserted at or above (1). Thus, the instructions will
+// never be reordered. All other dependences are checked to ensure the
+// correctness of the instruction reordering.
+//
+// The algorithm visits all memory accesses in the loop in bottom-up program
+// order. Program order is established by traversing the blocks in the loop in
+// reverse postorder when collecting the accesses.
+//
+// We visit the memory accesses in bottom-up order because it can simplify the
+// construction of store groups in the presence of write-after-write (WAW)
+// dependences.
+//
+// E.g., for the WAW dependence:  A[i] = a;      // (1)
+//                                A[i] = b;      // (2)
+//                                A[i + 1] = c;  // (3)
+//
+// We will first create a store group with (3) and (2). (1) can&apos;t be added to
+// this group because it and (2) are dependent. However, (1) can be grouped
+// with other accesses that may precede it in program order. Note that a
+// bottom-up order does not imply that WAW dependences should not be checked.</doc>
+<use f='llvm/llvm/lib/Transforms/Vectorize/LoopVectorize.cpp' l='9403' u='c' c='_ZN4llvm17LoopVectorizePass11processLoopEPNS_4LoopE'/>
+<use f='llvm/llvm/unittests/Transforms/Vectorize/VPlanSlpTest.cpp' l='49' u='c' c='_ZN4llvm12_GLOBAL__N_112VPlanSlpTest24getInterleavedAccessInfoERNS_8FunctionEPNS_4LoopERNS_5VPlanE'/>

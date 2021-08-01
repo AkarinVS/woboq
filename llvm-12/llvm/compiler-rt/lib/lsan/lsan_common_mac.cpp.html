@@ -1,0 +1,223 @@
+<!doctype html>
+<html>
+<head>
+<meta name="viewport" content="width=device-width, initial-scale=1.0"><title>lsan_common_mac.cpp source code [llvm/compiler-rt/lib/lsan/lsan_common_mac.cpp] - Woboq Code Browser</title>
+<link rel="stylesheet" href="../../../.././data/qtcreator.css" title="QtCreator"/>
+<link rel="alternate stylesheet" href="../../../.././data/kdevelop.css" title="KDevelop"/>
+<script type="text/javascript" src="../../../.././data/jquery/jquery.min.js"></script>
+<script type="text/javascript" src="../../../.././data/jquery/jquery-ui.min.js"></script>
+<script>var file = 'llvm/compiler-rt/lib/lsan/lsan_common_mac.cpp'; var root_path = '../../../..'; var data_path = '../../../.././data'; var ecma_script_api_version = 2;</script>
+<script src='../../../.././data/codebrowser.js'></script>
+</head>
+<body><div id='header'><h1 id='breadcrumb'><span>Browse the source code of </span><a href='../../..'>llvm</a>/<a href='../..'>compiler-rt</a>/<a href='..'>lib</a>/<a href='./'>lsan</a>/<a href='lsan_common_mac.cpp.html'>lsan_common_mac.cpp</a></h1></div>
+<hr/><div id='content'><table class="code">
+<tr><th id="1">1</th><td><i>//=-- lsan_common_mac.cpp -------------------------------------------------===//</i></td></tr>
+<tr><th id="2">2</th><td><i>//</i></td></tr>
+<tr><th id="3">3</th><td><i>// Part of the LLVM Project, under the Apache License v2.0 with LLVM Exceptions.</i></td></tr>
+<tr><th id="4">4</th><td><i>// See <a href="https://llvm.org/LICENSE.txt">https://llvm.org/LICENSE.txt</a> for license information.</i></td></tr>
+<tr><th id="5">5</th><td><i>// SPDX-License-Identifier: Apache-2.0 WITH LLVM-exception</i></td></tr>
+<tr><th id="6">6</th><td><i>//</i></td></tr>
+<tr><th id="7">7</th><td><i>//===----------------------------------------------------------------------===//</i></td></tr>
+<tr><th id="8">8</th><td><i>//</i></td></tr>
+<tr><th id="9">9</th><td><i>// This file is a part of LeakSanitizer.</i></td></tr>
+<tr><th id="10">10</th><td><i>// Implementation of common leak checking functionality. Darwin-specific code.</i></td></tr>
+<tr><th id="11">11</th><td><i>//</i></td></tr>
+<tr><th id="12">12</th><td><i>//===----------------------------------------------------------------------===//</i></td></tr>
+<tr><th id="13">13</th><td></td></tr>
+<tr><th id="14">14</th><td><u>#include <a href="../sanitizer_common/sanitizer_platform.h.html">"sanitizer_common/sanitizer_platform.h"</a></u></td></tr>
+<tr><th id="15">15</th><td><u>#include <a href="../sanitizer_common/sanitizer_libc.h.html">"sanitizer_common/sanitizer_libc.h"</a></u></td></tr>
+<tr><th id="16">16</th><td><u>#include <a href="lsan_common.h.html">"lsan_common.h"</a></u></td></tr>
+<tr><th id="17">17</th><td></td></tr>
+<tr><th id="18">18</th><td><u>#<span data-ppcond="18">if</span> <a class="macro" href="lsan_common.h.html#39" title="1" data-ref="_M/CAN_SANITIZE_LEAKS">CAN_SANITIZE_LEAKS</a> &amp;&amp; <a class="macro" href="../sanitizer_common/sanitizer_platform.h.html#73" title="0" data-ref="_M/SANITIZER_MAC">SANITIZER_MAC</a></u></td></tr>
+<tr><th id="19">19</th><td></td></tr>
+<tr><th id="20">20</th><td><u>#include "sanitizer_common/sanitizer_allocator_internal.h"</u></td></tr>
+<tr><th id="21">21</th><td><u>#include "lsan_allocator.h"</u></td></tr>
+<tr><th id="22">22</th><td></td></tr>
+<tr><th id="23">23</th><td><u>#include &lt;pthread.h&gt;</u></td></tr>
+<tr><th id="24">24</th><td></td></tr>
+<tr><th id="25">25</th><td><u>#include &lt;mach/mach.h&gt;</u></td></tr>
+<tr><th id="26">26</th><td></td></tr>
+<tr><th id="27">27</th><td><i>// Only introduced in Mac OS X 10.9.</i></td></tr>
+<tr><th id="28">28</th><td><u>#ifdef VM_MEMORY_OS_ALLOC_ONCE</u></td></tr>
+<tr><th id="29">29</th><td><em>static</em> <em>const</em> <em>int</em> kSanitizerVmMemoryOsAllocOnce = VM_MEMORY_OS_ALLOC_ONCE;</td></tr>
+<tr><th id="30">30</th><td><u>#else</u></td></tr>
+<tr><th id="31">31</th><td><em>static</em> <em>const</em> <em>int</em> kSanitizerVmMemoryOsAllocOnce = <var>73</var>;</td></tr>
+<tr><th id="32">32</th><td><u>#endif</u></td></tr>
+<tr><th id="33">33</th><td></td></tr>
+<tr><th id="34">34</th><td><b>namespace</b> __lsan {</td></tr>
+<tr><th id="35">35</th><td></td></tr>
+<tr><th id="36">36</th><td><b>typedef</b> <b>struct</b> {</td></tr>
+<tr><th id="37">37</th><td>  <em>int</em> disable_counter;</td></tr>
+<tr><th id="38">38</th><td>  u32 current_thread_id;</td></tr>
+<tr><th id="39">39</th><td>  AllocatorCache cache;</td></tr>
+<tr><th id="40">40</th><td>} thread_local_data_t;</td></tr>
+<tr><th id="41">41</th><td></td></tr>
+<tr><th id="42">42</th><td><em>static</em> pthread_key_t key;</td></tr>
+<tr><th id="43">43</th><td><em>static</em> pthread_once_t key_once = PTHREAD_ONCE_INIT;</td></tr>
+<tr><th id="44">44</th><td></td></tr>
+<tr><th id="45">45</th><td><i>// The main thread destructor requires the current thread id,</i></td></tr>
+<tr><th id="46">46</th><td><i>// so we can't destroy it until it's been used and reset to invalid tid</i></td></tr>
+<tr><th id="47">47</th><td><em>void</em> restore_tid_data(<em>void</em> *ptr) {</td></tr>
+<tr><th id="48">48</th><td>  thread_local_data_t *data = (thread_local_data_t *)ptr;</td></tr>
+<tr><th id="49">49</th><td>  <b>if</b> (data-&gt;current_thread_id != kInvalidTid)</td></tr>
+<tr><th id="50">50</th><td>    pthread_setspecific(key, data);</td></tr>
+<tr><th id="51">51</th><td>}</td></tr>
+<tr><th id="52">52</th><td></td></tr>
+<tr><th id="53">53</th><td><em>static</em> <em>void</em> make_tls_key() {</td></tr>
+<tr><th id="54">54</th><td>  CHECK_EQ(pthread_key_create(&amp;key, restore_tid_data), <var>0</var>);</td></tr>
+<tr><th id="55">55</th><td>}</td></tr>
+<tr><th id="56">56</th><td></td></tr>
+<tr><th id="57">57</th><td><em>static</em> thread_local_data_t *get_tls_val(<em>bool</em> alloc) {</td></tr>
+<tr><th id="58">58</th><td>  pthread_once(&amp;key_once, make_tls_key);</td></tr>
+<tr><th id="59">59</th><td></td></tr>
+<tr><th id="60">60</th><td>  thread_local_data_t *ptr = (thread_local_data_t *)pthread_getspecific(key);</td></tr>
+<tr><th id="61">61</th><td>  <b>if</b> (ptr == NULL &amp;&amp; alloc) {</td></tr>
+<tr><th id="62">62</th><td>    ptr = (thread_local_data_t *)InternalAlloc(<b>sizeof</b>(*ptr));</td></tr>
+<tr><th id="63">63</th><td>    ptr-&gt;disable_counter = <var>0</var>;</td></tr>
+<tr><th id="64">64</th><td>    ptr-&gt;current_thread_id = kInvalidTid;</td></tr>
+<tr><th id="65">65</th><td>    ptr-&gt;cache = AllocatorCache();</td></tr>
+<tr><th id="66">66</th><td>    pthread_setspecific(key, ptr);</td></tr>
+<tr><th id="67">67</th><td>  }</td></tr>
+<tr><th id="68">68</th><td></td></tr>
+<tr><th id="69">69</th><td>  <b>return</b> ptr;</td></tr>
+<tr><th id="70">70</th><td>}</td></tr>
+<tr><th id="71">71</th><td></td></tr>
+<tr><th id="72">72</th><td><em>bool</em> DisabledInThisThread() {</td></tr>
+<tr><th id="73">73</th><td>  thread_local_data_t *data = get_tls_val(<b>false</b>);</td></tr>
+<tr><th id="74">74</th><td>  <b>return</b> data ? data-&gt;disable_counter &gt; <var>0</var> : <b>false</b>;</td></tr>
+<tr><th id="75">75</th><td>}</td></tr>
+<tr><th id="76">76</th><td></td></tr>
+<tr><th id="77">77</th><td><em>void</em> DisableInThisThread() { ++get_tls_val(<b>true</b>)-&gt;disable_counter; }</td></tr>
+<tr><th id="78">78</th><td></td></tr>
+<tr><th id="79">79</th><td><em>void</em> EnableInThisThread() {</td></tr>
+<tr><th id="80">80</th><td>  <em>int</em> *disable_counter = &amp;get_tls_val(<b>true</b>)-&gt;disable_counter;</td></tr>
+<tr><th id="81">81</th><td>  <b>if</b> (*disable_counter == <var>0</var>) {</td></tr>
+<tr><th id="82">82</th><td>    DisableCounterUnderflow();</td></tr>
+<tr><th id="83">83</th><td>  }</td></tr>
+<tr><th id="84">84</th><td>  --*disable_counter;</td></tr>
+<tr><th id="85">85</th><td>}</td></tr>
+<tr><th id="86">86</th><td></td></tr>
+<tr><th id="87">87</th><td>u32 GetCurrentThread() {</td></tr>
+<tr><th id="88">88</th><td>  thread_local_data_t *data = get_tls_val(<b>false</b>);</td></tr>
+<tr><th id="89">89</th><td>  <b>return</b> data ? data-&gt;current_thread_id : kInvalidTid;</td></tr>
+<tr><th id="90">90</th><td>}</td></tr>
+<tr><th id="91">91</th><td></td></tr>
+<tr><th id="92">92</th><td><em>void</em> SetCurrentThread(u32 tid) { get_tls_val(<b>true</b>)-&gt;current_thread_id = tid; }</td></tr>
+<tr><th id="93">93</th><td></td></tr>
+<tr><th id="94">94</th><td>AllocatorCache *GetAllocatorCache() { <b>return</b> &amp;get_tls_val(<b>true</b>)-&gt;cache; }</td></tr>
+<tr><th id="95">95</th><td></td></tr>
+<tr><th id="96">96</th><td>LoadedModule *GetLinker() { <b>return</b> <b>nullptr</b>; }</td></tr>
+<tr><th id="97">97</th><td></td></tr>
+<tr><th id="98">98</th><td><i>// Required on Linux for initialization of TLS behavior, but should not be</i></td></tr>
+<tr><th id="99">99</th><td><i>// required on Darwin.</i></td></tr>
+<tr><th id="100">100</th><td><em>void</em> InitializePlatformSpecificModules() {}</td></tr>
+<tr><th id="101">101</th><td></td></tr>
+<tr><th id="102">102</th><td><i>// Sections which can't contain contain global pointers. This list errs on the</i></td></tr>
+<tr><th id="103">103</th><td><i>// side of caution to avoid false positives, at the expense of performance.</i></td></tr>
+<tr><th id="104">104</th><td><i>//</i></td></tr>
+<tr><th id="105">105</th><td><i>// Other potentially safe sections include:</i></td></tr>
+<tr><th id="106">106</th><td><i>// __all_image_info, __crash_info, __const, __got, __interpose, __objc_msg_break</i></td></tr>
+<tr><th id="107">107</th><td><i>//</i></td></tr>
+<tr><th id="108">108</th><td><i>// Sections which definitely cannot be included here are:</i></td></tr>
+<tr><th id="109">109</th><td><i>// __objc_data, __objc_const, __data, __bss, __common, __thread_data,</i></td></tr>
+<tr><th id="110">110</th><td><i>// __thread_bss, __thread_vars, __objc_opt_rw, __objc_opt_ptrs</i></td></tr>
+<tr><th id="111">111</th><td><em>static</em> <em>const</em> <em>char</em> *kSkippedSecNames[] = {</td></tr>
+<tr><th id="112">112</th><td>    <q>"__cfstring"</q>,       <q>"__la_symbol_ptr"</q>,  <q>"__mod_init_func"</q>,</td></tr>
+<tr><th id="113">113</th><td>    <q>"__mod_term_func"</q>,  <q>"__nl_symbol_ptr"</q>,  <q>"__objc_classlist"</q>,</td></tr>
+<tr><th id="114">114</th><td>    <q>"__objc_classrefs"</q>, <q>"__objc_imageinfo"</q>, <q>"__objc_nlclslist"</q>,</td></tr>
+<tr><th id="115">115</th><td>    <q>"__objc_protolist"</q>, <q>"__objc_selrefs"</q>,   <q>"__objc_superrefs"</q>};</td></tr>
+<tr><th id="116">116</th><td></td></tr>
+<tr><th id="117">117</th><td><i>// Scans global variables for heap pointers.</i></td></tr>
+<tr><th id="118">118</th><td><em>void</em> ProcessGlobalRegions(Frontier *frontier) {</td></tr>
+<tr><th id="119">119</th><td>  <b>for</b> (<em>auto</em> name : kSkippedSecNames)</td></tr>
+<tr><th id="120">120</th><td>    CHECK(internal_strnlen(name, kMaxSegName + <var>1</var>) &lt;= kMaxSegName);</td></tr>
+<tr><th id="121">121</th><td></td></tr>
+<tr><th id="122">122</th><td>  MemoryMappingLayout memory_mapping(<b>false</b>);</td></tr>
+<tr><th id="123">123</th><td>  InternalMmapVector&lt;LoadedModule&gt; modules;</td></tr>
+<tr><th id="124">124</th><td>  modules.reserve(<var>128</var>);</td></tr>
+<tr><th id="125">125</th><td>  memory_mapping.DumpListOfModules(&amp;modules);</td></tr>
+<tr><th id="126">126</th><td>  <b>for</b> (uptr i = <var>0</var>; i &lt; modules.size(); ++i) {</td></tr>
+<tr><th id="127">127</th><td>    <i>// Even when global scanning is disabled, we still need to scan</i></td></tr>
+<tr><th id="128">128</th><td><i>    // system libraries for stashed pointers</i></td></tr>
+<tr><th id="129">129</th><td>    <b>if</b> (!flags()-&gt;use_globals &amp;&amp; modules[i].instrumented()) <b>continue</b>;</td></tr>
+<tr><th id="130">130</th><td></td></tr>
+<tr><th id="131">131</th><td>    <b>for</b> (<em>const</em> __sanitizer::LoadedModule::AddressRange &amp;range :</td></tr>
+<tr><th id="132">132</th><td>         modules[i].ranges()) {</td></tr>
+<tr><th id="133">133</th><td>      <i>// Sections storing global variables are writable and non-executable</i></td></tr>
+<tr><th id="134">134</th><td>      <b>if</b> (range.executable || !range.writable) <b>continue</b>;</td></tr>
+<tr><th id="135">135</th><td></td></tr>
+<tr><th id="136">136</th><td>      <b>for</b> (<em>auto</em> name : kSkippedSecNames) {</td></tr>
+<tr><th id="137">137</th><td>        <b>if</b> (!internal_strcmp(range.name, name)) <b>continue</b>;</td></tr>
+<tr><th id="138">138</th><td>      }</td></tr>
+<tr><th id="139">139</th><td></td></tr>
+<tr><th id="140">140</th><td>      ScanGlobalRange(range.beg, range.end, frontier);</td></tr>
+<tr><th id="141">141</th><td>    }</td></tr>
+<tr><th id="142">142</th><td>  }</td></tr>
+<tr><th id="143">143</th><td>}</td></tr>
+<tr><th id="144">144</th><td></td></tr>
+<tr><th id="145">145</th><td><em>void</em> ProcessPlatformSpecificAllocations(Frontier *frontier) {</td></tr>
+<tr><th id="146">146</th><td>  <em>unsigned</em> depth = <var>1</var>;</td></tr>
+<tr><th id="147">147</th><td>  vm_size_t size = <var>0</var>;</td></tr>
+<tr><th id="148">148</th><td>  vm_address_t address = <var>0</var>;</td></tr>
+<tr><th id="149">149</th><td>  kern_return_t err = KERN_SUCCESS;</td></tr>
+<tr><th id="150">150</th><td>  mach_msg_type_number_t count = VM_REGION_SUBMAP_INFO_COUNT_64;</td></tr>
+<tr><th id="151">151</th><td></td></tr>
+<tr><th id="152">152</th><td>  InternalMmapVector&lt;RootRegion&gt; <em>const</em> *root_regions = GetRootRegions();</td></tr>
+<tr><th id="153">153</th><td></td></tr>
+<tr><th id="154">154</th><td>  <b>while</b> (err == KERN_SUCCESS) {</td></tr>
+<tr><th id="155">155</th><td>    <b>struct</b> vm_region_submap_info_64 info;</td></tr>
+<tr><th id="156">156</th><td>    err = vm_region_recurse_64(mach_task_self(), &amp;address, &amp;size, &amp;depth,</td></tr>
+<tr><th id="157">157</th><td>                               (vm_region_info_t)&amp;info, &amp;count);</td></tr>
+<tr><th id="158">158</th><td></td></tr>
+<tr><th id="159">159</th><td>    uptr end_address = address + size;</td></tr>
+<tr><th id="160">160</th><td></td></tr>
+<tr><th id="161">161</th><td>    <i>// libxpc stashes some pointers in the Kernel Alloc Once page,</i></td></tr>
+<tr><th id="162">162</th><td><i>    // make sure not to report those as leaks.</i></td></tr>
+<tr><th id="163">163</th><td>    <b>if</b> (info.user_tag == kSanitizerVmMemoryOsAllocOnce) {</td></tr>
+<tr><th id="164">164</th><td>      ScanRangeForPointers(address, end_address, frontier, <q>"GLOBAL"</q>,</td></tr>
+<tr><th id="165">165</th><td>                           kReachable);</td></tr>
+<tr><th id="166">166</th><td></td></tr>
+<tr><th id="167">167</th><td>      <i>// Recursing over the full memory map is very slow, break out</i></td></tr>
+<tr><th id="168">168</th><td><i>      // early if we don't need the full iteration.</i></td></tr>
+<tr><th id="169">169</th><td>      <b>if</b> (!flags()-&gt;use_root_regions || !root_regions-&gt;size())</td></tr>
+<tr><th id="170">170</th><td>        <b>break</b>;</td></tr>
+<tr><th id="171">171</th><td>    }</td></tr>
+<tr><th id="172">172</th><td></td></tr>
+<tr><th id="173">173</th><td>    <i>// This additional root region scan is required on Darwin in order to</i></td></tr>
+<tr><th id="174">174</th><td><i>    // detect root regions contained within mmap'd memory regions, because</i></td></tr>
+<tr><th id="175">175</th><td><i>    // the Darwin implementation of sanitizer_procmaps traverses images</i></td></tr>
+<tr><th id="176">176</th><td><i>    // as loaded by dyld, and not the complete set of all memory regions.</i></td></tr>
+<tr><th id="177">177</th><td><i>    //</i></td></tr>
+<tr><th id="178">178</th><td><i>    // TODO(fjricci) - remove this once sanitizer_procmaps_mac has the same</i></td></tr>
+<tr><th id="179">179</th><td><i>    // behavior as sanitizer_procmaps_linux and traverses all memory regions</i></td></tr>
+<tr><th id="180">180</th><td>    <b>if</b> (flags()-&gt;use_root_regions) {</td></tr>
+<tr><th id="181">181</th><td>      <b>for</b> (uptr i = <var>0</var>; i &lt; root_regions-&gt;size(); i++) {</td></tr>
+<tr><th id="182">182</th><td>        ScanRootRegion(frontier, (*root_regions)[i], address, end_address,</td></tr>
+<tr><th id="183">183</th><td>                       info.protection &amp; kProtectionRead);</td></tr>
+<tr><th id="184">184</th><td>      }</td></tr>
+<tr><th id="185">185</th><td>    }</td></tr>
+<tr><th id="186">186</th><td></td></tr>
+<tr><th id="187">187</th><td>    address = end_address;</td></tr>
+<tr><th id="188">188</th><td>  }</td></tr>
+<tr><th id="189">189</th><td>}</td></tr>
+<tr><th id="190">190</th><td></td></tr>
+<tr><th id="191">191</th><td><i>// On darwin, we can intercept _exit gracefully, and return a failing exit code</i></td></tr>
+<tr><th id="192">192</th><td><i>// if required at that point. Calling Die() here is undefined behavior and</i></td></tr>
+<tr><th id="193">193</th><td><i>// causes rare race conditions.</i></td></tr>
+<tr><th id="194">194</th><td><em>void</em> HandleLeaks() {}</td></tr>
+<tr><th id="195">195</th><td></td></tr>
+<tr><th id="196">196</th><td><em>void</em> LockStuffAndStopTheWorld(StopTheWorldCallback callback,</td></tr>
+<tr><th id="197">197</th><td>                              CheckForLeaksParam *argument) {</td></tr>
+<tr><th id="198">198</th><td>  LockThreadRegistry();</td></tr>
+<tr><th id="199">199</th><td>  LockAllocator();</td></tr>
+<tr><th id="200">200</th><td>  StopTheWorld(callback, argument);</td></tr>
+<tr><th id="201">201</th><td>  UnlockAllocator();</td></tr>
+<tr><th id="202">202</th><td>  UnlockThreadRegistry();</td></tr>
+<tr><th id="203">203</th><td>}</td></tr>
+<tr><th id="204">204</th><td></td></tr>
+<tr><th id="205">205</th><td>} <i>// namespace __lsan</i></td></tr>
+<tr><th id="206">206</th><td></td></tr>
+<tr><th id="207">207</th><td><u>#<span data-ppcond="18">endif</span> // CAN_SANITIZE_LEAKS &amp;&amp; SANITIZER_MAC</u></td></tr>
+<tr><th id="208">208</th><td></td></tr>
+</table><hr/><p id='footer'>
+Generated on <em>2021-Jul-01</em> from project llvm revision <em>12</em>

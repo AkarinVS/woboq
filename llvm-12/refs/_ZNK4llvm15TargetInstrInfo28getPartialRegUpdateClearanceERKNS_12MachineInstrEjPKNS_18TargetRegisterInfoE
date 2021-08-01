@@ -1,0 +1,43 @@
+<def f='llvm/llvm/include/llvm/CodeGen/TargetInstrInfo.h' l='1691' ll='1696' type='unsigned int llvm::TargetInstrInfo::getPartialRegUpdateClearance(const llvm::MachineInstr &amp; MI, unsigned int OpNum, const llvm::TargetRegisterInfo * TRI) const'/>
+<doc f='llvm/llvm/include/llvm/CodeGen/TargetInstrInfo.h' l='1652'>/// Returns the preferred minimum clearance
+  /// before an instruction with an unwanted partial register update.
+  ///
+  /// Some instructions only write part of a register, and implicitly need to
+  /// read the other parts of the register.  This may cause unwanted stalls
+  /// preventing otherwise unrelated instructions from executing in parallel in
+  /// an out-of-order CPU.
+  ///
+  /// For example, the x86 instruction cvtsi2ss writes its result to bits
+  /// [31:0] of the destination xmm register. Bits [127:32] are unaffected, so
+  /// the instruction needs to wait for the old value of the register to become
+  /// available:
+  ///
+  ///   addps %xmm1, %xmm0
+  ///   movaps %xmm0, (%rax)
+  ///   cvtsi2ss %rbx, %xmm0
+  ///
+  /// In the code above, the cvtsi2ss instruction needs to wait for the addps
+  /// instruction before it can issue, even though the high bits of %xmm0
+  /// probably aren&apos;t needed.
+  ///
+  /// This hook returns the preferred clearance before MI, measured in
+  /// instructions.  Other defs of MI&apos;s operand OpNum are avoided in the last N
+  /// instructions before MI.  It should only return a positive value for
+  /// unwanted dependencies.  If the old bits of the defined register have
+  /// useful values, or if MI is determined to otherwise read the dependency,
+  /// the hook should return 0.
+  ///
+  /// The unwanted dependency may be handled by:
+  ///
+  /// 1. Allocating the same register for an MI def and use.  That makes the
+  ///    unwanted dependency identical to a required dependency.
+  ///
+  /// 2. Allocating a register for the def that has no defs in the previous N
+  ///    instructions.
+  ///
+  /// 3. Calling breakPartialRegDependency() with the same arguments.  This
+  ///    allows the target to insert a dependency breaking instruction.
+  ///</doc>
+<use f='llvm/llvm/lib/CodeGen/BreakFalseDeps.cpp' l='223' u='c' c='_ZN4llvm14BreakFalseDeps11processDefsEPNS_12MachineInstrE'/>
+<ovr f='llvm/llvm/lib/Target/ARM/ARMBaseInstrInfo.cpp' l='5223' c='_ZNK4llvm16ARMBaseInstrInfo28getPartialRegUpdateClearanceERKNS_12MachineInstrEjPKNS_18TargetRegisterInfoE'/>
+<ovr f='llvm/llvm/lib/Target/X86/X86InstrInfo.cpp' l='4920' c='_ZNK4llvm12X86InstrInfo28getPartialRegUpdateClearanceERKNS_12MachineInstrEjPKNS_18TargetRegisterInfoE'/>

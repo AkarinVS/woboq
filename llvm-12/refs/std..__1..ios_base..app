@@ -1,0 +1,13 @@
+<dec f='llvm/build/include/c++/v1/ios' l='262' type='const std::__1::ios_base::openmode'/>
+<use f='llvm/build/include/c++/v1/sstream' l='478' u='r' c='_ZNSt3__115basic_stringbuf3strERKNS_12basic_stringIT_T0_T1_EE'/>
+<def f='llvm/libcxx/src/ios.cpp' l='101' type='const ios_base::openmode'/>
+<use f='llvm/build/include/c++/v1/fstream' l='516' u='r' c='_ZNSt3__113basic_filebuf15__make_mdstringEj'/>
+<use f='llvm/build/include/c++/v1/fstream' l='517' u='r' c='_ZNSt3__113basic_filebuf15__make_mdstringEj'/>
+<use f='llvm/build/include/c++/v1/fstream' l='525' u='r' c='_ZNSt3__113basic_filebuf15__make_mdstringEj'/>
+<use f='llvm/build/include/c++/v1/fstream' l='526' u='r' c='_ZNSt3__113basic_filebuf15__make_mdstringEj'/>
+<use f='llvm/build/include/c++/v1/fstream' l='531' u='r' c='_ZNSt3__113basic_filebuf15__make_mdstringEj'/>
+<use f='llvm/build/include/c++/v1/fstream' l='532' u='r' c='_ZNSt3__113basic_filebuf15__make_mdstringEj'/>
+<use f='llvm/build/include/c++/v1/fstream' l='540' u='r' c='_ZNSt3__113basic_filebuf15__make_mdstringEj'/>
+<use f='llvm/build/include/c++/v1/fstream' l='541' u='r' c='_ZNSt3__113basic_filebuf15__make_mdstringEj'/>
+<use f='llvm/build/include/c++/v1/strstream' l='301' u='r' c='_ZNSt3__110ostrstreamC1EPcij'/>
+<use f='llvm/build/include/c++/v1/strstream' l='361' u='r' c='_ZNSt3__19strstreamC1EPcij'/>

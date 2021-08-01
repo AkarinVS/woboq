@@ -1,0 +1,4 @@
+<dec f='llvm/llvm/include/llvm/Bitcode/BitcodeWriterPass.h' l='51' type='llvm::raw_ostream &amp;'/>
+<use f='llvm/llvm/include/llvm/Bitcode/BitcodeWriterPass.h' l='68' u='w' c='_ZN4llvm17BitcodeWriterPassC1ERNS_11raw_ostreamEbbb'/>
+<offset>0</offset>
+<use f='llvm/llvm/lib/Bitcode/Writer/BitcodeWriterPass.cpp' l='26' u='a' c='_ZN4llvm17BitcodeWriterPass3runERNS_6ModuleERNS_15AnalysisManagerIS1_JEEE'/>

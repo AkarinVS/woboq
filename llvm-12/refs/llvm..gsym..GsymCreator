@@ -1,0 +1,160 @@
+<use f='llvm/llvm/include/llvm/DebugInfo/GSYM/DwarfTransformer.h' l='43' c='_ZN4llvm4gsym16DwarfTransformerC1ERNS_12DWARFContextERNS_11raw_ostreamERNS0_11GsymCreatorE'/>
+<use f='llvm/llvm/include/llvm/DebugInfo/GSYM/DwarfTransformer.h' l='83'/>
+<def f='llvm/llvm/include/llvm/DebugInfo/GSYM/GsymCreator.h' l='134' ll='292'/>
+<use f='llvm/llvm/lib/DebugInfo/GSYM/DwarfTransformer.cpp' l='66' c='_ZN4llvm4gsym6CUInfo20DWARFToGSYMFileIndexERNS0_11GsymCreatorEj'/>
+<use f='llvm/llvm/lib/DebugInfo/GSYM/DwarfTransformer.cpp' l='132' c='_ZL21getQualifiedNameIndexRN4llvm8DWARFDieEmRNS_4gsym11GsymCreatorE'/>
+<use f='llvm/llvm/lib/DebugInfo/GSYM/DwarfTransformer.cpp' l='207' c='_ZL15parseInlineInfoRN4llvm4gsym11GsymCreatorERNS0_6CUInfoENS_8DWARFDieEjRNS0_12FunctionInfoERNS0_10InlineInfoE'/>
+<use f='llvm/llvm/lib/DebugInfo/GSYM/DwarfTransformer.cpp' l='250' c='_ZL24convertFunctionLineTableRN4llvm11raw_ostreamERNS_4gsym6CUInfoENS_8DWARFDieERNS2_11GsymCreatorERNS2_12FunctionInfoE'/>
+<size>296</size>
+<doc f='llvm/llvm/include/llvm/DebugInfo/GSYM/GsymCreator.h' l='33'>/// GsymCreator is used to emit GSYM data to a stand alone file or section
+/// within a file.
+///
+/// The GsymCreator is designed to be used in 3 stages:
+/// - Create FunctionInfo objects and add them
+/// - Finalize the GsymCreator object
+/// - Save to file or section
+///
+/// The first stage involves creating FunctionInfo objects from another source
+/// of information like compiler debug info metadata, DWARF or Breakpad files.
+/// Any strings in the FunctionInfo or contained information, like InlineInfo
+/// or LineTable objects, should get the string table offsets by calling
+/// GsymCreator::insertString(...). Any file indexes that are needed should be
+/// obtained by calling GsymCreator::insertFile(...). All of the function calls
+/// in GsymCreator are thread safe. This allows multiple threads to create and
+/// add FunctionInfo objects while parsing debug information.
+///
+/// Once all of the FunctionInfo objects have been added, the
+/// GsymCreator::finalize(...) must be called prior to saving. This function
+/// will sort the FunctionInfo objects, finalize the string table, and do any
+/// other passes on the information needed to prepare the information to be
+/// saved.
+///
+/// Once the object has been finalized, it can be saved to a file or section.
+///
+/// ENCODING
+///
+/// GSYM files are designed to be memory mapped into a process as shared, read
+/// only data, and used as is.
+///
+/// The GSYM file format when in a stand alone file consists of:
+///   - Header
+///   - Address Table
+///   - Function Info Offsets
+///   - File Table
+///   - String Table
+///   - Function Info Data
+///
+/// HEADER
+///
+/// The header is fully described in &quot;llvm/DebugInfo/GSYM/Header.h&quot;.
+///
+/// ADDRESS TABLE
+///
+/// The address table immediately follows the header in the file and consists
+/// of Header.NumAddresses address offsets. These offsets are sorted and can be
+/// binary searched for efficient lookups. Addresses in the address table are
+/// stored as offsets from a 64 bit base address found in Header.BaseAddress.
+/// This allows the address table to contain 8, 16, or 32 offsets. This allows
+/// the address table to not require full 64 bit addresses for each address.
+/// The resulting GSYM size is smaller and causes fewer pages to be touched
+/// during address lookups when the address table is smaller. The size of the
+/// address offsets in the address table is specified in the header in
+/// Header.AddrOffSize. The first offset in the address table is aligned to
+/// Header.AddrOffSize alignment to ensure efficient access when loaded into
+/// memory.
+///
+/// FUNCTION INFO OFFSETS TABLE
+///
+/// The function info offsets table immediately follows the address table and
+/// consists of Header.NumAddresses 32 bit file offsets: one for each address
+/// in the address table. This data is aligned to a 4 byte boundary. The
+/// offsets in this table are the relative offsets from the start offset of the
+/// GSYM header and point to the function info data for each address in the
+/// address table. Keeping this data separate from the address table helps to
+/// reduce the number of pages that are touched when address lookups occur on a
+/// GSYM file.
+///
+/// FILE TABLE
+///
+/// The file table immediately follows the function info offsets table. The
+/// encoding of the FileTable is:
+///
+/// struct FileTable {
+///   uint32_t Count;
+///   FileEntry Files[];
+/// };
+///
+/// The file table starts with a 32 bit count of the number of files that are
+/// used in all of the function info, followed by that number of FileEntry
+/// structures. The file table is aligned to a 4 byte boundary, Each file in
+/// the file table is represented with a FileEntry structure.
+/// See &quot;llvm/DebugInfo/GSYM/FileEntry.h&quot; for details.
+///
+/// STRING TABLE
+///
+/// The string table follows the file table in stand alone GSYM files and
+/// contains all strings for everything contained in the GSYM file. Any string
+/// data should be added to the string table and any references to strings
+/// inside GSYM information must be stored as 32 bit string table offsets into
+/// this string table. The string table always starts with an empty string at
+/// offset zero and is followed by any strings needed by the GSYM information.
+/// The start of the string table is not aligned to any boundary.
+///
+/// FUNCTION INFO DATA
+///
+/// The function info data is the payload that contains information about the
+/// address that is being looked up. It contains all of the encoded
+/// FunctionInfo objects. Each encoded FunctionInfo&apos;s data is pointed to by an
+/// entry in the Function Info Offsets Table. For details on the exact encoding
+/// of FunctionInfo objects, see &quot;llvm/DebugInfo/GSYM/FunctionInfo.h&quot;.</doc>
+<mbr r='llvm::gsym::GsymCreator::Mutex' o='0' t='std::recursive_mutex'/>
+<mbr r='llvm::gsym::GsymCreator::Funcs' o='320' t='std::vector&lt;FunctionInfo&gt;'/>
+<mbr r='llvm::gsym::GsymCreator::StrTab' o='512' t='llvm::StringTableBuilder'/>
+<mbr r='llvm::gsym::GsymCreator::StringStorage' o='896' t='StringSet&lt;&gt;'/>
+<mbr r='llvm::gsym::GsymCreator::FileEntryToIndex' o='1152' t='DenseMap&lt;llvm::gsym::FileEntry, uint32_t&gt;'/>
+<mbr r='llvm::gsym::GsymCreator::Files' o='1344' t='std::vector&lt;llvm::gsym::FileEntry&gt;'/>
+<mbr r='llvm::gsym::GsymCreator::UUID' o='1536' t='std::vector&lt;uint8_t&gt;'/>
+<mbr r='llvm::gsym::GsymCreator::ValidTextRanges' o='1728' t='Optional&lt;llvm::gsym::AddressRanges&gt;'/>
+<mbr r='llvm::gsym::GsymCreator::Ranges' o='1984' t='llvm::gsym::AddressRanges'/>
+<mbr r='llvm::gsym::GsymCreator::BaseAddress' o='2176' t='llvm::Optional&lt;uint64_t&gt;'/>
+<mbr r='llvm::gsym::GsymCreator::Finalized' o='2304' t='bool'/>
+<fun r='_ZN4llvm4gsym11GsymCreatorC1Ev'/>
+<fun r='_ZNK4llvm4gsym11GsymCreator4saveENS_9StringRefENS_7support10endiannessE'/>
+<fun r='_ZNK4llvm4gsym11GsymCreator6encodeERNS0_10FileWriterE'/>
+<fun r='_ZN4llvm4gsym11GsymCreator12insertStringENS_9StringRefEb'/>
+<fun r='_ZN4llvm4gsym11GsymCreator10insertFileENS_9StringRefENS_3sys4path5StyleE'/>
+<fun r='_ZN4llvm4gsym11GsymCreator15addFunctionInfoEONS0_12FunctionInfoE'/>
+<fun r='_ZN4llvm4gsym11GsymCreator8finalizeERNS_11raw_ostreamE'/>
+<fun r='_ZN4llvm4gsym11GsymCreator7setUUIDENS_8ArrayRefIhEE'/>
+<fun r='_ZN4llvm4gsym11GsymCreator19forEachFunctionInfoERKSt8functionIFbRNS0_12FunctionInfoEEE'/>
+<fun r='_ZNK4llvm4gsym11GsymCreator19forEachFunctionInfoERKSt8functionIFbRKNS0_12FunctionInfoEEE'/>
+<fun r='_ZNK4llvm4gsym11GsymCreator19getNumFunctionInfosEv'/>
+<fun r='_ZNK4llvm4gsym11GsymCreator25hasFunctionInfoForAddressEm'/>
+<fun r='_ZN4llvm4gsym11GsymCreator18SetValidTextRangesERNS0_13AddressRangesE'/>
+<fun r='_ZNK4llvm4gsym11GsymCreator18GetValidTextRangesEv'/>
+<fun r='_ZNK4llvm4gsym11GsymCreator18IsValidTextAddressEm'/>
+<fun r='_ZN4llvm4gsym11GsymCreator14setBaseAddressEm'/>
+<use f='llvm/llvm/include/llvm/DebugInfo/GSYM/ObjectFileTransformer.h' l='45' c='_ZN4llvm4gsym21ObjectFileTransformer7convertERKNS_6object10ObjectFileERNS_11raw_ostreamERNS0_11GsymCreatorE'/>
+<use f='llvm/llvm/lib/DebugInfo/GSYM/ObjectFileTransformer.cpp' l='72' c='_ZN4llvm4gsym21ObjectFileTransformer7convertERKNS_6object10ObjectFileERNS_11raw_ostreamERNS0_11GsymCreatorE'/>
+<size>296</size>
+<use f='llvm/llvm/tools/llvm-gsymutil/llvm-gsymutil.cpp' l='281' c='_ZL16handleObjectFileRN4llvm6object10ObjectFileERKNSt7__cxx1112basic_stringIcSt11char_traitsIcESaIcEEE'/>
+<size>296</size>
+<use f='llvm/llvm/unittests/DebugInfo/GSYM/GSYMTest.cpp' l='1058' c='_ZL26TestGsymCreatorEncodeErrorN4llvm7support10endiannessERKNS_4gsym11GsymCreatorENSt7__cxx1112basic_stringIcSt11char_traitsIcESaIcEEE'/>
+<use f='llvm/llvm/unittests/DebugInfo/GSYM/GSYMTest.cpp' l='1076' c='_ZN41GSYMTest_TestGsymCreatorEncodeErrors_Test8TestBodyEv'/>
+<use f='llvm/llvm/unittests/DebugInfo/GSYM/GSYMTest.cpp' l='1119' c='_ZL7CompareRKN4llvm4gsym11GsymCreatorERKNS0_10GsymReaderE'/>
+<use f='llvm/llvm/unittests/DebugInfo/GSYM/GSYMTest.cpp' l='1130' c='_ZL16TestEncodeDecodeRKN4llvm4gsym11GsymCreatorENS_7support10endiannessEthmjNS_8ArrayRefIhEE'/>
+<use f='llvm/llvm/unittests/DebugInfo/GSYM/GSYMTest.cpp' l='1153' c='_ZN45GSYMTest_TestGsymCreator1ByteAddrOffsets_Test8TestBodyEv'/>
+<use f='llvm/llvm/unittests/DebugInfo/GSYM/GSYMTest.cpp' l='1179' c='_ZN45GSYMTest_TestGsymCreator2ByteAddrOffsets_Test8TestBodyEv'/>
+<use f='llvm/llvm/unittests/DebugInfo/GSYM/GSYMTest.cpp' l='1205' c='_ZN45GSYMTest_TestGsymCreator4ByteAddrOffsets_Test8TestBodyEv'/>
+<use f='llvm/llvm/unittests/DebugInfo/GSYM/GSYMTest.cpp' l='1231' c='_ZN45GSYMTest_TestGsymCreator8ByteAddrOffsets_Test8TestBodyEv'/>
+<use f='llvm/llvm/unittests/DebugInfo/GSYM/GSYMTest.cpp' l='1271' c='_ZN28GSYMTest_TestGsymReader_Test8TestBodyEv'/>
+<use f='llvm/llvm/unittests/DebugInfo/GSYM/GSYMTest.cpp' l='1315' c='_ZN29GSYMTest_TestGsymLookups_Test8TestBodyEv'/>
+<use f='llvm/llvm/unittests/DebugInfo/GSYM/GSYMTest.cpp' l='1463' c='_ZN44GSYMTest_TestDWARFFunctionWithAddresses_Test8TestBodyEv'/>
+<use f='llvm/llvm/unittests/DebugInfo/GSYM/GSYMTest.cpp' l='1540' c='_ZN51GSYMTest_TestDWARFFunctionWithAddressAndOffset_Test8TestBodyEv'/>
+<use f='llvm/llvm/unittests/DebugInfo/GSYM/GSYMTest.cpp' l='1647' c='_ZN44GSYMTest_TestDWARFStructMethodNoMangled_Test8TestBodyEv'/>
+<use f='llvm/llvm/unittests/DebugInfo/GSYM/GSYMTest.cpp' l='1747' c='_ZN33GSYMTest_TestDWARFTextRanges_Test8TestBodyEv'/>
+<use f='llvm/llvm/unittests/DebugInfo/GSYM/GSYMTest.cpp' l='1921' c='_ZN33GSYMTest_TestDWARFInlineInfo_Test8TestBodyEv'/>
+<use f='llvm/llvm/unittests/DebugInfo/GSYM/GSYMTest.cpp' l='2181' c='_ZN30GSYMTest_TestDWARFNoLines_Test8TestBodyEv'/>
+<use f='llvm/llvm/unittests/DebugInfo/GSYM/GSYMTest.cpp' l='2360' c='_ZN37GSYMTest_TestDWARFDeadStripAddr4_Test8TestBodyEv'/>
+<use f='llvm/llvm/unittests/DebugInfo/GSYM/GSYMTest.cpp' l='2500' c='_ZN37GSYMTest_TestDWARFDeadStripAddr8_Test8TestBodyEv'/>
+<size>296</size>

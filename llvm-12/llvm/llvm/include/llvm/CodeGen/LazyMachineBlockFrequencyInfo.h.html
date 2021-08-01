@@ -1,0 +1,92 @@
+<!doctype html>
+<html>
+<head>
+<meta name="viewport" content="width=device-width, initial-scale=1.0"><title>LazyMachineBlockFrequencyInfo.h source code [llvm/llvm/include/llvm/CodeGen/LazyMachineBlockFrequencyInfo.h] - Woboq Code Browser</title>
+<meta name="woboq:interestingDefinitions" content="llvm::LazyMachineBlockFrequencyInfoPass "/>
+<link rel="stylesheet" href="../../../../.././data/qtcreator.css" title="QtCreator"/>
+<link rel="alternate stylesheet" href="../../../../.././data/kdevelop.css" title="KDevelop"/>
+<script type="text/javascript" src="../../../../.././data/jquery/jquery.min.js"></script>
+<script type="text/javascript" src="../../../../.././data/jquery/jquery-ui.min.js"></script>
+<script>var file = 'llvm/llvm/include/llvm/CodeGen/LazyMachineBlockFrequencyInfo.h'; var root_path = '../../../../..'; var data_path = '../../../../.././data'; var ecma_script_api_version = 2;</script>
+<script src='../../../../.././data/codebrowser.js'></script>
+</head>
+<body><div id='header'><h1 id='breadcrumb'><span>Browse the source code of </span><a href='../../../..'>llvm</a>/<a href='../../..'>llvm</a>/<a href='../..'>include</a>/<a href='..'>llvm</a>/<a href='./'>CodeGen</a>/<a href='LazyMachineBlockFrequencyInfo.h.html'>LazyMachineBlockFrequencyInfo.h</a></h1></div>
+<hr/><div id='content'><table class="code">
+<tr><th id="1">1</th><td><i class="doc">///===- LazyMachineBlockFrequencyInfo.h - Lazy Block Frequency -*- C++ -*--===//</i></td></tr>
+<tr><th id="2">2</th><td><i class="doc">///</i></td></tr>
+<tr><th id="3">3</th><td><i class="doc">/// Part of the LLVM Project, under the Apache License v2.0 with LLVM Exceptions.</i></td></tr>
+<tr><th id="4">4</th><td><i class="doc">/// See <a href="https://llvm.org/LICENSE.txt">https://llvm.org/LICENSE.txt</a> for license information.</i></td></tr>
+<tr><th id="5">5</th><td><i class="doc">/// SPDX-License-Identifier: Apache-2.0 WITH LLVM-exception</i></td></tr>
+<tr><th id="6">6</th><td><i class="doc">///</i></td></tr>
+<tr><th id="7">7</th><td><i class="doc">///===---------------------------------------------------------------------===//</i></td></tr>
+<tr><th id="8">8</th><td><i class="doc">///<span class="command"> \file</span></i></td></tr>
+<tr><th id="9">9</th><td><i class="doc">/// This is an alternative analysis pass to MachineBlockFrequencyInfo.  The</i></td></tr>
+<tr><th id="10">10</th><td><i class="doc">/// difference is that with this pass the block frequencies are not computed</i></td></tr>
+<tr><th id="11">11</th><td><i class="doc">/// when the analysis pass is executed but rather when the BFI result is</i></td></tr>
+<tr><th id="12">12</th><td><i class="doc">/// explicitly requested by the analysis client.</i></td></tr>
+<tr><th id="13">13</th><td><i class="doc">///</i></td></tr>
+<tr><th id="14">14</th><td><i class="doc">///===---------------------------------------------------------------------===//</i></td></tr>
+<tr><th id="15">15</th><td></td></tr>
+<tr><th id="16">16</th><td><u>#<span data-ppcond="16">ifndef</span> <span class="macro" data-ref="_M/LLVM_ANALYSIS_LAZYMACHINEBLOCKFREQUENCYINFO_H">LLVM_ANALYSIS_LAZYMACHINEBLOCKFREQUENCYINFO_H</span></u></td></tr>
+<tr><th id="17">17</th><td><u>#define <dfn class="macro" id="_M/LLVM_ANALYSIS_LAZYMACHINEBLOCKFREQUENCYINFO_H" data-ref="_M/LLVM_ANALYSIS_LAZYMACHINEBLOCKFREQUENCYINFO_H">LLVM_ANALYSIS_LAZYMACHINEBLOCKFREQUENCYINFO_H</dfn></u></td></tr>
+<tr><th id="18">18</th><td></td></tr>
+<tr><th id="19">19</th><td><u>#include <a href="MachineBlockFrequencyInfo.h.html">"llvm/CodeGen/MachineBlockFrequencyInfo.h"</a></u></td></tr>
+<tr><th id="20">20</th><td><u>#include <a href="MachineBranchProbabilityInfo.h.html">"llvm/CodeGen/MachineBranchProbabilityInfo.h"</a></u></td></tr>
+<tr><th id="21">21</th><td><u>#include <a href="MachineDominators.h.html">"llvm/CodeGen/MachineDominators.h"</a></u></td></tr>
+<tr><th id="22">22</th><td><u>#include <a href="MachineLoopInfo.h.html">"llvm/CodeGen/MachineLoopInfo.h"</a></u></td></tr>
+<tr><th id="23">23</th><td></td></tr>
+<tr><th id="24">24</th><td><b>namespace</b> <span class="namespace">llvm</span> {</td></tr>
+<tr><th id="25">25</th><td><i class="doc">/// This is an alternative analysis pass to MachineBlockFrequencyInfo.</i></td></tr>
+<tr><th id="26">26</th><td><i class="doc">/// The difference is that with this pass, the block frequencies are not</i></td></tr>
+<tr><th id="27">27</th><td><i class="doc">/// computed when the analysis pass is executed but rather when the BFI result</i></td></tr>
+<tr><th id="28">28</th><td><i class="doc">/// is explicitly requested by the analysis client.</i></td></tr>
+<tr><th id="29">29</th><td><i class="doc">///</i></td></tr>
+<tr><th id="30">30</th><td><i class="doc">/// This works by checking querying if MBFI is available and otherwise</i></td></tr>
+<tr><th id="31">31</th><td><i class="doc">/// generating MBFI on the fly.  In this case the passes required for (LI, DT)</i></td></tr>
+<tr><th id="32">32</th><td><i class="doc">/// are also queried before being computed on the fly.</i></td></tr>
+<tr><th id="33">33</th><td><i class="doc">///</i></td></tr>
+<tr><th id="34">34</th><td><i class="doc">/// Note that it is expected that we wouldn't need this functionality for the</i></td></tr>
+<tr><th id="35">35</th><td><i class="doc">/// new PM since with the new PM, analyses are executed on demand.</i></td></tr>
+<tr><th id="36">36</th><td></td></tr>
+<tr><th id="37">37</th><td><b>class</b> <dfn class="type def" id="llvm::LazyMachineBlockFrequencyInfoPass" title='llvm::LazyMachineBlockFrequencyInfoPass' data-ref="llvm::LazyMachineBlockFrequencyInfoPass" data-ref-filename="llvm..LazyMachineBlockFrequencyInfoPass">LazyMachineBlockFrequencyInfoPass</dfn> : <b>public</b> <a class="type" href="MachineFunctionPass.h.html#llvm::MachineFunctionPass" title='llvm::MachineFunctionPass' data-ref="llvm::MachineFunctionPass" data-ref-filename="llvm..MachineFunctionPass">MachineFunctionPass</a> {</td></tr>
+<tr><th id="38">38</th><td><b>private</b>:</td></tr>
+<tr><th id="39">39</th><td>  <i class="doc">/// If generated on the fly this own the instance.</i></td></tr>
+<tr><th id="40">40</th><td>  <em>mutable</em> <span class="namespace">std::</span><span class='type' title='std::unique_ptr' data-ref="std::unique_ptr" data-ref-filename="std..unique_ptr">unique_ptr</span>&lt;<a class="type" href="MachineBlockFrequencyInfo.h.html#llvm::MachineBlockFrequencyInfo" title='llvm::MachineBlockFrequencyInfo' data-ref="llvm::MachineBlockFrequencyInfo" data-ref-filename="llvm..MachineBlockFrequencyInfo">MachineBlockFrequencyInfo</a>&gt; <dfn class="decl field" id="llvm::LazyMachineBlockFrequencyInfoPass::OwnedMBFI" title='llvm::LazyMachineBlockFrequencyInfoPass::OwnedMBFI' data-ref="llvm::LazyMachineBlockFrequencyInfoPass::OwnedMBFI" data-ref-filename="llvm..LazyMachineBlockFrequencyInfoPass..OwnedMBFI">OwnedMBFI</dfn>;</td></tr>
+<tr><th id="41">41</th><td></td></tr>
+<tr><th id="42">42</th><td>  <i class="doc">/// If generated on the fly this own the instance.</i></td></tr>
+<tr><th id="43">43</th><td>  <em>mutable</em> <span class="namespace">std::</span><span class='type' title='std::unique_ptr' data-ref="std::unique_ptr" data-ref-filename="std..unique_ptr">unique_ptr</span>&lt;<a class="type" href="MachineLoopInfo.h.html#llvm::MachineLoopInfo" title='llvm::MachineLoopInfo' data-ref="llvm::MachineLoopInfo" data-ref-filename="llvm..MachineLoopInfo">MachineLoopInfo</a>&gt; <dfn class="decl field" id="llvm::LazyMachineBlockFrequencyInfoPass::OwnedMLI" title='llvm::LazyMachineBlockFrequencyInfoPass::OwnedMLI' data-ref="llvm::LazyMachineBlockFrequencyInfoPass::OwnedMLI" data-ref-filename="llvm..LazyMachineBlockFrequencyInfoPass..OwnedMLI">OwnedMLI</dfn>;</td></tr>
+<tr><th id="44">44</th><td></td></tr>
+<tr><th id="45">45</th><td>  <i class="doc">/// If generated on the fly this own the instance.</i></td></tr>
+<tr><th id="46">46</th><td>  <em>mutable</em> <span class="namespace">std::</span><span class='type' title='std::unique_ptr' data-ref="std::unique_ptr" data-ref-filename="std..unique_ptr">unique_ptr</span>&lt;<a class="type" href="MachineDominators.h.html#llvm::MachineDominatorTree" title='llvm::MachineDominatorTree' data-ref="llvm::MachineDominatorTree" data-ref-filename="llvm..MachineDominatorTree">MachineDominatorTree</a>&gt; <dfn class="decl field" id="llvm::LazyMachineBlockFrequencyInfoPass::OwnedMDT" title='llvm::LazyMachineBlockFrequencyInfoPass::OwnedMDT' data-ref="llvm::LazyMachineBlockFrequencyInfoPass::OwnedMDT" data-ref-filename="llvm..LazyMachineBlockFrequencyInfoPass..OwnedMDT">OwnedMDT</dfn>;</td></tr>
+<tr><th id="47">47</th><td></td></tr>
+<tr><th id="48">48</th><td>  <i class="doc">/// The function.</i></td></tr>
+<tr><th id="49">49</th><td>  <a class="type" href="MachineFunction.h.html#llvm::MachineFunction" title='llvm::MachineFunction' data-ref="llvm::MachineFunction" data-ref-filename="llvm..MachineFunction">MachineFunction</a> *<dfn class="decl field" id="llvm::LazyMachineBlockFrequencyInfoPass::MF" title='llvm::LazyMachineBlockFrequencyInfoPass::MF' data-ref="llvm::LazyMachineBlockFrequencyInfoPass::MF" data-ref-filename="llvm..LazyMachineBlockFrequencyInfoPass..MF">MF</dfn> = <b>nullptr</b>;</td></tr>
+<tr><th id="50">50</th><td></td></tr>
+<tr><th id="51">51</th><td>  <i class="doc">/// Calculate MBFI and all other analyses that's not available and</i></td></tr>
+<tr><th id="52">52</th><td><i class="doc">  /// required by BFI.</i></td></tr>
+<tr><th id="53">53</th><td>  <a class="type" href="MachineBlockFrequencyInfo.h.html#llvm::MachineBlockFrequencyInfo" title='llvm::MachineBlockFrequencyInfo' data-ref="llvm::MachineBlockFrequencyInfo" data-ref-filename="llvm..MachineBlockFrequencyInfo">MachineBlockFrequencyInfo</a> &amp;<a class="decl fn" href="../../../lib/CodeGen/LazyMachineBlockFrequencyInfo.cpp.html#_ZNK4llvm33LazyMachineBlockFrequencyInfoPass23calculateIfNotAvailableEv" title='llvm::LazyMachineBlockFrequencyInfoPass::calculateIfNotAvailable' data-ref="_ZNK4llvm33LazyMachineBlockFrequencyInfoPass23calculateIfNotAvailableEv" data-ref-filename="_ZNK4llvm33LazyMachineBlockFrequencyInfoPass23calculateIfNotAvailableEv" id="_ZNK4llvm33LazyMachineBlockFrequencyInfoPass23calculateIfNotAvailableEv">calculateIfNotAvailable</a>() <em>const</em>;</td></tr>
+<tr><th id="54">54</th><td></td></tr>
+<tr><th id="55">55</th><td><b>public</b>:</td></tr>
+<tr><th id="56">56</th><td>  <em>static</em> <em>char</em> <dfn class="decl" id="llvm::LazyMachineBlockFrequencyInfoPass::ID" title='llvm::LazyMachineBlockFrequencyInfoPass::ID' data-ref="llvm::LazyMachineBlockFrequencyInfoPass::ID" data-ref-filename="llvm..LazyMachineBlockFrequencyInfoPass..ID">ID</dfn>;</td></tr>
+<tr><th id="57">57</th><td></td></tr>
+<tr><th id="58">58</th><td>  <a class="decl fn" href="../../../lib/CodeGen/LazyMachineBlockFrequencyInfo.cpp.html#_ZN4llvm33LazyMachineBlockFrequencyInfoPassC1Ev" title='llvm::LazyMachineBlockFrequencyInfoPass::LazyMachineBlockFrequencyInfoPass' data-ref="_ZN4llvm33LazyMachineBlockFrequencyInfoPassC1Ev" data-ref-filename="_ZN4llvm33LazyMachineBlockFrequencyInfoPassC1Ev" id="_ZN4llvm33LazyMachineBlockFrequencyInfoPassC1Ev">LazyMachineBlockFrequencyInfoPass</a>();</td></tr>
+<tr><th id="59">59</th><td></td></tr>
+<tr><th id="60">60</th><td>  <i class="doc">/// Compute and return the block frequencies.</i></td></tr>
+<tr><th id="61">61</th><td>  <a class="type" href="MachineBlockFrequencyInfo.h.html#llvm::MachineBlockFrequencyInfo" title='llvm::MachineBlockFrequencyInfo' data-ref="llvm::MachineBlockFrequencyInfo" data-ref-filename="llvm..MachineBlockFrequencyInfo">MachineBlockFrequencyInfo</a> &amp;<dfn class="decl def fn" id="_ZN4llvm33LazyMachineBlockFrequencyInfoPass6getBFIEv" title='llvm::LazyMachineBlockFrequencyInfoPass::getBFI' data-ref="_ZN4llvm33LazyMachineBlockFrequencyInfoPass6getBFIEv" data-ref-filename="_ZN4llvm33LazyMachineBlockFrequencyInfoPass6getBFIEv">getBFI</dfn>() { <b>return</b> <a class="member fn" href="../../../lib/CodeGen/LazyMachineBlockFrequencyInfo.cpp.html#_ZNK4llvm33LazyMachineBlockFrequencyInfoPass23calculateIfNotAvailableEv" title='llvm::LazyMachineBlockFrequencyInfoPass::calculateIfNotAvailable' data-ref="_ZNK4llvm33LazyMachineBlockFrequencyInfoPass23calculateIfNotAvailableEv" data-ref-filename="_ZNK4llvm33LazyMachineBlockFrequencyInfoPass23calculateIfNotAvailableEv">calculateIfNotAvailable</a>(); }</td></tr>
+<tr><th id="62">62</th><td></td></tr>
+<tr><th id="63">63</th><td>  <i class="doc">/// Compute and return the block frequencies.</i></td></tr>
+<tr><th id="64">64</th><td>  <em>const</em> <a class="type" href="MachineBlockFrequencyInfo.h.html#llvm::MachineBlockFrequencyInfo" title='llvm::MachineBlockFrequencyInfo' data-ref="llvm::MachineBlockFrequencyInfo" data-ref-filename="llvm..MachineBlockFrequencyInfo">MachineBlockFrequencyInfo</a> &amp;<dfn class="decl def fn" id="_ZNK4llvm33LazyMachineBlockFrequencyInfoPass6getBFIEv" title='llvm::LazyMachineBlockFrequencyInfoPass::getBFI' data-ref="_ZNK4llvm33LazyMachineBlockFrequencyInfoPass6getBFIEv" data-ref-filename="_ZNK4llvm33LazyMachineBlockFrequencyInfoPass6getBFIEv">getBFI</dfn>() <em>const</em> {</td></tr>
+<tr><th id="65">65</th><td>    <b>return</b> <a class="member fn" href="../../../lib/CodeGen/LazyMachineBlockFrequencyInfo.cpp.html#_ZNK4llvm33LazyMachineBlockFrequencyInfoPass23calculateIfNotAvailableEv" title='llvm::LazyMachineBlockFrequencyInfoPass::calculateIfNotAvailable' data-ref="_ZNK4llvm33LazyMachineBlockFrequencyInfoPass23calculateIfNotAvailableEv" data-ref-filename="_ZNK4llvm33LazyMachineBlockFrequencyInfoPass23calculateIfNotAvailableEv">calculateIfNotAvailable</a>();</td></tr>
+<tr><th id="66">66</th><td>  }</td></tr>
+<tr><th id="67">67</th><td></td></tr>
+<tr><th id="68">68</th><td>  <em>void</em> <a class="virtual decl fn" href="../../../lib/CodeGen/LazyMachineBlockFrequencyInfo.cpp.html#_ZNK4llvm33LazyMachineBlockFrequencyInfoPass16getAnalysisUsageERNS_13AnalysisUsageE" title='llvm::LazyMachineBlockFrequencyInfoPass::getAnalysisUsage' data-ref="_ZNK4llvm33LazyMachineBlockFrequencyInfoPass16getAnalysisUsageERNS_13AnalysisUsageE" data-ref-filename="_ZNK4llvm33LazyMachineBlockFrequencyInfoPass16getAnalysisUsageERNS_13AnalysisUsageE" id="_ZNK4llvm33LazyMachineBlockFrequencyInfoPass16getAnalysisUsageERNS_13AnalysisUsageE">getAnalysisUsage</a>(<a class="type" href="../PassAnalysisSupport.h.html#llvm::AnalysisUsage" title='llvm::AnalysisUsage' data-ref="llvm::AnalysisUsage" data-ref-filename="llvm..AnalysisUsage">AnalysisUsage</a> &amp;<dfn class="local col1 decl" id="1AU" title='AU' data-type='llvm::AnalysisUsage &amp;' data-ref="1AU" data-ref-filename="1AU">AU</dfn>) <em>const</em> override;</td></tr>
+<tr><th id="69">69</th><td></td></tr>
+<tr><th id="70">70</th><td>  <em>bool</em> <a class="virtual decl fn" href="../../../lib/CodeGen/LazyMachineBlockFrequencyInfo.cpp.html#_ZN4llvm33LazyMachineBlockFrequencyInfoPass20runOnMachineFunctionERNS_15MachineFunctionE" title='llvm::LazyMachineBlockFrequencyInfoPass::runOnMachineFunction' data-ref="_ZN4llvm33LazyMachineBlockFrequencyInfoPass20runOnMachineFunctionERNS_15MachineFunctionE" data-ref-filename="_ZN4llvm33LazyMachineBlockFrequencyInfoPass20runOnMachineFunctionERNS_15MachineFunctionE" id="_ZN4llvm33LazyMachineBlockFrequencyInfoPass20runOnMachineFunctionERNS_15MachineFunctionE">runOnMachineFunction</a>(<a class="type" href="MachineFunction.h.html#llvm::MachineFunction" title='llvm::MachineFunction' data-ref="llvm::MachineFunction" data-ref-filename="llvm..MachineFunction">MachineFunction</a> &amp;<dfn class="local col2 decl" id="2F" title='F' data-type='llvm::MachineFunction &amp;' data-ref="2F" data-ref-filename="2F">F</dfn>) override;</td></tr>
+<tr><th id="71">71</th><td>  <em>void</em> <a class="virtual decl fn" href="../../../lib/CodeGen/LazyMachineBlockFrequencyInfo.cpp.html#_ZN4llvm33LazyMachineBlockFrequencyInfoPass13releaseMemoryEv" title='llvm::LazyMachineBlockFrequencyInfoPass::releaseMemory' data-ref="_ZN4llvm33LazyMachineBlockFrequencyInfoPass13releaseMemoryEv" data-ref-filename="_ZN4llvm33LazyMachineBlockFrequencyInfoPass13releaseMemoryEv" id="_ZN4llvm33LazyMachineBlockFrequencyInfoPass13releaseMemoryEv">releaseMemory</a>() override;</td></tr>
+<tr><th id="72">72</th><td>  <em>void</em> <a class="virtual decl fn" href="../../../lib/CodeGen/LazyMachineBlockFrequencyInfo.cpp.html#_ZNK4llvm33LazyMachineBlockFrequencyInfoPass5printERNS_11raw_ostreamEPKNS_6ModuleE" title='llvm::LazyMachineBlockFrequencyInfoPass::print' data-ref="_ZNK4llvm33LazyMachineBlockFrequencyInfoPass5printERNS_11raw_ostreamEPKNS_6ModuleE" data-ref-filename="_ZNK4llvm33LazyMachineBlockFrequencyInfoPass5printERNS_11raw_ostreamEPKNS_6ModuleE" id="_ZNK4llvm33LazyMachineBlockFrequencyInfoPass5printERNS_11raw_ostreamEPKNS_6ModuleE">print</a>(<a class="type" href="../Support/raw_ostream.h.html#llvm::raw_ostream" title='llvm::raw_ostream' data-ref="llvm::raw_ostream" data-ref-filename="llvm..raw_ostream">raw_ostream</a> &amp;<dfn class="local col3 decl" id="3OS" title='OS' data-type='llvm::raw_ostream &amp;' data-ref="3OS" data-ref-filename="3OS">OS</dfn>, <em>const</em> <a class="type" href="../IR/Module.h.html#llvm::Module" title='llvm::Module' data-ref="llvm::Module" data-ref-filename="llvm..Module">Module</a> *<dfn class="local col4 decl" id="4M" title='M' data-type='const llvm::Module *' data-ref="4M" data-ref-filename="4M">M</dfn>) <em>const</em> override;</td></tr>
+<tr><th id="73">73</th><td>};</td></tr>
+<tr><th id="74">74</th><td>}</td></tr>
+<tr><th id="75">75</th><td><u>#<span data-ppcond="16">endif</span></u></td></tr>
+<tr><th id="76">76</th><td></td></tr>
+</table><hr/><p id='footer'>
+Generated while processing <a href='../../../lib/CodeGen/LazyMachineBlockFrequencyInfo.cpp.html'>llvm/llvm/lib/CodeGen/LazyMachineBlockFrequencyInfo.cpp</a><br/>Generated on <em>2021-Jul-01</em> from project llvm revision <em>12</em>

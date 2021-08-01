@@ -1,0 +1,90 @@
+<dec f='llvm/llvm/include/llvm/Analysis/DependenceAnalysis.h' l='332' type='const llvm::SCEV * llvm::DependenceInfo::getSplitIteration(const llvm::Dependence &amp; Dep, unsigned int Level)'/>
+<doc f='llvm/llvm/include/llvm/Analysis/DependenceAnalysis.h' l='292'>/// getSplitIteration - Give a dependence that&apos;s splittable at some
+    /// particular level, return the iteration that should be used to split
+    /// the loop.
+    ///
+    /// Generally, the dependence analyzer will be used to build
+    /// a dependence graph for a function (basically a map from instructions
+    /// to dependences). Looking for cycles in the graph shows us loops
+    /// that cannot be trivially vectorized/parallelized.
+    ///
+    /// We can try to improve the situation by examining all the dependences
+    /// that make up the cycle, looking for ones we can break.
+    /// Sometimes, peeling the first or last iteration of a loop will break
+    /// dependences, and there are flags for those possibilities.
+    /// Sometimes, splitting a loop at some other iteration will do the trick,
+    /// and we&apos;ve got a flag for that case. Rather than waste the space to
+    /// record the exact iteration (since we rarely know), we provide
+    /// a method that calculates the iteration. It&apos;s a drag that it must work
+    /// from scratch, but wonderful in that it&apos;s possible.
+    ///
+    /// Here&apos;s an example:
+    ///
+    ///    for (i = 0; i &lt; 10; i++)
+    ///        A[i] = ...
+    ///        ... = A[11 - i]
+    ///
+    /// There&apos;s a loop-carried flow dependence from the store to the load,
+    /// found by the weak-crossing SIV test. The dependence will have a flag,
+    /// indicating that the dependence can be broken by splitting the loop.
+    /// Calling getSplitIteration will return 5.
+    /// Splitting the loop breaks the dependence, like so:
+    ///
+    ///    for (i = 0; i &lt;= 5; i++)
+    ///        A[i] = ...
+    ///        ... = A[11 - i]
+    ///    for (i = 6; i &lt; 10; i++)
+    ///        A[i] = ...
+    ///        ... = A[11 - i]
+    ///
+    /// breaks the dependence and allows us to vectorize/parallelize
+    /// both loops.</doc>
+<use f='llvm/llvm/lib/Analysis/DependenceAnalysis.cpp' l='192' u='c' c='_ZL21dumpExampleDependenceRN4llvm11raw_ostreamEPNS_14DependenceInfoE'/>
+<def f='llvm/llvm/lib/Analysis/DependenceAnalysis.cpp' l='3905' ll='4082' type='const llvm::SCEV * llvm::DependenceInfo::getSplitIteration(const llvm::Dependence &amp; Dep, unsigned int SplitLevel)'/>
+<doc f='llvm/llvm/lib/Analysis/DependenceAnalysis.cpp' l='3858'>//===----------------------------------------------------------------------===//
+// getSplitIteration -
+// Rather than spend rarely-used space recording the splitting iteration
+// during the Weak-Crossing SIV test, we re-compute it on demand.
+// The re-computation is basically a repeat of the entire dependence test,
+// though simplified since we know that the dependence exists.
+// It&apos;s tedious, since we must go through all propagations, etc.
+//
+// Care is required to keep this code up to date with respect to the routine
+// above, depends().
+//
+// Generally, the dependence analyzer will be used to build
+// a dependence graph for a function (basically a map from instructions
+// to dependences). Looking for cycles in the graph shows us loops
+// that cannot be trivially vectorized/parallelized.
+//
+// We can try to improve the situation by examining all the dependences
+// that make up the cycle, looking for ones we can break.
+// Sometimes, peeling the first or last iteration of a loop will break
+// dependences, and we&apos;ve got flags for those possibilities.
+// Sometimes, splitting a loop at some other iteration will do the trick,
+// and we&apos;ve got a flag for that case. Rather than waste the space to
+// record the exact iteration (since we rarely know), we provide
+// a method that calculates the iteration. It&apos;s a drag that it must work
+// from scratch, but wonderful in that it&apos;s possible.
+//
+// Here&apos;s an example:
+//
+//    for (i = 0; i &lt; 10; i++)
+//        A[i] = ...
+//        ... = A[11 - i]
+//
+// There&apos;s a loop-carried flow dependence from the store to the load,
+// found by the weak-crossing SIV test. The dependence will have a flag,
+// indicating that the dependence can be broken by splitting the loop.
+// Calling getSplitIteration will return 5.
+// Splitting the loop breaks the dependence, like so:
+//
+//    for (i = 0; i &lt;= 5; i++)
+//        A[i] = ...
+//        ... = A[11 - i]
+//    for (i = 6; i &lt; 10; i++)
+//        A[i] = ...
+//        ... = A[11 - i]
+//
+// breaks the dependence and allows us to vectorize/parallelize
+// both loops.</doc>

@@ -1,0 +1,161 @@
+<!doctype html>
+<html>
+<head>
+<meta name="viewport" content="width=device-width, initial-scale=1.0"><title>asan_posix.cpp source code [llvm/compiler-rt/lib/asan/asan_posix.cpp] - Woboq Code Browser</title>
+<link rel="stylesheet" href="../../../.././data/qtcreator.css" title="QtCreator"/>
+<link rel="alternate stylesheet" href="../../../.././data/kdevelop.css" title="KDevelop"/>
+<script type="text/javascript" src="../../../.././data/jquery/jquery.min.js"></script>
+<script type="text/javascript" src="../../../.././data/jquery/jquery-ui.min.js"></script>
+<script>var file = 'llvm/compiler-rt/lib/asan/asan_posix.cpp'; var root_path = '../../../..'; var data_path = '../../../.././data'; var ecma_script_api_version = 2;</script>
+<script src='../../../.././data/codebrowser.js'></script>
+</head>
+<body><div id='header'><h1 id='breadcrumb'><span>Browse the source code of </span><a href='../../..'>llvm</a>/<a href='../..'>compiler-rt</a>/<a href='..'>lib</a>/<a href='./'>asan</a>/<a href='asan_posix.cpp.html'>asan_posix.cpp</a></h1></div>
+<hr/><div id='content'><table class="code">
+<tr><th id="1">1</th><td><i>//===-- asan_posix.cpp ----------------------------------------------------===//</i></td></tr>
+<tr><th id="2">2</th><td><i>//</i></td></tr>
+<tr><th id="3">3</th><td><i>// Part of the LLVM Project, under the Apache License v2.0 with LLVM Exceptions.</i></td></tr>
+<tr><th id="4">4</th><td><i>// See <a href="https://llvm.org/LICENSE.txt">https://llvm.org/LICENSE.txt</a> for license information.</i></td></tr>
+<tr><th id="5">5</th><td><i>// SPDX-License-Identifier: Apache-2.0 WITH LLVM-exception</i></td></tr>
+<tr><th id="6">6</th><td><i>//</i></td></tr>
+<tr><th id="7">7</th><td><i>//===----------------------------------------------------------------------===//</i></td></tr>
+<tr><th id="8">8</th><td><i>//</i></td></tr>
+<tr><th id="9">9</th><td><i>// This file is a part of AddressSanitizer, an address sanity checker.</i></td></tr>
+<tr><th id="10">10</th><td><i>//</i></td></tr>
+<tr><th id="11">11</th><td><i>// Posix-specific details.</i></td></tr>
+<tr><th id="12">12</th><td><i>//===----------------------------------------------------------------------===//</i></td></tr>
+<tr><th id="13">13</th><td></td></tr>
+<tr><th id="14">14</th><td><u>#include <a href="../sanitizer_common/sanitizer_platform.h.html">"sanitizer_common/sanitizer_platform.h"</a></u></td></tr>
+<tr><th id="15">15</th><td><u>#<span data-ppcond="15">if</span> <a class="macro" href="../sanitizer_common/sanitizer_platform.h.html#120" title="(0 || 1 || 0 || 0 || 0)" data-ref="_M/SANITIZER_POSIX">SANITIZER_POSIX</a></u></td></tr>
+<tr><th id="16">16</th><td></td></tr>
+<tr><th id="17">17</th><td><u>#include <a href="asan_internal.h.html">"asan_internal.h"</a></u></td></tr>
+<tr><th id="18">18</th><td><u>#include <a href="asan_interceptors.h.html">"asan_interceptors.h"</a></u></td></tr>
+<tr><th id="19">19</th><td><u>#include <a href="asan_mapping.h.html">"asan_mapping.h"</a></u></td></tr>
+<tr><th id="20">20</th><td><u>#include <a href="asan_poisoning.h.html">"asan_poisoning.h"</a></u></td></tr>
+<tr><th id="21">21</th><td><u>#include <a href="asan_report.h.html">"asan_report.h"</a></u></td></tr>
+<tr><th id="22">22</th><td><u>#include <a href="asan_stack.h.html">"asan_stack.h"</a></u></td></tr>
+<tr><th id="23">23</th><td><u>#include <a href="../sanitizer_common/sanitizer_libc.h.html">"sanitizer_common/sanitizer_libc.h"</a></u></td></tr>
+<tr><th id="24">24</th><td><u>#include <a href="../sanitizer_common/sanitizer_posix.h.html">"sanitizer_common/sanitizer_posix.h"</a></u></td></tr>
+<tr><th id="25">25</th><td><u>#include <a href="../sanitizer_common/sanitizer_procmaps.h.html">"sanitizer_common/sanitizer_procmaps.h"</a></u></td></tr>
+<tr><th id="26">26</th><td></td></tr>
+<tr><th id="27">27</th><td><u>#include <a href="../../../../include/pthread.h.html">&lt;pthread.h&gt;</a></u></td></tr>
+<tr><th id="28">28</th><td><u>#include <a href="../../../../include/signal.h.html">&lt;signal.h&gt;</a></u></td></tr>
+<tr><th id="29">29</th><td><u>#include <a href="../../../../include/stdlib.h.html">&lt;stdlib.h&gt;</a></u></td></tr>
+<tr><th id="30">30</th><td><u>#include <a href="../../../../include/sys/time.h.html">&lt;sys/time.h&gt;</a></u></td></tr>
+<tr><th id="31">31</th><td><u>#include <a href="../../../../include/sys/resource.h.html">&lt;sys/resource.h&gt;</a></u></td></tr>
+<tr><th id="32">32</th><td><u>#include <a href="../../../../include/unistd.h.html">&lt;unistd.h&gt;</a></u></td></tr>
+<tr><th id="33">33</th><td></td></tr>
+<tr><th id="34">34</th><td><b>namespace</b> <span class="namespace">__asan</span> {</td></tr>
+<tr><th id="35">35</th><td></td></tr>
+<tr><th id="36">36</th><td><em>void</em> <dfn class="decl def fn" id="__asan::AsanOnDeadlySignal" title='__asan::AsanOnDeadlySignal' data-ref="__asan::AsanOnDeadlySignal" data-ref-filename="__asan..AsanOnDeadlySignal">AsanOnDeadlySignal</dfn>(<em>int</em> <dfn class="local col1 decl" id="1signo" title='signo' data-type='int' data-ref="1signo" data-ref-filename="1signo">signo</dfn>, <em>void</em> *<dfn class="local col2 decl" id="2siginfo" title='siginfo' data-type='void *' data-ref="2siginfo" data-ref-filename="2siginfo">siginfo</dfn>, <em>void</em> *<dfn class="local col3 decl" id="3context" title='context' data-type='void *' data-ref="3context" data-ref-filename="3context">context</dfn>) {</td></tr>
+<tr><th id="37">37</th><td>  <a class="ref fn" href="../sanitizer_common/sanitizer_common.h.html#__sanitizer::StartReportDeadlySignal" title='__sanitizer::StartReportDeadlySignal' data-ref="__sanitizer::StartReportDeadlySignal" data-ref-filename="__sanitizer..StartReportDeadlySignal">StartReportDeadlySignal</a>();</td></tr>
+<tr><th id="38">38</th><td>  <a class="type" href="../sanitizer_common/sanitizer_common.h.html#__sanitizer::SignalContext" title='__sanitizer::SignalContext' data-ref="__sanitizer::SignalContext" data-ref-filename="__sanitizer..SignalContext">SignalContext</a> <dfn class="local col4 decl" id="4sig" title='sig' data-type='__sanitizer::SignalContext' data-ref="4sig" data-ref-filename="4sig">sig</dfn><a class="ref fn" href="../sanitizer_common/sanitizer_common.h.html#__sanitizer::SignalContext::SignalContext" title='__sanitizer::SignalContext::SignalContext' data-ref="__sanitizer::SignalContext::SignalContext" data-ref-filename="__sanitizer..SignalContext..SignalContext">(</a><a class="local col2 ref" href="#2siginfo" title='siginfo' data-ref="2siginfo" data-ref-filename="2siginfo">siginfo</a>, <a class="local col3 ref" href="#3context" title='context' data-ref="3context" data-ref-filename="3context">context</a>);</td></tr>
+<tr><th id="39">39</th><td>  <a class="ref fn" href="asan_report.h.html#__asan::ReportDeadlySignal" title='__asan::ReportDeadlySignal' data-ref="__asan::ReportDeadlySignal" data-ref-filename="__asan..ReportDeadlySignal">ReportDeadlySignal</a>(<a class="local col4 ref" href="#4sig" title='sig' data-ref="4sig" data-ref-filename="4sig">sig</a>);</td></tr>
+<tr><th id="40">40</th><td>}</td></tr>
+<tr><th id="41">41</th><td></td></tr>
+<tr><th id="42">42</th><td><em>bool</em> <dfn class="decl def fn" id="__asan::PlatformUnpoisonStacks" title='__asan::PlatformUnpoisonStacks' data-ref="__asan::PlatformUnpoisonStacks" data-ref-filename="__asan..PlatformUnpoisonStacks">PlatformUnpoisonStacks</dfn>() {</td></tr>
+<tr><th id="43">43</th><td>  <a class="typedef" href="../../../../include/bits/types/stack_t.h.html#stack_t" title='stack_t' data-type='struct stack_t' data-ref="stack_t" data-ref-filename="stack_t">stack_t</a> <a class="ref fn fake" href="../../../../include/bits/types/stack_t.h.html#26" title='(anonymous struct)::' data-ref="_ZN7stack_tC1Ev" data-ref-filename="_ZN7stack_tC1Ev"></a><dfn class="local col5 decl" id="5signal_stack" title='signal_stack' data-type='stack_t' data-ref="5signal_stack" data-ref-filename="5signal_stack">signal_stack</dfn>;</td></tr>
+<tr><th id="44">44</th><td>  <a class="macro" href="../sanitizer_common/sanitizer_internal_defs.h.html#300" title="do { __sanitizer::u64 v1 = (__sanitizer::u64)((0)); __sanitizer::u64 v2 = (__sanitizer::u64)((sigaltstack(nullptr, &amp;signal_stack))); if (__builtin_expect(!!(!(v1 == v2)), 0)) __sanitizer::CheckFailed(&quot;/fast/tmp/llvm-proj-12/compiler-rt/lib/asan/asan_posix.cpp&quot;, 44, &quot;(&quot; &quot;(0)&quot; &quot;) &quot; &quot;==&quot; &quot; (&quot; &quot;(sigaltstack(nullptr, &amp;signal_stack))&quot; &quot;)&quot;, v1, v2); } while (false)" data-ref="_M/CHECK_EQ">CHECK_EQ</a>(<var>0</var>, <a class="ref fn" href="../../../../include/signal.h.html#sigaltstack" title='sigaltstack' data-ref="sigaltstack" data-ref-filename="sigaltstack">sigaltstack</a>(<b>nullptr</b>, &amp;<a class="local col5 ref" href="#5signal_stack" title='signal_stack' data-ref="5signal_stack" data-ref-filename="5signal_stack">signal_stack</a>));</td></tr>
+<tr><th id="45">45</th><td>  <a class="typedef" href="../sanitizer_common/sanitizer_internal_defs.h.html#__sanitizer::uptr" title='__sanitizer::uptr' data-type='unsigned long' data-ref="__sanitizer::uptr" data-ref-filename="__sanitizer..uptr">uptr</a> <dfn class="local col6 decl" id="6sigalt_bottom" title='sigalt_bottom' data-type='__sanitizer::uptr' data-ref="6sigalt_bottom" data-ref-filename="6sigalt_bottom">sigalt_bottom</dfn> = (<a class="typedef" href="../sanitizer_common/sanitizer_internal_defs.h.html#__sanitizer::uptr" title='__sanitizer::uptr' data-type='unsigned long' data-ref="__sanitizer::uptr" data-ref-filename="__sanitizer..uptr">uptr</a>)<a class="local col5 ref" href="#5signal_stack" title='signal_stack' data-ref="5signal_stack" data-ref-filename="5signal_stack">signal_stack</a>.<a class="ref field" href="../../../../include/bits/types/stack_t.h.html#(anonymous)::ss_sp" title='(anonymous struct)::ss_sp' data-ref="(anonymous)::ss_sp" data-ref-filename="(anonymous)..ss_sp">ss_sp</a>;</td></tr>
+<tr><th id="46">46</th><td>  <a class="typedef" href="../sanitizer_common/sanitizer_internal_defs.h.html#__sanitizer::uptr" title='__sanitizer::uptr' data-type='unsigned long' data-ref="__sanitizer::uptr" data-ref-filename="__sanitizer..uptr">uptr</a> <dfn class="local col7 decl" id="7sigalt_top" title='sigalt_top' data-type='__sanitizer::uptr' data-ref="7sigalt_top" data-ref-filename="7sigalt_top">sigalt_top</dfn> = (<a class="typedef" href="../sanitizer_common/sanitizer_internal_defs.h.html#__sanitizer::uptr" title='__sanitizer::uptr' data-type='unsigned long' data-ref="__sanitizer::uptr" data-ref-filename="__sanitizer..uptr">uptr</a>)((<em>char</em> *)<a class="local col5 ref" href="#5signal_stack" title='signal_stack' data-ref="5signal_stack" data-ref-filename="5signal_stack">signal_stack</a>.<a class="ref field" href="../../../../include/bits/types/stack_t.h.html#(anonymous)::ss_sp" title='(anonymous struct)::ss_sp' data-ref="(anonymous)::ss_sp" data-ref-filename="(anonymous)..ss_sp">ss_sp</a> + <a class="local col5 ref" href="#5signal_stack" title='signal_stack' data-ref="5signal_stack" data-ref-filename="5signal_stack">signal_stack</a>.<a class="ref field" href="../../../../include/bits/types/stack_t.h.html#(anonymous)::ss_size" title='(anonymous struct)::ss_size' data-ref="(anonymous)::ss_size" data-ref-filename="(anonymous)..ss_size">ss_size</a>);</td></tr>
+<tr><th id="47">47</th><td>  <i>// If we're executing on the signal alternate stack AND the Linux flag</i></td></tr>
+<tr><th id="48">48</th><td><i>  // SS_AUTODISARM was used, then we cannot get the signal alternate stack</i></td></tr>
+<tr><th id="49">49</th><td><i>  // bounds from sigaltstack -- sigaltstack's output looks just as if no</i></td></tr>
+<tr><th id="50">50</th><td><i>  // alternate stack has ever been set up.</i></td></tr>
+<tr><th id="51">51</th><td><i>  // We're always unpoisoning the signal alternate stack to support jumping</i></td></tr>
+<tr><th id="52">52</th><td><i>  // between the default stack and signal alternate stack.</i></td></tr>
+<tr><th id="53">53</th><td>  <b>if</b> (<a class="local col5 ref" href="#5signal_stack" title='signal_stack' data-ref="5signal_stack" data-ref-filename="5signal_stack">signal_stack</a>.<a class="ref field" href="../../../../include/bits/types/stack_t.h.html#(anonymous)::ss_flags" title='(anonymous struct)::ss_flags' data-ref="(anonymous)::ss_flags" data-ref-filename="(anonymous)..ss_flags">ss_flags</a> != <a class="macro" href="../../../../include/bits/ss_flags.h.html#32" title="SS_DISABLE" data-ref="_M/SS_DISABLE">SS_DISABLE</a>)</td></tr>
+<tr><th id="54">54</th><td>    <a class="ref fn" href="asan_internal.h.html#__asan::UnpoisonStack" title='__asan::UnpoisonStack' data-ref="__asan::UnpoisonStack" data-ref-filename="__asan..UnpoisonStack">UnpoisonStack</a>(<a class="local col6 ref" href="#6sigalt_bottom" title='sigalt_bottom' data-ref="6sigalt_bottom" data-ref-filename="6sigalt_bottom">sigalt_bottom</a>, <a class="local col7 ref" href="#7sigalt_top" title='sigalt_top' data-ref="7sigalt_top" data-ref-filename="7sigalt_top">sigalt_top</a>, <q>"sigalt"</q>);</td></tr>
+<tr><th id="55">55</th><td></td></tr>
+<tr><th id="56">56</th><td>  <b>if</b> (<a class="local col5 ref" href="#5signal_stack" title='signal_stack' data-ref="5signal_stack" data-ref-filename="5signal_stack">signal_stack</a>.<a class="ref field" href="../../../../include/bits/types/stack_t.h.html#(anonymous)::ss_flags" title='(anonymous struct)::ss_flags' data-ref="(anonymous)::ss_flags" data-ref-filename="(anonymous)..ss_flags">ss_flags</a> != <a class="macro" href="../../../../include/bits/ss_flags.h.html#30" title="SS_ONSTACK" data-ref="_M/SS_ONSTACK">SS_ONSTACK</a>)</td></tr>
+<tr><th id="57">57</th><td>    <b>return</b> <b>false</b>;</td></tr>
+<tr><th id="58">58</th><td></td></tr>
+<tr><th id="59">59</th><td>  <i>// Since we're on the signal altnerate stack, we cannot find the DEFAULT</i></td></tr>
+<tr><th id="60">60</th><td><i>  // stack bottom using a local variable.</i></td></tr>
+<tr><th id="61">61</th><td>  <a class="typedef" href="../sanitizer_common/sanitizer_internal_defs.h.html#__sanitizer::uptr" title='__sanitizer::uptr' data-type='unsigned long' data-ref="__sanitizer::uptr" data-ref-filename="__sanitizer..uptr">uptr</a> <dfn class="local col8 decl" id="8default_bottom" title='default_bottom' data-type='__sanitizer::uptr' data-ref="8default_bottom" data-ref-filename="8default_bottom">default_bottom</dfn>, <dfn class="local col9 decl" id="9tls_addr" title='tls_addr' data-type='__sanitizer::uptr' data-ref="9tls_addr" data-ref-filename="9tls_addr">tls_addr</dfn>, <dfn class="local col0 decl" id="10tls_size" title='tls_size' data-type='__sanitizer::uptr' data-ref="10tls_size" data-ref-filename="10tls_size">tls_size</dfn>, <dfn class="local col1 decl" id="11stack_size" title='stack_size' data-type='__sanitizer::uptr' data-ref="11stack_size" data-ref-filename="11stack_size">stack_size</dfn>;</td></tr>
+<tr><th id="62">62</th><td>  <a class="ref fn" href="../sanitizer_common/sanitizer_common.h.html#__sanitizer::GetThreadStackAndTls" title='__sanitizer::GetThreadStackAndTls' data-ref="__sanitizer::GetThreadStackAndTls" data-ref-filename="__sanitizer..GetThreadStackAndTls">GetThreadStackAndTls</a>(<i>/*main=*/</i><b>false</b>, &amp;<a class="local col8 ref" href="#8default_bottom" title='default_bottom' data-ref="8default_bottom" data-ref-filename="8default_bottom">default_bottom</a>, &amp;<a class="local col1 ref" href="#11stack_size" title='stack_size' data-ref="11stack_size" data-ref-filename="11stack_size">stack_size</a>, &amp;<a class="local col9 ref" href="#9tls_addr" title='tls_addr' data-ref="9tls_addr" data-ref-filename="9tls_addr">tls_addr</a>,</td></tr>
+<tr><th id="63">63</th><td>                       &amp;<a class="local col0 ref" href="#10tls_size" title='tls_size' data-ref="10tls_size" data-ref-filename="10tls_size">tls_size</a>);</td></tr>
+<tr><th id="64">64</th><td>  <a class="ref fn" href="asan_internal.h.html#__asan::UnpoisonStack" title='__asan::UnpoisonStack' data-ref="__asan::UnpoisonStack" data-ref-filename="__asan..UnpoisonStack">UnpoisonStack</a>(<a class="local col8 ref" href="#8default_bottom" title='default_bottom' data-ref="8default_bottom" data-ref-filename="8default_bottom">default_bottom</a>, <a class="local col8 ref" href="#8default_bottom" title='default_bottom' data-ref="8default_bottom" data-ref-filename="8default_bottom">default_bottom</a> + <a class="local col1 ref" href="#11stack_size" title='stack_size' data-ref="11stack_size" data-ref-filename="11stack_size">stack_size</a>, <q>"default"</q>);</td></tr>
+<tr><th id="65">65</th><td>  <b>return</b> <b>true</b>;</td></tr>
+<tr><th id="66">66</th><td>}</td></tr>
+<tr><th id="67">67</th><td></td></tr>
+<tr><th id="68">68</th><td><i>// ---------------------- TSD ---------------- {{{1</i></td></tr>
+<tr><th id="69">69</th><td></td></tr>
+<tr><th id="70">70</th><td><u>#<span data-ppcond="70">if</span> <a class="macro" href="../sanitizer_common/sanitizer_platform.h.html#50" title="0" data-ref="_M/SANITIZER_NETBSD">SANITIZER_NETBSD</a> &amp;&amp; !<a class="macro" href="asan_internal.h.html#49" title="0" data-ref="_M/ASAN_DYNAMIC">ASAN_DYNAMIC</a></u></td></tr>
+<tr><th id="71">71</th><td><i>// Thread Static Data cannot be used in early static ASan init on NetBSD.</i></td></tr>
+<tr><th id="72">72</th><td><i>// Reuse the Asan TSD API for compatibility with existing code</i></td></tr>
+<tr><th id="73">73</th><td><i>// with an alternative implementation.</i></td></tr>
+<tr><th id="74">74</th><td></td></tr>
+<tr><th id="75">75</th><td><em>static</em> <em>void</em> (*tsd_destructor)(<em>void</em> *tsd) = <b>nullptr</b>;</td></tr>
+<tr><th id="76">76</th><td></td></tr>
+<tr><th id="77">77</th><td><b>struct</b> tsd_key {</td></tr>
+<tr><th id="78">78</th><td>  tsd_key() : key(<b>nullptr</b>) {}</td></tr>
+<tr><th id="79">79</th><td>  ~tsd_key() {</td></tr>
+<tr><th id="80">80</th><td>    CHECK(tsd_destructor);</td></tr>
+<tr><th id="81">81</th><td>    <b>if</b> (key)</td></tr>
+<tr><th id="82">82</th><td>      (*tsd_destructor)(key);</td></tr>
+<tr><th id="83">83</th><td>  }</td></tr>
+<tr><th id="84">84</th><td>  <em>void</em> *key;</td></tr>
+<tr><th id="85">85</th><td>};</td></tr>
+<tr><th id="86">86</th><td></td></tr>
+<tr><th id="87">87</th><td><em>static</em> <b>thread_local</b> <b>struct</b> tsd_key key;</td></tr>
+<tr><th id="88">88</th><td></td></tr>
+<tr><th id="89">89</th><td><em>void</em> AsanTSDInit(<em>void</em> (*destructor)(<em>void</em> *tsd)) {</td></tr>
+<tr><th id="90">90</th><td>  CHECK(!tsd_destructor);</td></tr>
+<tr><th id="91">91</th><td>  tsd_destructor = destructor;</td></tr>
+<tr><th id="92">92</th><td>}</td></tr>
+<tr><th id="93">93</th><td></td></tr>
+<tr><th id="94">94</th><td><em>void</em> *AsanTSDGet() {</td></tr>
+<tr><th id="95">95</th><td>  CHECK(tsd_destructor);</td></tr>
+<tr><th id="96">96</th><td>  <b>return</b> key.key;</td></tr>
+<tr><th id="97">97</th><td>}</td></tr>
+<tr><th id="98">98</th><td></td></tr>
+<tr><th id="99">99</th><td><em>void</em> AsanTSDSet(<em>void</em> *tsd) {</td></tr>
+<tr><th id="100">100</th><td>  CHECK(tsd_destructor);</td></tr>
+<tr><th id="101">101</th><td>  CHECK(tsd);</td></tr>
+<tr><th id="102">102</th><td>  CHECK(!key.key);</td></tr>
+<tr><th id="103">103</th><td>  key.key = tsd;</td></tr>
+<tr><th id="104">104</th><td>}</td></tr>
+<tr><th id="105">105</th><td></td></tr>
+<tr><th id="106">106</th><td><em>void</em> PlatformTSDDtor(<em>void</em> *tsd) {</td></tr>
+<tr><th id="107">107</th><td>  CHECK(tsd_destructor);</td></tr>
+<tr><th id="108">108</th><td>  CHECK_EQ(key.key, tsd);</td></tr>
+<tr><th id="109">109</th><td>  key.key = <b>nullptr</b>;</td></tr>
+<tr><th id="110">110</th><td>  <i>// Make sure that signal handler can not see a stale current thread pointer.</i></td></tr>
+<tr><th id="111">111</th><td>  atomic_signal_fence(memory_order_seq_cst);</td></tr>
+<tr><th id="112">112</th><td>  AsanThread::TSDDtor(tsd);</td></tr>
+<tr><th id="113">113</th><td>}</td></tr>
+<tr><th id="114">114</th><td><u>#<span data-ppcond="70">else</span></u></td></tr>
+<tr><th id="115">115</th><td><em>static</em> <a class="typedef" href="../../../../include/bits/pthreadtypes.h.html#pthread_key_t" title='pthread_key_t' data-type='unsigned int' data-ref="pthread_key_t" data-ref-filename="pthread_key_t">pthread_key_t</a> <dfn class="tu decl def" id="__asan::tsd_key" title='__asan::tsd_key' data-type='pthread_key_t' data-ref="__asan::tsd_key" data-ref-filename="__asan..tsd_key">tsd_key</dfn>;</td></tr>
+<tr><th id="116">116</th><td><em>static</em> <em>bool</em> <dfn class="tu decl def" id="__asan::tsd_key_inited" title='__asan::tsd_key_inited' data-type='bool' data-ref="__asan::tsd_key_inited" data-ref-filename="__asan..tsd_key_inited">tsd_key_inited</dfn> = <b>false</b>;</td></tr>
+<tr><th id="117">117</th><td><em>void</em> <dfn class="decl def fn" id="__asan::AsanTSDInit" title='__asan::AsanTSDInit' data-ref="__asan::AsanTSDInit" data-ref-filename="__asan..AsanTSDInit">AsanTSDInit</dfn>(<em>void</em> (*<dfn class="local col2 decl" id="12destructor" title='destructor' data-type='void (*)(void *)' data-ref="12destructor" data-ref-filename="12destructor">destructor</dfn>)(<em>void</em> *<dfn class="local col3 decl" id="13tsd" title='tsd' data-type='void *' data-ref="13tsd" data-ref-filename="13tsd">tsd</dfn>)) {</td></tr>
+<tr><th id="118">118</th><td>  <a class="macro" href="../sanitizer_common/sanitizer_internal_defs.h.html#299" title="do { __sanitizer::u64 v1 = (__sanitizer::u64)((!tsd_key_inited)); __sanitizer::u64 v2 = (__sanitizer::u64)(0); if (__builtin_expect(!!(!(v1 != v2)), 0)) __sanitizer::CheckFailed(&quot;/fast/tmp/llvm-proj-12/compiler-rt/lib/asan/asan_posix.cpp&quot;, 118, &quot;(&quot; &quot;(!tsd_key_inited)&quot; &quot;) &quot; &quot;!=&quot; &quot; (&quot; &quot;0&quot; &quot;)&quot;, v1, v2); } while (false)" data-ref="_M/CHECK">CHECK</a>(!<a class="tu ref" href="#__asan::tsd_key_inited" title='__asan::tsd_key_inited' data-use='r' data-ref="__asan::tsd_key_inited" data-ref-filename="__asan..tsd_key_inited">tsd_key_inited</a>);</td></tr>
+<tr><th id="119">119</th><td>  <a class="tu ref" href="#__asan::tsd_key_inited" title='__asan::tsd_key_inited' data-use='w' data-ref="__asan::tsd_key_inited" data-ref-filename="__asan..tsd_key_inited">tsd_key_inited</a> = <b>true</b>;</td></tr>
+<tr><th id="120">120</th><td>  <a class="macro" href="../sanitizer_common/sanitizer_internal_defs.h.html#300" title="do { __sanitizer::u64 v1 = (__sanitizer::u64)((0)); __sanitizer::u64 v2 = (__sanitizer::u64)((pthread_key_create(&amp;tsd_key, destructor))); if (__builtin_expect(!!(!(v1 == v2)), 0)) __sanitizer::CheckFailed(&quot;/fast/tmp/llvm-proj-12/compiler-rt/lib/asan/asan_posix.cpp&quot;, 120, &quot;(&quot; &quot;(0)&quot; &quot;) &quot; &quot;==&quot; &quot; (&quot; &quot;(pthread_key_create(&amp;tsd_key, destructor))&quot; &quot;)&quot;, v1, v2); } while (false)" data-ref="_M/CHECK_EQ">CHECK_EQ</a>(<var>0</var>, <a class="ref fn" href="../../../../include/pthread.h.html#pthread_key_create" title='pthread_key_create' data-ref="pthread_key_create" data-ref-filename="pthread_key_create">pthread_key_create</a>(&amp;<a class="tu ref" href="#__asan::tsd_key" title='__asan::tsd_key' data-use='a' data-ref="__asan::tsd_key" data-ref-filename="__asan..tsd_key">tsd_key</a>, <a class="local col2 ref" href="#12destructor" title='destructor' data-ref="12destructor" data-ref-filename="12destructor">destructor</a>));</td></tr>
+<tr><th id="121">121</th><td>}</td></tr>
+<tr><th id="122">122</th><td></td></tr>
+<tr><th id="123">123</th><td><em>void</em> *<dfn class="decl def fn" id="__asan::AsanTSDGet" title='__asan::AsanTSDGet' data-ref="__asan::AsanTSDGet" data-ref-filename="__asan..AsanTSDGet">AsanTSDGet</dfn>() {</td></tr>
+<tr><th id="124">124</th><td>  <a class="macro" href="../sanitizer_common/sanitizer_internal_defs.h.html#299" title="do { __sanitizer::u64 v1 = (__sanitizer::u64)((tsd_key_inited)); __sanitizer::u64 v2 = (__sanitizer::u64)(0); if (__builtin_expect(!!(!(v1 != v2)), 0)) __sanitizer::CheckFailed(&quot;/fast/tmp/llvm-proj-12/compiler-rt/lib/asan/asan_posix.cpp&quot;, 124, &quot;(&quot; &quot;(tsd_key_inited)&quot; &quot;) &quot; &quot;!=&quot; &quot; (&quot; &quot;0&quot; &quot;)&quot;, v1, v2); } while (false)" data-ref="_M/CHECK">CHECK</a>(<a class="tu ref" href="#__asan::tsd_key_inited" title='__asan::tsd_key_inited' data-use='r' data-ref="__asan::tsd_key_inited" data-ref-filename="__asan..tsd_key_inited">tsd_key_inited</a>);</td></tr>
+<tr><th id="125">125</th><td>  <b>return</b> <a class="ref fn" href="../../../../include/pthread.h.html#pthread_getspecific" title='pthread_getspecific' data-ref="pthread_getspecific" data-ref-filename="pthread_getspecific">pthread_getspecific</a>(<a class="tu ref" href="#__asan::tsd_key" title='__asan::tsd_key' data-use='r' data-ref="__asan::tsd_key" data-ref-filename="__asan..tsd_key">tsd_key</a>);</td></tr>
+<tr><th id="126">126</th><td>}</td></tr>
+<tr><th id="127">127</th><td></td></tr>
+<tr><th id="128">128</th><td><em>void</em> <dfn class="decl def fn" id="__asan::AsanTSDSet" title='__asan::AsanTSDSet' data-ref="__asan::AsanTSDSet" data-ref-filename="__asan..AsanTSDSet">AsanTSDSet</dfn>(<em>void</em> *<dfn class="local col4 decl" id="14tsd" title='tsd' data-type='void *' data-ref="14tsd" data-ref-filename="14tsd">tsd</dfn>) {</td></tr>
+<tr><th id="129">129</th><td>  <a class="macro" href="../sanitizer_common/sanitizer_internal_defs.h.html#299" title="do { __sanitizer::u64 v1 = (__sanitizer::u64)((tsd_key_inited)); __sanitizer::u64 v2 = (__sanitizer::u64)(0); if (__builtin_expect(!!(!(v1 != v2)), 0)) __sanitizer::CheckFailed(&quot;/fast/tmp/llvm-proj-12/compiler-rt/lib/asan/asan_posix.cpp&quot;, 129, &quot;(&quot; &quot;(tsd_key_inited)&quot; &quot;) &quot; &quot;!=&quot; &quot; (&quot; &quot;0&quot; &quot;)&quot;, v1, v2); } while (false)" data-ref="_M/CHECK">CHECK</a>(<a class="tu ref" href="#__asan::tsd_key_inited" title='__asan::tsd_key_inited' data-use='r' data-ref="__asan::tsd_key_inited" data-ref-filename="__asan..tsd_key_inited">tsd_key_inited</a>);</td></tr>
+<tr><th id="130">130</th><td>  <a class="ref fn" href="../../../../include/pthread.h.html#pthread_setspecific" title='pthread_setspecific' data-ref="pthread_setspecific" data-ref-filename="pthread_setspecific">pthread_setspecific</a>(<a class="tu ref" href="#__asan::tsd_key" title='__asan::tsd_key' data-use='r' data-ref="__asan::tsd_key" data-ref-filename="__asan..tsd_key">tsd_key</a>, <a class="local col4 ref" href="#14tsd" title='tsd' data-ref="14tsd" data-ref-filename="14tsd">tsd</a>);</td></tr>
+<tr><th id="131">131</th><td>}</td></tr>
+<tr><th id="132">132</th><td></td></tr>
+<tr><th id="133">133</th><td><em>void</em> <dfn class="decl def fn" id="__asan::PlatformTSDDtor" title='__asan::PlatformTSDDtor' data-ref="__asan::PlatformTSDDtor" data-ref-filename="__asan..PlatformTSDDtor">PlatformTSDDtor</dfn>(<em>void</em> *<dfn class="local col5 decl" id="15tsd" title='tsd' data-type='void *' data-ref="15tsd" data-ref-filename="15tsd">tsd</dfn>) {</td></tr>
+<tr><th id="134">134</th><td>  <a class="type" href="asan_thread.h.html#__asan::AsanThreadContext" title='__asan::AsanThreadContext' data-ref="__asan::AsanThreadContext" data-ref-filename="__asan..AsanThreadContext">AsanThreadContext</a> *<dfn class="local col6 decl" id="16context" title='context' data-type='__asan::AsanThreadContext *' data-ref="16context" data-ref-filename="16context">context</dfn> = (<a class="type" href="asan_thread.h.html#__asan::AsanThreadContext" title='__asan::AsanThreadContext' data-ref="__asan::AsanThreadContext" data-ref-filename="__asan..AsanThreadContext">AsanThreadContext</a>*)<a class="local col5 ref" href="#15tsd" title='tsd' data-ref="15tsd" data-ref-filename="15tsd">tsd</a>;</td></tr>
+<tr><th id="135">135</th><td>  <b>if</b> (<a class="local col6 ref" href="#16context" title='context' data-ref="16context" data-ref-filename="16context">context</a>-&gt;<a class="ref field" href="asan_thread.h.html#__asan::AsanThreadContext::destructor_iterations" title='__asan::AsanThreadContext::destructor_iterations' data-ref="__asan::AsanThreadContext::destructor_iterations" data-ref-filename="__asan..AsanThreadContext..destructor_iterations">destructor_iterations</a> &gt; <var>1</var>) {</td></tr>
+<tr><th id="136">136</th><td>    <a class="local col6 ref" href="#16context" title='context' data-ref="16context" data-ref-filename="16context">context</a>-&gt;<a class="ref field" href="asan_thread.h.html#__asan::AsanThreadContext::destructor_iterations" title='__asan::AsanThreadContext::destructor_iterations' data-ref="__asan::AsanThreadContext::destructor_iterations" data-ref-filename="__asan..AsanThreadContext..destructor_iterations">destructor_iterations</a>--;</td></tr>
+<tr><th id="137">137</th><td>    <a class="macro" href="../sanitizer_common/sanitizer_internal_defs.h.html#300" title="do { __sanitizer::u64 v1 = (__sanitizer::u64)((0)); __sanitizer::u64 v2 = (__sanitizer::u64)((pthread_setspecific(tsd_key, tsd))); if (__builtin_expect(!!(!(v1 == v2)), 0)) __sanitizer::CheckFailed(&quot;/fast/tmp/llvm-proj-12/compiler-rt/lib/asan/asan_posix.cpp&quot;, 137, &quot;(&quot; &quot;(0)&quot; &quot;) &quot; &quot;==&quot; &quot; (&quot; &quot;(pthread_setspecific(tsd_key, tsd))&quot; &quot;)&quot;, v1, v2); } while (false)" data-ref="_M/CHECK_EQ">CHECK_EQ</a>(<var>0</var>, <a class="ref fn" href="../../../../include/pthread.h.html#pthread_setspecific" title='pthread_setspecific' data-ref="pthread_setspecific" data-ref-filename="pthread_setspecific">pthread_setspecific</a>(<a class="tu ref" href="#__asan::tsd_key" title='__asan::tsd_key' data-use='r' data-ref="__asan::tsd_key" data-ref-filename="__asan..tsd_key">tsd_key</a>, <a class="local col5 ref" href="#15tsd" title='tsd' data-ref="15tsd" data-ref-filename="15tsd">tsd</a>));</td></tr>
+<tr><th id="138">138</th><td>    <b>return</b>;</td></tr>
+<tr><th id="139">139</th><td>  }</td></tr>
+<tr><th id="140">140</th><td>  <a class="type" href="asan_thread.h.html#__asan::AsanThread" title='__asan::AsanThread' data-ref="__asan::AsanThread" data-ref-filename="__asan..AsanThread">AsanThread</a>::<a class="ref fn" href="asan_thread.h.html#__asan::AsanThread::TSDDtor" title='__asan::AsanThread::TSDDtor' data-ref="__asan::AsanThread::TSDDtor" data-ref-filename="__asan..AsanThread..TSDDtor">TSDDtor</a>(<a class="local col5 ref" href="#15tsd" title='tsd' data-ref="15tsd" data-ref-filename="15tsd">tsd</a>);</td></tr>
+<tr><th id="141">141</th><td>}</td></tr>
+<tr><th id="142">142</th><td><u>#<span data-ppcond="70">endif</span></u></td></tr>
+<tr><th id="143">143</th><td>}  <i>// namespace __asan</i></td></tr>
+<tr><th id="144">144</th><td></td></tr>
+<tr><th id="145">145</th><td><u>#<span data-ppcond="15">endif</span>  // SANITIZER_POSIX</u></td></tr>
+<tr><th id="146">146</th><td></td></tr>
+</table><hr/><p id='footer'>
+Generated on <em>2021-Jul-01</em> from project llvm revision <em>12</em>

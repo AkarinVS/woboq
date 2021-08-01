@@ -1,0 +1,90 @@
+<inh f='llvm/llvm/include/llvm/IR/PassManager.h' l='374' c='llvm::PassInfoMixin'/>
+<def f='llvm/llvm/include/llvm/Transforms/Scalar/SpeculateAroundPHIs.h' l='103' ll='106'/>
+<use f='llvm/llvm/include/llvm/Transforms/Scalar/SpeculateAroundPHIs.h' l='103'/>
+<use f='llvm/llvm/lib/Passes/PassBuilder.cpp' l='1373' c='_ZN4llvm11PassBuilder31buildModuleOptimizationPipelineENS0_17OptimizationLevelEb'/>
+<use f='llvm/llvm/lib/Passes/PassRegistry.def' l='308' c='_ZN4llvm11PassBuilder15parseModulePassERNS_11PassManagerINS_6ModuleENS_15AnalysisManagerIS2_JEEEJEEERKNS0_15PipelineElementE'/>
+<use f='llvm/llvm/lib/Passes/PassRegistry.def' l='308' c='_ZN4llvm11PassBuilder14parseCGSCCPassERNS_11PassManagerINS_13LazyCallGraph3SCCENS_15AnalysisManagerIS3_JRS2_EEEJS5_RNS_17CGSCCUpdateResultEEEERKNS0_15PipelineElementE'/>
+<use f='llvm/llvm/lib/Passes/PassRegistry.def' l='308' c='_ZN4llvm11PassBuilder17parseFunctionPassERNS_11PassManagerINS_8FunctionENS_15AnalysisManagerIS2_JEEEJEEERKNS0_15PipelineElementE'/>
+<size>1</size>
+<doc f='llvm/llvm/include/llvm/Transforms/Scalar/SpeculateAroundPHIs.h' l='22'>/// This pass handles simple speculating of  instructions around PHIs when
+/// doing so is profitable for a particular target despite duplicated
+/// instructions.
+///
+/// The motivating example are PHIs of constants which will require
+/// materializing the constants along each edge. If the PHI is used by an
+/// instruction where the target can materialize the constant as part of the
+/// instruction, it is profitable to speculate those instructions around the
+/// PHI node. This can reduce dynamic instruction count as well as decrease
+/// register pressure.
+///
+/// Consider this IR for example:
+///   ```
+///   entry:
+///     br i1 %flag, label %a, label %b
+///
+///   a:
+///     br label %exit
+///
+///   b:
+///     br label %exit
+///
+///   exit:
+///     %p = phi i32 [ 7, %a ], [ 11, %b ]
+///     %sum = add i32 %arg, %p
+///     ret i32 %sum
+///   ```
+/// To materialize the inputs to this PHI node may require an explicit
+/// instruction. For example, on x86 this would turn into something like
+///   ```
+///     testq %eax, %eax
+///     movl $7, %rNN
+///     jne .L
+///     movl $11, %rNN
+///   .L:
+///     addl %edi, %rNN
+///     movl %rNN, %eax
+///     retq
+///   ```
+/// When these constants can be folded directly into another instruction, it
+/// would be preferable to avoid the potential for register pressure (above we
+/// can easily avoid it, but that isn&apos;t always true) and simply duplicate the
+/// instruction using the PHI:
+///   ```
+///   entry:
+///     br i1 %flag, label %a, label %b
+///
+///   a:
+///     %sum.1 = add i32 %arg, 7
+///     br label %exit
+///
+///   b:
+///     %sum.2 = add i32 %arg, 11
+///     br label %exit
+///
+///   exit:
+///     %p = phi i32 [ %sum.1, %a ], [ %sum.2, %b ]
+///     ret i32 %p
+///   ```
+/// Which will generate something like the following on x86:
+///   ```
+///     testq %eax, %eax
+///     addl $7, %edi
+///     jne .L
+///     addl $11, %edi
+///   .L:
+///     movl %edi, %eax
+///     retq
+///   ```
+///
+/// It is important to note that this pass is never intended to handle more
+/// complex cases where speculating around PHIs allows simplifications of the
+/// IR itself or other subsequent optimizations. Those can and should already
+/// be handled before this pass is ever run by a more powerful analysis that
+/// can reason about equivalences and common subexpressions. Classically, those
+/// cases would be handled by a GVN-powered PRE or similar transform. This
+/// pass, in contrast, is *only* interested in cases where despite no
+/// simplifications to the IR itself, speculation is *faster* to execute. The
+/// result of this is that the cost models which are appropriate to consider
+/// here are relatively simple ones around execution and codesize cost, without
+/// any need to consider simplifications or other transformations.</doc>
+<fun r='_ZN4llvm23SpeculateAroundPHIsPass3runERNS_8FunctionERNS_15AnalysisManagerIS1_JEEE'/>

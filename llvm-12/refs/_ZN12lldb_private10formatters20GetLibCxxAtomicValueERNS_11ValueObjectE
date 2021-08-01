@@ -1,0 +1,41 @@
+<dec f='llvm/lldb/source/Plugins/Language/CPlusPlus/LibCxxAtomic.h' l='21' type='lldb::ValueObjectSP lldb_private::formatters::GetLibCxxAtomicValue(lldb_private::ValueObject &amp; valobj)'/>
+<def f='llvm/lldb/source/Plugins/Language/CPlusPlus/LibCxxAtomic.cpp' l='52' ll='69' type='lldb::ValueObjectSP lldb_private::formatters::GetLibCxxAtomicValue(lldb_private::ValueObject &amp; valobj)'/>
+<use f='llvm/lldb/source/Plugins/Language/CPlusPlus/LibCxxAtomic.cpp' l='74' u='c' c='_ZN12lldb_private10formatters27LibCxxAtomicSummaryProviderERNS_11ValueObjectERNS_6StreamERKNS_18TypeSummaryOptionsE'/>
+<use f='llvm/lldb/source/Plugins/Language/CPlusPlus/LibCxxAtomic.cpp' l='115' u='c' c='_ZN12lldb_private10formatters32LibcxxStdAtomicSyntheticFrontEnd6UpdateEv'/>
+<use f='llvm/lldb/source/Plugins/Language/CPlusPlus/LibCxxAtomic.cpp' l='117' u='c' c='_ZN12lldb_private10formatters32LibcxxStdAtomicSyntheticFrontEnd6UpdateEv'/>
+<doc f='llvm/lldb/source/Plugins/Language/CPlusPlus/LibCxxAtomic.cpp' l='16'>//
+// We are supporting two versions of libc++ std::atomic
+//
+// Given std::atomic&lt;int&gt; i;
+//
+// The previous version of std::atomic was laid out like this
+//
+// (lldb) frame var -L -R i
+// 0x00007ffeefbff9a0: (std::__1::atomic&lt;int&gt;) i = {
+// 0x00007ffeefbff9a0:   std::__1::__atomic_base&lt;int, true&gt; = {
+// 0x00007ffeefbff9a0:     std::__1::__atomic_base&lt;int, false&gt; = {
+// 0x00007ffeefbff9a0:       __a_ = 5
+//        }
+//    }
+// }
+//
+// In this case we need to obtain __a_ and the current version is laid out as so
+//
+// (lldb) frame var -L -R i
+// 0x00007ffeefbff9b0: (std::__1::atomic&lt;int&gt;) i = {
+// 0x00007ffeefbff9b0:   std::__1::__atomic_base&lt;int, true&gt; = {
+// 0x00007ffeefbff9b0:     std::__1::__atomic_base&lt;int, false&gt; = {
+// 0x00007ffeefbff9b0:       __a_ = {
+// 0x00007ffeefbff9b0:         std::__1::__cxx_atomic_base_impl&lt;int&gt; = {
+// 0x00007ffeefbff9b0:           __a_value = 5
+//                }
+//          }
+//       }
+//    }
+//}
+//
+// In this case we need to obtain __a_value
+//
+// The below method covers both cases and returns the relevant member as a
+// ValueObjectSP
+//</doc>

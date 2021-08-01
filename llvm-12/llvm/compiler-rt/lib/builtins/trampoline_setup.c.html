@@ -1,0 +1,59 @@
+<!doctype html>
+<html>
+<head>
+<meta name="viewport" content="width=device-width, initial-scale=1.0"><title>trampoline_setup.c source code [llvm/compiler-rt/lib/builtins/trampoline_setup.c] - Woboq Code Browser</title>
+<link rel="stylesheet" href="../../../.././data/qtcreator.css" title="QtCreator"/>
+<link rel="alternate stylesheet" href="../../../.././data/kdevelop.css" title="KDevelop"/>
+<script type="text/javascript" src="../../../.././data/jquery/jquery.min.js"></script>
+<script type="text/javascript" src="../../../.././data/jquery/jquery-ui.min.js"></script>
+<script>var file = 'llvm/compiler-rt/lib/builtins/trampoline_setup.c'; var root_path = '../../../..'; var data_path = '../../../.././data'; var ecma_script_api_version = 2;</script>
+<script src='../../../.././data/codebrowser.js'></script>
+</head>
+<body><div id='header'><h1 id='breadcrumb'><span>Browse the source code of </span><a href='../../..'>llvm</a>/<a href='../..'>compiler-rt</a>/<a href='..'>lib</a>/<a href='./'>builtins</a>/<a href='trampoline_setup.c.html'>trampoline_setup.c</a></h1></div>
+<hr/><div id='content'><table class="code">
+<tr><th id="1">1</th><td><i>//===----- trampoline_setup.c - Implement __trampoline_setup -------------===//</i></td></tr>
+<tr><th id="2">2</th><td><i>//</i></td></tr>
+<tr><th id="3">3</th><td><i>// Part of the LLVM Project, under the Apache License v2.0 with LLVM Exceptions.</i></td></tr>
+<tr><th id="4">4</th><td><i>// See <a href="https://llvm.org/LICENSE.txt">https://llvm.org/LICENSE.txt</a> for license information.</i></td></tr>
+<tr><th id="5">5</th><td><i>// SPDX-License-Identifier: Apache-2.0 WITH LLVM-exception</i></td></tr>
+<tr><th id="6">6</th><td><i>//</i></td></tr>
+<tr><th id="7">7</th><td><i>//===----------------------------------------------------------------------===//</i></td></tr>
+<tr><th id="8">8</th><td></td></tr>
+<tr><th id="9">9</th><td><u>#include <a href="int_lib.h.html">"int_lib.h"</a></u></td></tr>
+<tr><th id="10">10</th><td></td></tr>
+<tr><th id="11">11</th><td><b>extern</b> <em>void</em> <dfn class="decl fn" id="__clear_cache" title='__clear_cache' data-ref="__clear_cache" data-ref-filename="__clear_cache">__clear_cache</dfn>(<em>void</em> *<dfn class="local col1 decl" id="1start" title='start' data-type='void *' data-ref="1start" data-ref-filename="1start">start</dfn>, <em>void</em> *<dfn class="local col2 decl" id="2end" title='end' data-type='void *' data-ref="2end" data-ref-filename="2end">end</dfn>);</td></tr>
+<tr><th id="12">12</th><td></td></tr>
+<tr><th id="13">13</th><td><i>// The ppc compiler generates calls to __trampoline_setup() when creating</i></td></tr>
+<tr><th id="14">14</th><td><i>// trampoline functions on the stack for use with nested functions.</i></td></tr>
+<tr><th id="15">15</th><td><i>// This function creates a custom 40-byte trampoline function on the stack</i></td></tr>
+<tr><th id="16">16</th><td><i>// which loads r11 with a pointer to the outer function's locals</i></td></tr>
+<tr><th id="17">17</th><td><i>// and then jumps to the target nested function.</i></td></tr>
+<tr><th id="18">18</th><td></td></tr>
+<tr><th id="19">19</th><td><u>#<span data-ppcond="19">if</span> __ppc__ &amp;&amp; !defined(<span class="macro" data-ref="_M/__powerpc64__">__powerpc64__</span>)</u></td></tr>
+<tr><th id="20">20</th><td>COMPILER_RT_ABI <em>void</em> __trampoline_setup(uint32_t *trampOnStack,</td></tr>
+<tr><th id="21">21</th><td>                                        <em>int</em> trampSizeAllocated,</td></tr>
+<tr><th id="22">22</th><td>                                        <em>const</em> <em>void</em> *realFunc, <em>void</em> *localsPtr) {</td></tr>
+<tr><th id="23">23</th><td>  <i>// should never happen, but if compiler did not allocate</i></td></tr>
+<tr><th id="24">24</th><td><i>  // enough space on stack for the trampoline, abort</i></td></tr>
+<tr><th id="25">25</th><td>  <b>if</b> (trampSizeAllocated &lt; <var>40</var>)</td></tr>
+<tr><th id="26">26</th><td>    compilerrt_abort();</td></tr>
+<tr><th id="27">27</th><td></td></tr>
+<tr><th id="28">28</th><td>  <i>// create trampoline</i></td></tr>
+<tr><th id="29">29</th><td>  trampOnStack[<var>0</var>] = <var>0x7c0802a6</var>; <i>// mflr r0</i></td></tr>
+<tr><th id="30">30</th><td>  trampOnStack[<var>1</var>] = <var>0x4800000d</var>; <i>// bl Lbase</i></td></tr>
+<tr><th id="31">31</th><td>  trampOnStack[<var>2</var>] = (uint32_t)realFunc;</td></tr>
+<tr><th id="32">32</th><td>  trampOnStack[<var>3</var>] = (uint32_t)localsPtr;</td></tr>
+<tr><th id="33">33</th><td>  trampOnStack[<var>4</var>] = <var>0x7d6802a6</var>; <i>// Lbase: mflr r11</i></td></tr>
+<tr><th id="34">34</th><td>  trampOnStack[<var>5</var>] = <var>0x818b0000</var>; <i>// lwz    r12,0(r11)</i></td></tr>
+<tr><th id="35">35</th><td>  trampOnStack[<var>6</var>] = <var>0x7c0803a6</var>; <i>// mtlr r0</i></td></tr>
+<tr><th id="36">36</th><td>  trampOnStack[<var>7</var>] = <var>0x7d8903a6</var>; <i>// mtctr r12</i></td></tr>
+<tr><th id="37">37</th><td>  trampOnStack[<var>8</var>] = <var>0x816b0004</var>; <i>// lwz    r11,4(r11)</i></td></tr>
+<tr><th id="38">38</th><td>  trampOnStack[<var>9</var>] = <var>0x4e800420</var>; <i>// bctr</i></td></tr>
+<tr><th id="39">39</th><td></td></tr>
+<tr><th id="40">40</th><td>  <i>// clear instruction cache</i></td></tr>
+<tr><th id="41">41</th><td>  __clear_cache(trampOnStack, &amp;trampOnStack[<var>10</var>]);</td></tr>
+<tr><th id="42">42</th><td>}</td></tr>
+<tr><th id="43">43</th><td><u>#<span data-ppcond="19">endif</span> // __ppc__ &amp;&amp; !defined(__powerpc64__)</u></td></tr>
+<tr><th id="44">44</th><td></td></tr>
+</table><hr/><p id='footer'>
+Generated on <em>2021-Jul-01</em> from project llvm revision <em>12</em>

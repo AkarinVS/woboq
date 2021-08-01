@@ -1,0 +1,212 @@
+<def f='llvm/llvm/lib/Target/AArch64/AArch64InstrInfo.cpp' l='5998' ll='6004'/>
+<doc f='llvm/llvm/lib/Target/AArch64/AArch64InstrInfo.cpp' l='5918'>/// Constants defining how certain sequences should be outlined.
+/// This encompasses how an outlined function should be called, and what kind of
+/// frame should be emitted for that outlined function.
+///
+/// \p MachineOutlinerDefault implies that the function should be called with
+/// a save and restore of LR to the stack.
+///
+/// That is,
+///
+/// I1     Save LR                    OUTLINED_FUNCTION:
+/// I2 --&gt; BL OUTLINED_FUNCTION       I1
+/// I3     Restore LR                 I2
+///                                   I3
+///                                   RET
+///
+/// * Call construction overhead: 3 (save + BL + restore)
+/// * Frame construction overhead: 1 (ret)
+/// * Requires stack fixups? Yes
+///
+/// \p MachineOutlinerTailCall implies that the function is being created from
+/// a sequence of instructions ending in a return.
+///
+/// That is,
+///
+/// I1                             OUTLINED_FUNCTION:
+/// I2 --&gt; B OUTLINED_FUNCTION     I1
+/// RET                            I2
+///                                RET
+///
+/// * Call construction overhead: 1 (B)
+/// * Frame construction overhead: 0 (Return included in sequence)
+/// * Requires stack fixups? No
+///
+/// \p MachineOutlinerNoLRSave implies that the function should be called using
+/// a BL instruction, but doesn&apos;t require LR to be saved and restored. This
+/// happens when LR is known to be dead.
+///
+/// That is,
+///
+/// I1                                OUTLINED_FUNCTION:
+/// I2 --&gt; BL OUTLINED_FUNCTION       I1
+/// I3                                I2
+///                                   I3
+///                                   RET
+///
+/// * Call construction overhead: 1 (BL)
+/// * Frame construction overhead: 1 (RET)
+/// * Requires stack fixups? No
+///
+/// \p MachineOutlinerThunk implies that the function is being created from
+/// a sequence of instructions ending in a call. The outlined function is
+/// called with a BL instruction, and the outlined function tail-calls the
+/// original call destination.
+///
+/// That is,
+///
+/// I1                                OUTLINED_FUNCTION:
+/// I2 --&gt; BL OUTLINED_FUNCTION       I1
+/// BL f                              I2
+///                                   B f
+/// * Call construction overhead: 1 (BL)
+/// * Frame construction overhead: 0
+/// * Requires stack fixups? No
+///
+/// \p MachineOutlinerRegSave implies that the function should be called with a
+/// save and restore of LR to an available register. This allows us to avoid
+/// stack fixups. Note that this outlining variant is compatible with the
+/// NoLRSave case.
+///
+/// That is,
+///
+/// I1     Save LR                    OUTLINED_FUNCTION:
+/// I2 --&gt; BL OUTLINED_FUNCTION       I1
+/// I3     Restore LR                 I2
+///                                   I3
+///                                   RET
+///
+/// * Call construction overhead: 3 (save + BL + restore)
+/// * Frame construction overhead: 1 (ret)
+/// * Requires stack fixups? No</doc>
+<def f='llvm/llvm/lib/Target/ARM/ARMBaseInstrInfo.cpp' l='5660' ll='5666'/>
+<doc f='llvm/llvm/lib/Target/ARM/ARMBaseInstrInfo.cpp' l='5558'>/// Constants defining how certain sequences should be outlined.
+/// This encompasses how an outlined function should be called, and what kind of
+/// frame should be emitted for that outlined function.
+///
+/// \p MachineOutlinerTailCall implies that the function is being created from
+/// a sequence of instructions ending in a return.
+///
+/// That is,
+///
+/// I1                                OUTLINED_FUNCTION:
+/// I2    --&gt; B OUTLINED_FUNCTION     I1
+/// BX LR                             I2
+///                                   BX LR
+///
+/// +-------------------------+--------+-----+
+/// |                         | Thumb2 | ARM |
+/// +-------------------------+--------+-----+
+/// | Call overhead in Bytes  |      4 |   4 |
+/// | Frame overhead in Bytes |      0 |   0 |
+/// | Stack fixup required    |     No |  No |
+/// +-------------------------+--------+-----+
+///
+/// \p MachineOutlinerThunk implies that the function is being created from
+/// a sequence of instructions ending in a call. The outlined function is
+/// called with a BL instruction, and the outlined function tail-calls the
+/// original call destination.
+///
+/// That is,
+///
+/// I1                                OUTLINED_FUNCTION:
+/// I2   --&gt; BL OUTLINED_FUNCTION     I1
+/// BL f                              I2
+///                                   B f
+///
+/// +-------------------------+--------+-----+
+/// |                         | Thumb2 | ARM |
+/// +-------------------------+--------+-----+
+/// | Call overhead in Bytes  |      4 |   4 |
+/// | Frame overhead in Bytes |      0 |   0 |
+/// | Stack fixup required    |     No |  No |
+/// +-------------------------+--------+-----+
+///
+/// \p MachineOutlinerNoLRSave implies that the function should be called using
+/// a BL instruction, but doesn&apos;t require LR to be saved and restored. This
+/// happens when LR is known to be dead.
+///
+/// That is,
+///
+/// I1                                OUTLINED_FUNCTION:
+/// I2 --&gt; BL OUTLINED_FUNCTION       I1
+/// I3                                I2
+///                                   I3
+///                                   BX LR
+///
+/// +-------------------------+--------+-----+
+/// |                         | Thumb2 | ARM |
+/// +-------------------------+--------+-----+
+/// | Call overhead in Bytes  |      4 |   4 |
+/// | Frame overhead in Bytes |      4 |   4 |
+/// | Stack fixup required    |     No |  No |
+/// +-------------------------+--------+-----+
+///
+/// \p MachineOutlinerRegSave implies that the function should be called with a
+/// save and restore of LR to an available register. This allows us to avoid
+/// stack fixups. Note that this outlining variant is compatible with the
+/// NoLRSave case.
+///
+/// That is,
+///
+/// I1     Save LR                    OUTLINED_FUNCTION:
+/// I2 --&gt; BL OUTLINED_FUNCTION       I1
+/// I3     Restore LR                 I2
+///                                   I3
+///                                   BX LR
+///
+/// +-------------------------+--------+-----+
+/// |                         | Thumb2 | ARM |
+/// +-------------------------+--------+-----+
+/// | Call overhead in Bytes  |      8 |  12 |
+/// | Frame overhead in Bytes |      2 |   4 |
+/// | Stack fixup required    |     No |  No |
+/// +-------------------------+--------+-----+
+///
+/// \p MachineOutlinerDefault implies that the function should be called with
+/// a save and restore of LR to the stack.
+///
+/// That is,
+///
+/// I1     Save LR                    OUTLINED_FUNCTION:
+/// I2 --&gt; BL OUTLINED_FUNCTION       I1
+/// I3     Restore LR                 I2
+///                                   I3
+///                                   BX LR
+///
+/// +-------------------------+--------+-----+
+/// |                         | Thumb2 | ARM |
+/// +-------------------------+--------+-----+
+/// | Call overhead in Bytes  |      8 |  12 |
+/// | Frame overhead in Bytes |      2 |   4 |
+/// | Stack fixup required    |    Yes | Yes |
+/// +-------------------------+--------+-----+</doc>
+<def f='llvm/llvm/lib/Target/X86/X86InstrInfo.cpp' l='8878' ll='8881'/>
+<doc f='llvm/llvm/lib/Target/X86/X86InstrInfo.cpp' l='8850'>/// Constants defining how certain sequences should be outlined.
+///
+/// \p MachineOutlinerDefault implies that the function is called with a call
+/// instruction, and a return must be emitted for the outlined function frame.
+///
+/// That is,
+///
+/// I1                                 OUTLINED_FUNCTION:
+/// I2 --&gt; call OUTLINED_FUNCTION       I1
+/// I3                                  I2
+///                                     I3
+///                                     ret
+///
+/// * Call construction overhead: 1 (call instruction)
+/// * Frame construction overhead: 1 (return instruction)
+///
+/// \p MachineOutlinerTailCall implies that the function is being tail called.
+/// A jump is emitted instead of a call, and the return is already present in
+/// the outlined sequence. That is,
+///
+/// I1                                 OUTLINED_FUNCTION:
+/// I2 --&gt; jmp OUTLINED_FUNCTION       I1
+/// ret                                I2
+///                                    ret
+///
+/// * Call construction overhead: 1 (jump instruction)
+/// * Frame construction overhead: 0 (don&apos;t need to return)
+///</doc>

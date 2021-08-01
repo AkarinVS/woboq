@@ -1,0 +1,89 @@
+<!doctype html>
+<html>
+<head>
+<meta name="viewport" content="width=device-width, initial-scale=1.0"><title>floattidf.c source code [llvm/compiler-rt/lib/builtins/floattidf.c] - Woboq Code Browser</title>
+<link rel="stylesheet" href="../../../.././data/qtcreator.css" title="QtCreator"/>
+<link rel="alternate stylesheet" href="../../../.././data/kdevelop.css" title="KDevelop"/>
+<script type="text/javascript" src="../../../.././data/jquery/jquery.min.js"></script>
+<script type="text/javascript" src="../../../.././data/jquery/jquery-ui.min.js"></script>
+<script>var file = 'llvm/compiler-rt/lib/builtins/floattidf.c'; var root_path = '../../../..'; var data_path = '../../../.././data'; var ecma_script_api_version = 2;</script>
+<script src='../../../.././data/codebrowser.js'></script>
+</head>
+<body><div id='header'><h1 id='breadcrumb'><span>Browse the source code of </span><a href='../../..'>llvm</a>/<a href='../..'>compiler-rt</a>/<a href='..'>lib</a>/<a href='./'>builtins</a>/<a href='floattidf.c.html'>floattidf.c</a></h1></div>
+<hr/><div id='content'><table class="code">
+<tr><th id="1">1</th><td><i>//===-- floattidf.c - Implement __floattidf -------------------------------===//</i></td></tr>
+<tr><th id="2">2</th><td><i>//</i></td></tr>
+<tr><th id="3">3</th><td><i>// Part of the LLVM Project, under the Apache License v2.0 with LLVM Exceptions.</i></td></tr>
+<tr><th id="4">4</th><td><i>// See <a href="https://llvm.org/LICENSE.txt">https://llvm.org/LICENSE.txt</a> for license information.</i></td></tr>
+<tr><th id="5">5</th><td><i>// SPDX-License-Identifier: Apache-2.0 WITH LLVM-exception</i></td></tr>
+<tr><th id="6">6</th><td><i>//</i></td></tr>
+<tr><th id="7">7</th><td><i>//===----------------------------------------------------------------------===//</i></td></tr>
+<tr><th id="8">8</th><td><i>//</i></td></tr>
+<tr><th id="9">9</th><td><i>// This file implements __floattidf for the compiler_rt library.</i></td></tr>
+<tr><th id="10">10</th><td><i>//</i></td></tr>
+<tr><th id="11">11</th><td><i>//===----------------------------------------------------------------------===//</i></td></tr>
+<tr><th id="12">12</th><td></td></tr>
+<tr><th id="13">13</th><td><u>#include <a href="int_lib.h.html">"int_lib.h"</a></u></td></tr>
+<tr><th id="14">14</th><td></td></tr>
+<tr><th id="15">15</th><td><u>#<span data-ppcond="15">ifdef</span> <span class="macro" data-ref="_M/CRT_HAS_128BIT">CRT_HAS_128BIT</span></u></td></tr>
+<tr><th id="16">16</th><td></td></tr>
+<tr><th id="17">17</th><td><i>// Returns: convert a to a double, rounding toward even.</i></td></tr>
+<tr><th id="18">18</th><td><i></i></td></tr>
+<tr><th id="19">19</th><td><i>// Assumption: double is a IEEE 64 bit floating point type</i></td></tr>
+<tr><th id="20">20</th><td><i>//            ti_int is a 128 bit integral type</i></td></tr>
+<tr><th id="21">21</th><td><i></i></td></tr>
+<tr><th id="22">22</th><td><i>// seee eeee eeee mmmm mmmm mmmm mmmm mmmm | mmmm mmmm mmmm mmmm mmmm mmmm mmmm</i></td></tr>
+<tr><th id="23">23</th><td><i>// mmmm</i></td></tr>
+<tr><th id="24">24</th><td></td></tr>
+<tr><th id="25">25</th><td>COMPILER_RT_ABI <em>double</em> __floattidf(ti_int a) {</td></tr>
+<tr><th id="26">26</th><td>  <b>if</b> (a == <var>0</var>)</td></tr>
+<tr><th id="27">27</th><td>    <b>return</b> <var>0.0</var>;</td></tr>
+<tr><th id="28">28</th><td>  <em>const</em> <em>unsigned</em> N = <b>sizeof</b>(ti_int) * CHAR_BIT;</td></tr>
+<tr><th id="29">29</th><td>  <em>const</em> ti_int s = a &gt;&gt; (N - <var>1</var>);</td></tr>
+<tr><th id="30">30</th><td>  a = (a ^ s) - s;</td></tr>
+<tr><th id="31">31</th><td>  <em>int</em> sd = N - __clzti2(a); <i>// number of significant digits</i></td></tr>
+<tr><th id="32">32</th><td>  <em>int</em> e = sd - <var>1</var>;           <i>// exponent</i></td></tr>
+<tr><th id="33">33</th><td>  <b>if</b> (sd &gt; DBL_MANT_DIG) {</td></tr>
+<tr><th id="34">34</th><td>    <i>// start:  0000000000000000000001xxxxxxxxxxxxxxxxxxxxxxPQxxxxxxxxxxxxxxxxxx</i></td></tr>
+<tr><th id="35">35</th><td><i>    //  finish: 000000000000000000000000000000000000001xxxxxxxxxxxxxxxxxxxxxxPQR</i></td></tr>
+<tr><th id="36">36</th><td><i>    //                                               12345678901234567890123456</i></td></tr>
+<tr><th id="37">37</th><td><i>    // 1 = msb 1 bit</i></td></tr>
+<tr><th id="38">38</th><td><i>    // P = bit DBL_MANT_DIG-1 bits to the right of 1</i></td></tr>
+<tr><th id="39">39</th><td><i>    // Q = bit DBL_MANT_DIG bits to the right of 1</i></td></tr>
+<tr><th id="40">40</th><td><i>    // R = "or" of all bits to the right of Q</i></td></tr>
+<tr><th id="41">41</th><td>    <b>switch</b> (sd) {</td></tr>
+<tr><th id="42">42</th><td>    <b>case</b> DBL_MANT_DIG + <var>1</var>:</td></tr>
+<tr><th id="43">43</th><td>      a &lt;&lt;= <var>1</var>;</td></tr>
+<tr><th id="44">44</th><td>      <b>break</b>;</td></tr>
+<tr><th id="45">45</th><td>    <b>case</b> DBL_MANT_DIG + <var>2</var>:</td></tr>
+<tr><th id="46">46</th><td>      <b>break</b>;</td></tr>
+<tr><th id="47">47</th><td>    <b>default</b>:</td></tr>
+<tr><th id="48">48</th><td>      a = ((tu_int)a &gt;&gt; (sd - (DBL_MANT_DIG + <var>2</var>))) |</td></tr>
+<tr><th id="49">49</th><td>          ((a &amp; ((tu_int)(-<var>1</var>) &gt;&gt; ((N + DBL_MANT_DIG + <var>2</var>) - sd))) != <var>0</var>);</td></tr>
+<tr><th id="50">50</th><td>    };</td></tr>
+<tr><th id="51">51</th><td>    <i>// finish:</i></td></tr>
+<tr><th id="52">52</th><td>    a |= (a &amp; <var>4</var>) != <var>0</var>; <i>// Or P into R</i></td></tr>
+<tr><th id="53">53</th><td>    ++a;               <i>// round - this step may add a significant bit</i></td></tr>
+<tr><th id="54">54</th><td>    a &gt;&gt;= <var>2</var>;           <i>// dump Q and R</i></td></tr>
+<tr><th id="55">55</th><td>    <i>// a is now rounded to DBL_MANT_DIG or DBL_MANT_DIG+1 bits</i></td></tr>
+<tr><th id="56">56</th><td>    <b>if</b> (a &amp; ((tu_int)<var>1</var> &lt;&lt; DBL_MANT_DIG)) {</td></tr>
+<tr><th id="57">57</th><td>      a &gt;&gt;= <var>1</var>;</td></tr>
+<tr><th id="58">58</th><td>      ++e;</td></tr>
+<tr><th id="59">59</th><td>    }</td></tr>
+<tr><th id="60">60</th><td>    <i>// a is now rounded to DBL_MANT_DIG bits</i></td></tr>
+<tr><th id="61">61</th><td>  } <b>else</b> {</td></tr>
+<tr><th id="62">62</th><td>    a &lt;&lt;= (DBL_MANT_DIG - sd);</td></tr>
+<tr><th id="63">63</th><td>    <i>// a is now rounded to DBL_MANT_DIG bits</i></td></tr>
+<tr><th id="64">64</th><td>  }</td></tr>
+<tr><th id="65">65</th><td>  double_bits fb;</td></tr>
+<tr><th id="66">66</th><td>  fb.u.s.high = ((su_int)s &amp; <var>0x80000000</var>) |        <i>// sign</i></td></tr>
+<tr><th id="67">67</th><td>                ((e + <var>1023</var>) &lt;&lt; <var>20</var>) |              <i>// exponent</i></td></tr>
+<tr><th id="68">68</th><td>                ((su_int)(a &gt;&gt; <var>32</var>) &amp; <var>0x000FFFFF</var>); <i>// mantissa-high</i></td></tr>
+<tr><th id="69">69</th><td>  fb.u.s.low = (su_int)a;                         <i>// mantissa-low</i></td></tr>
+<tr><th id="70">70</th><td>  <b>return</b> fb.f;</td></tr>
+<tr><th id="71">71</th><td>}</td></tr>
+<tr><th id="72">72</th><td></td></tr>
+<tr><th id="73">73</th><td><u>#<span data-ppcond="15">endif</span> // CRT_HAS_128BIT</u></td></tr>
+<tr><th id="74">74</th><td></td></tr>
+</table><hr/><p id='footer'>
+Generated on <em>2021-Jul-01</em> from project llvm revision <em>12</em>

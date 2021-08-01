@@ -1,0 +1,25 @@
+<dec f='llvm/llvm/include/llvm/Object/MachO.h' l='114' type='llvm::Error *'/>
+<offset>0</offset>
+<use f='llvm/llvm/lib/Object/MachOObjectFile.cpp' l='2816' u='w' c='_ZN4llvm6object11ExportEntryC1EPNS_5ErrorEPKNS0_15MachOObjectFileENS_8ArrayRefIhEE'/>
+<use f='llvm/llvm/lib/Object/MachOObjectFile.cpp' l='2819' u='r' c='_ZN4llvm6object11ExportEntry11moveToFirstEv'/>
+<use f='llvm/llvm/lib/Object/MachOObjectFile.cpp' l='2821' u='r' c='_ZN4llvm6object11ExportEntry11moveToFirstEv'/>
+<use f='llvm/llvm/lib/Object/MachOObjectFile.cpp' l='2889' u='r' c='_ZN4llvm6object11ExportEntry8pushNodeEm'/>
+<use f='llvm/llvm/lib/Object/MachOObjectFile.cpp' l='2895' u='r' c='_ZN4llvm6object11ExportEntry8pushNodeEm'/>
+<use f='llvm/llvm/lib/Object/MachOObjectFile.cpp' l='2904' u='r' c='_ZN4llvm6object11ExportEntry8pushNodeEm'/>
+<use f='llvm/llvm/lib/Object/MachOObjectFile.cpp' l='2915' u='r' c='_ZN4llvm6object11ExportEntry8pushNodeEm'/>
+<use f='llvm/llvm/lib/Object/MachOObjectFile.cpp' l='2926' u='r' c='_ZN4llvm6object11ExportEntry8pushNodeEm'/>
+<use f='llvm/llvm/lib/Object/MachOObjectFile.cpp' l='2937' u='r' c='_ZN4llvm6object11ExportEntry8pushNodeEm'/>
+<use f='llvm/llvm/lib/Object/MachOObjectFile.cpp' l='2945' u='r' c='_ZN4llvm6object11ExportEntry8pushNodeEm'/>
+<use f='llvm/llvm/lib/Object/MachOObjectFile.cpp' l='2959' u='r' c='_ZN4llvm6object11ExportEntry8pushNodeEm'/>
+<use f='llvm/llvm/lib/Object/MachOObjectFile.cpp' l='2969' u='r' c='_ZN4llvm6object11ExportEntry8pushNodeEm'/>
+<use f='llvm/llvm/lib/Object/MachOObjectFile.cpp' l='2981' u='r' c='_ZN4llvm6object11ExportEntry8pushNodeEm'/>
+<use f='llvm/llvm/lib/Object/MachOObjectFile.cpp' l='2990' u='r' c='_ZN4llvm6object11ExportEntry8pushNodeEm'/>
+<use f='llvm/llvm/lib/Object/MachOObjectFile.cpp' l='2999' u='r' c='_ZN4llvm6object11ExportEntry8pushNodeEm'/>
+<use f='llvm/llvm/lib/Object/MachOObjectFile.cpp' l='3010' u='r' c='_ZN4llvm6object11ExportEntry8pushNodeEm'/>
+<use f='llvm/llvm/lib/Object/MachOObjectFile.cpp' l='3024' u='r' c='_ZN4llvm6object11ExportEntry19pushDownUntilBottomEv'/>
+<use f='llvm/llvm/lib/Object/MachOObjectFile.cpp' l='3034' u='r' c='_ZN4llvm6object11ExportEntry19pushDownUntilBottomEv'/>
+<use f='llvm/llvm/lib/Object/MachOObjectFile.cpp' l='3044' u='r' c='_ZN4llvm6object11ExportEntry19pushDownUntilBottomEv'/>
+<use f='llvm/llvm/lib/Object/MachOObjectFile.cpp' l='3052' u='r' c='_ZN4llvm6object11ExportEntry19pushDownUntilBottomEv'/>
+<use f='llvm/llvm/lib/Object/MachOObjectFile.cpp' l='3062' u='r' c='_ZN4llvm6object11ExportEntry19pushDownUntilBottomEv'/>
+<use f='llvm/llvm/lib/Object/MachOObjectFile.cpp' l='3066' u='r' c='_ZN4llvm6object11ExportEntry19pushDownUntilBottomEv'/>
+<use f='llvm/llvm/lib/Object/MachOObjectFile.cpp' l='3092' u='r' c='_ZN4llvm6object11ExportEntry8moveNextEv'/>

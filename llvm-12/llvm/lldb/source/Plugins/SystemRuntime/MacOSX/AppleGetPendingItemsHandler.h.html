@@ -1,0 +1,134 @@
+<!doctype html>
+<html>
+<head>
+<meta name="viewport" content="width=device-width, initial-scale=1.0"><title>AppleGetPendingItemsHandler.h source code [llvm/lldb/source/Plugins/SystemRuntime/MacOSX/AppleGetPendingItemsHandler.h] - Woboq Code Browser</title>
+<meta name="woboq:interestingDefinitions" content="lldb_private::AppleGetPendingItemsHandler "/>
+<link rel="stylesheet" href="../../../../../.././data/qtcreator.css" title="QtCreator"/>
+<link rel="alternate stylesheet" href="../../../../../.././data/kdevelop.css" title="KDevelop"/>
+<script type="text/javascript" src="../../../../../.././data/jquery/jquery.min.js"></script>
+<script type="text/javascript" src="../../../../../.././data/jquery/jquery-ui.min.js"></script>
+<script>var file = 'llvm/lldb/source/Plugins/SystemRuntime/MacOSX/AppleGetPendingItemsHandler.h'; var root_path = '../../../../../..'; var data_path = '../../../../../.././data'; var ecma_script_api_version = 2;</script>
+<script src='../../../../../.././data/codebrowser.js'></script>
+</head>
+<body><div id='header'><h1 id='breadcrumb'><span>Browse the source code of </span><a href='../../../../..'>llvm</a>/<a href='../../../..'>lldb</a>/<a href='../../..'>source</a>/<a href='../..'>Plugins</a>/<a href='..'>SystemRuntime</a>/<a href='./'>MacOSX</a>/<a href='AppleGetPendingItemsHandler.h.html'>AppleGetPendingItemsHandler.h</a></h1></div>
+<hr/><div id='content'><table class="code">
+<tr><th id="1">1</th><td><i>//===-- AppleGetPendingItemsHandler.h ----------------------------*- C++</i></td></tr>
+<tr><th id="2">2</th><td><i>//-*-===//</i></td></tr>
+<tr><th id="3">3</th><td><i>//</i></td></tr>
+<tr><th id="4">4</th><td><i>// Part of the LLVM Project, under the Apache License v2.0 with LLVM Exceptions.</i></td></tr>
+<tr><th id="5">5</th><td><i>// See <a href="https://llvm.org/LICENSE.txt">https://llvm.org/LICENSE.txt</a> for license information.</i></td></tr>
+<tr><th id="6">6</th><td><i>// SPDX-License-Identifier: Apache-2.0 WITH LLVM-exception</i></td></tr>
+<tr><th id="7">7</th><td><i>//</i></td></tr>
+<tr><th id="8">8</th><td><i>//===----------------------------------------------------------------------===//</i></td></tr>
+<tr><th id="9">9</th><td></td></tr>
+<tr><th id="10">10</th><td><u>#<span data-ppcond="10">ifndef</span> <span class="macro" data-ref="_M/LLDB_SOURCE_PLUGINS_SYSTEMRUNTIME_MACOSX_APPLEGETPENDINGITEMSHANDLER_H">LLDB_SOURCE_PLUGINS_SYSTEMRUNTIME_MACOSX_APPLEGETPENDINGITEMSHANDLER_H</span></u></td></tr>
+<tr><th id="11">11</th><td><u>#define <dfn class="macro" id="_M/LLDB_SOURCE_PLUGINS_SYSTEMRUNTIME_MACOSX_APPLEGETPENDINGITEMSHANDLER_H" data-ref="_M/LLDB_SOURCE_PLUGINS_SYSTEMRUNTIME_MACOSX_APPLEGETPENDINGITEMSHANDLER_H">LLDB_SOURCE_PLUGINS_SYSTEMRUNTIME_MACOSX_APPLEGETPENDINGITEMSHANDLER_H</dfn></u></td></tr>
+<tr><th id="12">12</th><td></td></tr>
+<tr><th id="13">13</th><td><u>#include &lt;map&gt;</u></td></tr>
+<tr><th id="14">14</th><td><u>#include &lt;mutex&gt;</u></td></tr>
+<tr><th id="15">15</th><td><u>#include &lt;vector&gt;</u></td></tr>
+<tr><th id="16">16</th><td></td></tr>
+<tr><th id="17">17</th><td><u>#include <a href="../../../../include/lldb/Symbol/CompilerType.h.html">"lldb/Symbol/CompilerType.h"</a></u></td></tr>
+<tr><th id="18">18</th><td><u>#include <a href="../../../../include/lldb/Utility/Status.h.html">"lldb/Utility/Status.h"</a></u></td></tr>
+<tr><th id="19">19</th><td><u>#include <a href="../../../../include/lldb/lldb-public.h.html">"lldb/lldb-public.h"</a></u></td></tr>
+<tr><th id="20">20</th><td></td></tr>
+<tr><th id="21">21</th><td><i>// This class will insert a UtilityFunction into the inferior process for</i></td></tr>
+<tr><th id="22">22</th><td><i>// calling libBacktraceRecording's</i></td></tr>
+<tr><th id="23">23</th><td><i>// __introspection_dispatch_queue_get_pending_items()</i></td></tr>
+<tr><th id="24">24</th><td><i>// function.  The function in the inferior will return a struct by value</i></td></tr>
+<tr><th id="25">25</th><td><i>// with these members:</i></td></tr>
+<tr><th id="26">26</th><td><i>//</i></td></tr>
+<tr><th id="27">27</th><td><i>//     struct get_pending_items_return_values</i></td></tr>
+<tr><th id="28">28</th><td><i>//     {</i></td></tr>
+<tr><th id="29">29</th><td><i>//         introspection_dispatch_item_info_ref *items_buffer;</i></td></tr>
+<tr><th id="30">30</th><td><i>//         uint64_t items_buffer_size;</i></td></tr>
+<tr><th id="31">31</th><td><i>//         uint64_t count;</i></td></tr>
+<tr><th id="32">32</th><td><i>//     };</i></td></tr>
+<tr><th id="33">33</th><td><i>//</i></td></tr>
+<tr><th id="34">34</th><td><i>// The items_buffer pointer is an address in the inferior program's address</i></td></tr>
+<tr><th id="35">35</th><td><i>// space (items_buffer_size in size) which must be mach_vm_deallocate'd by</i></td></tr>
+<tr><th id="36">36</th><td><i>// lldb.  count is the number of items that were stored in the buffer.</i></td></tr>
+<tr><th id="37">37</th><td><i>//</i></td></tr>
+<tr><th id="38">38</th><td><i>// The AppleGetPendingItemsHandler object should persist so that the</i></td></tr>
+<tr><th id="39">39</th><td><i>// UtilityFunction</i></td></tr>
+<tr><th id="40">40</th><td><i>// can be reused multiple times.</i></td></tr>
+<tr><th id="41">41</th><td></td></tr>
+<tr><th id="42">42</th><td><b>namespace</b> <span class="namespace">lldb_private</span> {</td></tr>
+<tr><th id="43">43</th><td></td></tr>
+<tr><th id="44">44</th><td><b>class</b> <dfn class="type def" id="lldb_private::AppleGetPendingItemsHandler" title='lldb_private::AppleGetPendingItemsHandler' data-ref="lldb_private::AppleGetPendingItemsHandler" data-ref-filename="lldb_private..AppleGetPendingItemsHandler">AppleGetPendingItemsHandler</dfn> {</td></tr>
+<tr><th id="45">45</th><td><b>public</b>:</td></tr>
+<tr><th id="46">46</th><td>  <a class="decl fn" href="AppleGetPendingItemsHandler.cpp.html#_ZN12lldb_private27AppleGetPendingItemsHandlerC1EPNS_7ProcessE" title='lldb_private::AppleGetPendingItemsHandler::AppleGetPendingItemsHandler' data-ref="_ZN12lldb_private27AppleGetPendingItemsHandlerC1EPNS_7ProcessE" data-ref-filename="_ZN12lldb_private27AppleGetPendingItemsHandlerC1EPNS_7ProcessE" id="_ZN12lldb_private27AppleGetPendingItemsHandlerC1EPNS_7ProcessE">AppleGetPendingItemsHandler</a>(<span class="namespace">lldb_private::</span><a class="type" href="../../../../include/lldb/Target/Process.h.html#lldb_private::Process" title='lldb_private::Process' data-ref="lldb_private::Process" data-ref-filename="lldb_private..Process">Process</a> *<dfn class="local col1 decl" id="1process" title='process' data-type='lldb_private::Process *' data-ref="1process" data-ref-filename="1process">process</dfn>);</td></tr>
+<tr><th id="47">47</th><td></td></tr>
+<tr><th id="48">48</th><td>  <a class="decl fn" href="AppleGetPendingItemsHandler.cpp.html#_ZN12lldb_private27AppleGetPendingItemsHandlerD1Ev" title='lldb_private::AppleGetPendingItemsHandler::~AppleGetPendingItemsHandler' data-ref="_ZN12lldb_private27AppleGetPendingItemsHandlerD1Ev" data-ref-filename="_ZN12lldb_private27AppleGetPendingItemsHandlerD1Ev" id="_ZN12lldb_private27AppleGetPendingItemsHandlerD1Ev">~AppleGetPendingItemsHandler</a>();</td></tr>
+<tr><th id="49">49</th><td></td></tr>
+<tr><th id="50">50</th><td>  <b>struct</b> <dfn class="type def" id="lldb_private::AppleGetPendingItemsHandler::GetPendingItemsReturnInfo" title='lldb_private::AppleGetPendingItemsHandler::GetPendingItemsReturnInfo' data-ref="lldb_private::AppleGetPendingItemsHandler::GetPendingItemsReturnInfo" data-ref-filename="lldb_private..AppleGetPendingItemsHandler..GetPendingItemsReturnInfo">GetPendingItemsReturnInfo</dfn> {</td></tr>
+<tr><th id="51">51</th><td>    <span class="namespace">lldb::</span><a class="typedef" href="../../../../include/lldb/lldb-types.h.html#lldb::addr_t" title='lldb::addr_t' data-type='uint64_t' data-ref="lldb::addr_t" data-ref-filename="lldb..addr_t">addr_t</a> <dfn class="decl field" id="lldb_private::AppleGetPendingItemsHandler::GetPendingItemsReturnInfo::items_buffer_ptr" title='lldb_private::AppleGetPendingItemsHandler::GetPendingItemsReturnInfo::items_buffer_ptr' data-ref="lldb_private::AppleGetPendingItemsHandler::GetPendingItemsReturnInfo::items_buffer_ptr" data-ref-filename="lldb_private..AppleGetPendingItemsHandler..GetPendingItemsReturnInfo..items_buffer_ptr">items_buffer_ptr</dfn>; <i>/* the address of the pending items buffer</i></td></tr>
+<tr><th id="52">52</th><td><i>                                      from libBacktraceRecording */</i></td></tr>
+<tr><th id="53">53</th><td>    <span class="namespace">lldb::</span><a class="typedef" href="../../../../include/lldb/lldb-types.h.html#lldb::addr_t" title='lldb::addr_t' data-type='uint64_t' data-ref="lldb::addr_t" data-ref-filename="lldb..addr_t">addr_t</a></td></tr>
+<tr><th id="54">54</th><td>        <dfn class="decl field" id="lldb_private::AppleGetPendingItemsHandler::GetPendingItemsReturnInfo::items_buffer_size" title='lldb_private::AppleGetPendingItemsHandler::GetPendingItemsReturnInfo::items_buffer_size' data-ref="lldb_private::AppleGetPendingItemsHandler::GetPendingItemsReturnInfo::items_buffer_size" data-ref-filename="lldb_private..AppleGetPendingItemsHandler..GetPendingItemsReturnInfo..items_buffer_size">items_buffer_size</dfn>; <i>/* the size of the pending items buffer from</i></td></tr>
+<tr><th id="55">55</th><td><i>                              libBacktraceRecording */</i></td></tr>
+<tr><th id="56">56</th><td>    <a class="typedef" href="../../../../../../include/bits/stdint-uintn.h.html#uint64_t" title='uint64_t' data-type='__uint64_t' data-ref="uint64_t" data-ref-filename="uint64_t">uint64_t</a> <dfn class="decl field" id="lldb_private::AppleGetPendingItemsHandler::GetPendingItemsReturnInfo::count" title='lldb_private::AppleGetPendingItemsHandler::GetPendingItemsReturnInfo::count' data-ref="lldb_private::AppleGetPendingItemsHandler::GetPendingItemsReturnInfo::count" data-ref-filename="lldb_private..AppleGetPendingItemsHandler..GetPendingItemsReturnInfo..count">count</dfn>; <i>/* the number of pending items included in the buffer */</i></td></tr>
+<tr><th id="57">57</th><td></td></tr>
+<tr><th id="58">58</th><td>    <dfn class="decl def fn" id="_ZN12lldb_private27AppleGetPendingItemsHandler25GetPendingItemsReturnInfoC1Ev" title='lldb_private::AppleGetPendingItemsHandler::GetPendingItemsReturnInfo::GetPendingItemsReturnInfo' data-ref="_ZN12lldb_private27AppleGetPendingItemsHandler25GetPendingItemsReturnInfoC1Ev" data-ref-filename="_ZN12lldb_private27AppleGetPendingItemsHandler25GetPendingItemsReturnInfoC1Ev">GetPendingItemsReturnInfo</dfn>()</td></tr>
+<tr><th id="59">59</th><td>        : <a class="member field" href="#lldb_private::AppleGetPendingItemsHandler::GetPendingItemsReturnInfo::items_buffer_ptr" title='lldb_private::AppleGetPendingItemsHandler::GetPendingItemsReturnInfo::items_buffer_ptr' data-ref="lldb_private::AppleGetPendingItemsHandler::GetPendingItemsReturnInfo::items_buffer_ptr" data-ref-filename="lldb_private..AppleGetPendingItemsHandler..GetPendingItemsReturnInfo..items_buffer_ptr">items_buffer_ptr</a>(<a class="macro" href="../../../../include/lldb/lldb-defines.h.html#85" title="(18446744073709551615UL)" data-ref="_M/LLDB_INVALID_ADDRESS">LLDB_INVALID_ADDRESS</a>), <a class="member field" href="#lldb_private::AppleGetPendingItemsHandler::GetPendingItemsReturnInfo::items_buffer_size" title='lldb_private::AppleGetPendingItemsHandler::GetPendingItemsReturnInfo::items_buffer_size' data-ref="lldb_private::AppleGetPendingItemsHandler::GetPendingItemsReturnInfo::items_buffer_size" data-ref-filename="lldb_private..AppleGetPendingItemsHandler..GetPendingItemsReturnInfo..items_buffer_size">items_buffer_size</a>(<var>0</var>),</td></tr>
+<tr><th id="60">60</th><td>          <a class="member field" href="#lldb_private::AppleGetPendingItemsHandler::GetPendingItemsReturnInfo::count" title='lldb_private::AppleGetPendingItemsHandler::GetPendingItemsReturnInfo::count' data-ref="lldb_private::AppleGetPendingItemsHandler::GetPendingItemsReturnInfo::count" data-ref-filename="lldb_private..AppleGetPendingItemsHandler..GetPendingItemsReturnInfo..count">count</a>(<var>0</var>) {}</td></tr>
+<tr><th id="61">61</th><td>  };</td></tr>
+<tr><th id="62">62</th><td></td></tr>
+<tr><th id="63">63</th><td>  <i class="doc">/// Get the list of pending items for a given queue via a call to</i></td></tr>
+<tr><th id="64">64</th><td><i class="doc">  /// __introspection_dispatch_queue_get_pending_items.  If there's a page of</i></td></tr>
+<tr><th id="65">65</th><td><i class="doc">  /// memory that needs to be freed, pass in the address and size and it will</i></td></tr>
+<tr><th id="66">66</th><td><i class="doc">  /// be freed before getting the list of queues.</i></td></tr>
+<tr><th id="67">67</th><td><i class="doc">  ///</i></td></tr>
+<tr><th id="68">68</th><td><i class="doc">  /// <span class="command">\param</span> [in] <span class="arg">thread</span></i></td></tr>
+<tr><th id="69">69</th><td><i class="doc">  ///     The thread to run this plan on.</i></td></tr>
+<tr><th id="70">70</th><td><i class="doc">  ///</i></td></tr>
+<tr><th id="71">71</th><td><i class="doc">  /// <span class="command">\param</span> [in] <span class="arg">queue</span></i></td></tr>
+<tr><th id="72">72</th><td><i class="doc">  ///     The dispatch_queue_t value for the queue of interest.</i></td></tr>
+<tr><th id="73">73</th><td><i class="doc">  ///</i></td></tr>
+<tr><th id="74">74</th><td><i class="doc">  /// <span class="command">\param</span> [in] <span class="arg">page_to_free</span></i></td></tr>
+<tr><th id="75">75</th><td><i class="doc">  ///     An address of an inferior process vm page that needs to be</i></td></tr>
+<tr><th id="76">76</th><td><i class="doc">  ///     deallocated,</i></td></tr>
+<tr><th id="77">77</th><td><i class="doc">  ///     LLDB_INVALID_ADDRESS if this is not needed.</i></td></tr>
+<tr><th id="78">78</th><td><i class="doc">  ///</i></td></tr>
+<tr><th id="79">79</th><td><i class="doc">  /// <span class="command">\param</span> [in] <span class="arg">page_to_free_size</span></i></td></tr>
+<tr><th id="80">80</th><td><i class="doc">  ///     The size of the vm page that needs to be deallocated if an address was</i></td></tr>
+<tr><th id="81">81</th><td><i class="doc">  ///     passed in to page_to_free.</i></td></tr>
+<tr><th id="82">82</th><td><i class="doc">  ///</i></td></tr>
+<tr><th id="83">83</th><td><i class="doc">  /// <span class="command">\param</span> [out] <span class="arg">error</span></i></td></tr>
+<tr><th id="84">84</th><td><i class="doc">  ///     This object will be updated with the error status / error string from</i></td></tr>
+<tr><th id="85">85</th><td><i class="doc">  ///     any failures encountered.</i></td></tr>
+<tr><th id="86">86</th><td><i class="doc">  ///</i></td></tr>
+<tr><th id="87">87</th><td><i class="doc">  /// <span class="command">\returns</span></i></td></tr>
+<tr><th id="88">88</th><td><i class="doc">  ///     The result of the inferior function call execution.  If there was a</i></td></tr>
+<tr><th id="89">89</th><td><i class="doc">  ///     failure of any kind while getting</i></td></tr>
+<tr><th id="90">90</th><td><i class="doc">  ///     the information, the items_buffer_ptr value will be</i></td></tr>
+<tr><th id="91">91</th><td><i class="doc">  ///     LLDB_INVALID_ADDRESS.</i></td></tr>
+<tr><th id="92">92</th><td>  <a class="type" href="#lldb_private::AppleGetPendingItemsHandler::GetPendingItemsReturnInfo" title='lldb_private::AppleGetPendingItemsHandler::GetPendingItemsReturnInfo' data-ref="lldb_private::AppleGetPendingItemsHandler::GetPendingItemsReturnInfo" data-ref-filename="lldb_private..AppleGetPendingItemsHandler..GetPendingItemsReturnInfo">GetPendingItemsReturnInfo</a> <a class="decl fn" href="AppleGetPendingItemsHandler.cpp.html#_ZN12lldb_private27AppleGetPendingItemsHandler15GetPendingItemsERNS_6ThreadEmmmRNS_6StatusE" title='lldb_private::AppleGetPendingItemsHandler::GetPendingItems' data-ref="_ZN12lldb_private27AppleGetPendingItemsHandler15GetPendingItemsERNS_6ThreadEmmmRNS_6StatusE" data-ref-filename="_ZN12lldb_private27AppleGetPendingItemsHandler15GetPendingItemsERNS_6ThreadEmmmRNS_6StatusE" id="_ZN12lldb_private27AppleGetPendingItemsHandler15GetPendingItemsERNS_6ThreadEmmmRNS_6StatusE">GetPendingItems</a>(<a class="type" href="../../../../include/lldb/Target/Thread.h.html#lldb_private::Thread" title='lldb_private::Thread' data-ref="lldb_private::Thread" data-ref-filename="lldb_private..Thread">Thread</a> &amp;<dfn class="local col2 decl" id="2thread" title='thread' data-type='lldb_private::Thread &amp;' data-ref="2thread" data-ref-filename="2thread">thread</dfn>, <span class="namespace">lldb::</span><a class="typedef" href="../../../../include/lldb/lldb-types.h.html#lldb::addr_t" title='lldb::addr_t' data-type='uint64_t' data-ref="lldb::addr_t" data-ref-filename="lldb..addr_t">addr_t</a> <dfn class="local col3 decl" id="3queue" title='queue' data-type='lldb::addr_t' data-ref="3queue" data-ref-filename="3queue">queue</dfn>,</td></tr>
+<tr><th id="93">93</th><td>                                            <span class="namespace">lldb::</span><a class="typedef" href="../../../../include/lldb/lldb-types.h.html#lldb::addr_t" title='lldb::addr_t' data-type='uint64_t' data-ref="lldb::addr_t" data-ref-filename="lldb..addr_t">addr_t</a> <dfn class="local col4 decl" id="4page_to_free" title='page_to_free' data-type='lldb::addr_t' data-ref="4page_to_free" data-ref-filename="4page_to_free">page_to_free</dfn>,</td></tr>
+<tr><th id="94">94</th><td>                                            <a class="typedef" href="../../../../../../include/bits/stdint-uintn.h.html#uint64_t" title='uint64_t' data-type='__uint64_t' data-ref="uint64_t" data-ref-filename="uint64_t">uint64_t</a> <dfn class="local col5 decl" id="5page_to_free_size" title='page_to_free_size' data-type='uint64_t' data-ref="5page_to_free_size" data-ref-filename="5page_to_free_size">page_to_free_size</dfn>,</td></tr>
+<tr><th id="95">95</th><td>                                            <span class="namespace">lldb_private::</span><a class="type" href="../../../../include/lldb/Utility/Status.h.html#lldb_private::Status" title='lldb_private::Status' data-ref="lldb_private::Status" data-ref-filename="lldb_private..Status">Status</a> &amp;<dfn class="local col6 decl" id="6error" title='error' data-type='lldb_private::Status &amp;' data-ref="6error" data-ref-filename="6error">error</dfn>);</td></tr>
+<tr><th id="96">96</th><td></td></tr>
+<tr><th id="97">97</th><td>  <em>void</em> <a class="decl fn" href="AppleGetPendingItemsHandler.cpp.html#_ZN12lldb_private27AppleGetPendingItemsHandler6DetachEv" title='lldb_private::AppleGetPendingItemsHandler::Detach' data-ref="_ZN12lldb_private27AppleGetPendingItemsHandler6DetachEv" data-ref-filename="_ZN12lldb_private27AppleGetPendingItemsHandler6DetachEv" id="_ZN12lldb_private27AppleGetPendingItemsHandler6DetachEv">Detach</a>();</td></tr>
+<tr><th id="98">98</th><td></td></tr>
+<tr><th id="99">99</th><td><b>private</b>:</td></tr>
+<tr><th id="100">100</th><td>  <span class="namespace">lldb::</span><a class="typedef" href="../../../../include/lldb/lldb-types.h.html#lldb::addr_t" title='lldb::addr_t' data-type='uint64_t' data-ref="lldb::addr_t" data-ref-filename="lldb..addr_t">addr_t</a></td></tr>
+<tr><th id="101">101</th><td>  <a class="decl fn" href="AppleGetPendingItemsHandler.cpp.html#_ZN12lldb_private27AppleGetPendingItemsHandler28SetupGetPendingItemsFunctionERNS_6ThreadERNS_9ValueListE" title='lldb_private::AppleGetPendingItemsHandler::SetupGetPendingItemsFunction' data-ref="_ZN12lldb_private27AppleGetPendingItemsHandler28SetupGetPendingItemsFunctionERNS_6ThreadERNS_9ValueListE" data-ref-filename="_ZN12lldb_private27AppleGetPendingItemsHandler28SetupGetPendingItemsFunctionERNS_6ThreadERNS_9ValueListE" id="_ZN12lldb_private27AppleGetPendingItemsHandler28SetupGetPendingItemsFunctionERNS_6ThreadERNS_9ValueListE">SetupGetPendingItemsFunction</a>(<a class="type" href="../../../../include/lldb/Target/Thread.h.html#lldb_private::Thread" title='lldb_private::Thread' data-ref="lldb_private::Thread" data-ref-filename="lldb_private..Thread">Thread</a> &amp;<dfn class="local col7 decl" id="7thread" title='thread' data-type='lldb_private::Thread &amp;' data-ref="7thread" data-ref-filename="7thread">thread</dfn>,</td></tr>
+<tr><th id="102">102</th><td>                               <a class="type" href="../../../../include/lldb/Core/Value.h.html#lldb_private::ValueList" title='lldb_private::ValueList' data-ref="lldb_private::ValueList" data-ref-filename="lldb_private..ValueList">ValueList</a> &amp;<dfn class="local col8 decl" id="8get_pending_items_arglist" title='get_pending_items_arglist' data-type='lldb_private::ValueList &amp;' data-ref="8get_pending_items_arglist" data-ref-filename="8get_pending_items_arglist">get_pending_items_arglist</dfn>);</td></tr>
+<tr><th id="103">103</th><td></td></tr>
+<tr><th id="104">104</th><td>  <em>static</em> <em>const</em> <em>char</em> *<dfn class="decl" id="lldb_private::AppleGetPendingItemsHandler::g_get_pending_items_function_name" title='lldb_private::AppleGetPendingItemsHandler::g_get_pending_items_function_name' data-ref="lldb_private::AppleGetPendingItemsHandler::g_get_pending_items_function_name" data-ref-filename="lldb_private..AppleGetPendingItemsHandler..g_get_pending_items_function_name">g_get_pending_items_function_name</dfn>;</td></tr>
+<tr><th id="105">105</th><td>  <em>static</em> <em>const</em> <em>char</em> *<dfn class="decl" id="lldb_private::AppleGetPendingItemsHandler::g_get_pending_items_function_code" title='lldb_private::AppleGetPendingItemsHandler::g_get_pending_items_function_code' data-ref="lldb_private::AppleGetPendingItemsHandler::g_get_pending_items_function_code" data-ref-filename="lldb_private..AppleGetPendingItemsHandler..g_get_pending_items_function_code">g_get_pending_items_function_code</dfn>;</td></tr>
+<tr><th id="106">106</th><td></td></tr>
+<tr><th id="107">107</th><td>  <span class="namespace">lldb_private::</span><a class="type" href="../../../../include/lldb/Target/Process.h.html#lldb_private::Process" title='lldb_private::Process' data-ref="lldb_private::Process" data-ref-filename="lldb_private..Process">Process</a> *<dfn class="decl field" id="lldb_private::AppleGetPendingItemsHandler::m_process" title='lldb_private::AppleGetPendingItemsHandler::m_process' data-ref="lldb_private::AppleGetPendingItemsHandler::m_process" data-ref-filename="lldb_private..AppleGetPendingItemsHandler..m_process">m_process</dfn>;</td></tr>
+<tr><th id="108">108</th><td>  <span class="namespace">std::</span><span class='type' title='std::unique_ptr' data-ref="std::unique_ptr" data-ref-filename="std..unique_ptr">unique_ptr</span>&lt;<a class="type" href="../../../../include/lldb/Expression/UtilityFunction.h.html#lldb_private::UtilityFunction" title='lldb_private::UtilityFunction' data-ref="lldb_private::UtilityFunction" data-ref-filename="lldb_private..UtilityFunction">UtilityFunction</a>&gt; <dfn class="decl field" id="lldb_private::AppleGetPendingItemsHandler::m_get_pending_items_impl_code" title='lldb_private::AppleGetPendingItemsHandler::m_get_pending_items_impl_code' data-ref="lldb_private::AppleGetPendingItemsHandler::m_get_pending_items_impl_code" data-ref-filename="lldb_private..AppleGetPendingItemsHandler..m_get_pending_items_impl_code">m_get_pending_items_impl_code</dfn>;</td></tr>
+<tr><th id="109">109</th><td>  <span class="namespace">std::</span><span class='type' title='std::mutex' data-ref="std::mutex" data-ref-filename="std..mutex">mutex</span> <dfn class="decl field" id="lldb_private::AppleGetPendingItemsHandler::m_get_pending_items_function_mutex" title='lldb_private::AppleGetPendingItemsHandler::m_get_pending_items_function_mutex' data-ref="lldb_private::AppleGetPendingItemsHandler::m_get_pending_items_function_mutex" data-ref-filename="lldb_private..AppleGetPendingItemsHandler..m_get_pending_items_function_mutex">m_get_pending_items_function_mutex</dfn>;</td></tr>
+<tr><th id="110">110</th><td></td></tr>
+<tr><th id="111">111</th><td>  <span class="namespace">lldb::</span><a class="typedef" href="../../../../include/lldb/lldb-types.h.html#lldb::addr_t" title='lldb::addr_t' data-type='uint64_t' data-ref="lldb::addr_t" data-ref-filename="lldb..addr_t">addr_t</a> <dfn class="decl field" id="lldb_private::AppleGetPendingItemsHandler::m_get_pending_items_return_buffer_addr" title='lldb_private::AppleGetPendingItemsHandler::m_get_pending_items_return_buffer_addr' data-ref="lldb_private::AppleGetPendingItemsHandler::m_get_pending_items_return_buffer_addr" data-ref-filename="lldb_private..AppleGetPendingItemsHandler..m_get_pending_items_return_buffer_addr">m_get_pending_items_return_buffer_addr</dfn>;</td></tr>
+<tr><th id="112">112</th><td>  <span class="namespace">std::</span><span class='type' title='std::mutex' data-ref="std::mutex" data-ref-filename="std..mutex">mutex</span> <dfn class="decl field" id="lldb_private::AppleGetPendingItemsHandler::m_get_pending_items_retbuffer_mutex" title='lldb_private::AppleGetPendingItemsHandler::m_get_pending_items_retbuffer_mutex' data-ref="lldb_private::AppleGetPendingItemsHandler::m_get_pending_items_retbuffer_mutex" data-ref-filename="lldb_private..AppleGetPendingItemsHandler..m_get_pending_items_retbuffer_mutex">m_get_pending_items_retbuffer_mutex</dfn>;</td></tr>
+<tr><th id="113">113</th><td>};</td></tr>
+<tr><th id="114">114</th><td></td></tr>
+<tr><th id="115">115</th><td>} <i>// using namespace lldb_private</i></td></tr>
+<tr><th id="116">116</th><td></td></tr>
+<tr><th id="117">117</th><td><u>#<span data-ppcond="10">endif</span> // LLDB_SOURCE_PLUGINS_SYSTEMRUNTIME_MACOSX_APPLEGETPENDINGITEMSHANDLER_H</u></td></tr>
+<tr><th id="118">118</th><td></td></tr>
+</table><hr/><p id='footer'>
+Generated while processing <a href='AppleGetPendingItemsHandler.cpp.html'>llvm/lldb/source/Plugins/SystemRuntime/MacOSX/AppleGetPendingItemsHandler.cpp</a><br/>Generated on <em>2021-Jul-01</em> from project llvm revision <em>12</em>

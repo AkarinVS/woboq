@@ -1,0 +1,35 @@
+<dec f='llvm/llvm/lib/Transforms/Vectorize/LoopVectorize.cpp' l='572' type='void llvm::InnerLoopVectorizer::vectorizeInterleaveGroup(const InterleaveGroup&lt;llvm::Instruction&gt; * Group, ArrayRef&lt;llvm::VPValue *&gt; VPDefs, llvm::VPTransformState &amp; State, llvm::VPValue * Addr, ArrayRef&lt;llvm::VPValue *&gt; StoredValues, llvm::VPValue * BlockInMask = nullptr)'/>
+<def f='llvm/llvm/lib/Transforms/Vectorize/LoopVectorize.cpp' l='2541' ll='2728' type='void llvm::InnerLoopVectorizer::vectorizeInterleaveGroup(const InterleaveGroup&lt;llvm::Instruction&gt; * Group, ArrayRef&lt;llvm::VPValue *&gt; VPDefs, llvm::VPTransformState &amp; State, llvm::VPValue * Addr, ArrayRef&lt;llvm::VPValue *&gt; StoredValues, llvm::VPValue * BlockInMask = nullptr)'/>
+<use f='llvm/llvm/lib/Transforms/Vectorize/LoopVectorize.cpp' l='9029' u='c' c='_ZN4llvm18VPInterleaveRecipe7executeERNS_16VPTransformStateE'/>
+<doc f='llvm/llvm/lib/Transforms/Vectorize/LoopVectorize.cpp' l='568'>/// Try to vectorize interleaved access group \p Group with the base address
+  /// given in \p Addr, optionally masking the vector operations if \p
+  /// BlockInMask is non-null. Use \p State to translate given VPValues to IR
+  /// values in the vectorized loop.</doc>
+<doc f='llvm/llvm/lib/Transforms/Vectorize/LoopVectorize.cpp' l='2513'>// Try to vectorize the interleave group that \p Instr belongs to.
+//
+// E.g. Translate following interleaved load group (factor = 3):
+//   for (i = 0; i &lt; N; i+=3) {
+//     R = Pic[i];             // Member of index 0
+//     G = Pic[i+1];           // Member of index 1
+//     B = Pic[i+2];           // Member of index 2
+//     ... // do something to R, G, B
+//   }
+// To:
+//   %wide.vec = load &lt;12 x i32&gt;                       ; Read 4 tuples of R,G,B
+//   %R.vec = shuffle %wide.vec, poison, &lt;0, 3, 6, 9&gt;   ; R elements
+//   %G.vec = shuffle %wide.vec, poison, &lt;1, 4, 7, 10&gt;  ; G elements
+//   %B.vec = shuffle %wide.vec, poison, &lt;2, 5, 8, 11&gt;  ; B elements
+//
+// Or translate following interleaved store group (factor = 3):
+//   for (i = 0; i &lt; N; i+=3) {
+//     ... do something to R, G, B
+//     Pic[i]   = R;           // Member of index 0
+//     Pic[i+1] = G;           // Member of index 1
+//     Pic[i+2] = B;           // Member of index 2
+//   }
+// To:
+//   %R_G.vec = shuffle %R.vec, %G.vec, &lt;0, 1, 2, ..., 7&gt;
+//   %B_U.vec = shuffle %B.vec, poison, &lt;0, 1, 2, 3, u, u, u, u&gt;
+//   %interleaved.vec = shuffle %R_G.vec, %B_U.vec,
+//        &lt;0, 4, 8, 1, 5, 9, 2, 6, 10, 3, 7, 11&gt;    ; Interleave R,G,B elements
+//   store &lt;12 x i32&gt; %interleaved.vec              ; Write 4 tuples of R,G,B</doc>

@@ -1,0 +1,96 @@
+<!doctype html>
+<html>
+<head>
+<meta name="viewport" content="width=device-width, initial-scale=1.0"><title>memprof_linux.cpp source code [llvm/compiler-rt/lib/memprof/memprof_linux.cpp] - Woboq Code Browser</title>
+<link rel="stylesheet" href="../../../.././data/qtcreator.css" title="QtCreator"/>
+<link rel="alternate stylesheet" href="../../../.././data/kdevelop.css" title="KDevelop"/>
+<script type="text/javascript" src="../../../.././data/jquery/jquery.min.js"></script>
+<script type="text/javascript" src="../../../.././data/jquery/jquery-ui.min.js"></script>
+<script>var file = 'llvm/compiler-rt/lib/memprof/memprof_linux.cpp'; var root_path = '../../../..'; var data_path = '../../../.././data'; var ecma_script_api_version = 2;</script>
+<script src='../../../.././data/codebrowser.js'></script>
+</head>
+<body><div id='header'><h1 id='breadcrumb'><span>Browse the source code of </span><a href='../../..'>llvm</a>/<a href='../..'>compiler-rt</a>/<a href='..'>lib</a>/<a href='./'>memprof</a>/<a href='memprof_linux.cpp.html'>memprof_linux.cpp</a></h1></div>
+<hr/><div id='content'><table class="code">
+<tr><th id="1">1</th><td><i>//===-- memprof_linux.cpp ------------------------------------------------===//</i></td></tr>
+<tr><th id="2">2</th><td><i>//</i></td></tr>
+<tr><th id="3">3</th><td><i>// Part of the LLVM Project, under the Apache License v2.0 with LLVM Exceptions.</i></td></tr>
+<tr><th id="4">4</th><td><i>// See <a href="https://llvm.org/LICENSE.txt">https://llvm.org/LICENSE.txt</a> for license information.</i></td></tr>
+<tr><th id="5">5</th><td><i>// SPDX-License-Identifier: Apache-2.0 WITH LLVM-exception</i></td></tr>
+<tr><th id="6">6</th><td><i>//</i></td></tr>
+<tr><th id="7">7</th><td><i>//===----------------------------------------------------------------------===//</i></td></tr>
+<tr><th id="8">8</th><td><i>//</i></td></tr>
+<tr><th id="9">9</th><td><i>// This file is a part of MemProfiler, a memory profiler.</i></td></tr>
+<tr><th id="10">10</th><td><i>//</i></td></tr>
+<tr><th id="11">11</th><td><i>// Linux-specific details.</i></td></tr>
+<tr><th id="12">12</th><td><i>//===----------------------------------------------------------------------===//</i></td></tr>
+<tr><th id="13">13</th><td></td></tr>
+<tr><th id="14">14</th><td><u>#include <a href="../sanitizer_common/sanitizer_platform.h.html">"sanitizer_common/sanitizer_platform.h"</a></u></td></tr>
+<tr><th id="15">15</th><td><u>#<span data-ppcond="15">if</span> !<a class="macro" href="../sanitizer_common/sanitizer_platform.h.html#30" title="1" data-ref="_M/SANITIZER_LINUX">SANITIZER_LINUX</a></u></td></tr>
+<tr><th id="16">16</th><td><u>#error Unsupported OS</u></td></tr>
+<tr><th id="17">17</th><td><u>#<span data-ppcond="15">endif</span></u></td></tr>
+<tr><th id="18">18</th><td></td></tr>
+<tr><th id="19">19</th><td><u>#include <a href="memprof_interceptors.h.html">"memprof_interceptors.h"</a></u></td></tr>
+<tr><th id="20">20</th><td><u>#include <a href="memprof_internal.h.html">"memprof_internal.h"</a></u></td></tr>
+<tr><th id="21">21</th><td><u>#include <a href="memprof_thread.h.html">"memprof_thread.h"</a></u></td></tr>
+<tr><th id="22">22</th><td><u>#include <a href="../sanitizer_common/sanitizer_flags.h.html">"sanitizer_common/sanitizer_flags.h"</a></u></td></tr>
+<tr><th id="23">23</th><td><u>#include <a href="../sanitizer_common/sanitizer_freebsd.h.html">"sanitizer_common/sanitizer_freebsd.h"</a></u></td></tr>
+<tr><th id="24">24</th><td><u>#include <a href="../sanitizer_common/sanitizer_libc.h.html">"sanitizer_common/sanitizer_libc.h"</a></u></td></tr>
+<tr><th id="25">25</th><td><u>#include <a href="../sanitizer_common/sanitizer_procmaps.h.html">"sanitizer_common/sanitizer_procmaps.h"</a></u></td></tr>
+<tr><th id="26">26</th><td></td></tr>
+<tr><th id="27">27</th><td><u>#include <a href="../../../../include/dlfcn.h.html">&lt;dlfcn.h&gt;</a></u></td></tr>
+<tr><th id="28">28</th><td><u>#include <a href="../../../../include/fcntl.h.html">&lt;fcntl.h&gt;</a></u></td></tr>
+<tr><th id="29">29</th><td><u>#include &lt;limits.h&gt;</u></td></tr>
+<tr><th id="30">30</th><td><u>#include <a href="../../../../include/link.h.html">&lt;link.h&gt;</a></u></td></tr>
+<tr><th id="31">31</th><td><u>#include <a href="../../../../include/pthread.h.html">&lt;pthread.h&gt;</a></u></td></tr>
+<tr><th id="32">32</th><td><u>#include <a href="../../../../include/stdio.h.html">&lt;stdio.h&gt;</a></u></td></tr>
+<tr><th id="33">33</th><td><u>#include <a href="../../../../include/sys/mman.h.html">&lt;sys/mman.h&gt;</a></u></td></tr>
+<tr><th id="34">34</th><td><u>#include <a href="../../../../include/sys/resource.h.html">&lt;sys/resource.h&gt;</a></u></td></tr>
+<tr><th id="35">35</th><td><u>#include <a href="../../../../include/sys/syscall.h.html">&lt;sys/syscall.h&gt;</a></u></td></tr>
+<tr><th id="36">36</th><td><u>#include <a href="../../../../include/sys/time.h.html">&lt;sys/time.h&gt;</a></u></td></tr>
+<tr><th id="37">37</th><td><u>#include <a href="../../../../include/sys/types.h.html">&lt;sys/types.h&gt;</a></u></td></tr>
+<tr><th id="38">38</th><td><u>#include <a href="../../../../include/sys/ucontext.h.html">&lt;sys/ucontext.h&gt;</a></u></td></tr>
+<tr><th id="39">39</th><td><u>#include <a href="../../../../include/unistd.h.html">&lt;unistd.h&gt;</a></u></td></tr>
+<tr><th id="40">40</th><td><u>#include &lt;unwind.h&gt;</u></td></tr>
+<tr><th id="41">41</th><td></td></tr>
+<tr><th id="42">42</th><td><b>extern</b> <a class="macro" href="../../../../include/link.h.html#30" title="Elf64_Dyn" data-ref="_M/ElfW">ElfW</a>(Dyn) <a class="decl" href="../../../../include/link.h.html#_DYNAMIC" title='_DYNAMIC' data-ref="_DYNAMIC" data-ref-filename="_DYNAMIC" id="_DYNAMIC">_DYNAMIC</a>[];</td></tr>
+<tr><th id="43">43</th><td></td></tr>
+<tr><th id="44">44</th><td><b>typedef</b> <b>enum</b> {</td></tr>
+<tr><th id="45">45</th><td>  <dfn class="enum" id="MEMPROF_RT_VERSION_UNDEFINED" title='MEMPROF_RT_VERSION_UNDEFINED' data-ref="MEMPROF_RT_VERSION_UNDEFINED" data-ref-filename="MEMPROF_RT_VERSION_UNDEFINED">MEMPROF_RT_VERSION_UNDEFINED</dfn> = <var>0</var>,</td></tr>
+<tr><th id="46">46</th><td>  <dfn class="enum" id="MEMPROF_RT_VERSION_DYNAMIC" title='MEMPROF_RT_VERSION_DYNAMIC' data-ref="MEMPROF_RT_VERSION_DYNAMIC" data-ref-filename="MEMPROF_RT_VERSION_DYNAMIC">MEMPROF_RT_VERSION_DYNAMIC</dfn>,</td></tr>
+<tr><th id="47">47</th><td>  <dfn class="enum" id="MEMPROF_RT_VERSION_STATIC" title='MEMPROF_RT_VERSION_STATIC' data-ref="MEMPROF_RT_VERSION_STATIC" data-ref-filename="MEMPROF_RT_VERSION_STATIC">MEMPROF_RT_VERSION_STATIC</dfn>,</td></tr>
+<tr><th id="48">48</th><td>} <dfn class="typedef" id="memprof_rt_version_t" title='memprof_rt_version_t' data-type='enum memprof_rt_version_t' data-ref="memprof_rt_version_t" data-ref-filename="memprof_rt_version_t">memprof_rt_version_t</dfn>;</td></tr>
+<tr><th id="49">49</th><td></td></tr>
+<tr><th id="50">50</th><td><i>// FIXME: perhaps also store abi version here?</i></td></tr>
+<tr><th id="51">51</th><td><b>extern</b> <q>"C"</q> {</td></tr>
+<tr><th id="52">52</th><td><a class="macro" href="../sanitizer_common/sanitizer_internal_defs.h.html#36" title="__attribute__((visibility(&quot;default&quot;)))" data-ref="_M/SANITIZER_INTERFACE_ATTRIBUTE">SANITIZER_INTERFACE_ATTRIBUTE</a></td></tr>
+<tr><th id="53">53</th><td><a class="typedef" href="#memprof_rt_version_t" title='memprof_rt_version_t' data-type='enum memprof_rt_version_t' data-ref="memprof_rt_version_t" data-ref-filename="memprof_rt_version_t">memprof_rt_version_t</a> <dfn class="decl def" id="__memprof_rt_version" title='__memprof_rt_version' data-ref="__memprof_rt_version" data-ref-filename="__memprof_rt_version">__memprof_rt_version</dfn>;</td></tr>
+<tr><th id="54">54</th><td>}</td></tr>
+<tr><th id="55">55</th><td></td></tr>
+<tr><th id="56">56</th><td><b>namespace</b> <span class="namespace">__memprof</span> {</td></tr>
+<tr><th id="57">57</th><td></td></tr>
+<tr><th id="58">58</th><td><em>void</em> <dfn class="decl def fn" id="__memprof::InitializePlatformInterceptors" title='__memprof::InitializePlatformInterceptors' data-ref="__memprof::InitializePlatformInterceptors" data-ref-filename="__memprof..InitializePlatformInterceptors">InitializePlatformInterceptors</dfn>() {}</td></tr>
+<tr><th id="59">59</th><td><em>void</em> <dfn class="decl def fn" id="__memprof::InitializePlatformExceptionHandlers" title='__memprof::InitializePlatformExceptionHandlers' data-ref="__memprof::InitializePlatformExceptionHandlers" data-ref-filename="__memprof..InitializePlatformExceptionHandlers">InitializePlatformExceptionHandlers</dfn>() {}</td></tr>
+<tr><th id="60">60</th><td></td></tr>
+<tr><th id="61">61</th><td><em>void</em> *<dfn class="decl def fn" id="__memprof::MemprofDoesNotSupportStaticLinkage" title='__memprof::MemprofDoesNotSupportStaticLinkage' data-ref="__memprof::MemprofDoesNotSupportStaticLinkage" data-ref-filename="__memprof..MemprofDoesNotSupportStaticLinkage">MemprofDoesNotSupportStaticLinkage</dfn>() {</td></tr>
+<tr><th id="62">62</th><td>  <i>// This will fail to link with -static.</i></td></tr>
+<tr><th id="63">63</th><td>  <b>return</b> &amp;<a class="ref" href="../../../../include/link.h.html#_DYNAMIC" title='_DYNAMIC' data-ref="_DYNAMIC" data-ref-filename="_DYNAMIC">_DYNAMIC</a>;</td></tr>
+<tr><th id="64">64</th><td>}</td></tr>
+<tr><th id="65">65</th><td></td></tr>
+<tr><th id="66">66</th><td><a class="typedef" href="../sanitizer_common/sanitizer_internal_defs.h.html#__sanitizer::uptr" title='__sanitizer::uptr' data-type='unsigned long' data-ref="__sanitizer::uptr" data-ref-filename="__sanitizer..uptr">uptr</a> <dfn class="decl def fn" id="__memprof::FindDynamicShadowStart" title='__memprof::FindDynamicShadowStart' data-ref="__memprof::FindDynamicShadowStart" data-ref-filename="__memprof..FindDynamicShadowStart">FindDynamicShadowStart</dfn>() {</td></tr>
+<tr><th id="67">67</th><td>  <a class="typedef" href="../sanitizer_common/sanitizer_internal_defs.h.html#__sanitizer::uptr" title='__sanitizer::uptr' data-type='unsigned long' data-ref="__sanitizer::uptr" data-ref-filename="__sanitizer..uptr">uptr</a> <dfn class="local col1 decl" id="1shadow_size_bytes" title='shadow_size_bytes' data-type='__sanitizer::uptr' data-ref="1shadow_size_bytes" data-ref-filename="1shadow_size_bytes">shadow_size_bytes</dfn> = <a class="ref fn" href="memprof_mapping.h.html#__memprof::MemToShadowSize" title='__memprof::MemToShadowSize' data-ref="__memprof::MemToShadowSize" data-ref-filename="__memprof..MemToShadowSize">MemToShadowSize</a>(<a class="ref" href="memprof_mapping.h.html#__memprof::kHighMemEnd" title='__memprof::kHighMemEnd' data-ref="__memprof::kHighMemEnd" data-ref-filename="__memprof..kHighMemEnd">kHighMemEnd</a>);</td></tr>
+<tr><th id="68">68</th><td>  <b>return</b> <a class="ref fn" href="../sanitizer_common/sanitizer_common.h.html#__sanitizer::MapDynamicShadow" title='__sanitizer::MapDynamicShadow' data-ref="__sanitizer::MapDynamicShadow" data-ref-filename="__sanitizer..MapDynamicShadow">MapDynamicShadow</a>(<a class="local col1 ref" href="#1shadow_size_bytes" title='shadow_size_bytes' data-ref="1shadow_size_bytes" data-ref-filename="1shadow_size_bytes">shadow_size_bytes</a>, <a class="macro" href="memprof_mapping.h.html#19" title="kDefaultShadowScale" data-ref="_M/SHADOW_SCALE">SHADOW_SCALE</a>,</td></tr>
+<tr><th id="69">69</th><td>                          <i>/*min_shadow_base_alignment*/</i> <var>0</var>, <span class='refarg'><a class="ref" href="memprof_mapping.h.html#__memprof::kHighMemEnd" title='__memprof::kHighMemEnd' data-ref="__memprof::kHighMemEnd" data-ref-filename="__memprof..kHighMemEnd">kHighMemEnd</a></span>);</td></tr>
+<tr><th id="70">70</th><td>}</td></tr>
+<tr><th id="71">71</th><td></td></tr>
+<tr><th id="72">72</th><td><em>void</em> <dfn class="decl def fn" id="__memprof::ReadContextStack" title='__memprof::ReadContextStack' data-ref="__memprof::ReadContextStack" data-ref-filename="__memprof..ReadContextStack">ReadContextStack</dfn>(<em>void</em> *<dfn class="local col2 decl" id="2context" title='context' data-type='void *' data-ref="2context" data-ref-filename="2context">context</dfn>, <a class="typedef" href="../sanitizer_common/sanitizer_internal_defs.h.html#__sanitizer::uptr" title='__sanitizer::uptr' data-type='unsigned long' data-ref="__sanitizer::uptr" data-ref-filename="__sanitizer..uptr">uptr</a> *<dfn class="local col3 decl" id="3stack" title='stack' data-type='__sanitizer::uptr *' data-ref="3stack" data-ref-filename="3stack">stack</dfn>, <a class="typedef" href="../sanitizer_common/sanitizer_internal_defs.h.html#__sanitizer::uptr" title='__sanitizer::uptr' data-type='unsigned long' data-ref="__sanitizer::uptr" data-ref-filename="__sanitizer..uptr">uptr</a> *<dfn class="local col4 decl" id="4ssize" title='ssize' data-type='__sanitizer::uptr *' data-ref="4ssize" data-ref-filename="4ssize">ssize</dfn>) {</td></tr>
+<tr><th id="73">73</th><td>  <a class="typedef" href="../../../../include/sys/ucontext.h.html#ucontext_t" title='ucontext_t' data-type='struct ucontext_t' data-ref="ucontext_t" data-ref-filename="ucontext_t">ucontext_t</a> *<dfn class="local col5 decl" id="5ucp" title='ucp' data-type='ucontext_t *' data-ref="5ucp" data-ref-filename="5ucp">ucp</dfn> = (<a class="typedef" href="../../../../include/sys/ucontext.h.html#ucontext_t" title='ucontext_t' data-type='struct ucontext_t' data-ref="ucontext_t" data-ref-filename="ucontext_t">ucontext_t</a> *)<a class="local col2 ref" href="#2context" title='context' data-ref="2context" data-ref-filename="2context">context</a>;</td></tr>
+<tr><th id="74">74</th><td>  *<a class="local col3 ref" href="#3stack" title='stack' data-ref="3stack" data-ref-filename="3stack">stack</a> = (<a class="typedef" href="../sanitizer_common/sanitizer_internal_defs.h.html#__sanitizer::uptr" title='__sanitizer::uptr' data-type='unsigned long' data-ref="__sanitizer::uptr" data-ref-filename="__sanitizer..uptr">uptr</a>)<a class="local col5 ref" href="#5ucp" title='ucp' data-ref="5ucp" data-ref-filename="5ucp">ucp</a>-&gt;<a class="ref field" href="../../../../include/sys/ucontext.h.html#ucontext_t::uc_stack" title='ucontext_t::uc_stack' data-ref="ucontext_t::uc_stack" data-ref-filename="ucontext_t..uc_stack">uc_stack</a>.<a class="ref field" href="../../../../include/bits/types/stack_t.h.html#(anonymous)::ss_sp" title='(anonymous struct)::ss_sp' data-ref="(anonymous)::ss_sp" data-ref-filename="(anonymous)..ss_sp">ss_sp</a>;</td></tr>
+<tr><th id="75">75</th><td>  *<a class="local col4 ref" href="#4ssize" title='ssize' data-ref="4ssize" data-ref-filename="4ssize">ssize</a> = <a class="local col5 ref" href="#5ucp" title='ucp' data-ref="5ucp" data-ref-filename="5ucp">ucp</a>-&gt;<a class="ref field" href="../../../../include/sys/ucontext.h.html#ucontext_t::uc_stack" title='ucontext_t::uc_stack' data-ref="ucontext_t::uc_stack" data-ref-filename="ucontext_t..uc_stack">uc_stack</a>.<a class="ref field" href="../../../../include/bits/types/stack_t.h.html#(anonymous)::ss_size" title='(anonymous struct)::ss_size' data-ref="(anonymous)::ss_size" data-ref-filename="(anonymous)..ss_size">ss_size</a>;</td></tr>
+<tr><th id="76">76</th><td>}</td></tr>
+<tr><th id="77">77</th><td></td></tr>
+<tr><th id="78">78</th><td><em>void</em> *<dfn class="decl def fn" id="__memprof::MemprofDlSymNext" title='__memprof::MemprofDlSymNext' data-ref="__memprof::MemprofDlSymNext" data-ref-filename="__memprof..MemprofDlSymNext">MemprofDlSymNext</dfn>(<em>const</em> <em>char</em> *<dfn class="local col6 decl" id="6sym" title='sym' data-type='const char *' data-ref="6sym" data-ref-filename="6sym">sym</dfn>) { <b>return</b> <a class="ref fn" href="../../../../include/dlfcn.h.html#dlsym" title='dlsym' data-ref="dlsym" data-ref-filename="dlsym">dlsym</a>(<a class="macro" href="../../../../include/dlfcn.h.html#35" title="((void *) -1l)" data-ref="_M/RTLD_NEXT">RTLD_NEXT</a>, <a class="local col6 ref" href="#6sym" title='sym' data-ref="6sym" data-ref-filename="6sym">sym</a>); }</td></tr>
+<tr><th id="79">79</th><td></td></tr>
+<tr><th id="80">80</th><td>} <i>// namespace __memprof</i></td></tr>
+<tr><th id="81">81</th><td></td></tr>
+</table><hr/><p id='footer'>
+Generated on <em>2021-Jul-01</em> from project llvm revision <em>12</em>

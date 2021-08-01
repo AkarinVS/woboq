@@ -1,0 +1,44 @@
+<dec f='llvm/llvm/lib/Transforms/InstCombine/InstCombineInternal.h' l='183' type='bool llvm::InstCombinerImpl::replacedSelectWithOperand(llvm::SelectInst * SI, const llvm::ICmpInst * Icmp, const unsigned int SIOpd)'/>
+<doc f='llvm/llvm/lib/Transforms/InstCombine/InstCombineInternal.h' l='182'>/// Try to replace select with select operand SIOpd in SI-ICmp sequence.</doc>
+<use f='llvm/llvm/lib/Transforms/InstCombine/InstCombineCompares.cpp' l='3267' u='c' c='_ZN4llvm16InstCombinerImpl30foldICmpInstWithConstantNotIntERNS_8ICmpInstE'/>
+<def f='llvm/llvm/lib/Transforms/InstCombine/InstCombineCompares.cpp' l='4969' ll='4993' type='bool llvm::InstCombinerImpl::replacedSelectWithOperand(llvm::SelectInst * SI, const llvm::ICmpInst * Icmp, const unsigned int SIOpd)'/>
+<doc f='llvm/llvm/lib/Transforms/InstCombine/InstCombineCompares.cpp' l='4929'>/// True when a select result is replaced by one of its operands
+/// in select-icmp sequence. This will eventually result in the elimination
+/// of the select.
+///
+/// \param SI    Select instruction
+/// \param Icmp  Compare instruction
+/// \param SIOpd Operand that replaces the select
+///
+/// Notes:
+/// - The replacement is global and requires dominator information
+/// - The caller is responsible for the actual replacement
+///
+/// Example:
+///
+/// entry:
+///  %4 = select i1 %3, %C* %0, %C* null
+///  %5 = icmp eq %C* %4, null
+///  br i1 %5, label %9, label %7
+///  ...
+///  ; &lt;label&gt;:7                                       ; preds = %entry
+///  %8 = getelementptr inbounds %C* %4, i64 0, i32 0
+///  ...
+///
+/// can be transformed to
+///
+///  %5 = icmp eq %C* %0, null
+///  %6 = select i1 %3, i1 %5, i1 true
+///  br i1 %6, label %9, label %7
+///  ...
+///  ; &lt;label&gt;:7                                       ; preds = %entry
+///  %8 = getelementptr inbounds %C* %0, i64 0, i32 0  // replace by %0!
+///
+/// Similar when the first operand of the select is a constant or/and
+/// the compare is for not equal rather than equal.
+///
+/// NOTE: The function is only called when the select and compare constants
+/// are equal, the optimization can work only for EQ predicates. This is not a
+/// major restriction since a NE compare should be &apos;normalized&apos; to an equal
+/// compare, which usually happens in the combiner and test case
+/// select-cmp-br.ll checks for it.</doc>

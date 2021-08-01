@@ -1,0 +1,117 @@
+<!doctype html>
+<html>
+<head>
+<meta name="viewport" content="width=device-width, initial-scale=1.0"><title>LockFileManager.h source code [llvm/llvm/include/llvm/Support/LockFileManager.h] - Woboq Code Browser</title>
+<meta name="woboq:interestingDefinitions" content="llvm::LockFileManager "/>
+<link rel="stylesheet" href="../../../../.././data/qtcreator.css" title="QtCreator"/>
+<link rel="alternate stylesheet" href="../../../../.././data/kdevelop.css" title="KDevelop"/>
+<script type="text/javascript" src="../../../../.././data/jquery/jquery.min.js"></script>
+<script type="text/javascript" src="../../../../.././data/jquery/jquery-ui.min.js"></script>
+<script>var file = 'llvm/llvm/include/llvm/Support/LockFileManager.h'; var root_path = '../../../../..'; var data_path = '../../../../.././data'; var ecma_script_api_version = 2;</script>
+<script src='../../../../.././data/codebrowser.js'></script>
+</head>
+<body><div id='header'><h1 id='breadcrumb'><span>Browse the source code of </span><a href='../../../..'>llvm</a>/<a href='../../..'>llvm</a>/<a href='../..'>include</a>/<a href='..'>llvm</a>/<a href='./'>Support</a>/<a href='LockFileManager.h.html'>LockFileManager.h</a></h1></div>
+<hr/><div id='content'><table class="code">
+<tr><th id="1">1</th><td><i>//===--- LockFileManager.h - File-level locking utility ---------*- C++ -*-===//</i></td></tr>
+<tr><th id="2">2</th><td><i>//</i></td></tr>
+<tr><th id="3">3</th><td><i>// Part of the LLVM Project, under the Apache License v2.0 with LLVM Exceptions.</i></td></tr>
+<tr><th id="4">4</th><td><i>// See <a href="https://llvm.org/LICENSE.txt">https://llvm.org/LICENSE.txt</a> for license information.</i></td></tr>
+<tr><th id="5">5</th><td><i>// SPDX-License-Identifier: Apache-2.0 WITH LLVM-exception</i></td></tr>
+<tr><th id="6">6</th><td><i>//</i></td></tr>
+<tr><th id="7">7</th><td><i>//===----------------------------------------------------------------------===//</i></td></tr>
+<tr><th id="8">8</th><td><u>#<span data-ppcond="8">ifndef</span> <span class="macro" data-ref="_M/LLVM_SUPPORT_LOCKFILEMANAGER_H">LLVM_SUPPORT_LOCKFILEMANAGER_H</span></u></td></tr>
+<tr><th id="9">9</th><td><u>#define <dfn class="macro" id="_M/LLVM_SUPPORT_LOCKFILEMANAGER_H" data-ref="_M/LLVM_SUPPORT_LOCKFILEMANAGER_H">LLVM_SUPPORT_LOCKFILEMANAGER_H</dfn></u></td></tr>
+<tr><th id="10">10</th><td></td></tr>
+<tr><th id="11">11</th><td><u>#include <a href="../ADT/Optional.h.html">"llvm/ADT/Optional.h"</a></u></td></tr>
+<tr><th id="12">12</th><td><u>#include <a href="../ADT/SmallString.h.html">"llvm/ADT/SmallString.h"</a></u></td></tr>
+<tr><th id="13">13</th><td><u>#include &lt;system_error&gt;</u></td></tr>
+<tr><th id="14">14</th><td><u>#include &lt;utility&gt; // for std::pair</u></td></tr>
+<tr><th id="15">15</th><td></td></tr>
+<tr><th id="16">16</th><td><b>namespace</b> <span class="namespace">llvm</span> {</td></tr>
+<tr><th id="17">17</th><td><b>class</b> <a class="type" href="../ADT/StringRef.h.html#llvm::StringRef" title='llvm::StringRef' data-ref="llvm::StringRef" data-ref-filename="llvm..StringRef" id="llvm::StringRef">StringRef</a>;</td></tr>
+<tr><th id="18">18</th><td></td></tr>
+<tr><th id="19">19</th><td><i class="doc">/// Class that manages the creation of a lock file to aid</i></td></tr>
+<tr><th id="20">20</th><td><i class="doc">/// implicit coordination between different processes.</i></td></tr>
+<tr><th id="21">21</th><td><i class="doc">///</i></td></tr>
+<tr><th id="22">22</th><td><i class="doc">/// The implicit coordination works by creating a ".lock" file alongside</i></td></tr>
+<tr><th id="23">23</th><td><i class="doc">/// the file that we're coordinating for, using the atomicity of the file</i></td></tr>
+<tr><th id="24">24</th><td><i class="doc">/// system to ensure that only a single process can create that ".lock" file.</i></td></tr>
+<tr><th id="25">25</th><td><i class="doc">/// When the lock file is removed, the owning process has finished the</i></td></tr>
+<tr><th id="26">26</th><td><i class="doc">/// operation.</i></td></tr>
+<tr><th id="27">27</th><td><b>class</b> <dfn class="type def" id="llvm::LockFileManager" title='llvm::LockFileManager' data-ref="llvm::LockFileManager" data-ref-filename="llvm..LockFileManager">LockFileManager</dfn> {</td></tr>
+<tr><th id="28">28</th><td><b>public</b>:</td></tr>
+<tr><th id="29">29</th><td>  <i class="doc">/// Describes the state of a lock file.</i></td></tr>
+<tr><th id="30">30</th><td>  <b>enum</b> <dfn class="type def" id="llvm::LockFileManager::LockFileState" title='llvm::LockFileManager::LockFileState' data-ref="llvm::LockFileManager::LockFileState" data-ref-filename="llvm..LockFileManager..LockFileState">LockFileState</dfn> {</td></tr>
+<tr><th id="31">31</th><td>    <i class="doc">/// The lock file has been created and is owned by this instance</i></td></tr>
+<tr><th id="32">32</th><td><i class="doc">    /// of the object.</i></td></tr>
+<tr><th id="33">33</th><td>    <dfn class="enum" id="llvm::LockFileManager::LFS_Owned" title='llvm::LockFileManager::LFS_Owned' data-ref="llvm::LockFileManager::LFS_Owned" data-ref-filename="llvm..LockFileManager..LFS_Owned">LFS_Owned</dfn>,</td></tr>
+<tr><th id="34">34</th><td>    <i class="doc">/// The lock file already exists and is owned by some other</i></td></tr>
+<tr><th id="35">35</th><td><i class="doc">    /// instance.</i></td></tr>
+<tr><th id="36">36</th><td>    <dfn class="enum" id="llvm::LockFileManager::LFS_Shared" title='llvm::LockFileManager::LFS_Shared' data-ref="llvm::LockFileManager::LFS_Shared" data-ref-filename="llvm..LockFileManager..LFS_Shared">LFS_Shared</dfn>,</td></tr>
+<tr><th id="37">37</th><td>    <i class="doc">/// An error occurred while trying to create or find the lock</i></td></tr>
+<tr><th id="38">38</th><td><i class="doc">    /// file.</i></td></tr>
+<tr><th id="39">39</th><td>    <dfn class="enum" id="llvm::LockFileManager::LFS_Error" title='llvm::LockFileManager::LFS_Error' data-ref="llvm::LockFileManager::LFS_Error" data-ref-filename="llvm..LockFileManager..LFS_Error">LFS_Error</dfn></td></tr>
+<tr><th id="40">40</th><td>  };</td></tr>
+<tr><th id="41">41</th><td></td></tr>
+<tr><th id="42">42</th><td>  <i class="doc">/// Describes the result of waiting for the owner to release the lock.</i></td></tr>
+<tr><th id="43">43</th><td>  <b>enum</b> <dfn class="type def" id="llvm::LockFileManager::WaitForUnlockResult" title='llvm::LockFileManager::WaitForUnlockResult' data-ref="llvm::LockFileManager::WaitForUnlockResult" data-ref-filename="llvm..LockFileManager..WaitForUnlockResult">WaitForUnlockResult</dfn> {</td></tr>
+<tr><th id="44">44</th><td>    <i class="doc">/// The lock was released successfully.</i></td></tr>
+<tr><th id="45">45</th><td>    <dfn class="enum" id="llvm::LockFileManager::Res_Success" title='llvm::LockFileManager::Res_Success' data-ref="llvm::LockFileManager::Res_Success" data-ref-filename="llvm..LockFileManager..Res_Success">Res_Success</dfn>,</td></tr>
+<tr><th id="46">46</th><td>    <i class="doc">/// Owner died while holding the lock.</i></td></tr>
+<tr><th id="47">47</th><td>    <dfn class="enum" id="llvm::LockFileManager::Res_OwnerDied" title='llvm::LockFileManager::Res_OwnerDied' data-ref="llvm::LockFileManager::Res_OwnerDied" data-ref-filename="llvm..LockFileManager..Res_OwnerDied">Res_OwnerDied</dfn>,</td></tr>
+<tr><th id="48">48</th><td>    <i class="doc">/// Reached timeout while waiting for the owner to release the lock.</i></td></tr>
+<tr><th id="49">49</th><td>    <dfn class="enum" id="llvm::LockFileManager::Res_Timeout" title='llvm::LockFileManager::Res_Timeout' data-ref="llvm::LockFileManager::Res_Timeout" data-ref-filename="llvm..LockFileManager..Res_Timeout">Res_Timeout</dfn></td></tr>
+<tr><th id="50">50</th><td>  };</td></tr>
+<tr><th id="51">51</th><td></td></tr>
+<tr><th id="52">52</th><td><b>private</b>:</td></tr>
+<tr><th id="53">53</th><td>  <a class="type" href="../../../../clang/include/clang/Basic/LLVM.h.html#llvm::SmallString" title='llvm::SmallString' data-ref="llvm::SmallString" data-ref-filename="llvm..SmallString">SmallString</a>&lt;<var>128</var>&gt; <dfn class="decl field" id="llvm::LockFileManager::FileName" title='llvm::LockFileManager::FileName' data-ref="llvm::LockFileManager::FileName" data-ref-filename="llvm..LockFileManager..FileName">FileName</dfn>;</td></tr>
+<tr><th id="54">54</th><td>  <a class="type" href="../../../../clang/include/clang/Basic/LLVM.h.html#llvm::SmallString" title='llvm::SmallString' data-ref="llvm::SmallString" data-ref-filename="llvm..SmallString">SmallString</a>&lt;<var>128</var>&gt; <dfn class="decl field" id="llvm::LockFileManager::LockFileName" title='llvm::LockFileManager::LockFileName' data-ref="llvm::LockFileManager::LockFileName" data-ref-filename="llvm..LockFileManager..LockFileName">LockFileName</dfn>;</td></tr>
+<tr><th id="55">55</th><td>  <a class="type" href="../../../../clang/include/clang/Basic/LLVM.h.html#llvm::SmallString" title='llvm::SmallString' data-ref="llvm::SmallString" data-ref-filename="llvm..SmallString">SmallString</a>&lt;<var>128</var>&gt; <dfn class="decl field" id="llvm::LockFileManager::UniqueLockFileName" title='llvm::LockFileManager::UniqueLockFileName' data-ref="llvm::LockFileManager::UniqueLockFileName" data-ref-filename="llvm..LockFileManager..UniqueLockFileName">UniqueLockFileName</dfn>;</td></tr>
+<tr><th id="56">56</th><td></td></tr>
+<tr><th id="57">57</th><td>  <a class="type" href="../../../../clang/include/clang/Basic/LLVM.h.html#llvm::Optional" title='llvm::Optional' data-ref="llvm::Optional" data-ref-filename="llvm..Optional">Optional</a>&lt;<span class="namespace">std::</span><span class='type' title='std::pair' data-ref="std::pair" data-ref-filename="std..pair">pair</span>&lt;<span class="namespace">std::</span><span class='typedef' title='std::string' data-type='basic_string&lt;char&gt;' data-ref="std::string" data-ref-filename="std..string">string</span>, <em>int</em>&gt; &gt; <dfn class="decl field" id="llvm::LockFileManager::Owner" title='llvm::LockFileManager::Owner' data-ref="llvm::LockFileManager::Owner" data-ref-filename="llvm..LockFileManager..Owner">Owner</dfn>;</td></tr>
+<tr><th id="58">58</th><td>  <span class="namespace">std::</span><span class='type' title='std::error_code' data-ref="std::error_code" data-ref-filename="std..error_code">error_code</span> <dfn class="decl field" id="llvm::LockFileManager::ErrorCode" title='llvm::LockFileManager::ErrorCode' data-ref="llvm::LockFileManager::ErrorCode" data-ref-filename="llvm..LockFileManager..ErrorCode">ErrorCode</dfn>;</td></tr>
+<tr><th id="59">59</th><td>  <span class="namespace">std::</span><span class='typedef' title='std::string' data-type='basic_string&lt;char&gt;' data-ref="std::string" data-ref-filename="std..string">string</span> <dfn class="decl field" id="llvm::LockFileManager::ErrorDiagMsg" title='llvm::LockFileManager::ErrorDiagMsg' data-ref="llvm::LockFileManager::ErrorDiagMsg" data-ref-filename="llvm..LockFileManager..ErrorDiagMsg">ErrorDiagMsg</dfn>;</td></tr>
+<tr><th id="60">60</th><td></td></tr>
+<tr><th id="61">61</th><td>  <dfn class="decl def fn" id="_ZN4llvm15LockFileManagerC1ERKS0_" title='llvm::LockFileManager::LockFileManager' data-ref="_ZN4llvm15LockFileManagerC1ERKS0_" data-ref-filename="_ZN4llvm15LockFileManagerC1ERKS0_">LockFileManager</dfn>(<em>const</em> <a class="type" href="#llvm::LockFileManager" title='llvm::LockFileManager' data-ref="llvm::LockFileManager" data-ref-filename="llvm..LockFileManager">LockFileManager</a> &amp;) = <b>delete</b>;</td></tr>
+<tr><th id="62">62</th><td>  <a class="type" href="#llvm::LockFileManager" title='llvm::LockFileManager' data-ref="llvm::LockFileManager" data-ref-filename="llvm..LockFileManager">LockFileManager</a> &amp;<dfn class="decl def fn" id="_ZN4llvm15LockFileManageraSERKS0_" title='llvm::LockFileManager::operator=' data-ref="_ZN4llvm15LockFileManageraSERKS0_" data-ref-filename="_ZN4llvm15LockFileManageraSERKS0_"><b>operator</b>=</dfn>(<em>const</em> <a class="type" href="#llvm::LockFileManager" title='llvm::LockFileManager' data-ref="llvm::LockFileManager" data-ref-filename="llvm..LockFileManager">LockFileManager</a> &amp;) = <b>delete</b>;</td></tr>
+<tr><th id="63">63</th><td></td></tr>
+<tr><th id="64">64</th><td>  <em>static</em> <a class="type" href="../../../../clang/include/clang/Basic/LLVM.h.html#llvm::Optional" title='llvm::Optional' data-ref="llvm::Optional" data-ref-filename="llvm..Optional">Optional</a>&lt;<span class="namespace">std::</span><span class='type' title='std::pair' data-ref="std::pair" data-ref-filename="std..pair">pair</span>&lt;<span class="namespace">std::</span><span class='typedef' title='std::string' data-type='basic_string&lt;char&gt;' data-ref="std::string" data-ref-filename="std..string">string</span>, <em>int</em>&gt; &gt;</td></tr>
+<tr><th id="65">65</th><td>  <dfn class="decl fn" id="_ZN4llvm15LockFileManager12readLockFileB5cxx11ENS_9StringRefE" title='llvm::LockFileManager::readLockFile' data-ref="_ZN4llvm15LockFileManager12readLockFileB5cxx11ENS_9StringRefE" data-ref-filename="_ZN4llvm15LockFileManager12readLockFileB5cxx11ENS_9StringRefE">readLockFile</dfn>(<a class="type" href="../ADT/StringRef.h.html#llvm::StringRef" title='llvm::StringRef' data-ref="llvm::StringRef" data-ref-filename="llvm..StringRef">StringRef</a> <dfn class="local col6 decl" id="56LockFileName" title='LockFileName' data-type='llvm::StringRef' data-ref="56LockFileName" data-ref-filename="56LockFileName">LockFileName</dfn>);</td></tr>
+<tr><th id="66">66</th><td></td></tr>
+<tr><th id="67">67</th><td>  <em>static</em> <em>bool</em> <dfn class="decl fn" id="_ZN4llvm15LockFileManager21processStillExecutingENS_9StringRefEi" title='llvm::LockFileManager::processStillExecuting' data-ref="_ZN4llvm15LockFileManager21processStillExecutingENS_9StringRefEi" data-ref-filename="_ZN4llvm15LockFileManager21processStillExecutingENS_9StringRefEi">processStillExecuting</dfn>(<a class="type" href="../ADT/StringRef.h.html#llvm::StringRef" title='llvm::StringRef' data-ref="llvm::StringRef" data-ref-filename="llvm..StringRef">StringRef</a> <dfn class="local col7 decl" id="57Hostname" title='Hostname' data-type='llvm::StringRef' data-ref="57Hostname" data-ref-filename="57Hostname">Hostname</dfn>, <em>int</em> <dfn class="local col8 decl" id="58PID" title='PID' data-type='int' data-ref="58PID" data-ref-filename="58PID">PID</dfn>);</td></tr>
+<tr><th id="68">68</th><td></td></tr>
+<tr><th id="69">69</th><td><b>public</b>:</td></tr>
+<tr><th id="70">70</th><td></td></tr>
+<tr><th id="71">71</th><td>  <dfn class="decl fn" id="_ZN4llvm15LockFileManagerC1ENS_9StringRefE" title='llvm::LockFileManager::LockFileManager' data-ref="_ZN4llvm15LockFileManagerC1ENS_9StringRefE" data-ref-filename="_ZN4llvm15LockFileManagerC1ENS_9StringRefE">LockFileManager</dfn>(<a class="type" href="../ADT/StringRef.h.html#llvm::StringRef" title='llvm::StringRef' data-ref="llvm::StringRef" data-ref-filename="llvm..StringRef">StringRef</a> <dfn class="local col9 decl" id="59FileName" title='FileName' data-type='llvm::StringRef' data-ref="59FileName" data-ref-filename="59FileName">FileName</dfn>);</td></tr>
+<tr><th id="72">72</th><td>  <dfn class="decl fn" id="_ZN4llvm15LockFileManagerD1Ev" title='llvm::LockFileManager::~LockFileManager' data-ref="_ZN4llvm15LockFileManagerD1Ev" data-ref-filename="_ZN4llvm15LockFileManagerD1Ev">~LockFileManager</dfn>();</td></tr>
+<tr><th id="73">73</th><td></td></tr>
+<tr><th id="74">74</th><td>  <i class="doc">/// Determine the state of the lock file.</i></td></tr>
+<tr><th id="75">75</th><td>  <a class="type" href="#llvm::LockFileManager::LockFileState" title='llvm::LockFileManager::LockFileState' data-ref="llvm::LockFileManager::LockFileState" data-ref-filename="llvm..LockFileManager..LockFileState">LockFileState</a> <dfn class="decl fn" id="_ZNK4llvm15LockFileManager8getStateEv" title='llvm::LockFileManager::getState' data-ref="_ZNK4llvm15LockFileManager8getStateEv" data-ref-filename="_ZNK4llvm15LockFileManager8getStateEv">getState</dfn>() <em>const</em>;</td></tr>
+<tr><th id="76">76</th><td></td></tr>
+<tr><th id="77">77</th><td>  <dfn class="decl def fn" id="_ZNK4llvm15LockFileManagercvNS0_13LockFileStateEEv" title='llvm::LockFileManager::operator llvm::LockFileManager::LockFileState' data-ref="_ZNK4llvm15LockFileManagercvNS0_13LockFileStateEEv" data-ref-filename="_ZNK4llvm15LockFileManagercvNS0_13LockFileStateEEv"><b>operator</b> <a class="type" href="#llvm::LockFileManager::LockFileState" title='llvm::LockFileManager::LockFileState' data-ref="llvm::LockFileManager::LockFileState" data-ref-filename="llvm..LockFileManager..LockFileState">LockFileState</a></dfn>() <em>const</em> { <b>return</b> <a class="member fn" href="#_ZNK4llvm15LockFileManager8getStateEv" title='llvm::LockFileManager::getState' data-ref="_ZNK4llvm15LockFileManager8getStateEv" data-ref-filename="_ZNK4llvm15LockFileManager8getStateEv">getState</a>(); }</td></tr>
+<tr><th id="78">78</th><td></td></tr>
+<tr><th id="79">79</th><td>  <i class="doc">/// For a shared lock, wait until the owner releases the lock.</i></td></tr>
+<tr><th id="80">80</th><td><i class="doc">  /// Total timeout for the file to appear is ~1.5 minutes.</i></td></tr>
+<tr><th id="81">81</th><td><i class="doc">  /// <span class="command">\param</span> <span class="arg">MaxSeconds</span> the maximum total wait time in seconds.</i></td></tr>
+<tr><th id="82">82</th><td>  <a class="type" href="#llvm::LockFileManager::WaitForUnlockResult" title='llvm::LockFileManager::WaitForUnlockResult' data-ref="llvm::LockFileManager::WaitForUnlockResult" data-ref-filename="llvm..LockFileManager..WaitForUnlockResult">WaitForUnlockResult</a> <dfn class="decl fn" id="_ZN4llvm15LockFileManager13waitForUnlockEj" title='llvm::LockFileManager::waitForUnlock' data-ref="_ZN4llvm15LockFileManager13waitForUnlockEj" data-ref-filename="_ZN4llvm15LockFileManager13waitForUnlockEj">waitForUnlock</dfn>(<em>const</em> <em>unsigned</em> <dfn class="local col0 decl" id="60MaxSeconds" title='MaxSeconds' data-type='const unsigned int' data-ref="60MaxSeconds" data-ref-filename="60MaxSeconds">MaxSeconds</dfn> = <var>90</var>);</td></tr>
+<tr><th id="83">83</th><td></td></tr>
+<tr><th id="84">84</th><td>  <i class="doc">/// Remove the lock file.  This may delete a different lock file than</i></td></tr>
+<tr><th id="85">85</th><td><i class="doc">  /// the one previously read if there is a race.</i></td></tr>
+<tr><th id="86">86</th><td>  <span class="namespace">std::</span><span class='type' title='std::error_code' data-ref="std::error_code" data-ref-filename="std..error_code">error_code</span> <dfn class="decl fn" id="_ZN4llvm15LockFileManager20unsafeRemoveLockFileEv" title='llvm::LockFileManager::unsafeRemoveLockFile' data-ref="_ZN4llvm15LockFileManager20unsafeRemoveLockFileEv" data-ref-filename="_ZN4llvm15LockFileManager20unsafeRemoveLockFileEv">unsafeRemoveLockFile</dfn>();</td></tr>
+<tr><th id="87">87</th><td></td></tr>
+<tr><th id="88">88</th><td>  <i class="doc">/// Get error message, or "" if there is no error.</i></td></tr>
+<tr><th id="89">89</th><td>  <span class="namespace">std::</span><span class='typedef' title='std::string' data-type='basic_string&lt;char&gt;' data-ref="std::string" data-ref-filename="std..string">string</span> <dfn class="decl fn" id="_ZNK4llvm15LockFileManager15getErrorMessageB5cxx11Ev" title='llvm::LockFileManager::getErrorMessage' data-ref="_ZNK4llvm15LockFileManager15getErrorMessageB5cxx11Ev" data-ref-filename="_ZNK4llvm15LockFileManager15getErrorMessageB5cxx11Ev">getErrorMessage</dfn>() <em>const</em>;</td></tr>
+<tr><th id="90">90</th><td></td></tr>
+<tr><th id="91">91</th><td>  <i class="doc">/// Set error and error message</i></td></tr>
+<tr><th id="92">92</th><td>  <em>void</em> <dfn class="decl def fn" id="_ZN4llvm15LockFileManager8setErrorERKSt10error_codeNS_9StringRefE" title='llvm::LockFileManager::setError' data-ref="_ZN4llvm15LockFileManager8setErrorERKSt10error_codeNS_9StringRefE" data-ref-filename="_ZN4llvm15LockFileManager8setErrorERKSt10error_codeNS_9StringRefE">setError</dfn>(<em>const</em> <span class="namespace">std::</span><span class='type' title='std::error_code' data-ref="std::error_code" data-ref-filename="std..error_code">error_code</span> &amp;<dfn class="local col1 decl" id="61EC" title='EC' data-type='const std::error_code &amp;' data-ref="61EC" data-ref-filename="61EC">EC</dfn>, <a class="type" href="../ADT/StringRef.h.html#llvm::StringRef" title='llvm::StringRef' data-ref="llvm::StringRef" data-ref-filename="llvm..StringRef">StringRef</a> <dfn class="local col2 decl" id="62ErrorMsg" title='ErrorMsg' data-type='llvm::StringRef' data-ref="62ErrorMsg" data-ref-filename="62ErrorMsg">ErrorMsg</dfn> = <a class="ref fn fake" href="../ADT/StringRef.h.html#_ZN4llvm9StringRefC1EPKc" title='llvm::StringRef::StringRef' data-ref="_ZN4llvm9StringRefC1EPKc" data-ref-filename="_ZN4llvm9StringRefC1EPKc"></a><q>""</q>) {</td></tr>
+<tr><th id="93">93</th><td>    <a class="member field" href="#llvm::LockFileManager::ErrorCode" title='llvm::LockFileManager::ErrorCode' data-ref="llvm::LockFileManager::ErrorCode" data-ref-filename="llvm..LockFileManager..ErrorCode">ErrorCode</a> <span class='ref fn' title='std::error_code::operator=' data-ref="_ZNSt10error_codeaSERKS_" data-ref-filename="_ZNSt10error_codeaSERKS_">=</span> <a class="local col1 ref" href="#61EC" title='EC' data-ref="61EC" data-ref-filename="61EC">EC</a>;</td></tr>
+<tr><th id="94">94</th><td>    <a class="member field" href="#llvm::LockFileManager::ErrorDiagMsg" title='llvm::LockFileManager::ErrorDiagMsg' data-ref="llvm::LockFileManager::ErrorDiagMsg" data-ref-filename="llvm..LockFileManager..ErrorDiagMsg">ErrorDiagMsg</a> <span class='ref fn' title='std::__cxx11::basic_string::operator=' data-ref="_ZNSt7__cxx1112basic_stringaSEONS_12basic_stringIT_T0_T1_EE" data-ref-filename="_ZNSt7__cxx1112basic_stringaSEONS_12basic_stringIT_T0_T1_EE">=</span> <a class="local col2 ref" href="#62ErrorMsg" title='ErrorMsg' data-ref="62ErrorMsg" data-ref-filename="62ErrorMsg">ErrorMsg</a>.<a class="ref fn" href="../ADT/StringRef.h.html#_ZNK4llvm9StringRef3strB5cxx11Ev" title='llvm::StringRef::str' data-ref="_ZNK4llvm9StringRef3strB5cxx11Ev" data-ref-filename="_ZNK4llvm9StringRef3strB5cxx11Ev">str</a>();</td></tr>
+<tr><th id="95">95</th><td>  }</td></tr>
+<tr><th id="96">96</th><td>};</td></tr>
+<tr><th id="97">97</th><td></td></tr>
+<tr><th id="98">98</th><td>} <i>// end namespace llvm</i></td></tr>
+<tr><th id="99">99</th><td></td></tr>
+<tr><th id="100">100</th><td><u>#<span data-ppcond="8">endif</span> // LLVM_SUPPORT_LOCKFILEMANAGER_H</u></td></tr>
+<tr><th id="101">101</th><td></td></tr>
+</table><hr/><p id='footer'>
+Generated while processing <a href='../../../../clang/lib/Frontend/CompilerInstance.cpp.html'>llvm/clang/lib/Frontend/CompilerInstance.cpp</a><br/>Generated on <em>2021-Jul-01</em> from project llvm revision <em>12</em>

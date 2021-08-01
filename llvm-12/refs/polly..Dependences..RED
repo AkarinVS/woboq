@@ -1,0 +1,29 @@
+<use f='llvm/polly/include/polly/DependenceInfo.h' l='154' u='w' c='_ZN5polly11DependencesC1ERKSt10shared_ptrI7isl_ctxENS0_13AnalysisLevelE'/>
+<dec f='llvm/polly/include/polly/DependenceInfo.h' l='177' type='isl_union_map *'/>
+<use f='llvm/polly/lib/Analysis/DependenceInfo.cpp' l='247' u='r' c='_ZN5polly11Dependences27addPrivatizationDependencesEv'/>
+<use f='llvm/polly/lib/Analysis/DependenceInfo.cpp' l='373' u='w' c='_ZN5polly11Dependences20calculateDependencesERNS_4ScopE'/>
+<use f='llvm/polly/lib/Analysis/DependenceInfo.cpp' l='494' u='w' c='_ZN5polly11Dependences20calculateDependencesERNS_4ScopE'/>
+<use f='llvm/polly/lib/Analysis/DependenceInfo.cpp' l='529' u='w' c='_ZN5polly11Dependences20calculateDependencesERNS_4ScopE'/>
+<use f='llvm/polly/lib/Analysis/DependenceInfo.cpp' l='537' u='w' c='_ZN5polly11Dependences20calculateDependencesERNS_4ScopE'/>
+<use f='llvm/polly/lib/Analysis/DependenceInfo.cpp' l='537' u='r' c='_ZN5polly11Dependences20calculateDependencesERNS_4ScopE'/>
+<use f='llvm/polly/lib/Analysis/DependenceInfo.cpp' l='542' u='w' c='_ZN5polly11Dependences20calculateDependencesERNS_4ScopE'/>
+<use f='llvm/polly/lib/Analysis/DependenceInfo.cpp' l='542' u='r' c='_ZN5polly11Dependences20calculateDependencesERNS_4ScopE'/>
+<use f='llvm/polly/lib/Analysis/DependenceInfo.cpp' l='543' u='w' c='_ZN5polly11Dependences20calculateDependencesERNS_4ScopE'/>
+<use f='llvm/polly/lib/Analysis/DependenceInfo.cpp' l='543' u='r' c='_ZN5polly11Dependences20calculateDependencesERNS_4ScopE'/>
+<use f='llvm/polly/lib/Analysis/DependenceInfo.cpp' l='545' u='r' c='_ZN5polly11Dependences20calculateDependencesERNS_4ScopE'/>
+<use f='llvm/polly/lib/Analysis/DependenceInfo.cpp' l='548' u='r' c='_ZN5polly11Dependences20calculateDependencesERNS_4ScopE'/>
+<use f='llvm/polly/lib/Analysis/DependenceInfo.cpp' l='549' u='r' c='_ZN5polly11Dependences20calculateDependencesERNS_4ScopE'/>
+<use f='llvm/polly/lib/Analysis/DependenceInfo.cpp' l='550' u='r' c='_ZN5polly11Dependences20calculateDependencesERNS_4ScopE'/>
+<use f='llvm/polly/lib/Analysis/DependenceInfo.cpp' l='555' u='r' c='_ZN5polly11Dependences20calculateDependencesERNS_4ScopE'/>
+<use f='llvm/polly/lib/Analysis/DependenceInfo.cpp' l='604' u='w' c='_ZN5polly11Dependences20calculateDependencesERNS_4ScopE'/>
+<use f='llvm/polly/lib/Analysis/DependenceInfo.cpp' l='604' u='r' c='_ZN5polly11Dependences20calculateDependencesERNS_4ScopE'/>
+<use f='llvm/polly/lib/Analysis/DependenceInfo.cpp' l='616' u='w' c='_ZN5polly11Dependences20calculateDependencesERNS_4ScopE'/>
+<use f='llvm/polly/lib/Analysis/DependenceInfo.cpp' l='616' u='r' c='_ZN5polly11Dependences20calculateDependencesERNS_4ScopE'/>
+<use f='llvm/polly/lib/Analysis/DependenceInfo.cpp' l='632' u='w' c='_ZN5polly11Dependences20calculateDependencesERNS_4ScopE'/>
+<use f='llvm/polly/lib/Analysis/DependenceInfo.cpp' l='632' u='r' c='_ZN5polly11Dependences20calculateDependencesERNS_4ScopE'/>
+<use f='llvm/polly/lib/Analysis/DependenceInfo.cpp' l='756' u='r' c='_ZNK5polly11Dependences5printERN4llvm11raw_ostreamE'/>
+<use f='llvm/polly/lib/Analysis/DependenceInfo.cpp' l='767' u='r' c='_ZN5polly11Dependences13releaseMemoryEv'/>
+<use f='llvm/polly/lib/Analysis/DependenceInfo.cpp' l='770' u='w' c='_ZN5polly11Dependences13releaseMemoryEv'/>
+<use f='llvm/polly/lib/Analysis/DependenceInfo.cpp' l='792' u='r' c='_ZNK5polly11Dependences14getDependencesEi'/>
+<offset>192</offset>
+<doc f='llvm/polly/include/polly/DependenceInfo.h' l='176'>/// The special reduction dependences.</doc>

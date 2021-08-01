@@ -1,0 +1,54 @@
+<dec f='llvm/llvm/lib/Target/Mips/MipsSEISelLowering.h' l='136' type='llvm::MachineBasicBlock * llvm::MipsSETargetLowering::emitFPROUND_PSEUDO(llvm::MachineInstr &amp; MI, llvm::MachineBasicBlock * BBi, bool IsFGR64) const'/>
+<use f='llvm/llvm/lib/Target/Mips/MipsSEISelLowering.cpp' l='1135' u='c' c='_ZNK4llvm20MipsSETargetLowering27EmitInstrWithCustomInserterERNS_12MachineInstrEPNS_17MachineBasicBlockE'/>
+<use f='llvm/llvm/lib/Target/Mips/MipsSEISelLowering.cpp' l='1139' u='c' c='_ZNK4llvm20MipsSETargetLowering27EmitInstrWithCustomInserterERNS_12MachineInstrEPNS_17MachineBasicBlockE'/>
+<def f='llvm/llvm/lib/Target/Mips/MipsSEISelLowering.cpp' l='3648' ll='3709' type='llvm::MachineBasicBlock * llvm::MipsSETargetLowering::emitFPROUND_PSEUDO(llvm::MachineInstr &amp; MI, llvm::MachineBasicBlock * BB, bool IsFGR64) const'/>
+<doc f='llvm/llvm/lib/Target/Mips/MipsSEISelLowering.cpp' l='3599'>// Emit the FPROUND_PSEUDO instruction.
+//
+// Round an FGR64Opnd, FGR32Opnd to an f16.
+//
+// Safety: Cycle the operand through the GPRs so the result always ends up
+//         the correct MSA register.
+//
+// FIXME: This copying is strictly unnecessary. If we could tie FGR32Opnd:$Fs
+//        / FGR64Opnd:$Fs and MSA128F16:$Wd to the same physical register
+//        (which they can be, as the MSA registers are defined to alias the
+//        FPU&apos;s 64 bit and 32 bit registers) the result can be accessed using
+//        the correct register class. That requires operands be tie-able across
+//        register classes which have a sub/super register class relationship.
+//
+// For FPG32Opnd:
+//
+// FPROUND MSA128F16:$wd, FGR32Opnd:$fs
+// =&gt;
+//  mfc1 $rtemp, $fs
+//  fill.w $rtemp, $wtemp
+//  fexdo.w $wd, $wtemp, $wtemp
+//
+// For FPG64Opnd on mips32r2+:
+//
+// FPROUND MSA128F16:$wd, FGR64Opnd:$fs
+// =&gt;
+//  mfc1 $rtemp, $fs
+//  fill.w $rtemp, $wtemp
+//  mfhc1 $rtemp2, $fs
+//  insert.w $wtemp[1], $rtemp2
+//  insert.w $wtemp[3], $rtemp2
+//  fexdo.w $wtemp2, $wtemp, $wtemp
+//  fexdo.h $wd, $temp2, $temp2
+//
+// For FGR64Opnd on mips64r2+:
+//
+// FPROUND MSA128F16:$wd, FGR64Opnd:$fs
+// =&gt;
+//  dmfc1 $rtemp, $fs
+//  fill.d $rtemp, $wtemp
+//  fexdo.w $wtemp2, $wtemp, $wtemp
+//  fexdo.h $wd, $wtemp2, $wtemp2
+//
+// Safety note: As $wtemp is UNDEF, we may provoke a spurious exception if the
+//              undef bits are &quot;just right&quot; and the exception enable bits are
+//              set. By using fill.w to replicate $fs into all elements over
+//              insert.w for one element, we avoid that potiential case. If
+//              fexdo.[hw] causes an exception in, the exception is valid and it
+//              occurs for all elements.</doc>
+<doc f='llvm/llvm/lib/Target/Mips/MipsSEISelLowering.h' l='135'>/// Emit the FEXP2_D_1 pseudo instructions.</doc>

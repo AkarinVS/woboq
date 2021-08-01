@@ -1,0 +1,33 @@
+<dec f='llvm/llvm/lib/Target/AMDGPU/AMDGPUTargetTransformInfo.h' l='67' type='const llvm::GCNSubtarget *'/>
+<use f='llvm/llvm/lib/Target/AMDGPU/AMDGPUTargetTransformInfo.h' l='77' u='r' c='_ZNK4llvm10GCNTTIImpl5getSTEv'/>
+<use f='llvm/llvm/lib/Target/AMDGPU/AMDGPUInstCombineIntrinsic.cpp' l='901' u='r' c='_ZNK4llvm10GCNTTIImpl20instCombineIntrinsicERNS_12InstCombinerERNS_13IntrinsicInstE'/>
+<offset>128</offset>
+<use f='llvm/llvm/lib/Target/AMDGPU/AMDGPUTargetTransformInfo.cpp' l='282' u='w' c='_ZN4llvm10GCNTTIImplC1EPKNS_19AMDGPUTargetMachineERKNS_8FunctionE'/>
+<use f='llvm/llvm/lib/Target/AMDGPU/AMDGPUTargetTransformInfo.cpp' l='283' u='r' c='_ZN4llvm10GCNTTIImplC1EPKNS_19AMDGPUTargetMachineERKNS_8FunctionE'/>
+<use f='llvm/llvm/lib/Target/AMDGPU/AMDGPUTargetTransformInfo.cpp' l='285' u='r' c='_ZN4llvm10GCNTTIImplC1EPKNS_19AMDGPUTargetMachineERKNS_8FunctionE'/>
+<use f='llvm/llvm/lib/Target/AMDGPU/AMDGPUTargetTransformInfo.cpp' l='286' u='r' c='_ZN4llvm10GCNTTIImplC1EPKNS_19AMDGPUTargetMachineERKNS_8FunctionE'/>
+<use f='llvm/llvm/lib/Target/AMDGPU/AMDGPUTargetTransformInfo.cpp' l='287' u='r' c='_ZN4llvm10GCNTTIImplC1EPKNS_19AMDGPUTargetMachineERKNS_8FunctionE'/>
+<use f='llvm/llvm/lib/Target/AMDGPU/AMDGPUTargetTransformInfo.cpp' l='288' u='r' c='_ZN4llvm10GCNTTIImplC1EPKNS_19AMDGPUTargetMachineERKNS_8FunctionE'/>
+<use f='llvm/llvm/lib/Target/AMDGPU/AMDGPUTargetTransformInfo.cpp' l='307' u='r' c='_ZNK4llvm10GCNTTIImpl20getNumberOfRegistersEj'/>
+<use f='llvm/llvm/lib/Target/AMDGPU/AMDGPUTargetTransformInfo.cpp' l='324' u='r' c='_ZNK4llvm10GCNTTIImpl12getMaximumVFEjj'/>
+<use f='llvm/llvm/lib/Target/AMDGPU/AMDGPUTargetTransformInfo.cpp' l='357' u='r' c='_ZNK4llvm10GCNTTIImpl26getLoadStoreVecRegBitWidthEj'/>
+<use f='llvm/llvm/lib/Target/AMDGPU/AMDGPUTargetTransformInfo.cpp' l='370' u='r' c='_ZNK4llvm10GCNTTIImpl26isLegalToVectorizeMemChainEjNS_5AlignEj'/>
+<use f='llvm/llvm/lib/Target/AMDGPU/AMDGPUTargetTransformInfo.cpp' l='371' u='r' c='_ZNK4llvm10GCNTTIImpl26isLegalToVectorizeMemChainEjNS_5AlignEj'/>
+<use f='llvm/llvm/lib/Target/AMDGPU/AMDGPUTargetTransformInfo.cpp' l='575' u='r' c='_ZN4llvm10GCNTTIImpl22getArithmeticInstrCostEjPNS_4TypeENS_19TargetTransformInfo14TargetCostKindENS3_16OperandValueKindES5_NS3_22OperandValuePropertie9548614'/>
+<use f='llvm/llvm/lib/Target/AMDGPU/AMDGPUTargetTransformInfo.cpp' l='590' u='r' c='_ZN4llvm10GCNTTIImpl22getArithmeticInstrCostEjPNS_4TypeENS_19TargetTransformInfo14TargetCostKindENS3_16OperandValueKindES5_NS3_22OperandValuePropertie9548614'/>
+<use f='llvm/llvm/lib/Target/AMDGPU/AMDGPUTargetTransformInfo.cpp' l='601' u='r' c='_ZN4llvm10GCNTTIImpl22getArithmeticInstrCostEjPNS_4TypeENS_19TargetTransformInfo14TargetCostKindENS3_16OperandValueKindES5_NS3_22OperandValuePropertie9548614'/>
+<use f='llvm/llvm/lib/Target/AMDGPU/AMDGPUTargetTransformInfo.cpp' l='615' u='r' c='_ZN4llvm10GCNTTIImpl22getArithmeticInstrCostEjPNS_4TypeENS_19TargetTransformInfo14TargetCostKindENS3_16OperandValueKindES5_NS3_22OperandValuePropertie9548614'/>
+<use f='llvm/llvm/lib/Target/AMDGPU/AMDGPUTargetTransformInfo.cpp' l='617' u='r' c='_ZN4llvm10GCNTTIImpl22getArithmeticInstrCostEjPNS_4TypeENS_19TargetTransformInfo14TargetCostKindENS3_16OperandValueKindES5_NS3_22OperandValuePropertie9548614'/>
+<use f='llvm/llvm/lib/Target/AMDGPU/AMDGPUTargetTransformInfo.cpp' l='634' u='r' c='_ZN4llvm10GCNTTIImpl22getArithmeticInstrCostEjPNS_4TypeENS_19TargetTransformInfo14TargetCostKindENS3_16OperandValueKindES5_NS3_22OperandValuePropertie9548614'/>
+<use f='llvm/llvm/lib/Target/AMDGPU/AMDGPUTargetTransformInfo.cpp' l='649' u='r' c='_ZN4llvm10GCNTTIImpl22getArithmeticInstrCostEjPNS_4TypeENS_19TargetTransformInfo14TargetCostKindENS3_16OperandValueKindES5_NS3_22OperandValuePropertie9548614'/>
+<use f='llvm/llvm/lib/Target/AMDGPU/AMDGPUTargetTransformInfo.cpp' l='658' u='r' c='_ZN4llvm10GCNTTIImpl22getArithmeticInstrCostEjPNS_4TypeENS_19TargetTransformInfo14TargetCostKindENS3_16OperandValueKindES5_NS3_22OperandValuePropertie9548614'/>
+<use f='llvm/llvm/lib/Target/AMDGPU/AMDGPUTargetTransformInfo.cpp' l='663' u='r' c='_ZN4llvm10GCNTTIImpl22getArithmeticInstrCostEjPNS_4TypeENS_19TargetTransformInfo14TargetCostKindENS3_16OperandValueKindES5_NS3_22OperandValuePropertie9548614'/>
+<use f='llvm/llvm/lib/Target/AMDGPU/AMDGPUTargetTransformInfo.cpp' l='782' u='r' c='_ZN4llvm10GCNTTIImpl21getIntrinsicInstrCostERKNS_23IntrinsicCostAttributesENS_19TargetTransformInfo14TargetCostKindE'/>
+<use f='llvm/llvm/lib/Target/AMDGPU/AMDGPUTargetTransformInfo.cpp' l='788' u='r' c='_ZN4llvm10GCNTTIImpl21getIntrinsicInstrCostERKNS_23IntrinsicCostAttributesENS_19TargetTransformInfo14TargetCostKindE'/>
+<use f='llvm/llvm/lib/Target/AMDGPU/AMDGPUTargetTransformInfo.cpp' l='818' u='r' c='_ZN4llvm10GCNTTIImpl26getArithmeticReductionCostEjPNS_10VectorTypeEbNS_19TargetTransformInfo14TargetCostKindE'/>
+<use f='llvm/llvm/lib/Target/AMDGPU/AMDGPUTargetTransformInfo.cpp' l='834' u='r' c='_ZN4llvm10GCNTTIImpl22getMinMaxReductionCostEPNS_10VectorTypeES2_bbNS_19TargetTransformInfo14TargetCostKindE'/>
+<use f='llvm/llvm/lib/Target/AMDGPU/AMDGPUTargetTransformInfo.cpp' l='851' u='r' c='_ZN4llvm10GCNTTIImpl18getVectorInstrCostEjPNS_4TypeEj'/>
+<use f='llvm/llvm/lib/Target/AMDGPU/AMDGPUTargetTransformInfo.cpp' l='879' u='r' c='_ZNK4llvm10GCNTTIImpl29isInlineAsmSourceOfDivergenceEPKNS_8CallInstENS_8ArrayRefIjEE'/>
+<use f='llvm/llvm/lib/Target/AMDGPU/AMDGPUTargetTransformInfo.cpp' l='881' u='r' c='_ZNK4llvm10GCNTTIImpl29isInlineAsmSourceOfDivergenceEPKNS_8CallInstENS_8ArrayRefIjEE'/>
+<use f='llvm/llvm/lib/Target/AMDGPU/AMDGPUTargetTransformInfo.cpp' l='1101' u='r' c='_ZN4llvm10GCNTTIImpl14getShuffleCostENS_19TargetTransformInfo11ShuffleKindEPNS_10VectorTypeEiS4_'/>
+<use f='llvm/llvm/lib/Target/AMDGPU/AMDGPUTargetTransformInfo.cpp' l='1195' u='r' c='_ZNK4llvm10GCNTTIImpl17get64BitInstrCostENS_19TargetTransformInfo14TargetCostKindE'/>

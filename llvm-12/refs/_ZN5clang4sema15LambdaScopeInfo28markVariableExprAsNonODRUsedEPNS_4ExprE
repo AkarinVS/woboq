@@ -1,0 +1,41 @@
+<def f='llvm/clang/include/clang/Sema/ScopeInfo.h' l='987' ll='992' type='void clang::sema::LambdaScopeInfo::markVariableExprAsNonODRUsed(clang::Expr * CapturingVarExpr)'/>
+<doc f='llvm/clang/include/clang/Sema/ScopeInfo.h' l='948'>/// Mark a variable&apos;s reference in a lambda as non-odr using.
+  ///
+  /// For generic lambdas, if a variable is named in a potentially evaluated
+  /// expression, where the enclosing full expression is dependent then we
+  /// must capture the variable (given a default capture).
+  /// This is accomplished by recording all references to variables
+  /// (DeclRefExprs or MemberExprs) within said nested lambda in its array of
+  /// PotentialCaptures. All such variables have to be captured by that lambda,
+  /// except for as described below.
+  /// If that variable is usable as a constant expression and is named in a
+  /// manner that does not involve its odr-use (e.g. undergoes
+  /// lvalue-to-rvalue conversion, or discarded) record that it is so. Upon the
+  /// act of analyzing the enclosing full expression (ActOnFinishFullExpr)
+  /// if we can determine that the full expression is not instantiation-
+  /// dependent, then we can entirely avoid its capture.
+  ///
+  ///   const int n = 0;
+  ///   [&amp;] (auto x) {
+  ///     (void)+n + x;
+  ///   };
+  /// Interestingly, this strategy would involve a capture of n, even though
+  /// it&apos;s obviously not odr-used here, because the full-expression is
+  /// instantiation-dependent.  It could be useful to avoid capturing such
+  /// variables, even when they are referred to in an instantiation-dependent
+  /// expression, if we can unambiguously determine that they shall never be
+  /// odr-used.  This would involve removal of the variable-referring-expression
+  /// from the array of PotentialCaptures during the lvalue-to-rvalue
+  /// conversions.  But per the working draft N3797, (post-chicago 2013) we must
+  /// capture such variables.
+  /// Before anyone is tempted to implement a strategy for not-capturing &apos;n&apos;,
+  /// consider the insightful warning in:
+  ///    /cfe-commits/Week-of-Mon-20131104/092596.html
+  /// &quot;The problem is that the set of captures for a lambda is part of the ABI
+  ///  (since lambda layout can be made visible through inline functions and the
+  ///  like), and there are no guarantees as to which cases we&apos;ll manage to build
+  ///  an lvalue-to-rvalue conversion in, when parsing a template -- some
+  ///  seemingly harmless change elsewhere in Sema could cause us to start or stop
+  ///  building such a node. So we need a rule that anyone can implement and get
+  ///  exactly the same result&quot;.</doc>
+<use f='llvm/clang/lib/Sema/SemaExpr.cpp' l='17775' u='c' c='_ZL35rebuildPotentialResultsAsNonOdrUsedRN5clang4SemaEPNS_4ExprENS_15NonOdrUseReasonE'/>

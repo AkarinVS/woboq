@@ -1,0 +1,330 @@
+<!doctype html>
+<html>
+<head>
+<meta name="viewport" content="width=device-width, initial-scale=1.0"><title>MLInlineAdvisor.cpp source code [llvm/llvm/lib/Analysis/MLInlineAdvisor.cpp] - Woboq Code Browser</title>
+<link rel="stylesheet" href="../../../.././data/qtcreator.css" title="QtCreator"/>
+<link rel="alternate stylesheet" href="../../../.././data/kdevelop.css" title="KDevelop"/>
+<script type="text/javascript" src="../../../.././data/jquery/jquery.min.js"></script>
+<script type="text/javascript" src="../../../.././data/jquery/jquery-ui.min.js"></script>
+<script>var file = 'llvm/llvm/lib/Analysis/MLInlineAdvisor.cpp'; var root_path = '../../../..'; var data_path = '../../../.././data'; var ecma_script_api_version = 2;</script>
+<script src='../../../.././data/codebrowser.js'></script>
+</head>
+<body><div id='header'><h1 id='breadcrumb'><span>Browse the source code of </span><a href='../../..'>llvm</a>/<a href='../..'>llvm</a>/<a href='..'>lib</a>/<a href='./'>Analysis</a>/<a href='MLInlineAdvisor.cpp.html'>MLInlineAdvisor.cpp</a></h1></div>
+<hr/><div id='content'><table class="code">
+<tr><th id="1">1</th><td><i>//===- MLInlineAdvisor.cpp - machine learned InlineAdvisor ----------------===//</i></td></tr>
+<tr><th id="2">2</th><td><i>//</i></td></tr>
+<tr><th id="3">3</th><td><i>// Part of the LLVM Project, under the Apache License v2.0 with LLVM Exceptions.</i></td></tr>
+<tr><th id="4">4</th><td><i>// See <a href="https://llvm.org/LICENSE.txt">https://llvm.org/LICENSE.txt</a> for license information.</i></td></tr>
+<tr><th id="5">5</th><td><i>// SPDX-License-Identifier: Apache-2.0 WITH LLVM-exception</i></td></tr>
+<tr><th id="6">6</th><td><i>//</i></td></tr>
+<tr><th id="7">7</th><td><i>//===----------------------------------------------------------------------===//</i></td></tr>
+<tr><th id="8">8</th><td><i>//</i></td></tr>
+<tr><th id="9">9</th><td><i>// This file implements the interface between the inliner and a learned model.</i></td></tr>
+<tr><th id="10">10</th><td><i>// It delegates model evaluation to either the AOT compiled model (the</i></td></tr>
+<tr><th id="11">11</th><td><i>// 'release' mode) or a runtime-loaded model (the 'development' case).</i></td></tr>
+<tr><th id="12">12</th><td><i>//</i></td></tr>
+<tr><th id="13">13</th><td><i>//===----------------------------------------------------------------------===//</i></td></tr>
+<tr><th id="14">14</th><td><u>#include <a href="../../../build/include/llvm/Config/config.h.html">"llvm/Config/config.h"</a></u></td></tr>
+<tr><th id="15">15</th><td><u>#<span data-ppcond="15">if</span> defined(<span class="macro" data-ref="_M/LLVM_HAVE_TF_AOT">LLVM_HAVE_TF_AOT</span>) || defined(<span class="macro" data-ref="_M/LLVM_HAVE_TF_API">LLVM_HAVE_TF_API</span>)</u></td></tr>
+<tr><th id="16">16</th><td></td></tr>
+<tr><th id="17">17</th><td><u>#include &lt;limits&gt;</u></td></tr>
+<tr><th id="18">18</th><td><u>#include &lt;unordered_map&gt;</u></td></tr>
+<tr><th id="19">19</th><td><u>#include &lt;unordered_set&gt;</u></td></tr>
+<tr><th id="20">20</th><td></td></tr>
+<tr><th id="21">21</th><td><u>#include "llvm/ADT/SCCIterator.h"</u></td></tr>
+<tr><th id="22">22</th><td><u>#include "llvm/Analysis/CallGraph.h"</u></td></tr>
+<tr><th id="23">23</th><td><u>#include "llvm/Analysis/FunctionPropertiesAnalysis.h"</u></td></tr>
+<tr><th id="24">24</th><td><u>#include "llvm/Analysis/InlineCost.h"</u></td></tr>
+<tr><th id="25">25</th><td><u>#include "llvm/Analysis/MLInlineAdvisor.h"</u></td></tr>
+<tr><th id="26">26</th><td><u>#include "llvm/Analysis/MLModelRunner.h"</u></td></tr>
+<tr><th id="27">27</th><td><u>#include "llvm/Analysis/OptimizationRemarkEmitter.h"</u></td></tr>
+<tr><th id="28">28</th><td><u>#include "llvm/Analysis/TargetLibraryInfo.h"</u></td></tr>
+<tr><th id="29">29</th><td><u>#include "llvm/Analysis/TargetTransformInfo.h"</u></td></tr>
+<tr><th id="30">30</th><td><u>#include "llvm/IR/InstIterator.h"</u></td></tr>
+<tr><th id="31">31</th><td><u>#include "llvm/IR/Instructions.h"</u></td></tr>
+<tr><th id="32">32</th><td><u>#include "llvm/IR/PassManager.h"</u></td></tr>
+<tr><th id="33">33</th><td><u>#include "llvm/Support/CommandLine.h"</u></td></tr>
+<tr><th id="34">34</th><td><u>#include "llvm/Support/Path.h"</u></td></tr>
+<tr><th id="35">35</th><td></td></tr>
+<tr><th id="36">36</th><td><b>using</b> <b>namespace</b> llvm;</td></tr>
+<tr><th id="37">37</th><td></td></tr>
+<tr><th id="38">38</th><td><u>#define DEBUG_TYPE "inline-ml"</u></td></tr>
+<tr><th id="39">39</th><td></td></tr>
+<tr><th id="40">40</th><td><em>static</em> cl::opt&lt;<em>float</em>&gt; SizeIncreaseThreshold(</td></tr>
+<tr><th id="41">41</th><td>    <q>"ml-advisor-size-increase-threshold"</q>, cl::Hidden,</td></tr>
+<tr><th id="42">42</th><td>    cl::desc(<q>"Maximum factor by which expected native size may increase before "</q></td></tr>
+<tr><th id="43">43</th><td>             <q>"blocking any further inlining."</q>),</td></tr>
+<tr><th id="44">44</th><td>    cl::init(<var>2.0</var>));</td></tr>
+<tr><th id="45">45</th><td></td></tr>
+<tr><th id="46">46</th><td><em>const</em> std::array&lt;std::string, NumberOfFeatures&gt; llvm::FeatureNameMap{</td></tr>
+<tr><th id="47">47</th><td><u>#define POPULATE_NAMES(INDEX_NAME, NAME, COMMENT) NAME,</u></td></tr>
+<tr><th id="48">48</th><td>    INLINE_FEATURE_ITERATOR(POPULATE_NAMES)</td></tr>
+<tr><th id="49">49</th><td><u>#undef POPULATE_NAMES</u></td></tr>
+<tr><th id="50">50</th><td>};</td></tr>
+<tr><th id="51">51</th><td></td></tr>
+<tr><th id="52">52</th><td><em>const</em> <em>char</em> *<em>const</em> llvm::DecisionName = <q>"inlining_decision"</q>;</td></tr>
+<tr><th id="53">53</th><td><em>const</em> <em>char</em> *<em>const</em> llvm::DefaultDecisionName = <q>"inlining_default"</q>;</td></tr>
+<tr><th id="54">54</th><td><em>const</em> <em>char</em> *<em>const</em> llvm::RewardName = <q>"delta_size"</q>;</td></tr>
+<tr><th id="55">55</th><td></td></tr>
+<tr><th id="56">56</th><td>CallBase *getInlinableCS(Instruction &amp;I) {</td></tr>
+<tr><th id="57">57</th><td>  <b>if</b> (<em>auto</em> *CS = dyn_cast&lt;CallBase&gt;(&amp;I))</td></tr>
+<tr><th id="58">58</th><td>    <b>if</b> (Function *Callee = CS-&gt;getCalledFunction()) {</td></tr>
+<tr><th id="59">59</th><td>      <b>if</b> (!Callee-&gt;isDeclaration()) {</td></tr>
+<tr><th id="60">60</th><td>        <b>return</b> CS;</td></tr>
+<tr><th id="61">61</th><td>      }</td></tr>
+<tr><th id="62">62</th><td>    }</td></tr>
+<tr><th id="63">63</th><td>  <b>return</b> <b>nullptr</b>;</td></tr>
+<tr><th id="64">64</th><td>}</td></tr>
+<tr><th id="65">65</th><td></td></tr>
+<tr><th id="66">66</th><td>MLInlineAdvisor::MLInlineAdvisor(Module &amp;M, ModuleAnalysisManager &amp;MAM,</td></tr>
+<tr><th id="67">67</th><td>                                 std::unique_ptr&lt;MLModelRunner&gt; Runner)</td></tr>
+<tr><th id="68">68</th><td>    : InlineAdvisor(</td></tr>
+<tr><th id="69">69</th><td>          M, MAM.getResult&lt;FunctionAnalysisManagerModuleProxy&gt;(M).getManager()),</td></tr>
+<tr><th id="70">70</th><td>      ModelRunner(std::move(Runner)), CG(<b>new</b> CallGraph(M)),</td></tr>
+<tr><th id="71">71</th><td>      InitialIRSize(getModuleIRSize()), CurrentIRSize(InitialIRSize) {</td></tr>
+<tr><th id="72">72</th><td>  assert(ModelRunner);</td></tr>
+<tr><th id="73">73</th><td></td></tr>
+<tr><th id="74">74</th><td>  <i>// Extract the 'call site height' feature - the position of a call site</i></td></tr>
+<tr><th id="75">75</th><td><i>  // relative to the farthest statically reachable SCC node. We don't mutate</i></td></tr>
+<tr><th id="76">76</th><td><i>  // this value while inlining happens. Empirically, this feature proved</i></td></tr>
+<tr><th id="77">77</th><td><i>  // critical in behavioral cloning - i.e. training a model to mimic the manual</i></td></tr>
+<tr><th id="78">78</th><td><i>  // heuristic's decisions - and, thus, equally important for training for</i></td></tr>
+<tr><th id="79">79</th><td><i>  // improvement.</i></td></tr>
+<tr><th id="80">80</th><td>  <b>for</b> (<em>auto</em> I = scc_begin(CG.get()); !I.isAtEnd(); ++I) {</td></tr>
+<tr><th id="81">81</th><td>    <em>const</em> std::vector&lt;CallGraphNode *&gt; &amp;CGNodes = *I;</td></tr>
+<tr><th id="82">82</th><td>    <em>unsigned</em> Level = <var>0</var>;</td></tr>
+<tr><th id="83">83</th><td>    <b>for</b> (<em>auto</em> *CGNode : CGNodes) {</td></tr>
+<tr><th id="84">84</th><td>      Function *F = CGNode-&gt;getFunction();</td></tr>
+<tr><th id="85">85</th><td>      <b>if</b> (!F || F-&gt;isDeclaration())</td></tr>
+<tr><th id="86">86</th><td>        <b>continue</b>;</td></tr>
+<tr><th id="87">87</th><td>      <b>for</b> (<em>auto</em> &amp;I : instructions(F)) {</td></tr>
+<tr><th id="88">88</th><td>        <b>if</b> (<em>auto</em> *CS = getInlinableCS(I)) {</td></tr>
+<tr><th id="89">89</th><td>          <em>auto</em> *Called = CS-&gt;getCalledFunction();</td></tr>
+<tr><th id="90">90</th><td>          <em>auto</em> Pos = FunctionLevels.find(Called);</td></tr>
+<tr><th id="91">91</th><td>          <i>// In bottom up traversal, an inlinable callee is either in the</i></td></tr>
+<tr><th id="92">92</th><td><i>          // same SCC, or to a function in a visited SCC. So not finding its</i></td></tr>
+<tr><th id="93">93</th><td><i>          // level means we haven't visited it yet, meaning it's in this SCC.</i></td></tr>
+<tr><th id="94">94</th><td>          <b>if</b> (Pos == FunctionLevels.end())</td></tr>
+<tr><th id="95">95</th><td>            <b>continue</b>;</td></tr>
+<tr><th id="96">96</th><td>          Level = std::max(Level, Pos-&gt;second + <var>1</var>);</td></tr>
+<tr><th id="97">97</th><td>        }</td></tr>
+<tr><th id="98">98</th><td>      }</td></tr>
+<tr><th id="99">99</th><td>    }</td></tr>
+<tr><th id="100">100</th><td>    <b>for</b> (<em>auto</em> *CGNode : CGNodes) {</td></tr>
+<tr><th id="101">101</th><td>      Function *F = CGNode-&gt;getFunction();</td></tr>
+<tr><th id="102">102</th><td>      <b>if</b> (F &amp;&amp; !F-&gt;isDeclaration())</td></tr>
+<tr><th id="103">103</th><td>        FunctionLevels[F] = Level;</td></tr>
+<tr><th id="104">104</th><td>    }</td></tr>
+<tr><th id="105">105</th><td>  }</td></tr>
+<tr><th id="106">106</th><td>}</td></tr>
+<tr><th id="107">107</th><td></td></tr>
+<tr><th id="108">108</th><td><em>void</em> MLInlineAdvisor::onPassEntry() {</td></tr>
+<tr><th id="109">109</th><td>  <i>// Function passes executed between InlinerPass runs may have changed the</i></td></tr>
+<tr><th id="110">110</th><td><i>  // module-wide features.</i></td></tr>
+<tr><th id="111">111</th><td>  NodeCount = <var>0</var>;</td></tr>
+<tr><th id="112">112</th><td>  EdgeCount = <var>0</var>;</td></tr>
+<tr><th id="113">113</th><td>  <b>for</b> (<em>auto</em> &amp;F : M)</td></tr>
+<tr><th id="114">114</th><td>    <b>if</b> (!F.isDeclaration()) {</td></tr>
+<tr><th id="115">115</th><td>      ++NodeCount;</td></tr>
+<tr><th id="116">116</th><td>      EdgeCount += getLocalCalls(F);</td></tr>
+<tr><th id="117">117</th><td>    }</td></tr>
+<tr><th id="118">118</th><td>}</td></tr>
+<tr><th id="119">119</th><td></td></tr>
+<tr><th id="120">120</th><td>int64_t MLInlineAdvisor::getLocalCalls(Function &amp;F) {</td></tr>
+<tr><th id="121">121</th><td>  <b>return</b> FAM.getResult&lt;FunctionPropertiesAnalysis&gt;(F)</td></tr>
+<tr><th id="122">122</th><td>      .DirectCallsToDefinedFunctions;</td></tr>
+<tr><th id="123">123</th><td>}</td></tr>
+<tr><th id="124">124</th><td></td></tr>
+<tr><th id="125">125</th><td><i>// Update the internal state of the advisor, and force invalidate feature</i></td></tr>
+<tr><th id="126">126</th><td><i>// analysis. Currently, we maintain minimal (and very simple) global state - the</i></td></tr>
+<tr><th id="127">127</th><td><i>// number of functions and the number of static calls. We also keep track of the</i></td></tr>
+<tr><th id="128">128</th><td><i>// total IR size in this module, to stop misbehaving policies at a certain bloat</i></td></tr>
+<tr><th id="129">129</th><td><i>// factor (SizeIncreaseThreshold)</i></td></tr>
+<tr><th id="130">130</th><td><em>void</em> MLInlineAdvisor::onSuccessfulInlining(<em>const</em> MLInlineAdvice &amp;Advice,</td></tr>
+<tr><th id="131">131</th><td>                                           <em>bool</em> CalleeWasDeleted) {</td></tr>
+<tr><th id="132">132</th><td>  assert(!ForceStop);</td></tr>
+<tr><th id="133">133</th><td>  Function *Caller = Advice.getCaller();</td></tr>
+<tr><th id="134">134</th><td>  Function *Callee = Advice.getCallee();</td></tr>
+<tr><th id="135">135</th><td></td></tr>
+<tr><th id="136">136</th><td>  <i>// The caller features aren't valid anymore.</i></td></tr>
+<tr><th id="137">137</th><td>  FAM.invalidate&lt;FunctionPropertiesAnalysis&gt;(*Caller);</td></tr>
+<tr><th id="138">138</th><td>  int64_t IRSizeAfter =</td></tr>
+<tr><th id="139">139</th><td>      getIRSize(*Caller) + (CalleeWasDeleted ? <var>0</var> : Advice.CalleeIRSize);</td></tr>
+<tr><th id="140">140</th><td>  CurrentIRSize += IRSizeAfter - (Advice.CallerIRSize + Advice.CalleeIRSize);</td></tr>
+<tr><th id="141">141</th><td>  <b>if</b> (CurrentIRSize &gt; SizeIncreaseThreshold * InitialIRSize)</td></tr>
+<tr><th id="142">142</th><td>    ForceStop = <b>true</b>;</td></tr>
+<tr><th id="143">143</th><td></td></tr>
+<tr><th id="144">144</th><td>  <i>// We can delta-update module-wide features. We know the inlining only changed</i></td></tr>
+<tr><th id="145">145</th><td><i>  // the caller, and maybe the callee (by deleting the latter).</i></td></tr>
+<tr><th id="146">146</th><td><i>  // Nodes are simple to update.</i></td></tr>
+<tr><th id="147">147</th><td><i>  // For edges, we 'forget' the edges that the caller and callee used to have</i></td></tr>
+<tr><th id="148">148</th><td><i>  // before inlining, and add back what they currently have together.</i></td></tr>
+<tr><th id="149">149</th><td>  int64_t NewCallerAndCalleeEdges =</td></tr>
+<tr><th id="150">150</th><td>      FAM.getResult&lt;FunctionPropertiesAnalysis&gt;(*Caller)</td></tr>
+<tr><th id="151">151</th><td>          .DirectCallsToDefinedFunctions;</td></tr>
+<tr><th id="152">152</th><td></td></tr>
+<tr><th id="153">153</th><td>  <b>if</b> (CalleeWasDeleted)</td></tr>
+<tr><th id="154">154</th><td>    --NodeCount;</td></tr>
+<tr><th id="155">155</th><td>  <b>else</b></td></tr>
+<tr><th id="156">156</th><td>    NewCallerAndCalleeEdges +=</td></tr>
+<tr><th id="157">157</th><td>        FAM.getResult&lt;FunctionPropertiesAnalysis&gt;(*Callee)</td></tr>
+<tr><th id="158">158</th><td>            .DirectCallsToDefinedFunctions;</td></tr>
+<tr><th id="159">159</th><td>  EdgeCount += (NewCallerAndCalleeEdges - Advice.CallerAndCalleeEdges);</td></tr>
+<tr><th id="160">160</th><td>  assert(CurrentIRSize &gt;= <var>0</var> &amp;&amp; EdgeCount &gt;= <var>0</var> &amp;&amp; NodeCount &gt;= <var>0</var>);</td></tr>
+<tr><th id="161">161</th><td>}</td></tr>
+<tr><th id="162">162</th><td></td></tr>
+<tr><th id="163">163</th><td>int64_t MLInlineAdvisor::getModuleIRSize() <em>const</em> {</td></tr>
+<tr><th id="164">164</th><td>  int64_t Ret = <var>0</var>;</td></tr>
+<tr><th id="165">165</th><td>  <b>for</b> (<em>auto</em> &amp;F : CG-&gt;getModule())</td></tr>
+<tr><th id="166">166</th><td>    <b>if</b> (!F.isDeclaration())</td></tr>
+<tr><th id="167">167</th><td>      Ret += getIRSize(F);</td></tr>
+<tr><th id="168">168</th><td>  <b>return</b> Ret;</td></tr>
+<tr><th id="169">169</th><td>}</td></tr>
+<tr><th id="170">170</th><td></td></tr>
+<tr><th id="171">171</th><td>std::unique_ptr&lt;InlineAdvice&gt; MLInlineAdvisor::getAdviceImpl(CallBase &amp;CB) {</td></tr>
+<tr><th id="172">172</th><td>  <em>auto</em> &amp;Caller = *CB.getCaller();</td></tr>
+<tr><th id="173">173</th><td>  <em>auto</em> &amp;Callee = *CB.getCalledFunction();</td></tr>
+<tr><th id="174">174</th><td></td></tr>
+<tr><th id="175">175</th><td>  <em>auto</em> GetAssumptionCache = [&amp;](Function &amp;F) -&gt; AssumptionCache &amp; {</td></tr>
+<tr><th id="176">176</th><td>    <b>return</b> FAM.getResult&lt;AssumptionAnalysis&gt;(F);</td></tr>
+<tr><th id="177">177</th><td>  };</td></tr>
+<tr><th id="178">178</th><td>  <em>auto</em> &amp;TIR = FAM.getResult&lt;TargetIRAnalysis&gt;(Callee);</td></tr>
+<tr><th id="179">179</th><td>  <em>auto</em> &amp;ORE = FAM.getResult&lt;OptimizationRemarkEmitterAnalysis&gt;(Caller);</td></tr>
+<tr><th id="180">180</th><td></td></tr>
+<tr><th id="181">181</th><td>  <em>auto</em> MandatoryKind = InlineAdvisor::getMandatoryKind(CB, FAM, ORE);</td></tr>
+<tr><th id="182">182</th><td>  <i>// If this is a "never inline" case, there won't be any changes to internal</i></td></tr>
+<tr><th id="183">183</th><td><i>  // state we need to track, so we can just return the base InlineAdvice, which</i></td></tr>
+<tr><th id="184">184</th><td><i>  // will do nothing interesting.</i></td></tr>
+<tr><th id="185">185</th><td><i>  // Same thing if this is a recursive case.</i></td></tr>
+<tr><th id="186">186</th><td>  <b>if</b> (MandatoryKind == InlineAdvisor::MandatoryInliningKind::Never ||</td></tr>
+<tr><th id="187">187</th><td>      &amp;Caller == &amp;Callee)</td></tr>
+<tr><th id="188">188</th><td>    <b>return</b> getMandatoryAdvice(CB, <b>false</b>);</td></tr>
+<tr><th id="189">189</th><td></td></tr>
+<tr><th id="190">190</th><td>  <em>bool</em> Mandatory =</td></tr>
+<tr><th id="191">191</th><td>      MandatoryKind == InlineAdvisor::MandatoryInliningKind::Always;</td></tr>
+<tr><th id="192">192</th><td></td></tr>
+<tr><th id="193">193</th><td>  <i>// If we need to stop, we won't want to track anymore any state changes, so</i></td></tr>
+<tr><th id="194">194</th><td><i>  // we just return the base InlineAdvice, which acts as a noop.</i></td></tr>
+<tr><th id="195">195</th><td>  <b>if</b> (ForceStop) {</td></tr>
+<tr><th id="196">196</th><td>    ORE.emit([&amp;] {</td></tr>
+<tr><th id="197">197</th><td>      <b>return</b> OptimizationRemarkMissed(DEBUG_TYPE, <q>"ForceStop"</q>, &amp;CB)</td></tr>
+<tr><th id="198">198</th><td>             &lt;&lt; <q>"Won't attempt inlining because module size grew too much."</q>;</td></tr>
+<tr><th id="199">199</th><td>    });</td></tr>
+<tr><th id="200">200</th><td>    <b>return</b> std::make_unique&lt;InlineAdvice&gt;(<b>this</b>, CB, ORE, Mandatory);</td></tr>
+<tr><th id="201">201</th><td>  }</td></tr>
+<tr><th id="202">202</th><td></td></tr>
+<tr><th id="203">203</th><td>  <em>int</em> CostEstimate = <var>0</var>;</td></tr>
+<tr><th id="204">204</th><td>  <b>if</b> (!Mandatory) {</td></tr>
+<tr><th id="205">205</th><td>    <em>auto</em> IsCallSiteInlinable =</td></tr>
+<tr><th id="206">206</th><td>        llvm::getInliningCostEstimate(CB, TIR, GetAssumptionCache);</td></tr>
+<tr><th id="207">207</th><td>    <b>if</b> (!IsCallSiteInlinable) {</td></tr>
+<tr><th id="208">208</th><td>      <i>// We can't inline this for correctness reasons, so return the base</i></td></tr>
+<tr><th id="209">209</th><td><i>      // InlineAdvice, as we don't care about tracking any state changes (which</i></td></tr>
+<tr><th id="210">210</th><td><i>      // won't happen).</i></td></tr>
+<tr><th id="211">211</th><td>      <b>return</b> std::make_unique&lt;InlineAdvice&gt;(<b>this</b>, CB, ORE, <b>false</b>);</td></tr>
+<tr><th id="212">212</th><td>    }</td></tr>
+<tr><th id="213">213</th><td>    CostEstimate = *IsCallSiteInlinable;</td></tr>
+<tr><th id="214">214</th><td>  }</td></tr>
+<tr><th id="215">215</th><td></td></tr>
+<tr><th id="216">216</th><td>  <b>if</b> (Mandatory)</td></tr>
+<tr><th id="217">217</th><td>    <b>return</b> getMandatoryAdvice(CB, <b>true</b>);</td></tr>
+<tr><th id="218">218</th><td></td></tr>
+<tr><th id="219">219</th><td>  <em>auto</em> NrCtantParams = <var>0</var>;</td></tr>
+<tr><th id="220">220</th><td>  <b>for</b> (<em>auto</em> I = CB.arg_begin(), E = CB.arg_end(); I != E; ++I) {</td></tr>
+<tr><th id="221">221</th><td>    NrCtantParams += (isa&lt;Constant&gt;(*I));</td></tr>
+<tr><th id="222">222</th><td>  }</td></tr>
+<tr><th id="223">223</th><td></td></tr>
+<tr><th id="224">224</th><td>  <em>auto</em> &amp;CallerBefore = FAM.getResult&lt;FunctionPropertiesAnalysis&gt;(Caller);</td></tr>
+<tr><th id="225">225</th><td>  <em>auto</em> &amp;CalleeBefore = FAM.getResult&lt;FunctionPropertiesAnalysis&gt;(Callee);</td></tr>
+<tr><th id="226">226</th><td></td></tr>
+<tr><th id="227">227</th><td>  ModelRunner-&gt;setFeature(FeatureIndex::CalleeBasicBlockCount,</td></tr>
+<tr><th id="228">228</th><td>                          CalleeBefore.BasicBlockCount);</td></tr>
+<tr><th id="229">229</th><td>  ModelRunner-&gt;setFeature(FeatureIndex::CallSiteHeight,</td></tr>
+<tr><th id="230">230</th><td>                          FunctionLevels[&amp;Caller]);</td></tr>
+<tr><th id="231">231</th><td>  ModelRunner-&gt;setFeature(FeatureIndex::NodeCount, NodeCount);</td></tr>
+<tr><th id="232">232</th><td>  ModelRunner-&gt;setFeature(FeatureIndex::NrCtantParams, NrCtantParams);</td></tr>
+<tr><th id="233">233</th><td>  ModelRunner-&gt;setFeature(FeatureIndex::CostEstimate, CostEstimate);</td></tr>
+<tr><th id="234">234</th><td>  ModelRunner-&gt;setFeature(FeatureIndex::EdgeCount, EdgeCount);</td></tr>
+<tr><th id="235">235</th><td>  ModelRunner-&gt;setFeature(FeatureIndex::CallerUsers, CallerBefore.Uses);</td></tr>
+<tr><th id="236">236</th><td>  ModelRunner-&gt;setFeature(FeatureIndex::CallerConditionallyExecutedBlocks,</td></tr>
+<tr><th id="237">237</th><td>                          CallerBefore.BlocksReachedFromConditionalInstruction);</td></tr>
+<tr><th id="238">238</th><td>  ModelRunner-&gt;setFeature(FeatureIndex::CallerBasicBlockCount,</td></tr>
+<tr><th id="239">239</th><td>                          CallerBefore.BasicBlockCount);</td></tr>
+<tr><th id="240">240</th><td>  ModelRunner-&gt;setFeature(FeatureIndex::CalleeConditionallyExecutedBlocks,</td></tr>
+<tr><th id="241">241</th><td>                          CalleeBefore.BlocksReachedFromConditionalInstruction);</td></tr>
+<tr><th id="242">242</th><td>  ModelRunner-&gt;setFeature(FeatureIndex::CalleeUsers, CalleeBefore.Uses);</td></tr>
+<tr><th id="243">243</th><td>  <b>return</b> getAdviceFromModel(CB, ORE);</td></tr>
+<tr><th id="244">244</th><td>}</td></tr>
+<tr><th id="245">245</th><td></td></tr>
+<tr><th id="246">246</th><td>std::unique_ptr&lt;MLInlineAdvice&gt;</td></tr>
+<tr><th id="247">247</th><td>MLInlineAdvisor::getAdviceFromModel(CallBase &amp;CB,</td></tr>
+<tr><th id="248">248</th><td>                                    OptimizationRemarkEmitter &amp;ORE) {</td></tr>
+<tr><th id="249">249</th><td>  <b>return</b> std::make_unique&lt;MLInlineAdvice&gt;(<b>this</b>, CB, ORE, ModelRunner-&gt;run());</td></tr>
+<tr><th id="250">250</th><td>}</td></tr>
+<tr><th id="251">251</th><td></td></tr>
+<tr><th id="252">252</th><td>std::unique_ptr&lt;InlineAdvice&gt; MLInlineAdvisor::getMandatoryAdvice(CallBase &amp;CB,</td></tr>
+<tr><th id="253">253</th><td>                                                                  <em>bool</em> Advice) {</td></tr>
+<tr><th id="254">254</th><td>  <i>// Make sure we track inlinings in all cases - mandatory or not.</i></td></tr>
+<tr><th id="255">255</th><td>  <b>if</b> (Advice &amp;&amp; !ForceStop)</td></tr>
+<tr><th id="256">256</th><td>    <b>return</b> getMandatoryAdviceImpl(CB);</td></tr>
+<tr><th id="257">257</th><td></td></tr>
+<tr><th id="258">258</th><td>  <i>// If this is a "never inline" case, there won't be any changes to internal</i></td></tr>
+<tr><th id="259">259</th><td><i>  // state we need to track, so we can just return the base InlineAdvice, which</i></td></tr>
+<tr><th id="260">260</th><td><i>  // will do nothing interesting.</i></td></tr>
+<tr><th id="261">261</th><td><i>  // Same if we are forced to stop - we don't track anymore.</i></td></tr>
+<tr><th id="262">262</th><td>  <b>return</b> std::make_unique&lt;InlineAdvice&gt;(<b>this</b>, CB, getCallerORE(CB), Advice);</td></tr>
+<tr><th id="263">263</th><td>}</td></tr>
+<tr><th id="264">264</th><td></td></tr>
+<tr><th id="265">265</th><td>std::unique_ptr&lt;MLInlineAdvice&gt;</td></tr>
+<tr><th id="266">266</th><td>MLInlineAdvisor::getMandatoryAdviceImpl(CallBase &amp;CB) {</td></tr>
+<tr><th id="267">267</th><td>  <b>return</b> std::make_unique&lt;MLInlineAdvice&gt;(<b>this</b>, CB, getCallerORE(CB), <b>true</b>);</td></tr>
+<tr><th id="268">268</th><td>}</td></tr>
+<tr><th id="269">269</th><td></td></tr>
+<tr><th id="270">270</th><td><em>void</em> MLInlineAdvice::reportContextForRemark(</td></tr>
+<tr><th id="271">271</th><td>    DiagnosticInfoOptimizationBase &amp;OR) {</td></tr>
+<tr><th id="272">272</th><td>  <b>using</b> <b>namespace</b> ore;</td></tr>
+<tr><th id="273">273</th><td>  OR &lt;&lt; NV(<q>"Callee"</q>, Callee-&gt;getName());</td></tr>
+<tr><th id="274">274</th><td>  <b>for</b> (size_t I = <var>0</var>; I &lt; NumberOfFeatures; ++I)</td></tr>
+<tr><th id="275">275</th><td>    OR &lt;&lt; NV(FeatureNameMap[I], getAdvisor()-&gt;getModelRunner().getFeature(I));</td></tr>
+<tr><th id="276">276</th><td>  OR &lt;&lt; NV(<q>"ShouldInline"</q>, isInliningRecommended());</td></tr>
+<tr><th id="277">277</th><td>}</td></tr>
+<tr><th id="278">278</th><td></td></tr>
+<tr><th id="279">279</th><td><em>void</em> MLInlineAdvice::recordInliningImpl() {</td></tr>
+<tr><th id="280">280</th><td>  ORE.emit([&amp;]() {</td></tr>
+<tr><th id="281">281</th><td>    OptimizationRemark R(DEBUG_TYPE, <q>"InliningSuccess"</q>, DLoc, Block);</td></tr>
+<tr><th id="282">282</th><td>    reportContextForRemark(R);</td></tr>
+<tr><th id="283">283</th><td>    <b>return</b> R;</td></tr>
+<tr><th id="284">284</th><td>  });</td></tr>
+<tr><th id="285">285</th><td>  getAdvisor()-&gt;onSuccessfulInlining(*<b>this</b>, <i>/*CalleeWasDeleted*/</i> <b>false</b>);</td></tr>
+<tr><th id="286">286</th><td>}</td></tr>
+<tr><th id="287">287</th><td></td></tr>
+<tr><th id="288">288</th><td><em>void</em> MLInlineAdvice::recordInliningWithCalleeDeletedImpl() {</td></tr>
+<tr><th id="289">289</th><td>  ORE.emit([&amp;]() {</td></tr>
+<tr><th id="290">290</th><td>    OptimizationRemark R(DEBUG_TYPE, <q>"InliningSuccessWithCalleeDeleted"</q>, DLoc,</td></tr>
+<tr><th id="291">291</th><td>                         Block);</td></tr>
+<tr><th id="292">292</th><td>    reportContextForRemark(R);</td></tr>
+<tr><th id="293">293</th><td>    <b>return</b> R;</td></tr>
+<tr><th id="294">294</th><td>  });</td></tr>
+<tr><th id="295">295</th><td>  getAdvisor()-&gt;onSuccessfulInlining(*<b>this</b>, <i>/*CalleeWasDeleted*/</i> <b>true</b>);</td></tr>
+<tr><th id="296">296</th><td>}</td></tr>
+<tr><th id="297">297</th><td></td></tr>
+<tr><th id="298">298</th><td><em>void</em> MLInlineAdvice::recordUnsuccessfulInliningImpl(</td></tr>
+<tr><th id="299">299</th><td>    <em>const</em> InlineResult &amp;Result) {</td></tr>
+<tr><th id="300">300</th><td>  ORE.emit([&amp;]() {</td></tr>
+<tr><th id="301">301</th><td>    OptimizationRemarkMissed R(DEBUG_TYPE, <q>"InliningAttemptedAndUnsuccessful"</q>,</td></tr>
+<tr><th id="302">302</th><td>                               DLoc, Block);</td></tr>
+<tr><th id="303">303</th><td>    reportContextForRemark(R);</td></tr>
+<tr><th id="304">304</th><td>    <b>return</b> R;</td></tr>
+<tr><th id="305">305</th><td>  });</td></tr>
+<tr><th id="306">306</th><td>}</td></tr>
+<tr><th id="307">307</th><td><em>void</em> MLInlineAdvice::recordUnattemptedInliningImpl() {</td></tr>
+<tr><th id="308">308</th><td>  ORE.emit([&amp;]() {</td></tr>
+<tr><th id="309">309</th><td>    OptimizationRemarkMissed R(DEBUG_TYPE, <q>"IniningNotAttempted"</q>, DLoc, Block);</td></tr>
+<tr><th id="310">310</th><td>    reportContextForRemark(R);</td></tr>
+<tr><th id="311">311</th><td>    <b>return</b> R;</td></tr>
+<tr><th id="312">312</th><td>  });</td></tr>
+<tr><th id="313">313</th><td>}</td></tr>
+<tr><th id="314">314</th><td><u>#<span data-ppcond="15">endif</span> // defined(LLVM_HAVE_TF_AOT) || defined(LLVM_HAVE_TF_API)</u></td></tr>
+<tr><th id="315">315</th><td></td></tr>
+</table><hr/><p id='footer'>
+Generated on <em>2021-Jul-01</em> from project llvm revision <em>12</em>

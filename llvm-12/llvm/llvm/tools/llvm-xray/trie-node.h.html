@@ -1,0 +1,108 @@
+<!doctype html>
+<html>
+<head>
+<meta name="viewport" content="width=device-width, initial-scale=1.0"><title>trie-node.h source code [llvm/llvm/tools/llvm-xray/trie-node.h] - Woboq Code Browser</title>
+<meta name="woboq:interestingDefinitions" content="TrieNode "/>
+<link rel="stylesheet" href="../../../.././data/qtcreator.css" title="QtCreator"/>
+<link rel="alternate stylesheet" href="../../../.././data/kdevelop.css" title="KDevelop"/>
+<script type="text/javascript" src="../../../.././data/jquery/jquery.min.js"></script>
+<script type="text/javascript" src="../../../.././data/jquery/jquery-ui.min.js"></script>
+<script>var file = 'llvm/llvm/tools/llvm-xray/trie-node.h'; var root_path = '../../../..'; var data_path = '../../../.././data'; var ecma_script_api_version = 2;</script>
+<script src='../../../.././data/codebrowser.js'></script>
+</head>
+<body><div id='header'><h1 id='breadcrumb'><span>Browse the source code of </span><a href='../../..'>llvm</a>/<a href='../..'>llvm</a>/<a href='..'>tools</a>/<a href='./'>llvm-xray</a>/<a href='trie-node.h.html'>trie-node.h</a></h1></div>
+<hr/><div id='content'><table class="code">
+<tr><th id="1">1</th><td><i>//===- trie-node.h - XRay Call Stack Data Structure -----------------------===//</i></td></tr>
+<tr><th id="2">2</th><td><i>//</i></td></tr>
+<tr><th id="3">3</th><td><i>// Part of the LLVM Project, under the Apache License v2.0 with LLVM Exceptions.</i></td></tr>
+<tr><th id="4">4</th><td><i>// See <a href="https://llvm.org/LICENSE.txt">https://llvm.org/LICENSE.txt</a> for license information.</i></td></tr>
+<tr><th id="5">5</th><td><i>// SPDX-License-Identifier: Apache-2.0 WITH LLVM-exception</i></td></tr>
+<tr><th id="6">6</th><td><i>//</i></td></tr>
+<tr><th id="7">7</th><td><i>//===----------------------------------------------------------------------===//</i></td></tr>
+<tr><th id="8">8</th><td><i>//</i></td></tr>
+<tr><th id="9">9</th><td><i>// This file provides a data structure and routines for working with call stacks</i></td></tr>
+<tr><th id="10">10</th><td><i>// of instrumented functions.</i></td></tr>
+<tr><th id="11">11</th><td><i>//</i></td></tr>
+<tr><th id="12">12</th><td><i>//===----------------------------------------------------------------------===//</i></td></tr>
+<tr><th id="13">13</th><td></td></tr>
+<tr><th id="14">14</th><td><u>#<span data-ppcond="14">ifndef</span> <span class="macro" data-ref="_M/LLVM_TOOLS_LLVM_XRAY_STACK_TRIE_H">LLVM_TOOLS_LLVM_XRAY_STACK_TRIE_H</span></u></td></tr>
+<tr><th id="15">15</th><td><u>#define <dfn class="macro" id="_M/LLVM_TOOLS_LLVM_XRAY_STACK_TRIE_H" data-ref="_M/LLVM_TOOLS_LLVM_XRAY_STACK_TRIE_H">LLVM_TOOLS_LLVM_XRAY_STACK_TRIE_H</dfn></u></td></tr>
+<tr><th id="16">16</th><td></td></tr>
+<tr><th id="17">17</th><td><u>#include &lt;forward_list&gt;</u></td></tr>
+<tr><th id="18">18</th><td><u>#include &lt;numeric&gt;</u></td></tr>
+<tr><th id="19">19</th><td></td></tr>
+<tr><th id="20">20</th><td><u>#include <a href="../../include/llvm/ADT/DenseMap.h.html">"llvm/ADT/DenseMap.h"</a></u></td></tr>
+<tr><th id="21">21</th><td><u>#include <a href="../../include/llvm/ADT/STLExtras.h.html">"llvm/ADT/STLExtras.h"</a></u></td></tr>
+<tr><th id="22">22</th><td><u>#include <a href="../../include/llvm/ADT/SmallVector.h.html">"llvm/ADT/SmallVector.h"</a></u></td></tr>
+<tr><th id="23">23</th><td></td></tr>
+<tr><th id="24">24</th><td><i class="doc">/// A type to represent a trie of invocations. It is useful to construct a</i></td></tr>
+<tr><th id="25">25</th><td><i class="doc">/// graph of these nodes from reading an XRay trace, such that each function</i></td></tr>
+<tr><th id="26">26</th><td><i class="doc">/// call can be placed in a larger context.</i></td></tr>
+<tr><th id="27">27</th><td><i class="doc">///</i></td></tr>
+<tr><th id="28">28</th><td><i class="doc">/// The template parameter allows users of the template to attach their own</i></td></tr>
+<tr><th id="29">29</th><td><i class="doc">/// data elements to each node in the invocation graph.</i></td></tr>
+<tr><th id="30">30</th><td><b>template</b> &lt;<b>typename</b> AssociatedData&gt; <b>struct</b> <dfn class="type def" id="TrieNode" title='TrieNode' data-ref="TrieNode" data-ref-filename="TrieNode">TrieNode</dfn> {</td></tr>
+<tr><th id="31">31</th><td>  <i class="doc">/// The function ID.</i></td></tr>
+<tr><th id="32">32</th><td>  <a class="typedef" href="../../../../include/bits/stdint-intn.h.html#int32_t" title='int32_t' data-type='__int32_t' data-ref="int32_t" data-ref-filename="int32_t">int32_t</a> <dfn class="decl field" id="TrieNode::FuncId" title='TrieNode::FuncId' data-ref="TrieNode::FuncId" data-ref-filename="TrieNode..FuncId">FuncId</dfn>;</td></tr>
+<tr><th id="33">33</th><td></td></tr>
+<tr><th id="34">34</th><td>  <i class="doc">/// The caller of this function.</i></td></tr>
+<tr><th id="35">35</th><td>  <a class="type" href="#TrieNode" title='TrieNode' data-ref="TrieNode" data-ref-filename="TrieNode">TrieNode</a>&lt;AssociatedData&gt; *<dfn class="decl field" id="TrieNode::Parent" title='TrieNode::Parent' data-ref="TrieNode::Parent" data-ref-filename="TrieNode..Parent">Parent</dfn>;</td></tr>
+<tr><th id="36">36</th><td></td></tr>
+<tr><th id="37">37</th><td>  <i class="doc">/// The callees from this function.</i></td></tr>
+<tr><th id="38">38</th><td>  <span class="namespace">llvm::</span><a class="type" href="../../include/llvm/ADT/SmallVector.h.html#llvm::SmallVector" title='llvm::SmallVector' data-ref="llvm::SmallVector" data-ref-filename="llvm..SmallVector">SmallVector</a>&lt;<a class="type" href="#TrieNode" title='TrieNode' data-ref="TrieNode" data-ref-filename="TrieNode">TrieNode</a>&lt;AssociatedData&gt; *, <var>4</var>&gt; <dfn class="decl field" id="TrieNode::Callees" title='TrieNode::Callees' data-ref="TrieNode::Callees" data-ref-filename="TrieNode..Callees">Callees</dfn>;</td></tr>
+<tr><th id="39">39</th><td></td></tr>
+<tr><th id="40">40</th><td>  <i class="doc">/// Additional parameterized data on each node.</i></td></tr>
+<tr><th id="41">41</th><td>  AssociatedData <dfn class="decl field" id="TrieNode::ExtraData" title='TrieNode::ExtraData' data-ref="TrieNode::ExtraData" data-ref-filename="TrieNode..ExtraData">ExtraData</dfn>;</td></tr>
+<tr><th id="42">42</th><td>};</td></tr>
+<tr><th id="43">43</th><td></td></tr>
+<tr><th id="44">44</th><td><i class="doc">/// Merges together two TrieNodes with like function ids, aggregating their</i></td></tr>
+<tr><th id="45">45</th><td><i class="doc">/// callee lists and durations. The caller must provide storage where new merged</i></td></tr>
+<tr><th id="46">46</th><td><i class="doc">/// nodes can be allocated in the form of a linked list.</i></td></tr>
+<tr><th id="47">47</th><td><b>template</b> &lt;<b>typename</b> T, <b>typename</b> Callable&gt;</td></tr>
+<tr><th id="48">48</th><td><a class="type" href="#TrieNode" title='TrieNode' data-ref="TrieNode" data-ref-filename="TrieNode">TrieNode</a>&lt;T&gt; *</td></tr>
+<tr><th id="49">49</th><td><dfn class="decl def fn" id="_Z14mergeTrieNodesRK8TrieNodeIT_ES3_NSt16remove_referenceIPS1_E4typeERSt12forward_listIS1_SaIS1_EEOT0_" title='mergeTrieNodes' data-ref="_Z14mergeTrieNodesRK8TrieNodeIT_ES3_NSt16remove_referenceIPS1_E4typeERSt12forward_listIS1_SaIS1_EEOT0_" data-ref-filename="_Z14mergeTrieNodesRK8TrieNodeIT_ES3_NSt16remove_referenceIPS1_E4typeERSt12forward_listIS1_SaIS1_EEOT0_">mergeTrieNodes</dfn>(<em>const</em> <a class="type" href="#TrieNode" title='TrieNode' data-ref="TrieNode" data-ref-filename="TrieNode">TrieNode</a>&lt;T&gt; &amp;<dfn class="local col9 decl" id="9Left" title='Left' data-type='const TrieNode&lt;T&gt; &amp;' data-ref="9Left" data-ref-filename="9Left">Left</dfn>, <em>const</em> <a class="type" href="#TrieNode" title='TrieNode' data-ref="TrieNode" data-ref-filename="TrieNode">TrieNode</a>&lt;T&gt; &amp;<dfn class="local col0 decl" id="10Right" title='Right' data-type='const TrieNode&lt;T&gt; &amp;' data-ref="10Right" data-ref-filename="10Right">Right</dfn>,</td></tr>
+<tr><th id="50">50</th><td>               <i>/*Non-deduced pointer type for nullptr compatibility*/</i></td></tr>
+<tr><th id="51">51</th><td>               <span class="namespace">std::</span><span class='type' title='std::remove_reference_t' data-ref="std::remove_reference_t" data-ref-filename="std..remove_reference_t">remove_reference_t</span>&lt;<a class="type" href="#TrieNode" title='TrieNode' data-ref="TrieNode" data-ref-filename="TrieNode">TrieNode</a>&lt;T&gt; *&gt; <dfn class="local col1 decl" id="11NewParent" title='NewParent' data-type='std::remove_reference_t&lt;TrieNode&lt;T&gt; *&gt;' data-ref="11NewParent" data-ref-filename="11NewParent">NewParent</dfn>,</td></tr>
+<tr><th id="52">52</th><td>               <span class="namespace">std::</span><span class='type' title='std::forward_list' data-ref="std::forward_list" data-ref-filename="std..forward_list">forward_list</span>&lt;<a class="type" href="#TrieNode" title='TrieNode' data-ref="TrieNode" data-ref-filename="TrieNode">TrieNode</a>&lt;T&gt;&gt; &amp;<dfn class="local col2 decl" id="12NodeStore" title='NodeStore' data-type='std::forward_list&lt;TrieNode&lt;T&gt; &gt; &amp;' data-ref="12NodeStore" data-ref-filename="12NodeStore">NodeStore</dfn>,</td></tr>
+<tr><th id="53">53</th><td>               Callable &amp;&amp;<dfn class="local col3 decl" id="13MergeCallable" title='MergeCallable' data-type='Callable &amp;&amp;' data-ref="13MergeCallable" data-ref-filename="13MergeCallable">MergeCallable</dfn>) {</td></tr>
+<tr><th id="54">54</th><td>  <span class="namespace">llvm::</span><a class="type" href="../../include/llvm/ADT/STLExtras.h.html#llvm::function_ref" title='llvm::function_ref' data-ref="llvm::function_ref" data-ref-filename="llvm..function_ref">function_ref</a>&lt;T(<em>const</em> T &amp;, <em>const</em> T &amp;)&gt; <dfn class="local col4 decl" id="14MergeFn" title='MergeFn' data-type='llvm::function_ref&lt;T (const T &amp;, const T &amp;)&gt;' data-ref="14MergeFn" data-ref-filename="14MergeFn">MergeFn</dfn>(</td></tr>
+<tr><th id="55">55</th><td>      <span class="namespace">std::</span>forward&lt;Callable&gt;(<a class="local col3 ref" href="#13MergeCallable" title='MergeCallable' data-ref="13MergeCallable" data-ref-filename="13MergeCallable">MergeCallable</a>));</td></tr>
+<tr><th id="56">56</th><td>  <a class="macro" href="../../../../include/assert.h.html#50" title="(static_cast&lt;void&gt; (0))" data-ref="_M/assert">assert</a>(Left.FuncId == Right.FuncId);</td></tr>
+<tr><th id="57">57</th><td>  <a class="local col2 ref" href="#12NodeStore" title='NodeStore' data-ref="12NodeStore" data-ref-filename="12NodeStore">NodeStore</a>.push_front(<a class="type" href="#TrieNode" title='TrieNode' data-ref="TrieNode" data-ref-filename="TrieNode">TrieNode</a>&lt;T&gt;{</td></tr>
+<tr><th id="58">58</th><td>      <a class="local col9 ref" href="#9Left" title='Left' data-ref="9Left" data-ref-filename="9Left">Left</a>.FuncId, <a class="local col1 ref" href="#11NewParent" title='NewParent' data-ref="11NewParent" data-ref-filename="11NewParent">NewParent</a>, {}, <a class="local col4 ref" href="#14MergeFn" title='MergeFn' data-ref="14MergeFn" data-ref-filename="14MergeFn">MergeFn</a>(<a class="local col9 ref" href="#9Left" title='Left' data-ref="9Left" data-ref-filename="9Left">Left</a>.ExtraData, <a class="local col0 ref" href="#10Right" title='Right' data-ref="10Right" data-ref-filename="10Right">Right</a>.ExtraData)});</td></tr>
+<tr><th id="59">59</th><td>  <em>auto</em> <dfn class="local col5 decl" id="15I" title='I' data-type='auto' data-ref="15I" data-ref-filename="15I">I</dfn> = <a class="local col2 ref" href="#12NodeStore" title='NodeStore' data-ref="12NodeStore" data-ref-filename="12NodeStore">NodeStore</a>.begin();</td></tr>
+<tr><th id="60">60</th><td>  <em>auto</em> *<dfn class="local col6 decl" id="16Node" title='Node' data-type='auto *' data-ref="16Node" data-ref-filename="16Node">Node</dfn> = &amp;*<a class="local col5 ref" href="#15I" title='I' data-ref="15I" data-ref-filename="15I">I</a>;</td></tr>
+<tr><th id="61">61</th><td></td></tr>
+<tr><th id="62">62</th><td>  <i>// Build a map of callees from the left side.</i></td></tr>
+<tr><th id="63">63</th><td>  <span class="namespace">llvm::</span><a class="type" href="../../include/llvm/ADT/DenseMap.h.html#llvm::DenseMap" title='llvm::DenseMap' data-ref="llvm::DenseMap" data-ref-filename="llvm..DenseMap">DenseMap</a>&lt;<a class="typedef" href="../../../../include/bits/stdint-intn.h.html#int32_t" title='int32_t' data-type='__int32_t' data-ref="int32_t" data-ref-filename="int32_t">int32_t</a>, <a class="type" href="#TrieNode" title='TrieNode' data-ref="TrieNode" data-ref-filename="TrieNode">TrieNode</a>&lt;T&gt; *&gt; <dfn class="local col7 decl" id="17LeftCalleesByFuncId" title='LeftCalleesByFuncId' data-type='llvm::DenseMap&lt;int32_t, TrieNode&lt;T&gt; *&gt;' data-ref="17LeftCalleesByFuncId" data-ref-filename="17LeftCalleesByFuncId">LeftCalleesByFuncId</dfn>;</td></tr>
+<tr><th id="64">64</th><td>  <b>for</b> (<em>auto</em> *<dfn class="local col8 decl" id="18Callee" title='Callee' data-type='auto *' data-ref="18Callee" data-ref-filename="18Callee">Callee</dfn> : <a class="local col9 ref" href="#9Left" title='Left' data-ref="9Left" data-ref-filename="9Left">Left</a>.Callees) {</td></tr>
+<tr><th id="65">65</th><td>    <a class="local col7 ref" href="#17LeftCalleesByFuncId" title='LeftCalleesByFuncId' data-ref="17LeftCalleesByFuncId" data-ref-filename="17LeftCalleesByFuncId">LeftCalleesByFuncId</a>[<a class="local col8 ref" href="#18Callee" title='Callee' data-ref="18Callee" data-ref-filename="18Callee">Callee</a>-&gt;FuncId] = <a class="local col8 ref" href="#18Callee" title='Callee' data-ref="18Callee" data-ref-filename="18Callee">Callee</a>;</td></tr>
+<tr><th id="66">66</th><td>  }</td></tr>
+<tr><th id="67">67</th><td></td></tr>
+<tr><th id="68">68</th><td>  <i>// Iterate through the right side, either merging with the map values or</i></td></tr>
+<tr><th id="69">69</th><td><i>  // directly adding to the Callees vector. The iteration also removes any</i></td></tr>
+<tr><th id="70">70</th><td><i>  // merged values from the left side map.</i></td></tr>
+<tr><th id="71">71</th><td><i>  // TODO: Unroll into iterative and explicit stack for efficiency.</i></td></tr>
+<tr><th id="72">72</th><td>  <b>for</b> (<em>auto</em> *<dfn class="local col9 decl" id="19Callee" title='Callee' data-type='auto *' data-ref="19Callee" data-ref-filename="19Callee">Callee</dfn> : <a class="local col0 ref" href="#10Right" title='Right' data-ref="10Right" data-ref-filename="10Right">Right</a>.Callees) {</td></tr>
+<tr><th id="73">73</th><td>    <em>auto</em> <dfn class="local col0 decl" id="20iter" title='iter' data-type='auto' data-ref="20iter" data-ref-filename="20iter">iter</dfn> = <a class="local col7 ref" href="#17LeftCalleesByFuncId" title='LeftCalleesByFuncId' data-ref="17LeftCalleesByFuncId" data-ref-filename="17LeftCalleesByFuncId">LeftCalleesByFuncId</a>.find(<a class="local col9 ref" href="#19Callee" title='Callee' data-ref="19Callee" data-ref-filename="19Callee">Callee</a>-&gt;FuncId);</td></tr>
+<tr><th id="74">74</th><td>    <b>if</b> (<a class="local col0 ref" href="#20iter" title='iter' data-ref="20iter" data-ref-filename="20iter">iter</a> != <a class="local col7 ref" href="#17LeftCalleesByFuncId" title='LeftCalleesByFuncId' data-ref="17LeftCalleesByFuncId" data-ref-filename="17LeftCalleesByFuncId">LeftCalleesByFuncId</a>.end()) {</td></tr>
+<tr><th id="75">75</th><td>      <a class="local col6 ref" href="#16Node" title='Node' data-ref="16Node" data-ref-filename="16Node">Node</a>-&gt;Callees.push_back(</td></tr>
+<tr><th id="76">76</th><td>          mergeTrieNodes(*(<a class="local col0 ref" href="#20iter" title='iter' data-ref="20iter" data-ref-filename="20iter">iter</a>-&gt;second), *<a class="local col9 ref" href="#19Callee" title='Callee' data-ref="19Callee" data-ref-filename="19Callee">Callee</a>, <a class="local col6 ref" href="#16Node" title='Node' data-ref="16Node" data-ref-filename="16Node">Node</a>, <a class="local col2 ref" href="#12NodeStore" title='NodeStore' data-ref="12NodeStore" data-ref-filename="12NodeStore">NodeStore</a>, <a class="local col4 ref" href="#14MergeFn" title='MergeFn' data-ref="14MergeFn" data-ref-filename="14MergeFn">MergeFn</a>));</td></tr>
+<tr><th id="77">77</th><td>      <a class="local col7 ref" href="#17LeftCalleesByFuncId" title='LeftCalleesByFuncId' data-ref="17LeftCalleesByFuncId" data-ref-filename="17LeftCalleesByFuncId">LeftCalleesByFuncId</a>.erase(<a class="local col0 ref" href="#20iter" title='iter' data-ref="20iter" data-ref-filename="20iter">iter</a>);</td></tr>
+<tr><th id="78">78</th><td>    } <b>else</b> {</td></tr>
+<tr><th id="79">79</th><td>      <a class="local col6 ref" href="#16Node" title='Node' data-ref="16Node" data-ref-filename="16Node">Node</a>-&gt;Callees.push_back(<a class="local col9 ref" href="#19Callee" title='Callee' data-ref="19Callee" data-ref-filename="19Callee">Callee</a>);</td></tr>
+<tr><th id="80">80</th><td>    }</td></tr>
+<tr><th id="81">81</th><td>  }</td></tr>
+<tr><th id="82">82</th><td></td></tr>
+<tr><th id="83">83</th><td>  <i>// Add any callees that weren't found in the right side.</i></td></tr>
+<tr><th id="84">84</th><td>  <b>for</b> (<em>auto</em> <dfn class="local col1 decl" id="21MapPairIter" title='MapPairIter' data-type='auto' data-ref="21MapPairIter" data-ref-filename="21MapPairIter">MapPairIter</dfn> : <a class="local col7 ref" href="#17LeftCalleesByFuncId" title='LeftCalleesByFuncId' data-ref="17LeftCalleesByFuncId" data-ref-filename="17LeftCalleesByFuncId">LeftCalleesByFuncId</a>) {</td></tr>
+<tr><th id="85">85</th><td>    <a class="local col6 ref" href="#16Node" title='Node' data-ref="16Node" data-ref-filename="16Node">Node</a>-&gt;Callees.push_back(<a class="local col1 ref" href="#21MapPairIter" title='MapPairIter' data-ref="21MapPairIter" data-ref-filename="21MapPairIter">MapPairIter</a>.second);</td></tr>
+<tr><th id="86">86</th><td>  }</td></tr>
+<tr><th id="87">87</th><td></td></tr>
+<tr><th id="88">88</th><td>  <b>return</b> <a class="local col6 ref" href="#16Node" title='Node' data-ref="16Node" data-ref-filename="16Node">Node</a>;</td></tr>
+<tr><th id="89">89</th><td>}</td></tr>
+<tr><th id="90">90</th><td></td></tr>
+<tr><th id="91">91</th><td><u>#<span data-ppcond="14">endif</span> // LLVM_TOOLS_LLVM_XRAY_STACK_TRIE_H</u></td></tr>
+<tr><th id="92">92</th><td></td></tr>
+</table><hr/><p id='footer'>
+Generated while processing <a href='xray-converter.cpp.html'>llvm/llvm/tools/llvm-xray/xray-converter.cpp</a><br/>Generated on <em>2021-Jul-01</em> from project llvm revision <em>12</em>

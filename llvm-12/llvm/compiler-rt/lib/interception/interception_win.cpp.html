@@ -1,0 +1,1038 @@
+<!doctype html>
+<html>
+<head>
+<meta name="viewport" content="width=device-width, initial-scale=1.0"><title>interception_win.cpp source code [llvm/compiler-rt/lib/interception/interception_win.cpp] - Woboq Code Browser</title>
+<link rel="stylesheet" href="../../../.././data/qtcreator.css" title="QtCreator"/>
+<link rel="alternate stylesheet" href="../../../.././data/kdevelop.css" title="KDevelop"/>
+<script type="text/javascript" src="../../../.././data/jquery/jquery.min.js"></script>
+<script type="text/javascript" src="../../../.././data/jquery/jquery-ui.min.js"></script>
+<script>var file = 'llvm/compiler-rt/lib/interception/interception_win.cpp'; var root_path = '../../../..'; var data_path = '../../../.././data'; var ecma_script_api_version = 2;</script>
+<script src='../../../.././data/codebrowser.js'></script>
+</head>
+<body><div id='header'><h1 id='breadcrumb'><span>Browse the source code of </span><a href='../../..'>llvm</a>/<a href='../..'>compiler-rt</a>/<a href='..'>lib</a>/<a href='./'>interception</a>/<a href='interception_win.cpp.html'>interception_win.cpp</a></h1></div>
+<hr/><div id='content'><table class="code">
+<tr><th id="1">1</th><td><i>//===-- interception_linux.cpp ----------------------------------*- C++ -*-===//</i></td></tr>
+<tr><th id="2">2</th><td><i>//</i></td></tr>
+<tr><th id="3">3</th><td><i>// Part of the LLVM Project, under the Apache License v2.0 with LLVM Exceptions.</i></td></tr>
+<tr><th id="4">4</th><td><i>// See <a href="https://llvm.org/LICENSE.txt">https://llvm.org/LICENSE.txt</a> for license information.</i></td></tr>
+<tr><th id="5">5</th><td><i>// SPDX-License-Identifier: Apache-2.0 WITH LLVM-exception</i></td></tr>
+<tr><th id="6">6</th><td><i>//</i></td></tr>
+<tr><th id="7">7</th><td><i>//===----------------------------------------------------------------------===//</i></td></tr>
+<tr><th id="8">8</th><td><i>//</i></td></tr>
+<tr><th id="9">9</th><td><i>// This file is a part of AddressSanitizer, an address sanity checker.</i></td></tr>
+<tr><th id="10">10</th><td><i>//</i></td></tr>
+<tr><th id="11">11</th><td><i>// Windows-specific interception methods.</i></td></tr>
+<tr><th id="12">12</th><td><i>//</i></td></tr>
+<tr><th id="13">13</th><td><i>// This file is implementing several hooking techniques to intercept calls</i></td></tr>
+<tr><th id="14">14</th><td><i>// to functions. The hooks are dynamically installed by modifying the assembly</i></td></tr>
+<tr><th id="15">15</th><td><i>// code.</i></td></tr>
+<tr><th id="16">16</th><td><i>//</i></td></tr>
+<tr><th id="17">17</th><td><i>// The hooking techniques are making assumptions on the way the code is</i></td></tr>
+<tr><th id="18">18</th><td><i>// generated and are safe under these assumptions.</i></td></tr>
+<tr><th id="19">19</th><td><i>//</i></td></tr>
+<tr><th id="20">20</th><td><i>// On 64-bit architecture, there is no direct 64-bit jump instruction. To allow</i></td></tr>
+<tr><th id="21">21</th><td><i>// arbitrary branching on the whole memory space, the notion of trampoline</i></td></tr>
+<tr><th id="22">22</th><td><i>// region is used. A trampoline region is a memory space withing 2G boundary</i></td></tr>
+<tr><th id="23">23</th><td><i>// where it is safe to add custom assembly code to build 64-bit jumps.</i></td></tr>
+<tr><th id="24">24</th><td><i>//</i></td></tr>
+<tr><th id="25">25</th><td><i>// Hooking techniques</i></td></tr>
+<tr><th id="26">26</th><td><i>// ==================</i></td></tr>
+<tr><th id="27">27</th><td><i>//</i></td></tr>
+<tr><th id="28">28</th><td><i>// 1) Detour</i></td></tr>
+<tr><th id="29">29</th><td><i>//</i></td></tr>
+<tr><th id="30">30</th><td><i>//    The Detour hooking technique is assuming the presence of an header with</i></td></tr>
+<tr><th id="31">31</th><td><i>//    padding and an overridable 2-bytes nop instruction (mov edi, edi). The</i></td></tr>
+<tr><th id="32">32</th><td><i>//    nop instruction can safely be replaced by a 2-bytes jump without any need</i></td></tr>
+<tr><th id="33">33</th><td><i>//    to save the instruction. A jump to the target is encoded in the function</i></td></tr>
+<tr><th id="34">34</th><td><i>//    header and the nop instruction is replaced by a short jump to the header.</i></td></tr>
+<tr><th id="35">35</th><td><i>//</i></td></tr>
+<tr><th id="36">36</th><td><i>//        head:  5 x nop                 head:  jmp &lt;hook&gt;</i></td></tr>
+<tr><th id="37">37</th><td><i>//        func:  mov edi, edi    --&gt;     func:  jmp short &lt;head&gt;</i></td></tr>
+<tr><th id="38">38</th><td><i>//               [...]                   real:  [...]</i></td></tr>
+<tr><th id="39">39</th><td><i>//</i></td></tr>
+<tr><th id="40">40</th><td><i>//    This technique is only implemented on 32-bit architecture.</i></td></tr>
+<tr><th id="41">41</th><td><i>//    Most of the time, Windows API are hookable with the detour technique.</i></td></tr>
+<tr><th id="42">42</th><td><i>//</i></td></tr>
+<tr><th id="43">43</th><td><i>// 2) Redirect Jump</i></td></tr>
+<tr><th id="44">44</th><td><i>//</i></td></tr>
+<tr><th id="45">45</th><td><i>//    The redirect jump is applicable when the first instruction is a direct</i></td></tr>
+<tr><th id="46">46</th><td><i>//    jump. The instruction is replaced by jump to the hook.</i></td></tr>
+<tr><th id="47">47</th><td><i>//</i></td></tr>
+<tr><th id="48">48</th><td><i>//        func:  jmp &lt;label&gt;     --&gt;     func:  jmp &lt;hook&gt;</i></td></tr>
+<tr><th id="49">49</th><td><i>//</i></td></tr>
+<tr><th id="50">50</th><td><i>//    On an 64-bit architecture, a trampoline is inserted.</i></td></tr>
+<tr><th id="51">51</th><td><i>//</i></td></tr>
+<tr><th id="52">52</th><td><i>//        func:  jmp &lt;label&gt;     --&gt;     func:  jmp &lt;tramp&gt;</i></td></tr>
+<tr><th id="53">53</th><td><i>//                                              [...]</i></td></tr>
+<tr><th id="54">54</th><td><i>//</i></td></tr>
+<tr><th id="55">55</th><td><i>//                                   [trampoline]</i></td></tr>
+<tr><th id="56">56</th><td><i>//                                      tramp:  jmp QWORD [addr]</i></td></tr>
+<tr><th id="57">57</th><td><i>//                                       addr:  .bytes &lt;hook&gt;</i></td></tr>
+<tr><th id="58">58</th><td><i>//</i></td></tr>
+<tr><th id="59">59</th><td><i>//    Note: &lt;real&gt; is equilavent to &lt;label&gt;.</i></td></tr>
+<tr><th id="60">60</th><td><i>//</i></td></tr>
+<tr><th id="61">61</th><td><i>// 3) HotPatch</i></td></tr>
+<tr><th id="62">62</th><td><i>//</i></td></tr>
+<tr><th id="63">63</th><td><i>//    The HotPatch hooking is assuming the presence of an header with padding</i></td></tr>
+<tr><th id="64">64</th><td><i>//    and a first instruction with at least 2-bytes.</i></td></tr>
+<tr><th id="65">65</th><td><i>//</i></td></tr>
+<tr><th id="66">66</th><td><i>//    The reason to enforce the 2-bytes limitation is to provide the minimal</i></td></tr>
+<tr><th id="67">67</th><td><i>//    space to encode a short jump. HotPatch technique is only rewriting one</i></td></tr>
+<tr><th id="68">68</th><td><i>//    instruction to avoid breaking a sequence of instructions containing a</i></td></tr>
+<tr><th id="69">69</th><td><i>//    branching target.</i></td></tr>
+<tr><th id="70">70</th><td><i>//</i></td></tr>
+<tr><th id="71">71</th><td><i>//    Assumptions are enforced by MSVC compiler by using the /HOTPATCH flag.</i></td></tr>
+<tr><th id="72">72</th><td><i>//      see: <a href="https://msdn.microsoft.com/en-us/library/ms173507.aspx">https://msdn.microsoft.com/en-us/library/ms173507.aspx</a></i></td></tr>
+<tr><th id="73">73</th><td><i>//    Default padding length is 5 bytes in 32-bits and 6 bytes in 64-bits.</i></td></tr>
+<tr><th id="74">74</th><td><i>//</i></td></tr>
+<tr><th id="75">75</th><td><i>//        head:   5 x nop                head:  jmp &lt;hook&gt;</i></td></tr>
+<tr><th id="76">76</th><td><i>//        func:   &lt;instr&gt;        --&gt;     func:  jmp short &lt;head&gt;</i></td></tr>
+<tr><th id="77">77</th><td><i>//                [...]                  body:  [...]</i></td></tr>
+<tr><th id="78">78</th><td><i>//</i></td></tr>
+<tr><th id="79">79</th><td><i>//                                   [trampoline]</i></td></tr>
+<tr><th id="80">80</th><td><i>//                                       real:  &lt;instr&gt;</i></td></tr>
+<tr><th id="81">81</th><td><i>//                                              jmp &lt;body&gt;</i></td></tr>
+<tr><th id="82">82</th><td><i>//</i></td></tr>
+<tr><th id="83">83</th><td><i>//    On an 64-bit architecture:</i></td></tr>
+<tr><th id="84">84</th><td><i>//</i></td></tr>
+<tr><th id="85">85</th><td><i>//        head:   6 x nop                head:  jmp QWORD [addr1]</i></td></tr>
+<tr><th id="86">86</th><td><i>//        func:   &lt;instr&gt;        --&gt;     func:  jmp short &lt;head&gt;</i></td></tr>
+<tr><th id="87">87</th><td><i>//                [...]                  body:  [...]</i></td></tr>
+<tr><th id="88">88</th><td><i>//</i></td></tr>
+<tr><th id="89">89</th><td><i>//                                   [trampoline]</i></td></tr>
+<tr><th id="90">90</th><td><i>//                                      addr1:  .bytes &lt;hook&gt;</i></td></tr>
+<tr><th id="91">91</th><td><i>//                                       real:  &lt;instr&gt;</i></td></tr>
+<tr><th id="92">92</th><td><i>//                                              jmp QWORD [addr2]</i></td></tr>
+<tr><th id="93">93</th><td><i>//                                      addr2:  .bytes &lt;body&gt;</i></td></tr>
+<tr><th id="94">94</th><td><i>//</i></td></tr>
+<tr><th id="95">95</th><td><i>// 4) Trampoline</i></td></tr>
+<tr><th id="96">96</th><td><i>//</i></td></tr>
+<tr><th id="97">97</th><td><i>//    The Trampoline hooking technique is the most aggressive one. It is</i></td></tr>
+<tr><th id="98">98</th><td><i>//    assuming that there is a sequence of instructions that can be safely</i></td></tr>
+<tr><th id="99">99</th><td><i>//    replaced by a jump (enough room and no incoming branches).</i></td></tr>
+<tr><th id="100">100</th><td><i>//</i></td></tr>
+<tr><th id="101">101</th><td><i>//    Unfortunately, these assumptions can't be safely presumed and code may</i></td></tr>
+<tr><th id="102">102</th><td><i>//    be broken after hooking.</i></td></tr>
+<tr><th id="103">103</th><td><i>//</i></td></tr>
+<tr><th id="104">104</th><td><i>//        func:   &lt;instr&gt;        --&gt;     func:  jmp &lt;hook&gt;</i></td></tr>
+<tr><th id="105">105</th><td><i>//                &lt;instr&gt;</i></td></tr>
+<tr><th id="106">106</th><td><i>//                [...]                  body:  [...]</i></td></tr>
+<tr><th id="107">107</th><td><i>//</i></td></tr>
+<tr><th id="108">108</th><td><i>//                                   [trampoline]</i></td></tr>
+<tr><th id="109">109</th><td><i>//                                       real:  &lt;instr&gt;</i></td></tr>
+<tr><th id="110">110</th><td><i>//                                              &lt;instr&gt;</i></td></tr>
+<tr><th id="111">111</th><td><i>//                                              jmp &lt;body&gt;</i></td></tr>
+<tr><th id="112">112</th><td><i>//</i></td></tr>
+<tr><th id="113">113</th><td><i>//    On an 64-bit architecture:</i></td></tr>
+<tr><th id="114">114</th><td><i>//</i></td></tr>
+<tr><th id="115">115</th><td><i>//        func:   &lt;instr&gt;        --&gt;     func:  jmp QWORD [addr1]</i></td></tr>
+<tr><th id="116">116</th><td><i>//                &lt;instr&gt;</i></td></tr>
+<tr><th id="117">117</th><td><i>//                [...]                  body:  [...]</i></td></tr>
+<tr><th id="118">118</th><td><i>//</i></td></tr>
+<tr><th id="119">119</th><td><i>//                                   [trampoline]</i></td></tr>
+<tr><th id="120">120</th><td><i>//                                      addr1:  .bytes &lt;hook&gt;</i></td></tr>
+<tr><th id="121">121</th><td><i>//                                       real:  &lt;instr&gt;</i></td></tr>
+<tr><th id="122">122</th><td><i>//                                              &lt;instr&gt;</i></td></tr>
+<tr><th id="123">123</th><td><i>//                                              jmp QWORD [addr2]</i></td></tr>
+<tr><th id="124">124</th><td><i>//                                      addr2:  .bytes &lt;body&gt;</i></td></tr>
+<tr><th id="125">125</th><td><i>//===----------------------------------------------------------------------===//</i></td></tr>
+<tr><th id="126">126</th><td></td></tr>
+<tr><th id="127">127</th><td><u>#include <a href="interception.h.html">"interception.h"</a></u></td></tr>
+<tr><th id="128">128</th><td></td></tr>
+<tr><th id="129">129</th><td><u>#<span data-ppcond="129">if</span> <a class="macro" href="../sanitizer_common/sanitizer_platform.h.html#93" title="0" data-ref="_M/SANITIZER_WINDOWS">SANITIZER_WINDOWS</a></u></td></tr>
+<tr><th id="130">130</th><td><u>#include "sanitizer_common/sanitizer_platform.h"</u></td></tr>
+<tr><th id="131">131</th><td><u>#define WIN32_LEAN_AND_MEAN</u></td></tr>
+<tr><th id="132">132</th><td><u>#include &lt;windows.h&gt;</u></td></tr>
+<tr><th id="133">133</th><td></td></tr>
+<tr><th id="134">134</th><td><b>namespace</b> __interception {</td></tr>
+<tr><th id="135">135</th><td></td></tr>
+<tr><th id="136">136</th><td><em>static</em> <em>const</em> <em>int</em> kAddressLength = FIRST_32_SECOND_64(<var>4</var>, <var>8</var>);</td></tr>
+<tr><th id="137">137</th><td><em>static</em> <em>const</em> <em>int</em> kJumpInstructionLength = <var>5</var>;</td></tr>
+<tr><th id="138">138</th><td><em>static</em> <em>const</em> <em>int</em> kShortJumpInstructionLength = <var>2</var>;</td></tr>
+<tr><th id="139">139</th><td>UNUSED <em>static</em> <em>const</em> <em>int</em> kIndirectJumpInstructionLength = <var>6</var>;</td></tr>
+<tr><th id="140">140</th><td><em>static</em> <em>const</em> <em>int</em> kBranchLength =</td></tr>
+<tr><th id="141">141</th><td>    FIRST_32_SECOND_64(kJumpInstructionLength, kIndirectJumpInstructionLength);</td></tr>
+<tr><th id="142">142</th><td><em>static</em> <em>const</em> <em>int</em> kDirectBranchLength = kBranchLength + kAddressLength;</td></tr>
+<tr><th id="143">143</th><td></td></tr>
+<tr><th id="144">144</th><td><em>static</em> <em>void</em> InterceptionFailed() {</td></tr>
+<tr><th id="145">145</th><td>  <i>// Do we have a good way to abort with an error message here?</i></td></tr>
+<tr><th id="146">146</th><td>  __debugbreak();</td></tr>
+<tr><th id="147">147</th><td>}</td></tr>
+<tr><th id="148">148</th><td></td></tr>
+<tr><th id="149">149</th><td><em>static</em> <em>bool</em> DistanceIsWithin2Gig(uptr from, uptr target) {</td></tr>
+<tr><th id="150">150</th><td><u>#if SANITIZER_WINDOWS64</u></td></tr>
+<tr><th id="151">151</th><td>  <b>if</b> (from &lt; target)</td></tr>
+<tr><th id="152">152</th><td>    <b>return</b> target - from &lt;= (uptr)<var>0x7FFFFFFFU</var>;</td></tr>
+<tr><th id="153">153</th><td>  <b>else</b></td></tr>
+<tr><th id="154">154</th><td>    <b>return</b> from - target &lt;= (uptr)<var>0x80000000U</var>;</td></tr>
+<tr><th id="155">155</th><td><u>#else</u></td></tr>
+<tr><th id="156">156</th><td>  <i>// In a 32-bit address space, the address calculation will wrap, so this check</i></td></tr>
+<tr><th id="157">157</th><td><i>  // is unnecessary.</i></td></tr>
+<tr><th id="158">158</th><td>  <b>return</b> <b>true</b>;</td></tr>
+<tr><th id="159">159</th><td><u>#endif</u></td></tr>
+<tr><th id="160">160</th><td>}</td></tr>
+<tr><th id="161">161</th><td></td></tr>
+<tr><th id="162">162</th><td><em>static</em> uptr GetMmapGranularity() {</td></tr>
+<tr><th id="163">163</th><td>  SYSTEM_INFO si;</td></tr>
+<tr><th id="164">164</th><td>  GetSystemInfo(&amp;si);</td></tr>
+<tr><th id="165">165</th><td>  <b>return</b> si.dwAllocationGranularity;</td></tr>
+<tr><th id="166">166</th><td>}</td></tr>
+<tr><th id="167">167</th><td></td></tr>
+<tr><th id="168">168</th><td>UNUSED <em>static</em> uptr RoundUpTo(uptr size, uptr boundary) {</td></tr>
+<tr><th id="169">169</th><td>  <b>return</b> (size + boundary - <var>1</var>) &amp; ~(boundary - <var>1</var>);</td></tr>
+<tr><th id="170">170</th><td>}</td></tr>
+<tr><th id="171">171</th><td></td></tr>
+<tr><th id="172">172</th><td><i>// FIXME: internal_str* and internal_mem* functions should be moved from the</i></td></tr>
+<tr><th id="173">173</th><td><i>// ASan sources into interception/.</i></td></tr>
+<tr><th id="174">174</th><td></td></tr>
+<tr><th id="175">175</th><td><em>static</em> size_t _strlen(<em>const</em> <em>char</em> *str) {</td></tr>
+<tr><th id="176">176</th><td>  <em>const</em> <em>char</em>* p = str;</td></tr>
+<tr><th id="177">177</th><td>  <b>while</b> (*p != <kbd>'\0'</kbd>) ++p;</td></tr>
+<tr><th id="178">178</th><td>  <b>return</b> p - str;</td></tr>
+<tr><th id="179">179</th><td>}</td></tr>
+<tr><th id="180">180</th><td></td></tr>
+<tr><th id="181">181</th><td><em>static</em> <em>char</em>* _strchr(<em>char</em>* str, <em>char</em> c) {</td></tr>
+<tr><th id="182">182</th><td>  <b>while</b> (*str) {</td></tr>
+<tr><th id="183">183</th><td>    <b>if</b> (*str == c)</td></tr>
+<tr><th id="184">184</th><td>      <b>return</b> str;</td></tr>
+<tr><th id="185">185</th><td>    ++str;</td></tr>
+<tr><th id="186">186</th><td>  }</td></tr>
+<tr><th id="187">187</th><td>  <b>return</b> <b>nullptr</b>;</td></tr>
+<tr><th id="188">188</th><td>}</td></tr>
+<tr><th id="189">189</th><td></td></tr>
+<tr><th id="190">190</th><td><em>static</em> <em>void</em> _memset(<em>void</em> *p, <em>int</em> value, size_t sz) {</td></tr>
+<tr><th id="191">191</th><td>  <b>for</b> (size_t i = <var>0</var>; i &lt; sz; ++i)</td></tr>
+<tr><th id="192">192</th><td>    ((<em>char</em>*)p)[i] = (<em>char</em>)value;</td></tr>
+<tr><th id="193">193</th><td>}</td></tr>
+<tr><th id="194">194</th><td></td></tr>
+<tr><th id="195">195</th><td><em>static</em> <em>void</em> _memcpy(<em>void</em> *dst, <em>void</em> *src, size_t sz) {</td></tr>
+<tr><th id="196">196</th><td>  <em>char</em> *dst_c = (<em>char</em>*)dst,</td></tr>
+<tr><th id="197">197</th><td>       *src_c = (<em>char</em>*)src;</td></tr>
+<tr><th id="198">198</th><td>  <b>for</b> (size_t i = <var>0</var>; i &lt; sz; ++i)</td></tr>
+<tr><th id="199">199</th><td>    dst_c[i] = src_c[i];</td></tr>
+<tr><th id="200">200</th><td>}</td></tr>
+<tr><th id="201">201</th><td></td></tr>
+<tr><th id="202">202</th><td><em>static</em> <em>bool</em> ChangeMemoryProtection(</td></tr>
+<tr><th id="203">203</th><td>    uptr address, uptr size, DWORD *old_protection) {</td></tr>
+<tr><th id="204">204</th><td>  <b>return</b> ::VirtualProtect((<em>void</em>*)address, size,</td></tr>
+<tr><th id="205">205</th><td>                          PAGE_EXECUTE_READWRITE,</td></tr>
+<tr><th id="206">206</th><td>                          old_protection) != FALSE;</td></tr>
+<tr><th id="207">207</th><td>}</td></tr>
+<tr><th id="208">208</th><td></td></tr>
+<tr><th id="209">209</th><td><em>static</em> <em>bool</em> RestoreMemoryProtection(</td></tr>
+<tr><th id="210">210</th><td>    uptr address, uptr size, DWORD old_protection) {</td></tr>
+<tr><th id="211">211</th><td>  DWORD unused;</td></tr>
+<tr><th id="212">212</th><td>  <b>return</b> ::VirtualProtect((<em>void</em>*)address, size,</td></tr>
+<tr><th id="213">213</th><td>                          old_protection,</td></tr>
+<tr><th id="214">214</th><td>                          &amp;unused) != FALSE;</td></tr>
+<tr><th id="215">215</th><td>}</td></tr>
+<tr><th id="216">216</th><td></td></tr>
+<tr><th id="217">217</th><td><em>static</em> <em>bool</em> IsMemoryPadding(uptr address, uptr size) {</td></tr>
+<tr><th id="218">218</th><td>  u8* function = (u8*)address;</td></tr>
+<tr><th id="219">219</th><td>  <b>for</b> (size_t i = <var>0</var>; i &lt; size; ++i)</td></tr>
+<tr><th id="220">220</th><td>    <b>if</b> (function[i] != <var>0x90</var> &amp;&amp; function[i] != <var>0xCC</var>)</td></tr>
+<tr><th id="221">221</th><td>      <b>return</b> <b>false</b>;</td></tr>
+<tr><th id="222">222</th><td>  <b>return</b> <b>true</b>;</td></tr>
+<tr><th id="223">223</th><td>}</td></tr>
+<tr><th id="224">224</th><td></td></tr>
+<tr><th id="225">225</th><td><em>static</em> <em>const</em> u8 kHintNop8Bytes[] = {</td></tr>
+<tr><th id="226">226</th><td>  <var>0x0F</var>, <var>0x1F</var>, <var>0x84</var>, <var>0x00</var>, <var>0x00</var>, <var>0x00</var>, <var>0x00</var>, <var>0x00</var></td></tr>
+<tr><th id="227">227</th><td>};</td></tr>
+<tr><th id="228">228</th><td></td></tr>
+<tr><th id="229">229</th><td><b>template</b>&lt;<b>class</b> T&gt;</td></tr>
+<tr><th id="230">230</th><td><em>static</em> <em>bool</em> FunctionHasPrefix(uptr address, <em>const</em> T &amp;pattern) {</td></tr>
+<tr><th id="231">231</th><td>  u8* function = (u8*)address - <b>sizeof</b>(pattern);</td></tr>
+<tr><th id="232">232</th><td>  <b>for</b> (size_t i = <var>0</var>; i &lt; <b>sizeof</b>(pattern); ++i)</td></tr>
+<tr><th id="233">233</th><td>    <b>if</b> (function[i] != pattern[i])</td></tr>
+<tr><th id="234">234</th><td>      <b>return</b> <b>false</b>;</td></tr>
+<tr><th id="235">235</th><td>  <b>return</b> <b>true</b>;</td></tr>
+<tr><th id="236">236</th><td>}</td></tr>
+<tr><th id="237">237</th><td></td></tr>
+<tr><th id="238">238</th><td><em>static</em> <em>bool</em> FunctionHasPadding(uptr address, uptr size) {</td></tr>
+<tr><th id="239">239</th><td>  <b>if</b> (IsMemoryPadding(address - size, size))</td></tr>
+<tr><th id="240">240</th><td>    <b>return</b> <b>true</b>;</td></tr>
+<tr><th id="241">241</th><td>  <b>if</b> (size &lt;= <b>sizeof</b>(kHintNop8Bytes) &amp;&amp;</td></tr>
+<tr><th id="242">242</th><td>      FunctionHasPrefix(address, kHintNop8Bytes))</td></tr>
+<tr><th id="243">243</th><td>    <b>return</b> <b>true</b>;</td></tr>
+<tr><th id="244">244</th><td>  <b>return</b> <b>false</b>;</td></tr>
+<tr><th id="245">245</th><td>}</td></tr>
+<tr><th id="246">246</th><td></td></tr>
+<tr><th id="247">247</th><td><em>static</em> <em>void</em> WritePadding(uptr from, uptr size) {</td></tr>
+<tr><th id="248">248</th><td>  _memset((<em>void</em>*)from, <var>0xCC</var>, (size_t)size);</td></tr>
+<tr><th id="249">249</th><td>}</td></tr>
+<tr><th id="250">250</th><td></td></tr>
+<tr><th id="251">251</th><td><em>static</em> <em>void</em> WriteJumpInstruction(uptr from, uptr target) {</td></tr>
+<tr><th id="252">252</th><td>  <b>if</b> (!DistanceIsWithin2Gig(from + kJumpInstructionLength, target))</td></tr>
+<tr><th id="253">253</th><td>    InterceptionFailed();</td></tr>
+<tr><th id="254">254</th><td>  ptrdiff_t offset = target - from - kJumpInstructionLength;</td></tr>
+<tr><th id="255">255</th><td>  *(u8*)from = <var>0xE9</var>;</td></tr>
+<tr><th id="256">256</th><td>  *(u32*)(from + <var>1</var>) = offset;</td></tr>
+<tr><th id="257">257</th><td>}</td></tr>
+<tr><th id="258">258</th><td></td></tr>
+<tr><th id="259">259</th><td><em>static</em> <em>void</em> WriteShortJumpInstruction(uptr from, uptr target) {</td></tr>
+<tr><th id="260">260</th><td>  sptr offset = target - from - kShortJumpInstructionLength;</td></tr>
+<tr><th id="261">261</th><td>  <b>if</b> (offset &lt; -<var>128</var> || offset &gt; <var>127</var>)</td></tr>
+<tr><th id="262">262</th><td>    InterceptionFailed();</td></tr>
+<tr><th id="263">263</th><td>  *(u8*)from = <var>0xEB</var>;</td></tr>
+<tr><th id="264">264</th><td>  *(u8*)(from + <var>1</var>) = (u8)offset;</td></tr>
+<tr><th id="265">265</th><td>}</td></tr>
+<tr><th id="266">266</th><td></td></tr>
+<tr><th id="267">267</th><td><u>#if SANITIZER_WINDOWS64</u></td></tr>
+<tr><th id="268">268</th><td><em>static</em> <em>void</em> WriteIndirectJumpInstruction(uptr from, uptr indirect_target) {</td></tr>
+<tr><th id="269">269</th><td>  <i>// jmp [rip + &lt;offset&gt;] = FF 25 &lt;offset&gt; where &lt;offset&gt; is a relative</i></td></tr>
+<tr><th id="270">270</th><td><i>  // offset.</i></td></tr>
+<tr><th id="271">271</th><td><i>  // The offset is the distance from then end of the jump instruction to the</i></td></tr>
+<tr><th id="272">272</th><td><i>  // memory location containing the targeted address. The displacement is still</i></td></tr>
+<tr><th id="273">273</th><td><i>  // 32-bit in x64, so indirect_target must be located within +/- 2GB range.</i></td></tr>
+<tr><th id="274">274</th><td>  <em>int</em> offset = indirect_target - from - kIndirectJumpInstructionLength;</td></tr>
+<tr><th id="275">275</th><td>  <b>if</b> (!DistanceIsWithin2Gig(from + kIndirectJumpInstructionLength,</td></tr>
+<tr><th id="276">276</th><td>                            indirect_target)) {</td></tr>
+<tr><th id="277">277</th><td>    InterceptionFailed();</td></tr>
+<tr><th id="278">278</th><td>  }</td></tr>
+<tr><th id="279">279</th><td>  *(u16*)from = <var>0x25FF</var>;</td></tr>
+<tr><th id="280">280</th><td>  *(u32*)(from + <var>2</var>) = offset;</td></tr>
+<tr><th id="281">281</th><td>}</td></tr>
+<tr><th id="282">282</th><td><u>#endif</u></td></tr>
+<tr><th id="283">283</th><td></td></tr>
+<tr><th id="284">284</th><td><em>static</em> <em>void</em> WriteBranch(</td></tr>
+<tr><th id="285">285</th><td>    uptr from, uptr indirect_target, uptr target) {</td></tr>
+<tr><th id="286">286</th><td><u>#if SANITIZER_WINDOWS64</u></td></tr>
+<tr><th id="287">287</th><td>  WriteIndirectJumpInstruction(from, indirect_target);</td></tr>
+<tr><th id="288">288</th><td>  *(u64*)indirect_target = target;</td></tr>
+<tr><th id="289">289</th><td><u>#else</u></td></tr>
+<tr><th id="290">290</th><td>  (<em>void</em>)indirect_target;</td></tr>
+<tr><th id="291">291</th><td>  WriteJumpInstruction(from, target);</td></tr>
+<tr><th id="292">292</th><td><u>#endif</u></td></tr>
+<tr><th id="293">293</th><td>}</td></tr>
+<tr><th id="294">294</th><td></td></tr>
+<tr><th id="295">295</th><td><em>static</em> <em>void</em> WriteDirectBranch(uptr from, uptr target) {</td></tr>
+<tr><th id="296">296</th><td><u>#if SANITIZER_WINDOWS64</u></td></tr>
+<tr><th id="297">297</th><td>  <i>// Emit an indirect jump through immediately following bytes:</i></td></tr>
+<tr><th id="298">298</th><td><i>  //   jmp [rip + kBranchLength]</i></td></tr>
+<tr><th id="299">299</th><td><i>  //   .quad &lt;target&gt;</i></td></tr>
+<tr><th id="300">300</th><td>  WriteBranch(from, from + kBranchLength, target);</td></tr>
+<tr><th id="301">301</th><td><u>#else</u></td></tr>
+<tr><th id="302">302</th><td>  WriteJumpInstruction(from, target);</td></tr>
+<tr><th id="303">303</th><td><u>#endif</u></td></tr>
+<tr><th id="304">304</th><td>}</td></tr>
+<tr><th id="305">305</th><td></td></tr>
+<tr><th id="306">306</th><td><b>struct</b> TrampolineMemoryRegion {</td></tr>
+<tr><th id="307">307</th><td>  uptr content;</td></tr>
+<tr><th id="308">308</th><td>  uptr allocated_size;</td></tr>
+<tr><th id="309">309</th><td>  uptr max_size;</td></tr>
+<tr><th id="310">310</th><td>};</td></tr>
+<tr><th id="311">311</th><td></td></tr>
+<tr><th id="312">312</th><td>UNUSED <em>static</em> <em>const</em> uptr kTrampolineScanLimitRange = <var>1</var> &lt;&lt; <var>31</var>;  <i>// 2 gig</i></td></tr>
+<tr><th id="313">313</th><td><em>static</em> <em>const</em> <em>int</em> kMaxTrampolineRegion = <var>1024</var>;</td></tr>
+<tr><th id="314">314</th><td><em>static</em> TrampolineMemoryRegion TrampolineRegions[kMaxTrampolineRegion];</td></tr>
+<tr><th id="315">315</th><td></td></tr>
+<tr><th id="316">316</th><td><em>static</em> <em>void</em> *AllocateTrampolineRegion(uptr image_address, size_t granularity) {</td></tr>
+<tr><th id="317">317</th><td><u>#if SANITIZER_WINDOWS64</u></td></tr>
+<tr><th id="318">318</th><td>  uptr address = image_address;</td></tr>
+<tr><th id="319">319</th><td>  uptr scanned = <var>0</var>;</td></tr>
+<tr><th id="320">320</th><td>  <b>while</b> (scanned &lt; kTrampolineScanLimitRange) {</td></tr>
+<tr><th id="321">321</th><td>    MEMORY_BASIC_INFORMATION info;</td></tr>
+<tr><th id="322">322</th><td>    <b>if</b> (!::VirtualQuery((<em>void</em>*)address, &amp;info, <b>sizeof</b>(info)))</td></tr>
+<tr><th id="323">323</th><td>      <b>return</b> <b>nullptr</b>;</td></tr>
+<tr><th id="324">324</th><td></td></tr>
+<tr><th id="325">325</th><td>    <i>// Check whether a region can be allocated at |address|.</i></td></tr>
+<tr><th id="326">326</th><td>    <b>if</b> (info.State == MEM_FREE &amp;&amp; info.RegionSize &gt;= granularity) {</td></tr>
+<tr><th id="327">327</th><td>      <em>void</em> *page = ::VirtualAlloc((<em>void</em>*)RoundUpTo(address, granularity),</td></tr>
+<tr><th id="328">328</th><td>                                  granularity,</td></tr>
+<tr><th id="329">329</th><td>                                  MEM_RESERVE | MEM_COMMIT,</td></tr>
+<tr><th id="330">330</th><td>                                  PAGE_EXECUTE_READWRITE);</td></tr>
+<tr><th id="331">331</th><td>      <b>return</b> page;</td></tr>
+<tr><th id="332">332</th><td>    }</td></tr>
+<tr><th id="333">333</th><td></td></tr>
+<tr><th id="334">334</th><td>    <i>// Move to the next region.</i></td></tr>
+<tr><th id="335">335</th><td>    address = (uptr)info.BaseAddress + info.RegionSize;</td></tr>
+<tr><th id="336">336</th><td>    scanned += info.RegionSize;</td></tr>
+<tr><th id="337">337</th><td>  }</td></tr>
+<tr><th id="338">338</th><td>  <b>return</b> <b>nullptr</b>;</td></tr>
+<tr><th id="339">339</th><td><u>#else</u></td></tr>
+<tr><th id="340">340</th><td>  <b>return</b> ::VirtualAlloc(<b>nullptr</b>,</td></tr>
+<tr><th id="341">341</th><td>                        granularity,</td></tr>
+<tr><th id="342">342</th><td>                        MEM_RESERVE | MEM_COMMIT,</td></tr>
+<tr><th id="343">343</th><td>                        PAGE_EXECUTE_READWRITE);</td></tr>
+<tr><th id="344">344</th><td><u>#endif</u></td></tr>
+<tr><th id="345">345</th><td>}</td></tr>
+<tr><th id="346">346</th><td></td></tr>
+<tr><th id="347">347</th><td><i>// Used by unittests to release mapped memory space.</i></td></tr>
+<tr><th id="348">348</th><td><em>void</em> TestOnlyReleaseTrampolineRegions() {</td></tr>
+<tr><th id="349">349</th><td>  <b>for</b> (size_t bucket = <var>0</var>; bucket &lt; kMaxTrampolineRegion; ++bucket) {</td></tr>
+<tr><th id="350">350</th><td>    TrampolineMemoryRegion *current = &amp;TrampolineRegions[bucket];</td></tr>
+<tr><th id="351">351</th><td>    <b>if</b> (current-&gt;content == <var>0</var>)</td></tr>
+<tr><th id="352">352</th><td>      <b>return</b>;</td></tr>
+<tr><th id="353">353</th><td>    ::VirtualFree((<em>void</em>*)current-&gt;content, <var>0</var>, MEM_RELEASE);</td></tr>
+<tr><th id="354">354</th><td>    current-&gt;content = <var>0</var>;</td></tr>
+<tr><th id="355">355</th><td>  }</td></tr>
+<tr><th id="356">356</th><td>}</td></tr>
+<tr><th id="357">357</th><td></td></tr>
+<tr><th id="358">358</th><td><em>static</em> uptr AllocateMemoryForTrampoline(uptr image_address, size_t size) {</td></tr>
+<tr><th id="359">359</th><td>  <i>// Find a region within 2G with enough space to allocate |size| bytes.</i></td></tr>
+<tr><th id="360">360</th><td>  TrampolineMemoryRegion *region = <b>nullptr</b>;</td></tr>
+<tr><th id="361">361</th><td>  <b>for</b> (size_t bucket = <var>0</var>; bucket &lt; kMaxTrampolineRegion; ++bucket) {</td></tr>
+<tr><th id="362">362</th><td>    TrampolineMemoryRegion* current = &amp;TrampolineRegions[bucket];</td></tr>
+<tr><th id="363">363</th><td>    <b>if</b> (current-&gt;content == <var>0</var>) {</td></tr>
+<tr><th id="364">364</th><td>      <i>// No valid region found, allocate a new region.</i></td></tr>
+<tr><th id="365">365</th><td>      size_t bucket_size = GetMmapGranularity();</td></tr>
+<tr><th id="366">366</th><td>      <em>void</em> *content = AllocateTrampolineRegion(image_address, bucket_size);</td></tr>
+<tr><th id="367">367</th><td>      <b>if</b> (content == <b>nullptr</b>)</td></tr>
+<tr><th id="368">368</th><td>        <b>return</b> <var>0U</var>;</td></tr>
+<tr><th id="369">369</th><td></td></tr>
+<tr><th id="370">370</th><td>      current-&gt;content = (uptr)content;</td></tr>
+<tr><th id="371">371</th><td>      current-&gt;allocated_size = <var>0</var>;</td></tr>
+<tr><th id="372">372</th><td>      current-&gt;max_size = bucket_size;</td></tr>
+<tr><th id="373">373</th><td>      region = current;</td></tr>
+<tr><th id="374">374</th><td>      <b>break</b>;</td></tr>
+<tr><th id="375">375</th><td>    } <b>else</b> <b>if</b> (current-&gt;max_size - current-&gt;allocated_size &gt; size) {</td></tr>
+<tr><th id="376">376</th><td><u>#if SANITIZER_WINDOWS64</u></td></tr>
+<tr><th id="377">377</th><td>        <i>// In 64-bits, the memory space must be allocated within 2G boundary.</i></td></tr>
+<tr><th id="378">378</th><td>        uptr next_address = current-&gt;content + current-&gt;allocated_size;</td></tr>
+<tr><th id="379">379</th><td>        <b>if</b> (next_address &lt; image_address ||</td></tr>
+<tr><th id="380">380</th><td>            next_address - image_address &gt;= <var>0x7FFF0000</var>)</td></tr>
+<tr><th id="381">381</th><td>          <b>continue</b>;</td></tr>
+<tr><th id="382">382</th><td><u>#endif</u></td></tr>
+<tr><th id="383">383</th><td>      <i>// The space can be allocated in the current region.</i></td></tr>
+<tr><th id="384">384</th><td>      region = current;</td></tr>
+<tr><th id="385">385</th><td>      <b>break</b>;</td></tr>
+<tr><th id="386">386</th><td>    }</td></tr>
+<tr><th id="387">387</th><td>  }</td></tr>
+<tr><th id="388">388</th><td></td></tr>
+<tr><th id="389">389</th><td>  <i>// Failed to find a region.</i></td></tr>
+<tr><th id="390">390</th><td>  <b>if</b> (region == <b>nullptr</b>)</td></tr>
+<tr><th id="391">391</th><td>    <b>return</b> <var>0U</var>;</td></tr>
+<tr><th id="392">392</th><td></td></tr>
+<tr><th id="393">393</th><td>  <i>// Allocate the space in the current region.</i></td></tr>
+<tr><th id="394">394</th><td>  uptr allocated_space = region-&gt;content + region-&gt;allocated_size;</td></tr>
+<tr><th id="395">395</th><td>  region-&gt;allocated_size += size;</td></tr>
+<tr><th id="396">396</th><td>  WritePadding(allocated_space, size);</td></tr>
+<tr><th id="397">397</th><td></td></tr>
+<tr><th id="398">398</th><td>  <b>return</b> allocated_space;</td></tr>
+<tr><th id="399">399</th><td>}</td></tr>
+<tr><th id="400">400</th><td></td></tr>
+<tr><th id="401">401</th><td><i>// Returns 0 on error.</i></td></tr>
+<tr><th id="402">402</th><td><em>static</em> size_t GetInstructionSize(uptr address, size_t* rel_offset = <b>nullptr</b>) {</td></tr>
+<tr><th id="403">403</th><td>  <b>switch</b> (*(u64*)address) {</td></tr>
+<tr><th id="404">404</th><td>    <b>case</b> <var>0x90909090909006EB</var>:  <i>// stub: jmp over 6 x nop.</i></td></tr>
+<tr><th id="405">405</th><td>      <b>return</b> <var>8</var>;</td></tr>
+<tr><th id="406">406</th><td>  }</td></tr>
+<tr><th id="407">407</th><td></td></tr>
+<tr><th id="408">408</th><td>  <b>switch</b> (*(u8*)address) {</td></tr>
+<tr><th id="409">409</th><td>    <b>case</b> <var>0x90</var>:  <i>// 90 : nop</i></td></tr>
+<tr><th id="410">410</th><td>      <b>return</b> <var>1</var>;</td></tr>
+<tr><th id="411">411</th><td></td></tr>
+<tr><th id="412">412</th><td>    <b>case</b> <var>0x50</var>:  <i>// push eax / rax</i></td></tr>
+<tr><th id="413">413</th><td>    <b>case</b> <var>0x51</var>:  <i>// push ecx / rcx</i></td></tr>
+<tr><th id="414">414</th><td>    <b>case</b> <var>0x52</var>:  <i>// push edx / rdx</i></td></tr>
+<tr><th id="415">415</th><td>    <b>case</b> <var>0x53</var>:  <i>// push ebx / rbx</i></td></tr>
+<tr><th id="416">416</th><td>    <b>case</b> <var>0x54</var>:  <i>// push esp / rsp</i></td></tr>
+<tr><th id="417">417</th><td>    <b>case</b> <var>0x55</var>:  <i>// push ebp / rbp</i></td></tr>
+<tr><th id="418">418</th><td>    <b>case</b> <var>0x56</var>:  <i>// push esi / rsi</i></td></tr>
+<tr><th id="419">419</th><td>    <b>case</b> <var>0x57</var>:  <i>// push edi / rdi</i></td></tr>
+<tr><th id="420">420</th><td>    <b>case</b> <var>0x5D</var>:  <i>// pop ebp / rbp</i></td></tr>
+<tr><th id="421">421</th><td>      <b>return</b> <var>1</var>;</td></tr>
+<tr><th id="422">422</th><td></td></tr>
+<tr><th id="423">423</th><td>    <b>case</b> <var>0x6A</var>:  <i>// 6A XX = push XX</i></td></tr>
+<tr><th id="424">424</th><td>      <b>return</b> <var>2</var>;</td></tr>
+<tr><th id="425">425</th><td></td></tr>
+<tr><th id="426">426</th><td>    <b>case</b> <var>0xb8</var>:  <i>// b8 XX XX XX XX : mov eax, XX XX XX XX</i></td></tr>
+<tr><th id="427">427</th><td>    <b>case</b> <var>0xB9</var>:  <i>// b9 XX XX XX XX : mov ecx, XX XX XX XX</i></td></tr>
+<tr><th id="428">428</th><td>      <b>return</b> <var>5</var>;</td></tr>
+<tr><th id="429">429</th><td></td></tr>
+<tr><th id="430">430</th><td>    <i>// Cannot overwrite control-instruction. Return 0 to indicate failure.</i></td></tr>
+<tr><th id="431">431</th><td>    <b>case</b> <var>0xE9</var>:  <i>// E9 XX XX XX XX : jmp &lt;label&gt;</i></td></tr>
+<tr><th id="432">432</th><td>    <b>case</b> <var>0xE8</var>:  <i>// E8 XX XX XX XX : call &lt;func&gt;</i></td></tr>
+<tr><th id="433">433</th><td>    <b>case</b> <var>0xC3</var>:  <i>// C3 : ret</i></td></tr>
+<tr><th id="434">434</th><td>    <b>case</b> <var>0xEB</var>:  <i>// EB XX : jmp XX (short jump)</i></td></tr>
+<tr><th id="435">435</th><td>    <b>case</b> <var>0x70</var>:  <i>// 7Y YY : jy XX (short conditional jump)</i></td></tr>
+<tr><th id="436">436</th><td>    <b>case</b> <var>0x71</var>:</td></tr>
+<tr><th id="437">437</th><td>    <b>case</b> <var>0x72</var>:</td></tr>
+<tr><th id="438">438</th><td>    <b>case</b> <var>0x73</var>:</td></tr>
+<tr><th id="439">439</th><td>    <b>case</b> <var>0x74</var>:</td></tr>
+<tr><th id="440">440</th><td>    <b>case</b> <var>0x75</var>:</td></tr>
+<tr><th id="441">441</th><td>    <b>case</b> <var>0x76</var>:</td></tr>
+<tr><th id="442">442</th><td>    <b>case</b> <var>0x77</var>:</td></tr>
+<tr><th id="443">443</th><td>    <b>case</b> <var>0x78</var>:</td></tr>
+<tr><th id="444">444</th><td>    <b>case</b> <var>0x79</var>:</td></tr>
+<tr><th id="445">445</th><td>    <b>case</b> <var>0x7A</var>:</td></tr>
+<tr><th id="446">446</th><td>    <b>case</b> <var>0x7B</var>:</td></tr>
+<tr><th id="447">447</th><td>    <b>case</b> <var>0x7C</var>:</td></tr>
+<tr><th id="448">448</th><td>    <b>case</b> <var>0x7D</var>:</td></tr>
+<tr><th id="449">449</th><td>    <b>case</b> <var>0x7E</var>:</td></tr>
+<tr><th id="450">450</th><td>    <b>case</b> <var>0x7F</var>:</td></tr>
+<tr><th id="451">451</th><td>      <b>return</b> <var>0</var>;</td></tr>
+<tr><th id="452">452</th><td>  }</td></tr>
+<tr><th id="453">453</th><td></td></tr>
+<tr><th id="454">454</th><td>  <b>switch</b> (*(u16*)(address)) {</td></tr>
+<tr><th id="455">455</th><td>    <b>case</b> <var>0x018A</var>:  <i>// 8A 01 : mov al, byte ptr [ecx]</i></td></tr>
+<tr><th id="456">456</th><td>    <b>case</b> <var>0xFF8B</var>:  <i>// 8B FF : mov edi, edi</i></td></tr>
+<tr><th id="457">457</th><td>    <b>case</b> <var>0xEC8B</var>:  <i>// 8B EC : mov ebp, esp</i></td></tr>
+<tr><th id="458">458</th><td>    <b>case</b> <var>0xc889</var>:  <i>// 89 C8 : mov eax, ecx</i></td></tr>
+<tr><th id="459">459</th><td>    <b>case</b> <var>0xC18B</var>:  <i>// 8B C1 : mov eax, ecx</i></td></tr>
+<tr><th id="460">460</th><td>    <b>case</b> <var>0xC033</var>:  <i>// 33 C0 : xor eax, eax</i></td></tr>
+<tr><th id="461">461</th><td>    <b>case</b> <var>0xC933</var>:  <i>// 33 C9 : xor ecx, ecx</i></td></tr>
+<tr><th id="462">462</th><td>    <b>case</b> <var>0xD233</var>:  <i>// 33 D2 : xor edx, edx</i></td></tr>
+<tr><th id="463">463</th><td>      <b>return</b> <var>2</var>;</td></tr>
+<tr><th id="464">464</th><td></td></tr>
+<tr><th id="465">465</th><td>    <i>// Cannot overwrite control-instruction. Return 0 to indicate failure.</i></td></tr>
+<tr><th id="466">466</th><td>    <b>case</b> <var>0x25FF</var>:  <i>// FF 25 XX XX XX XX : jmp [XXXXXXXX]</i></td></tr>
+<tr><th id="467">467</th><td>      <b>return</b> <var>0</var>;</td></tr>
+<tr><th id="468">468</th><td>  }</td></tr>
+<tr><th id="469">469</th><td></td></tr>
+<tr><th id="470">470</th><td>  <b>switch</b> (<var>0x00FFFFFF</var> &amp; *(u32*)address) {</td></tr>
+<tr><th id="471">471</th><td>    <b>case</b> <var>0x24A48D</var>:  <i>// 8D A4 24 XX XX XX XX : lea esp, [esp + XX XX XX XX]</i></td></tr>
+<tr><th id="472">472</th><td>      <b>return</b> <var>7</var>;</td></tr>
+<tr><th id="473">473</th><td>  }</td></tr>
+<tr><th id="474">474</th><td></td></tr>
+<tr><th id="475">475</th><td><u>#if SANITIZER_WINDOWS64</u></td></tr>
+<tr><th id="476">476</th><td>  <b>switch</b> (*(u8*)address) {</td></tr>
+<tr><th id="477">477</th><td>    <b>case</b> <var>0xA1</var>:  <i>// A1 XX XX XX XX XX XX XX XX :</i></td></tr>
+<tr><th id="478">478</th><td>                <i>//   movabs eax, dword ptr ds:[XXXXXXXX]</i></td></tr>
+<tr><th id="479">479</th><td>      <b>return</b> <var>9</var>;</td></tr>
+<tr><th id="480">480</th><td>  }</td></tr>
+<tr><th id="481">481</th><td></td></tr>
+<tr><th id="482">482</th><td>  <b>switch</b> (*(u16*)address) {</td></tr>
+<tr><th id="483">483</th><td>    <b>case</b> <var>0x5040</var>:  <i>// push rax</i></td></tr>
+<tr><th id="484">484</th><td>    <b>case</b> <var>0x5140</var>:  <i>// push rcx</i></td></tr>
+<tr><th id="485">485</th><td>    <b>case</b> <var>0x5240</var>:  <i>// push rdx</i></td></tr>
+<tr><th id="486">486</th><td>    <b>case</b> <var>0x5340</var>:  <i>// push rbx</i></td></tr>
+<tr><th id="487">487</th><td>    <b>case</b> <var>0x5440</var>:  <i>// push rsp</i></td></tr>
+<tr><th id="488">488</th><td>    <b>case</b> <var>0x5540</var>:  <i>// push rbp</i></td></tr>
+<tr><th id="489">489</th><td>    <b>case</b> <var>0x5640</var>:  <i>// push rsi</i></td></tr>
+<tr><th id="490">490</th><td>    <b>case</b> <var>0x5740</var>:  <i>// push rdi</i></td></tr>
+<tr><th id="491">491</th><td>    <b>case</b> <var>0x5441</var>:  <i>// push r12</i></td></tr>
+<tr><th id="492">492</th><td>    <b>case</b> <var>0x5541</var>:  <i>// push r13</i></td></tr>
+<tr><th id="493">493</th><td>    <b>case</b> <var>0x5641</var>:  <i>// push r14</i></td></tr>
+<tr><th id="494">494</th><td>    <b>case</b> <var>0x5741</var>:  <i>// push r15</i></td></tr>
+<tr><th id="495">495</th><td>    <b>case</b> <var>0x9066</var>:  <i>// Two-byte NOP</i></td></tr>
+<tr><th id="496">496</th><td>      <b>return</b> <var>2</var>;</td></tr>
+<tr><th id="497">497</th><td></td></tr>
+<tr><th id="498">498</th><td>    <b>case</b> <var>0x058B</var>:  <i>// 8B 05 XX XX XX XX : mov eax, dword ptr [XX XX XX XX]</i></td></tr>
+<tr><th id="499">499</th><td>      <b>if</b> (rel_offset)</td></tr>
+<tr><th id="500">500</th><td>        *rel_offset = <var>2</var>;</td></tr>
+<tr><th id="501">501</th><td>      <b>return</b> <var>6</var>;</td></tr>
+<tr><th id="502">502</th><td>  }</td></tr>
+<tr><th id="503">503</th><td></td></tr>
+<tr><th id="504">504</th><td>  <b>switch</b> (<var>0x00FFFFFF</var> &amp; *(u32*)address) {</td></tr>
+<tr><th id="505">505</th><td>    <b>case</b> <var>0xe58948</var>:    <i>// 48 8b c4 : mov rbp, rsp</i></td></tr>
+<tr><th id="506">506</th><td>    <b>case</b> <var>0xc18b48</var>:    <i>// 48 8b c1 : mov rax, rcx</i></td></tr>
+<tr><th id="507">507</th><td>    <b>case</b> <var>0xc48b48</var>:    <i>// 48 8b c4 : mov rax, rsp</i></td></tr>
+<tr><th id="508">508</th><td>    <b>case</b> <var>0xd9f748</var>:    <i>// 48 f7 d9 : neg rcx</i></td></tr>
+<tr><th id="509">509</th><td>    <b>case</b> <var>0xd12b48</var>:    <i>// 48 2b d1 : sub rdx, rcx</i></td></tr>
+<tr><th id="510">510</th><td>    <b>case</b> <var>0x07c1f6</var>:    <i>// f6 c1 07 : test cl, 0x7</i></td></tr>
+<tr><th id="511">511</th><td>    <b>case</b> <var>0xc98548</var>:    <i>// 48 85 C9 : test rcx, rcx</i></td></tr>
+<tr><th id="512">512</th><td>    <b>case</b> <var>0xc0854d</var>:    <i>// 4d 85 c0 : test r8, r8</i></td></tr>
+<tr><th id="513">513</th><td>    <b>case</b> <var>0xc2b60f</var>:    <i>// 0f b6 c2 : movzx eax, dl</i></td></tr>
+<tr><th id="514">514</th><td>    <b>case</b> <var>0xc03345</var>:    <i>// 45 33 c0 : xor r8d, r8d</i></td></tr>
+<tr><th id="515">515</th><td>    <b>case</b> <var>0xc93345</var>:    <i>// 45 33 c9 : xor r9d, r9d</i></td></tr>
+<tr><th id="516">516</th><td>    <b>case</b> <var>0xdb3345</var>:    <i>// 45 33 DB : xor r11d, r11d</i></td></tr>
+<tr><th id="517">517</th><td>    <b>case</b> <var>0xd98b4c</var>:    <i>// 4c 8b d9 : mov r11, rcx</i></td></tr>
+<tr><th id="518">518</th><td>    <b>case</b> <var>0xd28b4c</var>:    <i>// 4c 8b d2 : mov r10, rdx</i></td></tr>
+<tr><th id="519">519</th><td>    <b>case</b> <var>0xc98b4c</var>:    <i>// 4C 8B C9 : mov r9, rcx</i></td></tr>
+<tr><th id="520">520</th><td>    <b>case</b> <var>0xc18b4c</var>:    <i>// 4C 8B C1 : mov r8, rcx</i></td></tr>
+<tr><th id="521">521</th><td>    <b>case</b> <var>0xd2b60f</var>:    <i>// 0f b6 d2 : movzx edx, dl</i></td></tr>
+<tr><th id="522">522</th><td>    <b>case</b> <var>0xca2b48</var>:    <i>// 48 2b ca : sub rcx, rdx</i></td></tr>
+<tr><th id="523">523</th><td>    <b>case</b> <var>0x10b70f</var>:    <i>// 0f b7 10 : movzx edx, WORD PTR [rax]</i></td></tr>
+<tr><th id="524">524</th><td>    <b>case</b> <var>0xc00b4d</var>:    <i>// 3d 0b c0 : or r8, r8</i></td></tr>
+<tr><th id="525">525</th><td>    <b>case</b> <var>0xd18b48</var>:    <i>// 48 8b d1 : mov rdx, rcx</i></td></tr>
+<tr><th id="526">526</th><td>    <b>case</b> <var>0xdc8b4c</var>:    <i>// 4c 8b dc : mov r11, rsp</i></td></tr>
+<tr><th id="527">527</th><td>    <b>case</b> <var>0xd18b4c</var>:    <i>// 4c 8b d1 : mov r10, rcx</i></td></tr>
+<tr><th id="528">528</th><td>    <b>case</b> <var>0xE0E483</var>:    <i>// 83 E4 E0 : and esp, 0xFFFFFFE0</i></td></tr>
+<tr><th id="529">529</th><td>      <b>return</b> <var>3</var>;</td></tr>
+<tr><th id="530">530</th><td></td></tr>
+<tr><th id="531">531</th><td>    <b>case</b> <var>0xec8348</var>:    <i>// 48 83 ec XX : sub rsp, XX</i></td></tr>
+<tr><th id="532">532</th><td>    <b>case</b> <var>0xf88349</var>:    <i>// 49 83 f8 XX : cmp r8, XX</i></td></tr>
+<tr><th id="533">533</th><td>    <b>case</b> <var>0x588948</var>:    <i>// 48 89 58 XX : mov QWORD PTR[rax + XX], rbx</i></td></tr>
+<tr><th id="534">534</th><td>      <b>return</b> <var>4</var>;</td></tr>
+<tr><th id="535">535</th><td></td></tr>
+<tr><th id="536">536</th><td>    <b>case</b> <var>0xec8148</var>:    <i>// 48 81 EC XX XX XX XX : sub rsp, XXXXXXXX</i></td></tr>
+<tr><th id="537">537</th><td>      <b>return</b> <var>7</var>;</td></tr>
+<tr><th id="538">538</th><td></td></tr>
+<tr><th id="539">539</th><td>    <b>case</b> <var>0x058b48</var>:    <i>// 48 8b 05 XX XX XX XX :</i></td></tr>
+<tr><th id="540">540</th><td>                      <i>//   mov rax, QWORD PTR [rip + XXXXXXXX]</i></td></tr>
+<tr><th id="541">541</th><td>    <b>case</b> <var>0x25ff48</var>:    <i>// 48 ff 25 XX XX XX XX :</i></td></tr>
+<tr><th id="542">542</th><td>                      <i>//   rex.W jmp QWORD PTR [rip + XXXXXXXX]</i></td></tr>
+<tr><th id="543">543</th><td><i></i></td></tr>
+<tr><th id="544">544</th><td><i>      // Instructions having offset relative to 'rip' need offset adjustment.</i></td></tr>
+<tr><th id="545">545</th><td>      <b>if</b> (rel_offset)</td></tr>
+<tr><th id="546">546</th><td>        *rel_offset = <var>3</var>;</td></tr>
+<tr><th id="547">547</th><td>      <b>return</b> <var>7</var>;</td></tr>
+<tr><th id="548">548</th><td></td></tr>
+<tr><th id="549">549</th><td>    <b>case</b> <var>0x2444c7</var>:    <i>// C7 44 24 XX YY YY YY YY</i></td></tr>
+<tr><th id="550">550</th><td>                      <i>//   mov dword ptr [rsp + XX], YYYYYYYY</i></td></tr>
+<tr><th id="551">551</th><td>      <b>return</b> <var>8</var>;</td></tr>
+<tr><th id="552">552</th><td>  }</td></tr>
+<tr><th id="553">553</th><td></td></tr>
+<tr><th id="554">554</th><td>  <b>switch</b> (*(u32*)(address)) {</td></tr>
+<tr><th id="555">555</th><td>    <b>case</b> <var>0x24448b48</var>:  <i>// 48 8b 44 24 XX : mov rax, QWORD ptr [rsp + XX]</i></td></tr>
+<tr><th id="556">556</th><td>    <b>case</b> <var>0x246c8948</var>:  <i>// 48 89 6C 24 XX : mov QWORD ptr [rsp + XX], rbp</i></td></tr>
+<tr><th id="557">557</th><td>    <b>case</b> <var>0x245c8948</var>:  <i>// 48 89 5c 24 XX : mov QWORD PTR [rsp + XX], rbx</i></td></tr>
+<tr><th id="558">558</th><td>    <b>case</b> <var>0x24748948</var>:  <i>// 48 89 74 24 XX : mov QWORD PTR [rsp + XX], rsi</i></td></tr>
+<tr><th id="559">559</th><td>    <b>case</b> <var>0x244C8948</var>:  <i>// 48 89 4C 24 XX : mov QWORD PTR [rsp + XX], rcx</i></td></tr>
+<tr><th id="560">560</th><td>    <b>case</b> <var>0x24548948</var>:  <i>// 48 89 54 24 XX : mov QWORD PTR [rsp + XX], rdx</i></td></tr>
+<tr><th id="561">561</th><td>    <b>case</b> <var>0x244c894c</var>:  <i>// 4c 89 4c 24 XX : mov QWORD PTR [rsp + XX], r9</i></td></tr>
+<tr><th id="562">562</th><td>    <b>case</b> <var>0x2444894c</var>:  <i>// 4c 89 44 24 XX : mov QWORD PTR [rsp + XX], r8</i></td></tr>
+<tr><th id="563">563</th><td>      <b>return</b> <var>5</var>;</td></tr>
+<tr><th id="564">564</th><td>    <b>case</b> <var>0x24648348</var>:  <i>// 48 83 64 24 XX : and QWORD PTR [rsp + XX], YY</i></td></tr>
+<tr><th id="565">565</th><td>      <b>return</b> <var>6</var>;</td></tr>
+<tr><th id="566">566</th><td>  }</td></tr>
+<tr><th id="567">567</th><td></td></tr>
+<tr><th id="568">568</th><td><u>#else</u></td></tr>
+<tr><th id="569">569</th><td></td></tr>
+<tr><th id="570">570</th><td>  <b>switch</b> (*(u8*)address) {</td></tr>
+<tr><th id="571">571</th><td>    <b>case</b> <var>0xA1</var>:  <i>// A1 XX XX XX XX :  mov eax, dword ptr ds:[XXXXXXXX]</i></td></tr>
+<tr><th id="572">572</th><td>      <b>return</b> <var>5</var>;</td></tr>
+<tr><th id="573">573</th><td>  }</td></tr>
+<tr><th id="574">574</th><td>  <b>switch</b> (*(u16*)address) {</td></tr>
+<tr><th id="575">575</th><td>    <b>case</b> <var>0x458B</var>:  <i>// 8B 45 XX : mov eax, dword ptr [ebp + XX]</i></td></tr>
+<tr><th id="576">576</th><td>    <b>case</b> <var>0x5D8B</var>:  <i>// 8B 5D XX : mov ebx, dword ptr [ebp + XX]</i></td></tr>
+<tr><th id="577">577</th><td>    <b>case</b> <var>0x7D8B</var>:  <i>// 8B 7D XX : mov edi, dword ptr [ebp + XX]</i></td></tr>
+<tr><th id="578">578</th><td>    <b>case</b> <var>0xEC83</var>:  <i>// 83 EC XX : sub esp, XX</i></td></tr>
+<tr><th id="579">579</th><td>    <b>case</b> <var>0x75FF</var>:  <i>// FF 75 XX : push dword ptr [ebp + XX]</i></td></tr>
+<tr><th id="580">580</th><td>      <b>return</b> <var>3</var>;</td></tr>
+<tr><th id="581">581</th><td>    <b>case</b> <var>0xC1F7</var>:  <i>// F7 C1 XX YY ZZ WW : test ecx, WWZZYYXX</i></td></tr>
+<tr><th id="582">582</th><td>    <b>case</b> <var>0x25FF</var>:  <i>// FF 25 XX YY ZZ WW : jmp dword ptr ds:[WWZZYYXX]</i></td></tr>
+<tr><th id="583">583</th><td>      <b>return</b> <var>6</var>;</td></tr>
+<tr><th id="584">584</th><td>    <b>case</b> <var>0x3D83</var>:  <i>// 83 3D XX YY ZZ WW TT : cmp TT, WWZZYYXX</i></td></tr>
+<tr><th id="585">585</th><td>      <b>return</b> <var>7</var>;</td></tr>
+<tr><th id="586">586</th><td>    <b>case</b> <var>0x7D83</var>:  <i>// 83 7D XX YY : cmp dword ptr [ebp + XX], YY</i></td></tr>
+<tr><th id="587">587</th><td>      <b>return</b> <var>4</var>;</td></tr>
+<tr><th id="588">588</th><td>  }</td></tr>
+<tr><th id="589">589</th><td></td></tr>
+<tr><th id="590">590</th><td>  <b>switch</b> (<var>0x00FFFFFF</var> &amp; *(u32*)address) {</td></tr>
+<tr><th id="591">591</th><td>    <b>case</b> <var>0x24448A</var>:  <i>// 8A 44 24 XX : mov eal, dword ptr [esp + XX]</i></td></tr>
+<tr><th id="592">592</th><td>    <b>case</b> <var>0x24448B</var>:  <i>// 8B 44 24 XX : mov eax, dword ptr [esp + XX]</i></td></tr>
+<tr><th id="593">593</th><td>    <b>case</b> <var>0x244C8B</var>:  <i>// 8B 4C 24 XX : mov ecx, dword ptr [esp + XX]</i></td></tr>
+<tr><th id="594">594</th><td>    <b>case</b> <var>0x24548B</var>:  <i>// 8B 54 24 XX : mov edx, dword ptr [esp + XX]</i></td></tr>
+<tr><th id="595">595</th><td>    <b>case</b> <var>0x24748B</var>:  <i>// 8B 74 24 XX : mov esi, dword ptr [esp + XX]</i></td></tr>
+<tr><th id="596">596</th><td>    <b>case</b> <var>0x247C8B</var>:  <i>// 8B 7C 24 XX : mov edi, dword ptr [esp + XX]</i></td></tr>
+<tr><th id="597">597</th><td>      <b>return</b> <var>4</var>;</td></tr>
+<tr><th id="598">598</th><td>  }</td></tr>
+<tr><th id="599">599</th><td></td></tr>
+<tr><th id="600">600</th><td>  <b>switch</b> (*(u32*)address) {</td></tr>
+<tr><th id="601">601</th><td>    <b>case</b> <var>0x2444B60F</var>:  <i>// 0F B6 44 24 XX : movzx eax, byte ptr [esp + XX]</i></td></tr>
+<tr><th id="602">602</th><td>      <b>return</b> <var>5</var>;</td></tr>
+<tr><th id="603">603</th><td>  }</td></tr>
+<tr><th id="604">604</th><td><u>#endif</u></td></tr>
+<tr><th id="605">605</th><td></td></tr>
+<tr><th id="606">606</th><td>  <i>// Unknown instruction!</i></td></tr>
+<tr><th id="607">607</th><td><i>  // FIXME: Unknown instruction failures might happen when we add a new</i></td></tr>
+<tr><th id="608">608</th><td><i>  // interceptor or a new compiler version. In either case, they should result</i></td></tr>
+<tr><th id="609">609</th><td><i>  // in visible and readable error messages. However, merely calling abort()</i></td></tr>
+<tr><th id="610">610</th><td><i>  // leads to an infinite recursion in CheckFailed.</i></td></tr>
+<tr><th id="611">611</th><td>  InterceptionFailed();</td></tr>
+<tr><th id="612">612</th><td>  <b>return</b> <var>0</var>;</td></tr>
+<tr><th id="613">613</th><td>}</td></tr>
+<tr><th id="614">614</th><td></td></tr>
+<tr><th id="615">615</th><td><i>// Returns 0 on error.</i></td></tr>
+<tr><th id="616">616</th><td><em>static</em> size_t RoundUpToInstrBoundary(size_t size, uptr address) {</td></tr>
+<tr><th id="617">617</th><td>  size_t cursor = <var>0</var>;</td></tr>
+<tr><th id="618">618</th><td>  <b>while</b> (cursor &lt; size) {</td></tr>
+<tr><th id="619">619</th><td>    size_t instruction_size = GetInstructionSize(address + cursor);</td></tr>
+<tr><th id="620">620</th><td>    <b>if</b> (!instruction_size)</td></tr>
+<tr><th id="621">621</th><td>      <b>return</b> <var>0</var>;</td></tr>
+<tr><th id="622">622</th><td>    cursor += instruction_size;</td></tr>
+<tr><th id="623">623</th><td>  }</td></tr>
+<tr><th id="624">624</th><td>  <b>return</b> cursor;</td></tr>
+<tr><th id="625">625</th><td>}</td></tr>
+<tr><th id="626">626</th><td></td></tr>
+<tr><th id="627">627</th><td><em>static</em> <em>bool</em> CopyInstructions(uptr to, uptr from, size_t size) {</td></tr>
+<tr><th id="628">628</th><td>  size_t cursor = <var>0</var>;</td></tr>
+<tr><th id="629">629</th><td>  <b>while</b> (cursor != size) {</td></tr>
+<tr><th id="630">630</th><td>    size_t rel_offset = <var>0</var>;</td></tr>
+<tr><th id="631">631</th><td>    size_t instruction_size = GetInstructionSize(from + cursor, &amp;rel_offset);</td></tr>
+<tr><th id="632">632</th><td>    _memcpy((<em>void</em>*)(to + cursor), (<em>void</em>*)(from + cursor),</td></tr>
+<tr><th id="633">633</th><td>            (size_t)instruction_size);</td></tr>
+<tr><th id="634">634</th><td>    <b>if</b> (rel_offset) {</td></tr>
+<tr><th id="635">635</th><td>      uptr delta = to - from;</td></tr>
+<tr><th id="636">636</th><td>      uptr relocated_offset = *(u32*)(to + cursor + rel_offset) - delta;</td></tr>
+<tr><th id="637">637</th><td><u>#if SANITIZER_WINDOWS64</u></td></tr>
+<tr><th id="638">638</th><td>      <b>if</b> (relocated_offset + <var>0x80000000U</var> &gt;= <var>0xFFFFFFFFU</var>)</td></tr>
+<tr><th id="639">639</th><td>        <b>return</b> <b>false</b>;</td></tr>
+<tr><th id="640">640</th><td><u>#endif</u></td></tr>
+<tr><th id="641">641</th><td>      *(u32*)(to + cursor + rel_offset) = relocated_offset;</td></tr>
+<tr><th id="642">642</th><td>    }</td></tr>
+<tr><th id="643">643</th><td>    cursor += instruction_size;</td></tr>
+<tr><th id="644">644</th><td>  }</td></tr>
+<tr><th id="645">645</th><td>  <b>return</b> <b>true</b>;</td></tr>
+<tr><th id="646">646</th><td>}</td></tr>
+<tr><th id="647">647</th><td></td></tr>
+<tr><th id="648">648</th><td></td></tr>
+<tr><th id="649">649</th><td><u>#if !SANITIZER_WINDOWS64</u></td></tr>
+<tr><th id="650">650</th><td><em>bool</em> OverrideFunctionWithDetour(</td></tr>
+<tr><th id="651">651</th><td>    uptr old_func, uptr new_func, uptr *orig_old_func) {</td></tr>
+<tr><th id="652">652</th><td>  <em>const</em> <em>int</em> kDetourHeaderLen = <var>5</var>;</td></tr>
+<tr><th id="653">653</th><td>  <em>const</em> u16 kDetourInstruction = <var>0xFF8B</var>;</td></tr>
+<tr><th id="654">654</th><td></td></tr>
+<tr><th id="655">655</th><td>  uptr header = (uptr)old_func - kDetourHeaderLen;</td></tr>
+<tr><th id="656">656</th><td>  uptr patch_length = kDetourHeaderLen + kShortJumpInstructionLength;</td></tr>
+<tr><th id="657">657</th><td></td></tr>
+<tr><th id="658">658</th><td>  <i>// Validate that the function is hookable.</i></td></tr>
+<tr><th id="659">659</th><td>  <b>if</b> (*(u16*)old_func != kDetourInstruction ||</td></tr>
+<tr><th id="660">660</th><td>      !IsMemoryPadding(header, kDetourHeaderLen))</td></tr>
+<tr><th id="661">661</th><td>    <b>return</b> <b>false</b>;</td></tr>
+<tr><th id="662">662</th><td></td></tr>
+<tr><th id="663">663</th><td>  <i>// Change memory protection to writable.</i></td></tr>
+<tr><th id="664">664</th><td>  DWORD protection = <var>0</var>;</td></tr>
+<tr><th id="665">665</th><td>  <b>if</b> (!ChangeMemoryProtection(header, patch_length, &amp;protection))</td></tr>
+<tr><th id="666">666</th><td>    <b>return</b> <b>false</b>;</td></tr>
+<tr><th id="667">667</th><td></td></tr>
+<tr><th id="668">668</th><td>  <i>// Write a relative jump to the redirected function.</i></td></tr>
+<tr><th id="669">669</th><td>  WriteJumpInstruction(header, new_func);</td></tr>
+<tr><th id="670">670</th><td></td></tr>
+<tr><th id="671">671</th><td>  <i>// Write the short jump to the function prefix.</i></td></tr>
+<tr><th id="672">672</th><td>  WriteShortJumpInstruction(old_func, header);</td></tr>
+<tr><th id="673">673</th><td></td></tr>
+<tr><th id="674">674</th><td>  <i>// Restore previous memory protection.</i></td></tr>
+<tr><th id="675">675</th><td>  <b>if</b> (!RestoreMemoryProtection(header, patch_length, protection))</td></tr>
+<tr><th id="676">676</th><td>    <b>return</b> <b>false</b>;</td></tr>
+<tr><th id="677">677</th><td></td></tr>
+<tr><th id="678">678</th><td>  <b>if</b> (orig_old_func)</td></tr>
+<tr><th id="679">679</th><td>    *orig_old_func = old_func + kShortJumpInstructionLength;</td></tr>
+<tr><th id="680">680</th><td></td></tr>
+<tr><th id="681">681</th><td>  <b>return</b> <b>true</b>;</td></tr>
+<tr><th id="682">682</th><td>}</td></tr>
+<tr><th id="683">683</th><td><u>#endif</u></td></tr>
+<tr><th id="684">684</th><td></td></tr>
+<tr><th id="685">685</th><td><em>bool</em> OverrideFunctionWithRedirectJump(</td></tr>
+<tr><th id="686">686</th><td>    uptr old_func, uptr new_func, uptr *orig_old_func) {</td></tr>
+<tr><th id="687">687</th><td>  <i>// Check whether the first instruction is a relative jump.</i></td></tr>
+<tr><th id="688">688</th><td>  <b>if</b> (*(u8*)old_func != <var>0xE9</var>)</td></tr>
+<tr><th id="689">689</th><td>    <b>return</b> <b>false</b>;</td></tr>
+<tr><th id="690">690</th><td></td></tr>
+<tr><th id="691">691</th><td>  <b>if</b> (orig_old_func) {</td></tr>
+<tr><th id="692">692</th><td>    uptr relative_offset = *(u32*)(old_func + <var>1</var>);</td></tr>
+<tr><th id="693">693</th><td>    uptr absolute_target = old_func + relative_offset + kJumpInstructionLength;</td></tr>
+<tr><th id="694">694</th><td>    *orig_old_func = absolute_target;</td></tr>
+<tr><th id="695">695</th><td>  }</td></tr>
+<tr><th id="696">696</th><td></td></tr>
+<tr><th id="697">697</th><td><u>#if SANITIZER_WINDOWS64</u></td></tr>
+<tr><th id="698">698</th><td>  <i>// If needed, get memory space for a trampoline jump.</i></td></tr>
+<tr><th id="699">699</th><td>  uptr trampoline = AllocateMemoryForTrampoline(old_func, kDirectBranchLength);</td></tr>
+<tr><th id="700">700</th><td>  <b>if</b> (!trampoline)</td></tr>
+<tr><th id="701">701</th><td>    <b>return</b> <b>false</b>;</td></tr>
+<tr><th id="702">702</th><td>  WriteDirectBranch(trampoline, new_func);</td></tr>
+<tr><th id="703">703</th><td><u>#endif</u></td></tr>
+<tr><th id="704">704</th><td></td></tr>
+<tr><th id="705">705</th><td>  <i>// Change memory protection to writable.</i></td></tr>
+<tr><th id="706">706</th><td>  DWORD protection = <var>0</var>;</td></tr>
+<tr><th id="707">707</th><td>  <b>if</b> (!ChangeMemoryProtection(old_func, kJumpInstructionLength, &amp;protection))</td></tr>
+<tr><th id="708">708</th><td>    <b>return</b> <b>false</b>;</td></tr>
+<tr><th id="709">709</th><td></td></tr>
+<tr><th id="710">710</th><td>  <i>// Write a relative jump to the redirected function.</i></td></tr>
+<tr><th id="711">711</th><td>  WriteJumpInstruction(old_func, FIRST_32_SECOND_64(new_func, trampoline));</td></tr>
+<tr><th id="712">712</th><td></td></tr>
+<tr><th id="713">713</th><td>  <i>// Restore previous memory protection.</i></td></tr>
+<tr><th id="714">714</th><td>  <b>if</b> (!RestoreMemoryProtection(old_func, kJumpInstructionLength, protection))</td></tr>
+<tr><th id="715">715</th><td>    <b>return</b> <b>false</b>;</td></tr>
+<tr><th id="716">716</th><td></td></tr>
+<tr><th id="717">717</th><td>  <b>return</b> <b>true</b>;</td></tr>
+<tr><th id="718">718</th><td>}</td></tr>
+<tr><th id="719">719</th><td></td></tr>
+<tr><th id="720">720</th><td><em>bool</em> OverrideFunctionWithHotPatch(</td></tr>
+<tr><th id="721">721</th><td>    uptr old_func, uptr new_func, uptr *orig_old_func) {</td></tr>
+<tr><th id="722">722</th><td>  <em>const</em> <em>int</em> kHotPatchHeaderLen = kBranchLength;</td></tr>
+<tr><th id="723">723</th><td></td></tr>
+<tr><th id="724">724</th><td>  uptr header = (uptr)old_func - kHotPatchHeaderLen;</td></tr>
+<tr><th id="725">725</th><td>  uptr patch_length = kHotPatchHeaderLen + kShortJumpInstructionLength;</td></tr>
+<tr><th id="726">726</th><td></td></tr>
+<tr><th id="727">727</th><td>  <i>// Validate that the function is hot patchable.</i></td></tr>
+<tr><th id="728">728</th><td>  size_t instruction_size = GetInstructionSize(old_func);</td></tr>
+<tr><th id="729">729</th><td>  <b>if</b> (instruction_size &lt; kShortJumpInstructionLength ||</td></tr>
+<tr><th id="730">730</th><td>      !FunctionHasPadding(old_func, kHotPatchHeaderLen))</td></tr>
+<tr><th id="731">731</th><td>    <b>return</b> <b>false</b>;</td></tr>
+<tr><th id="732">732</th><td></td></tr>
+<tr><th id="733">733</th><td>  <b>if</b> (orig_old_func) {</td></tr>
+<tr><th id="734">734</th><td>    <i>// Put the needed instructions into the trampoline bytes.</i></td></tr>
+<tr><th id="735">735</th><td>    uptr trampoline_length = instruction_size + kDirectBranchLength;</td></tr>
+<tr><th id="736">736</th><td>    uptr trampoline = AllocateMemoryForTrampoline(old_func, trampoline_length);</td></tr>
+<tr><th id="737">737</th><td>    <b>if</b> (!trampoline)</td></tr>
+<tr><th id="738">738</th><td>      <b>return</b> <b>false</b>;</td></tr>
+<tr><th id="739">739</th><td>    <b>if</b> (!CopyInstructions(trampoline, old_func, instruction_size))</td></tr>
+<tr><th id="740">740</th><td>      <b>return</b> <b>false</b>;</td></tr>
+<tr><th id="741">741</th><td>    WriteDirectBranch(trampoline + instruction_size,</td></tr>
+<tr><th id="742">742</th><td>                      old_func + instruction_size);</td></tr>
+<tr><th id="743">743</th><td>    *orig_old_func = trampoline;</td></tr>
+<tr><th id="744">744</th><td>  }</td></tr>
+<tr><th id="745">745</th><td></td></tr>
+<tr><th id="746">746</th><td>  <i>// If needed, get memory space for indirect address.</i></td></tr>
+<tr><th id="747">747</th><td>  uptr indirect_address = <var>0</var>;</td></tr>
+<tr><th id="748">748</th><td><u>#if SANITIZER_WINDOWS64</u></td></tr>
+<tr><th id="749">749</th><td>  indirect_address = AllocateMemoryForTrampoline(old_func, kAddressLength);</td></tr>
+<tr><th id="750">750</th><td>  <b>if</b> (!indirect_address)</td></tr>
+<tr><th id="751">751</th><td>    <b>return</b> <b>false</b>;</td></tr>
+<tr><th id="752">752</th><td><u>#endif</u></td></tr>
+<tr><th id="753">753</th><td></td></tr>
+<tr><th id="754">754</th><td>  <i>// Change memory protection to writable.</i></td></tr>
+<tr><th id="755">755</th><td>  DWORD protection = <var>0</var>;</td></tr>
+<tr><th id="756">756</th><td>  <b>if</b> (!ChangeMemoryProtection(header, patch_length, &amp;protection))</td></tr>
+<tr><th id="757">757</th><td>    <b>return</b> <b>false</b>;</td></tr>
+<tr><th id="758">758</th><td></td></tr>
+<tr><th id="759">759</th><td>  <i>// Write jumps to the redirected function.</i></td></tr>
+<tr><th id="760">760</th><td>  WriteBranch(header, indirect_address, new_func);</td></tr>
+<tr><th id="761">761</th><td>  WriteShortJumpInstruction(old_func, header);</td></tr>
+<tr><th id="762">762</th><td></td></tr>
+<tr><th id="763">763</th><td>  <i>// Restore previous memory protection.</i></td></tr>
+<tr><th id="764">764</th><td>  <b>if</b> (!RestoreMemoryProtection(header, patch_length, protection))</td></tr>
+<tr><th id="765">765</th><td>    <b>return</b> <b>false</b>;</td></tr>
+<tr><th id="766">766</th><td></td></tr>
+<tr><th id="767">767</th><td>  <b>return</b> <b>true</b>;</td></tr>
+<tr><th id="768">768</th><td>}</td></tr>
+<tr><th id="769">769</th><td></td></tr>
+<tr><th id="770">770</th><td><em>bool</em> OverrideFunctionWithTrampoline(</td></tr>
+<tr><th id="771">771</th><td>    uptr old_func, uptr new_func, uptr *orig_old_func) {</td></tr>
+<tr><th id="772">772</th><td></td></tr>
+<tr><th id="773">773</th><td>  size_t instructions_length = kBranchLength;</td></tr>
+<tr><th id="774">774</th><td>  size_t padding_length = <var>0</var>;</td></tr>
+<tr><th id="775">775</th><td>  uptr indirect_address = <var>0</var>;</td></tr>
+<tr><th id="776">776</th><td></td></tr>
+<tr><th id="777">777</th><td>  <b>if</b> (orig_old_func) {</td></tr>
+<tr><th id="778">778</th><td>    <i>// Find out the number of bytes of the instructions we need to copy</i></td></tr>
+<tr><th id="779">779</th><td><i>    // to the trampoline.</i></td></tr>
+<tr><th id="780">780</th><td>    instructions_length = RoundUpToInstrBoundary(kBranchLength, old_func);</td></tr>
+<tr><th id="781">781</th><td>    <b>if</b> (!instructions_length)</td></tr>
+<tr><th id="782">782</th><td>      <b>return</b> <b>false</b>;</td></tr>
+<tr><th id="783">783</th><td></td></tr>
+<tr><th id="784">784</th><td>    <i>// Put the needed instructions into the trampoline bytes.</i></td></tr>
+<tr><th id="785">785</th><td>    uptr trampoline_length = instructions_length + kDirectBranchLength;</td></tr>
+<tr><th id="786">786</th><td>    uptr trampoline = AllocateMemoryForTrampoline(old_func, trampoline_length);</td></tr>
+<tr><th id="787">787</th><td>    <b>if</b> (!trampoline)</td></tr>
+<tr><th id="788">788</th><td>      <b>return</b> <b>false</b>;</td></tr>
+<tr><th id="789">789</th><td>    <b>if</b> (!CopyInstructions(trampoline, old_func, instructions_length))</td></tr>
+<tr><th id="790">790</th><td>      <b>return</b> <b>false</b>;</td></tr>
+<tr><th id="791">791</th><td>    WriteDirectBranch(trampoline + instructions_length,</td></tr>
+<tr><th id="792">792</th><td>                      old_func + instructions_length);</td></tr>
+<tr><th id="793">793</th><td>    *orig_old_func = trampoline;</td></tr>
+<tr><th id="794">794</th><td>  }</td></tr>
+<tr><th id="795">795</th><td></td></tr>
+<tr><th id="796">796</th><td><u>#if SANITIZER_WINDOWS64</u></td></tr>
+<tr><th id="797">797</th><td>  <i>// Check if the targeted address can be encoded in the function padding.</i></td></tr>
+<tr><th id="798">798</th><td><i>  // Otherwise, allocate it in the trampoline region.</i></td></tr>
+<tr><th id="799">799</th><td>  <b>if</b> (IsMemoryPadding(old_func - kAddressLength, kAddressLength)) {</td></tr>
+<tr><th id="800">800</th><td>    indirect_address = old_func - kAddressLength;</td></tr>
+<tr><th id="801">801</th><td>    padding_length = kAddressLength;</td></tr>
+<tr><th id="802">802</th><td>  } <b>else</b> {</td></tr>
+<tr><th id="803">803</th><td>    indirect_address = AllocateMemoryForTrampoline(old_func, kAddressLength);</td></tr>
+<tr><th id="804">804</th><td>    <b>if</b> (!indirect_address)</td></tr>
+<tr><th id="805">805</th><td>      <b>return</b> <b>false</b>;</td></tr>
+<tr><th id="806">806</th><td>  }</td></tr>
+<tr><th id="807">807</th><td><u>#endif</u></td></tr>
+<tr><th id="808">808</th><td></td></tr>
+<tr><th id="809">809</th><td>  <i>// Change memory protection to writable.</i></td></tr>
+<tr><th id="810">810</th><td>  uptr patch_address = old_func - padding_length;</td></tr>
+<tr><th id="811">811</th><td>  uptr patch_length = instructions_length + padding_length;</td></tr>
+<tr><th id="812">812</th><td>  DWORD protection = <var>0</var>;</td></tr>
+<tr><th id="813">813</th><td>  <b>if</b> (!ChangeMemoryProtection(patch_address, patch_length, &amp;protection))</td></tr>
+<tr><th id="814">814</th><td>    <b>return</b> <b>false</b>;</td></tr>
+<tr><th id="815">815</th><td></td></tr>
+<tr><th id="816">816</th><td>  <i>// Patch the original function.</i></td></tr>
+<tr><th id="817">817</th><td>  WriteBranch(old_func, indirect_address, new_func);</td></tr>
+<tr><th id="818">818</th><td></td></tr>
+<tr><th id="819">819</th><td>  <i>// Restore previous memory protection.</i></td></tr>
+<tr><th id="820">820</th><td>  <b>if</b> (!RestoreMemoryProtection(patch_address, patch_length, protection))</td></tr>
+<tr><th id="821">821</th><td>    <b>return</b> <b>false</b>;</td></tr>
+<tr><th id="822">822</th><td></td></tr>
+<tr><th id="823">823</th><td>  <b>return</b> <b>true</b>;</td></tr>
+<tr><th id="824">824</th><td>}</td></tr>
+<tr><th id="825">825</th><td></td></tr>
+<tr><th id="826">826</th><td><em>bool</em> OverrideFunction(</td></tr>
+<tr><th id="827">827</th><td>    uptr old_func, uptr new_func, uptr *orig_old_func) {</td></tr>
+<tr><th id="828">828</th><td><u>#if !SANITIZER_WINDOWS64</u></td></tr>
+<tr><th id="829">829</th><td>  <b>if</b> (OverrideFunctionWithDetour(old_func, new_func, orig_old_func))</td></tr>
+<tr><th id="830">830</th><td>    <b>return</b> <b>true</b>;</td></tr>
+<tr><th id="831">831</th><td><u>#endif</u></td></tr>
+<tr><th id="832">832</th><td>  <b>if</b> (OverrideFunctionWithRedirectJump(old_func, new_func, orig_old_func))</td></tr>
+<tr><th id="833">833</th><td>    <b>return</b> <b>true</b>;</td></tr>
+<tr><th id="834">834</th><td>  <b>if</b> (OverrideFunctionWithHotPatch(old_func, new_func, orig_old_func))</td></tr>
+<tr><th id="835">835</th><td>    <b>return</b> <b>true</b>;</td></tr>
+<tr><th id="836">836</th><td>  <b>if</b> (OverrideFunctionWithTrampoline(old_func, new_func, orig_old_func))</td></tr>
+<tr><th id="837">837</th><td>    <b>return</b> <b>true</b>;</td></tr>
+<tr><th id="838">838</th><td>  <b>return</b> <b>false</b>;</td></tr>
+<tr><th id="839">839</th><td>}</td></tr>
+<tr><th id="840">840</th><td></td></tr>
+<tr><th id="841">841</th><td><em>static</em> <em>void</em> **InterestingDLLsAvailable() {</td></tr>
+<tr><th id="842">842</th><td>  <em>static</em> <em>const</em> <em>char</em> *InterestingDLLs[] = {</td></tr>
+<tr><th id="843">843</th><td>      <q>"kernel32.dll"</q>,</td></tr>
+<tr><th id="844">844</th><td>      <q>"msvcr100.dll"</q>,      <i>// VS2010</i></td></tr>
+<tr><th id="845">845</th><td>      <q>"msvcr110.dll"</q>,      <i>// VS2012</i></td></tr>
+<tr><th id="846">846</th><td>      <q>"msvcr120.dll"</q>,      <i>// VS2013</i></td></tr>
+<tr><th id="847">847</th><td>      <q>"vcruntime140.dll"</q>,  <i>// VS2015</i></td></tr>
+<tr><th id="848">848</th><td>      <q>"ucrtbase.dll"</q>,      <i>// Universal CRT</i></td></tr>
+<tr><th id="849">849</th><td>      <i>// NTDLL should go last as it exports some functions that we should</i></td></tr>
+<tr><th id="850">850</th><td><i>      // override in the CRT [presumably only used internally].</i></td></tr>
+<tr><th id="851">851</th><td>      <q>"ntdll.dll"</q>, NULL};</td></tr>
+<tr><th id="852">852</th><td>  <em>static</em> <em>void</em> *result[ARRAY_SIZE(InterestingDLLs)] = { <var>0</var> };</td></tr>
+<tr><th id="853">853</th><td>  <b>if</b> (!result[<var>0</var>]) {</td></tr>
+<tr><th id="854">854</th><td>    <b>for</b> (size_t i = <var>0</var>, j = <var>0</var>; InterestingDLLs[i]; ++i) {</td></tr>
+<tr><th id="855">855</th><td>      <b>if</b> (HMODULE h = GetModuleHandleA(InterestingDLLs[i]))</td></tr>
+<tr><th id="856">856</th><td>        result[j++] = (<em>void</em> *)h;</td></tr>
+<tr><th id="857">857</th><td>    }</td></tr>
+<tr><th id="858">858</th><td>  }</td></tr>
+<tr><th id="859">859</th><td>  <b>return</b> &amp;result[<var>0</var>];</td></tr>
+<tr><th id="860">860</th><td>}</td></tr>
+<tr><th id="861">861</th><td></td></tr>
+<tr><th id="862">862</th><td><b>namespace</b> {</td></tr>
+<tr><th id="863">863</th><td><i>// Utility for reading loaded PE images.</i></td></tr>
+<tr><th id="864">864</th><td><b>template</b> &lt;<b>typename</b> T&gt; <b>class</b> RVAPtr {</td></tr>
+<tr><th id="865">865</th><td> <b>public</b>:</td></tr>
+<tr><th id="866">866</th><td>  RVAPtr(<em>void</em> *module, uptr rva)</td></tr>
+<tr><th id="867">867</th><td>      : ptr_(<b>reinterpret_cast</b>&lt;T *&gt;(<b>reinterpret_cast</b>&lt;<em>char</em> *&gt;(module) + rva)) {}</td></tr>
+<tr><th id="868">868</th><td>  <b>operator</b> T *() { <b>return</b> ptr_; }</td></tr>
+<tr><th id="869">869</th><td>  T *<b>operator</b>-&gt;() { <b>return</b> ptr_; }</td></tr>
+<tr><th id="870">870</th><td>  T *<b>operator</b>++() { <b>return</b> ++ptr_; }</td></tr>
+<tr><th id="871">871</th><td></td></tr>
+<tr><th id="872">872</th><td> <b>private</b>:</td></tr>
+<tr><th id="873">873</th><td>  T *ptr_;</td></tr>
+<tr><th id="874">874</th><td>};</td></tr>
+<tr><th id="875">875</th><td>} <i>// namespace</i></td></tr>
+<tr><th id="876">876</th><td></td></tr>
+<tr><th id="877">877</th><td><i>// Internal implementation of GetProcAddress. At least since Windows 8,</i></td></tr>
+<tr><th id="878">878</th><td><i>// GetProcAddress appears to initialize DLLs before returning function pointers</i></td></tr>
+<tr><th id="879">879</th><td><i>// into them. This is problematic for the sanitizers, because they typically</i></td></tr>
+<tr><th id="880">880</th><td><i>// want to intercept malloc *before* MSVCRT initializes. Our internal</i></td></tr>
+<tr><th id="881">881</th><td><i>// implementation walks the export list manually without doing initialization.</i></td></tr>
+<tr><th id="882">882</th><td>uptr InternalGetProcAddress(<em>void</em> *module, <em>const</em> <em>char</em> *func_name) {</td></tr>
+<tr><th id="883">883</th><td>  <i>// Check that the module header is full and present.</i></td></tr>
+<tr><th id="884">884</th><td>  RVAPtr&lt;IMAGE_DOS_HEADER&gt; dos_stub(module, <var>0</var>);</td></tr>
+<tr><th id="885">885</th><td>  RVAPtr&lt;IMAGE_NT_HEADERS&gt; headers(module, dos_stub-&gt;e_lfanew);</td></tr>
+<tr><th id="886">886</th><td>  <b>if</b> (!module || dos_stub-&gt;e_magic != IMAGE_DOS_SIGNATURE ||  <i>// "MZ"</i></td></tr>
+<tr><th id="887">887</th><td>      headers-&gt;Signature != IMAGE_NT_SIGNATURE ||             <i>// "PE\0\0"</i></td></tr>
+<tr><th id="888">888</th><td>      headers-&gt;FileHeader.SizeOfOptionalHeader &lt;</td></tr>
+<tr><th id="889">889</th><td>          <b>sizeof</b>(IMAGE_OPTIONAL_HEADER)) {</td></tr>
+<tr><th id="890">890</th><td>    <b>return</b> <var>0</var>;</td></tr>
+<tr><th id="891">891</th><td>  }</td></tr>
+<tr><th id="892">892</th><td></td></tr>
+<tr><th id="893">893</th><td>  IMAGE_DATA_DIRECTORY *export_directory =</td></tr>
+<tr><th id="894">894</th><td>      &amp;headers-&gt;OptionalHeader.DataDirectory[IMAGE_DIRECTORY_ENTRY_EXPORT];</td></tr>
+<tr><th id="895">895</th><td>  <b>if</b> (export_directory-&gt;Size == <var>0</var>)</td></tr>
+<tr><th id="896">896</th><td>    <b>return</b> <var>0</var>;</td></tr>
+<tr><th id="897">897</th><td>  RVAPtr&lt;IMAGE_EXPORT_DIRECTORY&gt; exports(module,</td></tr>
+<tr><th id="898">898</th><td>                                         export_directory-&gt;VirtualAddress);</td></tr>
+<tr><th id="899">899</th><td>  RVAPtr&lt;DWORD&gt; functions(module, exports-&gt;AddressOfFunctions);</td></tr>
+<tr><th id="900">900</th><td>  RVAPtr&lt;DWORD&gt; names(module, exports-&gt;AddressOfNames);</td></tr>
+<tr><th id="901">901</th><td>  RVAPtr&lt;WORD&gt; ordinals(module, exports-&gt;AddressOfNameOrdinals);</td></tr>
+<tr><th id="902">902</th><td></td></tr>
+<tr><th id="903">903</th><td>  <b>for</b> (DWORD i = <var>0</var>; i &lt; exports-&gt;NumberOfNames; i++) {</td></tr>
+<tr><th id="904">904</th><td>    RVAPtr&lt;<em>char</em>&gt; name(module, names[i]);</td></tr>
+<tr><th id="905">905</th><td>    <b>if</b> (!strcmp(func_name, name)) {</td></tr>
+<tr><th id="906">906</th><td>      DWORD index = ordinals[i];</td></tr>
+<tr><th id="907">907</th><td>      RVAPtr&lt;<em>char</em>&gt; func(module, functions[index]);</td></tr>
+<tr><th id="908">908</th><td></td></tr>
+<tr><th id="909">909</th><td>      <i>// Handle forwarded functions.</i></td></tr>
+<tr><th id="910">910</th><td>      DWORD offset = functions[index];</td></tr>
+<tr><th id="911">911</th><td>      <b>if</b> (offset &gt;= export_directory-&gt;VirtualAddress &amp;&amp;</td></tr>
+<tr><th id="912">912</th><td>          offset &lt; export_directory-&gt;VirtualAddress + export_directory-&gt;Size) {</td></tr>
+<tr><th id="913">913</th><td>        <i>// An entry for a forwarded function is a string with the following</i></td></tr>
+<tr><th id="914">914</th><td><i>        // format: "&lt;module&gt; . &lt;function_name&gt;" that is stored into the</i></td></tr>
+<tr><th id="915">915</th><td><i>        // exported directory.</i></td></tr>
+<tr><th id="916">916</th><td>        <em>char</em> function_name[<var>256</var>];</td></tr>
+<tr><th id="917">917</th><td>        size_t funtion_name_length = _strlen(func);</td></tr>
+<tr><th id="918">918</th><td>        <b>if</b> (funtion_name_length &gt;= <b>sizeof</b>(function_name) - <var>1</var>)</td></tr>
+<tr><th id="919">919</th><td>          InterceptionFailed();</td></tr>
+<tr><th id="920">920</th><td></td></tr>
+<tr><th id="921">921</th><td>        _memcpy(function_name, func, funtion_name_length);</td></tr>
+<tr><th id="922">922</th><td>        function_name[funtion_name_length] = <kbd>'\0'</kbd>;</td></tr>
+<tr><th id="923">923</th><td>        <em>char</em>* separator = _strchr(function_name, <kbd>'.'</kbd>);</td></tr>
+<tr><th id="924">924</th><td>        <b>if</b> (!separator)</td></tr>
+<tr><th id="925">925</th><td>          InterceptionFailed();</td></tr>
+<tr><th id="926">926</th><td>        *separator = <kbd>'\0'</kbd>;</td></tr>
+<tr><th id="927">927</th><td></td></tr>
+<tr><th id="928">928</th><td>        <em>void</em>* redirected_module = GetModuleHandleA(function_name);</td></tr>
+<tr><th id="929">929</th><td>        <b>if</b> (!redirected_module)</td></tr>
+<tr><th id="930">930</th><td>          InterceptionFailed();</td></tr>
+<tr><th id="931">931</th><td>        <b>return</b> InternalGetProcAddress(redirected_module, separator + <var>1</var>);</td></tr>
+<tr><th id="932">932</th><td>      }</td></tr>
+<tr><th id="933">933</th><td></td></tr>
+<tr><th id="934">934</th><td>      <b>return</b> (uptr)(<em>char</em> *)func;</td></tr>
+<tr><th id="935">935</th><td>    }</td></tr>
+<tr><th id="936">936</th><td>  }</td></tr>
+<tr><th id="937">937</th><td></td></tr>
+<tr><th id="938">938</th><td>  <b>return</b> <var>0</var>;</td></tr>
+<tr><th id="939">939</th><td>}</td></tr>
+<tr><th id="940">940</th><td></td></tr>
+<tr><th id="941">941</th><td><em>bool</em> OverrideFunction(</td></tr>
+<tr><th id="942">942</th><td>    <em>const</em> <em>char</em> *func_name, uptr new_func, uptr *orig_old_func) {</td></tr>
+<tr><th id="943">943</th><td>  <em>bool</em> hooked = <b>false</b>;</td></tr>
+<tr><th id="944">944</th><td>  <em>void</em> **DLLs = InterestingDLLsAvailable();</td></tr>
+<tr><th id="945">945</th><td>  <b>for</b> (size_t i = <var>0</var>; DLLs[i]; ++i) {</td></tr>
+<tr><th id="946">946</th><td>    uptr func_addr = InternalGetProcAddress(DLLs[i], func_name);</td></tr>
+<tr><th id="947">947</th><td>    <b>if</b> (func_addr &amp;&amp;</td></tr>
+<tr><th id="948">948</th><td>        OverrideFunction(func_addr, new_func, orig_old_func)) {</td></tr>
+<tr><th id="949">949</th><td>      hooked = <b>true</b>;</td></tr>
+<tr><th id="950">950</th><td>    }</td></tr>
+<tr><th id="951">951</th><td>  }</td></tr>
+<tr><th id="952">952</th><td>  <b>return</b> hooked;</td></tr>
+<tr><th id="953">953</th><td>}</td></tr>
+<tr><th id="954">954</th><td></td></tr>
+<tr><th id="955">955</th><td><em>bool</em> OverrideImportedFunction(<em>const</em> <em>char</em> *module_to_patch,</td></tr>
+<tr><th id="956">956</th><td>                              <em>const</em> <em>char</em> *imported_module,</td></tr>
+<tr><th id="957">957</th><td>                              <em>const</em> <em>char</em> *function_name, uptr new_function,</td></tr>
+<tr><th id="958">958</th><td>                              uptr *orig_old_func) {</td></tr>
+<tr><th id="959">959</th><td>  HMODULE module = GetModuleHandleA(module_to_patch);</td></tr>
+<tr><th id="960">960</th><td>  <b>if</b> (!module)</td></tr>
+<tr><th id="961">961</th><td>    <b>return</b> <b>false</b>;</td></tr>
+<tr><th id="962">962</th><td></td></tr>
+<tr><th id="963">963</th><td>  <i>// Check that the module header is full and present.</i></td></tr>
+<tr><th id="964">964</th><td>  RVAPtr&lt;IMAGE_DOS_HEADER&gt; dos_stub(module, <var>0</var>);</td></tr>
+<tr><th id="965">965</th><td>  RVAPtr&lt;IMAGE_NT_HEADERS&gt; headers(module, dos_stub-&gt;e_lfanew);</td></tr>
+<tr><th id="966">966</th><td>  <b>if</b> (!module || dos_stub-&gt;e_magic != IMAGE_DOS_SIGNATURE ||  <i>// "MZ"</i></td></tr>
+<tr><th id="967">967</th><td>      headers-&gt;Signature != IMAGE_NT_SIGNATURE ||             <i>// "PE\0\0"</i></td></tr>
+<tr><th id="968">968</th><td>      headers-&gt;FileHeader.SizeOfOptionalHeader &lt;</td></tr>
+<tr><th id="969">969</th><td>          <b>sizeof</b>(IMAGE_OPTIONAL_HEADER)) {</td></tr>
+<tr><th id="970">970</th><td>    <b>return</b> <b>false</b>;</td></tr>
+<tr><th id="971">971</th><td>  }</td></tr>
+<tr><th id="972">972</th><td></td></tr>
+<tr><th id="973">973</th><td>  IMAGE_DATA_DIRECTORY *import_directory =</td></tr>
+<tr><th id="974">974</th><td>      &amp;headers-&gt;OptionalHeader.DataDirectory[IMAGE_DIRECTORY_ENTRY_IMPORT];</td></tr>
+<tr><th id="975">975</th><td></td></tr>
+<tr><th id="976">976</th><td>  <i>// Iterate the list of imported DLLs. FirstThunk will be null for the last</i></td></tr>
+<tr><th id="977">977</th><td><i>  // entry.</i></td></tr>
+<tr><th id="978">978</th><td>  RVAPtr&lt;IMAGE_IMPORT_DESCRIPTOR&gt; imports(module,</td></tr>
+<tr><th id="979">979</th><td>                                          import_directory-&gt;VirtualAddress);</td></tr>
+<tr><th id="980">980</th><td>  <b>for</b> (; imports-&gt;FirstThunk != <var>0</var>; ++imports) {</td></tr>
+<tr><th id="981">981</th><td>    RVAPtr&lt;<em>const</em> <em>char</em>&gt; modname(module, imports-&gt;Name);</td></tr>
+<tr><th id="982">982</th><td>    <b>if</b> (_stricmp(&amp;*modname, imported_module) == <var>0</var>)</td></tr>
+<tr><th id="983">983</th><td>      <b>break</b>;</td></tr>
+<tr><th id="984">984</th><td>  }</td></tr>
+<tr><th id="985">985</th><td>  <b>if</b> (imports-&gt;FirstThunk == <var>0</var>)</td></tr>
+<tr><th id="986">986</th><td>    <b>return</b> <b>false</b>;</td></tr>
+<tr><th id="987">987</th><td></td></tr>
+<tr><th id="988">988</th><td>  <i>// We have two parallel arrays: the import address table (IAT) and the table</i></td></tr>
+<tr><th id="989">989</th><td><i>  // of names. They start out containing the same data, but the loader rewrites</i></td></tr>
+<tr><th id="990">990</th><td><i>  // the IAT to hold imported addresses and leaves the name table in</i></td></tr>
+<tr><th id="991">991</th><td><i>  // OriginalFirstThunk alone.</i></td></tr>
+<tr><th id="992">992</th><td>  RVAPtr&lt;IMAGE_THUNK_DATA&gt; name_table(module, imports-&gt;OriginalFirstThunk);</td></tr>
+<tr><th id="993">993</th><td>  RVAPtr&lt;IMAGE_THUNK_DATA&gt; iat(module, imports-&gt;FirstThunk);</td></tr>
+<tr><th id="994">994</th><td>  <b>for</b> (; name_table-&gt;u1.Ordinal != <var>0</var>; ++name_table, ++iat) {</td></tr>
+<tr><th id="995">995</th><td>    <b>if</b> (!IMAGE_SNAP_BY_ORDINAL(name_table-&gt;u1.Ordinal)) {</td></tr>
+<tr><th id="996">996</th><td>      RVAPtr&lt;IMAGE_IMPORT_BY_NAME&gt; import_by_name(</td></tr>
+<tr><th id="997">997</th><td>          module, name_table-&gt;u1.ForwarderString);</td></tr>
+<tr><th id="998">998</th><td>      <em>const</em> <em>char</em> *funcname = &amp;import_by_name-&gt;Name[<var>0</var>];</td></tr>
+<tr><th id="999">999</th><td>      <b>if</b> (strcmp(funcname, function_name) == <var>0</var>)</td></tr>
+<tr><th id="1000">1000</th><td>        <b>break</b>;</td></tr>
+<tr><th id="1001">1001</th><td>    }</td></tr>
+<tr><th id="1002">1002</th><td>  }</td></tr>
+<tr><th id="1003">1003</th><td>  <b>if</b> (name_table-&gt;u1.Ordinal == <var>0</var>)</td></tr>
+<tr><th id="1004">1004</th><td>    <b>return</b> <b>false</b>;</td></tr>
+<tr><th id="1005">1005</th><td></td></tr>
+<tr><th id="1006">1006</th><td>  <i>// Now we have the correct IAT entry. Do the swap. We have to make the page</i></td></tr>
+<tr><th id="1007">1007</th><td><i>  // read/write first.</i></td></tr>
+<tr><th id="1008">1008</th><td>  <b>if</b> (orig_old_func)</td></tr>
+<tr><th id="1009">1009</th><td>    *orig_old_func = iat-&gt;u1.AddressOfData;</td></tr>
+<tr><th id="1010">1010</th><td>  DWORD old_prot, unused_prot;</td></tr>
+<tr><th id="1011">1011</th><td>  <b>if</b> (!VirtualProtect(&amp;iat-&gt;u1.AddressOfData, <var>4</var>, PAGE_EXECUTE_READWRITE,</td></tr>
+<tr><th id="1012">1012</th><td>                      &amp;old_prot))</td></tr>
+<tr><th id="1013">1013</th><td>    <b>return</b> <b>false</b>;</td></tr>
+<tr><th id="1014">1014</th><td>  iat-&gt;u1.AddressOfData = new_function;</td></tr>
+<tr><th id="1015">1015</th><td>  <b>if</b> (!VirtualProtect(&amp;iat-&gt;u1.AddressOfData, <var>4</var>, old_prot, &amp;unused_prot))</td></tr>
+<tr><th id="1016">1016</th><td>    <b>return</b> <b>false</b>;  <i>// Not clear if this failure bothers us.</i></td></tr>
+<tr><th id="1017">1017</th><td>  <b>return</b> <b>true</b>;</td></tr>
+<tr><th id="1018">1018</th><td>}</td></tr>
+<tr><th id="1019">1019</th><td></td></tr>
+<tr><th id="1020">1020</th><td>}  <i>// namespace __interception</i></td></tr>
+<tr><th id="1021">1021</th><td></td></tr>
+<tr><th id="1022">1022</th><td><u>#<span data-ppcond="129">endif</span>  // SANITIZER_MAC</u></td></tr>
+<tr><th id="1023">1023</th><td></td></tr>
+</table><hr/><p id='footer'>
+Generated on <em>2021-Jul-01</em> from project llvm revision <em>12</em>

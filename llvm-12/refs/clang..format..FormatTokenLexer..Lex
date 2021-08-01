@@ -1,0 +1,30 @@
+<dec f='llvm/clang/lib/Format/FormatTokenLexer.h' l='104' type='std::unique_ptr&lt;Lexer&gt;'/>
+<offset>832</offset>
+<use f='llvm/clang/lib/Format/FormatTokenLexer.cpp' l='36' u='m' c='_ZN5clang6format16FormatTokenLexerC1ERKNS_13SourceManagerENS_6FileIDEjRKNS0_11FormatStyleENS0_8encoding8EncodingERN4llvm24SpecificBumpPtrAllocatorINS01923091'/>
+<use f='llvm/clang/lib/Format/FormatTokenLexer.cpp' l='38' u='m' c='_ZN5clang6format16FormatTokenLexerC1ERKNS_13SourceManagerENS_6FileIDEjRKNS0_11FormatStyleENS0_8encoding8EncodingERN4llvm24SpecificBumpPtrAllocatorINS01923091'/>
+<use f='llvm/clang/lib/Format/FormatTokenLexer.cpp' l='540' u='m' c='_ZN5clang6format16FormatTokenLexer22tryParseJSRegexLiteralEv'/>
+<use f='llvm/clang/lib/Format/FormatTokenLexer.cpp' l='542' u='m' c='_ZN5clang6format16FormatTokenLexer22tryParseJSRegexLiteralEv'/>
+<use f='llvm/clang/lib/Format/FormatTokenLexer.cpp' l='573' u='m' c='_ZN5clang6format16FormatTokenLexer22tryParseJSRegexLiteralEv'/>
+<use f='llvm/clang/lib/Format/FormatTokenLexer.cpp' l='588' u='m' c='_ZN5clang6format16FormatTokenLexer42handleCSharpVerbatimAndInterpolatedStringsEv'/>
+<use f='llvm/clang/lib/Format/FormatTokenLexer.cpp' l='597' u='m' c='_ZN5clang6format16FormatTokenLexer42handleCSharpVerbatimAndInterpolatedStringsEv'/>
+<use f='llvm/clang/lib/Format/FormatTokenLexer.cpp' l='600' u='m' c='_ZN5clang6format16FormatTokenLexer42handleCSharpVerbatimAndInterpolatedStringsEv'/>
+<use f='llvm/clang/lib/Format/FormatTokenLexer.cpp' l='609' u='m' c='_ZN5clang6format16FormatTokenLexer42handleCSharpVerbatimAndInterpolatedStringsEv'/>
+<use f='llvm/clang/lib/Format/FormatTokenLexer.cpp' l='632' u='m' c='_ZN5clang6format16FormatTokenLexer42handleCSharpVerbatimAndInterpolatedStringsEv'/>
+<use f='llvm/clang/lib/Format/FormatTokenLexer.cpp' l='633' u='m' c='_ZN5clang6format16FormatTokenLexer42handleCSharpVerbatimAndInterpolatedStringsEv'/>
+<use f='llvm/clang/lib/Format/FormatTokenLexer.cpp' l='660' u='m' c='_ZN5clang6format16FormatTokenLexer21handleTemplateStringsEv'/>
+<use f='llvm/clang/lib/Format/FormatTokenLexer.cpp' l='662' u='m' c='_ZN5clang6format16FormatTokenLexer21handleTemplateStringsEv'/>
+<use f='llvm/clang/lib/Format/FormatTokenLexer.cpp' l='669' u='m' c='_ZN5clang6format16FormatTokenLexer21handleTemplateStringsEv'/>
+<use f='llvm/clang/lib/Format/FormatTokenLexer.cpp' l='699' u='m' c='_ZN5clang6format16FormatTokenLexer21handleTemplateStringsEv'/>
+<use f='llvm/clang/lib/Format/FormatTokenLexer.cpp' l='700' u='m' c='_ZN5clang6format16FormatTokenLexer21handleTemplateStringsEv'/>
+<use f='llvm/clang/lib/Format/FormatTokenLexer.cpp' l='711' u='m' c='_ZN5clang6format16FormatTokenLexer21tryParsePythonCommentEv'/>
+<use f='llvm/clang/lib/Format/FormatTokenLexer.cpp' l='712' u='m' c='_ZN5clang6format16FormatTokenLexer21tryParsePythonCommentEv'/>
+<use f='llvm/clang/lib/Format/FormatTokenLexer.cpp' l='713' u='m' c='_ZN5clang6format16FormatTokenLexer21tryParsePythonCommentEv'/>
+<use f='llvm/clang/lib/Format/FormatTokenLexer.cpp' l='715' u='m' c='_ZN5clang6format16FormatTokenLexer21tryParsePythonCommentEv'/>
+<use f='llvm/clang/lib/Format/FormatTokenLexer.cpp' l='719' u='m' c='_ZN5clang6format16FormatTokenLexer21tryParsePythonCommentEv'/>
+<use f='llvm/clang/lib/Format/FormatTokenLexer.cpp' l='720' u='m' c='_ZN5clang6format16FormatTokenLexer21tryParsePythonCommentEv'/>
+<use f='llvm/clang/lib/Format/FormatTokenLexer.cpp' l='721' u='m' c='_ZN5clang6format16FormatTokenLexer21tryParsePythonCommentEv'/>
+<use f='llvm/clang/lib/Format/FormatTokenLexer.cpp' l='933' u='m' c='_ZN5clang6format16FormatTokenLexer12getNextTokenEv'/>
+<use f='llvm/clang/lib/Format/FormatTokenLexer.cpp' l='936' u='m' c='_ZN5clang6format16FormatTokenLexer12getNextTokenEv'/>
+<use f='llvm/clang/lib/Format/FormatTokenLexer.cpp' l='1050' u='m' c='_ZN5clang6format16FormatTokenLexer12readRawTokenERNS0_11FormatTokenE'/>
+<use f='llvm/clang/lib/Format/FormatTokenLexer.cpp' l='1087' u='m' c='_ZN5clang6format16FormatTokenLexer10resetLexerEj'/>
+<use f='llvm/clang/lib/Format/FormatTokenLexer.cpp' l='1090' u='m' c='_ZN5clang6format16FormatTokenLexer10resetLexerEj'/>

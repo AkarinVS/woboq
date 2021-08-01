@@ -1,0 +1,191 @@
+<dec f='llvm/clang/include/clang/Parse/Parser.h' l='1784' type='clang::ExprResult clang::Parser::ParseCastExpression(clang::Parser::CastParseKind ParseKind, bool isAddressOfOperand, bool &amp; NotCastExpr, clang::Parser::TypeCastState isTypeCast, bool isVectorLiteral = false, bool * NotPrimaryExpression = nullptr)'/>
+<use f='llvm/clang/lib/Parse/ParseExpr.cpp' l='681' u='c' c='_ZN5clang6Parser19ParseCastExpressionENS0_13CastParseKindEbNS0_13TypeCastStateEbPb'/>
+<def f='llvm/clang/lib/Parse/ParseExpr.cpp' l='912' ll='1821' type='clang::ExprResult clang::Parser::ParseCastExpression(clang::Parser::CastParseKind ParseKind, bool isAddressOfOperand, bool &amp; NotCastExpr, clang::Parser::TypeCastState isTypeCast, bool isVectorLiteral = false, bool * NotPrimaryExpression = nullptr)'/>
+<use f='llvm/clang/lib/Parse/ParseExpr.cpp' l='1126' u='c' c='_ZN5clang6Parser19ParseCastExpressionENS0_13CastParseKindEbRbNS0_13TypeCastStateEbPb'/>
+<use f='llvm/clang/lib/Parse/ParseExpr.cpp' l='1139' u='c' c='_ZN5clang6Parser19ParseCastExpressionENS0_13CastParseKindEbRbNS0_13TypeCastStateEbPb'/>
+<use f='llvm/clang/lib/Parse/ParseExpr.cpp' l='1257' u='c' c='_ZN5clang6Parser19ParseCastExpressionENS0_13CastParseKindEbRbNS0_13TypeCastStateEbPb'/>
+<use f='llvm/clang/lib/Parse/ParseExpr.cpp' l='1330' u='c' c='_ZN5clang6Parser19ParseCastExpressionENS0_13CastParseKindEbRbNS0_13TypeCastStateEbPb'/>
+<use f='llvm/clang/lib/Parse/ParseExpr.cpp' l='1573' u='c' c='_ZN5clang6Parser19ParseCastExpressionENS0_13CastParseKindEbRbNS0_13TypeCastStateEbPb'/>
+<use f='llvm/clang/lib/Parse/ParseExpr.cpp' l='1589' u='c' c='_ZN5clang6Parser19ParseCastExpressionENS0_13CastParseKindEbRbNS0_13TypeCastStateEbPb'/>
+<use f='llvm/clang/lib/Parse/ParseExpr.cpp' l='1608' u='c' c='_ZN5clang6Parser19ParseCastExpressionENS0_13CastParseKindEbRbNS0_13TypeCastStateEbPb'/>
+<doc f='llvm/clang/lib/Parse/ParseExpr.cpp' l='732'>/// Parse a cast-expression, or, if \pisUnaryExpression is true, parse
+/// a unary-expression.
+///
+/// \p isAddressOfOperand exists because an id-expression that is the operand
+/// of address-of gets special treatment due to member pointers. NotCastExpr
+/// is set to true if the token is not the start of a cast-expression, and no
+/// diagnostic is emitted in this case and no tokens are consumed.
+///
+/// \verbatim
+///       cast-expression: [C99 6.5.4]
+///         unary-expression
+///         &apos;(&apos; type-name &apos;)&apos; cast-expression
+///
+///       unary-expression:  [C99 6.5.3]
+///         postfix-expression
+///         &apos;++&apos; unary-expression
+///         &apos;--&apos; unary-expression
+/// [Coro]  &apos;co_await&apos; cast-expression
+///         unary-operator cast-expression
+///         &apos;sizeof&apos; unary-expression
+///         &apos;sizeof&apos; &apos;(&apos; type-name &apos;)&apos;
+/// [C++11] &apos;sizeof&apos; &apos;...&apos; &apos;(&apos; identifier &apos;)&apos;
+/// [GNU]   &apos;__alignof&apos; unary-expression
+/// [GNU]   &apos;__alignof&apos; &apos;(&apos; type-name &apos;)&apos;
+/// [C11]   &apos;_Alignof&apos; &apos;(&apos; type-name &apos;)&apos;
+/// [C++11] &apos;alignof&apos; &apos;(&apos; type-id &apos;)&apos;
+/// [GNU]   &apos;&amp;&amp;&apos; identifier
+/// [C++11] &apos;noexcept&apos; &apos;(&apos; expression &apos;)&apos; [C++11 5.3.7]
+/// [C++]   new-expression
+/// [C++]   delete-expression
+///
+///       unary-operator: one of
+///         &apos;&amp;&apos;  &apos;*&apos;  &apos;+&apos;  &apos;-&apos;  &apos;~&apos;  &apos;!&apos;
+/// [GNU]   &apos;__extension__&apos;  &apos;__real&apos;  &apos;__imag&apos;
+///
+///       primary-expression: [C99 6.5.1]
+/// [C99]   identifier
+/// [C++]   id-expression
+///         constant
+///         string-literal
+/// [C++]   boolean-literal  [C++ 2.13.5]
+/// [C++11] &apos;nullptr&apos;        [C++11 2.14.7]
+/// [C++11] user-defined-literal
+///         &apos;(&apos; expression &apos;)&apos;
+/// [C11]   generic-selection
+/// [C++2a] requires-expression
+///         &apos;__func__&apos;        [C99 6.4.2.2]
+/// [GNU]   &apos;__FUNCTION__&apos;
+/// [MS]    &apos;__FUNCDNAME__&apos;
+/// [MS]    &apos;L__FUNCTION__&apos;
+/// [MS]    &apos;__FUNCSIG__&apos;
+/// [MS]    &apos;L__FUNCSIG__&apos;
+/// [GNU]   &apos;__PRETTY_FUNCTION__&apos;
+/// [GNU]   &apos;(&apos; compound-statement &apos;)&apos;
+/// [GNU]   &apos;__builtin_va_arg&apos; &apos;(&apos; assignment-expression &apos;,&apos; type-name &apos;)&apos;
+/// [GNU]   &apos;__builtin_offsetof&apos; &apos;(&apos; type-name &apos;,&apos; offsetof-member-designator&apos;)&apos;
+/// [GNU]   &apos;__builtin_choose_expr&apos; &apos;(&apos; assign-expr &apos;,&apos; assign-expr &apos;,&apos;
+///                                     assign-expr &apos;)&apos;
+/// [GNU]   &apos;__builtin_FILE&apos; &apos;(&apos; &apos;)&apos;
+/// [GNU]   &apos;__builtin_FUNCTION&apos; &apos;(&apos; &apos;)&apos;
+/// [GNU]   &apos;__builtin_LINE&apos; &apos;(&apos; &apos;)&apos;
+/// [CLANG] &apos;__builtin_COLUMN&apos; &apos;(&apos; &apos;)&apos;
+/// [GNU]   &apos;__builtin_types_compatible_p&apos; &apos;(&apos; type-name &apos;,&apos; type-name &apos;)&apos;
+/// [GNU]   &apos;__null&apos;
+/// [OBJC]  &apos;[&apos; objc-message-expr &apos;]&apos;
+/// [OBJC]  &apos;\@selector&apos; &apos;(&apos; objc-selector-arg &apos;)&apos;
+/// [OBJC]  &apos;\@protocol&apos; &apos;(&apos; identifier &apos;)&apos;
+/// [OBJC]  &apos;\@encode&apos; &apos;(&apos; type-name &apos;)&apos;
+/// [OBJC]  objc-string-literal
+/// [C++]   simple-type-specifier &apos;(&apos; expression-list[opt] &apos;)&apos;      [C++ 5.2.3]
+/// [C++11] simple-type-specifier braced-init-list                  [C++11 5.2.3]
+/// [C++]   typename-specifier &apos;(&apos; expression-list[opt] &apos;)&apos;         [C++ 5.2.3]
+/// [C++11] typename-specifier braced-init-list                     [C++11 5.2.3]
+/// [C++]   &apos;const_cast&apos; &apos;&lt;&apos; type-name &apos;&gt;&apos; &apos;(&apos; expression &apos;)&apos;       [C++ 5.2p1]
+/// [C++]   &apos;dynamic_cast&apos; &apos;&lt;&apos; type-name &apos;&gt;&apos; &apos;(&apos; expression &apos;)&apos;     [C++ 5.2p1]
+/// [C++]   &apos;reinterpret_cast&apos; &apos;&lt;&apos; type-name &apos;&gt;&apos; &apos;(&apos; expression &apos;)&apos; [C++ 5.2p1]
+/// [C++]   &apos;static_cast&apos; &apos;&lt;&apos; type-name &apos;&gt;&apos; &apos;(&apos; expression &apos;)&apos;      [C++ 5.2p1]
+/// [C++]   &apos;typeid&apos; &apos;(&apos; expression &apos;)&apos;                             [C++ 5.2p1]
+/// [C++]   &apos;typeid&apos; &apos;(&apos; type-id &apos;)&apos;                                [C++ 5.2p1]
+/// [C++]   &apos;this&apos;          [C++ 9.3.2]
+/// [G++]   unary-type-trait &apos;(&apos; type-id &apos;)&apos;
+/// [G++]   binary-type-trait &apos;(&apos; type-id &apos;,&apos; type-id &apos;)&apos;           [TODO]
+/// [EMBT]  array-type-trait &apos;(&apos; type-id &apos;,&apos; integer &apos;)&apos;
+/// [clang] &apos;^&apos; block-literal
+///
+///       constant: [C99 6.4.4]
+///         integer-constant
+///         floating-constant
+///         enumeration-constant -&gt; identifier
+///         character-constant
+///
+///       id-expression: [C++ 5.1]
+///                   unqualified-id
+///                   qualified-id
+///
+///       unqualified-id: [C++ 5.1]
+///                   identifier
+///                   operator-function-id
+///                   conversion-function-id
+///                   &apos;~&apos; class-name
+///                   template-id
+///
+///       new-expression: [C++ 5.3.4]
+///                   &apos;::&apos;[opt] &apos;new&apos; new-placement[opt] new-type-id
+///                                     new-initializer[opt]
+///                   &apos;::&apos;[opt] &apos;new&apos; new-placement[opt] &apos;(&apos; type-id &apos;)&apos;
+///                                     new-initializer[opt]
+///
+///       delete-expression: [C++ 5.3.5]
+///                   &apos;::&apos;[opt] &apos;delete&apos; cast-expression
+///                   &apos;::&apos;[opt] &apos;delete&apos; &apos;[&apos; &apos;]&apos; cast-expression
+///
+/// [GNU/Embarcadero] unary-type-trait:
+///                   &apos;__is_arithmetic&apos;
+///                   &apos;__is_floating_point&apos;
+///                   &apos;__is_integral&apos;
+///                   &apos;__is_lvalue_expr&apos;
+///                   &apos;__is_rvalue_expr&apos;
+///                   &apos;__is_complete_type&apos;
+///                   &apos;__is_void&apos;
+///                   &apos;__is_array&apos;
+///                   &apos;__is_function&apos;
+///                   &apos;__is_reference&apos;
+///                   &apos;__is_lvalue_reference&apos;
+///                   &apos;__is_rvalue_reference&apos;
+///                   &apos;__is_fundamental&apos;
+///                   &apos;__is_object&apos;
+///                   &apos;__is_scalar&apos;
+///                   &apos;__is_compound&apos;
+///                   &apos;__is_pointer&apos;
+///                   &apos;__is_member_object_pointer&apos;
+///                   &apos;__is_member_function_pointer&apos;
+///                   &apos;__is_member_pointer&apos;
+///                   &apos;__is_const&apos;
+///                   &apos;__is_volatile&apos;
+///                   &apos;__is_trivial&apos;
+///                   &apos;__is_standard_layout&apos;
+///                   &apos;__is_signed&apos;
+///                   &apos;__is_unsigned&apos;
+///
+/// [GNU] unary-type-trait:
+///                   &apos;__has_nothrow_assign&apos;
+///                   &apos;__has_nothrow_copy&apos;
+///                   &apos;__has_nothrow_constructor&apos;
+///                   &apos;__has_trivial_assign&apos;                  [TODO]
+///                   &apos;__has_trivial_copy&apos;                    [TODO]
+///                   &apos;__has_trivial_constructor&apos;
+///                   &apos;__has_trivial_destructor&apos;
+///                   &apos;__has_virtual_destructor&apos;
+///                   &apos;__is_abstract&apos;                         [TODO]
+///                   &apos;__is_class&apos;
+///                   &apos;__is_empty&apos;                            [TODO]
+///                   &apos;__is_enum&apos;
+///                   &apos;__is_final&apos;
+///                   &apos;__is_pod&apos;
+///                   &apos;__is_polymorphic&apos;
+///                   &apos;__is_sealed&apos;                           [MS]
+///                   &apos;__is_trivial&apos;
+///                   &apos;__is_union&apos;
+///                   &apos;__has_unique_object_representations&apos;
+///
+/// [Clang] unary-type-trait:
+///                   &apos;__is_aggregate&apos;
+///                   &apos;__trivially_copyable&apos;
+///
+///       binary-type-trait:
+/// [GNU]             &apos;__is_base_of&apos;
+/// [MS]              &apos;__is_convertible_to&apos;
+///                   &apos;__is_convertible&apos;
+///                   &apos;__is_same&apos;
+///
+/// [Embarcadero] array-type-trait:
+///                   &apos;__array_rank&apos;
+///                   &apos;__array_extent&apos;
+///
+/// [Embarcadero] expression-trait:
+///                   &apos;__is_lvalue_expr&apos;
+///                   &apos;__is_rvalue_expr&apos;
+/// \endverbatim
+///</doc>
+<use f='llvm/clang/lib/Parse/ParseExprCXX.cpp' l='3889' u='c' c='_ZN5clang6Parser32ParseCXXAmbiguousParenExpressionERNS0_16ParenParseOptionERNS_9OpaquePtrINS_8QualTypeEEERNS_24BalancedDelimiterTrackerERNS_25ColonProtectionRAIIObjectE'/>

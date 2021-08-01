@@ -1,0 +1,94 @@
+<dec f='llvm/lld/ELF/Relocations.h' l='148' type='void lld::elf::ThunkCreator::mergeThunks(ArrayRef&lt;lld::elf::OutputSection *&gt; outputSections)'/>
+<def f='llvm/lld/ELF/Relocations.cpp' l='1737' ll='1771' type='void lld::elf::ThunkCreator::mergeThunks(ArrayRef&lt;lld::elf::OutputSection *&gt; outputSections)'/>
+<use f='llvm/lld/ELF/Relocations.cpp' l='2078' u='c' c='_ZN3lld3elf12ThunkCreator12createThunksEN4llvm8ArrayRefIPNS0_13OutputSectionEEE'/>
+<doc f='llvm/lld/ELF/Relocations.cpp' l='1646'>// Thunk Implementation
+//
+// Thunks (sometimes called stubs, veneers or branch islands) are small pieces
+// of code that the linker inserts inbetween a caller and a callee. The thunks
+// are added at link time rather than compile time as the decision on whether
+// a thunk is needed, such as the caller and callee being out of range, can only
+// be made at link time.
+//
+// It is straightforward to tell given the current state of the program when a
+// thunk is needed for a particular call. The more difficult part is that
+// the thunk needs to be placed in the program such that the caller can reach
+// the thunk and the thunk can reach the callee; furthermore, adding thunks to
+// the program alters addresses, which can mean more thunks etc.
+//
+// In lld we have a synthetic ThunkSection that can hold many Thunks.
+// The decision to have a ThunkSection act as a container means that we can
+// more easily handle the most common case of a single block of contiguous
+// Thunks by inserting just a single ThunkSection.
+//
+// The implementation of Thunks in lld is split across these areas
+// Relocations.cpp : Framework for creating and placing thunks
+// Thunks.cpp : The code generated for each supported thunk
+// Target.cpp : Target specific hooks that the framework uses to decide when
+//              a thunk is used
+// Synthetic.cpp : Implementation of ThunkSection
+// Writer.cpp : Iteratively call framework until no more Thunks added
+//
+// Thunk placement requirements:
+// Mips LA25 thunks. These must be placed immediately before the callee section
+// We can assume that the caller is in range of the Thunk. These are modelled
+// by Thunks that return the section they must precede with
+// getTargetInputSection().
+//
+// ARM interworking and range extension thunks. These thunks must be placed
+// within range of the caller. All implemented ARM thunks can always reach the
+// callee as they use an indirect jump via a register that has no range
+// restrictions.
+//
+// Thunk placement algorithm:
+// For Mips LA25 ThunkSections; the placement is explicit, it has to be before
+// getTargetInputSection().
+//
+// For thunks that must be placed within range of the caller there are many
+// possible choices given that the maximum range from the caller is usually
+// much larger than the average InputSection size. Desirable properties include:
+// - Maximize reuse of thunks by multiple callers
+// - Minimize number of ThunkSections to simplify insertion
+// - Handle impact of already added Thunks on addresses
+// - Simple to understand and implement
+//
+// In lld for the first pass, we pre-create one or more ThunkSections per
+// InputSectionDescription at Target specific intervals. A ThunkSection is
+// placed so that the estimated end of the ThunkSection is within range of the
+// start of the InputSectionDescription or the previous ThunkSection. For
+// example:
+// InputSectionDescription
+// Section 0
+// ...
+// Section N
+// ThunkSection 0
+// Section N + 1
+// ...
+// Section N + K
+// Thunk Section 1
+//
+// The intention is that we can add a Thunk to a ThunkSection that is well
+// spaced enough to service a number of callers without having to do a lot
+// of work. An important principle is that it is not an error if a Thunk cannot
+// be placed in a pre-created ThunkSection; when this happens we create a new
+// ThunkSection placed next to the caller. This allows us to handle the vast
+// majority of thunks simply, but also handle rare cases where the branch range
+// is smaller than the target specific spacing.
+//
+// The algorithm is expected to create all the thunks that are needed in a
+// single pass, with a small number of programs needing a second pass due to
+// the insertion of thunks in the first pass increasing the offset between
+// callers and callees that were only just in range.
+//
+// A consequence of allowing new ThunkSections to be created outside of the
+// pre-created ThunkSections is that in rare cases calls to Thunks that were in
+// range in pass K, are out of range in some pass &gt; K due to the insertion of
+// more Thunks in between the caller and callee. When this happens we retarget
+// the relocation back to the original target and create another Thunk.
+
+// Remove ThunkSections that are empty, this should only be the initial set
+// precreated on pass 0.
+
+// Insert the Thunks for OutputSection OS into their designated place
+// in the Sections vector, and recalculate the InputSection output section
+// offsets.
+// This may invalidate any output section offsets stored outside of InputSection</doc>

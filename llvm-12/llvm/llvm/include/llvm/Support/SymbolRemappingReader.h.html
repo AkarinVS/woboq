@@ -1,0 +1,149 @@
+<!doctype html>
+<html>
+<head>
+<meta name="viewport" content="width=device-width, initial-scale=1.0"><title>SymbolRemappingReader.h source code [llvm/llvm/include/llvm/Support/SymbolRemappingReader.h] - Woboq Code Browser</title>
+<meta name="woboq:interestingDefinitions" content="llvm::SymbolRemappingParseError,llvm::SymbolRemappingReader "/>
+<link rel="stylesheet" href="../../../../.././data/qtcreator.css" title="QtCreator"/>
+<link rel="alternate stylesheet" href="../../../../.././data/kdevelop.css" title="KDevelop"/>
+<script type="text/javascript" src="../../../../.././data/jquery/jquery.min.js"></script>
+<script type="text/javascript" src="../../../../.././data/jquery/jquery-ui.min.js"></script>
+<script>var file = 'llvm/llvm/include/llvm/Support/SymbolRemappingReader.h'; var root_path = '../../../../..'; var data_path = '../../../../.././data'; var ecma_script_api_version = 2;</script>
+<script src='../../../../.././data/codebrowser.js'></script>
+</head>
+<body><div id='header'><h1 id='breadcrumb'><span>Browse the source code of </span><a href='../../../..'>llvm</a>/<a href='../../..'>llvm</a>/<a href='../..'>include</a>/<a href='..'>llvm</a>/<a href='./'>Support</a>/<a href='SymbolRemappingReader.h.html'>SymbolRemappingReader.h</a></h1></div>
+<hr/><div id='content'><table class="code">
+<tr><th id="1">1</th><td><i>//===- SymbolRemappingReader.h - Read symbol remapping file -----*- C++ -*-===//</i></td></tr>
+<tr><th id="2">2</th><td><i>//</i></td></tr>
+<tr><th id="3">3</th><td><i>// Part of the LLVM Project, under the Apache License v2.0 with LLVM Exceptions.</i></td></tr>
+<tr><th id="4">4</th><td><i>// See <a href="https://llvm.org/LICENSE.txt">https://llvm.org/LICENSE.txt</a> for license information.</i></td></tr>
+<tr><th id="5">5</th><td><i>// SPDX-License-Identifier: Apache-2.0 WITH LLVM-exception</i></td></tr>
+<tr><th id="6">6</th><td><i>//</i></td></tr>
+<tr><th id="7">7</th><td><i>//===----------------------------------------------------------------------===//</i></td></tr>
+<tr><th id="8">8</th><td><i>//</i></td></tr>
+<tr><th id="9">9</th><td><i>// This file contains definitions needed for reading and applying symbol</i></td></tr>
+<tr><th id="10">10</th><td><i>// remapping files.</i></td></tr>
+<tr><th id="11">11</th><td><i>//</i></td></tr>
+<tr><th id="12">12</th><td><i>// Support is provided only for the Itanium C++ name mangling scheme for now.</i></td></tr>
+<tr><th id="13">13</th><td><i>//</i></td></tr>
+<tr><th id="14">14</th><td><i>// NOTE: If you are making changes to this file format, please remember</i></td></tr>
+<tr><th id="15">15</th><td><i>//       to document them in the Clang documentation at</i></td></tr>
+<tr><th id="16">16</th><td><i>//       tools/clang/docs/UsersManual.rst.</i></td></tr>
+<tr><th id="17">17</th><td><i>//</i></td></tr>
+<tr><th id="18">18</th><td><i>// File format</i></td></tr>
+<tr><th id="19">19</th><td><i>// -----------</i></td></tr>
+<tr><th id="20">20</th><td><i>//</i></td></tr>
+<tr><th id="21">21</th><td><i>// The symbol remappings are written as an ASCII text file. Blank lines and</i></td></tr>
+<tr><th id="22">22</th><td><i>// lines starting with a # are ignored. All other lines specify a kind of</i></td></tr>
+<tr><th id="23">23</th><td><i>// mangled name fragment, along with two fragments of that kind that should</i></td></tr>
+<tr><th id="24">24</th><td><i>// be treated as equivalent, separated by spaces.</i></td></tr>
+<tr><th id="25">25</th><td><i>//</i></td></tr>
+<tr><th id="26">26</th><td><i>// See <a href="http://itanium-cxx-abi.github.io/cxx-abi/abi.html#mangling">http://itanium-cxx-abi.github.io/cxx-abi/abi.html#mangling</a> for a</i></td></tr>
+<tr><th id="27">27</th><td><i>// description of the Itanium name mangling scheme.</i></td></tr>
+<tr><th id="28">28</th><td><i>//</i></td></tr>
+<tr><th id="29">29</th><td><i>// The accepted fragment kinds are:</i></td></tr>
+<tr><th id="30">30</th><td><i>//</i></td></tr>
+<tr><th id="31">31</th><td><i>//  * name  A &lt;name&gt;, such as 6foobar or St3__1</i></td></tr>
+<tr><th id="32">32</th><td><i>//  * type  A &lt;type&gt;, such as Ss or N4llvm9StringRefE</i></td></tr>
+<tr><th id="33">33</th><td><i>//  * encoding  An &lt;encoding&gt; (a complete mangling without the leading _Z)</i></td></tr>
+<tr><th id="34">34</th><td><i>//</i></td></tr>
+<tr><th id="35">35</th><td><i>// For example:</i></td></tr>
+<tr><th id="36">36</th><td><i>//</i></td></tr>
+<tr><th id="37">37</th><td><i>// # Ignore int / long differences to treat symbols from 32-bit and 64-bit</i></td></tr>
+<tr><th id="38">38</th><td><i>// # builds with differing size_t / ptrdiff_t / intptr_t as equivalent.</i></td></tr>
+<tr><th id="39">39</th><td><i>// type i l</i></td></tr>
+<tr><th id="40">40</th><td><i>// type j m</i></td></tr>
+<tr><th id="41">41</th><td><i>//</i></td></tr>
+<tr><th id="42">42</th><td><i>// # Ignore differences between libc++ and libstdc++, and between libstdc++'s</i></td></tr>
+<tr><th id="43">43</th><td><i>// # C++98 and C++11 ABIs.</i></td></tr>
+<tr><th id="44">44</th><td><i>// name 3std St3__1</i></td></tr>
+<tr><th id="45">45</th><td><i>// name 3std St7__cxx11</i></td></tr>
+<tr><th id="46">46</th><td><i>//</i></td></tr>
+<tr><th id="47">47</th><td><i>// # Remap a function overload to a specialization of a template (including</i></td></tr>
+<tr><th id="48">48</th><td><i>// # any local symbols declared within it).</i></td></tr>
+<tr><th id="49">49</th><td><i>// encoding N2NS1fEi N2NS1fIiEEvT_</i></td></tr>
+<tr><th id="50">50</th><td><i>//</i></td></tr>
+<tr><th id="51">51</th><td><i>// # Substitutions must be remapped separately from namespace 'std' for now.</i></td></tr>
+<tr><th id="52">52</th><td><i>// name Sa NSt3__19allocatorE</i></td></tr>
+<tr><th id="53">53</th><td><i>// name Sb NSt3__112basic_stringE</i></td></tr>
+<tr><th id="54">54</th><td><i>// type Ss NSt3__112basic_stringIcSt11char_traitsIcESaE</i></td></tr>
+<tr><th id="55">55</th><td><i>// # ...</i></td></tr>
+<tr><th id="56">56</th><td><i>//</i></td></tr>
+<tr><th id="57">57</th><td><i>//===----------------------------------------------------------------------===//</i></td></tr>
+<tr><th id="58">58</th><td></td></tr>
+<tr><th id="59">59</th><td><u>#<span data-ppcond="59">ifndef</span> <span class="macro" data-ref="_M/LLVM_SUPPORT_SYMBOLREMAPPINGREADER_H">LLVM_SUPPORT_SYMBOLREMAPPINGREADER_H</span></u></td></tr>
+<tr><th id="60">60</th><td><u>#define <dfn class="macro" id="_M/LLVM_SUPPORT_SYMBOLREMAPPINGREADER_H" data-ref="_M/LLVM_SUPPORT_SYMBOLREMAPPINGREADER_H">LLVM_SUPPORT_SYMBOLREMAPPINGREADER_H</dfn></u></td></tr>
+<tr><th id="61">61</th><td></td></tr>
+<tr><th id="62">62</th><td><u>#include <a href="../ADT/StringRef.h.html">"llvm/ADT/StringRef.h"</a></u></td></tr>
+<tr><th id="63">63</th><td><u>#include <a href="Error.h.html">"llvm/Support/Error.h"</a></u></td></tr>
+<tr><th id="64">64</th><td><u>#include <a href="ItaniumManglingCanonicalizer.h.html">"llvm/Support/ItaniumManglingCanonicalizer.h"</a></u></td></tr>
+<tr><th id="65">65</th><td><u>#include <a href="MemoryBuffer.h.html">"llvm/Support/MemoryBuffer.h"</a></u></td></tr>
+<tr><th id="66">66</th><td></td></tr>
+<tr><th id="67">67</th><td><b>namespace</b> <span class="namespace">llvm</span> {</td></tr>
+<tr><th id="68">68</th><td></td></tr>
+<tr><th id="69">69</th><td><b>class</b> <dfn class="type def" id="llvm::SymbolRemappingParseError" title='llvm::SymbolRemappingParseError' data-ref="llvm::SymbolRemappingParseError" data-ref-filename="llvm..SymbolRemappingParseError">SymbolRemappingParseError</dfn> : <b>public</b> <a class="type" href="Error.h.html#llvm::ErrorInfo" title='llvm::ErrorInfo' data-ref="llvm::ErrorInfo" data-ref-filename="llvm..ErrorInfo">ErrorInfo</a>&lt;<a class="type" href="#llvm::SymbolRemappingParseError" title='llvm::SymbolRemappingParseError' data-ref="llvm::SymbolRemappingParseError" data-ref-filename="llvm..SymbolRemappingParseError">SymbolRemappingParseError</a>&gt; {</td></tr>
+<tr><th id="70">70</th><td><b>public</b>:</td></tr>
+<tr><th id="71">71</th><td>  <dfn class="decl def fn" id="_ZN4llvm25SymbolRemappingParseErrorC1ENS_9StringRefElRKNS_5TwineE" title='llvm::SymbolRemappingParseError::SymbolRemappingParseError' data-ref="_ZN4llvm25SymbolRemappingParseErrorC1ENS_9StringRefElRKNS_5TwineE" data-ref-filename="_ZN4llvm25SymbolRemappingParseErrorC1ENS_9StringRefElRKNS_5TwineE">SymbolRemappingParseError</dfn>(<a class="type" href="../ADT/StringRef.h.html#llvm::StringRef" title='llvm::StringRef' data-ref="llvm::StringRef" data-ref-filename="llvm..StringRef">StringRef</a> <dfn class="local col6 decl" id="6File" title='File' data-type='llvm::StringRef' data-ref="6File" data-ref-filename="6File">File</dfn>, <a class="typedef" href="../../../../../include/bits/stdint-intn.h.html#int64_t" title='int64_t' data-type='__int64_t' data-ref="int64_t" data-ref-filename="int64_t">int64_t</a> <dfn class="local col7 decl" id="7Line" title='Line' data-type='int64_t' data-ref="7Line" data-ref-filename="7Line">Line</dfn>, <em>const</em> <a class="type" href="../ADT/Twine.h.html#llvm::Twine" title='llvm::Twine' data-ref="llvm::Twine" data-ref-filename="llvm..Twine">Twine</a> &amp;<dfn class="local col8 decl" id="8Message" title='Message' data-type='const llvm::Twine &amp;' data-ref="8Message" data-ref-filename="8Message">Message</dfn>)</td></tr>
+<tr><th id="72">72</th><td>      : <a class="member field" href="#llvm::SymbolRemappingParseError::File" title='llvm::SymbolRemappingParseError::File' data-ref="llvm::SymbolRemappingParseError::File" data-ref-filename="llvm..SymbolRemappingParseError..File">File</a><span class='ref fn' title='std::__cxx11::basic_string::basic_string&lt;_CharT, _Traits, _Alloc&gt;' data-ref="_ZNSt7__cxx1112basic_stringC1EONS_12basic_stringIT_T0_T1_EE" data-ref-filename="_ZNSt7__cxx1112basic_stringC1EONS_12basic_stringIT_T0_T1_EE">(</span><a class="ref fn fake" href="../ADT/StringRef.h.html#_ZNK4llvm9StringRefcvNSt7__cxx1112basic_stringIcSt11char_traitsIcESaIcEEEEv" title='llvm::StringRef::operator basic_string' data-ref="_ZNK4llvm9StringRefcvNSt7__cxx1112basic_stringIcSt11char_traitsIcESaIcEEEEv" data-ref-filename="_ZNK4llvm9StringRefcvNSt7__cxx1112basic_stringIcSt11char_traitsIcESaIcEEEEv"></a><a class="local col6 ref" href="#6File" title='File' data-ref="6File" data-ref-filename="6File">File</a>), <a class="member field" href="#llvm::SymbolRemappingParseError::Line" title='llvm::SymbolRemappingParseError::Line' data-ref="llvm::SymbolRemappingParseError::Line" data-ref-filename="llvm..SymbolRemappingParseError..Line">Line</a>(<a class="local col7 ref" href="#7Line" title='Line' data-ref="7Line" data-ref-filename="7Line">Line</a>), <a class="member field" href="#llvm::SymbolRemappingParseError::Message" title='llvm::SymbolRemappingParseError::Message' data-ref="llvm::SymbolRemappingParseError::Message" data-ref-filename="llvm..SymbolRemappingParseError..Message">Message</a><span class='ref fn' title='std::__cxx11::basic_string::basic_string&lt;_CharT, _Traits, _Alloc&gt;' data-ref="_ZNSt7__cxx1112basic_stringC1EONS_12basic_stringIT_T0_T1_EE" data-ref-filename="_ZNSt7__cxx1112basic_stringC1EONS_12basic_stringIT_T0_T1_EE">(</span><a class="local col8 ref" href="#8Message" title='Message' data-ref="8Message" data-ref-filename="8Message">Message</a>.<a class="ref fn" href="../ADT/Twine.h.html#_ZNK4llvm5Twine3strB5cxx11Ev" title='llvm::Twine::str' data-ref="_ZNK4llvm5Twine3strB5cxx11Ev" data-ref-filename="_ZNK4llvm5Twine3strB5cxx11Ev">str</a>()) {}</td></tr>
+<tr><th id="73">73</th><td></td></tr>
+<tr><th id="74">74</th><td>  <em>void</em> <dfn class="virtual decl def fn" id="_ZNK4llvm25SymbolRemappingParseError3logERNS_11raw_ostreamE" title='llvm::SymbolRemappingParseError::log' data-ref="_ZNK4llvm25SymbolRemappingParseError3logERNS_11raw_ostreamE" data-ref-filename="_ZNK4llvm25SymbolRemappingParseError3logERNS_11raw_ostreamE">log</dfn>(<span class="namespace">llvm::</span><a class="type" href="raw_ostream.h.html#llvm::raw_ostream" title='llvm::raw_ostream' data-ref="llvm::raw_ostream" data-ref-filename="llvm..raw_ostream">raw_ostream</a> &amp;<dfn class="local col9 decl" id="9OS" title='OS' data-type='llvm::raw_ostream &amp;' data-ref="9OS" data-ref-filename="9OS">OS</dfn>) <em>const</em> override {</td></tr>
+<tr><th id="75">75</th><td>    <a class="local col9 ref" href="#9OS" title='OS' data-ref="9OS" data-ref-filename="9OS">OS</a> <a class="ref fn" href="raw_ostream.h.html#_ZN4llvm11raw_ostreamlsERKNSt7__cxx1112basic_stringIcSt11char_traitsIcESaIcEEE" title='llvm::raw_ostream::operator&lt;&lt;' data-ref="_ZN4llvm11raw_ostreamlsERKNSt7__cxx1112basic_stringIcSt11char_traitsIcESaIcEEE" data-ref-filename="_ZN4llvm11raw_ostreamlsERKNSt7__cxx1112basic_stringIcSt11char_traitsIcESaIcEEE">&lt;&lt;</a> <a class="member field" href="#llvm::SymbolRemappingParseError::File" title='llvm::SymbolRemappingParseError::File' data-ref="llvm::SymbolRemappingParseError::File" data-ref-filename="llvm..SymbolRemappingParseError..File">File</a> <a class="ref fn" href="raw_ostream.h.html#_ZN4llvm11raw_ostreamlsEc" title='llvm::raw_ostream::operator&lt;&lt;' data-ref="_ZN4llvm11raw_ostreamlsEc" data-ref-filename="_ZN4llvm11raw_ostreamlsEc">&lt;&lt;</a> <kbd>':'</kbd> <a class="ref fn" href="raw_ostream.h.html#_ZN4llvm11raw_ostreamlsEl" title='llvm::raw_ostream::operator&lt;&lt;' data-ref="_ZN4llvm11raw_ostreamlsEl" data-ref-filename="_ZN4llvm11raw_ostreamlsEl">&lt;&lt;</a> <a class="member field" href="#llvm::SymbolRemappingParseError::Line" title='llvm::SymbolRemappingParseError::Line' data-ref="llvm::SymbolRemappingParseError::Line" data-ref-filename="llvm..SymbolRemappingParseError..Line">Line</a> <a class="ref fn" href="raw_ostream.h.html#_ZN4llvm11raw_ostreamlsEPKc" title='llvm::raw_ostream::operator&lt;&lt;' data-ref="_ZN4llvm11raw_ostreamlsEPKc" data-ref-filename="_ZN4llvm11raw_ostreamlsEPKc">&lt;&lt;</a> <q>": "</q> <a class="ref fn" href="raw_ostream.h.html#_ZN4llvm11raw_ostreamlsERKNSt7__cxx1112basic_stringIcSt11char_traitsIcESaIcEEE" title='llvm::raw_ostream::operator&lt;&lt;' data-ref="_ZN4llvm11raw_ostreamlsERKNSt7__cxx1112basic_stringIcSt11char_traitsIcESaIcEEE" data-ref-filename="_ZN4llvm11raw_ostreamlsERKNSt7__cxx1112basic_stringIcSt11char_traitsIcESaIcEEE">&lt;&lt;</a> <a class="member field" href="#llvm::SymbolRemappingParseError::Message" title='llvm::SymbolRemappingParseError::Message' data-ref="llvm::SymbolRemappingParseError::Message" data-ref-filename="llvm..SymbolRemappingParseError..Message">Message</a>;</td></tr>
+<tr><th id="76">76</th><td>  }</td></tr>
+<tr><th id="77">77</th><td>  <span class="namespace">std::</span><span class='type' title='std::error_code' data-ref="std::error_code" data-ref-filename="std..error_code">error_code</span> <dfn class="virtual decl def fn" id="_ZNK4llvm25SymbolRemappingParseError18convertToErrorCodeEv" title='llvm::SymbolRemappingParseError::convertToErrorCode' data-ref="_ZNK4llvm25SymbolRemappingParseError18convertToErrorCodeEv" data-ref-filename="_ZNK4llvm25SymbolRemappingParseError18convertToErrorCodeEv">convertToErrorCode</dfn>() <em>const</em> override {</td></tr>
+<tr><th id="78">78</th><td>    <b>return</b> <span class="namespace">llvm::</span><a class="ref fn" href="Error.h.html#_ZN4llvm22inconvertibleErrorCodeEv" title='llvm::inconvertibleErrorCode' data-ref="_ZN4llvm22inconvertibleErrorCodeEv" data-ref-filename="_ZN4llvm22inconvertibleErrorCodeEv">inconvertibleErrorCode</a>();</td></tr>
+<tr><th id="79">79</th><td>  }</td></tr>
+<tr><th id="80">80</th><td></td></tr>
+<tr><th id="81">81</th><td>  <a class="type" href="../ADT/StringRef.h.html#llvm::StringRef" title='llvm::StringRef' data-ref="llvm::StringRef" data-ref-filename="llvm..StringRef">StringRef</a> <dfn class="decl def fn" id="_ZNK4llvm25SymbolRemappingParseError11getFileNameEv" title='llvm::SymbolRemappingParseError::getFileName' data-ref="_ZNK4llvm25SymbolRemappingParseError11getFileNameEv" data-ref-filename="_ZNK4llvm25SymbolRemappingParseError11getFileNameEv">getFileName</dfn>() <em>const</em> { <b>return</b> <a class="ref fn fake" href="../ADT/StringRef.h.html#_ZN4llvm9StringRefC1ERKNSt7__cxx1112basic_stringIcSt11char_traitsIcESaIcEEE" title='llvm::StringRef::StringRef' data-ref="_ZN4llvm9StringRefC1ERKNSt7__cxx1112basic_stringIcSt11char_traitsIcESaIcEEE" data-ref-filename="_ZN4llvm9StringRefC1ERKNSt7__cxx1112basic_stringIcSt11char_traitsIcESaIcEEE"></a><a class="member field" href="#llvm::SymbolRemappingParseError::File" title='llvm::SymbolRemappingParseError::File' data-ref="llvm::SymbolRemappingParseError::File" data-ref-filename="llvm..SymbolRemappingParseError..File">File</a>; }</td></tr>
+<tr><th id="82">82</th><td>  <a class="typedef" href="../../../../../include/bits/stdint-intn.h.html#int64_t" title='int64_t' data-type='__int64_t' data-ref="int64_t" data-ref-filename="int64_t">int64_t</a> <dfn class="decl def fn" id="_ZNK4llvm25SymbolRemappingParseError10getLineNumEv" title='llvm::SymbolRemappingParseError::getLineNum' data-ref="_ZNK4llvm25SymbolRemappingParseError10getLineNumEv" data-ref-filename="_ZNK4llvm25SymbolRemappingParseError10getLineNumEv">getLineNum</dfn>() <em>const</em> { <b>return</b> <a class="member field" href="#llvm::SymbolRemappingParseError::Line" title='llvm::SymbolRemappingParseError::Line' data-ref="llvm::SymbolRemappingParseError::Line" data-ref-filename="llvm..SymbolRemappingParseError..Line">Line</a>; }</td></tr>
+<tr><th id="83">83</th><td>  <a class="type" href="../ADT/StringRef.h.html#llvm::StringRef" title='llvm::StringRef' data-ref="llvm::StringRef" data-ref-filename="llvm..StringRef">StringRef</a> <dfn class="decl def fn" id="_ZNK4llvm25SymbolRemappingParseError10getMessageEv" title='llvm::SymbolRemappingParseError::getMessage' data-ref="_ZNK4llvm25SymbolRemappingParseError10getMessageEv" data-ref-filename="_ZNK4llvm25SymbolRemappingParseError10getMessageEv">getMessage</dfn>() <em>const</em> { <b>return</b> <a class="ref fn fake" href="../ADT/StringRef.h.html#_ZN4llvm9StringRefC1ERKNSt7__cxx1112basic_stringIcSt11char_traitsIcESaIcEEE" title='llvm::StringRef::StringRef' data-ref="_ZN4llvm9StringRefC1ERKNSt7__cxx1112basic_stringIcSt11char_traitsIcESaIcEEE" data-ref-filename="_ZN4llvm9StringRefC1ERKNSt7__cxx1112basic_stringIcSt11char_traitsIcESaIcEEE"></a><a class="member field" href="#llvm::SymbolRemappingParseError::Message" title='llvm::SymbolRemappingParseError::Message' data-ref="llvm::SymbolRemappingParseError::Message" data-ref-filename="llvm..SymbolRemappingParseError..Message">Message</a>; }</td></tr>
+<tr><th id="84">84</th><td></td></tr>
+<tr><th id="85">85</th><td>  <em>static</em> <em>char</em> <dfn class="decl" id="llvm::SymbolRemappingParseError::ID" title='llvm::SymbolRemappingParseError::ID' data-ref="llvm::SymbolRemappingParseError::ID" data-ref-filename="llvm..SymbolRemappingParseError..ID">ID</dfn>;</td></tr>
+<tr><th id="86">86</th><td></td></tr>
+<tr><th id="87">87</th><td><b>private</b>:</td></tr>
+<tr><th id="88">88</th><td>  <span class="namespace">std::</span><span class='typedef' title='std::string' data-type='basic_string&lt;char&gt;' data-ref="std::string" data-ref-filename="std..string">string</span> <dfn class="decl field" id="llvm::SymbolRemappingParseError::File" title='llvm::SymbolRemappingParseError::File' data-ref="llvm::SymbolRemappingParseError::File" data-ref-filename="llvm..SymbolRemappingParseError..File">File</dfn>;</td></tr>
+<tr><th id="89">89</th><td>  <a class="typedef" href="../../../../../include/bits/stdint-intn.h.html#int64_t" title='int64_t' data-type='__int64_t' data-ref="int64_t" data-ref-filename="int64_t">int64_t</a> <dfn class="decl field" id="llvm::SymbolRemappingParseError::Line" title='llvm::SymbolRemappingParseError::Line' data-ref="llvm::SymbolRemappingParseError::Line" data-ref-filename="llvm..SymbolRemappingParseError..Line">Line</dfn>;</td></tr>
+<tr><th id="90">90</th><td>  <span class="namespace">std::</span><span class='typedef' title='std::string' data-type='basic_string&lt;char&gt;' data-ref="std::string" data-ref-filename="std..string">string</span> <dfn class="decl field" id="llvm::SymbolRemappingParseError::Message" title='llvm::SymbolRemappingParseError::Message' data-ref="llvm::SymbolRemappingParseError::Message" data-ref-filename="llvm..SymbolRemappingParseError..Message">Message</dfn>;</td></tr>
+<tr><th id="91">91</th><td>};</td></tr>
+<tr><th id="92">92</th><td></td></tr>
+<tr><th id="93">93</th><td><i class="doc">/// Reader for symbol remapping files.</i></td></tr>
+<tr><th id="94">94</th><td><i class="doc">///</i></td></tr>
+<tr><th id="95">95</th><td><i class="doc">/// Remaps the symbol names in profile data to match those in the program</i></td></tr>
+<tr><th id="96">96</th><td><i class="doc">/// according to a set of rules specified in a given file.</i></td></tr>
+<tr><th id="97">97</th><td><b>class</b> <dfn class="type def" id="llvm::SymbolRemappingReader" title='llvm::SymbolRemappingReader' data-ref="llvm::SymbolRemappingReader" data-ref-filename="llvm..SymbolRemappingReader">SymbolRemappingReader</dfn> {</td></tr>
+<tr><th id="98">98</th><td><b>public</b>:</td></tr>
+<tr><th id="99">99</th><td>  <i class="doc">/// Read remappings from the given buffer, which must live as long as</i></td></tr>
+<tr><th id="100">100</th><td><i class="doc">  /// the remapper.</i></td></tr>
+<tr><th id="101">101</th><td>  <a class="type" href="Error.h.html#llvm::Error" title='llvm::Error' data-ref="llvm::Error" data-ref-filename="llvm..Error">Error</a> <dfn class="decl fn" id="_ZN4llvm21SymbolRemappingReader4readERNS_12MemoryBufferE" title='llvm::SymbolRemappingReader::read' data-ref="_ZN4llvm21SymbolRemappingReader4readERNS_12MemoryBufferE" data-ref-filename="_ZN4llvm21SymbolRemappingReader4readERNS_12MemoryBufferE">read</dfn>(<a class="type" href="MemoryBuffer.h.html#llvm::MemoryBuffer" title='llvm::MemoryBuffer' data-ref="llvm::MemoryBuffer" data-ref-filename="llvm..MemoryBuffer">MemoryBuffer</a> &amp;<dfn class="local col0 decl" id="10B" title='B' data-type='llvm::MemoryBuffer &amp;' data-ref="10B" data-ref-filename="10B">B</dfn>);</td></tr>
+<tr><th id="102">102</th><td></td></tr>
+<tr><th id="103">103</th><td>  <i class="doc">/// A Key represents an equivalence class of symbol names.</i></td></tr>
+<tr><th id="104">104</th><td>  <b>using</b> <dfn class="typedef" id="llvm::SymbolRemappingReader::Key" title='llvm::SymbolRemappingReader::Key' data-type='uintptr_t' data-ref="llvm::SymbolRemappingReader::Key" data-ref-filename="llvm..SymbolRemappingReader..Key">Key</dfn> = <a class="typedef" href="../../../../../include/stdint.h.html#uintptr_t" title='uintptr_t' data-type='unsigned long' data-ref="uintptr_t" data-ref-filename="uintptr_t">uintptr_t</a>;</td></tr>
+<tr><th id="105">105</th><td></td></tr>
+<tr><th id="106">106</th><td>  <i class="doc">/// Construct a key for the given symbol, or return an existing one if an</i></td></tr>
+<tr><th id="107">107</th><td><i class="doc">  /// equivalent name has already been inserted. The symbol name must live</i></td></tr>
+<tr><th id="108">108</th><td><i class="doc">  /// as long as the remapper.</i></td></tr>
+<tr><th id="109">109</th><td><i class="doc">  ///</i></td></tr>
+<tr><th id="110">110</th><td><i class="doc">  /// The result will be Key() if the name cannot be remapped (typically</i></td></tr>
+<tr><th id="111">111</th><td><i class="doc">  /// because it is not a valid mangled name).</i></td></tr>
+<tr><th id="112">112</th><td>  <a class="typedef" href="#llvm::SymbolRemappingReader::Key" title='llvm::SymbolRemappingReader::Key' data-type='uintptr_t' data-ref="llvm::SymbolRemappingReader::Key" data-ref-filename="llvm..SymbolRemappingReader..Key">Key</a> <dfn class="decl def fn" id="_ZN4llvm21SymbolRemappingReader6insertENS_9StringRefE" title='llvm::SymbolRemappingReader::insert' data-ref="_ZN4llvm21SymbolRemappingReader6insertENS_9StringRefE" data-ref-filename="_ZN4llvm21SymbolRemappingReader6insertENS_9StringRefE">insert</dfn>(<a class="type" href="../ADT/StringRef.h.html#llvm::StringRef" title='llvm::StringRef' data-ref="llvm::StringRef" data-ref-filename="llvm..StringRef">StringRef</a> <dfn class="local col1 decl" id="11FunctionName" title='FunctionName' data-type='llvm::StringRef' data-ref="11FunctionName" data-ref-filename="11FunctionName">FunctionName</dfn>) {</td></tr>
+<tr><th id="113">113</th><td>    <b>return</b> <a class="member field" href="#llvm::SymbolRemappingReader::Canonicalizer" title='llvm::SymbolRemappingReader::Canonicalizer' data-ref="llvm::SymbolRemappingReader::Canonicalizer" data-ref-filename="llvm..SymbolRemappingReader..Canonicalizer">Canonicalizer</a>.<a class="ref fn" href="ItaniumManglingCanonicalizer.h.html#_ZN4llvm28ItaniumManglingCanonicalizer12canonicalizeENS_9StringRefE" title='llvm::ItaniumManglingCanonicalizer::canonicalize' data-ref="_ZN4llvm28ItaniumManglingCanonicalizer12canonicalizeENS_9StringRefE" data-ref-filename="_ZN4llvm28ItaniumManglingCanonicalizer12canonicalizeENS_9StringRefE">canonicalize</a>(<a class="ref fn fake" href="../ADT/StringRef.h.html#57" title='llvm::StringRef::StringRef' data-ref="_ZN4llvm9StringRefC1ERKS0_" data-ref-filename="_ZN4llvm9StringRefC1ERKS0_"></a><a class="local col1 ref" href="#11FunctionName" title='FunctionName' data-ref="11FunctionName" data-ref-filename="11FunctionName">FunctionName</a>);</td></tr>
+<tr><th id="114">114</th><td>  }</td></tr>
+<tr><th id="115">115</th><td></td></tr>
+<tr><th id="116">116</th><td>  <i class="doc">/// Map the given symbol name into the key for the corresponding equivalence</i></td></tr>
+<tr><th id="117">117</th><td><i class="doc">  /// class.</i></td></tr>
+<tr><th id="118">118</th><td><i class="doc">  ///</i></td></tr>
+<tr><th id="119">119</th><td><i class="doc">  /// The result will typically be Key() if no equivalent symbol has been</i></td></tr>
+<tr><th id="120">120</th><td><i class="doc">  /// inserted, but this is not guaranteed: a Key different from all keys ever</i></td></tr>
+<tr><th id="121">121</th><td><i class="doc">  /// returned by<span class="command"> \c</span> <span class="arg">insert</span> may be returned instead.</i></td></tr>
+<tr><th id="122">122</th><td>  <a class="typedef" href="#llvm::SymbolRemappingReader::Key" title='llvm::SymbolRemappingReader::Key' data-type='uintptr_t' data-ref="llvm::SymbolRemappingReader::Key" data-ref-filename="llvm..SymbolRemappingReader..Key">Key</a> <dfn class="decl def fn" id="_ZN4llvm21SymbolRemappingReader6lookupENS_9StringRefE" title='llvm::SymbolRemappingReader::lookup' data-ref="_ZN4llvm21SymbolRemappingReader6lookupENS_9StringRefE" data-ref-filename="_ZN4llvm21SymbolRemappingReader6lookupENS_9StringRefE">lookup</dfn>(<a class="type" href="../ADT/StringRef.h.html#llvm::StringRef" title='llvm::StringRef' data-ref="llvm::StringRef" data-ref-filename="llvm..StringRef">StringRef</a> <dfn class="local col2 decl" id="12FunctionName" title='FunctionName' data-type='llvm::StringRef' data-ref="12FunctionName" data-ref-filename="12FunctionName">FunctionName</dfn>) {</td></tr>
+<tr><th id="123">123</th><td>    <b>return</b> <a class="member field" href="#llvm::SymbolRemappingReader::Canonicalizer" title='llvm::SymbolRemappingReader::Canonicalizer' data-ref="llvm::SymbolRemappingReader::Canonicalizer" data-ref-filename="llvm..SymbolRemappingReader..Canonicalizer">Canonicalizer</a>.<a class="ref fn" href="ItaniumManglingCanonicalizer.h.html#_ZN4llvm28ItaniumManglingCanonicalizer6lookupENS_9StringRefE" title='llvm::ItaniumManglingCanonicalizer::lookup' data-ref="_ZN4llvm28ItaniumManglingCanonicalizer6lookupENS_9StringRefE" data-ref-filename="_ZN4llvm28ItaniumManglingCanonicalizer6lookupENS_9StringRefE">lookup</a>(<a class="ref fn fake" href="../ADT/StringRef.h.html#57" title='llvm::StringRef::StringRef' data-ref="_ZN4llvm9StringRefC1ERKS0_" data-ref-filename="_ZN4llvm9StringRefC1ERKS0_"></a><a class="local col2 ref" href="#12FunctionName" title='FunctionName' data-ref="12FunctionName" data-ref-filename="12FunctionName">FunctionName</a>);</td></tr>
+<tr><th id="124">124</th><td>  }</td></tr>
+<tr><th id="125">125</th><td></td></tr>
+<tr><th id="126">126</th><td><b>private</b>:</td></tr>
+<tr><th id="127">127</th><td>  <a class="type" href="ItaniumManglingCanonicalizer.h.html#llvm::ItaniumManglingCanonicalizer" title='llvm::ItaniumManglingCanonicalizer' data-ref="llvm::ItaniumManglingCanonicalizer" data-ref-filename="llvm..ItaniumManglingCanonicalizer">ItaniumManglingCanonicalizer</a> <dfn class="decl field" id="llvm::SymbolRemappingReader::Canonicalizer" title='llvm::SymbolRemappingReader::Canonicalizer' data-ref="llvm::SymbolRemappingReader::Canonicalizer" data-ref-filename="llvm..SymbolRemappingReader..Canonicalizer">Canonicalizer</dfn>;</td></tr>
+<tr><th id="128">128</th><td>};</td></tr>
+<tr><th id="129">129</th><td></td></tr>
+<tr><th id="130">130</th><td>} <i>// end namespace llvm</i></td></tr>
+<tr><th id="131">131</th><td></td></tr>
+<tr><th id="132">132</th><td><u>#<span data-ppcond="59">endif</span> // LLVM_SUPPORT_SYMBOLREMAPPINGREADER_H</u></td></tr>
+<tr><th id="133">133</th><td></td></tr>
+</table><hr/><p id='footer'>
+Generated while processing <a href='../../../lib/ProfileData/InstrProfReader.cpp.html'>llvm/llvm/lib/ProfileData/InstrProfReader.cpp</a><br/>Generated on <em>2021-Jul-01</em> from project llvm revision <em>12</em>

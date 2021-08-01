@@ -1,0 +1,172 @@
+<!doctype html>
+<html>
+<head>
+<meta name="viewport" content="width=device-width, initial-scale=1.0"><title>mutex.h source code [llvm/llvm/utils/benchmark/src/mutex.h] - Woboq Code Browser</title>
+<meta name="woboq:interestingDefinitions" content="benchmark::Barrier,benchmark::Mutex,benchmark::MutexLock "/>
+<link rel="stylesheet" href="../../../../.././data/qtcreator.css" title="QtCreator"/>
+<link rel="alternate stylesheet" href="../../../../.././data/kdevelop.css" title="KDevelop"/>
+<script type="text/javascript" src="../../../../.././data/jquery/jquery.min.js"></script>
+<script type="text/javascript" src="../../../../.././data/jquery/jquery-ui.min.js"></script>
+<script>var file = 'llvm/llvm/utils/benchmark/src/mutex.h'; var root_path = '../../../../..'; var data_path = '../../../../.././data'; var ecma_script_api_version = 2;</script>
+<script src='../../../../.././data/codebrowser.js'></script>
+</head>
+<body><div id='header'><h1 id='breadcrumb'><span>Browse the source code of </span><a href='../../../..'>llvm</a>/<a href='../../..'>llvm</a>/<a href='../..'>utils</a>/<a href='..'>benchmark</a>/<a href='./'>src</a>/<a href='mutex.h.html'>mutex.h</a></h1></div>
+<hr/><div id='content'><table class="code">
+<tr><th id="1">1</th><td><u>#<span data-ppcond="1">ifndef</span> <span class="macro" data-ref="_M/BENCHMARK_MUTEX_H_">BENCHMARK_MUTEX_H_</span></u></td></tr>
+<tr><th id="2">2</th><td><u>#define <dfn class="macro" id="_M/BENCHMARK_MUTEX_H_" data-ref="_M/BENCHMARK_MUTEX_H_">BENCHMARK_MUTEX_H_</dfn></u></td></tr>
+<tr><th id="3">3</th><td></td></tr>
+<tr><th id="4">4</th><td><u>#include &lt;condition_variable&gt;</u></td></tr>
+<tr><th id="5">5</th><td><u>#include &lt;mutex&gt;</u></td></tr>
+<tr><th id="6">6</th><td></td></tr>
+<tr><th id="7">7</th><td><u>#include <a href="check.h.html">"check.h"</a></u></td></tr>
+<tr><th id="8">8</th><td></td></tr>
+<tr><th id="9">9</th><td><i>// Enable thread safety attributes only with clang.</i></td></tr>
+<tr><th id="10">10</th><td><i>// The attributes can be safely erased when compiling with other compilers.</i></td></tr>
+<tr><th id="11">11</th><td><u>#<span data-ppcond="11">if</span> defined(<span class="macro" data-ref="_M/HAVE_THREAD_SAFETY_ATTRIBUTES">HAVE_THREAD_SAFETY_ATTRIBUTES</span>)</u></td></tr>
+<tr><th id="12">12</th><td><u>#define THREAD_ANNOTATION_ATTRIBUTE__(x) __attribute__((x))</u></td></tr>
+<tr><th id="13">13</th><td><u>#<span data-ppcond="11">else</span></u></td></tr>
+<tr><th id="14">14</th><td><u>#define <dfn class="macro" id="_M/THREAD_ANNOTATION_ATTRIBUTE__" data-ref="_M/THREAD_ANNOTATION_ATTRIBUTE__">THREAD_ANNOTATION_ATTRIBUTE__</dfn>(x)  // no-op</u></td></tr>
+<tr><th id="15">15</th><td><u>#<span data-ppcond="11">endif</span></u></td></tr>
+<tr><th id="16">16</th><td></td></tr>
+<tr><th id="17">17</th><td><u>#define <dfn class="macro" id="_M/CAPABILITY" data-ref="_M/CAPABILITY">CAPABILITY</dfn>(x) THREAD_ANNOTATION_ATTRIBUTE__(capability(x))</u></td></tr>
+<tr><th id="18">18</th><td></td></tr>
+<tr><th id="19">19</th><td><u>#define <dfn class="macro" id="_M/SCOPED_CAPABILITY" data-ref="_M/SCOPED_CAPABILITY">SCOPED_CAPABILITY</dfn> THREAD_ANNOTATION_ATTRIBUTE__(scoped_lockable)</u></td></tr>
+<tr><th id="20">20</th><td></td></tr>
+<tr><th id="21">21</th><td><u>#define <dfn class="macro" id="_M/GUARDED_BY" data-ref="_M/GUARDED_BY">GUARDED_BY</dfn>(x) THREAD_ANNOTATION_ATTRIBUTE__(guarded_by(x))</u></td></tr>
+<tr><th id="22">22</th><td></td></tr>
+<tr><th id="23">23</th><td><u>#define <dfn class="macro" id="_M/PT_GUARDED_BY" data-ref="_M/PT_GUARDED_BY">PT_GUARDED_BY</dfn>(x) THREAD_ANNOTATION_ATTRIBUTE__(pt_guarded_by(x))</u></td></tr>
+<tr><th id="24">24</th><td></td></tr>
+<tr><th id="25">25</th><td><u>#define <dfn class="macro" id="_M/ACQUIRED_BEFORE" data-ref="_M/ACQUIRED_BEFORE">ACQUIRED_BEFORE</dfn>(...) \</u></td></tr>
+<tr><th id="26">26</th><td><u>  THREAD_ANNOTATION_ATTRIBUTE__(acquired_before(__VA_ARGS__))</u></td></tr>
+<tr><th id="27">27</th><td></td></tr>
+<tr><th id="28">28</th><td><u>#define <dfn class="macro" id="_M/ACQUIRED_AFTER" data-ref="_M/ACQUIRED_AFTER">ACQUIRED_AFTER</dfn>(...) \</u></td></tr>
+<tr><th id="29">29</th><td><u>  THREAD_ANNOTATION_ATTRIBUTE__(acquired_after(__VA_ARGS__))</u></td></tr>
+<tr><th id="30">30</th><td></td></tr>
+<tr><th id="31">31</th><td><u>#define <dfn class="macro" id="_M/REQUIRES" data-ref="_M/REQUIRES">REQUIRES</dfn>(...) \</u></td></tr>
+<tr><th id="32">32</th><td><u>  THREAD_ANNOTATION_ATTRIBUTE__(requires_capability(__VA_ARGS__))</u></td></tr>
+<tr><th id="33">33</th><td></td></tr>
+<tr><th id="34">34</th><td><u>#define <dfn class="macro" id="_M/REQUIRES_SHARED" data-ref="_M/REQUIRES_SHARED">REQUIRES_SHARED</dfn>(...) \</u></td></tr>
+<tr><th id="35">35</th><td><u>  THREAD_ANNOTATION_ATTRIBUTE__(requires_shared_capability(__VA_ARGS__))</u></td></tr>
+<tr><th id="36">36</th><td></td></tr>
+<tr><th id="37">37</th><td><u>#define <dfn class="macro" id="_M/ACQUIRE" data-ref="_M/ACQUIRE">ACQUIRE</dfn>(...) \</u></td></tr>
+<tr><th id="38">38</th><td><u>  THREAD_ANNOTATION_ATTRIBUTE__(acquire_capability(__VA_ARGS__))</u></td></tr>
+<tr><th id="39">39</th><td></td></tr>
+<tr><th id="40">40</th><td><u>#define <dfn class="macro" id="_M/ACQUIRE_SHARED" data-ref="_M/ACQUIRE_SHARED">ACQUIRE_SHARED</dfn>(...) \</u></td></tr>
+<tr><th id="41">41</th><td><u>  THREAD_ANNOTATION_ATTRIBUTE__(acquire_shared_capability(__VA_ARGS__))</u></td></tr>
+<tr><th id="42">42</th><td></td></tr>
+<tr><th id="43">43</th><td><u>#define <dfn class="macro" id="_M/RELEASE" data-ref="_M/RELEASE">RELEASE</dfn>(...) \</u></td></tr>
+<tr><th id="44">44</th><td><u>  THREAD_ANNOTATION_ATTRIBUTE__(release_capability(__VA_ARGS__))</u></td></tr>
+<tr><th id="45">45</th><td></td></tr>
+<tr><th id="46">46</th><td><u>#define <dfn class="macro" id="_M/RELEASE_SHARED" data-ref="_M/RELEASE_SHARED">RELEASE_SHARED</dfn>(...) \</u></td></tr>
+<tr><th id="47">47</th><td><u>  THREAD_ANNOTATION_ATTRIBUTE__(release_shared_capability(__VA_ARGS__))</u></td></tr>
+<tr><th id="48">48</th><td></td></tr>
+<tr><th id="49">49</th><td><u>#define <dfn class="macro" id="_M/TRY_ACQUIRE" data-ref="_M/TRY_ACQUIRE">TRY_ACQUIRE</dfn>(...) \</u></td></tr>
+<tr><th id="50">50</th><td><u>  THREAD_ANNOTATION_ATTRIBUTE__(try_acquire_capability(__VA_ARGS__))</u></td></tr>
+<tr><th id="51">51</th><td></td></tr>
+<tr><th id="52">52</th><td><u>#define <dfn class="macro" id="_M/TRY_ACQUIRE_SHARED" data-ref="_M/TRY_ACQUIRE_SHARED">TRY_ACQUIRE_SHARED</dfn>(...) \</u></td></tr>
+<tr><th id="53">53</th><td><u>  THREAD_ANNOTATION_ATTRIBUTE__(try_acquire_shared_capability(__VA_ARGS__))</u></td></tr>
+<tr><th id="54">54</th><td></td></tr>
+<tr><th id="55">55</th><td><u>#define <dfn class="macro" id="_M/EXCLUDES" data-ref="_M/EXCLUDES">EXCLUDES</dfn>(...) THREAD_ANNOTATION_ATTRIBUTE__(locks_excluded(__VA_ARGS__))</u></td></tr>
+<tr><th id="56">56</th><td></td></tr>
+<tr><th id="57">57</th><td><u>#define <dfn class="macro" id="_M/ASSERT_CAPABILITY" data-ref="_M/ASSERT_CAPABILITY">ASSERT_CAPABILITY</dfn>(x) THREAD_ANNOTATION_ATTRIBUTE__(assert_capability(x))</u></td></tr>
+<tr><th id="58">58</th><td></td></tr>
+<tr><th id="59">59</th><td><u>#define <dfn class="macro" id="_M/ASSERT_SHARED_CAPABILITY" data-ref="_M/ASSERT_SHARED_CAPABILITY">ASSERT_SHARED_CAPABILITY</dfn>(x) \</u></td></tr>
+<tr><th id="60">60</th><td><u>  THREAD_ANNOTATION_ATTRIBUTE__(assert_shared_capability(x))</u></td></tr>
+<tr><th id="61">61</th><td></td></tr>
+<tr><th id="62">62</th><td><u>#define <dfn class="macro" id="_M/RETURN_CAPABILITY" data-ref="_M/RETURN_CAPABILITY">RETURN_CAPABILITY</dfn>(x) THREAD_ANNOTATION_ATTRIBUTE__(lock_returned(x))</u></td></tr>
+<tr><th id="63">63</th><td></td></tr>
+<tr><th id="64">64</th><td><u>#define <dfn class="macro" id="_M/NO_THREAD_SAFETY_ANALYSIS" data-ref="_M/NO_THREAD_SAFETY_ANALYSIS">NO_THREAD_SAFETY_ANALYSIS</dfn> \</u></td></tr>
+<tr><th id="65">65</th><td><u>  THREAD_ANNOTATION_ATTRIBUTE__(no_thread_safety_analysis)</u></td></tr>
+<tr><th id="66">66</th><td></td></tr>
+<tr><th id="67">67</th><td><b>namespace</b> <span class="namespace">benchmark</span> {</td></tr>
+<tr><th id="68">68</th><td></td></tr>
+<tr><th id="69">69</th><td><b>typedef</b> <span class="namespace">std::</span><span class='type' title='std::condition_variable' data-ref="std::condition_variable" data-ref-filename="std..condition_variable">condition_variable</span> <dfn class="typedef" id="benchmark::Condition" title='benchmark::Condition' data-type='std::condition_variable' data-ref="benchmark::Condition" data-ref-filename="benchmark..Condition">Condition</dfn>;</td></tr>
+<tr><th id="70">70</th><td></td></tr>
+<tr><th id="71">71</th><td><i>// NOTE: Wrappers for std::mutex and std::unique_lock are provided so that</i></td></tr>
+<tr><th id="72">72</th><td><i>// we can annotate them with thread safety attributes and use the</i></td></tr>
+<tr><th id="73">73</th><td><i>// -Wthread-safety warning with clang. The standard library types cannot be</i></td></tr>
+<tr><th id="74">74</th><td><i>// used directly because they do not provided the required annotations.</i></td></tr>
+<tr><th id="75">75</th><td><b>class</b> <a class="macro" href="#17" title="" data-ref="_M/CAPABILITY">CAPABILITY</a>(<q>"mutex"</q>) <dfn class="type def" id="benchmark::Mutex" title='benchmark::Mutex' data-ref="benchmark::Mutex" data-ref-filename="benchmark..Mutex">Mutex</dfn> {</td></tr>
+<tr><th id="76">76</th><td> <b>public</b>:</td></tr>
+<tr><th id="77">77</th><td>  <dfn class="decl def fn" id="_ZN9benchmark5MutexC1Ev" title='benchmark::Mutex::Mutex' data-ref="_ZN9benchmark5MutexC1Ev" data-ref-filename="_ZN9benchmark5MutexC1Ev">Mutex</dfn>() {}</td></tr>
+<tr><th id="78">78</th><td></td></tr>
+<tr><th id="79">79</th><td>  <em>void</em> <dfn class="decl def fn" id="_ZN9benchmark5Mutex4lockEv" title='benchmark::Mutex::lock' data-ref="_ZN9benchmark5Mutex4lockEv" data-ref-filename="_ZN9benchmark5Mutex4lockEv">lock</dfn>() <a class="macro" href="#37" title="" data-ref="_M/ACQUIRE">ACQUIRE</a>() { <a class="member field" href="#benchmark::Mutex::mut_" title='benchmark::Mutex::mut_' data-ref="benchmark::Mutex::mut_" data-ref-filename="benchmark..Mutex..mut_">mut_</a>.<span class='ref fn' title='std::mutex::lock' data-ref="_ZNSt5mutex4lockEv" data-ref-filename="_ZNSt5mutex4lockEv">lock</span>(); }</td></tr>
+<tr><th id="80">80</th><td>  <em>void</em> <dfn class="decl def fn" id="_ZN9benchmark5Mutex6unlockEv" title='benchmark::Mutex::unlock' data-ref="_ZN9benchmark5Mutex6unlockEv" data-ref-filename="_ZN9benchmark5Mutex6unlockEv">unlock</dfn>() <a class="macro" href="#43" title="" data-ref="_M/RELEASE">RELEASE</a>() { <a class="member field" href="#benchmark::Mutex::mut_" title='benchmark::Mutex::mut_' data-ref="benchmark::Mutex::mut_" data-ref-filename="benchmark..Mutex..mut_">mut_</a>.<span class='ref fn' title='std::mutex::unlock' data-ref="_ZNSt5mutex6unlockEv" data-ref-filename="_ZNSt5mutex6unlockEv">unlock</span>(); }</td></tr>
+<tr><th id="81">81</th><td>  <span class="namespace">std::</span><span class='type' title='std::mutex' data-ref="std::mutex" data-ref-filename="std..mutex">mutex</span>&amp; <dfn class="decl def fn" id="_ZN9benchmark5Mutex13native_handleEv" title='benchmark::Mutex::native_handle' data-ref="_ZN9benchmark5Mutex13native_handleEv" data-ref-filename="_ZN9benchmark5Mutex13native_handleEv">native_handle</dfn>() { <b>return</b> <a class="member field" href="#benchmark::Mutex::mut_" title='benchmark::Mutex::mut_' data-ref="benchmark::Mutex::mut_" data-ref-filename="benchmark..Mutex..mut_">mut_</a>; }</td></tr>
+<tr><th id="82">82</th><td></td></tr>
+<tr><th id="83">83</th><td> <b>private</b>:</td></tr>
+<tr><th id="84">84</th><td>  <span class="namespace">std::</span><span class='type' title='std::mutex' data-ref="std::mutex" data-ref-filename="std..mutex">mutex</span> <dfn class="decl field" id="benchmark::Mutex::mut_" title='benchmark::Mutex::mut_' data-ref="benchmark::Mutex::mut_" data-ref-filename="benchmark..Mutex..mut_">mut_</dfn>;</td></tr>
+<tr><th id="85">85</th><td>};</td></tr>
+<tr><th id="86">86</th><td></td></tr>
+<tr><th id="87">87</th><td><b>class</b> <a class="macro" href="#19" title="" data-ref="_M/SCOPED_CAPABILITY">SCOPED_CAPABILITY</a> <dfn class="type def" id="benchmark::MutexLock" title='benchmark::MutexLock' data-ref="benchmark::MutexLock" data-ref-filename="benchmark..MutexLock">MutexLock</dfn> {</td></tr>
+<tr><th id="88">88</th><td>  <b>typedef</b> <span class="namespace">std::</span><span class='type' title='std::unique_lock' data-ref="std::unique_lock" data-ref-filename="std..unique_lock">unique_lock</span>&lt;<span class="namespace">std::</span><span class='type' title='std::mutex' data-ref="std::mutex" data-ref-filename="std..mutex">mutex</span>&gt; <dfn class="typedef" id="benchmark::MutexLock::MutexLockImp" title='benchmark::MutexLock::MutexLockImp' data-type='std::unique_lock&lt;std::mutex&gt;' data-ref="benchmark::MutexLock::MutexLockImp" data-ref-filename="benchmark..MutexLock..MutexLockImp">MutexLockImp</dfn>;</td></tr>
+<tr><th id="89">89</th><td></td></tr>
+<tr><th id="90">90</th><td> <b>public</b>:</td></tr>
+<tr><th id="91">91</th><td>  <dfn class="decl def fn" id="_ZN9benchmark9MutexLockC1ERNS_5MutexE" title='benchmark::MutexLock::MutexLock' data-ref="_ZN9benchmark9MutexLockC1ERNS_5MutexE" data-ref-filename="_ZN9benchmark9MutexLockC1ERNS_5MutexE">MutexLock</dfn>(<a class="type" href="#benchmark::Mutex" title='benchmark::Mutex' data-ref="benchmark::Mutex" data-ref-filename="benchmark..Mutex">Mutex</a>&amp; <dfn class="local col5 decl" id="65m" title='m' data-type='benchmark::Mutex &amp;' data-ref="65m" data-ref-filename="65m">m</dfn>) <a class="macro" href="#37" title="" data-ref="_M/ACQUIRE">ACQUIRE</a>(m) : <a class="member field" href="#benchmark::MutexLock::ml_" title='benchmark::MutexLock::ml_' data-ref="benchmark::MutexLock::ml_" data-ref-filename="benchmark..MutexLock..ml_">ml_</a><span class='ref fn' title='std::unique_lock::unique_lock&lt;_Mutex&gt;' data-ref="_ZNSt11unique_lockC1ERT_" data-ref-filename="_ZNSt11unique_lockC1ERT_">(</span><a class="local col5 ref" href="#65m" title='m' data-ref="65m" data-ref-filename="65m">m</a>.<a class="ref fn" href="#_ZN9benchmark5Mutex13native_handleEv" title='benchmark::Mutex::native_handle' data-ref="_ZN9benchmark5Mutex13native_handleEv" data-ref-filename="_ZN9benchmark5Mutex13native_handleEv">native_handle</a>()) {}</td></tr>
+<tr><th id="92">92</th><td>  <dfn class="decl def fn" id="_ZN9benchmark9MutexLockD1Ev" title='benchmark::MutexLock::~MutexLock' data-ref="_ZN9benchmark9MutexLockD1Ev" data-ref-filename="_ZN9benchmark9MutexLockD1Ev">~MutexLock</dfn>() <a class="macro" href="#43" title="" data-ref="_M/RELEASE">RELEASE</a>() {}</td></tr>
+<tr><th id="93">93</th><td>  <a class="typedef" href="#benchmark::MutexLock::MutexLockImp" title='benchmark::MutexLock::MutexLockImp' data-type='std::unique_lock&lt;std::mutex&gt;' data-ref="benchmark::MutexLock::MutexLockImp" data-ref-filename="benchmark..MutexLock..MutexLockImp">MutexLockImp</a>&amp; <dfn class="decl def fn" id="_ZN9benchmark9MutexLock13native_handleEv" title='benchmark::MutexLock::native_handle' data-ref="_ZN9benchmark9MutexLock13native_handleEv" data-ref-filename="_ZN9benchmark9MutexLock13native_handleEv">native_handle</dfn>() { <b>return</b> <a class="member field" href="#benchmark::MutexLock::ml_" title='benchmark::MutexLock::ml_' data-ref="benchmark::MutexLock::ml_" data-ref-filename="benchmark..MutexLock..ml_">ml_</a>; }</td></tr>
+<tr><th id="94">94</th><td></td></tr>
+<tr><th id="95">95</th><td> <b>private</b>:</td></tr>
+<tr><th id="96">96</th><td>  <a class="typedef" href="#benchmark::MutexLock::MutexLockImp" title='benchmark::MutexLock::MutexLockImp' data-type='std::unique_lock&lt;std::mutex&gt;' data-ref="benchmark::MutexLock::MutexLockImp" data-ref-filename="benchmark..MutexLock..MutexLockImp">MutexLockImp</a> <dfn class="decl field" id="benchmark::MutexLock::ml_" title='benchmark::MutexLock::ml_' data-ref="benchmark::MutexLock::ml_" data-ref-filename="benchmark..MutexLock..ml_">ml_</dfn>;</td></tr>
+<tr><th id="97">97</th><td>};</td></tr>
+<tr><th id="98">98</th><td></td></tr>
+<tr><th id="99">99</th><td><b>class</b> <dfn class="type def" id="benchmark::Barrier" title='benchmark::Barrier' data-ref="benchmark::Barrier" data-ref-filename="benchmark..Barrier">Barrier</dfn> {</td></tr>
+<tr><th id="100">100</th><td> <b>public</b>:</td></tr>
+<tr><th id="101">101</th><td>  <dfn class="decl def fn" id="_ZN9benchmark7BarrierC1Ei" title='benchmark::Barrier::Barrier' data-ref="_ZN9benchmark7BarrierC1Ei" data-ref-filename="_ZN9benchmark7BarrierC1Ei">Barrier</dfn>(<em>int</em> <dfn class="local col6 decl" id="66num_threads" title='num_threads' data-type='int' data-ref="66num_threads" data-ref-filename="66num_threads">num_threads</dfn>) : <a class="member field" href="#benchmark::Barrier::running_threads_" title='benchmark::Barrier::running_threads_' data-ref="benchmark::Barrier::running_threads_" data-ref-filename="benchmark..Barrier..running_threads_">running_threads_</a>(<a class="local col6 ref" href="#66num_threads" title='num_threads' data-ref="66num_threads" data-ref-filename="66num_threads">num_threads</a>) {}</td></tr>
+<tr><th id="102">102</th><td></td></tr>
+<tr><th id="103">103</th><td>  <i>// Called by each thread</i></td></tr>
+<tr><th id="104">104</th><td>  <em>bool</em> <dfn class="decl def fn" id="_ZN9benchmark7Barrier4waitEv" title='benchmark::Barrier::wait' data-ref="_ZN9benchmark7Barrier4waitEv" data-ref-filename="_ZN9benchmark7Barrier4waitEv">wait</dfn>() <a class="macro" href="#55" title="" data-ref="_M/EXCLUDES">EXCLUDES</a>(lock_) {</td></tr>
+<tr><th id="105">105</th><td>    <em>bool</em> <dfn class="local col7 decl" id="67last_thread" title='last_thread' data-type='bool' data-ref="67last_thread" data-ref-filename="67last_thread">last_thread</dfn> = <b>false</b>;</td></tr>
+<tr><th id="106">106</th><td>    {</td></tr>
+<tr><th id="107">107</th><td>      <a class="type" href="#benchmark::MutexLock" title='benchmark::MutexLock' data-ref="benchmark::MutexLock" data-ref-filename="benchmark..MutexLock">MutexLock</a> <dfn class="local col8 decl" id="68ml" title='ml' data-type='benchmark::MutexLock' data-ref="68ml" data-ref-filename="68ml">ml</dfn><a class="ref fn" href="#_ZN9benchmark9MutexLockC1ERNS_5MutexE" title='benchmark::MutexLock::MutexLock' data-ref="_ZN9benchmark9MutexLockC1ERNS_5MutexE" data-ref-filename="_ZN9benchmark9MutexLockC1ERNS_5MutexE">(</a><a class="member field" href="#benchmark::Barrier::lock_" title='benchmark::Barrier::lock_' data-ref="benchmark::Barrier::lock_" data-ref-filename="benchmark..Barrier..lock_">lock_</a>);</td></tr>
+<tr><th id="108">108</th><td>      <a class="local col7 ref" href="#67last_thread" title='last_thread' data-ref="67last_thread" data-ref-filename="67last_thread">last_thread</a> = <a class="member fn" href="#_ZN9benchmark7Barrier13createBarrierERNS_9MutexLockE" title='benchmark::Barrier::createBarrier' data-ref="_ZN9benchmark7Barrier13createBarrierERNS_9MutexLockE" data-ref-filename="_ZN9benchmark7Barrier13createBarrierERNS_9MutexLockE">createBarrier</a>(<span class='refarg'><a class="local col8 ref" href="#68ml" title='ml' data-ref="68ml" data-ref-filename="68ml">ml</a></span>);</td></tr>
+<tr><th id="109">109</th><td>    }</td></tr>
+<tr><th id="110">110</th><td>    <b>if</b> (<a class="local col7 ref" href="#67last_thread" title='last_thread' data-ref="67last_thread" data-ref-filename="67last_thread">last_thread</a>) <a class="member field" href="#benchmark::Barrier::phase_condition_" title='benchmark::Barrier::phase_condition_' data-ref="benchmark::Barrier::phase_condition_" data-ref-filename="benchmark..Barrier..phase_condition_">phase_condition_</a>.<span class='ref fn' title='std::condition_variable::notify_all' data-ref="_ZNSt18condition_variable10notify_allEv" data-ref-filename="_ZNSt18condition_variable10notify_allEv">notify_all</span>();</td></tr>
+<tr><th id="111">111</th><td>    <b>return</b> <a class="local col7 ref" href="#67last_thread" title='last_thread' data-ref="67last_thread" data-ref-filename="67last_thread">last_thread</a>;</td></tr>
+<tr><th id="112">112</th><td>  }</td></tr>
+<tr><th id="113">113</th><td></td></tr>
+<tr><th id="114">114</th><td>  <em>void</em> <dfn class="decl def fn" id="_ZN9benchmark7Barrier12removeThreadEv" title='benchmark::Barrier::removeThread' data-ref="_ZN9benchmark7Barrier12removeThreadEv" data-ref-filename="_ZN9benchmark7Barrier12removeThreadEv">removeThread</dfn>() <a class="macro" href="#55" title="" data-ref="_M/EXCLUDES">EXCLUDES</a>(lock_) {</td></tr>
+<tr><th id="115">115</th><td>    <a class="type" href="#benchmark::MutexLock" title='benchmark::MutexLock' data-ref="benchmark::MutexLock" data-ref-filename="benchmark..MutexLock">MutexLock</a> <dfn class="local col9 decl" id="69ml" title='ml' data-type='benchmark::MutexLock' data-ref="69ml" data-ref-filename="69ml">ml</dfn><a class="ref fn" href="#_ZN9benchmark9MutexLockC1ERNS_5MutexE" title='benchmark::MutexLock::MutexLock' data-ref="_ZN9benchmark9MutexLockC1ERNS_5MutexE" data-ref-filename="_ZN9benchmark9MutexLockC1ERNS_5MutexE">(</a><a class="member field" href="#benchmark::Barrier::lock_" title='benchmark::Barrier::lock_' data-ref="benchmark::Barrier::lock_" data-ref-filename="benchmark..Barrier..lock_">lock_</a>);</td></tr>
+<tr><th id="116">116</th><td>    --<a class="member field" href="#benchmark::Barrier::running_threads_" title='benchmark::Barrier::running_threads_' data-ref="benchmark::Barrier::running_threads_" data-ref-filename="benchmark..Barrier..running_threads_">running_threads_</a>;</td></tr>
+<tr><th id="117">117</th><td>    <b>if</b> (<a class="member field" href="#benchmark::Barrier::entered_" title='benchmark::Barrier::entered_' data-ref="benchmark::Barrier::entered_" data-ref-filename="benchmark..Barrier..entered_">entered_</a> != <var>0</var>) <a class="member field" href="#benchmark::Barrier::phase_condition_" title='benchmark::Barrier::phase_condition_' data-ref="benchmark::Barrier::phase_condition_" data-ref-filename="benchmark..Barrier..phase_condition_">phase_condition_</a>.<span class='ref fn' title='std::condition_variable::notify_all' data-ref="_ZNSt18condition_variable10notify_allEv" data-ref-filename="_ZNSt18condition_variable10notify_allEv">notify_all</span>();</td></tr>
+<tr><th id="118">118</th><td>  }</td></tr>
+<tr><th id="119">119</th><td></td></tr>
+<tr><th id="120">120</th><td> <b>private</b>:</td></tr>
+<tr><th id="121">121</th><td>  <a class="type" href="#benchmark::Mutex" title='benchmark::Mutex' data-ref="benchmark::Mutex" data-ref-filename="benchmark..Mutex">Mutex</a> <dfn class="decl field" id="benchmark::Barrier::lock_" title='benchmark::Barrier::lock_' data-ref="benchmark::Barrier::lock_" data-ref-filename="benchmark..Barrier..lock_">lock_</dfn>;</td></tr>
+<tr><th id="122">122</th><td>  <a class="typedef" href="#benchmark::Condition" title='benchmark::Condition' data-type='std::condition_variable' data-ref="benchmark::Condition" data-ref-filename="benchmark..Condition">Condition</a> <dfn class="decl field" id="benchmark::Barrier::phase_condition_" title='benchmark::Barrier::phase_condition_' data-ref="benchmark::Barrier::phase_condition_" data-ref-filename="benchmark..Barrier..phase_condition_">phase_condition_</dfn>;</td></tr>
+<tr><th id="123">123</th><td>  <em>int</em> <dfn class="decl field" id="benchmark::Barrier::running_threads_" title='benchmark::Barrier::running_threads_' data-ref="benchmark::Barrier::running_threads_" data-ref-filename="benchmark..Barrier..running_threads_">running_threads_</dfn>;</td></tr>
+<tr><th id="124">124</th><td></td></tr>
+<tr><th id="125">125</th><td>  <i>// State for barrier management</i></td></tr>
+<tr><th id="126">126</th><td>  <em>int</em> <dfn class="decl field" id="benchmark::Barrier::phase_number_" title='benchmark::Barrier::phase_number_' data-ref="benchmark::Barrier::phase_number_" data-ref-filename="benchmark..Barrier..phase_number_">phase_number_</dfn> = <var>0</var>;</td></tr>
+<tr><th id="127">127</th><td>  <em>int</em> <dfn class="decl field" id="benchmark::Barrier::entered_" title='benchmark::Barrier::entered_' data-ref="benchmark::Barrier::entered_" data-ref-filename="benchmark..Barrier..entered_">entered_</dfn> = <var>0</var>;  <i>// Number of threads that have entered this barrier</i></td></tr>
+<tr><th id="128">128</th><td></td></tr>
+<tr><th id="129">129</th><td>  <i>// Enter the barrier and wait until all other threads have also</i></td></tr>
+<tr><th id="130">130</th><td><i>  // entered the barrier.  Returns iff this is the last thread to</i></td></tr>
+<tr><th id="131">131</th><td><i>  // enter the barrier.</i></td></tr>
+<tr><th id="132">132</th><td>  <em>bool</em> <dfn class="decl def fn" id="_ZN9benchmark7Barrier13createBarrierERNS_9MutexLockE" title='benchmark::Barrier::createBarrier' data-ref="_ZN9benchmark7Barrier13createBarrierERNS_9MutexLockE" data-ref-filename="_ZN9benchmark7Barrier13createBarrierERNS_9MutexLockE">createBarrier</dfn>(<a class="type" href="#benchmark::MutexLock" title='benchmark::MutexLock' data-ref="benchmark::MutexLock" data-ref-filename="benchmark..MutexLock">MutexLock</a>&amp; <dfn class="local col0 decl" id="70ml" title='ml' data-type='benchmark::MutexLock &amp;' data-ref="70ml" data-ref-filename="70ml">ml</dfn>) <a class="macro" href="#31" title="" data-ref="_M/REQUIRES">REQUIRES</a>(lock_) {</td></tr>
+<tr><th id="133">133</th><td>    <a class="macro" href="check.h.html#70" title="::benchmark::internal::GetNullLogInstance()" data-ref="_M/CHECK_LT">CHECK_LT</a>(entered_, running_threads_);</td></tr>
+<tr><th id="134">134</th><td>    <a class="member field" href="#benchmark::Barrier::entered_" title='benchmark::Barrier::entered_' data-ref="benchmark::Barrier::entered_" data-ref-filename="benchmark..Barrier..entered_">entered_</a>++;</td></tr>
+<tr><th id="135">135</th><td>    <b>if</b> (<a class="member field" href="#benchmark::Barrier::entered_" title='benchmark::Barrier::entered_' data-ref="benchmark::Barrier::entered_" data-ref-filename="benchmark..Barrier..entered_">entered_</a> &lt; <a class="member field" href="#benchmark::Barrier::running_threads_" title='benchmark::Barrier::running_threads_' data-ref="benchmark::Barrier::running_threads_" data-ref-filename="benchmark..Barrier..running_threads_">running_threads_</a>) {</td></tr>
+<tr><th id="136">136</th><td>      <i>// Wait for all threads to enter</i></td></tr>
+<tr><th id="137">137</th><td>      <em>int</em> <dfn class="local col1 decl" id="71phase_number_cp" title='phase_number_cp' data-type='int' data-ref="71phase_number_cp" data-ref-filename="71phase_number_cp">phase_number_cp</dfn> = <a class="member field" href="#benchmark::Barrier::phase_number_" title='benchmark::Barrier::phase_number_' data-ref="benchmark::Barrier::phase_number_" data-ref-filename="benchmark..Barrier..phase_number_">phase_number_</a>;</td></tr>
+<tr><th id="138">138</th><td>      <em>auto</em> <dfn class="local col2 decl" id="72cb" title='cb' data-type='(lambda at /fast/tmp/llvm-proj-12/llvm/utils/benchmark/src/mutex.h:138:17)' data-ref="72cb" data-ref-filename="72cb">cb</dfn> = [<b>this</b>, <a class="local col1 ref" href="#71phase_number_cp" title='phase_number_cp' data-ref="71phase_number_cp" data-ref-filename="71phase_number_cp">phase_number_cp</a>]() {</td></tr>
+<tr><th id="139">139</th><td>        <b>return</b> <b>this</b>-&gt;<a class="member field" href="#benchmark::Barrier::phase_number_" title='benchmark::Barrier::phase_number_' data-ref="benchmark::Barrier::phase_number_" data-ref-filename="benchmark..Barrier..phase_number_">phase_number_</a> &gt; <a class="local col1 ref" href="#71phase_number_cp" title='phase_number_cp' data-ref="71phase_number_cp" data-ref-filename="71phase_number_cp">phase_number_cp</a> ||</td></tr>
+<tr><th id="140">140</th><td>               <a class="member field" href="#benchmark::Barrier::entered_" title='benchmark::Barrier::entered_' data-ref="benchmark::Barrier::entered_" data-ref-filename="benchmark..Barrier..entered_">entered_</a> == <a class="member field" href="#benchmark::Barrier::running_threads_" title='benchmark::Barrier::running_threads_' data-ref="benchmark::Barrier::running_threads_" data-ref-filename="benchmark..Barrier..running_threads_">running_threads_</a>;  <i>// A thread has aborted in error</i></td></tr>
+<tr><th id="141">141</th><td>      };</td></tr>
+<tr><th id="142">142</th><td>      <a class="member field" href="#benchmark::Barrier::phase_condition_" title='benchmark::Barrier::phase_condition_' data-ref="benchmark::Barrier::phase_condition_" data-ref-filename="benchmark..Barrier..phase_condition_">phase_condition_</a>.<span class='local col3 ref fn' title='wait' data-ref="73wait" data-ref-filename="73wait">wait</span>(<span class='refarg'><a class="local col0 ref" href="#70ml" title='ml' data-ref="70ml" data-ref-filename="70ml">ml</a>.<a class="ref fn" href="#_ZN9benchmark9MutexLock13native_handleEv" title='benchmark::MutexLock::native_handle' data-ref="_ZN9benchmark9MutexLock13native_handleEv" data-ref-filename="_ZN9benchmark9MutexLock13native_handleEv">native_handle</a>()</span>, <a class="local col2 ref" href="#72cb" title='cb' data-ref="72cb" data-ref-filename="72cb">cb</a>);</td></tr>
+<tr><th id="143">143</th><td>      <b>if</b> (<a class="member field" href="#benchmark::Barrier::phase_number_" title='benchmark::Barrier::phase_number_' data-ref="benchmark::Barrier::phase_number_" data-ref-filename="benchmark..Barrier..phase_number_">phase_number_</a> &gt; <a class="local col1 ref" href="#71phase_number_cp" title='phase_number_cp' data-ref="71phase_number_cp" data-ref-filename="71phase_number_cp">phase_number_cp</a>) <b>return</b> <b>false</b>;</td></tr>
+<tr><th id="144">144</th><td>      <i>// else (running_threads_ == entered_) and we are the last thread.</i></td></tr>
+<tr><th id="145">145</th><td>    }</td></tr>
+<tr><th id="146">146</th><td>    <i>// Last thread has reached the barrier</i></td></tr>
+<tr><th id="147">147</th><td>    <a class="member field" href="#benchmark::Barrier::phase_number_" title='benchmark::Barrier::phase_number_' data-ref="benchmark::Barrier::phase_number_" data-ref-filename="benchmark..Barrier..phase_number_">phase_number_</a>++;</td></tr>
+<tr><th id="148">148</th><td>    <a class="member field" href="#benchmark::Barrier::entered_" title='benchmark::Barrier::entered_' data-ref="benchmark::Barrier::entered_" data-ref-filename="benchmark..Barrier..entered_">entered_</a> = <var>0</var>;</td></tr>
+<tr><th id="149">149</th><td>    <b>return</b> <b>true</b>;</td></tr>
+<tr><th id="150">150</th><td>  }</td></tr>
+<tr><th id="151">151</th><td>};</td></tr>
+<tr><th id="152">152</th><td></td></tr>
+<tr><th id="153">153</th><td>}  <i>// end namespace benchmark</i></td></tr>
+<tr><th id="154">154</th><td></td></tr>
+<tr><th id="155">155</th><td><u>#<span data-ppcond="1">endif</span>  // BENCHMARK_MUTEX_H_</u></td></tr>
+<tr><th id="156">156</th><td></td></tr>
+</table><hr/><p id='footer'>
+Generated while processing <a href='benchmark.cc.html'>llvm/llvm/utils/benchmark/src/benchmark.cc</a><br/>Generated on <em>2021-Jul-01</em> from project llvm revision <em>12</em>

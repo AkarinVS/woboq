@@ -1,0 +1,29 @@
+<dec f='llvm/llvm/include/llvm/Support/JSON.h' l='157' type='std::vector&lt;Value&gt;'/>
+<use f='llvm/llvm/include/llvm/Support/JSON.h' l='171' u='m' c='_ZN4llvm4json5ArrayixEm'/>
+<use f='llvm/llvm/include/llvm/Support/JSON.h' l='172' u='m' c='_ZNK4llvm4json5ArrayixEm'/>
+<use f='llvm/llvm/include/llvm/Support/JSON.h' l='173' u='m' c='_ZN4llvm4json5Array5frontEv'/>
+<use f='llvm/llvm/include/llvm/Support/JSON.h' l='174' u='m' c='_ZNK4llvm4json5Array5frontEv'/>
+<use f='llvm/llvm/include/llvm/Support/JSON.h' l='175' u='m' c='_ZN4llvm4json5Array4backEv'/>
+<use f='llvm/llvm/include/llvm/Support/JSON.h' l='176' u='m' c='_ZNK4llvm4json5Array4backEv'/>
+<use f='llvm/llvm/include/llvm/Support/JSON.h' l='177' u='m' c='_ZN4llvm4json5Array4dataEv'/>
+<use f='llvm/llvm/include/llvm/Support/JSON.h' l='178' u='m' c='_ZNK4llvm4json5Array4dataEv'/>
+<use f='llvm/llvm/include/llvm/Support/JSON.h' l='180' u='m' c='_ZN4llvm4json5Array5beginEv'/>
+<use f='llvm/llvm/include/llvm/Support/JSON.h' l='181' u='m' c='_ZNK4llvm4json5Array5beginEv'/>
+<use f='llvm/llvm/include/llvm/Support/JSON.h' l='182' u='m' c='_ZN4llvm4json5Array3endEv'/>
+<use f='llvm/llvm/include/llvm/Support/JSON.h' l='183' u='m' c='_ZNK4llvm4json5Array3endEv'/>
+<use f='llvm/llvm/include/llvm/Support/JSON.h' l='185' u='m' c='_ZNK4llvm4json5Array5emptyEv'/>
+<use f='llvm/llvm/include/llvm/Support/JSON.h' l='186' u='m' c='_ZNK4llvm4json5Array4sizeEv'/>
+<use f='llvm/llvm/include/llvm/Support/JSON.h' l='187' u='m' c='_ZN4llvm4json5Array7reserveEm'/>
+<use f='llvm/llvm/include/llvm/Support/JSON.h' l='189' u='m' c='_ZN4llvm4json5Array5clearEv'/>
+<use f='llvm/llvm/include/llvm/Support/JSON.h' l='190' u='m' c='_ZN4llvm4json5Array9push_backERKNS0_5ValueE'/>
+<use f='llvm/llvm/include/llvm/Support/JSON.h' l='191' u='m' c='_ZN4llvm4json5Array9push_backEONS0_5ValueE'/>
+<use f='llvm/llvm/include/llvm/Support/JSON.h' l='193' u='c' c='_ZN4llvm4json5Array12emplace_backEDpOT_'/>
+<use f='llvm/llvm/include/llvm/Support/JSON.h' l='195' u='m' c='_ZN4llvm4json5Array8pop_backEv'/>
+<use f='llvm/llvm/include/llvm/Support/JSON.h' l='197' u='m' c='_ZN4llvm4json5Array6insertEN9__gnu_cxx17__normal_iteratorIPNS0_5ValueESt6vectorIS4_SaIS4_EEEERKS4_'/>
+<use f='llvm/llvm/include/llvm/Support/JSON.h' l='199' u='m' c='_ZN4llvm4json5Array6insertEN9__gnu_cxx17__normal_iteratorIPNS0_5ValueESt6vectorIS4_SaIS4_EEEEOS4_'/>
+<use f='llvm/llvm/include/llvm/Support/JSON.h' l='202' u='c' c='_ZN4llvm4json5Array6insertEN9__gnu_cxx17__normal_iteratorIPNS0_5ValueESt6vectorIS4_SaIS4_EEEET_SA_'/>
+<use f='llvm/llvm/include/llvm/Support/JSON.h' l='205' u='c' c='_ZN4llvm4json5Array7emplaceEN9__gnu_cxx17__normal_iteratorIPKNS0_5ValueESt6vectorIS4_SaIS4_EEEEDpOT_'/>
+<use f='llvm/llvm/include/llvm/Support/JSON.h' l='208' u='r' c='_ZN4llvm4jsoneqERKNS0_5ArrayES3_'/>
+<use f='llvm/llvm/include/llvm/Support/JSON.h' l='208' u='r' c='_ZN4llvm4jsoneqERKNS0_5ArrayES3_'/>
+<offset>0</offset>
+<use f='llvm/llvm/lib/Support/JSON.cpp' l='95' u='m' c='_ZN4llvm4json5ArrayC1ESt16initializer_listINS0_5ValueEE'/>

@@ -1,0 +1,186 @@
+<!doctype html>
+<html>
+<head>
+<meta name="viewport" content="width=device-width, initial-scale=1.0"><title>FuzzerUtilDarwin.cpp source code [llvm/compiler-rt/lib/fuzzer/FuzzerUtilDarwin.cpp] - Woboq Code Browser</title>
+<link rel="stylesheet" href="../../../.././data/qtcreator.css" title="QtCreator"/>
+<link rel="alternate stylesheet" href="../../../.././data/kdevelop.css" title="KDevelop"/>
+<script type="text/javascript" src="../../../.././data/jquery/jquery.min.js"></script>
+<script type="text/javascript" src="../../../.././data/jquery/jquery-ui.min.js"></script>
+<script>var file = 'llvm/compiler-rt/lib/fuzzer/FuzzerUtilDarwin.cpp'; var root_path = '../../../..'; var data_path = '../../../.././data'; var ecma_script_api_version = 2;</script>
+<script src='../../../.././data/codebrowser.js'></script>
+</head>
+<body><div id='header'><h1 id='breadcrumb'><span>Browse the source code of </span><a href='../../..'>llvm</a>/<a href='../..'>compiler-rt</a>/<a href='..'>lib</a>/<a href='./'>fuzzer</a>/<a href='FuzzerUtilDarwin.cpp.html'>FuzzerUtilDarwin.cpp</a></h1></div>
+<hr/><div id='content'><table class="code">
+<tr><th id="1">1</th><td><i>//===- FuzzerUtilDarwin.cpp - Misc utils ----------------------------------===//</i></td></tr>
+<tr><th id="2">2</th><td><i>//</i></td></tr>
+<tr><th id="3">3</th><td><i>// Part of the LLVM Project, under the Apache License v2.0 with LLVM Exceptions.</i></td></tr>
+<tr><th id="4">4</th><td><i>// See <a href="https://llvm.org/LICENSE.txt">https://llvm.org/LICENSE.txt</a> for license information.</i></td></tr>
+<tr><th id="5">5</th><td><i>// SPDX-License-Identifier: Apache-2.0 WITH LLVM-exception</i></td></tr>
+<tr><th id="6">6</th><td><i>//</i></td></tr>
+<tr><th id="7">7</th><td><i>//===----------------------------------------------------------------------===//</i></td></tr>
+<tr><th id="8">8</th><td><i>// Misc utils for Darwin.</i></td></tr>
+<tr><th id="9">9</th><td><i>//===----------------------------------------------------------------------===//</i></td></tr>
+<tr><th id="10">10</th><td><u>#include <a href="FuzzerPlatform.h.html">"FuzzerPlatform.h"</a></u></td></tr>
+<tr><th id="11">11</th><td><u>#<span data-ppcond="11">if</span> <a class="macro" href="FuzzerPlatform.h.html#16" title="0" data-ref="_M/LIBFUZZER_APPLE">LIBFUZZER_APPLE</a></u></td></tr>
+<tr><th id="12">12</th><td><u>#include "FuzzerCommand.h"</u></td></tr>
+<tr><th id="13">13</th><td><u>#include "FuzzerIO.h"</u></td></tr>
+<tr><th id="14">14</th><td><u>#include &lt;mutex&gt;</u></td></tr>
+<tr><th id="15">15</th><td><u>#include &lt;signal.h&gt;</u></td></tr>
+<tr><th id="16">16</th><td><u>#include &lt;spawn.h&gt;</u></td></tr>
+<tr><th id="17">17</th><td><u>#include &lt;stdlib.h&gt;</u></td></tr>
+<tr><th id="18">18</th><td><u>#include &lt;string.h&gt;</u></td></tr>
+<tr><th id="19">19</th><td><u>#include &lt;sys/wait.h&gt;</u></td></tr>
+<tr><th id="20">20</th><td><u>#include &lt;unistd.h&gt;</u></td></tr>
+<tr><th id="21">21</th><td></td></tr>
+<tr><th id="22">22</th><td><i>// There is no header for this on macOS so declare here</i></td></tr>
+<tr><th id="23">23</th><td><b>extern</b> <q>"C"</q> <em>char</em> **environ;</td></tr>
+<tr><th id="24">24</th><td></td></tr>
+<tr><th id="25">25</th><td><b>namespace</b> fuzzer {</td></tr>
+<tr><th id="26">26</th><td></td></tr>
+<tr><th id="27">27</th><td><em>static</em> std::mutex SignalMutex;</td></tr>
+<tr><th id="28">28</th><td><i>// Global variables used to keep track of how signal handling should be</i></td></tr>
+<tr><th id="29">29</th><td><i>// restored. They should **not** be accessed without holding `SignalMutex`.</i></td></tr>
+<tr><th id="30">30</th><td><em>static</em> <em>int</em> ActiveThreadCount = <var>0</var>;</td></tr>
+<tr><th id="31">31</th><td><em>static</em> <b>struct</b> sigaction OldSigIntAction;</td></tr>
+<tr><th id="32">32</th><td><em>static</em> <b>struct</b> sigaction OldSigQuitAction;</td></tr>
+<tr><th id="33">33</th><td><em>static</em> sigset_t OldBlockedSignalsSet;</td></tr>
+<tr><th id="34">34</th><td></td></tr>
+<tr><th id="35">35</th><td><i>// This is a reimplementation of Libc's `system()`. On Darwin the Libc</i></td></tr>
+<tr><th id="36">36</th><td><i>// implementation contains a mutex which prevents it from being used</i></td></tr>
+<tr><th id="37">37</th><td><i>// concurrently. This implementation **can** be used concurrently. It sets the</i></td></tr>
+<tr><th id="38">38</th><td><i>// signal handlers when the first thread enters and restores them when the last</i></td></tr>
+<tr><th id="39">39</th><td><i>// thread finishes execution of the function and ensures this is not racey by</i></td></tr>
+<tr><th id="40">40</th><td><i>// using a mutex.</i></td></tr>
+<tr><th id="41">41</th><td><em>int</em> ExecuteCommand(<em>const</em> Command &amp;Cmd) {</td></tr>
+<tr><th id="42">42</th><td>  std::string CmdLine = Cmd.toString();</td></tr>
+<tr><th id="43">43</th><td>  posix_spawnattr_t SpawnAttributes;</td></tr>
+<tr><th id="44">44</th><td>  <b>if</b> (posix_spawnattr_init(&amp;SpawnAttributes))</td></tr>
+<tr><th id="45">45</th><td>    <b>return</b> -<var>1</var>;</td></tr>
+<tr><th id="46">46</th><td>  <i>// Block and ignore signals of the current process when the first thread</i></td></tr>
+<tr><th id="47">47</th><td><i>  // enters.</i></td></tr>
+<tr><th id="48">48</th><td>  {</td></tr>
+<tr><th id="49">49</th><td>    std::lock_guard&lt;std::mutex&gt; Lock(SignalMutex);</td></tr>
+<tr><th id="50">50</th><td>    <b>if</b> (ActiveThreadCount == <var>0</var>) {</td></tr>
+<tr><th id="51">51</th><td>      <em>static</em> <b>struct</b> sigaction IgnoreSignalAction;</td></tr>
+<tr><th id="52">52</th><td>      sigset_t BlockedSignalsSet;</td></tr>
+<tr><th id="53">53</th><td>      memset(&amp;IgnoreSignalAction, <var>0</var>, <b>sizeof</b>(IgnoreSignalAction));</td></tr>
+<tr><th id="54">54</th><td>      IgnoreSignalAction.sa_handler = SIG_IGN;</td></tr>
+<tr><th id="55">55</th><td></td></tr>
+<tr><th id="56">56</th><td>      <b>if</b> (sigaction(SIGINT, &amp;IgnoreSignalAction, &amp;OldSigIntAction) == -<var>1</var>) {</td></tr>
+<tr><th id="57">57</th><td>        Printf(<q>"Failed to ignore SIGINT\n"</q>);</td></tr>
+<tr><th id="58">58</th><td>        (<em>void</em>)posix_spawnattr_destroy(&amp;SpawnAttributes);</td></tr>
+<tr><th id="59">59</th><td>        <b>return</b> -<var>1</var>;</td></tr>
+<tr><th id="60">60</th><td>      }</td></tr>
+<tr><th id="61">61</th><td>      <b>if</b> (sigaction(SIGQUIT, &amp;IgnoreSignalAction, &amp;OldSigQuitAction) == -<var>1</var>) {</td></tr>
+<tr><th id="62">62</th><td>        Printf(<q>"Failed to ignore SIGQUIT\n"</q>);</td></tr>
+<tr><th id="63">63</th><td>        <i>// Try our best to restore the signal handlers.</i></td></tr>
+<tr><th id="64">64</th><td>        (<em>void</em>)sigaction(SIGINT, &amp;OldSigIntAction, NULL);</td></tr>
+<tr><th id="65">65</th><td>        (<em>void</em>)posix_spawnattr_destroy(&amp;SpawnAttributes);</td></tr>
+<tr><th id="66">66</th><td>        <b>return</b> -<var>1</var>;</td></tr>
+<tr><th id="67">67</th><td>      }</td></tr>
+<tr><th id="68">68</th><td></td></tr>
+<tr><th id="69">69</th><td>      (<em>void</em>)sigemptyset(&amp;BlockedSignalsSet);</td></tr>
+<tr><th id="70">70</th><td>      (<em>void</em>)sigaddset(&amp;BlockedSignalsSet, SIGCHLD);</td></tr>
+<tr><th id="71">71</th><td>      <b>if</b> (sigprocmask(SIG_BLOCK, &amp;BlockedSignalsSet, &amp;OldBlockedSignalsSet) ==</td></tr>
+<tr><th id="72">72</th><td>          -<var>1</var>) {</td></tr>
+<tr><th id="73">73</th><td>        Printf(<q>"Failed to block SIGCHLD\n"</q>);</td></tr>
+<tr><th id="74">74</th><td>        <i>// Try our best to restore the signal handlers.</i></td></tr>
+<tr><th id="75">75</th><td>        (<em>void</em>)sigaction(SIGQUIT, &amp;OldSigQuitAction, NULL);</td></tr>
+<tr><th id="76">76</th><td>        (<em>void</em>)sigaction(SIGINT, &amp;OldSigIntAction, NULL);</td></tr>
+<tr><th id="77">77</th><td>        (<em>void</em>)posix_spawnattr_destroy(&amp;SpawnAttributes);</td></tr>
+<tr><th id="78">78</th><td>        <b>return</b> -<var>1</var>;</td></tr>
+<tr><th id="79">79</th><td>      }</td></tr>
+<tr><th id="80">80</th><td>    }</td></tr>
+<tr><th id="81">81</th><td>    ++ActiveThreadCount;</td></tr>
+<tr><th id="82">82</th><td>  }</td></tr>
+<tr><th id="83">83</th><td></td></tr>
+<tr><th id="84">84</th><td>  <i>// NOTE: Do not introduce any new `return` statements past this</i></td></tr>
+<tr><th id="85">85</th><td><i>  // point. It is important that `ActiveThreadCount` always be decremented</i></td></tr>
+<tr><th id="86">86</th><td><i>  // when leaving this function.</i></td></tr>
+<tr><th id="87">87</th><td><i></i></td></tr>
+<tr><th id="88">88</th><td><i>  // Make sure the child process uses the default handlers for the</i></td></tr>
+<tr><th id="89">89</th><td><i>  // following signals rather than inheriting what the parent has.</i></td></tr>
+<tr><th id="90">90</th><td>  sigset_t DefaultSigSet;</td></tr>
+<tr><th id="91">91</th><td>  (<em>void</em>)sigemptyset(&amp;DefaultSigSet);</td></tr>
+<tr><th id="92">92</th><td>  (<em>void</em>)sigaddset(&amp;DefaultSigSet, SIGQUIT);</td></tr>
+<tr><th id="93">93</th><td>  (<em>void</em>)sigaddset(&amp;DefaultSigSet, SIGINT);</td></tr>
+<tr><th id="94">94</th><td>  (<em>void</em>)posix_spawnattr_setsigdefault(&amp;SpawnAttributes, &amp;DefaultSigSet);</td></tr>
+<tr><th id="95">95</th><td>  <i>// Make sure the child process doesn't block SIGCHLD</i></td></tr>
+<tr><th id="96">96</th><td>  (<em>void</em>)posix_spawnattr_setsigmask(&amp;SpawnAttributes, &amp;OldBlockedSignalsSet);</td></tr>
+<tr><th id="97">97</th><td>  <em>short</em> SpawnFlags = POSIX_SPAWN_SETSIGDEF | POSIX_SPAWN_SETSIGMASK;</td></tr>
+<tr><th id="98">98</th><td>  (<em>void</em>)posix_spawnattr_setflags(&amp;SpawnAttributes, SpawnFlags);</td></tr>
+<tr><th id="99">99</th><td></td></tr>
+<tr><th id="100">100</th><td>  pid_t Pid;</td></tr>
+<tr><th id="101">101</th><td>  <em>char</em> **Environ = environ; <i>// Read from global</i></td></tr>
+<tr><th id="102">102</th><td>  <em>const</em> <em>char</em> *CommandCStr = CmdLine.c_str();</td></tr>
+<tr><th id="103">103</th><td>  <em>char</em> *<em>const</em> Argv[] = {</td></tr>
+<tr><th id="104">104</th><td>    strdup(<q>"sh"</q>),</td></tr>
+<tr><th id="105">105</th><td>    strdup(<q>"-c"</q>),</td></tr>
+<tr><th id="106">106</th><td>    strdup(CommandCStr),</td></tr>
+<tr><th id="107">107</th><td>    NULL</td></tr>
+<tr><th id="108">108</th><td>  };</td></tr>
+<tr><th id="109">109</th><td>  <em>int</em> ErrorCode = <var>0</var>, ProcessStatus = <var>0</var>;</td></tr>
+<tr><th id="110">110</th><td>  <i>// FIXME: We probably shouldn't hardcode the shell path.</i></td></tr>
+<tr><th id="111">111</th><td>  ErrorCode = posix_spawn(&amp;Pid, <q>"/bin/sh"</q>, NULL, &amp;SpawnAttributes,</td></tr>
+<tr><th id="112">112</th><td>                          Argv, Environ);</td></tr>
+<tr><th id="113">113</th><td>  (<em>void</em>)posix_spawnattr_destroy(&amp;SpawnAttributes);</td></tr>
+<tr><th id="114">114</th><td>  <b>if</b> (!ErrorCode) {</td></tr>
+<tr><th id="115">115</th><td>    pid_t SavedPid = Pid;</td></tr>
+<tr><th id="116">116</th><td>    <b>do</b> {</td></tr>
+<tr><th id="117">117</th><td>      <i>// Repeat until call completes uninterrupted.</i></td></tr>
+<tr><th id="118">118</th><td>      Pid = waitpid(SavedPid, &amp;ProcessStatus, <i>/*options=*/</i><var>0</var>);</td></tr>
+<tr><th id="119">119</th><td>    } <b>while</b> (Pid == -<var>1</var> &amp;&amp; errno == EINTR);</td></tr>
+<tr><th id="120">120</th><td>    <b>if</b> (Pid == -<var>1</var>) {</td></tr>
+<tr><th id="121">121</th><td>      <i>// Fail for some other reason.</i></td></tr>
+<tr><th id="122">122</th><td>      ProcessStatus = -<var>1</var>;</td></tr>
+<tr><th id="123">123</th><td>    }</td></tr>
+<tr><th id="124">124</th><td>  } <b>else</b> <b>if</b> (ErrorCode == ENOMEM || ErrorCode == EAGAIN) {</td></tr>
+<tr><th id="125">125</th><td>    <i>// Fork failure.</i></td></tr>
+<tr><th id="126">126</th><td>    ProcessStatus = -<var>1</var>;</td></tr>
+<tr><th id="127">127</th><td>  } <b>else</b> {</td></tr>
+<tr><th id="128">128</th><td>    <i>// Shell execution failure.</i></td></tr>
+<tr><th id="129">129</th><td>    ProcessStatus = W_EXITCODE(<var>127</var>, <var>0</var>);</td></tr>
+<tr><th id="130">130</th><td>  }</td></tr>
+<tr><th id="131">131</th><td>  <b>for</b> (<em>unsigned</em> i = <var>0</var>, n = <b>sizeof</b>(Argv) / <b>sizeof</b>(Argv[<var>0</var>]); i &lt; n; ++i)</td></tr>
+<tr><th id="132">132</th><td>    free(Argv[i]);</td></tr>
+<tr><th id="133">133</th><td></td></tr>
+<tr><th id="134">134</th><td>  <i>// Restore the signal handlers of the current process when the last thread</i></td></tr>
+<tr><th id="135">135</th><td><i>  // using this function finishes.</i></td></tr>
+<tr><th id="136">136</th><td>  {</td></tr>
+<tr><th id="137">137</th><td>    std::lock_guard&lt;std::mutex&gt; Lock(SignalMutex);</td></tr>
+<tr><th id="138">138</th><td>    --ActiveThreadCount;</td></tr>
+<tr><th id="139">139</th><td>    <b>if</b> (ActiveThreadCount == <var>0</var>) {</td></tr>
+<tr><th id="140">140</th><td>      <em>bool</em> FailedRestore = <b>false</b>;</td></tr>
+<tr><th id="141">141</th><td>      <b>if</b> (sigaction(SIGINT, &amp;OldSigIntAction, NULL) == -<var>1</var>) {</td></tr>
+<tr><th id="142">142</th><td>        Printf(<q>"Failed to restore SIGINT handling\n"</q>);</td></tr>
+<tr><th id="143">143</th><td>        FailedRestore = <b>true</b>;</td></tr>
+<tr><th id="144">144</th><td>      }</td></tr>
+<tr><th id="145">145</th><td>      <b>if</b> (sigaction(SIGQUIT, &amp;OldSigQuitAction, NULL) == -<var>1</var>) {</td></tr>
+<tr><th id="146">146</th><td>        Printf(<q>"Failed to restore SIGQUIT handling\n"</q>);</td></tr>
+<tr><th id="147">147</th><td>        FailedRestore = <b>true</b>;</td></tr>
+<tr><th id="148">148</th><td>      }</td></tr>
+<tr><th id="149">149</th><td>      <b>if</b> (sigprocmask(SIG_BLOCK, &amp;OldBlockedSignalsSet, NULL) == -<var>1</var>) {</td></tr>
+<tr><th id="150">150</th><td>        Printf(<q>"Failed to unblock SIGCHLD\n"</q>);</td></tr>
+<tr><th id="151">151</th><td>        FailedRestore = <b>true</b>;</td></tr>
+<tr><th id="152">152</th><td>      }</td></tr>
+<tr><th id="153">153</th><td>      <b>if</b> (FailedRestore)</td></tr>
+<tr><th id="154">154</th><td>        ProcessStatus = -<var>1</var>;</td></tr>
+<tr><th id="155">155</th><td>    }</td></tr>
+<tr><th id="156">156</th><td>  }</td></tr>
+<tr><th id="157">157</th><td>  <b>return</b> ProcessStatus;</td></tr>
+<tr><th id="158">158</th><td>}</td></tr>
+<tr><th id="159">159</th><td></td></tr>
+<tr><th id="160">160</th><td><em>void</em> DiscardOutput(<em>int</em> Fd) {</td></tr>
+<tr><th id="161">161</th><td>  FILE* Temp = fopen(<q>"/dev/null"</q>, <q>"w"</q>);</td></tr>
+<tr><th id="162">162</th><td>  <b>if</b> (!Temp)</td></tr>
+<tr><th id="163">163</th><td>    <b>return</b>;</td></tr>
+<tr><th id="164">164</th><td>  dup2(fileno(Temp), Fd);</td></tr>
+<tr><th id="165">165</th><td>  fclose(Temp);</td></tr>
+<tr><th id="166">166</th><td>}</td></tr>
+<tr><th id="167">167</th><td></td></tr>
+<tr><th id="168">168</th><td>} <i>// namespace fuzzer</i></td></tr>
+<tr><th id="169">169</th><td></td></tr>
+<tr><th id="170">170</th><td><u>#<span data-ppcond="11">endif</span> // LIBFUZZER_APPLE</u></td></tr>
+<tr><th id="171">171</th><td></td></tr>
+</table><hr/><p id='footer'>
+Generated on <em>2021-Jul-01</em> from project llvm revision <em>12</em>

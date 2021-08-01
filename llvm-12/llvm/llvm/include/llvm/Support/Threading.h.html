@@ -1,0 +1,298 @@
+<!doctype html>
+<html>
+<head>
+<meta name="viewport" content="width=device-width, initial-scale=1.0"><title>Threading.h source code [llvm/llvm/include/llvm/Support/Threading.h] - Woboq Code Browser</title>
+<meta name="woboq:interestingDefinitions" content="llvm::SetThreadPriorityResult,llvm::ThreadPoolStrategy,llvm::ThreadPriority "/>
+<link rel="stylesheet" href="../../../../.././data/qtcreator.css" title="QtCreator"/>
+<link rel="alternate stylesheet" href="../../../../.././data/kdevelop.css" title="KDevelop"/>
+<script type="text/javascript" src="../../../../.././data/jquery/jquery.min.js"></script>
+<script type="text/javascript" src="../../../../.././data/jquery/jquery-ui.min.js"></script>
+<script>var file = 'llvm/llvm/include/llvm/Support/Threading.h'; var root_path = '../../../../..'; var data_path = '../../../../.././data'; var ecma_script_api_version = 2;</script>
+<script src='../../../../.././data/codebrowser.js'></script>
+</head>
+<body><div id='header'><h1 id='breadcrumb'><span>Browse the source code of </span><a href='../../../..'>llvm</a>/<a href='../../..'>llvm</a>/<a href='../..'>include</a>/<a href='..'>llvm</a>/<a href='./'>Support</a>/<a href='Threading.h.html'>Threading.h</a></h1></div>
+<hr/><div id='content'><table class="code">
+<tr><th id="1">1</th><td><i>//===-- llvm/Support/Threading.h - Control multithreading mode --*- C++ -*-===//</i></td></tr>
+<tr><th id="2">2</th><td><i>//</i></td></tr>
+<tr><th id="3">3</th><td><i>// Part of the LLVM Project, under the Apache License v2.0 with LLVM Exceptions.</i></td></tr>
+<tr><th id="4">4</th><td><i>// See <a href="https://llvm.org/LICENSE.txt">https://llvm.org/LICENSE.txt</a> for license information.</i></td></tr>
+<tr><th id="5">5</th><td><i>// SPDX-License-Identifier: Apache-2.0 WITH LLVM-exception</i></td></tr>
+<tr><th id="6">6</th><td><i>//</i></td></tr>
+<tr><th id="7">7</th><td><i>//===----------------------------------------------------------------------===//</i></td></tr>
+<tr><th id="8">8</th><td><i>//</i></td></tr>
+<tr><th id="9">9</th><td><i>// This file declares helper functions for running LLVM in a multi-threaded</i></td></tr>
+<tr><th id="10">10</th><td><i>// environment.</i></td></tr>
+<tr><th id="11">11</th><td><i>//</i></td></tr>
+<tr><th id="12">12</th><td><i>//===----------------------------------------------------------------------===//</i></td></tr>
+<tr><th id="13">13</th><td></td></tr>
+<tr><th id="14">14</th><td><u>#<span data-ppcond="14">ifndef</span> <span class="macro" data-ref="_M/LLVM_SUPPORT_THREADING_H">LLVM_SUPPORT_THREADING_H</span></u></td></tr>
+<tr><th id="15">15</th><td><u>#define <dfn class="macro" id="_M/LLVM_SUPPORT_THREADING_H" data-ref="_M/LLVM_SUPPORT_THREADING_H">LLVM_SUPPORT_THREADING_H</dfn></u></td></tr>
+<tr><th id="16">16</th><td></td></tr>
+<tr><th id="17">17</th><td><u>#include <a href="../ADT/BitVector.h.html">"llvm/ADT/BitVector.h"</a></u></td></tr>
+<tr><th id="18">18</th><td><u>#include <a href="../ADT/FunctionExtras.h.html">"llvm/ADT/FunctionExtras.h"</a></u></td></tr>
+<tr><th id="19">19</th><td><u>#include <a href="../ADT/SmallVector.h.html">"llvm/ADT/SmallVector.h"</a></u></td></tr>
+<tr><th id="20">20</th><td><u>#include <a href="../../../../build/include/llvm/Config/llvm-config.h.html">"llvm/Config/llvm-config.h"</a> // for LLVM_ON_UNIX</u></td></tr>
+<tr><th id="21">21</th><td><u>#include <a href="Compiler.h.html">"llvm/Support/Compiler.h"</a></u></td></tr>
+<tr><th id="22">22</th><td><u>#include &lt;ciso646&gt; // So we can check the C++ standard lib macros.</u></td></tr>
+<tr><th id="23">23</th><td><u>#include &lt;functional&gt;</u></td></tr>
+<tr><th id="24">24</th><td></td></tr>
+<tr><th id="25">25</th><td><u>#<span data-ppcond="25">if</span> defined(<span class="macro" data-ref="_M/_MSC_VER">_MSC_VER</span>)</u></td></tr>
+<tr><th id="26">26</th><td><i>// MSVC's call_once implementation worked since VS 2015, which is the minimum</i></td></tr>
+<tr><th id="27">27</th><td><i>// supported version as of this writing.</i></td></tr>
+<tr><th id="28">28</th><td><u>#define LLVM_THREADING_USE_STD_CALL_ONCE 1</u></td></tr>
+<tr><th id="29">29</th><td><u>#<span data-ppcond="25">elif</span> defined(<a class="macro" href="../../../../build/include/llvm/Config/llvm-config.h.html#54" data-ref="_M/LLVM_ON_UNIX">LLVM_ON_UNIX</a>) &amp;&amp;                                                 \</u></td></tr>
+<tr><th id="30">30</th><td><u>    (defined(<span class="macro" data-ref="_M/_LIBCPP_VERSION">_LIBCPP_VERSION</span>) ||                                               \</u></td></tr>
+<tr><th id="31">31</th><td><u>     !(defined(<span class="macro" data-ref="_M/__NetBSD__">__NetBSD__</span>) || defined(<span class="macro" data-ref="_M/__OpenBSD__">__OpenBSD__</span>) ||                          \</u></td></tr>
+<tr><th id="32">32</th><td><u>       (defined(<span class="macro" data-ref="_M/__ppc__">__ppc__</span>) || defined(<span class="macro" data-ref="_M/__PPC__">__PPC__</span>))))</u></td></tr>
+<tr><th id="33">33</th><td><i>// std::call_once from libc++ is used on all Unix platforms. Other</i></td></tr>
+<tr><th id="34">34</th><td><i>// implementations like libstdc++ are known to have problems on NetBSD,</i></td></tr>
+<tr><th id="35">35</th><td><i>// OpenBSD and PowerPC.</i></td></tr>
+<tr><th id="36">36</th><td><u>#define <dfn class="macro" id="_M/LLVM_THREADING_USE_STD_CALL_ONCE" data-ref="_M/LLVM_THREADING_USE_STD_CALL_ONCE">LLVM_THREADING_USE_STD_CALL_ONCE</dfn> 1</u></td></tr>
+<tr><th id="37">37</th><td><u>#<span data-ppcond="25">elif</span> defined(LLVM_ON_UNIX) &amp;&amp;                                                 \</u></td></tr>
+<tr><th id="38">38</th><td><u>    ((defined(__ppc__) || defined(__PPC__)) &amp;&amp; defined(__LITTLE_ENDIAN__))</u></td></tr>
+<tr><th id="39">39</th><td><u>#define LLVM_THREADING_USE_STD_CALL_ONCE 1</u></td></tr>
+<tr><th id="40">40</th><td><u>#else</u></td></tr>
+<tr><th id="41">41</th><td><u>#define LLVM_THREADING_USE_STD_CALL_ONCE 0</u></td></tr>
+<tr><th id="42">42</th><td><u>#<span data-ppcond="25">endif</span></u></td></tr>
+<tr><th id="43">43</th><td></td></tr>
+<tr><th id="44">44</th><td><u>#<span data-ppcond="44">if</span> <a class="macro" href="#36" title="1" data-ref="_M/LLVM_THREADING_USE_STD_CALL_ONCE">LLVM_THREADING_USE_STD_CALL_ONCE</a></u></td></tr>
+<tr><th id="45">45</th><td><u>#include &lt;mutex&gt;</u></td></tr>
+<tr><th id="46">46</th><td><u>#<span data-ppcond="44">else</span></u></td></tr>
+<tr><th id="47">47</th><td><u>#include "llvm/Support/Atomic.h"</u></td></tr>
+<tr><th id="48">48</th><td><u>#<span data-ppcond="44">endif</span></u></td></tr>
+<tr><th id="49">49</th><td></td></tr>
+<tr><th id="50">50</th><td><b>namespace</b> <span class="namespace">llvm</span> {</td></tr>
+<tr><th id="51">51</th><td><b>class</b> <a class="type" href="../ADT/Twine.h.html#llvm::Twine" title='llvm::Twine' data-ref="llvm::Twine" data-ref-filename="llvm..Twine" id="llvm::Twine">Twine</a>;</td></tr>
+<tr><th id="52">52</th><td></td></tr>
+<tr><th id="53">53</th><td><i class="doc">/// Returns true if LLVM is compiled with support for multi-threading, and</i></td></tr>
+<tr><th id="54">54</th><td><i class="doc">/// false otherwise.</i></td></tr>
+<tr><th id="55">55</th><td><em>bool</em> <dfn class="decl fn" id="_ZN4llvm21llvm_is_multithreadedEv" title='llvm::llvm_is_multithreaded' data-ref="_ZN4llvm21llvm_is_multithreadedEv" data-ref-filename="_ZN4llvm21llvm_is_multithreadedEv">llvm_is_multithreaded</dfn>();</td></tr>
+<tr><th id="56">56</th><td></td></tr>
+<tr><th id="57">57</th><td><i class="doc">/// Execute the given<span class="command"> \p</span> <span class="arg">UserFn</span> on a separate thread, passing it the provided<span class="command"> \p</span></i></td></tr>
+<tr><th id="58">58</th><td><i class="doc">/// <span class="arg">UserData</span> and waits for thread completion.</i></td></tr>
+<tr><th id="59">59</th><td><i class="doc">///</i></td></tr>
+<tr><th id="60">60</th><td><i class="doc">/// This function does not guarantee that the code will actually be executed</i></td></tr>
+<tr><th id="61">61</th><td><i class="doc">/// on a separate thread or honoring the requested stack size, but tries to do</i></td></tr>
+<tr><th id="62">62</th><td><i class="doc">/// so where system support is available.</i></td></tr>
+<tr><th id="63">63</th><td><i class="doc">///</i></td></tr>
+<tr><th id="64">64</th><td><i class="doc">/// <span class="command">\param</span> <span class="arg">UserFn</span> - The callback to execute.</i></td></tr>
+<tr><th id="65">65</th><td><i class="doc">/// <span class="command">\param</span> <span class="arg">UserData</span> - An argument to pass to the callback function.</i></td></tr>
+<tr><th id="66">66</th><td><i class="doc">/// <span class="command">\param</span> <span class="arg">StackSizeInBytes</span> - A requested size (in bytes) for the thread stack</i></td></tr>
+<tr><th id="67">67</th><td><i class="doc">/// (or None for default)</i></td></tr>
+<tr><th id="68">68</th><td><em>void</em> <dfn class="decl fn" id="_ZN4llvm22llvm_execute_on_threadEPFvPvES0_NS_8OptionalIjEE" title='llvm::llvm_execute_on_thread' data-ref="_ZN4llvm22llvm_execute_on_threadEPFvPvES0_NS_8OptionalIjEE" data-ref-filename="_ZN4llvm22llvm_execute_on_threadEPFvPvES0_NS_8OptionalIjEE">llvm_execute_on_thread</dfn>(</td></tr>
+<tr><th id="69">69</th><td>    <em>void</em> (*<dfn class="local col7 decl" id="2687UserFn" title='UserFn' data-type='void (*)(void *)' data-ref="2687UserFn" data-ref-filename="2687UserFn">UserFn</dfn>)(<em>void</em> *), <em>void</em> *<dfn class="local col8 decl" id="2688UserData" title='UserData' data-type='void *' data-ref="2688UserData" data-ref-filename="2688UserData">UserData</dfn>,</td></tr>
+<tr><th id="70">70</th><td>    <span class="namespace">llvm::</span><a class="type" href="../../../../clang/include/clang/Basic/LLVM.h.html#llvm::Optional" title='llvm::Optional' data-ref="llvm::Optional" data-ref-filename="llvm..Optional">Optional</a>&lt;<em>unsigned</em>&gt; <dfn class="local col9 decl" id="2689StackSizeInBytes" title='StackSizeInBytes' data-type='llvm::Optional&lt;unsigned int&gt;' data-ref="2689StackSizeInBytes" data-ref-filename="2689StackSizeInBytes">StackSizeInBytes</dfn> = <a class="ref fn fake" href="../ADT/Optional.h.html#_ZN4llvm8OptionalC1ENS_8NoneTypeE" title='llvm::Optional::Optional&lt;T&gt;' data-ref="_ZN4llvm8OptionalC1ENS_8NoneTypeE" data-ref-filename="_ZN4llvm8OptionalC1ENS_8NoneTypeE"></a><span class="namespace">llvm::</span><a class="ref" href="../ADT/None.h.html#llvm::None" title='llvm::None' data-ref="llvm::None" data-ref-filename="llvm..None">None</a>);</td></tr>
+<tr><th id="71">71</th><td></td></tr>
+<tr><th id="72">72</th><td><i class="doc">/// Schedule the given<span class="command"> \p</span> <span class="arg">Func</span> for execution on a separate thread, then return</i></td></tr>
+<tr><th id="73">73</th><td><i class="doc">/// to the caller immediately. Roughly equivalent to</i></td></tr>
+<tr><th id="74">74</th><td><i class="doc">/// `std::thread(Func).detach()`, except it allows requesting a specific stack</i></td></tr>
+<tr><th id="75">75</th><td><i class="doc">/// size, if supported for the platform.</i></td></tr>
+<tr><th id="76">76</th><td><i class="doc">///</i></td></tr>
+<tr><th id="77">77</th><td><i class="doc">/// This function would report a fatal error if it can't execute the code</i></td></tr>
+<tr><th id="78">78</th><td><i class="doc">/// on a separate thread.</i></td></tr>
+<tr><th id="79">79</th><td><i class="doc">///</i></td></tr>
+<tr><th id="80">80</th><td><i class="doc">/// <span class="command">\param</span> <span class="arg">Func</span> - The callback to execute.</i></td></tr>
+<tr><th id="81">81</th><td><i class="doc">/// <span class="command">\param</span> <span class="arg">StackSizeInBytes</span> - A requested size (in bytes) for the thread stack</i></td></tr>
+<tr><th id="82">82</th><td><i class="doc">/// (or None for default)</i></td></tr>
+<tr><th id="83">83</th><td><em>void</em> <dfn class="decl fn" id="_ZN4llvm28llvm_execute_on_thread_asyncENS_15unique_functionIFvvEEENS_8OptionalIjEE" title='llvm::llvm_execute_on_thread_async' data-ref="_ZN4llvm28llvm_execute_on_thread_asyncENS_15unique_functionIFvvEEENS_8OptionalIjEE" data-ref-filename="_ZN4llvm28llvm_execute_on_thread_asyncENS_15unique_functionIFvvEEENS_8OptionalIjEE">llvm_execute_on_thread_async</dfn>(</td></tr>
+<tr><th id="84">84</th><td>    <span class="namespace">llvm::</span><a class="type" href="../ADT/FunctionExtras.h.html#llvm::unique_function" title='llvm::unique_function' data-ref="llvm::unique_function" data-ref-filename="llvm..unique_function">unique_function</a>&lt;<em>void</em>()&gt; <dfn class="local col0 decl" id="2690Func" title='Func' data-type='llvm::unique_function&lt;void ()&gt;' data-ref="2690Func" data-ref-filename="2690Func">Func</dfn>,</td></tr>
+<tr><th id="85">85</th><td>    <span class="namespace">llvm::</span><a class="type" href="../../../../clang/include/clang/Basic/LLVM.h.html#llvm::Optional" title='llvm::Optional' data-ref="llvm::Optional" data-ref-filename="llvm..Optional">Optional</a>&lt;<em>unsigned</em>&gt; <dfn class="local col1 decl" id="2691StackSizeInBytes" title='StackSizeInBytes' data-type='llvm::Optional&lt;unsigned int&gt;' data-ref="2691StackSizeInBytes" data-ref-filename="2691StackSizeInBytes">StackSizeInBytes</dfn> = <a class="ref fn fake" href="../ADT/Optional.h.html#_ZN4llvm8OptionalC1ENS_8NoneTypeE" title='llvm::Optional::Optional&lt;T&gt;' data-ref="_ZN4llvm8OptionalC1ENS_8NoneTypeE" data-ref-filename="_ZN4llvm8OptionalC1ENS_8NoneTypeE"></a><span class="namespace">llvm::</span><a class="ref" href="../ADT/None.h.html#llvm::None" title='llvm::None' data-ref="llvm::None" data-ref-filename="llvm..None">None</a>);</td></tr>
+<tr><th id="86">86</th><td></td></tr>
+<tr><th id="87">87</th><td><u>#<span data-ppcond="87">if</span> <a class="macro" href="#36" title="1" data-ref="_M/LLVM_THREADING_USE_STD_CALL_ONCE">LLVM_THREADING_USE_STD_CALL_ONCE</a></u></td></tr>
+<tr><th id="88">88</th><td></td></tr>
+<tr><th id="89">89</th><td>  <b>typedef</b> <span class="namespace">std::</span><span class='type' title='std::once_flag' data-ref="std::once_flag" data-ref-filename="std..once_flag">once_flag</span> <dfn class="typedef" id="llvm::once_flag" title='llvm::once_flag' data-type='std::once_flag' data-ref="llvm::once_flag" data-ref-filename="llvm..once_flag">once_flag</dfn>;</td></tr>
+<tr><th id="90">90</th><td></td></tr>
+<tr><th id="91">91</th><td><u>#<span data-ppcond="87">else</span></u></td></tr>
+<tr><th id="92">92</th><td></td></tr>
+<tr><th id="93">93</th><td>  <b>enum</b> InitStatus { Uninitialized = <var>0</var>, Wait = <var>1</var>, Done = <var>2</var> };</td></tr>
+<tr><th id="94">94</th><td></td></tr>
+<tr><th id="95">95</th><td>  <i class="doc">/// The llvm::once_flag structure</i></td></tr>
+<tr><th id="96">96</th><td><i class="doc">  ///</i></td></tr>
+<tr><th id="97">97</th><td><i class="doc">  /// This type is modeled after std::once_flag to use with llvm::call_once.</i></td></tr>
+<tr><th id="98">98</th><td><i class="doc">  /// This structure must be used as an opaque object. It is a struct to force</i></td></tr>
+<tr><th id="99">99</th><td><i class="doc">  /// autoinitialization and behave like std::once_flag.</i></td></tr>
+<tr><th id="100">100</th><td>  <b>struct</b> once_flag {</td></tr>
+<tr><th id="101">101</th><td>    <em>volatile</em> sys::cas_flag status = Uninitialized;</td></tr>
+<tr><th id="102">102</th><td>  };</td></tr>
+<tr><th id="103">103</th><td></td></tr>
+<tr><th id="104">104</th><td><u>#<span data-ppcond="87">endif</span></u></td></tr>
+<tr><th id="105">105</th><td></td></tr>
+<tr><th id="106">106</th><td>  <i class="doc">/// Execute the function specified as a parameter once.</i></td></tr>
+<tr><th id="107">107</th><td><i class="doc">  ///</i></td></tr>
+<tr><th id="108">108</th><td><i class="doc">  /// Typical usage:</i></td></tr>
+<tr><th id="109">109</th><td><i class="doc">  /// <span class="command">\code</span></i></td></tr>
+<tr><th id="110">110</th><td><i class="doc">  ///<span class="verb">   void foo() {...};</span></i></td></tr>
+<tr><th id="111">111</th><td><i class="doc"><span class="verb"></span>  ///<span class="verb">   ...</span></i></td></tr>
+<tr><th id="112">112</th><td><i class="doc"><span class="verb"></span>  ///<span class="verb">   static once_flag flag;</span></i></td></tr>
+<tr><th id="113">113</th><td><i class="doc"><span class="verb"></span>  ///<span class="verb">   call_once(flag, foo);</span></i></td></tr>
+<tr><th id="114">114</th><td><i class="doc"><span class="verb"></span>  /// \endcode</i></td></tr>
+<tr><th id="115">115</th><td><i class="doc">  ///</i></td></tr>
+<tr><th id="116">116</th><td><i class="doc">  /// <span class="command">\param</span> <span class="arg">flag</span> Flag used for tracking whether or not this has run.</i></td></tr>
+<tr><th id="117">117</th><td><i class="doc">  /// <span class="command">\param</span> <span class="arg">F</span> Function to call once.</i></td></tr>
+<tr><th id="118">118</th><td>  <b>template</b> &lt;<b>typename</b> Function, <b>typename</b>... Args&gt;</td></tr>
+<tr><th id="119">119</th><td>  <em>void</em> <dfn class="decl def fn" id="_ZN4llvm9call_onceERSt9once_flagOT_DpOT0_" title='llvm::call_once' data-ref="_ZN4llvm9call_onceERSt9once_flagOT_DpOT0_" data-ref-filename="_ZN4llvm9call_onceERSt9once_flagOT_DpOT0_">call_once</dfn>(<a class="typedef" href="#llvm::once_flag" title='llvm::once_flag' data-type='std::once_flag' data-ref="llvm::once_flag" data-ref-filename="llvm..once_flag">once_flag</a> &amp;<dfn class="local col2 decl" id="2692flag" title='flag' data-type='llvm::once_flag &amp;' data-ref="2692flag" data-ref-filename="2692flag">flag</dfn>, Function &amp;&amp;<dfn class="local col3 decl" id="2693F" title='F' data-type='Function &amp;&amp;' data-ref="2693F" data-ref-filename="2693F">F</dfn>, Args &amp;&amp;... <dfn class="local col4 decl" id="2694ArgList" title='ArgList' data-type='Args &amp;&amp;...' data-ref="2694ArgList" data-ref-filename="2694ArgList">ArgList</dfn>) {</td></tr>
+<tr><th id="120">120</th><td><u>#<span data-ppcond="120">if</span> <a class="macro" href="#36" title="1" data-ref="_M/LLVM_THREADING_USE_STD_CALL_ONCE">LLVM_THREADING_USE_STD_CALL_ONCE</a></u></td></tr>
+<tr><th id="121">121</th><td>    <span class="namespace">std::</span>call_once(<a class="local col2 ref" href="#2692flag" title='flag' data-ref="2692flag" data-ref-filename="2692flag">flag</a>, <span class="namespace">std::</span>forward&lt;Function&gt;(<a class="local col3 ref" href="#2693F" title='F' data-ref="2693F" data-ref-filename="2693F">F</a>),</td></tr>
+<tr><th id="122">122</th><td>                   <span class="namespace">std::</span>forward&lt;Args&gt;(<a class="local col4 ref" href="#2694ArgList" title='ArgList' data-ref="2694ArgList" data-ref-filename="2694ArgList">ArgList</a>)...);</td></tr>
+<tr><th id="123">123</th><td><u>#<span data-ppcond="120">else</span></u></td></tr>
+<tr><th id="124">124</th><td>    <i>// For other platforms we use a generic (if brittle) version based on our</i></td></tr>
+<tr><th id="125">125</th><td><i>    // atomics.</i></td></tr>
+<tr><th id="126">126</th><td>    sys::cas_flag old_val = sys::CompareAndSwap(&amp;flag.status, Wait, Uninitialized);</td></tr>
+<tr><th id="127">127</th><td>    <b>if</b> (old_val == Uninitialized) {</td></tr>
+<tr><th id="128">128</th><td>      std::forward&lt;Function&gt;(F)(std::forward&lt;Args&gt;(ArgList)...);</td></tr>
+<tr><th id="129">129</th><td>      sys::MemoryFence();</td></tr>
+<tr><th id="130">130</th><td>      TsanIgnoreWritesBegin();</td></tr>
+<tr><th id="131">131</th><td>      TsanHappensBefore(&amp;flag.status);</td></tr>
+<tr><th id="132">132</th><td>      flag.status = Done;</td></tr>
+<tr><th id="133">133</th><td>      TsanIgnoreWritesEnd();</td></tr>
+<tr><th id="134">134</th><td>    } <b>else</b> {</td></tr>
+<tr><th id="135">135</th><td>      <i>// Wait until any thread doing the call has finished.</i></td></tr>
+<tr><th id="136">136</th><td>      sys::cas_flag tmp = flag.status;</td></tr>
+<tr><th id="137">137</th><td>      sys::MemoryFence();</td></tr>
+<tr><th id="138">138</th><td>      <b>while</b> (tmp != Done) {</td></tr>
+<tr><th id="139">139</th><td>        tmp = flag.status;</td></tr>
+<tr><th id="140">140</th><td>        sys::MemoryFence();</td></tr>
+<tr><th id="141">141</th><td>      }</td></tr>
+<tr><th id="142">142</th><td>    }</td></tr>
+<tr><th id="143">143</th><td>    TsanHappensAfter(&amp;flag.status);</td></tr>
+<tr><th id="144">144</th><td><u>#<span data-ppcond="120">endif</span></u></td></tr>
+<tr><th id="145">145</th><td>  }</td></tr>
+<tr><th id="146">146</th><td></td></tr>
+<tr><th id="147">147</th><td>  <i class="doc">/// This tells how a thread pool will be used</i></td></tr>
+<tr><th id="148">148</th><td>  <b>class</b> <dfn class="type def" id="llvm::ThreadPoolStrategy" title='llvm::ThreadPoolStrategy' data-ref="llvm::ThreadPoolStrategy" data-ref-filename="llvm..ThreadPoolStrategy">ThreadPoolStrategy</dfn> {</td></tr>
+<tr><th id="149">149</th><td>  <b>public</b>:</td></tr>
+<tr><th id="150">150</th><td>    <i>// The default value (0) means all available threads should be used,</i></td></tr>
+<tr><th id="151">151</th><td><i>    // taking the affinity mask into account. If set, this value only represents</i></td></tr>
+<tr><th id="152">152</th><td><i>    // a suggested high bound, the runtime might choose a lower value (not</i></td></tr>
+<tr><th id="153">153</th><td><i>    // higher).</i></td></tr>
+<tr><th id="154">154</th><td>    <em>unsigned</em> <dfn class="decl field" id="llvm::ThreadPoolStrategy::ThreadsRequested" title='llvm::ThreadPoolStrategy::ThreadsRequested' data-ref="llvm::ThreadPoolStrategy::ThreadsRequested" data-ref-filename="llvm..ThreadPoolStrategy..ThreadsRequested">ThreadsRequested</dfn> = <var>0</var>;</td></tr>
+<tr><th id="155">155</th><td></td></tr>
+<tr><th id="156">156</th><td>    <i>// If SMT is active, use hyper threads. If false, there will be only one</i></td></tr>
+<tr><th id="157">157</th><td><i>    // std::thread per core.</i></td></tr>
+<tr><th id="158">158</th><td>    <em>bool</em> <dfn class="decl field" id="llvm::ThreadPoolStrategy::UseHyperThreads" title='llvm::ThreadPoolStrategy::UseHyperThreads' data-ref="llvm::ThreadPoolStrategy::UseHyperThreads" data-ref-filename="llvm..ThreadPoolStrategy..UseHyperThreads">UseHyperThreads</dfn> = <b>true</b>;</td></tr>
+<tr><th id="159">159</th><td></td></tr>
+<tr><th id="160">160</th><td>    <i>// If set, will constrain 'ThreadsRequested' to the number of hardware</i></td></tr>
+<tr><th id="161">161</th><td><i>    // threads, or hardware cores.</i></td></tr>
+<tr><th id="162">162</th><td>    <em>bool</em> <dfn class="decl field" id="llvm::ThreadPoolStrategy::Limit" title='llvm::ThreadPoolStrategy::Limit' data-ref="llvm::ThreadPoolStrategy::Limit" data-ref-filename="llvm..ThreadPoolStrategy..Limit">Limit</dfn> = <b>false</b>;</td></tr>
+<tr><th id="163">163</th><td></td></tr>
+<tr><th id="164">164</th><td>    <i class="doc">/// Retrieves the max available threads for the current strategy. This</i></td></tr>
+<tr><th id="165">165</th><td><i class="doc">    /// accounts for affinity masks and takes advantage of all CPU sockets.</i></td></tr>
+<tr><th id="166">166</th><td>    <em>unsigned</em> <dfn class="decl fn" id="_ZNK4llvm18ThreadPoolStrategy20compute_thread_countEv" title='llvm::ThreadPoolStrategy::compute_thread_count' data-ref="_ZNK4llvm18ThreadPoolStrategy20compute_thread_countEv" data-ref-filename="_ZNK4llvm18ThreadPoolStrategy20compute_thread_countEv">compute_thread_count</dfn>() <em>const</em>;</td></tr>
+<tr><th id="167">167</th><td></td></tr>
+<tr><th id="168">168</th><td>    <i class="doc">/// Assign the current thread to an ideal hardware CPU or NUMA node. In a</i></td></tr>
+<tr><th id="169">169</th><td><i class="doc">    /// multi-socket system, this ensures threads are assigned to all CPU</i></td></tr>
+<tr><th id="170">170</th><td><i class="doc">    /// sockets.<span class="command"> \p</span> <span class="arg">ThreadPoolNum</span> represents a number bounded by [0,</i></td></tr>
+<tr><th id="171">171</th><td><i class="doc">    /// compute_thread_count()).</i></td></tr>
+<tr><th id="172">172</th><td>    <em>void</em> <dfn class="decl fn" id="_ZNK4llvm18ThreadPoolStrategy21apply_thread_strategyEj" title='llvm::ThreadPoolStrategy::apply_thread_strategy' data-ref="_ZNK4llvm18ThreadPoolStrategy21apply_thread_strategyEj" data-ref-filename="_ZNK4llvm18ThreadPoolStrategy21apply_thread_strategyEj">apply_thread_strategy</dfn>(<em>unsigned</em> <dfn class="local col5 decl" id="2695ThreadPoolNum" title='ThreadPoolNum' data-type='unsigned int' data-ref="2695ThreadPoolNum" data-ref-filename="2695ThreadPoolNum">ThreadPoolNum</dfn>) <em>const</em>;</td></tr>
+<tr><th id="173">173</th><td></td></tr>
+<tr><th id="174">174</th><td>    <i class="doc">/// Finds the CPU socket where a thread should go. Returns 'None' if the</i></td></tr>
+<tr><th id="175">175</th><td><i class="doc">    /// thread shall remain on the actual CPU socket.</i></td></tr>
+<tr><th id="176">176</th><td>    <a class="type" href="../../../../clang/include/clang/Basic/LLVM.h.html#llvm::Optional" title='llvm::Optional' data-ref="llvm::Optional" data-ref-filename="llvm..Optional">Optional</a>&lt;<em>unsigned</em>&gt; <dfn class="decl fn" id="_ZNK4llvm18ThreadPoolStrategy18compute_cpu_socketEj" title='llvm::ThreadPoolStrategy::compute_cpu_socket' data-ref="_ZNK4llvm18ThreadPoolStrategy18compute_cpu_socketEj" data-ref-filename="_ZNK4llvm18ThreadPoolStrategy18compute_cpu_socketEj">compute_cpu_socket</dfn>(<em>unsigned</em> <dfn class="local col6 decl" id="2696ThreadPoolNum" title='ThreadPoolNum' data-type='unsigned int' data-ref="2696ThreadPoolNum" data-ref-filename="2696ThreadPoolNum">ThreadPoolNum</dfn>) <em>const</em>;</td></tr>
+<tr><th id="177">177</th><td>  };</td></tr>
+<tr><th id="178">178</th><td></td></tr>
+<tr><th id="179">179</th><td>  <i class="doc">/// Build a strategy from a number of threads as a string provided in<span class="command"> \p</span> <span class="arg">Num.</span></i></td></tr>
+<tr><th id="180">180</th><td><i class="doc">  /// When Num is above the max number of threads specified by the<span class="command"> \p</span> <span class="arg">Default</span></i></td></tr>
+<tr><th id="181">181</th><td><i class="doc">  /// strategy, we attempt to equally allocate the threads on all CPU sockets.</i></td></tr>
+<tr><th id="182">182</th><td><i class="doc">  /// "0" or an empty string will return the<span class="command"> \p</span> <span class="arg">Default</span> strategy.</i></td></tr>
+<tr><th id="183">183</th><td><i class="doc">  /// "all" for using all hardware threads.</i></td></tr>
+<tr><th id="184">184</th><td>  <a class="type" href="../../../../clang/include/clang/Basic/LLVM.h.html#llvm::Optional" title='llvm::Optional' data-ref="llvm::Optional" data-ref-filename="llvm..Optional">Optional</a>&lt;<a class="type" href="#llvm::ThreadPoolStrategy" title='llvm::ThreadPoolStrategy' data-ref="llvm::ThreadPoolStrategy" data-ref-filename="llvm..ThreadPoolStrategy">ThreadPoolStrategy</a>&gt;</td></tr>
+<tr><th id="185">185</th><td>  <dfn class="decl fn" id="_ZN4llvm23get_threadpool_strategyENS_9StringRefENS_18ThreadPoolStrategyE" title='llvm::get_threadpool_strategy' data-ref="_ZN4llvm23get_threadpool_strategyENS_9StringRefENS_18ThreadPoolStrategyE" data-ref-filename="_ZN4llvm23get_threadpool_strategyENS_9StringRefENS_18ThreadPoolStrategyE">get_threadpool_strategy</dfn>(<a class="type" href="../ADT/StringRef.h.html#llvm::StringRef" title='llvm::StringRef' data-ref="llvm::StringRef" data-ref-filename="llvm..StringRef">StringRef</a> <dfn class="local col7 decl" id="2697Num" title='Num' data-type='llvm::StringRef' data-ref="2697Num" data-ref-filename="2697Num">Num</dfn>, <a class="type" href="#llvm::ThreadPoolStrategy" title='llvm::ThreadPoolStrategy' data-ref="llvm::ThreadPoolStrategy" data-ref-filename="llvm..ThreadPoolStrategy">ThreadPoolStrategy</a> <dfn class="local col8 decl" id="2698Default" title='Default' data-type='llvm::ThreadPoolStrategy' data-ref="2698Default" data-ref-filename="2698Default">Default</dfn> = {});</td></tr>
+<tr><th id="186">186</th><td></td></tr>
+<tr><th id="187">187</th><td>  <i class="doc">/// Returns a thread strategy for tasks requiring significant memory or other</i></td></tr>
+<tr><th id="188">188</th><td><i class="doc">  /// resources. To be used for workloads where hardware_concurrency() proves to</i></td></tr>
+<tr><th id="189">189</th><td><i class="doc">  /// be less efficient. Avoid this strategy if doing lots of I/O. Currently</i></td></tr>
+<tr><th id="190">190</th><td><i class="doc">  /// based on physical cores, if available for the host system, otherwise falls</i></td></tr>
+<tr><th id="191">191</th><td><i class="doc">  /// back to hardware_concurrency(). Returns 1 when LLVM is configured with</i></td></tr>
+<tr><th id="192">192</th><td><i class="doc">  /// LLVM_ENABLE_THREADS = OFF.</i></td></tr>
+<tr><th id="193">193</th><td>  <b>inline</b> <a class="type" href="#llvm::ThreadPoolStrategy" title='llvm::ThreadPoolStrategy' data-ref="llvm::ThreadPoolStrategy" data-ref-filename="llvm..ThreadPoolStrategy">ThreadPoolStrategy</a></td></tr>
+<tr><th id="194">194</th><td>  <dfn class="decl def fn" id="_ZN4llvm32heavyweight_hardware_concurrencyEj" title='llvm::heavyweight_hardware_concurrency' data-ref="_ZN4llvm32heavyweight_hardware_concurrencyEj" data-ref-filename="_ZN4llvm32heavyweight_hardware_concurrencyEj">heavyweight_hardware_concurrency</dfn>(<em>unsigned</em> <dfn class="local col9 decl" id="2699ThreadCount" title='ThreadCount' data-type='unsigned int' data-ref="2699ThreadCount" data-ref-filename="2699ThreadCount">ThreadCount</dfn> = <var>0</var>) {</td></tr>
+<tr><th id="195">195</th><td>    <a class="type" href="#llvm::ThreadPoolStrategy" title='llvm::ThreadPoolStrategy' data-ref="llvm::ThreadPoolStrategy" data-ref-filename="llvm..ThreadPoolStrategy">ThreadPoolStrategy</a> <a class="ref fn fake" href="#148" title='llvm::ThreadPoolStrategy::ThreadPoolStrategy' data-ref="_ZN4llvm18ThreadPoolStrategyC1Ev" data-ref-filename="_ZN4llvm18ThreadPoolStrategyC1Ev"></a><dfn class="local col0 decl" id="2700S" title='S' data-type='llvm::ThreadPoolStrategy' data-ref="2700S" data-ref-filename="2700S">S</dfn>;</td></tr>
+<tr><th id="196">196</th><td>    <a class="local col0 ref" href="#2700S" title='S' data-ref="2700S" data-ref-filename="2700S">S</a>.<a class="ref field" href="#llvm::ThreadPoolStrategy::UseHyperThreads" title='llvm::ThreadPoolStrategy::UseHyperThreads' data-ref="llvm::ThreadPoolStrategy::UseHyperThreads" data-ref-filename="llvm..ThreadPoolStrategy..UseHyperThreads">UseHyperThreads</a> = <b>false</b>;</td></tr>
+<tr><th id="197">197</th><td>    <a class="local col0 ref" href="#2700S" title='S' data-ref="2700S" data-ref-filename="2700S">S</a>.<a class="ref field" href="#llvm::ThreadPoolStrategy::ThreadsRequested" title='llvm::ThreadPoolStrategy::ThreadsRequested' data-ref="llvm::ThreadPoolStrategy::ThreadsRequested" data-ref-filename="llvm..ThreadPoolStrategy..ThreadsRequested">ThreadsRequested</a> = <a class="local col9 ref" href="#2699ThreadCount" title='ThreadCount' data-ref="2699ThreadCount" data-ref-filename="2699ThreadCount">ThreadCount</a>;</td></tr>
+<tr><th id="198">198</th><td>    <b>return</b> <a class="local col0 ref" href="#2700S" title='S' data-ref="2700S" data-ref-filename="2700S">S</a>;</td></tr>
+<tr><th id="199">199</th><td>  }</td></tr>
+<tr><th id="200">200</th><td></td></tr>
+<tr><th id="201">201</th><td>  <i class="doc">/// Like heavyweight_hardware_concurrency() above, but builds a strategy</i></td></tr>
+<tr><th id="202">202</th><td><i class="doc">  /// based on the rules described for get_threadpool_strategy().</i></td></tr>
+<tr><th id="203">203</th><td><i class="doc">  /// If<span class="command"> \p</span> <span class="arg">Num</span> is invalid, returns a default strategy where one thread per</i></td></tr>
+<tr><th id="204">204</th><td><i class="doc">  /// hardware core is used.</i></td></tr>
+<tr><th id="205">205</th><td>  <b>inline</b> <a class="type" href="#llvm::ThreadPoolStrategy" title='llvm::ThreadPoolStrategy' data-ref="llvm::ThreadPoolStrategy" data-ref-filename="llvm..ThreadPoolStrategy">ThreadPoolStrategy</a> <dfn class="decl def fn" id="_ZN4llvm32heavyweight_hardware_concurrencyENS_9StringRefE" title='llvm::heavyweight_hardware_concurrency' data-ref="_ZN4llvm32heavyweight_hardware_concurrencyENS_9StringRefE" data-ref-filename="_ZN4llvm32heavyweight_hardware_concurrencyENS_9StringRefE">heavyweight_hardware_concurrency</dfn>(<a class="type" href="../ADT/StringRef.h.html#llvm::StringRef" title='llvm::StringRef' data-ref="llvm::StringRef" data-ref-filename="llvm..StringRef">StringRef</a> <dfn class="local col1 decl" id="2701Num" title='Num' data-type='llvm::StringRef' data-ref="2701Num" data-ref-filename="2701Num">Num</dfn>) {</td></tr>
+<tr><th id="206">206</th><td>    <a class="type" href="../../../../clang/include/clang/Basic/LLVM.h.html#llvm::Optional" title='llvm::Optional' data-ref="llvm::Optional" data-ref-filename="llvm..Optional">Optional</a>&lt;<a class="type" href="#llvm::ThreadPoolStrategy" title='llvm::ThreadPoolStrategy' data-ref="llvm::ThreadPoolStrategy" data-ref-filename="llvm..ThreadPoolStrategy">ThreadPoolStrategy</a>&gt; <dfn class="local col2 decl" id="2702S" title='S' data-type='Optional&lt;llvm::ThreadPoolStrategy&gt;' data-ref="2702S" data-ref-filename="2702S">S</dfn> =</td></tr>
+<tr><th id="207">207</th><td>        <a class="ref fn" href="#_ZN4llvm23get_threadpool_strategyENS_9StringRefENS_18ThreadPoolStrategyE" title='llvm::get_threadpool_strategy' data-ref="_ZN4llvm23get_threadpool_strategyENS_9StringRefENS_18ThreadPoolStrategyE" data-ref-filename="_ZN4llvm23get_threadpool_strategyENS_9StringRefENS_18ThreadPoolStrategyE">get_threadpool_strategy</a>(<a class="ref fn fake" href="../ADT/StringRef.h.html#57" title='llvm::StringRef::StringRef' data-ref="_ZN4llvm9StringRefC1ERKS0_" data-ref-filename="_ZN4llvm9StringRefC1ERKS0_"></a><a class="local col1 ref" href="#2701Num" title='Num' data-ref="2701Num" data-ref-filename="2701Num">Num</a>, <a class="ref fn" href="#_ZN4llvm32heavyweight_hardware_concurrencyEj" title='llvm::heavyweight_hardware_concurrency' data-ref="_ZN4llvm32heavyweight_hardware_concurrencyEj" data-ref-filename="_ZN4llvm32heavyweight_hardware_concurrencyEj">heavyweight_hardware_concurrency</a>());</td></tr>
+<tr><th id="208">208</th><td>    <b>if</b> (<a class="ref fn fake" href="../ADT/Optional.h.html#_ZNK4llvm8OptionalcvbEv" title='llvm::Optional::operator bool' data-ref="_ZNK4llvm8OptionalcvbEv" data-ref-filename="_ZNK4llvm8OptionalcvbEv"></a><a class="local col2 ref" href="#2702S" title='S' data-ref="2702S" data-ref-filename="2702S">S</a>)</td></tr>
+<tr><th id="209">209</th><td>      <b>return</b> <a class="ref fn fake" href="#148" title='llvm::ThreadPoolStrategy::ThreadPoolStrategy' data-ref="_ZN4llvm18ThreadPoolStrategyC1ERKS0_" data-ref-filename="_ZN4llvm18ThreadPoolStrategyC1ERKS0_"></a><a class="ref fn" href="../ADT/Optional.h.html#_ZNR4llvm8OptionaldeEv" title='llvm::Optional::operator*' data-ref="_ZNR4llvm8OptionaldeEv" data-ref-filename="_ZNR4llvm8OptionaldeEv">*</a><a class="local col2 ref" href="#2702S" title='S' data-ref="2702S" data-ref-filename="2702S">S</a>;</td></tr>
+<tr><th id="210">210</th><td>    <b>return</b> <a class="ref fn" href="#_ZN4llvm32heavyweight_hardware_concurrencyEj" title='llvm::heavyweight_hardware_concurrency' data-ref="_ZN4llvm32heavyweight_hardware_concurrencyEj" data-ref-filename="_ZN4llvm32heavyweight_hardware_concurrencyEj">heavyweight_hardware_concurrency</a>();</td></tr>
+<tr><th id="211">211</th><td>  }</td></tr>
+<tr><th id="212">212</th><td></td></tr>
+<tr><th id="213">213</th><td>  <i class="doc">/// Returns a default thread strategy where all available hardware resources</i></td></tr>
+<tr><th id="214">214</th><td><i class="doc">  /// are to be used, except for those initially excluded by an affinity mask.</i></td></tr>
+<tr><th id="215">215</th><td><i class="doc">  /// This function takes affinity into consideration. Returns 1 when LLVM is</i></td></tr>
+<tr><th id="216">216</th><td><i class="doc">  /// configured with LLVM_ENABLE_THREADS=OFF.</i></td></tr>
+<tr><th id="217">217</th><td>  <b>inline</b> <a class="type" href="#llvm::ThreadPoolStrategy" title='llvm::ThreadPoolStrategy' data-ref="llvm::ThreadPoolStrategy" data-ref-filename="llvm..ThreadPoolStrategy">ThreadPoolStrategy</a> <dfn class="decl def fn" id="_ZN4llvm20hardware_concurrencyEj" title='llvm::hardware_concurrency' data-ref="_ZN4llvm20hardware_concurrencyEj" data-ref-filename="_ZN4llvm20hardware_concurrencyEj">hardware_concurrency</dfn>(<em>unsigned</em> <dfn class="local col3 decl" id="2703ThreadCount" title='ThreadCount' data-type='unsigned int' data-ref="2703ThreadCount" data-ref-filename="2703ThreadCount">ThreadCount</dfn> = <var>0</var>) {</td></tr>
+<tr><th id="218">218</th><td>    <a class="type" href="#llvm::ThreadPoolStrategy" title='llvm::ThreadPoolStrategy' data-ref="llvm::ThreadPoolStrategy" data-ref-filename="llvm..ThreadPoolStrategy">ThreadPoolStrategy</a> <a class="ref fn fake" href="#148" title='llvm::ThreadPoolStrategy::ThreadPoolStrategy' data-ref="_ZN4llvm18ThreadPoolStrategyC1Ev" data-ref-filename="_ZN4llvm18ThreadPoolStrategyC1Ev"></a><dfn class="local col4 decl" id="2704S" title='S' data-type='llvm::ThreadPoolStrategy' data-ref="2704S" data-ref-filename="2704S">S</dfn>;</td></tr>
+<tr><th id="219">219</th><td>    <a class="local col4 ref" href="#2704S" title='S' data-ref="2704S" data-ref-filename="2704S">S</a>.<a class="ref field" href="#llvm::ThreadPoolStrategy::ThreadsRequested" title='llvm::ThreadPoolStrategy::ThreadsRequested' data-ref="llvm::ThreadPoolStrategy::ThreadsRequested" data-ref-filename="llvm..ThreadPoolStrategy..ThreadsRequested">ThreadsRequested</a> = <a class="local col3 ref" href="#2703ThreadCount" title='ThreadCount' data-ref="2703ThreadCount" data-ref-filename="2703ThreadCount">ThreadCount</a>;</td></tr>
+<tr><th id="220">220</th><td>    <b>return</b> <a class="local col4 ref" href="#2704S" title='S' data-ref="2704S" data-ref-filename="2704S">S</a>;</td></tr>
+<tr><th id="221">221</th><td>  }</td></tr>
+<tr><th id="222">222</th><td></td></tr>
+<tr><th id="223">223</th><td>  <i class="doc">/// Returns an optimal thread strategy to execute specified amount of tasks.</i></td></tr>
+<tr><th id="224">224</th><td><i class="doc">  /// This strategy should prevent us from creating too many threads if we</i></td></tr>
+<tr><th id="225">225</th><td><i class="doc">  /// occasionaly have an unexpectedly small amount of tasks.</i></td></tr>
+<tr><th id="226">226</th><td>  <b>inline</b> <a class="type" href="#llvm::ThreadPoolStrategy" title='llvm::ThreadPoolStrategy' data-ref="llvm::ThreadPoolStrategy" data-ref-filename="llvm..ThreadPoolStrategy">ThreadPoolStrategy</a> <dfn class="decl def fn" id="_ZN4llvm19optimal_concurrencyEj" title='llvm::optimal_concurrency' data-ref="_ZN4llvm19optimal_concurrencyEj" data-ref-filename="_ZN4llvm19optimal_concurrencyEj">optimal_concurrency</dfn>(<em>unsigned</em> <dfn class="local col5 decl" id="2705TaskCount" title='TaskCount' data-type='unsigned int' data-ref="2705TaskCount" data-ref-filename="2705TaskCount">TaskCount</dfn> = <var>0</var>) {</td></tr>
+<tr><th id="227">227</th><td>    <a class="type" href="#llvm::ThreadPoolStrategy" title='llvm::ThreadPoolStrategy' data-ref="llvm::ThreadPoolStrategy" data-ref-filename="llvm..ThreadPoolStrategy">ThreadPoolStrategy</a> <a class="ref fn fake" href="#148" title='llvm::ThreadPoolStrategy::ThreadPoolStrategy' data-ref="_ZN4llvm18ThreadPoolStrategyC1Ev" data-ref-filename="_ZN4llvm18ThreadPoolStrategyC1Ev"></a><dfn class="local col6 decl" id="2706S" title='S' data-type='llvm::ThreadPoolStrategy' data-ref="2706S" data-ref-filename="2706S">S</dfn>;</td></tr>
+<tr><th id="228">228</th><td>    <a class="local col6 ref" href="#2706S" title='S' data-ref="2706S" data-ref-filename="2706S">S</a>.<a class="ref field" href="#llvm::ThreadPoolStrategy::Limit" title='llvm::ThreadPoolStrategy::Limit' data-ref="llvm::ThreadPoolStrategy::Limit" data-ref-filename="llvm..ThreadPoolStrategy..Limit">Limit</a> = <b>true</b>;</td></tr>
+<tr><th id="229">229</th><td>    <a class="local col6 ref" href="#2706S" title='S' data-ref="2706S" data-ref-filename="2706S">S</a>.<a class="ref field" href="#llvm::ThreadPoolStrategy::ThreadsRequested" title='llvm::ThreadPoolStrategy::ThreadsRequested' data-ref="llvm::ThreadPoolStrategy::ThreadsRequested" data-ref-filename="llvm..ThreadPoolStrategy..ThreadsRequested">ThreadsRequested</a> = <a class="local col5 ref" href="#2705TaskCount" title='TaskCount' data-ref="2705TaskCount" data-ref-filename="2705TaskCount">TaskCount</a>;</td></tr>
+<tr><th id="230">230</th><td>    <b>return</b> <a class="local col6 ref" href="#2706S" title='S' data-ref="2706S" data-ref-filename="2706S">S</a>;</td></tr>
+<tr><th id="231">231</th><td>  }</td></tr>
+<tr><th id="232">232</th><td></td></tr>
+<tr><th id="233">233</th><td>  <i class="doc">/// Return the current thread id, as used in various OS system calls.</i></td></tr>
+<tr><th id="234">234</th><td><i class="doc">  /// Note that not all platforms guarantee that the value returned will be</i></td></tr>
+<tr><th id="235">235</th><td><i class="doc">  /// unique across the entire system, so portable code should not assume</i></td></tr>
+<tr><th id="236">236</th><td><i class="doc">  /// this.</i></td></tr>
+<tr><th id="237">237</th><td>  <a class="typedef" href="../../../../../include/bits/stdint-uintn.h.html#uint64_t" title='uint64_t' data-type='__uint64_t' data-ref="uint64_t" data-ref-filename="uint64_t">uint64_t</a> <dfn class="decl fn" id="_ZN4llvm12get_threadidEv" title='llvm::get_threadid' data-ref="_ZN4llvm12get_threadidEv" data-ref-filename="_ZN4llvm12get_threadidEv">get_threadid</dfn>();</td></tr>
+<tr><th id="238">238</th><td></td></tr>
+<tr><th id="239">239</th><td>  <i class="doc">/// Get the maximum length of a thread name on this platform.</i></td></tr>
+<tr><th id="240">240</th><td><i class="doc">  /// A value of 0 means there is no limit.</i></td></tr>
+<tr><th id="241">241</th><td>  <a class="typedef" href="../../../../../include/bits/stdint-uintn.h.html#uint32_t" title='uint32_t' data-type='__uint32_t' data-ref="uint32_t" data-ref-filename="uint32_t">uint32_t</a> <dfn class="decl fn" id="_ZN4llvm26get_max_thread_name_lengthEv" title='llvm::get_max_thread_name_length' data-ref="_ZN4llvm26get_max_thread_name_lengthEv" data-ref-filename="_ZN4llvm26get_max_thread_name_lengthEv">get_max_thread_name_length</dfn>();</td></tr>
+<tr><th id="242">242</th><td></td></tr>
+<tr><th id="243">243</th><td>  <i class="doc">/// Set the name of the current thread.  Setting a thread's name can</i></td></tr>
+<tr><th id="244">244</th><td><i class="doc">  /// be helpful for enabling useful diagnostics under a debugger or when</i></td></tr>
+<tr><th id="245">245</th><td><i class="doc">  /// logging.  The level of support for setting a thread's name varies</i></td></tr>
+<tr><th id="246">246</th><td><i class="doc">  /// wildly across operating systems, and we only make a best effort to</i></td></tr>
+<tr><th id="247">247</th><td><i class="doc">  /// perform the operation on supported platforms.  No indication of success</i></td></tr>
+<tr><th id="248">248</th><td><i class="doc">  /// or failure is returned.</i></td></tr>
+<tr><th id="249">249</th><td>  <em>void</em> <dfn class="decl fn" id="_ZN4llvm15set_thread_nameERKNS_5TwineE" title='llvm::set_thread_name' data-ref="_ZN4llvm15set_thread_nameERKNS_5TwineE" data-ref-filename="_ZN4llvm15set_thread_nameERKNS_5TwineE">set_thread_name</dfn>(<em>const</em> <a class="type" href="../ADT/Twine.h.html#llvm::Twine" title='llvm::Twine' data-ref="llvm::Twine" data-ref-filename="llvm..Twine">Twine</a> &amp;<dfn class="local col7 decl" id="2707Name" title='Name' data-type='const llvm::Twine &amp;' data-ref="2707Name" data-ref-filename="2707Name">Name</dfn>);</td></tr>
+<tr><th id="250">250</th><td></td></tr>
+<tr><th id="251">251</th><td>  <i class="doc">/// Get the name of the current thread.  The level of support for</i></td></tr>
+<tr><th id="252">252</th><td><i class="doc">  /// getting a thread's name varies wildly across operating systems, and it</i></td></tr>
+<tr><th id="253">253</th><td><i class="doc">  /// is not even guaranteed that if you can successfully set a thread's name</i></td></tr>
+<tr><th id="254">254</th><td><i class="doc">  /// that you can later get it back.  This function is intended for diagnostic</i></td></tr>
+<tr><th id="255">255</th><td><i class="doc">  /// purposes, and as with setting a thread's name no indication of whether</i></td></tr>
+<tr><th id="256">256</th><td><i class="doc">  /// the operation succeeded or failed is returned.</i></td></tr>
+<tr><th id="257">257</th><td>  <em>void</em> <dfn class="decl fn" id="_ZN4llvm15get_thread_nameERNS_15SmallVectorImplIcEE" title='llvm::get_thread_name' data-ref="_ZN4llvm15get_thread_nameERNS_15SmallVectorImplIcEE" data-ref-filename="_ZN4llvm15get_thread_nameERNS_15SmallVectorImplIcEE">get_thread_name</dfn>(<a class="type" href="../../../../clang/include/clang/Basic/LLVM.h.html#llvm::SmallVectorImpl" title='llvm::SmallVectorImpl' data-ref="llvm::SmallVectorImpl" data-ref-filename="llvm..SmallVectorImpl">SmallVectorImpl</a>&lt;<em>char</em>&gt; &amp;<dfn class="local col8 decl" id="2708Name" title='Name' data-type='SmallVectorImpl&lt;char&gt; &amp;' data-ref="2708Name" data-ref-filename="2708Name">Name</dfn>);</td></tr>
+<tr><th id="258">258</th><td></td></tr>
+<tr><th id="259">259</th><td>  <i class="doc">/// Returns a mask that represents on which hardware thread, core, CPU, NUMA</i></td></tr>
+<tr><th id="260">260</th><td><i class="doc">  /// group, the calling thread can be executed. On Windows, threads cannot</i></td></tr>
+<tr><th id="261">261</th><td><i class="doc">  /// cross CPU sockets boundaries.</i></td></tr>
+<tr><th id="262">262</th><td>  <span class="namespace">llvm::</span><a class="type" href="../ADT/BitVector.h.html#llvm::BitVector" title='llvm::BitVector' data-ref="llvm::BitVector" data-ref-filename="llvm..BitVector">BitVector</a> <dfn class="decl fn" id="_ZN4llvm24get_thread_affinity_maskEv" title='llvm::get_thread_affinity_mask' data-ref="_ZN4llvm24get_thread_affinity_maskEv" data-ref-filename="_ZN4llvm24get_thread_affinity_maskEv">get_thread_affinity_mask</dfn>();</td></tr>
+<tr><th id="263">263</th><td></td></tr>
+<tr><th id="264">264</th><td>  <i class="doc">/// Returns how many physical CPUs or NUMA groups the system has.</i></td></tr>
+<tr><th id="265">265</th><td>  <em>unsigned</em> <dfn class="decl fn" id="_ZN4llvm8get_cpusEv" title='llvm::get_cpus' data-ref="_ZN4llvm8get_cpusEv" data-ref-filename="_ZN4llvm8get_cpusEv">get_cpus</dfn>();</td></tr>
+<tr><th id="266">266</th><td></td></tr>
+<tr><th id="267">267</th><td>  <b>enum</b> <b>class</b> <dfn class="type def" id="llvm::ThreadPriority" title='llvm::ThreadPriority' data-ref="llvm::ThreadPriority" data-ref-filename="llvm..ThreadPriority">ThreadPriority</dfn> {</td></tr>
+<tr><th id="268">268</th><td>    <dfn class="enum" id="llvm::ThreadPriority::Background" title='llvm::ThreadPriority::Background' data-ref="llvm::ThreadPriority::Background" data-ref-filename="llvm..ThreadPriority..Background">Background</dfn> = <var>0</var>,</td></tr>
+<tr><th id="269">269</th><td>    <dfn class="enum" id="llvm::ThreadPriority::Default" title='llvm::ThreadPriority::Default' data-ref="llvm::ThreadPriority::Default" data-ref-filename="llvm..ThreadPriority..Default">Default</dfn> = <var>1</var>,</td></tr>
+<tr><th id="270">270</th><td>  };</td></tr>
+<tr><th id="271">271</th><td>  <i class="doc">/// If priority is Background tries to lower current threads priority such</i></td></tr>
+<tr><th id="272">272</th><td><i class="doc">  /// that it does not affect foreground tasks significantly. Can be used for</i></td></tr>
+<tr><th id="273">273</th><td><i class="doc">  /// long-running, latency-insensitive tasks to make sure cpu is not hogged by</i></td></tr>
+<tr><th id="274">274</th><td><i class="doc">  /// this task.</i></td></tr>
+<tr><th id="275">275</th><td><i class="doc">  /// If the priority is default tries to restore current threads priority to</i></td></tr>
+<tr><th id="276">276</th><td><i class="doc">  /// default scheduling priority.</i></td></tr>
+<tr><th id="277">277</th><td>  <b>enum</b> <b>class</b> <dfn class="type def" id="llvm::SetThreadPriorityResult" title='llvm::SetThreadPriorityResult' data-ref="llvm::SetThreadPriorityResult" data-ref-filename="llvm..SetThreadPriorityResult">SetThreadPriorityResult</dfn> { <dfn class="enum" id="llvm::SetThreadPriorityResult::FAILURE" title='llvm::SetThreadPriorityResult::FAILURE' data-ref="llvm::SetThreadPriorityResult::FAILURE" data-ref-filename="llvm..SetThreadPriorityResult..FAILURE">FAILURE</dfn>, <dfn class="enum" id="llvm::SetThreadPriorityResult::SUCCESS" title='llvm::SetThreadPriorityResult::SUCCESS' data-ref="llvm::SetThreadPriorityResult::SUCCESS" data-ref-filename="llvm..SetThreadPriorityResult..SUCCESS">SUCCESS</dfn> };</td></tr>
+<tr><th id="278">278</th><td>  <a class="type" href="#llvm::SetThreadPriorityResult" title='llvm::SetThreadPriorityResult' data-ref="llvm::SetThreadPriorityResult" data-ref-filename="llvm..SetThreadPriorityResult">SetThreadPriorityResult</a> <dfn class="decl fn" id="_ZN4llvm19set_thread_priorityENS_14ThreadPriorityE" title='llvm::set_thread_priority' data-ref="_ZN4llvm19set_thread_priorityENS_14ThreadPriorityE" data-ref-filename="_ZN4llvm19set_thread_priorityENS_14ThreadPriorityE">set_thread_priority</dfn>(<a class="type" href="#llvm::ThreadPriority" title='llvm::ThreadPriority' data-ref="llvm::ThreadPriority" data-ref-filename="llvm..ThreadPriority">ThreadPriority</a> <dfn class="local col9 decl" id="2709Priority" title='Priority' data-type='llvm::ThreadPriority' data-ref="2709Priority" data-ref-filename="2709Priority">Priority</dfn>);</td></tr>
+<tr><th id="279">279</th><td>}</td></tr>
+<tr><th id="280">280</th><td></td></tr>
+<tr><th id="281">281</th><td><u>#<span data-ppcond="14">endif</span></u></td></tr>
+<tr><th id="282">282</th><td></td></tr>
+</table><hr/><p id='footer'>
+Generated while processing <a href='../../../../clang/examples/clang-interpreter/main.cpp.html'>llvm/clang/examples/clang-interpreter/main.cpp</a><br/>Generated on <em>2021-Jul-01</em> from project llvm revision <em>12</em>

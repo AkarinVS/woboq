@@ -1,0 +1,5 @@
+<dec f='llvm/clang/include/clang/AST/ASTContext.h' l='1339' type='llvm::ElementCount'/>
+<use f='llvm/clang/include/clang/AST/ASTContext.h' l='1343' u='w' c='_ZN5clang10ASTContext21BuiltinVectorTypeInfoC1ENS_8QualTypeEN4llvm12ElementCountEj'/>
+<offset>64</offset>
+<use f='llvm/clang/lib/CodeGen/CGDebugInfo.cpp' l='721' u='m' c='_ZN5clang7CodeGen11CGDebugInfo10CreateTypeEPKNS_11BuiltinTypeE'/>
+<use f='llvm/clang/lib/CodeGen/CodeGenTypes.cpp' l='595' u='m' c='_ZN5clang7CodeGen12CodeGenTypes11ConvertTypeENS_8QualTypeE'/>

@@ -1,0 +1,21 @@
+<dec f='llvm/llvm/include/llvm/Support/BranchProbability.h' l='35' type='const uint32_t'/>
+<use f='llvm/llvm/include/llvm/Support/BranchProbability.h' l='50' u='r' c='_ZN4llvm17BranchProbability6getOneEv'/>
+<use f='llvm/llvm/include/llvm/Support/BranchProbability.h' l='66' u='r' c='_ZN4llvm17BranchProbability14getDenominatorEv'/>
+<use f='llvm/llvm/include/llvm/Support/BranchProbability.h' l='69' u='r' c='_ZNK4llvm17BranchProbability8getComplEv'/>
+<use f='llvm/llvm/include/llvm/Support/BranchProbability.h' l='95' u='r' c='_ZN4llvm17BranchProbabilitypLES0_'/>
+<use f='llvm/llvm/include/llvm/Support/BranchProbability.h' l='95' u='r' c='_ZN4llvm17BranchProbabilitypLES0_'/>
+<use f='llvm/llvm/include/llvm/Support/BranchProbability.h' l='110' u='r' c='_ZN4llvm17BranchProbabilitymLES0_'/>
+<use f='llvm/llvm/include/llvm/Support/BranchProbability.h' l='110' u='r' c='_ZN4llvm17BranchProbabilitymLES0_'/>
+<use f='llvm/llvm/include/llvm/Support/BranchProbability.h' l='117' u='r' c='_ZN4llvm17BranchProbabilitymLEj'/>
+<use f='llvm/llvm/include/llvm/Support/BranchProbability.h' l='117' u='r' c='_ZN4llvm17BranchProbabilitymLEj'/>
+<use f='llvm/llvm/include/llvm/Support/BranchProbability.h' l='124' u='r' c='_ZN4llvm17BranchProbabilitydVES0_'/>
+<use f='llvm/llvm/include/llvm/Support/BranchProbability.h' l='243' u='r' c='_ZN4llvm17BranchProbability22normalizeProbabilitiesET_S1_'/>
+<doc f='llvm/llvm/include/llvm/Support/BranchProbability.h' l='34'>// Denominator, which is a constant value.</doc>
+<def f='llvm/llvm/lib/Support/BranchProbability.cpp' l='22' type='const uint32_t'/>
+<use f='llvm/llvm/lib/Support/BranchProbability.cpp' l='30' u='r' c='_ZNK4llvm17BranchProbability5printERNS_11raw_ostreamE'/>
+<use f='llvm/llvm/lib/Support/BranchProbability.cpp' l='31' u='r' c='_ZNK4llvm17BranchProbability5printERNS_11raw_ostreamE'/>
+<use f='llvm/llvm/lib/Support/BranchProbability.cpp' l='42' u='r' c='_ZN4llvm17BranchProbabilityC1Ejj'/>
+<use f='llvm/llvm/lib/Support/BranchProbability.cpp' l='46' u='r' c='_ZN4llvm17BranchProbabilityC1Ejj'/>
+<use f='llvm/llvm/lib/Support/BranchProbability.cpp' l='107' u='c' c='_ZNK4llvm17BranchProbability5scaleEm'/>
+<use f='llvm/llvm/lib/Support/BranchProbability.cpp' l='107' u='r' c='_ZNK4llvm17BranchProbability5scaleEm'/>
+<use f='llvm/llvm/lib/Support/BranchProbability.cpp' l='111' u='r' c='_ZNK4llvm17BranchProbability14scaleByInverseEm'/>

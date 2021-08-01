@@ -1,0 +1,32 @@
+<dec f='llvm/llvm/include/llvm/CodeGen/ModuloSchedule.h' l='301' type='llvm::MachineBasicBlock *'/>
+<offset>384</offset>
+<doc f='llvm/llvm/include/llvm/CodeGen/ModuloSchedule.h' l='300'>/// The original loop block that gets rewritten in-place.</doc>
+<use f='llvm/llvm/lib/CodeGen/ModuloSchedule.cpp' l='1579' u='r' c='_ZN4llvm29PeelingModuloScheduleExpander10peelKernelENS_17LoopPeelDirectionE'/>
+<use f='llvm/llvm/lib/CodeGen/ModuloSchedule.cpp' l='1584' u='r' c='_ZN4llvm29PeelingModuloScheduleExpander10peelKernelENS_17LoopPeelDirectionE'/>
+<use f='llvm/llvm/lib/CodeGen/ModuloSchedule.cpp' l='1589' u='a' c='_ZN4llvm29PeelingModuloScheduleExpander10peelKernelENS_17LoopPeelDirectionE'/>
+<use f='llvm/llvm/lib/CodeGen/ModuloSchedule.cpp' l='1728' u='r' c='_ZN4llvm29PeelingModuloScheduleExpander20peelPrologAndEpilogsEv'/>
+<use f='llvm/llvm/lib/CodeGen/ModuloSchedule.cpp' l='1729' u='r' c='_ZN4llvm29PeelingModuloScheduleExpander20peelPrologAndEpilogsEv'/>
+<use f='llvm/llvm/lib/CodeGen/ModuloSchedule.cpp' l='1818' u='r' c='_ZN4llvm29PeelingModuloScheduleExpander20peelPrologAndEpilogsEv'/>
+<use f='llvm/llvm/lib/CodeGen/ModuloSchedule.cpp' l='1843' u='r' c='_ZN4llvm29PeelingModuloScheduleExpander23CreateLCSSAExitingBlockEv'/>
+<use f='llvm/llvm/lib/CodeGen/ModuloSchedule.cpp' l='1844' u='r' c='_ZN4llvm29PeelingModuloScheduleExpander23CreateLCSSAExitingBlockEv'/>
+<use f='llvm/llvm/lib/CodeGen/ModuloSchedule.cpp' l='1845' u='r' c='_ZN4llvm29PeelingModuloScheduleExpander23CreateLCSSAExitingBlockEv'/>
+<use f='llvm/llvm/lib/CodeGen/ModuloSchedule.cpp' l='1846' u='r' c='_ZN4llvm29PeelingModuloScheduleExpander23CreateLCSSAExitingBlockEv'/>
+<use f='llvm/llvm/lib/CodeGen/ModuloSchedule.cpp' l='1848' u='r' c='_ZN4llvm29PeelingModuloScheduleExpander23CreateLCSSAExitingBlockEv'/>
+<use f='llvm/llvm/lib/CodeGen/ModuloSchedule.cpp' l='1849' u='r' c='_ZN4llvm29PeelingModuloScheduleExpander23CreateLCSSAExitingBlockEv'/>
+<use f='llvm/llvm/lib/CodeGen/ModuloSchedule.cpp' l='1852' u='r' c='_ZN4llvm29PeelingModuloScheduleExpander23CreateLCSSAExitingBlockEv'/>
+<use f='llvm/llvm/lib/CodeGen/ModuloSchedule.cpp' l='1858' u='r' c='_ZN4llvm29PeelingModuloScheduleExpander23CreateLCSSAExitingBlockEv'/>
+<use f='llvm/llvm/lib/CodeGen/ModuloSchedule.cpp' l='1865' u='r' c='_ZN4llvm29PeelingModuloScheduleExpander23CreateLCSSAExitingBlockEv'/>
+<use f='llvm/llvm/lib/CodeGen/ModuloSchedule.cpp' l='1869' u='r' c='_ZN4llvm29PeelingModuloScheduleExpander23CreateLCSSAExitingBlockEv'/>
+<use f='llvm/llvm/lib/CodeGen/ModuloSchedule.cpp' l='1870' u='r' c='_ZN4llvm29PeelingModuloScheduleExpander23CreateLCSSAExitingBlockEv'/>
+<use f='llvm/llvm/lib/CodeGen/ModuloSchedule.cpp' l='1875' u='r' c='_ZN4llvm29PeelingModuloScheduleExpander23CreateLCSSAExitingBlockEv'/>
+<use f='llvm/llvm/lib/CodeGen/ModuloSchedule.cpp' l='1878' u='r' c='_ZN4llvm29PeelingModuloScheduleExpander23CreateLCSSAExitingBlockEv'/>
+<use f='llvm/llvm/lib/CodeGen/ModuloSchedule.cpp' l='1879' u='r' c='_ZN4llvm29PeelingModuloScheduleExpander23CreateLCSSAExitingBlockEv'/>
+<use f='llvm/llvm/lib/CodeGen/ModuloSchedule.cpp' l='1989' u='w' c='_ZN4llvm29PeelingModuloScheduleExpander6expandEv'/>
+<use f='llvm/llvm/lib/CodeGen/ModuloSchedule.cpp' l='1992' u='r' c='_ZN4llvm29PeelingModuloScheduleExpander6expandEv'/>
+<use f='llvm/llvm/lib/CodeGen/ModuloSchedule.cpp' l='2001' u='w' c='_ZN4llvm29PeelingModuloScheduleExpander37validateAgainstModuloScheduleExpanderEv'/>
+<use f='llvm/llvm/lib/CodeGen/ModuloSchedule.cpp' l='2024' u='r' c='_ZN4llvm29PeelingModuloScheduleExpander37validateAgainstModuloScheduleExpanderEv'/>
+<use f='llvm/llvm/lib/CodeGen/ModuloSchedule.cpp' l='2034' u='r' c='_ZN4llvm29PeelingModuloScheduleExpander37validateAgainstModuloScheduleExpanderEv'/>
+<use f='llvm/llvm/lib/CodeGen/ModuloSchedule.cpp' l='2034' u='r' c='_ZN4llvm29PeelingModuloScheduleExpander37validateAgainstModuloScheduleExpanderEv'/>
+<use f='llvm/llvm/lib/CodeGen/ModuloSchedule.cpp' l='2043' u='r' c='_ZN4llvm29PeelingModuloScheduleExpander37validateAgainstModuloScheduleExpanderEv'/>
+<use f='llvm/llvm/lib/CodeGen/ModuloSchedule.cpp' l='2074' u='r' c='_ZN4llvm29PeelingModuloScheduleExpander37validateAgainstModuloScheduleExpanderEv'/>
+<use f='llvm/llvm/lib/CodeGen/ModuloSchedule.cpp' l='2082' u='r' c='_ZN4llvm29PeelingModuloScheduleExpander37validateAgainstModuloScheduleExpanderEv'/>

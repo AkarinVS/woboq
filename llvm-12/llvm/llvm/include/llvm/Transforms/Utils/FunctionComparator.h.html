@@ -1,0 +1,409 @@
+<!doctype html>
+<html>
+<head>
+<meta name="viewport" content="width=device-width, initial-scale=1.0"><title>FunctionComparator.h source code [llvm/llvm/include/llvm/Transforms/Utils/FunctionComparator.h] - Woboq Code Browser</title>
+<meta name="woboq:interestingDefinitions" content="llvm::FunctionComparator,llvm::GlobalNumberState "/>
+<link rel="stylesheet" href="../../../../../.././data/qtcreator.css" title="QtCreator"/>
+<link rel="alternate stylesheet" href="../../../../../.././data/kdevelop.css" title="KDevelop"/>
+<script type="text/javascript" src="../../../../../.././data/jquery/jquery.min.js"></script>
+<script type="text/javascript" src="../../../../../.././data/jquery/jquery-ui.min.js"></script>
+<script>var file = 'llvm/llvm/include/llvm/Transforms/Utils/FunctionComparator.h'; var root_path = '../../../../../..'; var data_path = '../../../../../.././data'; var ecma_script_api_version = 2;</script>
+<script src='../../../../../.././data/codebrowser.js'></script>
+</head>
+<body><div id='header'><h1 id='breadcrumb'><span>Browse the source code of </span><a href='../../../../..'>llvm</a>/<a href='../../../..'>llvm</a>/<a href='../../..'>include</a>/<a href='../..'>llvm</a>/<a href='..'>Transforms</a>/<a href='./'>Utils</a>/<a href='FunctionComparator.h.html'>FunctionComparator.h</a></h1></div>
+<hr/><div id='content'><table class="code">
+<tr><th id="1">1</th><td><i>//===- FunctionComparator.h - Function Comparator ---------------*- C++ -*-===//</i></td></tr>
+<tr><th id="2">2</th><td><i>//</i></td></tr>
+<tr><th id="3">3</th><td><i>// Part of the LLVM Project, under the Apache License v2.0 with LLVM Exceptions.</i></td></tr>
+<tr><th id="4">4</th><td><i>// See <a href="https://llvm.org/LICENSE.txt">https://llvm.org/LICENSE.txt</a> for license information.</i></td></tr>
+<tr><th id="5">5</th><td><i>// SPDX-License-Identifier: Apache-2.0 WITH LLVM-exception</i></td></tr>
+<tr><th id="6">6</th><td><i>//</i></td></tr>
+<tr><th id="7">7</th><td><i>//===----------------------------------------------------------------------===//</i></td></tr>
+<tr><th id="8">8</th><td><i>//</i></td></tr>
+<tr><th id="9">9</th><td><i>// This file defines the FunctionComparator and GlobalNumberState classes which</i></td></tr>
+<tr><th id="10">10</th><td><i>// are used by the MergeFunctions pass for comparing functions.</i></td></tr>
+<tr><th id="11">11</th><td><i>//</i></td></tr>
+<tr><th id="12">12</th><td><i>//===----------------------------------------------------------------------===//</i></td></tr>
+<tr><th id="13">13</th><td></td></tr>
+<tr><th id="14">14</th><td><u>#<span data-ppcond="14">ifndef</span> <span class="macro" data-ref="_M/LLVM_TRANSFORMS_UTILS_FUNCTIONCOMPARATOR_H">LLVM_TRANSFORMS_UTILS_FUNCTIONCOMPARATOR_H</span></u></td></tr>
+<tr><th id="15">15</th><td><u>#define <dfn class="macro" id="_M/LLVM_TRANSFORMS_UTILS_FUNCTIONCOMPARATOR_H" data-ref="_M/LLVM_TRANSFORMS_UTILS_FUNCTIONCOMPARATOR_H">LLVM_TRANSFORMS_UTILS_FUNCTIONCOMPARATOR_H</dfn></u></td></tr>
+<tr><th id="16">16</th><td></td></tr>
+<tr><th id="17">17</th><td><u>#include <a href="../../ADT/DenseMap.h.html">"llvm/ADT/DenseMap.h"</a></u></td></tr>
+<tr><th id="18">18</th><td><u>#include <a href="../../ADT/StringRef.h.html">"llvm/ADT/StringRef.h"</a></u></td></tr>
+<tr><th id="19">19</th><td><u>#include <a href="../../IR/Attributes.h.html">"llvm/IR/Attributes.h"</a></u></td></tr>
+<tr><th id="20">20</th><td><u>#include <a href="../../IR/Instructions.h.html">"llvm/IR/Instructions.h"</a></u></td></tr>
+<tr><th id="21">21</th><td><u>#include <a href="../../IR/Operator.h.html">"llvm/IR/Operator.h"</a></u></td></tr>
+<tr><th id="22">22</th><td><u>#include <a href="../../IR/ValueMap.h.html">"llvm/IR/ValueMap.h"</a></u></td></tr>
+<tr><th id="23">23</th><td><u>#include <a href="../../Support/AtomicOrdering.h.html">"llvm/Support/AtomicOrdering.h"</a></u></td></tr>
+<tr><th id="24">24</th><td><u>#include <a href="../../Support/Casting.h.html">"llvm/Support/Casting.h"</a></u></td></tr>
+<tr><th id="25">25</th><td><u>#include &lt;cstdint&gt;</u></td></tr>
+<tr><th id="26">26</th><td><u>#include &lt;tuple&gt;</u></td></tr>
+<tr><th id="27">27</th><td></td></tr>
+<tr><th id="28">28</th><td><b>namespace</b> <span class="namespace">llvm</span> {</td></tr>
+<tr><th id="29">29</th><td></td></tr>
+<tr><th id="30">30</th><td><b>class</b> <a class="type" href="../../ADT/APFloat.h.html#llvm::APFloat" title='llvm::APFloat' data-ref="llvm::APFloat" data-ref-filename="llvm..APFloat" id="llvm::APFloat">APFloat</a>;</td></tr>
+<tr><th id="31">31</th><td><b>class</b> <a class="type" href="../../ADT/APInt.h.html#llvm::APInt" title='llvm::APInt' data-ref="llvm::APInt" data-ref-filename="llvm..APInt" id="llvm::APInt">APInt</a>;</td></tr>
+<tr><th id="32">32</th><td><b>class</b> <a class="type" href="../../IR/BasicBlock.h.html#llvm::BasicBlock" title='llvm::BasicBlock' data-ref="llvm::BasicBlock" data-ref-filename="llvm..BasicBlock" id="llvm::BasicBlock">BasicBlock</a>;</td></tr>
+<tr><th id="33">33</th><td><b>class</b> <a class="type" href="../../IR/Constant.h.html#llvm::Constant" title='llvm::Constant' data-ref="llvm::Constant" data-ref-filename="llvm..Constant" id="llvm::Constant">Constant</a>;</td></tr>
+<tr><th id="34">34</th><td><b>class</b> <a class="type" href="../../IR/Function.h.html#llvm::Function" title='llvm::Function' data-ref="llvm::Function" data-ref-filename="llvm..Function" id="llvm::Function">Function</a>;</td></tr>
+<tr><th id="35">35</th><td><b>class</b> <a class="type" href="../../IR/GlobalValue.h.html#llvm::GlobalValue" title='llvm::GlobalValue' data-ref="llvm::GlobalValue" data-ref-filename="llvm..GlobalValue" id="llvm::GlobalValue">GlobalValue</a>;</td></tr>
+<tr><th id="36">36</th><td><b>class</b> <a class="type" href="../../IR/Value.h.html#llvm::InlineAsm" title='llvm::InlineAsm' data-ref="llvm::InlineAsm" data-ref-filename="llvm..InlineAsm" id="llvm::InlineAsm">InlineAsm</a>;</td></tr>
+<tr><th id="37">37</th><td><b>class</b> <a class="type" href="../../IR/Instruction.h.html#llvm::Instruction" title='llvm::Instruction' data-ref="llvm::Instruction" data-ref-filename="llvm..Instruction" id="llvm::Instruction">Instruction</a>;</td></tr>
+<tr><th id="38">38</th><td><b>class</b> <a class="type" href="../../IR/Metadata.h.html#llvm::MDNode" title='llvm::MDNode' data-ref="llvm::MDNode" data-ref-filename="llvm..MDNode" id="llvm::MDNode">MDNode</a>;</td></tr>
+<tr><th id="39">39</th><td><b>class</b> <a class="type" href="../../IR/Type.h.html#llvm::Type" title='llvm::Type' data-ref="llvm::Type" data-ref-filename="llvm..Type" id="llvm::Type">Type</a>;</td></tr>
+<tr><th id="40">40</th><td><b>class</b> <a class="type" href="../../IR/Value.h.html#llvm::Value" title='llvm::Value' data-ref="llvm::Value" data-ref-filename="llvm..Value" id="llvm::Value">Value</a>;</td></tr>
+<tr><th id="41">41</th><td></td></tr>
+<tr><th id="42">42</th><td><i class="doc">/// GlobalNumberState assigns an integer to each global value in the program,</i></td></tr>
+<tr><th id="43">43</th><td><i class="doc">/// which is used by the comparison routine to order references to globals. This</i></td></tr>
+<tr><th id="44">44</th><td><i class="doc">/// state must be preserved throughout the pass, because Functions and other</i></td></tr>
+<tr><th id="45">45</th><td><i class="doc">/// globals need to maintain their relative order. Globals are assigned a number</i></td></tr>
+<tr><th id="46">46</th><td><i class="doc">/// when they are first visited. This order is deterministic, and so the</i></td></tr>
+<tr><th id="47">47</th><td><i class="doc">/// assigned numbers are as well. When two functions are merged, neither number</i></td></tr>
+<tr><th id="48">48</th><td><i class="doc">/// is updated. If the symbols are weak, this would be incorrect. If they are</i></td></tr>
+<tr><th id="49">49</th><td><i class="doc">/// strong, then one will be replaced at all references to the other, and so</i></td></tr>
+<tr><th id="50">50</th><td><i class="doc">/// direct callsites will now see one or the other symbol, and no update is</i></td></tr>
+<tr><th id="51">51</th><td><i class="doc">/// necessary. Note that if we were guaranteed unique names, we could just</i></td></tr>
+<tr><th id="52">52</th><td><i class="doc">/// compare those, but this would not work for stripped bitcodes or for those</i></td></tr>
+<tr><th id="53">53</th><td><i class="doc">/// few symbols without a name.</i></td></tr>
+<tr><th id="54">54</th><td><b>class</b> <dfn class="type def" id="llvm::GlobalNumberState" title='llvm::GlobalNumberState' data-ref="llvm::GlobalNumberState" data-ref-filename="llvm..GlobalNumberState">GlobalNumberState</dfn> {</td></tr>
+<tr><th id="55">55</th><td>  <b>struct</b> <dfn class="type def" id="llvm::GlobalNumberState::Config" title='llvm::GlobalNumberState::Config' data-ref="llvm::GlobalNumberState::Config" data-ref-filename="llvm..GlobalNumberState..Config">Config</dfn> : <a class="type" href="../../IR/ValueMap.h.html#llvm::ValueMapConfig" title='llvm::ValueMapConfig' data-ref="llvm::ValueMapConfig" data-ref-filename="llvm..ValueMapConfig">ValueMapConfig</a>&lt;<a class="type" href="../../IR/GlobalValue.h.html#llvm::GlobalValue" title='llvm::GlobalValue' data-ref="llvm::GlobalValue" data-ref-filename="llvm..GlobalValue">GlobalValue</a> *&gt; {</td></tr>
+<tr><th id="56">56</th><td>    <b>enum</b> { <dfn class="enum" id="llvm::GlobalNumberState::Config::FollowRAUW" title='llvm::GlobalNumberState::Config::FollowRAUW' data-ref="llvm::GlobalNumberState::Config::FollowRAUW" data-ref-filename="llvm..GlobalNumberState..Config..FollowRAUW">FollowRAUW</dfn> = <b>false</b> };</td></tr>
+<tr><th id="57">57</th><td>  };</td></tr>
+<tr><th id="58">58</th><td></td></tr>
+<tr><th id="59">59</th><td>  <i>// Each GlobalValue is mapped to an identifier. The Config ensures when RAUW</i></td></tr>
+<tr><th id="60">60</th><td><i>  // occurs, the mapping does not change. Tracking changes is unnecessary, and</i></td></tr>
+<tr><th id="61">61</th><td><i>  // also problematic for weak symbols (which may be overwritten).</i></td></tr>
+<tr><th id="62">62</th><td>  <b>using</b> <dfn class="typedef" id="llvm::GlobalNumberState::ValueNumberMap" title='llvm::GlobalNumberState::ValueNumberMap' data-type='ValueMap&lt;llvm::GlobalValue *, uint64_t, llvm::GlobalNumberState::Config&gt;' data-ref="llvm::GlobalNumberState::ValueNumberMap" data-ref-filename="llvm..GlobalNumberState..ValueNumberMap">ValueNumberMap</dfn> = <a class="type" href="../../IR/ValueMap.h.html#llvm::ValueMap" title='llvm::ValueMap' data-ref="llvm::ValueMap" data-ref-filename="llvm..ValueMap">ValueMap</a>&lt;<a class="type" href="../../IR/GlobalValue.h.html#llvm::GlobalValue" title='llvm::GlobalValue' data-ref="llvm::GlobalValue" data-ref-filename="llvm..GlobalValue">GlobalValue</a> *, <a class="typedef" href="../../../../../../include/bits/stdint-uintn.h.html#uint64_t" title='uint64_t' data-type='__uint64_t' data-ref="uint64_t" data-ref-filename="uint64_t">uint64_t</a>, <a class="type" href="#llvm::GlobalNumberState::Config" title='llvm::GlobalNumberState::Config' data-ref="llvm::GlobalNumberState::Config" data-ref-filename="llvm..GlobalNumberState..Config">Config</a>&gt;;</td></tr>
+<tr><th id="63">63</th><td>  <a class="typedef" href="#llvm::GlobalNumberState::ValueNumberMap" title='llvm::GlobalNumberState::ValueNumberMap' data-type='ValueMap&lt;llvm::GlobalValue *, uint64_t, llvm::GlobalNumberState::Config&gt;' data-ref="llvm::GlobalNumberState::ValueNumberMap" data-ref-filename="llvm..GlobalNumberState..ValueNumberMap">ValueNumberMap</a> <dfn class="decl field" id="llvm::GlobalNumberState::GlobalNumbers" title='llvm::GlobalNumberState::GlobalNumbers' data-ref="llvm::GlobalNumberState::GlobalNumbers" data-ref-filename="llvm..GlobalNumberState..GlobalNumbers">GlobalNumbers</dfn>;</td></tr>
+<tr><th id="64">64</th><td></td></tr>
+<tr><th id="65">65</th><td>  <i>// The next unused serial number to assign to a global.</i></td></tr>
+<tr><th id="66">66</th><td>  <a class="typedef" href="../../../../../../include/bits/stdint-uintn.h.html#uint64_t" title='uint64_t' data-type='__uint64_t' data-ref="uint64_t" data-ref-filename="uint64_t">uint64_t</a> <dfn class="decl field" id="llvm::GlobalNumberState::NextNumber" title='llvm::GlobalNumberState::NextNumber' data-ref="llvm::GlobalNumberState::NextNumber" data-ref-filename="llvm..GlobalNumberState..NextNumber">NextNumber</dfn> = <var>0</var>;</td></tr>
+<tr><th id="67">67</th><td></td></tr>
+<tr><th id="68">68</th><td><b>public</b>:</td></tr>
+<tr><th id="69">69</th><td>  <dfn class="decl def fn" id="_ZN4llvm17GlobalNumberStateC1Ev" title='llvm::GlobalNumberState::GlobalNumberState' data-ref="_ZN4llvm17GlobalNumberStateC1Ev" data-ref-filename="_ZN4llvm17GlobalNumberStateC1Ev">GlobalNumberState</dfn>() = <b>default</b>;</td></tr>
+<tr><th id="70">70</th><td></td></tr>
+<tr><th id="71">71</th><td>  <a class="typedef" href="../../../../../../include/bits/stdint-uintn.h.html#uint64_t" title='uint64_t' data-type='__uint64_t' data-ref="uint64_t" data-ref-filename="uint64_t">uint64_t</a> <dfn class="decl def fn" id="_ZN4llvm17GlobalNumberState9getNumberEPNS_11GlobalValueE" title='llvm::GlobalNumberState::getNumber' data-ref="_ZN4llvm17GlobalNumberState9getNumberEPNS_11GlobalValueE" data-ref-filename="_ZN4llvm17GlobalNumberState9getNumberEPNS_11GlobalValueE">getNumber</dfn>(<a class="type" href="../../IR/GlobalValue.h.html#llvm::GlobalValue" title='llvm::GlobalValue' data-ref="llvm::GlobalValue" data-ref-filename="llvm..GlobalValue">GlobalValue</a>* <dfn class="local col1 decl" id="1Global" title='Global' data-type='llvm::GlobalValue *' data-ref="1Global" data-ref-filename="1Global">Global</dfn>) {</td></tr>
+<tr><th id="72">72</th><td>    <a class="typedef" href="#llvm::GlobalNumberState::ValueNumberMap" title='llvm::GlobalNumberState::ValueNumberMap' data-type='ValueMap&lt;llvm::GlobalValue *, uint64_t, llvm::GlobalNumberState::Config&gt;' data-ref="llvm::GlobalNumberState::ValueNumberMap" data-ref-filename="llvm..GlobalNumberState..ValueNumberMap">ValueNumberMap</a>::<a class="typedef" href="../../IR/ValueMap.h.html#llvm::ValueMap{llvm::GlobalValue*,unsignedlong,llvm::GlobalNumberState::Config}::iterator" title='llvm::ValueMap&lt;llvm::GlobalValue *, unsigned long, llvm::GlobalNumberState::Config&gt;::iterator' data-type='ValueMapIterator&lt;llvm::ValueMap&lt;llvm::GlobalValue *, unsigned long, llvm::GlobalNumberState::Config&gt;::MapT, llvm::GlobalValue *&gt;' data-ref="llvm::ValueMap{llvm::GlobalValue*,unsignedlong,llvm::GlobalNumberState::Config}::iterator" data-ref-filename="llvm..ValueMap{llvm..GlobalValue*,unsignedlong,llvm..GlobalNumberState..Config}..iterator">iterator</a> <a class="ref fn fake" href="../../IR/ValueMap.h.html#_ZN4llvm16ValueMapIteratorC1Ev" title='llvm::ValueMapIterator::ValueMapIterator&lt;DenseMapT, KeyT&gt;' data-ref="_ZN4llvm16ValueMapIteratorC1Ev" data-ref-filename="_ZN4llvm16ValueMapIteratorC1Ev"></a><dfn class="local col2 decl" id="2MapIter" title='MapIter' data-type='ValueNumberMap::iterator' data-ref="2MapIter" data-ref-filename="2MapIter">MapIter</dfn>;</td></tr>
+<tr><th id="73">73</th><td>    <em>bool</em> <dfn class="local col3 decl" id="3Inserted" title='Inserted' data-type='bool' data-ref="3Inserted" data-ref-filename="3Inserted">Inserted</dfn>;</td></tr>
+<tr><th id="74">74</th><td>    <span class="namespace">std::</span><span class='ref fn' title='std::tie' data-ref="_ZSt3tieDpRT_" data-ref-filename="_ZSt3tieDpRT_">tie</span>(<span class='refarg'><a class="local col2 ref" href="#2MapIter" title='MapIter' data-ref="2MapIter" data-ref-filename="2MapIter">MapIter</a></span>, <span class='refarg'><a class="local col3 ref" href="#3Inserted" title='Inserted' data-ref="3Inserted" data-ref-filename="3Inserted">Inserted</a></span>) <span class='ref fn' title='std::tuple&lt;type-parameter-0-0, type-parameter-0-1&gt;::operator=' data-ref="_ZNSt5tupleIJT_T0_EEaSEOSt4pairITL0__TL0_0_E" data-ref-filename="_ZNSt5tupleIJT_T0_EEaSEOSt4pairITL0__TL0_0_E">=</span> <a class="member field" href="#llvm::GlobalNumberState::GlobalNumbers" title='llvm::GlobalNumberState::GlobalNumbers' data-ref="llvm::GlobalNumberState::GlobalNumbers" data-ref-filename="llvm..GlobalNumberState..GlobalNumbers">GlobalNumbers</a>.<a class="ref fn" href="../../IR/ValueMap.h.html#_ZN4llvm8ValueMap6insertEOSt4pairIT_T0_E" title='llvm::ValueMap::insert' data-ref="_ZN4llvm8ValueMap6insertEOSt4pairIT_T0_E" data-ref-filename="_ZN4llvm8ValueMap6insertEOSt4pairIT_T0_E">insert</a>(<span class='ref fn' title='std::pair::pair&lt;_T1, _T2&gt;' data-ref="_ZNSt4pairC1EOTL0__OTL0_0_" data-ref-filename="_ZNSt4pairC1EOTL0__OTL0_0_">{</span><a class="local col1 ref" href="#1Global" title='Global' data-ref="1Global" data-ref-filename="1Global">Global</a>, <a class="member field" href="#llvm::GlobalNumberState::NextNumber" title='llvm::GlobalNumberState::NextNumber' data-ref="llvm::GlobalNumberState::NextNumber" data-ref-filename="llvm..GlobalNumberState..NextNumber">NextNumber</a>});</td></tr>
+<tr><th id="75">75</th><td>    <b>if</b> (<a class="local col3 ref" href="#3Inserted" title='Inserted' data-ref="3Inserted" data-ref-filename="3Inserted">Inserted</a>)</td></tr>
+<tr><th id="76">76</th><td>      <a class="member field" href="#llvm::GlobalNumberState::NextNumber" title='llvm::GlobalNumberState::NextNumber' data-ref="llvm::GlobalNumberState::NextNumber" data-ref-filename="llvm..GlobalNumberState..NextNumber">NextNumber</a>++;</td></tr>
+<tr><th id="77">77</th><td>    <b>return</b> <a class="local col2 ref" href="#2MapIter" title='MapIter' data-ref="2MapIter" data-ref-filename="2MapIter">MapIter</a><a class="ref fn" href="../../IR/ValueMap.h.html#_ZN4llvm16ValueMapIterator14ValueTypeProxyptEv" title='llvm::ValueMapIterator::ValueTypeProxy::operator-&gt;' data-ref="_ZN4llvm16ValueMapIterator14ValueTypeProxyptEv" data-ref-filename="_ZN4llvm16ValueMapIterator14ValueTypeProxyptEv"><a class="ref fn" href="../../IR/ValueMap.h.html#_ZNK4llvm16ValueMapIteratorptEv" title='llvm::ValueMapIterator::operator-&gt;' data-ref="_ZNK4llvm16ValueMapIteratorptEv" data-ref-filename="_ZNK4llvm16ValueMapIteratorptEv">-&gt;</a></a><a class="ref field" href="../../IR/ValueMap.h.html#llvm::ValueMapIterator::ValueTypeProxy::second" title='llvm::ValueMapIterator&lt;llvm::DenseMap&lt;llvm::ValueMapCallbackVH&lt;llvm::GlobalValue *, unsigned long, llvm::GlobalNumberState::Config&gt;, unsigned long, llvm::DenseMapInfo&lt;llvm::ValueMapCallbackVH&lt;llvm::GlobalValue *, unsigned long, llvm::GlobalNumberState::Config&gt; &gt;, llvm::detail::DenseMapPair&lt;llvm::ValueMapCallbackVH&lt;llvm::GlobalValue *, unsigned long, llvm::GlobalNumberState::Config&gt;, unsigned long&gt; &gt;, llvm::GlobalValue *&gt;::ValueTypeProxy::second' data-ref="llvm::ValueMapIterator::ValueTypeProxy::second" data-ref-filename="llvm..ValueMapIterator..ValueTypeProxy..second">second</a>;</td></tr>
+<tr><th id="78">78</th><td>  }</td></tr>
+<tr><th id="79">79</th><td></td></tr>
+<tr><th id="80">80</th><td>  <em>void</em> <dfn class="decl def fn" id="_ZN4llvm17GlobalNumberState5eraseEPNS_11GlobalValueE" title='llvm::GlobalNumberState::erase' data-ref="_ZN4llvm17GlobalNumberState5eraseEPNS_11GlobalValueE" data-ref-filename="_ZN4llvm17GlobalNumberState5eraseEPNS_11GlobalValueE">erase</dfn>(<a class="type" href="../../IR/GlobalValue.h.html#llvm::GlobalValue" title='llvm::GlobalValue' data-ref="llvm::GlobalValue" data-ref-filename="llvm..GlobalValue">GlobalValue</a> *<dfn class="local col4 decl" id="4Global" title='Global' data-type='llvm::GlobalValue *' data-ref="4Global" data-ref-filename="4Global">Global</dfn>) {</td></tr>
+<tr><th id="81">81</th><td>    <a class="member field" href="#llvm::GlobalNumberState::GlobalNumbers" title='llvm::GlobalNumberState::GlobalNumbers' data-ref="llvm::GlobalNumberState::GlobalNumbers" data-ref-filename="llvm..GlobalNumberState..GlobalNumbers">GlobalNumbers</a>.<a class="ref fn" href="../../IR/ValueMap.h.html#_ZN4llvm8ValueMap5eraseERKT_" title='llvm::ValueMap::erase' data-ref="_ZN4llvm8ValueMap5eraseERKT_" data-ref-filename="_ZN4llvm8ValueMap5eraseERKT_">erase</a>(<a class="local col4 ref" href="#4Global" title='Global' data-ref="4Global" data-ref-filename="4Global">Global</a>);</td></tr>
+<tr><th id="82">82</th><td>  }</td></tr>
+<tr><th id="83">83</th><td></td></tr>
+<tr><th id="84">84</th><td>  <em>void</em> <dfn class="decl def fn" id="_ZN4llvm17GlobalNumberState5clearEv" title='llvm::GlobalNumberState::clear' data-ref="_ZN4llvm17GlobalNumberState5clearEv" data-ref-filename="_ZN4llvm17GlobalNumberState5clearEv">clear</dfn>() {</td></tr>
+<tr><th id="85">85</th><td>    <a class="member field" href="#llvm::GlobalNumberState::GlobalNumbers" title='llvm::GlobalNumberState::GlobalNumbers' data-ref="llvm::GlobalNumberState::GlobalNumbers" data-ref-filename="llvm..GlobalNumberState..GlobalNumbers">GlobalNumbers</a>.<a class="ref fn" href="../../IR/ValueMap.h.html#_ZN4llvm8ValueMap5clearEv" title='llvm::ValueMap::clear' data-ref="_ZN4llvm8ValueMap5clearEv" data-ref-filename="_ZN4llvm8ValueMap5clearEv">clear</a>();</td></tr>
+<tr><th id="86">86</th><td>  }</td></tr>
+<tr><th id="87">87</th><td>};</td></tr>
+<tr><th id="88">88</th><td></td></tr>
+<tr><th id="89">89</th><td><i class="doc">/// FunctionComparator - Compares two functions to determine whether or not</i></td></tr>
+<tr><th id="90">90</th><td><i class="doc">/// they will generate machine code with the same behaviour. DataLayout is</i></td></tr>
+<tr><th id="91">91</th><td><i class="doc">/// used if available. The comparator always fails conservatively (erring on the</i></td></tr>
+<tr><th id="92">92</th><td><i class="doc">/// side of claiming that two functions are different).</i></td></tr>
+<tr><th id="93">93</th><td><b>class</b> <dfn class="type def" id="llvm::FunctionComparator" title='llvm::FunctionComparator' data-ref="llvm::FunctionComparator" data-ref-filename="llvm..FunctionComparator">FunctionComparator</dfn> {</td></tr>
+<tr><th id="94">94</th><td><b>public</b>:</td></tr>
+<tr><th id="95">95</th><td>  <dfn class="decl def fn" id="_ZN4llvm18FunctionComparatorC1EPKNS_8FunctionES3_PNS_17GlobalNumberStateE" title='llvm::FunctionComparator::FunctionComparator' data-ref="_ZN4llvm18FunctionComparatorC1EPKNS_8FunctionES3_PNS_17GlobalNumberStateE" data-ref-filename="_ZN4llvm18FunctionComparatorC1EPKNS_8FunctionES3_PNS_17GlobalNumberStateE">FunctionComparator</dfn>(<em>const</em> <a class="type" href="../../IR/Function.h.html#llvm::Function" title='llvm::Function' data-ref="llvm::Function" data-ref-filename="llvm..Function">Function</a> *<dfn class="local col5 decl" id="5F1" title='F1' data-type='const llvm::Function *' data-ref="5F1" data-ref-filename="5F1">F1</dfn>, <em>const</em> <a class="type" href="../../IR/Function.h.html#llvm::Function" title='llvm::Function' data-ref="llvm::Function" data-ref-filename="llvm..Function">Function</a> *<dfn class="local col6 decl" id="6F2" title='F2' data-type='const llvm::Function *' data-ref="6F2" data-ref-filename="6F2">F2</dfn>,</td></tr>
+<tr><th id="96">96</th><td>                     <a class="type" href="#llvm::GlobalNumberState" title='llvm::GlobalNumberState' data-ref="llvm::GlobalNumberState" data-ref-filename="llvm..GlobalNumberState">GlobalNumberState</a>* <dfn class="local col7 decl" id="7GN" title='GN' data-type='llvm::GlobalNumberState *' data-ref="7GN" data-ref-filename="7GN">GN</dfn>)</td></tr>
+<tr><th id="97">97</th><td>      : <a class="member field" href="#llvm::FunctionComparator::FnL" title='llvm::FunctionComparator::FnL' data-ref="llvm::FunctionComparator::FnL" data-ref-filename="llvm..FunctionComparator..FnL">FnL</a>(<a class="local col5 ref" href="#5F1" title='F1' data-ref="5F1" data-ref-filename="5F1">F1</a>), <a class="member field" href="#llvm::FunctionComparator::FnR" title='llvm::FunctionComparator::FnR' data-ref="llvm::FunctionComparator::FnR" data-ref-filename="llvm..FunctionComparator..FnR">FnR</a>(<a class="local col6 ref" href="#6F2" title='F2' data-ref="6F2" data-ref-filename="6F2">F2</a>), <a class="member field" href="#llvm::FunctionComparator::GlobalNumbers" title='llvm::FunctionComparator::GlobalNumbers' data-ref="llvm::FunctionComparator::GlobalNumbers" data-ref-filename="llvm..FunctionComparator..GlobalNumbers">GlobalNumbers</a>(<a class="local col7 ref" href="#7GN" title='GN' data-ref="7GN" data-ref-filename="7GN">GN</a>) {}</td></tr>
+<tr><th id="98">98</th><td></td></tr>
+<tr><th id="99">99</th><td>  <i class="doc">/// Test whether the two functions have equivalent behaviour.</i></td></tr>
+<tr><th id="100">100</th><td>  <em>int</em> <dfn class="decl fn" id="_ZN4llvm18FunctionComparator7compareEv" title='llvm::FunctionComparator::compare' data-ref="_ZN4llvm18FunctionComparator7compareEv" data-ref-filename="_ZN4llvm18FunctionComparator7compareEv">compare</dfn>();</td></tr>
+<tr><th id="101">101</th><td></td></tr>
+<tr><th id="102">102</th><td>  <i class="doc">/// Hash a function. Equivalent functions will have the same hash, and unequal</i></td></tr>
+<tr><th id="103">103</th><td><i class="doc">  /// functions will have different hashes with high probability.</i></td></tr>
+<tr><th id="104">104</th><td>  <b>using</b> <dfn class="typedef" id="llvm::FunctionComparator::FunctionHash" title='llvm::FunctionComparator::FunctionHash' data-type='uint64_t' data-ref="llvm::FunctionComparator::FunctionHash" data-ref-filename="llvm..FunctionComparator..FunctionHash">FunctionHash</dfn> = <a class="typedef" href="../../../../../../include/bits/stdint-uintn.h.html#uint64_t" title='uint64_t' data-type='__uint64_t' data-ref="uint64_t" data-ref-filename="uint64_t">uint64_t</a>;</td></tr>
+<tr><th id="105">105</th><td>  <em>static</em> <a class="typedef" href="#llvm::FunctionComparator::FunctionHash" title='llvm::FunctionComparator::FunctionHash' data-type='uint64_t' data-ref="llvm::FunctionComparator::FunctionHash" data-ref-filename="llvm..FunctionComparator..FunctionHash">FunctionHash</a> <dfn class="decl fn" id="_ZN4llvm18FunctionComparator12functionHashERNS_8FunctionE" title='llvm::FunctionComparator::functionHash' data-ref="_ZN4llvm18FunctionComparator12functionHashERNS_8FunctionE" data-ref-filename="_ZN4llvm18FunctionComparator12functionHashERNS_8FunctionE">functionHash</dfn>(<a class="type" href="../../IR/Function.h.html#llvm::Function" title='llvm::Function' data-ref="llvm::Function" data-ref-filename="llvm..Function">Function</a> &amp;);</td></tr>
+<tr><th id="106">106</th><td></td></tr>
+<tr><th id="107">107</th><td><b>protected</b>:</td></tr>
+<tr><th id="108">108</th><td>  <i class="doc">/// Start the comparison.</i></td></tr>
+<tr><th id="109">109</th><td>  <em>void</em> <dfn class="decl def fn" id="_ZN4llvm18FunctionComparator12beginCompareEv" title='llvm::FunctionComparator::beginCompare' data-ref="_ZN4llvm18FunctionComparator12beginCompareEv" data-ref-filename="_ZN4llvm18FunctionComparator12beginCompareEv">beginCompare</dfn>() {</td></tr>
+<tr><th id="110">110</th><td>    <a class="member field" href="#llvm::FunctionComparator::sn_mapL" title='llvm::FunctionComparator::sn_mapL' data-ref="llvm::FunctionComparator::sn_mapL" data-ref-filename="llvm..FunctionComparator..sn_mapL">sn_mapL</a>.<a class="ref fn" href="../../ADT/DenseMap.h.html#_ZN4llvm12DenseMapBase5clearEv" title='llvm::DenseMapBase::clear' data-ref="_ZN4llvm12DenseMapBase5clearEv" data-ref-filename="_ZN4llvm12DenseMapBase5clearEv">clear</a>();</td></tr>
+<tr><th id="111">111</th><td>    <a class="member field" href="#llvm::FunctionComparator::sn_mapR" title='llvm::FunctionComparator::sn_mapR' data-ref="llvm::FunctionComparator::sn_mapR" data-ref-filename="llvm..FunctionComparator..sn_mapR">sn_mapR</a>.<a class="ref fn" href="../../ADT/DenseMap.h.html#_ZN4llvm12DenseMapBase5clearEv" title='llvm::DenseMapBase::clear' data-ref="_ZN4llvm12DenseMapBase5clearEv" data-ref-filename="_ZN4llvm12DenseMapBase5clearEv">clear</a>();</td></tr>
+<tr><th id="112">112</th><td>  }</td></tr>
+<tr><th id="113">113</th><td></td></tr>
+<tr><th id="114">114</th><td>  <i class="doc">/// Compares the signature and other general attributes of the two functions.</i></td></tr>
+<tr><th id="115">115</th><td>  <em>int</em> <dfn class="decl fn" id="_ZNK4llvm18FunctionComparator16compareSignatureEv" title='llvm::FunctionComparator::compareSignature' data-ref="_ZNK4llvm18FunctionComparator16compareSignatureEv" data-ref-filename="_ZNK4llvm18FunctionComparator16compareSignatureEv">compareSignature</dfn>() <em>const</em>;</td></tr>
+<tr><th id="116">116</th><td></td></tr>
+<tr><th id="117">117</th><td>  <i class="doc">/// Test whether two basic blocks have equivalent behaviour.</i></td></tr>
+<tr><th id="118">118</th><td>  <em>int</em> <dfn class="decl fn" id="_ZNK4llvm18FunctionComparator14cmpBasicBlocksEPKNS_10BasicBlockES3_" title='llvm::FunctionComparator::cmpBasicBlocks' data-ref="_ZNK4llvm18FunctionComparator14cmpBasicBlocksEPKNS_10BasicBlockES3_" data-ref-filename="_ZNK4llvm18FunctionComparator14cmpBasicBlocksEPKNS_10BasicBlockES3_">cmpBasicBlocks</dfn>(<em>const</em> <a class="type" href="../../IR/BasicBlock.h.html#llvm::BasicBlock" title='llvm::BasicBlock' data-ref="llvm::BasicBlock" data-ref-filename="llvm..BasicBlock">BasicBlock</a> *<dfn class="local col8 decl" id="8BBL" title='BBL' data-type='const llvm::BasicBlock *' data-ref="8BBL" data-ref-filename="8BBL">BBL</dfn>, <em>const</em> <a class="type" href="../../IR/BasicBlock.h.html#llvm::BasicBlock" title='llvm::BasicBlock' data-ref="llvm::BasicBlock" data-ref-filename="llvm..BasicBlock">BasicBlock</a> *<dfn class="local col9 decl" id="9BBR" title='BBR' data-type='const llvm::BasicBlock *' data-ref="9BBR" data-ref-filename="9BBR">BBR</dfn>) <em>const</em>;</td></tr>
+<tr><th id="119">119</th><td></td></tr>
+<tr><th id="120">120</th><td>  <i class="doc">/// Constants comparison.</i></td></tr>
+<tr><th id="121">121</th><td><i class="doc">  /// Its analog to lexicographical comparison between hypothetical numbers</i></td></tr>
+<tr><th id="122">122</th><td><i class="doc">  /// of next format:</i></td></tr>
+<tr><th id="123">123</th><td><i class="doc">  /// &lt;bitcastability-trait&gt;&lt;raw-bit-contents&gt;</i></td></tr>
+<tr><th id="124">124</th><td><i class="doc">  ///</i></td></tr>
+<tr><th id="125">125</th><td><i class="doc">  /// 1. Bitcastability.</i></td></tr>
+<tr><th id="126">126</th><td><i class="doc">  /// Check whether L's type could be losslessly bitcasted to R's type.</i></td></tr>
+<tr><th id="127">127</th><td><i class="doc">  /// On this stage method, in case when lossless bitcast is not possible</i></td></tr>
+<tr><th id="128">128</th><td><i class="doc">  /// method returns -1 or 1, thus also defining which type is greater in</i></td></tr>
+<tr><th id="129">129</th><td><i class="doc">  /// context of bitcastability.</i></td></tr>
+<tr><th id="130">130</th><td><i class="doc">  /// Stage 0: If types are equal in terms of cmpTypes, then we can go straight</i></td></tr>
+<tr><th id="131">131</th><td><i class="doc">  ///          to the contents comparison.</i></td></tr>
+<tr><th id="132">132</th><td><i class="doc">  ///          If types differ, remember types comparison result and check</i></td></tr>
+<tr><th id="133">133</th><td><i class="doc">  ///          whether we still can bitcast types.</i></td></tr>
+<tr><th id="134">134</th><td><i class="doc">  /// Stage 1: Types that satisfies isFirstClassType conditions are always</i></td></tr>
+<tr><th id="135">135</th><td><i class="doc">  ///          greater then others.</i></td></tr>
+<tr><th id="136">136</th><td><i class="doc">  /// Stage 2: Vector is greater then non-vector.</i></td></tr>
+<tr><th id="137">137</th><td><i class="doc">  ///          If both types are vectors, then vector with greater bitwidth is</i></td></tr>
+<tr><th id="138">138</th><td><i class="doc">  ///          greater.</i></td></tr>
+<tr><th id="139">139</th><td><i class="doc">  ///          If both types are vectors with the same bitwidth, then types</i></td></tr>
+<tr><th id="140">140</th><td><i class="doc">  ///          are bitcastable, and we can skip other stages, and go to contents</i></td></tr>
+<tr><th id="141">141</th><td><i class="doc">  ///          comparison.</i></td></tr>
+<tr><th id="142">142</th><td><i class="doc">  /// Stage 3: Pointer types are greater than non-pointers. If both types are</i></td></tr>
+<tr><th id="143">143</th><td><i class="doc">  ///          pointers of the same address space - go to contents comparison.</i></td></tr>
+<tr><th id="144">144</th><td><i class="doc">  ///          Different address spaces: pointer with greater address space is</i></td></tr>
+<tr><th id="145">145</th><td><i class="doc">  ///          greater.</i></td></tr>
+<tr><th id="146">146</th><td><i class="doc">  /// Stage 4: Types are neither vectors, nor pointers. And they differ.</i></td></tr>
+<tr><th id="147">147</th><td><i class="doc">  ///          We don't know how to bitcast them. So, we better don't do it,</i></td></tr>
+<tr><th id="148">148</th><td><i class="doc">  ///          and return types comparison result (so it determines the</i></td></tr>
+<tr><th id="149">149</th><td><i class="doc">  ///          relationship among constants we don't know how to bitcast).</i></td></tr>
+<tr><th id="150">150</th><td><i class="doc">  ///</i></td></tr>
+<tr><th id="151">151</th><td><i class="doc">  /// Just for clearance, let's see how the set of constants could look</i></td></tr>
+<tr><th id="152">152</th><td><i class="doc">  /// on single dimension axis:</i></td></tr>
+<tr><th id="153">153</th><td><i class="doc">  ///</i></td></tr>
+<tr><th id="154">154</th><td><i class="doc">  /// [NFCT], [FCT, "others"], [FCT, pointers], [FCT, vectors]</i></td></tr>
+<tr><th id="155">155</th><td><i class="doc">  /// Where: NFCT - Not a FirstClassType</i></td></tr>
+<tr><th id="156">156</th><td><i class="doc">  ///        FCT - FirstClassTyp:</i></td></tr>
+<tr><th id="157">157</th><td><i class="doc">  ///</i></td></tr>
+<tr><th id="158">158</th><td><i class="doc">  /// 2. Compare raw contents.</i></td></tr>
+<tr><th id="159">159</th><td><i class="doc">  /// It ignores types on this stage and only compares bits from L and R.</i></td></tr>
+<tr><th id="160">160</th><td><i class="doc">  /// Returns 0, if L and R has equivalent contents.</i></td></tr>
+<tr><th id="161">161</th><td><i class="doc">  /// -1 or 1 if values are different.</i></td></tr>
+<tr><th id="162">162</th><td><i class="doc">  /// Pretty trivial:</i></td></tr>
+<tr><th id="163">163</th><td><i class="doc">  /// 2.1. If contents are numbers, compare numbers.</i></td></tr>
+<tr><th id="164">164</th><td><i class="doc">  ///    Ints with greater bitwidth are greater. Ints with same bitwidths</i></td></tr>
+<tr><th id="165">165</th><td><i class="doc">  ///    compared by their contents.</i></td></tr>
+<tr><th id="166">166</th><td><i class="doc">  /// 2.2. "And so on". Just to avoid discrepancies with comments</i></td></tr>
+<tr><th id="167">167</th><td><i class="doc">  /// perhaps it would be better to read the implementation itself.</i></td></tr>
+<tr><th id="168">168</th><td><i class="doc">  /// 3. And again about overall picture. Let's look back at how the ordered set</i></td></tr>
+<tr><th id="169">169</th><td><i class="doc">  /// of constants will look like:</i></td></tr>
+<tr><th id="170">170</th><td><i class="doc">  /// [NFCT], [FCT, "others"], [FCT, pointers], [FCT, vectors]</i></td></tr>
+<tr><th id="171">171</th><td><i class="doc">  ///</i></td></tr>
+<tr><th id="172">172</th><td><i class="doc">  /// Now look, what could be inside [FCT, "others"], for example:</i></td></tr>
+<tr><th id="173">173</th><td><i class="doc">  /// [FCT, "others"] =</i></td></tr>
+<tr><th id="174">174</th><td><i class="doc">  /// [</i></td></tr>
+<tr><th id="175">175</th><td><i class="doc">  ///   [double 0.1], [double 1.23],</i></td></tr>
+<tr><th id="176">176</th><td><i class="doc">  ///   [i32 1], [i32 2],</i></td></tr>
+<tr><th id="177">177</th><td><i class="doc">  ///   { double 1.0 },       ; StructTyID, NumElements = 1</i></td></tr>
+<tr><th id="178">178</th><td><i class="doc">  ///   { i32 1 },            ; StructTyID, NumElements = 1</i></td></tr>
+<tr><th id="179">179</th><td><i class="doc">  ///   { double 1, i32 1 },  ; StructTyID, NumElements = 2</i></td></tr>
+<tr><th id="180">180</th><td><i class="doc">  ///   { i32 1, double 1 }   ; StructTyID, NumElements = 2</i></td></tr>
+<tr><th id="181">181</th><td><i class="doc">  /// ]</i></td></tr>
+<tr><th id="182">182</th><td><i class="doc">  ///</i></td></tr>
+<tr><th id="183">183</th><td><i class="doc">  /// Let's explain the order. Float numbers will be less than integers, just</i></td></tr>
+<tr><th id="184">184</th><td><i class="doc">  /// because of cmpType terms: FloatTyID &lt; IntegerTyID.</i></td></tr>
+<tr><th id="185">185</th><td><i class="doc">  /// Floats (with same fltSemantics) are sorted according to their value.</i></td></tr>
+<tr><th id="186">186</th><td><i class="doc">  /// Then you can see integers, and they are, like a floats,</i></td></tr>
+<tr><th id="187">187</th><td><i class="doc">  /// could be easy sorted among each others.</i></td></tr>
+<tr><th id="188">188</th><td><i class="doc">  /// The structures. Structures are grouped at the tail, again because of their</i></td></tr>
+<tr><th id="189">189</th><td><i class="doc">  /// TypeID: StructTyID &gt; IntegerTyID &gt; FloatTyID.</i></td></tr>
+<tr><th id="190">190</th><td><i class="doc">  /// Structures with greater number of elements are greater. Structures with</i></td></tr>
+<tr><th id="191">191</th><td><i class="doc">  /// greater elements going first are greater.</i></td></tr>
+<tr><th id="192">192</th><td><i class="doc">  /// The same logic with vectors, arrays and other possible complex types.</i></td></tr>
+<tr><th id="193">193</th><td><i class="doc">  ///</i></td></tr>
+<tr><th id="194">194</th><td><i class="doc">  /// Bitcastable constants.</i></td></tr>
+<tr><th id="195">195</th><td><i class="doc">  /// Let's assume, that some constant, belongs to some group of</i></td></tr>
+<tr><th id="196">196</th><td><i class="doc">  /// "so-called-equal" values with different types, and at the same time</i></td></tr>
+<tr><th id="197">197</th><td><i class="doc">  /// belongs to another group of constants with equal types</i></td></tr>
+<tr><th id="198">198</th><td><i class="doc">  /// and "really" equal values.</i></td></tr>
+<tr><th id="199">199</th><td><i class="doc">  ///</i></td></tr>
+<tr><th id="200">200</th><td><i class="doc">  /// Now, prove that this is impossible:</i></td></tr>
+<tr><th id="201">201</th><td><i class="doc">  ///</i></td></tr>
+<tr><th id="202">202</th><td><i class="doc">  /// If constant A with type TyA is bitcastable to B with type TyB, then:</i></td></tr>
+<tr><th id="203">203</th><td><i class="doc">  /// 1. All constants with equal types to TyA, are bitcastable to B. Since</i></td></tr>
+<tr><th id="204">204</th><td><i class="doc">  ///    those should be vectors (if TyA is vector), pointers</i></td></tr>
+<tr><th id="205">205</th><td><i class="doc">  ///    (if TyA is pointer), or else (if TyA equal to TyB), those types should</i></td></tr>
+<tr><th id="206">206</th><td><i class="doc">  ///    be equal to TyB.</i></td></tr>
+<tr><th id="207">207</th><td><i class="doc">  /// 2. All constants with non-equal, but bitcastable types to TyA, are</i></td></tr>
+<tr><th id="208">208</th><td><i class="doc">  ///    bitcastable to B.</i></td></tr>
+<tr><th id="209">209</th><td><i class="doc">  ///    Once again, just because we allow it to vectors and pointers only.</i></td></tr>
+<tr><th id="210">210</th><td><i class="doc">  ///    This statement could be expanded as below:</i></td></tr>
+<tr><th id="211">211</th><td><i class="doc">  /// 2.1. All vectors with equal bitwidth to vector A, has equal bitwidth to</i></td></tr>
+<tr><th id="212">212</th><td><i class="doc">  ///      vector B, and thus bitcastable to B as well.</i></td></tr>
+<tr><th id="213">213</th><td><i class="doc">  /// 2.2. All pointers of the same address space, no matter what they point to,</i></td></tr>
+<tr><th id="214">214</th><td><i class="doc">  ///      bitcastable. So if C is pointer, it could be bitcasted to A and to B.</i></td></tr>
+<tr><th id="215">215</th><td><i class="doc">  /// So any constant equal or bitcastable to A is equal or bitcastable to B.</i></td></tr>
+<tr><th id="216">216</th><td><i class="doc">  /// QED.</i></td></tr>
+<tr><th id="217">217</th><td><i class="doc">  ///</i></td></tr>
+<tr><th id="218">218</th><td><i class="doc">  /// In another words, for pointers and vectors, we ignore top-level type and</i></td></tr>
+<tr><th id="219">219</th><td><i class="doc">  /// look at their particular properties (bit-width for vectors, and</i></td></tr>
+<tr><th id="220">220</th><td><i class="doc">  /// address space for pointers).</i></td></tr>
+<tr><th id="221">221</th><td><i class="doc">  /// If these properties are equal - compare their contents.</i></td></tr>
+<tr><th id="222">222</th><td>  <em>int</em> <dfn class="decl fn" id="_ZNK4llvm18FunctionComparator12cmpConstantsEPKNS_8ConstantES3_" title='llvm::FunctionComparator::cmpConstants' data-ref="_ZNK4llvm18FunctionComparator12cmpConstantsEPKNS_8ConstantES3_" data-ref-filename="_ZNK4llvm18FunctionComparator12cmpConstantsEPKNS_8ConstantES3_">cmpConstants</dfn>(<em>const</em> <a class="type" href="../../IR/Constant.h.html#llvm::Constant" title='llvm::Constant' data-ref="llvm::Constant" data-ref-filename="llvm..Constant">Constant</a> *<dfn class="local col0 decl" id="10L" title='L' data-type='const llvm::Constant *' data-ref="10L" data-ref-filename="10L">L</dfn>, <em>const</em> <a class="type" href="../../IR/Constant.h.html#llvm::Constant" title='llvm::Constant' data-ref="llvm::Constant" data-ref-filename="llvm..Constant">Constant</a> *<dfn class="local col1 decl" id="11R" title='R' data-type='const llvm::Constant *' data-ref="11R" data-ref-filename="11R">R</dfn>) <em>const</em>;</td></tr>
+<tr><th id="223">223</th><td></td></tr>
+<tr><th id="224">224</th><td>  <i class="doc">/// Compares two global values by number. Uses the GlobalNumbersState to</i></td></tr>
+<tr><th id="225">225</th><td><i class="doc">  /// identify the same gobals across function calls.</i></td></tr>
+<tr><th id="226">226</th><td>  <em>int</em> <dfn class="decl fn" id="_ZNK4llvm18FunctionComparator15cmpGlobalValuesEPNS_11GlobalValueES2_" title='llvm::FunctionComparator::cmpGlobalValues' data-ref="_ZNK4llvm18FunctionComparator15cmpGlobalValuesEPNS_11GlobalValueES2_" data-ref-filename="_ZNK4llvm18FunctionComparator15cmpGlobalValuesEPNS_11GlobalValueES2_">cmpGlobalValues</dfn>(<a class="type" href="../../IR/GlobalValue.h.html#llvm::GlobalValue" title='llvm::GlobalValue' data-ref="llvm::GlobalValue" data-ref-filename="llvm..GlobalValue">GlobalValue</a> *<dfn class="local col2 decl" id="12L" title='L' data-type='llvm::GlobalValue *' data-ref="12L" data-ref-filename="12L">L</dfn>, <a class="type" href="../../IR/GlobalValue.h.html#llvm::GlobalValue" title='llvm::GlobalValue' data-ref="llvm::GlobalValue" data-ref-filename="llvm..GlobalValue">GlobalValue</a> *<dfn class="local col3 decl" id="13R" title='R' data-type='llvm::GlobalValue *' data-ref="13R" data-ref-filename="13R">R</dfn>) <em>const</em>;</td></tr>
+<tr><th id="227">227</th><td></td></tr>
+<tr><th id="228">228</th><td>  <i class="doc">/// Assign or look up previously assigned numbers for the two values, and</i></td></tr>
+<tr><th id="229">229</th><td><i class="doc">  /// return whether the numbers are equal. Numbers are assigned in the order</i></td></tr>
+<tr><th id="230">230</th><td><i class="doc">  /// visited.</i></td></tr>
+<tr><th id="231">231</th><td><i class="doc">  /// Comparison order:</i></td></tr>
+<tr><th id="232">232</th><td><i class="doc">  /// Stage 0: Value that is function itself is always greater then others.</i></td></tr>
+<tr><th id="233">233</th><td><i class="doc">  ///          If left and right values are references to their functions, then</i></td></tr>
+<tr><th id="234">234</th><td><i class="doc">  ///          they are equal.</i></td></tr>
+<tr><th id="235">235</th><td><i class="doc">  /// Stage 1: Constants are greater than non-constants.</i></td></tr>
+<tr><th id="236">236</th><td><i class="doc">  ///          If both left and right are constants, then the result of</i></td></tr>
+<tr><th id="237">237</th><td><i class="doc">  ///          cmpConstants is used as cmpValues result.</i></td></tr>
+<tr><th id="238">238</th><td><i class="doc">  /// Stage 2: InlineAsm instances are greater than others. If both left and</i></td></tr>
+<tr><th id="239">239</th><td><i class="doc">  ///          right are InlineAsm instances, InlineAsm* pointers casted to</i></td></tr>
+<tr><th id="240">240</th><td><i class="doc">  ///          integers and compared as numbers.</i></td></tr>
+<tr><th id="241">241</th><td><i class="doc">  /// Stage 3: For all other cases we compare order we meet these values in</i></td></tr>
+<tr><th id="242">242</th><td><i class="doc">  ///          their functions. If right value was met first during scanning,</i></td></tr>
+<tr><th id="243">243</th><td><i class="doc">  ///          then left value is greater.</i></td></tr>
+<tr><th id="244">244</th><td><i class="doc">  ///          In another words, we compare serial numbers, for more details</i></td></tr>
+<tr><th id="245">245</th><td><i class="doc">  ///          see comments for sn_mapL and sn_mapR.</i></td></tr>
+<tr><th id="246">246</th><td>  <em>int</em> <dfn class="decl fn" id="_ZNK4llvm18FunctionComparator9cmpValuesEPKNS_5ValueES3_" title='llvm::FunctionComparator::cmpValues' data-ref="_ZNK4llvm18FunctionComparator9cmpValuesEPKNS_5ValueES3_" data-ref-filename="_ZNK4llvm18FunctionComparator9cmpValuesEPKNS_5ValueES3_">cmpValues</dfn>(<em>const</em> <a class="type" href="../../IR/Value.h.html#llvm::Value" title='llvm::Value' data-ref="llvm::Value" data-ref-filename="llvm..Value">Value</a> *<dfn class="local col4 decl" id="14L" title='L' data-type='const llvm::Value *' data-ref="14L" data-ref-filename="14L">L</dfn>, <em>const</em> <a class="type" href="../../IR/Value.h.html#llvm::Value" title='llvm::Value' data-ref="llvm::Value" data-ref-filename="llvm..Value">Value</a> *<dfn class="local col5 decl" id="15R" title='R' data-type='const llvm::Value *' data-ref="15R" data-ref-filename="15R">R</dfn>) <em>const</em>;</td></tr>
+<tr><th id="247">247</th><td></td></tr>
+<tr><th id="248">248</th><td>  <i class="doc">/// Compare two Instructions for equivalence, similar to</i></td></tr>
+<tr><th id="249">249</th><td><i class="doc">  /// Instruction::isSameOperationAs.</i></td></tr>
+<tr><th id="250">250</th><td><i class="doc">  ///</i></td></tr>
+<tr><th id="251">251</th><td><i class="doc">  /// Stages are listed in "most significant stage first" order:</i></td></tr>
+<tr><th id="252">252</th><td><i class="doc">  /// On each stage below, we do comparison between some left and right</i></td></tr>
+<tr><th id="253">253</th><td><i class="doc">  /// operation parts. If parts are non-equal, we assign parts comparison</i></td></tr>
+<tr><th id="254">254</th><td><i class="doc">  /// result to the operation comparison result and exit from method.</i></td></tr>
+<tr><th id="255">255</th><td><i class="doc">  /// Otherwise we proceed to the next stage.</i></td></tr>
+<tr><th id="256">256</th><td><i class="doc">  /// Stages:</i></td></tr>
+<tr><th id="257">257</th><td><i class="doc">  /// 1. Operations opcodes. Compared as numbers.</i></td></tr>
+<tr><th id="258">258</th><td><i class="doc">  /// 2. Number of operands.</i></td></tr>
+<tr><th id="259">259</th><td><i class="doc">  /// 3. Operation types. Compared with cmpType method.</i></td></tr>
+<tr><th id="260">260</th><td><i class="doc">  /// 4. Compare operation subclass optional data as stream of bytes:</i></td></tr>
+<tr><th id="261">261</th><td><i class="doc">  /// just convert it to integers and call cmpNumbers.</i></td></tr>
+<tr><th id="262">262</th><td><i class="doc">  /// 5. Compare in operation operand types with cmpType in</i></td></tr>
+<tr><th id="263">263</th><td><i class="doc">  /// most significant operand first order.</i></td></tr>
+<tr><th id="264">264</th><td><i class="doc">  /// 6. Last stage. Check operations for some specific attributes.</i></td></tr>
+<tr><th id="265">265</th><td><i class="doc">  /// For example, for Load it would be:</i></td></tr>
+<tr><th id="266">266</th><td><i class="doc">  /// 6.1.Load: volatile (as boolean flag)</i></td></tr>
+<tr><th id="267">267</th><td><i class="doc">  /// 6.2.Load: alignment (as integer numbers)</i></td></tr>
+<tr><th id="268">268</th><td><i class="doc">  /// 6.3.Load: ordering (as underlying enum class value)</i></td></tr>
+<tr><th id="269">269</th><td><i class="doc">  /// 6.4.Load: synch-scope (as integer numbers)</i></td></tr>
+<tr><th id="270">270</th><td><i class="doc">  /// 6.5.Load: range metadata (as integer ranges)</i></td></tr>
+<tr><th id="271">271</th><td><i class="doc">  /// On this stage its better to see the code, since its not more than 10-15</i></td></tr>
+<tr><th id="272">272</th><td><i class="doc">  /// strings for particular instruction, and could change sometimes.</i></td></tr>
+<tr><th id="273">273</th><td><i class="doc">  ///</i></td></tr>
+<tr><th id="274">274</th><td><i class="doc">  /// Sets<span class="command"> \p</span> <span class="arg">needToCmpOperands</span> to true if the operands of the instructions</i></td></tr>
+<tr><th id="275">275</th><td><i class="doc">  /// still must be compared afterwards. In this case it's already guaranteed</i></td></tr>
+<tr><th id="276">276</th><td><i class="doc">  /// that both instructions have the same number of operands.</i></td></tr>
+<tr><th id="277">277</th><td>  <em>int</em> <dfn class="decl fn" id="_ZNK4llvm18FunctionComparator13cmpOperationsEPKNS_11InstructionES3_Rb" title='llvm::FunctionComparator::cmpOperations' data-ref="_ZNK4llvm18FunctionComparator13cmpOperationsEPKNS_11InstructionES3_Rb" data-ref-filename="_ZNK4llvm18FunctionComparator13cmpOperationsEPKNS_11InstructionES3_Rb">cmpOperations</dfn>(<em>const</em> <a class="type" href="../../IR/Instruction.h.html#llvm::Instruction" title='llvm::Instruction' data-ref="llvm::Instruction" data-ref-filename="llvm..Instruction">Instruction</a> *<dfn class="local col6 decl" id="16L" title='L' data-type='const llvm::Instruction *' data-ref="16L" data-ref-filename="16L">L</dfn>, <em>const</em> <a class="type" href="../../IR/Instruction.h.html#llvm::Instruction" title='llvm::Instruction' data-ref="llvm::Instruction" data-ref-filename="llvm..Instruction">Instruction</a> *<dfn class="local col7 decl" id="17R" title='R' data-type='const llvm::Instruction *' data-ref="17R" data-ref-filename="17R">R</dfn>,</td></tr>
+<tr><th id="278">278</th><td>                    <em>bool</em> &amp;<dfn class="local col8 decl" id="18needToCmpOperands" title='needToCmpOperands' data-type='bool &amp;' data-ref="18needToCmpOperands" data-ref-filename="18needToCmpOperands">needToCmpOperands</dfn>) <em>const</em>;</td></tr>
+<tr><th id="279">279</th><td></td></tr>
+<tr><th id="280">280</th><td>  <i class="doc">/// cmpType - compares two types,</i></td></tr>
+<tr><th id="281">281</th><td><i class="doc">  /// defines total ordering among the types set.</i></td></tr>
+<tr><th id="282">282</th><td><i class="doc">  ///</i></td></tr>
+<tr><th id="283">283</th><td><i class="doc">  /// Return values:</i></td></tr>
+<tr><th id="284">284</th><td><i class="doc">  /// 0 if types are equal,</i></td></tr>
+<tr><th id="285">285</th><td><i class="doc">  /// -1 if Left is less than Right,</i></td></tr>
+<tr><th id="286">286</th><td><i class="doc">  /// +1 if Left is greater than Right.</i></td></tr>
+<tr><th id="287">287</th><td><i class="doc">  ///</i></td></tr>
+<tr><th id="288">288</th><td><i class="doc">  /// Description:</i></td></tr>
+<tr><th id="289">289</th><td><i class="doc">  /// Comparison is broken onto stages. Like in lexicographical comparison</i></td></tr>
+<tr><th id="290">290</th><td><i class="doc">  /// stage coming first has higher priority.</i></td></tr>
+<tr><th id="291">291</th><td><i class="doc">  /// On each explanation stage keep in mind total ordering properties.</i></td></tr>
+<tr><th id="292">292</th><td><i class="doc">  ///</i></td></tr>
+<tr><th id="293">293</th><td><i class="doc">  /// 0. Before comparison we coerce pointer types of 0 address space to</i></td></tr>
+<tr><th id="294">294</th><td><i class="doc">  /// integer.</i></td></tr>
+<tr><th id="295">295</th><td><i class="doc">  /// We also don't bother with same type at left and right, so</i></td></tr>
+<tr><th id="296">296</th><td><i class="doc">  /// just return 0 in this case.</i></td></tr>
+<tr><th id="297">297</th><td><i class="doc">  ///</i></td></tr>
+<tr><th id="298">298</th><td><i class="doc">  /// 1. If types are of different kind (different type IDs).</i></td></tr>
+<tr><th id="299">299</th><td><i class="doc">  ///    Return result of type IDs comparison, treating them as numbers.</i></td></tr>
+<tr><th id="300">300</th><td><i class="doc">  /// 2. If types are integers, check that they have the same width. If they</i></td></tr>
+<tr><th id="301">301</th><td><i class="doc">  /// are vectors, check that they have the same count and subtype.</i></td></tr>
+<tr><th id="302">302</th><td><i class="doc">  /// 3. Types have the same ID, so check whether they are one of:</i></td></tr>
+<tr><th id="303">303</th><td><i class="doc">  /// * Void</i></td></tr>
+<tr><th id="304">304</th><td><i class="doc">  /// * Float</i></td></tr>
+<tr><th id="305">305</th><td><i class="doc">  /// * Double</i></td></tr>
+<tr><th id="306">306</th><td><i class="doc">  /// * X86_FP80</i></td></tr>
+<tr><th id="307">307</th><td><i class="doc">  /// * FP128</i></td></tr>
+<tr><th id="308">308</th><td><i class="doc">  /// * PPC_FP128</i></td></tr>
+<tr><th id="309">309</th><td><i class="doc">  /// * Label</i></td></tr>
+<tr><th id="310">310</th><td><i class="doc">  /// * Metadata</i></td></tr>
+<tr><th id="311">311</th><td><i class="doc">  /// We can treat these types as equal whenever their IDs are same.</i></td></tr>
+<tr><th id="312">312</th><td><i class="doc">  /// 4. If Left and Right are pointers, return result of address space</i></td></tr>
+<tr><th id="313">313</th><td><i class="doc">  /// comparison (numbers comparison). We can treat pointer types of same</i></td></tr>
+<tr><th id="314">314</th><td><i class="doc">  /// address space as equal.</i></td></tr>
+<tr><th id="315">315</th><td><i class="doc">  /// 5. If types are complex.</i></td></tr>
+<tr><th id="316">316</th><td><i class="doc">  /// Then both Left and Right are to be expanded and their element types will</i></td></tr>
+<tr><th id="317">317</th><td><i class="doc">  /// be checked with the same way. If we get Res != 0 on some stage, return it.</i></td></tr>
+<tr><th id="318">318</th><td><i class="doc">  /// Otherwise return 0.</i></td></tr>
+<tr><th id="319">319</th><td><i class="doc">  /// 6. For all other cases put llvm_unreachable.</i></td></tr>
+<tr><th id="320">320</th><td>  <em>int</em> <dfn class="decl fn" id="_ZNK4llvm18FunctionComparator8cmpTypesEPNS_4TypeES2_" title='llvm::FunctionComparator::cmpTypes' data-ref="_ZNK4llvm18FunctionComparator8cmpTypesEPNS_4TypeES2_" data-ref-filename="_ZNK4llvm18FunctionComparator8cmpTypesEPNS_4TypeES2_">cmpTypes</dfn>(<a class="type" href="../../IR/Type.h.html#llvm::Type" title='llvm::Type' data-ref="llvm::Type" data-ref-filename="llvm..Type">Type</a> *<dfn class="local col9 decl" id="19TyL" title='TyL' data-type='llvm::Type *' data-ref="19TyL" data-ref-filename="19TyL">TyL</dfn>, <a class="type" href="../../IR/Type.h.html#llvm::Type" title='llvm::Type' data-ref="llvm::Type" data-ref-filename="llvm..Type">Type</a> *<dfn class="local col0 decl" id="20TyR" title='TyR' data-type='llvm::Type *' data-ref="20TyR" data-ref-filename="20TyR">TyR</dfn>) <em>const</em>;</td></tr>
+<tr><th id="321">321</th><td></td></tr>
+<tr><th id="322">322</th><td>  <em>int</em> <dfn class="decl fn" id="_ZNK4llvm18FunctionComparator10cmpNumbersEmm" title='llvm::FunctionComparator::cmpNumbers' data-ref="_ZNK4llvm18FunctionComparator10cmpNumbersEmm" data-ref-filename="_ZNK4llvm18FunctionComparator10cmpNumbersEmm">cmpNumbers</dfn>(<a class="typedef" href="../../../../../../include/bits/stdint-uintn.h.html#uint64_t" title='uint64_t' data-type='__uint64_t' data-ref="uint64_t" data-ref-filename="uint64_t">uint64_t</a> <dfn class="local col1 decl" id="21L" title='L' data-type='uint64_t' data-ref="21L" data-ref-filename="21L">L</dfn>, <a class="typedef" href="../../../../../../include/bits/stdint-uintn.h.html#uint64_t" title='uint64_t' data-type='__uint64_t' data-ref="uint64_t" data-ref-filename="uint64_t">uint64_t</a> <dfn class="local col2 decl" id="22R" title='R' data-type='uint64_t' data-ref="22R" data-ref-filename="22R">R</dfn>) <em>const</em>;</td></tr>
+<tr><th id="323">323</th><td>  <em>int</em> <dfn class="decl fn" id="_ZNK4llvm18FunctionComparator9cmpAPIntsERKNS_5APIntES3_" title='llvm::FunctionComparator::cmpAPInts' data-ref="_ZNK4llvm18FunctionComparator9cmpAPIntsERKNS_5APIntES3_" data-ref-filename="_ZNK4llvm18FunctionComparator9cmpAPIntsERKNS_5APIntES3_">cmpAPInts</dfn>(<em>const</em> <a class="type" href="../../ADT/APInt.h.html#llvm::APInt" title='llvm::APInt' data-ref="llvm::APInt" data-ref-filename="llvm..APInt">APInt</a> &amp;<dfn class="local col3 decl" id="23L" title='L' data-type='const llvm::APInt &amp;' data-ref="23L" data-ref-filename="23L">L</dfn>, <em>const</em> <a class="type" href="../../ADT/APInt.h.html#llvm::APInt" title='llvm::APInt' data-ref="llvm::APInt" data-ref-filename="llvm..APInt">APInt</a> &amp;<dfn class="local col4 decl" id="24R" title='R' data-type='const llvm::APInt &amp;' data-ref="24R" data-ref-filename="24R">R</dfn>) <em>const</em>;</td></tr>
+<tr><th id="324">324</th><td>  <em>int</em> <dfn class="decl fn" id="_ZNK4llvm18FunctionComparator11cmpAPFloatsERKNS_7APFloatES3_" title='llvm::FunctionComparator::cmpAPFloats' data-ref="_ZNK4llvm18FunctionComparator11cmpAPFloatsERKNS_7APFloatES3_" data-ref-filename="_ZNK4llvm18FunctionComparator11cmpAPFloatsERKNS_7APFloatES3_">cmpAPFloats</dfn>(<em>const</em> <a class="type" href="../../ADT/APFloat.h.html#llvm::APFloat" title='llvm::APFloat' data-ref="llvm::APFloat" data-ref-filename="llvm..APFloat">APFloat</a> &amp;<dfn class="local col5 decl" id="25L" title='L' data-type='const llvm::APFloat &amp;' data-ref="25L" data-ref-filename="25L">L</dfn>, <em>const</em> <a class="type" href="../../ADT/APFloat.h.html#llvm::APFloat" title='llvm::APFloat' data-ref="llvm::APFloat" data-ref-filename="llvm..APFloat">APFloat</a> &amp;<dfn class="local col6 decl" id="26R" title='R' data-type='const llvm::APFloat &amp;' data-ref="26R" data-ref-filename="26R">R</dfn>) <em>const</em>;</td></tr>
+<tr><th id="325">325</th><td>  <em>int</em> <dfn class="decl fn" id="_ZNK4llvm18FunctionComparator6cmpMemENS_9StringRefES1_" title='llvm::FunctionComparator::cmpMem' data-ref="_ZNK4llvm18FunctionComparator6cmpMemENS_9StringRefES1_" data-ref-filename="_ZNK4llvm18FunctionComparator6cmpMemENS_9StringRefES1_">cmpMem</dfn>(<a class="type" href="../../ADT/StringRef.h.html#llvm::StringRef" title='llvm::StringRef' data-ref="llvm::StringRef" data-ref-filename="llvm..StringRef">StringRef</a> <dfn class="local col7 decl" id="27L" title='L' data-type='llvm::StringRef' data-ref="27L" data-ref-filename="27L">L</dfn>, <a class="type" href="../../ADT/StringRef.h.html#llvm::StringRef" title='llvm::StringRef' data-ref="llvm::StringRef" data-ref-filename="llvm..StringRef">StringRef</a> <dfn class="local col8 decl" id="28R" title='R' data-type='llvm::StringRef' data-ref="28R" data-ref-filename="28R">R</dfn>) <em>const</em>;</td></tr>
+<tr><th id="326">326</th><td></td></tr>
+<tr><th id="327">327</th><td>  <i>// The two functions undergoing comparison.</i></td></tr>
+<tr><th id="328">328</th><td>  <em>const</em> <a class="type" href="../../IR/Function.h.html#llvm::Function" title='llvm::Function' data-ref="llvm::Function" data-ref-filename="llvm..Function">Function</a> *<dfn class="decl field" id="llvm::FunctionComparator::FnL" title='llvm::FunctionComparator::FnL' data-ref="llvm::FunctionComparator::FnL" data-ref-filename="llvm..FunctionComparator..FnL">FnL</dfn>, *<dfn class="decl field" id="llvm::FunctionComparator::FnR" title='llvm::FunctionComparator::FnR' data-ref="llvm::FunctionComparator::FnR" data-ref-filename="llvm..FunctionComparator..FnR">FnR</dfn>;</td></tr>
+<tr><th id="329">329</th><td></td></tr>
+<tr><th id="330">330</th><td><b>private</b>:</td></tr>
+<tr><th id="331">331</th><td>  <em>int</em> <dfn class="decl fn" id="_ZNK4llvm18FunctionComparator12cmpOrderingsENS_14AtomicOrderingES1_" title='llvm::FunctionComparator::cmpOrderings' data-ref="_ZNK4llvm18FunctionComparator12cmpOrderingsENS_14AtomicOrderingES1_" data-ref-filename="_ZNK4llvm18FunctionComparator12cmpOrderingsENS_14AtomicOrderingES1_">cmpOrderings</dfn>(<a class="type" href="../../Support/AtomicOrdering.h.html#llvm::AtomicOrdering" title='llvm::AtomicOrdering' data-ref="llvm::AtomicOrdering" data-ref-filename="llvm..AtomicOrdering">AtomicOrdering</a> <dfn class="local col9 decl" id="29L" title='L' data-type='llvm::AtomicOrdering' data-ref="29L" data-ref-filename="29L">L</dfn>, <a class="type" href="../../Support/AtomicOrdering.h.html#llvm::AtomicOrdering" title='llvm::AtomicOrdering' data-ref="llvm::AtomicOrdering" data-ref-filename="llvm..AtomicOrdering">AtomicOrdering</a> <dfn class="local col0 decl" id="30R" title='R' data-type='llvm::AtomicOrdering' data-ref="30R" data-ref-filename="30R">R</dfn>) <em>const</em>;</td></tr>
+<tr><th id="332">332</th><td>  <em>int</em> <dfn class="decl fn" id="_ZNK4llvm18FunctionComparator12cmpInlineAsmEPKNS_9InlineAsmES3_" title='llvm::FunctionComparator::cmpInlineAsm' data-ref="_ZNK4llvm18FunctionComparator12cmpInlineAsmEPKNS_9InlineAsmES3_" data-ref-filename="_ZNK4llvm18FunctionComparator12cmpInlineAsmEPKNS_9InlineAsmES3_">cmpInlineAsm</dfn>(<em>const</em> <a class="type" href="../../IR/Value.h.html#llvm::InlineAsm" title='llvm::InlineAsm' data-ref="llvm::InlineAsm" data-ref-filename="llvm..InlineAsm">InlineAsm</a> *<dfn class="local col1 decl" id="31L" title='L' data-type='const llvm::InlineAsm *' data-ref="31L" data-ref-filename="31L">L</dfn>, <em>const</em> <a class="type" href="../../IR/Value.h.html#llvm::InlineAsm" title='llvm::InlineAsm' data-ref="llvm::InlineAsm" data-ref-filename="llvm..InlineAsm">InlineAsm</a> *<dfn class="local col2 decl" id="32R" title='R' data-type='const llvm::InlineAsm *' data-ref="32R" data-ref-filename="32R">R</dfn>) <em>const</em>;</td></tr>
+<tr><th id="333">333</th><td>  <em>int</em> <dfn class="decl fn" id="_ZNK4llvm18FunctionComparator8cmpAttrsENS_13AttributeListES1_" title='llvm::FunctionComparator::cmpAttrs' data-ref="_ZNK4llvm18FunctionComparator8cmpAttrsENS_13AttributeListES1_" data-ref-filename="_ZNK4llvm18FunctionComparator8cmpAttrsENS_13AttributeListES1_">cmpAttrs</dfn>(<em>const</em> <a class="type" href="../../IR/Attributes.h.html#llvm::AttributeList" title='llvm::AttributeList' data-ref="llvm::AttributeList" data-ref-filename="llvm..AttributeList">AttributeList</a> <dfn class="local col3 decl" id="33L" title='L' data-type='const llvm::AttributeList' data-ref="33L" data-ref-filename="33L">L</dfn>, <em>const</em> <a class="type" href="../../IR/Attributes.h.html#llvm::AttributeList" title='llvm::AttributeList' data-ref="llvm::AttributeList" data-ref-filename="llvm..AttributeList">AttributeList</a> <dfn class="local col4 decl" id="34R" title='R' data-type='const llvm::AttributeList' data-ref="34R" data-ref-filename="34R">R</dfn>) <em>const</em>;</td></tr>
+<tr><th id="334">334</th><td>  <em>int</em> <dfn class="decl fn" id="_ZNK4llvm18FunctionComparator16cmpRangeMetadataEPKNS_6MDNodeES3_" title='llvm::FunctionComparator::cmpRangeMetadata' data-ref="_ZNK4llvm18FunctionComparator16cmpRangeMetadataEPKNS_6MDNodeES3_" data-ref-filename="_ZNK4llvm18FunctionComparator16cmpRangeMetadataEPKNS_6MDNodeES3_">cmpRangeMetadata</dfn>(<em>const</em> <a class="type" href="../../IR/Metadata.h.html#llvm::MDNode" title='llvm::MDNode' data-ref="llvm::MDNode" data-ref-filename="llvm..MDNode">MDNode</a> *<dfn class="local col5 decl" id="35L" title='L' data-type='const llvm::MDNode *' data-ref="35L" data-ref-filename="35L">L</dfn>, <em>const</em> <a class="type" href="../../IR/Metadata.h.html#llvm::MDNode" title='llvm::MDNode' data-ref="llvm::MDNode" data-ref-filename="llvm..MDNode">MDNode</a> *<dfn class="local col6 decl" id="36R" title='R' data-type='const llvm::MDNode *' data-ref="36R" data-ref-filename="36R">R</dfn>) <em>const</em>;</td></tr>
+<tr><th id="335">335</th><td>  <em>int</em> <dfn class="decl fn" id="_ZNK4llvm18FunctionComparator23cmpOperandBundlesSchemaERKNS_8CallBaseES3_" title='llvm::FunctionComparator::cmpOperandBundlesSchema' data-ref="_ZNK4llvm18FunctionComparator23cmpOperandBundlesSchemaERKNS_8CallBaseES3_" data-ref-filename="_ZNK4llvm18FunctionComparator23cmpOperandBundlesSchemaERKNS_8CallBaseES3_">cmpOperandBundlesSchema</dfn>(<em>const</em> <a class="type" href="../../IR/InstrTypes.h.html#llvm::CallBase" title='llvm::CallBase' data-ref="llvm::CallBase" data-ref-filename="llvm..CallBase">CallBase</a> &amp;<dfn class="local col7 decl" id="37LCS" title='LCS' data-type='const llvm::CallBase &amp;' data-ref="37LCS" data-ref-filename="37LCS">LCS</dfn>, <em>const</em> <a class="type" href="../../IR/InstrTypes.h.html#llvm::CallBase" title='llvm::CallBase' data-ref="llvm::CallBase" data-ref-filename="llvm..CallBase">CallBase</a> &amp;<dfn class="local col8 decl" id="38RCS" title='RCS' data-type='const llvm::CallBase &amp;' data-ref="38RCS" data-ref-filename="38RCS">RCS</dfn>) <em>const</em>;</td></tr>
+<tr><th id="336">336</th><td></td></tr>
+<tr><th id="337">337</th><td>  <i class="doc">/// Compare two GEPs for equivalent pointer arithmetic.</i></td></tr>
+<tr><th id="338">338</th><td><i class="doc">  /// Parts to be compared for each comparison stage,</i></td></tr>
+<tr><th id="339">339</th><td><i class="doc">  /// most significant stage first:</i></td></tr>
+<tr><th id="340">340</th><td><i class="doc">  /// 1. Address space. As numbers.</i></td></tr>
+<tr><th id="341">341</th><td><i class="doc">  /// 2. Constant offset, (using GEPOperator::accumulateConstantOffset method).</i></td></tr>
+<tr><th id="342">342</th><td><i class="doc">  /// 3. Pointer operand type (using cmpType method).</i></td></tr>
+<tr><th id="343">343</th><td><i class="doc">  /// 4. Number of operands.</i></td></tr>
+<tr><th id="344">344</th><td><i class="doc">  /// 5. Compare operands, using cmpValues method.</i></td></tr>
+<tr><th id="345">345</th><td>  <em>int</em> <dfn class="decl fn" id="_ZNK4llvm18FunctionComparator7cmpGEPsEPKNS_11GEPOperatorES3_" title='llvm::FunctionComparator::cmpGEPs' data-ref="_ZNK4llvm18FunctionComparator7cmpGEPsEPKNS_11GEPOperatorES3_" data-ref-filename="_ZNK4llvm18FunctionComparator7cmpGEPsEPKNS_11GEPOperatorES3_">cmpGEPs</dfn>(<em>const</em> <a class="type" href="../../IR/Operator.h.html#llvm::GEPOperator" title='llvm::GEPOperator' data-ref="llvm::GEPOperator" data-ref-filename="llvm..GEPOperator">GEPOperator</a> *<dfn class="local col9 decl" id="39GEPL" title='GEPL' data-type='const llvm::GEPOperator *' data-ref="39GEPL" data-ref-filename="39GEPL">GEPL</dfn>, <em>const</em> <a class="type" href="../../IR/Operator.h.html#llvm::GEPOperator" title='llvm::GEPOperator' data-ref="llvm::GEPOperator" data-ref-filename="llvm..GEPOperator">GEPOperator</a> *<dfn class="local col0 decl" id="40GEPR" title='GEPR' data-type='const llvm::GEPOperator *' data-ref="40GEPR" data-ref-filename="40GEPR">GEPR</dfn>) <em>const</em>;</td></tr>
+<tr><th id="346">346</th><td>  <em>int</em> <dfn class="decl def fn" id="_ZNK4llvm18FunctionComparator7cmpGEPsEPKNS_17GetElementPtrInstES3_" title='llvm::FunctionComparator::cmpGEPs' data-ref="_ZNK4llvm18FunctionComparator7cmpGEPsEPKNS_17GetElementPtrInstES3_" data-ref-filename="_ZNK4llvm18FunctionComparator7cmpGEPsEPKNS_17GetElementPtrInstES3_">cmpGEPs</dfn>(<em>const</em> <a class="type" href="../../IR/Instructions.h.html#llvm::GetElementPtrInst" title='llvm::GetElementPtrInst' data-ref="llvm::GetElementPtrInst" data-ref-filename="llvm..GetElementPtrInst">GetElementPtrInst</a> *<dfn class="local col1 decl" id="41GEPL" title='GEPL' data-type='const llvm::GetElementPtrInst *' data-ref="41GEPL" data-ref-filename="41GEPL">GEPL</dfn>,</td></tr>
+<tr><th id="347">347</th><td>              <em>const</em> <a class="type" href="../../IR/Instructions.h.html#llvm::GetElementPtrInst" title='llvm::GetElementPtrInst' data-ref="llvm::GetElementPtrInst" data-ref-filename="llvm..GetElementPtrInst">GetElementPtrInst</a> *<dfn class="local col2 decl" id="42GEPR" title='GEPR' data-type='const llvm::GetElementPtrInst *' data-ref="42GEPR" data-ref-filename="42GEPR">GEPR</dfn>) <em>const</em> {</td></tr>
+<tr><th id="348">348</th><td>    <b>return</b> <a class="member fn" href="#_ZNK4llvm18FunctionComparator7cmpGEPsEPKNS_11GEPOperatorES3_" title='llvm::FunctionComparator::cmpGEPs' data-ref="_ZNK4llvm18FunctionComparator7cmpGEPsEPKNS_11GEPOperatorES3_" data-ref-filename="_ZNK4llvm18FunctionComparator7cmpGEPsEPKNS_11GEPOperatorES3_">cmpGEPs</a>(<a class="ref fn" href="../../Support/Casting.h.html#_ZN4llvm4castEPT0_" title='llvm::cast' data-ref="_ZN4llvm4castEPT0_" data-ref-filename="_ZN4llvm4castEPT0_">cast</a>&lt;<a class="type" href="../../IR/Operator.h.html#llvm::GEPOperator" title='llvm::GEPOperator' data-ref="llvm::GEPOperator" data-ref-filename="llvm..GEPOperator">GEPOperator</a>&gt;(<a class="local col1 ref" href="#41GEPL" title='GEPL' data-ref="41GEPL" data-ref-filename="41GEPL">GEPL</a>), <a class="ref fn" href="../../Support/Casting.h.html#_ZN4llvm4castEPT0_" title='llvm::cast' data-ref="_ZN4llvm4castEPT0_" data-ref-filename="_ZN4llvm4castEPT0_">cast</a>&lt;<a class="type" href="../../IR/Operator.h.html#llvm::GEPOperator" title='llvm::GEPOperator' data-ref="llvm::GEPOperator" data-ref-filename="llvm..GEPOperator">GEPOperator</a>&gt;(<a class="local col2 ref" href="#42GEPR" title='GEPR' data-ref="42GEPR" data-ref-filename="42GEPR">GEPR</a>));</td></tr>
+<tr><th id="349">349</th><td>  }</td></tr>
+<tr><th id="350">350</th><td></td></tr>
+<tr><th id="351">351</th><td>  <i class="doc">/// Assign serial numbers to values from left function, and values from</i></td></tr>
+<tr><th id="352">352</th><td><i class="doc">  /// right function.</i></td></tr>
+<tr><th id="353">353</th><td><i class="doc">  /// Explanation:</i></td></tr>
+<tr><th id="354">354</th><td><i class="doc">  /// Being comparing functions we need to compare values we meet at left and</i></td></tr>
+<tr><th id="355">355</th><td><i class="doc">  /// right sides.</i></td></tr>
+<tr><th id="356">356</th><td><i class="doc">  /// Its easy to sort things out for external values. It just should be</i></td></tr>
+<tr><th id="357">357</th><td><i class="doc">  /// the same value at left and right.</i></td></tr>
+<tr><th id="358">358</th><td><i class="doc">  /// But for local values (those were introduced inside function body)</i></td></tr>
+<tr><th id="359">359</th><td><i class="doc">  /// we have to ensure they were introduced at exactly the same place,</i></td></tr>
+<tr><th id="360">360</th><td><i class="doc">  /// and plays the same role.</i></td></tr>
+<tr><th id="361">361</th><td><i class="doc">  /// Let's assign serial number to each value when we meet it first time.</i></td></tr>
+<tr><th id="362">362</th><td><i class="doc">  /// Values that were met at same place will be with same serial numbers.</i></td></tr>
+<tr><th id="363">363</th><td><i class="doc">  /// In this case it would be good to explain few points about values assigned</i></td></tr>
+<tr><th id="364">364</th><td><i class="doc">  /// to BBs and other ways of implementation (see below).</i></td></tr>
+<tr><th id="365">365</th><td><i class="doc">  ///</i></td></tr>
+<tr><th id="366">366</th><td><i class="doc">  /// 1. Safety of BB reordering.</i></td></tr>
+<tr><th id="367">367</th><td><i class="doc">  /// It's safe to change the order of BasicBlocks in function.</i></td></tr>
+<tr><th id="368">368</th><td><i class="doc">  /// Relationship with other functions and serial numbering will not be</i></td></tr>
+<tr><th id="369">369</th><td><i class="doc">  /// changed in this case.</i></td></tr>
+<tr><th id="370">370</th><td><i class="doc">  /// As follows from FunctionComparator::compare(), we do CFG walk: we start</i></td></tr>
+<tr><th id="371">371</th><td><i class="doc">  /// from the entry, and then take each terminator. So it doesn't matter how in</i></td></tr>
+<tr><th id="372">372</th><td><i class="doc">  /// fact BBs are ordered in function. And since cmpValues are called during</i></td></tr>
+<tr><th id="373">373</th><td><i class="doc">  /// this walk, the numbering depends only on how BBs located inside the CFG.</i></td></tr>
+<tr><th id="374">374</th><td><i class="doc">  /// So the answer is - yes. We will get the same numbering.</i></td></tr>
+<tr><th id="375">375</th><td><i class="doc">  ///</i></td></tr>
+<tr><th id="376">376</th><td><i class="doc">  /// 2. Impossibility to use dominance properties of values.</i></td></tr>
+<tr><th id="377">377</th><td><i class="doc">  /// If we compare two instruction operands: first is usage of local</i></td></tr>
+<tr><th id="378">378</th><td><i class="doc">  /// variable AL from function FL, and second is usage of local variable AR</i></td></tr>
+<tr><th id="379">379</th><td><i class="doc">  /// from FR, we could compare their origins and check whether they are</i></td></tr>
+<tr><th id="380">380</th><td><i class="doc">  /// defined at the same place.</i></td></tr>
+<tr><th id="381">381</th><td><i class="doc">  /// But, we are still not able to compare operands of PHI nodes, since those</i></td></tr>
+<tr><th id="382">382</th><td><i class="doc">  /// could be operands from further BBs we didn't scan yet.</i></td></tr>
+<tr><th id="383">383</th><td><i class="doc">  /// So it's impossible to use dominance properties in general.</i></td></tr>
+<tr><th id="384">384</th><td>  <em>mutable</em> <a class="type" href="../../ADT/DenseMap.h.html#llvm::DenseMap" title='llvm::DenseMap' data-ref="llvm::DenseMap" data-ref-filename="llvm..DenseMap">DenseMap</a>&lt;<em>const</em> <a class="type" href="../../IR/Value.h.html#llvm::Value" title='llvm::Value' data-ref="llvm::Value" data-ref-filename="llvm..Value">Value</a>*, <em>int</em>&gt; <dfn class="decl field" id="llvm::FunctionComparator::sn_mapL" title='llvm::FunctionComparator::sn_mapL' data-ref="llvm::FunctionComparator::sn_mapL" data-ref-filename="llvm..FunctionComparator..sn_mapL">sn_mapL</dfn>, <dfn class="decl field" id="llvm::FunctionComparator::sn_mapR" title='llvm::FunctionComparator::sn_mapR' data-ref="llvm::FunctionComparator::sn_mapR" data-ref-filename="llvm..FunctionComparator..sn_mapR">sn_mapR</dfn>;</td></tr>
+<tr><th id="385">385</th><td></td></tr>
+<tr><th id="386">386</th><td>  <i>// The global state we will use</i></td></tr>
+<tr><th id="387">387</th><td>  <a class="type" href="#llvm::GlobalNumberState" title='llvm::GlobalNumberState' data-ref="llvm::GlobalNumberState" data-ref-filename="llvm..GlobalNumberState">GlobalNumberState</a>* <dfn class="decl field" id="llvm::FunctionComparator::GlobalNumbers" title='llvm::FunctionComparator::GlobalNumbers' data-ref="llvm::FunctionComparator::GlobalNumbers" data-ref-filename="llvm..FunctionComparator..GlobalNumbers">GlobalNumbers</dfn>;</td></tr>
+<tr><th id="388">388</th><td>};</td></tr>
+<tr><th id="389">389</th><td></td></tr>
+<tr><th id="390">390</th><td>} <i>// end namespace llvm</i></td></tr>
+<tr><th id="391">391</th><td></td></tr>
+<tr><th id="392">392</th><td><u>#<span data-ppcond="14">endif</span> // LLVM_TRANSFORMS_UTILS_FUNCTIONCOMPARATOR_H</u></td></tr>
+<tr><th id="393">393</th><td></td></tr>
+</table><hr/><p id='footer'>
+Generated while processing <a href='../../../../lib/Transforms/IPO/MergeFunctions.cpp.html'>llvm/llvm/lib/Transforms/IPO/MergeFunctions.cpp</a><br/>Generated on <em>2021-Jul-01</em> from project llvm revision <em>12</em>

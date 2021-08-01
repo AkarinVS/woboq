@@ -1,0 +1,169 @@
+<!doctype html>
+<html>
+<head>
+<meta name="viewport" content="width=device-width, initial-scale=1.0"><title>Threading.cpp source code [llvm/llvm/lib/Support/Threading.cpp] - Woboq Code Browser</title>
+<link rel="stylesheet" href="../../../.././data/qtcreator.css" title="QtCreator"/>
+<link rel="alternate stylesheet" href="../../../.././data/kdevelop.css" title="KDevelop"/>
+<script type="text/javascript" src="../../../.././data/jquery/jquery.min.js"></script>
+<script type="text/javascript" src="../../../.././data/jquery/jquery-ui.min.js"></script>
+<script>var file = 'llvm/llvm/lib/Support/Threading.cpp'; var root_path = '../../../..'; var data_path = '../../../.././data'; var ecma_script_api_version = 2;</script>
+<script src='../../../.././data/codebrowser.js'></script>
+</head>
+<body><div id='header'><h1 id='breadcrumb'><span>Browse the source code of </span><a href='../../..'>llvm</a>/<a href='../..'>llvm</a>/<a href='..'>lib</a>/<a href='./'>Support</a>/<a href='Threading.cpp.html'>Threading.cpp</a></h1></div>
+<hr/><div id='content'><table class="code">
+<tr><th id="1">1</th><td><i>//===-- llvm/Support/Threading.cpp- Control multithreading mode --*- C++ -*-==//</i></td></tr>
+<tr><th id="2">2</th><td><i>//</i></td></tr>
+<tr><th id="3">3</th><td><i>// Part of the LLVM Project, under the Apache License v2.0 with LLVM Exceptions.</i></td></tr>
+<tr><th id="4">4</th><td><i>// See <a href="https://llvm.org/LICENSE.txt">https://llvm.org/LICENSE.txt</a> for license information.</i></td></tr>
+<tr><th id="5">5</th><td><i>// SPDX-License-Identifier: Apache-2.0 WITH LLVM-exception</i></td></tr>
+<tr><th id="6">6</th><td><i>//</i></td></tr>
+<tr><th id="7">7</th><td><i>//===----------------------------------------------------------------------===//</i></td></tr>
+<tr><th id="8">8</th><td><i>//</i></td></tr>
+<tr><th id="9">9</th><td><i>// This file defines helper functions for running LLVM in a multi-threaded</i></td></tr>
+<tr><th id="10">10</th><td><i>// environment.</i></td></tr>
+<tr><th id="11">11</th><td><i>//</i></td></tr>
+<tr><th id="12">12</th><td><i>//===----------------------------------------------------------------------===//</i></td></tr>
+<tr><th id="13">13</th><td></td></tr>
+<tr><th id="14">14</th><td><u>#include <a href="../../include/llvm/Support/Threading.h.html">"llvm/Support/Threading.h"</a></u></td></tr>
+<tr><th id="15">15</th><td><u>#include <a href="../../include/llvm/ADT/Optional.h.html">"llvm/ADT/Optional.h"</a></u></td></tr>
+<tr><th id="16">16</th><td><u>#include <a href="../../../build/include/llvm/Config/config.h.html">"llvm/Config/config.h"</a></u></td></tr>
+<tr><th id="17">17</th><td><u>#include <a href="../../include/llvm/Support/Host.h.html">"llvm/Support/Host.h"</a></u></td></tr>
+<tr><th id="18">18</th><td></td></tr>
+<tr><th id="19">19</th><td><u>#include &lt;cassert&gt;</u></td></tr>
+<tr><th id="20">20</th><td><u>#include <a href="../../../../include/errno.h.html">&lt;errno.h&gt;</a></u></td></tr>
+<tr><th id="21">21</th><td><u>#include &lt;stdlib.h&gt;</u></td></tr>
+<tr><th id="22">22</th><td><u>#include <a href="../../../../include/string.h.html">&lt;string.h&gt;</a></u></td></tr>
+<tr><th id="23">23</th><td></td></tr>
+<tr><th id="24">24</th><td><b>using</b> <b>namespace</b> <span class="namespace">llvm</span>;</td></tr>
+<tr><th id="25">25</th><td></td></tr>
+<tr><th id="26">26</th><td><i>//===----------------------------------------------------------------------===//</i></td></tr>
+<tr><th id="27">27</th><td><i>//=== WARNING: Implementation here must contain only TRULY operating system</i></td></tr>
+<tr><th id="28">28</th><td><i>//===          independent code.</i></td></tr>
+<tr><th id="29">29</th><td><i>//===----------------------------------------------------------------------===//</i></td></tr>
+<tr><th id="30">30</th><td></td></tr>
+<tr><th id="31">31</th><td><em>bool</em> <span class="namespace">llvm::</span><dfn class="decl def fn" id="_ZN4llvm21llvm_is_multithreadedEv" title='llvm::llvm_is_multithreaded' data-ref="_ZN4llvm21llvm_is_multithreadedEv" data-ref-filename="_ZN4llvm21llvm_is_multithreadedEv">llvm_is_multithreaded</dfn>() {</td></tr>
+<tr><th id="32">32</th><td><u>#<span data-ppcond="32">if</span> <a class="macro" href="../../../build/include/llvm/Config/llvm-config.h.html#24" title="1" data-ref="_M/LLVM_ENABLE_THREADS">LLVM_ENABLE_THREADS</a> != 0</u></td></tr>
+<tr><th id="33">33</th><td>  <b>return</b> <b>true</b>;</td></tr>
+<tr><th id="34">34</th><td><u>#<span data-ppcond="32">else</span></u></td></tr>
+<tr><th id="35">35</th><td>  <b>return</b> <b>false</b>;</td></tr>
+<tr><th id="36">36</th><td><u>#<span data-ppcond="32">endif</span></u></td></tr>
+<tr><th id="37">37</th><td>}</td></tr>
+<tr><th id="38">38</th><td></td></tr>
+<tr><th id="39">39</th><td><u>#<span data-ppcond="39">if</span> <a class="macro" href="../../../build/include/llvm/Config/llvm-config.h.html#24" title="1" data-ref="_M/LLVM_ENABLE_THREADS">LLVM_ENABLE_THREADS</a> == 0 ||                                                \</u></td></tr>
+<tr><th id="40">40</th><td><u>    (!defined(<span class="macro" data-ref="_M/_WIN32">_WIN32</span>) &amp;&amp; !defined(<a class="macro" href="../../../build/include/llvm/Config/config.h.html#158" data-ref="_M/HAVE_PTHREAD_H">HAVE_PTHREAD_H</a>))</u></td></tr>
+<tr><th id="41">41</th><td><i>// Support for non-Win32, non-pthread implementation.</i></td></tr>
+<tr><th id="42">42</th><td><em>void</em> llvm::llvm_execute_on_thread(<em>void</em> (*Fn)(<em>void</em> *), <em>void</em> *UserData,</td></tr>
+<tr><th id="43">43</th><td>                                  llvm::Optional&lt;<em>unsigned</em>&gt; StackSizeInBytes) {</td></tr>
+<tr><th id="44">44</th><td>  (<em>void</em>)StackSizeInBytes;</td></tr>
+<tr><th id="45">45</th><td>  Fn(UserData);</td></tr>
+<tr><th id="46">46</th><td>}</td></tr>
+<tr><th id="47">47</th><td></td></tr>
+<tr><th id="48">48</th><td>uint64_t llvm::get_threadid() { <b>return</b> <var>0</var>; }</td></tr>
+<tr><th id="49">49</th><td></td></tr>
+<tr><th id="50">50</th><td>uint32_t llvm::get_max_thread_name_length() { <b>return</b> <var>0</var>; }</td></tr>
+<tr><th id="51">51</th><td></td></tr>
+<tr><th id="52">52</th><td><em>void</em> llvm::set_thread_name(<em>const</em> Twine &amp;Name) {}</td></tr>
+<tr><th id="53">53</th><td></td></tr>
+<tr><th id="54">54</th><td><em>void</em> llvm::get_thread_name(SmallVectorImpl&lt;<em>char</em>&gt; &amp;Name) { Name.clear(); }</td></tr>
+<tr><th id="55">55</th><td></td></tr>
+<tr><th id="56">56</th><td>llvm::BitVector llvm::get_thread_affinity_mask() { <b>return</b> {}; }</td></tr>
+<tr><th id="57">57</th><td></td></tr>
+<tr><th id="58">58</th><td><em>unsigned</em> llvm::ThreadPoolStrategy::compute_thread_count() <em>const</em> {</td></tr>
+<tr><th id="59">59</th><td>  <i>// When threads are disabled, ensure clients will loop at least once.</i></td></tr>
+<tr><th id="60">60</th><td>  <b>return</b> <var>1</var>;</td></tr>
+<tr><th id="61">61</th><td>}</td></tr>
+<tr><th id="62">62</th><td></td></tr>
+<tr><th id="63">63</th><td><u>#if LLVM_ENABLE_THREADS == 0</u></td></tr>
+<tr><th id="64">64</th><td><em>void</em> llvm::llvm_execute_on_thread_async(</td></tr>
+<tr><th id="65">65</th><td>    llvm::unique_function&lt;<em>void</em>()&gt; Func,</td></tr>
+<tr><th id="66">66</th><td>    llvm::Optional&lt;<em>unsigned</em>&gt; StackSizeInBytes) {</td></tr>
+<tr><th id="67">67</th><td>  (<em>void</em>)Func;</td></tr>
+<tr><th id="68">68</th><td>  (<em>void</em>)StackSizeInBytes;</td></tr>
+<tr><th id="69">69</th><td>  report_fatal_error(<q>"Spawning a detached thread doesn't make sense with no "</q></td></tr>
+<tr><th id="70">70</th><td>                     <q>"threading support"</q>);</td></tr>
+<tr><th id="71">71</th><td>}</td></tr>
+<tr><th id="72">72</th><td><u>#else</u></td></tr>
+<tr><th id="73">73</th><td><i>// Support for non-Win32, non-pthread implementation.</i></td></tr>
+<tr><th id="74">74</th><td><em>void</em> llvm::llvm_execute_on_thread_async(</td></tr>
+<tr><th id="75">75</th><td>    llvm::unique_function&lt;<em>void</em>()&gt; Func,</td></tr>
+<tr><th id="76">76</th><td>    llvm::Optional&lt;<em>unsigned</em>&gt; StackSizeInBytes) {</td></tr>
+<tr><th id="77">77</th><td>  (<em>void</em>)StackSizeInBytes;</td></tr>
+<tr><th id="78">78</th><td>  std::thread(std::move(Func)).detach();</td></tr>
+<tr><th id="79">79</th><td>}</td></tr>
+<tr><th id="80">80</th><td><u>#endif</u></td></tr>
+<tr><th id="81">81</th><td></td></tr>
+<tr><th id="82">82</th><td><u>#<span data-ppcond="39">else</span></u></td></tr>
+<tr><th id="83">83</th><td></td></tr>
+<tr><th id="84">84</th><td><em>int</em> <a class="decl fn" href="Unix/Threading.inc.html#_Z29computeHostNumHardwareThreadsv" title='computeHostNumHardwareThreads' data-ref="_Z29computeHostNumHardwareThreadsv" data-ref-filename="_Z29computeHostNumHardwareThreadsv" id="_Z29computeHostNumHardwareThreadsv">computeHostNumHardwareThreads</a>();</td></tr>
+<tr><th id="85">85</th><td></td></tr>
+<tr><th id="86">86</th><td><em>unsigned</em> <span class="namespace">llvm::</span><a class="type" href="../../include/llvm/Support/Threading.h.html#llvm::ThreadPoolStrategy" title='llvm::ThreadPoolStrategy' data-ref="llvm::ThreadPoolStrategy" data-ref-filename="llvm..ThreadPoolStrategy">ThreadPoolStrategy</a>::<dfn class="decl def fn" id="_ZNK4llvm18ThreadPoolStrategy20compute_thread_countEv" title='llvm::ThreadPoolStrategy::compute_thread_count' data-ref="_ZNK4llvm18ThreadPoolStrategy20compute_thread_countEv" data-ref-filename="_ZNK4llvm18ThreadPoolStrategy20compute_thread_countEv">compute_thread_count</dfn>() <em>const</em> {</td></tr>
+<tr><th id="87">87</th><td>  <em>int</em> <dfn class="local col1 decl" id="1MaxThreadCount" title='MaxThreadCount' data-type='int' data-ref="1MaxThreadCount" data-ref-filename="1MaxThreadCount">MaxThreadCount</dfn> = <a class="member field" href="../../include/llvm/Support/Threading.h.html#llvm::ThreadPoolStrategy::UseHyperThreads" title='llvm::ThreadPoolStrategy::UseHyperThreads' data-ref="llvm::ThreadPoolStrategy::UseHyperThreads" data-ref-filename="llvm..ThreadPoolStrategy..UseHyperThreads">UseHyperThreads</a> ? <a class="ref fn" href="Unix/Threading.inc.html#_Z29computeHostNumHardwareThreadsv" title='computeHostNumHardwareThreads' data-ref="_Z29computeHostNumHardwareThreadsv" data-ref-filename="_Z29computeHostNumHardwareThreadsv">computeHostNumHardwareThreads</a>()</td></tr>
+<tr><th id="88">88</th><td>                                       : <span class="namespace">sys::</span><a class="ref fn" href="../../include/llvm/Support/Host.h.html#_ZN4llvm3sys23getHostNumPhysicalCoresEv" title='llvm::sys::getHostNumPhysicalCores' data-ref="_ZN4llvm3sys23getHostNumPhysicalCoresEv" data-ref-filename="_ZN4llvm3sys23getHostNumPhysicalCoresEv">getHostNumPhysicalCores</a>();</td></tr>
+<tr><th id="89">89</th><td>  <b>if</b> (<a class="local col1 ref" href="#1MaxThreadCount" title='MaxThreadCount' data-ref="1MaxThreadCount" data-ref-filename="1MaxThreadCount">MaxThreadCount</a> &lt;= <var>0</var>)</td></tr>
+<tr><th id="90">90</th><td>    <a class="local col1 ref" href="#1MaxThreadCount" title='MaxThreadCount' data-ref="1MaxThreadCount" data-ref-filename="1MaxThreadCount">MaxThreadCount</a> = <var>1</var>;</td></tr>
+<tr><th id="91">91</th><td>  <b>if</b> (<a class="member field" href="../../include/llvm/Support/Threading.h.html#llvm::ThreadPoolStrategy::ThreadsRequested" title='llvm::ThreadPoolStrategy::ThreadsRequested' data-ref="llvm::ThreadPoolStrategy::ThreadsRequested" data-ref-filename="llvm..ThreadPoolStrategy..ThreadsRequested">ThreadsRequested</a> == <var>0</var>)</td></tr>
+<tr><th id="92">92</th><td>    <b>return</b> <a class="local col1 ref" href="#1MaxThreadCount" title='MaxThreadCount' data-ref="1MaxThreadCount" data-ref-filename="1MaxThreadCount">MaxThreadCount</a>;</td></tr>
+<tr><th id="93">93</th><td>  <b>if</b> (!<a class="member field" href="../../include/llvm/Support/Threading.h.html#llvm::ThreadPoolStrategy::Limit" title='llvm::ThreadPoolStrategy::Limit' data-ref="llvm::ThreadPoolStrategy::Limit" data-ref-filename="llvm..ThreadPoolStrategy..Limit">Limit</a>)</td></tr>
+<tr><th id="94">94</th><td>    <b>return</b> <a class="member field" href="../../include/llvm/Support/Threading.h.html#llvm::ThreadPoolStrategy::ThreadsRequested" title='llvm::ThreadPoolStrategy::ThreadsRequested' data-ref="llvm::ThreadPoolStrategy::ThreadsRequested" data-ref-filename="llvm..ThreadPoolStrategy..ThreadsRequested">ThreadsRequested</a>;</td></tr>
+<tr><th id="95">95</th><td>  <b>return</b> <span class="namespace">std::</span><span class='ref fn' title='std::min' data-ref="_ZSt3minRKT_S1_" data-ref-filename="_ZSt3minRKT_S1_">min</span>((<em>unsigned</em>)<a class="local col1 ref" href="#1MaxThreadCount" title='MaxThreadCount' data-ref="1MaxThreadCount" data-ref-filename="1MaxThreadCount">MaxThreadCount</a>, <a class="member field" href="../../include/llvm/Support/Threading.h.html#llvm::ThreadPoolStrategy::ThreadsRequested" title='llvm::ThreadPoolStrategy::ThreadsRequested' data-ref="llvm::ThreadPoolStrategy::ThreadsRequested" data-ref-filename="llvm..ThreadPoolStrategy..ThreadsRequested">ThreadsRequested</a>);</td></tr>
+<tr><th id="96">96</th><td>}</td></tr>
+<tr><th id="97">97</th><td></td></tr>
+<tr><th id="98">98</th><td><b>namespace</b> {</td></tr>
+<tr><th id="99">99</th><td><b>struct</b> <dfn class="tu type def" id="(anonymousnamespace)::SyncThreadInfo" title='(anonymous namespace)::SyncThreadInfo' data-ref="(anonymousnamespace)::SyncThreadInfo" data-ref-filename="(anonymousnamespace)..SyncThreadInfo">SyncThreadInfo</dfn> {</td></tr>
+<tr><th id="100">100</th><td>  <em>void</em> (*<dfn class="tu decl field" id="(anonymousnamespace)::SyncThreadInfo::UserFn" title='(anonymous namespace)::SyncThreadInfo::UserFn' data-type='void (*)(void *)' data-ref="(anonymousnamespace)::SyncThreadInfo::UserFn" data-ref-filename="(anonymousnamespace)..SyncThreadInfo..UserFn">UserFn</dfn>)(<em>void</em> *);</td></tr>
+<tr><th id="101">101</th><td>  <em>void</em> *<dfn class="tu decl field" id="(anonymousnamespace)::SyncThreadInfo::UserData" title='(anonymous namespace)::SyncThreadInfo::UserData' data-type='void *' data-ref="(anonymousnamespace)::SyncThreadInfo::UserData" data-ref-filename="(anonymousnamespace)..SyncThreadInfo..UserData">UserData</dfn>;</td></tr>
+<tr><th id="102">102</th><td>};</td></tr>
+<tr><th id="103">103</th><td></td></tr>
+<tr><th id="104">104</th><td><b>using</b> <dfn class="tu typedef" id="(anonymousnamespace)::AsyncThreadInfo" title='(anonymous namespace)::AsyncThreadInfo' data-type='llvm::unique_function&lt;void ()&gt;' data-ref="(anonymousnamespace)::AsyncThreadInfo" data-ref-filename="(anonymousnamespace)..AsyncThreadInfo">AsyncThreadInfo</dfn> = <span class="namespace">llvm::</span><a class="type" href="../../include/llvm/ADT/FunctionExtras.h.html#llvm::unique_function" title='llvm::unique_function' data-ref="llvm::unique_function" data-ref-filename="llvm..unique_function">unique_function</a>&lt;<em>void</em>()&gt;;</td></tr>
+<tr><th id="105">105</th><td></td></tr>
+<tr><th id="106">106</th><td><b>enum</b> <b>class</b> <dfn class="tu type def" id="(anonymousnamespace)::JoiningPolicy" title='(anonymous namespace)::JoiningPolicy' data-ref="(anonymousnamespace)::JoiningPolicy" data-ref-filename="(anonymousnamespace)..JoiningPolicy">JoiningPolicy</dfn> { <dfn class="tu enum" id="(anonymousnamespace)::JoiningPolicy::Join" title='(anonymous namespace)::JoiningPolicy::Join' data-type='0' data-ref="(anonymousnamespace)::JoiningPolicy::Join" data-ref-filename="(anonymousnamespace)..JoiningPolicy..Join">Join</dfn>, <dfn class="tu enum" id="(anonymousnamespace)::JoiningPolicy::Detach" title='(anonymous namespace)::JoiningPolicy::Detach' data-type='1' data-ref="(anonymousnamespace)::JoiningPolicy::Detach" data-ref-filename="(anonymousnamespace)..JoiningPolicy..Detach">Detach</dfn> };</td></tr>
+<tr><th id="107">107</th><td>} <i>// namespace</i></td></tr>
+<tr><th id="108">108</th><td></td></tr>
+<tr><th id="109">109</th><td><i>// Include the platform-specific parts of this class.</i></td></tr>
+<tr><th id="110">110</th><td><u>#<span data-ppcond="110">ifdef</span> <a class="macro" href="../../../build/include/llvm/Config/llvm-config.h.html#54" data-ref="_M/LLVM_ON_UNIX">LLVM_ON_UNIX</a></u></td></tr>
+<tr><th id="111">111</th><td><u>#include <a href="Unix/Threading.inc.html">"Unix/Threading.inc"</a></u></td></tr>
+<tr><th id="112">112</th><td><u>#<span data-ppcond="110">endif</span></u></td></tr>
+<tr><th id="113">113</th><td><u>#<span data-ppcond="113">ifdef</span> <span class="macro" data-ref="_M/_WIN32">_WIN32</span></u></td></tr>
+<tr><th id="114">114</th><td><u>#include "Windows/Threading.inc"</u></td></tr>
+<tr><th id="115">115</th><td><u>#<span data-ppcond="113">endif</span></u></td></tr>
+<tr><th id="116">116</th><td></td></tr>
+<tr><th id="117">117</th><td><em>void</em> <span class="namespace">llvm::</span><dfn class="decl def fn" id="_ZN4llvm22llvm_execute_on_threadEPFvPvES0_NS_8OptionalIjEE" title='llvm::llvm_execute_on_thread' data-ref="_ZN4llvm22llvm_execute_on_threadEPFvPvES0_NS_8OptionalIjEE" data-ref-filename="_ZN4llvm22llvm_execute_on_threadEPFvPvES0_NS_8OptionalIjEE">llvm_execute_on_thread</dfn>(<em>void</em> (*<dfn class="local col5 decl" id="25Fn" title='Fn' data-type='void (*)(void *)' data-ref="25Fn" data-ref-filename="25Fn">Fn</dfn>)(<em>void</em> *), <em>void</em> *<dfn class="local col6 decl" id="26UserData" title='UserData' data-type='void *' data-ref="26UserData" data-ref-filename="26UserData">UserData</dfn>,</td></tr>
+<tr><th id="118">118</th><td>                                  <span class="namespace">llvm::</span><a class="type" href="../../include/llvm/ADT/Optional.h.html#llvm::Optional" title='llvm::Optional' data-ref="llvm::Optional" data-ref-filename="llvm..Optional">Optional</a>&lt;<em>unsigned</em>&gt; <dfn class="local col7 decl" id="27StackSizeInBytes" title='StackSizeInBytes' data-type='llvm::Optional&lt;unsigned int&gt;' data-ref="27StackSizeInBytes" data-ref-filename="27StackSizeInBytes">StackSizeInBytes</dfn>) {</td></tr>
+<tr><th id="119">119</th><td></td></tr>
+<tr><th id="120">120</th><td>  <a class="tu type" href="#(anonymousnamespace)::SyncThreadInfo" title='(anonymous namespace)::SyncThreadInfo' data-ref="(anonymousnamespace)::SyncThreadInfo" data-ref-filename="(anonymousnamespace)..SyncThreadInfo">SyncThreadInfo</a> <dfn class="local col8 decl" id="28Info" title='Info' data-type='(anonymous namespace)::SyncThreadInfo' data-ref="28Info" data-ref-filename="28Info">Info</dfn> = {<a class="local col5 ref" href="#25Fn" title='Fn' data-ref="25Fn" data-ref-filename="25Fn">Fn</a>, <a class="local col6 ref" href="#26UserData" title='UserData' data-ref="26UserData" data-ref-filename="26UserData">UserData</a>};</td></tr>
+<tr><th id="121">121</th><td>  <a class="ref fn" href="Unix/Threading.inc.html#_ZL27llvm_execute_on_thread_implPFPvS_ES_N4llvm8OptionalIjEEN12_GLOBAL__N_113JoiningPolicyE" title='llvm_execute_on_thread_impl' data-ref="_ZL27llvm_execute_on_thread_implPFPvS_ES_N4llvm8OptionalIjEEN12_GLOBAL__N_113JoiningPolicyE" data-ref-filename="_ZL27llvm_execute_on_thread_implPFPvS_ES_N4llvm8OptionalIjEEN12_GLOBAL__N_113JoiningPolicyE">llvm_execute_on_thread_impl</a>(<a class="ref fn" href="Unix/Threading.inc.html#_ZL14threadFuncSyncPv" title='threadFuncSync' data-ref="_ZL14threadFuncSyncPv" data-ref-filename="_ZL14threadFuncSyncPv">threadFuncSync</a>, &amp;<a class="local col8 ref" href="#28Info" title='Info' data-ref="28Info" data-ref-filename="28Info">Info</a>, <a class="ref fn fake" href="../../include/llvm/ADT/Optional.h.html#_ZN4llvm8OptionalC1ERKNS_8OptionalIT_EE" title='llvm::Optional::Optional&lt;T&gt;' data-ref="_ZN4llvm8OptionalC1ERKNS_8OptionalIT_EE" data-ref-filename="_ZN4llvm8OptionalC1ERKNS_8OptionalIT_EE"></a><a class="local col7 ref" href="#27StackSizeInBytes" title='StackSizeInBytes' data-ref="27StackSizeInBytes" data-ref-filename="27StackSizeInBytes">StackSizeInBytes</a>,</td></tr>
+<tr><th id="122">122</th><td>                              <a class="tu type" href="#(anonymousnamespace)::JoiningPolicy" title='(anonymous namespace)::JoiningPolicy' data-ref="(anonymousnamespace)::JoiningPolicy" data-ref-filename="(anonymousnamespace)..JoiningPolicy">JoiningPolicy</a>::<a class="tu enum" href="#(anonymousnamespace)::JoiningPolicy::Join" title='(anonymous namespace)::JoiningPolicy::Join' data-use='r' data-ref="(anonymousnamespace)::JoiningPolicy::Join" data-ref-filename="(anonymousnamespace)..JoiningPolicy..Join">Join</a>);</td></tr>
+<tr><th id="123">123</th><td>}</td></tr>
+<tr><th id="124">124</th><td></td></tr>
+<tr><th id="125">125</th><td><em>void</em> <span class="namespace">llvm::</span><dfn class="decl def fn" id="_ZN4llvm28llvm_execute_on_thread_asyncENS_15unique_functionIFvvEEENS_8OptionalIjEE" title='llvm::llvm_execute_on_thread_async' data-ref="_ZN4llvm28llvm_execute_on_thread_asyncENS_15unique_functionIFvvEEENS_8OptionalIjEE" data-ref-filename="_ZN4llvm28llvm_execute_on_thread_asyncENS_15unique_functionIFvvEEENS_8OptionalIjEE">llvm_execute_on_thread_async</dfn>(</td></tr>
+<tr><th id="126">126</th><td>    <span class="namespace">llvm::</span><a class="type" href="../../include/llvm/ADT/FunctionExtras.h.html#llvm::unique_function" title='llvm::unique_function' data-ref="llvm::unique_function" data-ref-filename="llvm..unique_function">unique_function</a>&lt;<em>void</em>()&gt; <dfn class="local col9 decl" id="29Func" title='Func' data-type='llvm::unique_function&lt;void ()&gt;' data-ref="29Func" data-ref-filename="29Func">Func</dfn>,</td></tr>
+<tr><th id="127">127</th><td>    <span class="namespace">llvm::</span><a class="type" href="../../include/llvm/ADT/Optional.h.html#llvm::Optional" title='llvm::Optional' data-ref="llvm::Optional" data-ref-filename="llvm..Optional">Optional</a>&lt;<em>unsigned</em>&gt; <dfn class="local col0 decl" id="30StackSizeInBytes" title='StackSizeInBytes' data-type='llvm::Optional&lt;unsigned int&gt;' data-ref="30StackSizeInBytes" data-ref-filename="30StackSizeInBytes">StackSizeInBytes</dfn>) {</td></tr>
+<tr><th id="128">128</th><td>  <a class="ref fn" href="Unix/Threading.inc.html#_ZL27llvm_execute_on_thread_implPFPvS_ES_N4llvm8OptionalIjEEN12_GLOBAL__N_113JoiningPolicyE" title='llvm_execute_on_thread_impl' data-ref="_ZL27llvm_execute_on_thread_implPFPvS_ES_N4llvm8OptionalIjEEN12_GLOBAL__N_113JoiningPolicyE" data-ref-filename="_ZL27llvm_execute_on_thread_implPFPvS_ES_N4llvm8OptionalIjEEN12_GLOBAL__N_113JoiningPolicyE">llvm_execute_on_thread_impl</a>(&amp;<a class="ref fn" href="Unix/Threading.inc.html#_ZL15threadFuncAsyncPv" title='threadFuncAsync' data-ref="_ZL15threadFuncAsyncPv" data-ref-filename="_ZL15threadFuncAsyncPv">threadFuncAsync</a>,</td></tr>
+<tr><th id="129">129</th><td>                              <b>new</b> <a class="tu typedef" href="#(anonymousnamespace)::AsyncThreadInfo" title='(anonymous namespace)::AsyncThreadInfo' data-type='llvm::unique_function&lt;void ()&gt;' data-ref="(anonymousnamespace)::AsyncThreadInfo" data-ref-filename="(anonymousnamespace)..AsyncThreadInfo">AsyncThreadInfo</a><a class="ref fn" href="../../include/llvm/ADT/FunctionExtras.h.html#_ZN4llvm15unique_functionIFT_DpT0_EEC1EONS0_IS4_EE" title='llvm::unique_function&lt;type-parameter-0-0 (type-parameter-0-1...)&gt;::unique_function&lt;type-parameter-0-0 (type-parameter-0-1...)&gt;' data-ref="_ZN4llvm15unique_functionIFT_DpT0_EEC1EONS0_IS4_EE" data-ref-filename="_ZN4llvm15unique_functionIFT_DpT0_EEC1EONS0_IS4_EE">(</a><span class="namespace">std::</span><span class='ref fn' title='std::move' data-ref="_ZSt4moveOT_" data-ref-filename="_ZSt4moveOT_">move</span>(<span class='refarg'><a class="local col9 ref" href="#29Func" title='Func' data-ref="29Func" data-ref-filename="29Func">Func</a></span>)),</td></tr>
+<tr><th id="130">130</th><td>                              <a class="ref fn fake" href="../../include/llvm/ADT/Optional.h.html#_ZN4llvm8OptionalC1ERKNS_8OptionalIT_EE" title='llvm::Optional::Optional&lt;T&gt;' data-ref="_ZN4llvm8OptionalC1ERKNS_8OptionalIT_EE" data-ref-filename="_ZN4llvm8OptionalC1ERKNS_8OptionalIT_EE"></a><a class="local col0 ref" href="#30StackSizeInBytes" title='StackSizeInBytes' data-ref="30StackSizeInBytes" data-ref-filename="30StackSizeInBytes">StackSizeInBytes</a>, <a class="tu type" href="#(anonymousnamespace)::JoiningPolicy" title='(anonymous namespace)::JoiningPolicy' data-ref="(anonymousnamespace)::JoiningPolicy" data-ref-filename="(anonymousnamespace)..JoiningPolicy">JoiningPolicy</a>::<a class="tu enum" href="#(anonymousnamespace)::JoiningPolicy::Detach" title='(anonymous namespace)::JoiningPolicy::Detach' data-use='r' data-ref="(anonymousnamespace)::JoiningPolicy::Detach" data-ref-filename="(anonymousnamespace)..JoiningPolicy..Detach">Detach</a>);</td></tr>
+<tr><th id="131">131</th><td>}</td></tr>
+<tr><th id="132">132</th><td></td></tr>
+<tr><th id="133">133</th><td><u>#<span data-ppcond="39">endif</span></u></td></tr>
+<tr><th id="134">134</th><td></td></tr>
+<tr><th id="135">135</th><td><a class="type" href="../../include/llvm/ADT/Optional.h.html#llvm::Optional" title='llvm::Optional' data-ref="llvm::Optional" data-ref-filename="llvm..Optional">Optional</a>&lt;<a class="type" href="../../include/llvm/Support/Threading.h.html#llvm::ThreadPoolStrategy" title='llvm::ThreadPoolStrategy' data-ref="llvm::ThreadPoolStrategy" data-ref-filename="llvm..ThreadPoolStrategy">ThreadPoolStrategy</a>&gt;</td></tr>
+<tr><th id="136">136</th><td><span class="namespace">llvm::</span><dfn class="decl def fn" id="_ZN4llvm23get_threadpool_strategyENS_9StringRefENS_18ThreadPoolStrategyE" title='llvm::get_threadpool_strategy' data-ref="_ZN4llvm23get_threadpool_strategyENS_9StringRefENS_18ThreadPoolStrategyE" data-ref-filename="_ZN4llvm23get_threadpool_strategyENS_9StringRefENS_18ThreadPoolStrategyE">get_threadpool_strategy</dfn>(<a class="type" href="../../include/llvm/ADT/StringRef.h.html#llvm::StringRef" title='llvm::StringRef' data-ref="llvm::StringRef" data-ref-filename="llvm..StringRef">StringRef</a> <dfn class="local col1 decl" id="31Num" title='Num' data-type='llvm::StringRef' data-ref="31Num" data-ref-filename="31Num">Num</dfn>, <a class="type" href="../../include/llvm/Support/Threading.h.html#llvm::ThreadPoolStrategy" title='llvm::ThreadPoolStrategy' data-ref="llvm::ThreadPoolStrategy" data-ref-filename="llvm..ThreadPoolStrategy">ThreadPoolStrategy</a> <dfn class="local col2 decl" id="32Default" title='Default' data-type='llvm::ThreadPoolStrategy' data-ref="32Default" data-ref-filename="32Default">Default</dfn>) {</td></tr>
+<tr><th id="137">137</th><td>  <b>if</b> (<a class="ref fn fake" href="../../include/llvm/ADT/StringRef.h.html#57" title='llvm::StringRef::StringRef' data-ref="_ZN4llvm9StringRefC1ERKS0_" data-ref-filename="_ZN4llvm9StringRefC1ERKS0_"></a><a class="local col1 ref" href="#31Num" title='Num' data-ref="31Num" data-ref-filename="31Num">Num</a> <a class="ref fn" href="../../include/llvm/ADT/StringRef.h.html#_ZN4llvmeqENS_9StringRefES0_" title='llvm::operator==' data-ref="_ZN4llvmeqENS_9StringRefES0_" data-ref-filename="_ZN4llvmeqENS_9StringRefES0_">==</a> <a class="ref fn fake" href="../../include/llvm/ADT/StringRef.h.html#_ZN4llvm9StringRefC1EPKc" title='llvm::StringRef::StringRef' data-ref="_ZN4llvm9StringRefC1EPKc" data-ref-filename="_ZN4llvm9StringRefC1EPKc"></a><q>"all"</q>)</td></tr>
+<tr><th id="138">138</th><td>    <b>return</b> <a class="ref fn fake" href="../../include/llvm/ADT/Optional.h.html#_ZN4llvm8OptionalC1EOT_" title='llvm::Optional::Optional&lt;T&gt;' data-ref="_ZN4llvm8OptionalC1EOT_" data-ref-filename="_ZN4llvm8OptionalC1EOT_"></a><span class="namespace">llvm::</span><a class="ref fn" href="../../include/llvm/Support/Threading.h.html#_ZN4llvm20hardware_concurrencyEj" title='llvm::hardware_concurrency' data-ref="_ZN4llvm20hardware_concurrencyEj" data-ref-filename="_ZN4llvm20hardware_concurrencyEj">hardware_concurrency</a>();</td></tr>
+<tr><th id="139">139</th><td>  <b>if</b> (<a class="local col1 ref" href="#31Num" title='Num' data-ref="31Num" data-ref-filename="31Num">Num</a>.<a class="ref fn" href="../../include/llvm/ADT/StringRef.h.html#_ZNK4llvm9StringRef5emptyEv" title='llvm::StringRef::empty' data-ref="_ZNK4llvm9StringRef5emptyEv" data-ref-filename="_ZNK4llvm9StringRef5emptyEv">empty</a>())</td></tr>
+<tr><th id="140">140</th><td>    <b>return</b> <a class="ref fn fake" href="../../include/llvm/ADT/Optional.h.html#_ZN4llvm8OptionalC1EOT_" title='llvm::Optional::Optional&lt;T&gt;' data-ref="_ZN4llvm8OptionalC1EOT_" data-ref-filename="_ZN4llvm8OptionalC1EOT_"></a><a class="local col2 ref" href="#32Default" title='Default' data-ref="32Default" data-ref-filename="32Default">Default</a>;</td></tr>
+<tr><th id="141">141</th><td>  <em>unsigned</em> <dfn class="local col3 decl" id="33V" title='V' data-type='unsigned int' data-ref="33V" data-ref-filename="33V">V</dfn>;</td></tr>
+<tr><th id="142">142</th><td>  <b>if</b> (<a class="local col1 ref" href="#31Num" title='Num' data-ref="31Num" data-ref-filename="31Num">Num</a>.<a class="ref fn" href="../../include/llvm/ADT/StringRef.h.html#_ZNK4llvm9StringRef12getAsIntegerEjRT_" title='llvm::StringRef::getAsInteger' data-ref="_ZNK4llvm9StringRef12getAsIntegerEjRT_" data-ref-filename="_ZNK4llvm9StringRef12getAsIntegerEjRT_">getAsInteger</a>(<var>10</var>, <span class='refarg'><a class="local col3 ref" href="#33V" title='V' data-ref="33V" data-ref-filename="33V">V</a></span>))</td></tr>
+<tr><th id="143">143</th><td>    <b>return</b> <a class="ref fn fake" href="../../include/llvm/ADT/Optional.h.html#_ZN4llvm8OptionalC1ENS_8NoneTypeE" title='llvm::Optional::Optional&lt;T&gt;' data-ref="_ZN4llvm8OptionalC1ENS_8NoneTypeE" data-ref-filename="_ZN4llvm8OptionalC1ENS_8NoneTypeE"></a><a class="ref" href="../../include/llvm/ADT/None.h.html#llvm::None" title='llvm::None' data-ref="llvm::None" data-ref-filename="llvm..None">None</a>; <i>// malformed 'Num' value</i></td></tr>
+<tr><th id="144">144</th><td>  <b>if</b> (<a class="local col3 ref" href="#33V" title='V' data-ref="33V" data-ref-filename="33V">V</a> == <var>0</var>)</td></tr>
+<tr><th id="145">145</th><td>    <b>return</b> <a class="ref fn fake" href="../../include/llvm/ADT/Optional.h.html#_ZN4llvm8OptionalC1EOT_" title='llvm::Optional::Optional&lt;T&gt;' data-ref="_ZN4llvm8OptionalC1EOT_" data-ref-filename="_ZN4llvm8OptionalC1EOT_"></a><a class="local col2 ref" href="#32Default" title='Default' data-ref="32Default" data-ref-filename="32Default">Default</a>;</td></tr>
+<tr><th id="146">146</th><td></td></tr>
+<tr><th id="147">147</th><td>  <i>// Do not take the Default into account. This effectively disables</i></td></tr>
+<tr><th id="148">148</th><td><i>  // heavyweight_hardware_concurrency() if the user asks for any number of</i></td></tr>
+<tr><th id="149">149</th><td><i>  // threads on the cmd-line.</i></td></tr>
+<tr><th id="150">150</th><td>  <a class="type" href="../../include/llvm/Support/Threading.h.html#llvm::ThreadPoolStrategy" title='llvm::ThreadPoolStrategy' data-ref="llvm::ThreadPoolStrategy" data-ref-filename="llvm..ThreadPoolStrategy">ThreadPoolStrategy</a> <dfn class="local col4 decl" id="34S" title='S' data-type='llvm::ThreadPoolStrategy' data-ref="34S" data-ref-filename="34S">S</dfn> = <span class="namespace">llvm::</span><a class="ref fn" href="../../include/llvm/Support/Threading.h.html#_ZN4llvm20hardware_concurrencyEj" title='llvm::hardware_concurrency' data-ref="_ZN4llvm20hardware_concurrencyEj" data-ref-filename="_ZN4llvm20hardware_concurrencyEj">hardware_concurrency</a>();</td></tr>
+<tr><th id="151">151</th><td>  <a class="local col4 ref" href="#34S" title='S' data-ref="34S" data-ref-filename="34S">S</a>.<a class="ref field" href="../../include/llvm/Support/Threading.h.html#llvm::ThreadPoolStrategy::ThreadsRequested" title='llvm::ThreadPoolStrategy::ThreadsRequested' data-ref="llvm::ThreadPoolStrategy::ThreadsRequested" data-ref-filename="llvm..ThreadPoolStrategy..ThreadsRequested">ThreadsRequested</a> = <a class="local col3 ref" href="#33V" title='V' data-ref="33V" data-ref-filename="33V">V</a>;</td></tr>
+<tr><th id="152">152</th><td>  <b>return</b> <a class="ref fn fake" href="../../include/llvm/ADT/Optional.h.html#_ZN4llvm8OptionalC1EOT_" title='llvm::Optional::Optional&lt;T&gt;' data-ref="_ZN4llvm8OptionalC1EOT_" data-ref-filename="_ZN4llvm8OptionalC1EOT_"></a><a class="local col4 ref" href="#34S" title='S' data-ref="34S" data-ref-filename="34S">S</a>;</td></tr>
+<tr><th id="153">153</th><td>}</td></tr>
+<tr><th id="154">154</th><td></td></tr>
+</table><hr/><p id='footer'>
+Generated on <em>2021-Jul-01</em> from project llvm revision <em>12</em>

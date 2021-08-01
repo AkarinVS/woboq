@@ -1,0 +1,8 @@
+<dec f='llvm/clang/include/clang/Serialization/ASTReader.h' l='1285' type='clang::ASTReader::ModuleFile *'/>
+<use f='llvm/clang/include/clang/Serialization/ASTReader.h' l='1292' u='w' c='_ZN5clang9ASTReader14ImportedModuleC1EPNS_13serialization10ModuleFileES4_NS_14SourceLocationE'/>
+<offset>0</offset>
+<use f='llvm/clang/lib/Serialization/ASTReader.cpp' l='4267' u='r' c='_ZN5clang9ASTReader7ReadASTEN4llvm9StringRefENS_13serialization10ModuleKindENS_14SourceLocationEjPNS1_15SmallVectorImplINS0_17ImportedSubmoduleEEE'/>
+<use f='llvm/clang/lib/Serialization/ASTReader.cpp' l='4294' u='r' c='_ZN5clang9ASTReader7ReadASTEN4llvm9StringRefENS_13serialization10ModuleKindENS_14SourceLocationEjPNS1_15SmallVectorImplINS0_17ImportedSubmoduleEEE'/>
+<use f='llvm/clang/lib/Serialization/ASTReader.cpp' l='4338' u='r' c='_ZN5clang9ASTReader7ReadASTEN4llvm9StringRefENS_13serialization10ModuleKindENS_14SourceLocationEjPNS1_15SmallVectorImplINS0_17ImportedSubmoduleEEE'/>
+<use f='llvm/clang/lib/Serialization/ASTReader.cpp' l='4449' u='r' c='_ZN5clang9ASTReader7ReadASTEN4llvm9StringRefENS_13serialization10ModuleKindENS_14SourceLocationEjPNS1_15SmallVectorImplINS0_17ImportedSubmoduleEEE'/>
+<use f='llvm/clang/lib/Serialization/ASTReader.cpp' l='4450' u='r' c='_ZN5clang9ASTReader7ReadASTEN4llvm9StringRefENS_13serialization10ModuleKindENS_14SourceLocationEjPNS1_15SmallVectorImplINS0_17ImportedSubmoduleEEE'/>

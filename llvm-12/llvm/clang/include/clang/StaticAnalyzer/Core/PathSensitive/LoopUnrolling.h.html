@@ -1,0 +1,65 @@
+<!doctype html>
+<html>
+<head>
+<meta name="viewport" content="width=device-width, initial-scale=1.0"><title>LoopUnrolling.h source code [llvm/clang/include/clang/StaticAnalyzer/Core/PathSensitive/LoopUnrolling.h] - Woboq Code Browser</title>
+<link rel="stylesheet" href="../../../../../../.././data/qtcreator.css" title="QtCreator"/>
+<link rel="alternate stylesheet" href="../../../../../../.././data/kdevelop.css" title="KDevelop"/>
+<script type="text/javascript" src="../../../../../../.././data/jquery/jquery.min.js"></script>
+<script type="text/javascript" src="../../../../../../.././data/jquery/jquery-ui.min.js"></script>
+<script>var file = 'llvm/clang/include/clang/StaticAnalyzer/Core/PathSensitive/LoopUnrolling.h'; var root_path = '../../../../../../..'; var data_path = '../../../../../../.././data'; var ecma_script_api_version = 2;</script>
+<script src='../../../../../../.././data/codebrowser.js'></script>
+</head>
+<body><div id='header'><h1 id='breadcrumb'><span>Browse the source code of </span><a href='../../../../../..'>llvm</a>/<a href='../../../../..'>clang</a>/<a href='../../../..'>include</a>/<a href='../../..'>clang</a>/<a href='../..'>StaticAnalyzer</a>/<a href='..'>Core</a>/<a href='./'>PathSensitive</a>/<a href='LoopUnrolling.h.html'>LoopUnrolling.h</a></h1></div>
+<hr/><div id='content'><table class="code">
+<tr><th id="1">1</th><td><i>//===--- LoopUnrolling.h - Unroll loops -------------------------*- C++ -*-===//</i></td></tr>
+<tr><th id="2">2</th><td><i>//</i></td></tr>
+<tr><th id="3">3</th><td><i>// Part of the LLVM Project, under the Apache License v2.0 with LLVM Exceptions.</i></td></tr>
+<tr><th id="4">4</th><td><i>// See <a href="https://llvm.org/LICENSE.txt">https://llvm.org/LICENSE.txt</a> for license information.</i></td></tr>
+<tr><th id="5">5</th><td><i>// SPDX-License-Identifier: Apache-2.0 WITH LLVM-exception</i></td></tr>
+<tr><th id="6">6</th><td><i>//</i></td></tr>
+<tr><th id="7">7</th><td><i>//===----------------------------------------------------------------------===//</i></td></tr>
+<tr><th id="8">8</th><td><i>///</i></td></tr>
+<tr><th id="9">9</th><td><i>/// This header contains the declarations of functions which are used to decide</i></td></tr>
+<tr><th id="10">10</th><td><i>/// which loops should be completely unrolled and mark their corresponding</i></td></tr>
+<tr><th id="11">11</th><td><i>/// CFGBlocks. It is done by tracking a stack of loops in the ProgramState. This</i></td></tr>
+<tr><th id="12">12</th><td><i>/// way specific loops can be marked as completely unrolled. For considering a</i></td></tr>
+<tr><th id="13">13</th><td><i>/// loop to be completely unrolled it has to fulfill the following requirements:</i></td></tr>
+<tr><th id="14">14</th><td><i>/// - Currently only forStmts can be considered.</i></td></tr>
+<tr><th id="15">15</th><td><i>/// - The bound has to be known.</i></td></tr>
+<tr><th id="16">16</th><td><i>/// - The counter variable has not escaped before/in the body of the loop and</i></td></tr>
+<tr><th id="17">17</th><td><i>///   changed only in the increment statement corresponding to the loop. It also</i></td></tr>
+<tr><th id="18">18</th><td><i>///   has to be initialized by a literal in the corresponding initStmt.</i></td></tr>
+<tr><th id="19">19</th><td><i>/// - Does not contain goto, switch and returnStmt.</i></td></tr>
+<tr><th id="20">20</th><td><i>///</i></td></tr>
+<tr><th id="21">21</th><td><i>///</i></td></tr>
+<tr><th id="22">22</th><td><i>//===----------------------------------------------------------------------===//</i></td></tr>
+<tr><th id="23">23</th><td></td></tr>
+<tr><th id="24">24</th><td><u>#<span data-ppcond="24">ifndef</span> <span class="macro" data-ref="_M/LLVM_CLANG_STATICANALYZER_CORE_PATHSENSITIVE_LOOPUNROLLING_H">LLVM_CLANG_STATICANALYZER_CORE_PATHSENSITIVE_LOOPUNROLLING_H</span></u></td></tr>
+<tr><th id="25">25</th><td><u>#define <dfn class="macro" id="_M/LLVM_CLANG_STATICANALYZER_CORE_PATHSENSITIVE_LOOPUNROLLING_H" data-ref="_M/LLVM_CLANG_STATICANALYZER_CORE_PATHSENSITIVE_LOOPUNROLLING_H">LLVM_CLANG_STATICANALYZER_CORE_PATHSENSITIVE_LOOPUNROLLING_H</dfn></u></td></tr>
+<tr><th id="26">26</th><td></td></tr>
+<tr><th id="27">27</th><td><u>#include <a href="../../../Analysis/CFG.h.html">"clang/Analysis/CFG.h"</a></u></td></tr>
+<tr><th id="28">28</th><td><u>#include <a href="ProgramState.h.html">"clang/StaticAnalyzer/Core/PathSensitive/ProgramState.h"</a></u></td></tr>
+<tr><th id="29">29</th><td><u>#include <a href="ExplodedGraph.h.html">"clang/StaticAnalyzer/Core/PathSensitive/ExplodedGraph.h"</a></u></td></tr>
+<tr><th id="30">30</th><td><b>namespace</b> <span class="namespace">clang</span> {</td></tr>
+<tr><th id="31">31</th><td><b>namespace</b> <span class="namespace">ento</span> {</td></tr>
+<tr><th id="32">32</th><td><b>class</b> <a class="type" href="AnalysisManager.h.html#clang::ento::AnalysisManager" title='clang::ento::AnalysisManager' data-ref="clang::ento::AnalysisManager" data-ref-filename="clang..ento..AnalysisManager" id="clang::ento::AnalysisManager">AnalysisManager</a>;</td></tr>
+<tr><th id="33">33</th><td></td></tr>
+<tr><th id="34">34</th><td><i class="doc">/// Returns if the given State indicates that is inside a completely unrolled</i></td></tr>
+<tr><th id="35">35</th><td><i class="doc">/// loop.</i></td></tr>
+<tr><th id="36">36</th><td><em>bool</em> <dfn class="decl fn" id="_ZN5clang4ento15isUnrolledStateEN4llvm18IntrusiveRefCntPtrIKNS0_12ProgramStateEEE" title='clang::ento::isUnrolledState' data-ref="_ZN5clang4ento15isUnrolledStateEN4llvm18IntrusiveRefCntPtrIKNS0_12ProgramStateEEE" data-ref-filename="_ZN5clang4ento15isUnrolledStateEN4llvm18IntrusiveRefCntPtrIKNS0_12ProgramStateEEE">isUnrolledState</dfn>(<a class="typedef" href="ProgramState_Fwd.h.html#clang::ento::ProgramStateRef" title='clang::ento::ProgramStateRef' data-type='IntrusiveRefCntPtr&lt;const clang::ento::ProgramState&gt;' data-ref="clang::ento::ProgramStateRef" data-ref-filename="clang..ento..ProgramStateRef">ProgramStateRef</a> <dfn class="local col3 decl" id="3State" title='State' data-type='clang::ento::ProgramStateRef' data-ref="3State" data-ref-filename="3State">State</dfn>);</td></tr>
+<tr><th id="37">37</th><td></td></tr>
+<tr><th id="38">38</th><td><i class="doc">/// Updates the stack of loops contained by the ProgramState.</i></td></tr>
+<tr><th id="39">39</th><td><a class="typedef" href="ProgramState_Fwd.h.html#clang::ento::ProgramStateRef" title='clang::ento::ProgramStateRef' data-type='IntrusiveRefCntPtr&lt;const clang::ento::ProgramState&gt;' data-ref="clang::ento::ProgramStateRef" data-ref-filename="clang..ento..ProgramStateRef">ProgramStateRef</a> <dfn class="decl fn" id="_ZN5clang4ento15updateLoopStackEPKNS_4StmtERNS_10ASTContextEPNS0_12ExplodedNodeEj" title='clang::ento::updateLoopStack' data-ref="_ZN5clang4ento15updateLoopStackEPKNS_4StmtERNS_10ASTContextEPNS0_12ExplodedNodeEj" data-ref-filename="_ZN5clang4ento15updateLoopStackEPKNS_4StmtERNS_10ASTContextEPNS0_12ExplodedNodeEj">updateLoopStack</dfn>(<em>const</em> <a class="type" href="../../../AST/Stmt.h.html#clang::Stmt" title='clang::Stmt' data-ref="clang::Stmt" data-ref-filename="clang..Stmt">Stmt</a> *<dfn class="local col4 decl" id="4LoopStmt" title='LoopStmt' data-type='const clang::Stmt *' data-ref="4LoopStmt" data-ref-filename="4LoopStmt">LoopStmt</dfn>, <a class="type" href="../../../AST/ASTContext.h.html#clang::ASTContext" title='clang::ASTContext' data-ref="clang::ASTContext" data-ref-filename="clang..ASTContext">ASTContext</a> &amp;<dfn class="local col5 decl" id="5ASTCtx" title='ASTCtx' data-type='clang::ASTContext &amp;' data-ref="5ASTCtx" data-ref-filename="5ASTCtx">ASTCtx</dfn>,</td></tr>
+<tr><th id="40">40</th><td>                                <a class="type" href="ExplodedGraph.h.html#clang::ento::ExplodedNode" title='clang::ento::ExplodedNode' data-ref="clang::ento::ExplodedNode" data-ref-filename="clang..ento..ExplodedNode">ExplodedNode</a>* <dfn class="local col6 decl" id="6Pred" title='Pred' data-type='clang::ento::ExplodedNode *' data-ref="6Pred" data-ref-filename="6Pred">Pred</dfn>, <em>unsigned</em> <dfn class="local col7 decl" id="7maxVisitOnPath" title='maxVisitOnPath' data-type='unsigned int' data-ref="7maxVisitOnPath" data-ref-filename="7maxVisitOnPath">maxVisitOnPath</dfn>);</td></tr>
+<tr><th id="41">41</th><td></td></tr>
+<tr><th id="42">42</th><td><i class="doc">/// Updates the given ProgramState. In current implementation it removes the top</i></td></tr>
+<tr><th id="43">43</th><td><i class="doc">/// element of the stack of loops.</i></td></tr>
+<tr><th id="44">44</th><td><a class="typedef" href="ProgramState_Fwd.h.html#clang::ento::ProgramStateRef" title='clang::ento::ProgramStateRef' data-type='IntrusiveRefCntPtr&lt;const clang::ento::ProgramState&gt;' data-ref="clang::ento::ProgramStateRef" data-ref-filename="clang..ento..ProgramStateRef">ProgramStateRef</a> <dfn class="decl fn" id="_ZN5clang4ento14processLoopEndEPKNS_4StmtEN4llvm18IntrusiveRefCntPtrIKNS0_12ProgramStateEEE" title='clang::ento::processLoopEnd' data-ref="_ZN5clang4ento14processLoopEndEPKNS_4StmtEN4llvm18IntrusiveRefCntPtrIKNS0_12ProgramStateEEE" data-ref-filename="_ZN5clang4ento14processLoopEndEPKNS_4StmtEN4llvm18IntrusiveRefCntPtrIKNS0_12ProgramStateEEE">processLoopEnd</dfn>(<em>const</em> <a class="type" href="../../../AST/Stmt.h.html#clang::Stmt" title='clang::Stmt' data-ref="clang::Stmt" data-ref-filename="clang..Stmt">Stmt</a> *<dfn class="local col8 decl" id="8LoopStmt" title='LoopStmt' data-type='const clang::Stmt *' data-ref="8LoopStmt" data-ref-filename="8LoopStmt">LoopStmt</dfn>, <a class="typedef" href="ProgramState_Fwd.h.html#clang::ento::ProgramStateRef" title='clang::ento::ProgramStateRef' data-type='IntrusiveRefCntPtr&lt;const clang::ento::ProgramState&gt;' data-ref="clang::ento::ProgramStateRef" data-ref-filename="clang..ento..ProgramStateRef">ProgramStateRef</a> <dfn class="local col9 decl" id="9State" title='State' data-type='clang::ento::ProgramStateRef' data-ref="9State" data-ref-filename="9State">State</dfn>);</td></tr>
+<tr><th id="45">45</th><td></td></tr>
+<tr><th id="46">46</th><td>} <i>// end namespace ento</i></td></tr>
+<tr><th id="47">47</th><td>} <i>// end namespace clang</i></td></tr>
+<tr><th id="48">48</th><td></td></tr>
+<tr><th id="49">49</th><td><u>#<span data-ppcond="24">endif</span></u></td></tr>
+<tr><th id="50">50</th><td></td></tr>
+</table><hr/><p id='footer'>
+Generated while processing <a href='../../../../../lib/StaticAnalyzer/Core/ExprEngine.cpp.html'>llvm/clang/lib/StaticAnalyzer/Core/ExprEngine.cpp</a><br/>Generated on <em>2021-Jul-01</em> from project llvm revision <em>12</em>

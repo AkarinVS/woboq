@@ -1,0 +1,25 @@
+<use f='llvm/llvm/tools/llvm-pdbutil/LinePrinter.h' l='65' u='a' c='_ZN4llvm3pdb11LinePrinter9getStreamEv'/>
+<dec f='llvm/llvm/tools/llvm-pdbutil/LinePrinter.h' l='81' type='llvm::raw_ostream &amp;'/>
+<offset>0</offset>
+<use f='llvm/llvm/tools/llvm-pdbutil/LinePrinter.cpp' l='54' u='w' c='_ZN4llvm3pdb11LinePrinterC1EibRNS_11raw_ostreamE'/>
+<use f='llvm/llvm/tools/llvm-pdbutil/LinePrinter.cpp' l='83' u='m' c='_ZN4llvm3pdb11LinePrinter7NewLineEv'/>
+<use f='llvm/llvm/tools/llvm-pdbutil/LinePrinter.cpp' l='84' u='m' c='_ZN4llvm3pdb11LinePrinter7NewLineEv'/>
+<use f='llvm/llvm/tools/llvm-pdbutil/LinePrinter.cpp' l='87' u='a' c='_ZN4llvm3pdb11LinePrinter5printERKNS_5TwineE'/>
+<use f='llvm/llvm/tools/llvm-pdbutil/LinePrinter.cpp' l='91' u='a' c='_ZN4llvm3pdb11LinePrinter9printLineERKNS_5TwineE'/>
+<use f='llvm/llvm/tools/llvm-pdbutil/LinePrinter.cpp' l='105' u='m' c='_ZN4llvm3pdb11LinePrinter12formatBinaryENS_9StringRefENS_8ArrayRefIhEEj'/>
+<use f='llvm/llvm/tools/llvm-pdbutil/LinePrinter.cpp' l='107' u='m' c='_ZN4llvm3pdb11LinePrinter12formatBinaryENS_9StringRefENS_8ArrayRefIhEEj'/>
+<use f='llvm/llvm/tools/llvm-pdbutil/LinePrinter.cpp' l='108' u='m' c='_ZN4llvm3pdb11LinePrinter12formatBinaryENS_9StringRefENS_8ArrayRefIhEEj'/>
+<use f='llvm/llvm/tools/llvm-pdbutil/LinePrinter.cpp' l='112' u='m' c='_ZN4llvm3pdb11LinePrinter12formatBinaryENS_9StringRefENS_8ArrayRefIhEEj'/>
+<use f='llvm/llvm/tools/llvm-pdbutil/LinePrinter.cpp' l='118' u='m' c='_ZN4llvm3pdb11LinePrinter12formatBinaryENS_9StringRefENS_8ArrayRefIhEEmj'/>
+<use f='llvm/llvm/tools/llvm-pdbutil/LinePrinter.cpp' l='120' u='m' c='_ZN4llvm3pdb11LinePrinter12formatBinaryENS_9StringRefENS_8ArrayRefIhEEmj'/>
+<use f='llvm/llvm/tools/llvm-pdbutil/LinePrinter.cpp' l='122' u='m' c='_ZN4llvm3pdb11LinePrinter12formatBinaryENS_9StringRefENS_8ArrayRefIhEEmj'/>
+<use f='llvm/llvm/tools/llvm-pdbutil/LinePrinter.cpp' l='126' u='m' c='_ZN4llvm3pdb11LinePrinter12formatBinaryENS_9StringRefENS_8ArrayRefIhEEmj'/>
+<use f='llvm/llvm/tools/llvm-pdbutil/LinePrinter.cpp' l='220' u='m' c='_ZN4llvm3pdb11LinePrinter19formatMsfStreamDataENS_9StringRefERNS0_7PDBFileERKNS_3msf15MSFStreamLayoutENS_18BinarySubstreamRefE'/>
+<use f='llvm/llvm/tools/llvm-pdbutil/LinePrinter.cpp' l='222' u='m' c='_ZN4llvm3pdb11LinePrinter19formatMsfStreamDataENS_9StringRefERNS0_7PDBFileERKNS_3msf15MSFStreamLayoutENS_18BinarySubstreamRefE'/>
+<use f='llvm/llvm/tools/llvm-pdbutil/LinePrinter.cpp' l='233' u='m' c='_ZN4llvm3pdb11LinePrinter19formatMsfStreamDataENS_9StringRefERNS0_7PDBFileERKNS_3msf15MSFStreamLayoutENS_18BinarySubstreamRefE'/>
+<use f='llvm/llvm/tools/llvm-pdbutil/LinePrinter.cpp' l='237' u='m' c='_ZN4llvm3pdb11LinePrinter19formatMsfStreamDataENS_9StringRefERNS0_7PDBFileERKNS_3msf15MSFStreamLayoutENS_18BinarySubstreamRefE'/>
+<use f='llvm/llvm/tools/llvm-pdbutil/LinePrinter.cpp' l='243' u='m' c='_ZN4llvm3pdb11LinePrinter19formatMsfStreamDataENS_9StringRefERNS0_7PDBFileERKNS_3msf15MSFStreamLayoutENS_18BinarySubstreamRefE'/>
+<use f='llvm/llvm/tools/llvm-pdbutil/LinePrinter.cpp' l='254' u='m' c='_ZN4llvm3pdb11LinePrinter21formatMsfStreamBlocksERNS0_7PDBFileERKNS_3msf15MSFStreamLayoutE'/>
+<use f='llvm/llvm/tools/llvm-pdbutil/LinePrinter.cpp' l='260' u='m' c='_ZN4llvm3pdb11LinePrinter21formatMsfStreamBlocksERNS0_7PDBFileERKNS_3msf15MSFStreamLayoutE'/>
+<use f='llvm/llvm/tools/llvm-pdbutil/LinePrinter.cpp' l='263' u='m' c='_ZN4llvm3pdb11LinePrinter21formatMsfStreamBlocksERNS0_7PDBFileERKNS_3msf15MSFStreamLayoutE'/>
+<use f='llvm/llvm/tools/llvm-pdbutil/LinePrinter.cpp' l='288' u='r' c='_ZN4llvm3pdb9WithColorC1ERNS0_11LinePrinterENS0_13PDB_ColorItemE'/>

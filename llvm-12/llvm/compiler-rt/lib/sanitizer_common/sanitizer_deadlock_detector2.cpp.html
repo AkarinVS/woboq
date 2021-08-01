@@ -1,0 +1,439 @@
+<!doctype html>
+<html>
+<head>
+<meta name="viewport" content="width=device-width, initial-scale=1.0"><title>sanitizer_deadlock_detector2.cpp source code [llvm/compiler-rt/lib/sanitizer_common/sanitizer_deadlock_detector2.cpp] - Woboq Code Browser</title>
+<link rel="stylesheet" href="../../../.././data/qtcreator.css" title="QtCreator"/>
+<link rel="alternate stylesheet" href="../../../.././data/kdevelop.css" title="KDevelop"/>
+<script type="text/javascript" src="../../../.././data/jquery/jquery.min.js"></script>
+<script type="text/javascript" src="../../../.././data/jquery/jquery-ui.min.js"></script>
+<script>var file = 'llvm/compiler-rt/lib/sanitizer_common/sanitizer_deadlock_detector2.cpp'; var root_path = '../../../..'; var data_path = '../../../.././data'; var ecma_script_api_version = 2;</script>
+<script src='../../../.././data/codebrowser.js'></script>
+</head>
+<body><div id='header'><h1 id='breadcrumb'><span>Browse the source code of </span><a href='../../..'>llvm</a>/<a href='../..'>compiler-rt</a>/<a href='..'>lib</a>/<a href='./'>sanitizer_common</a>/<a href='sanitizer_deadlock_detector2.cpp.html'>sanitizer_deadlock_detector2.cpp</a></h1></div>
+<hr/><div id='content'><table class="code">
+<tr><th id="1">1</th><td><i>//===-- sanitizer_deadlock_detector2.cpp ----------------------------------===//</i></td></tr>
+<tr><th id="2">2</th><td><i>//</i></td></tr>
+<tr><th id="3">3</th><td><i>// Part of the LLVM Project, under the Apache License v2.0 with LLVM Exceptions.</i></td></tr>
+<tr><th id="4">4</th><td><i>// See <a href="https://llvm.org/LICENSE.txt">https://llvm.org/LICENSE.txt</a> for license information.</i></td></tr>
+<tr><th id="5">5</th><td><i>// SPDX-License-Identifier: Apache-2.0 WITH LLVM-exception</i></td></tr>
+<tr><th id="6">6</th><td><i>//</i></td></tr>
+<tr><th id="7">7</th><td><i>//===----------------------------------------------------------------------===//</i></td></tr>
+<tr><th id="8">8</th><td><i>//</i></td></tr>
+<tr><th id="9">9</th><td><i>// Deadlock detector implementation based on adjacency lists.</i></td></tr>
+<tr><th id="10">10</th><td><i>//</i></td></tr>
+<tr><th id="11">11</th><td><i>//===----------------------------------------------------------------------===//</i></td></tr>
+<tr><th id="12">12</th><td></td></tr>
+<tr><th id="13">13</th><td><u>#include <a href="sanitizer_deadlock_detector_interface.h.html">"sanitizer_deadlock_detector_interface.h"</a></u></td></tr>
+<tr><th id="14">14</th><td><u>#include <a href="sanitizer_common.h.html">"sanitizer_common.h"</a></u></td></tr>
+<tr><th id="15">15</th><td><u>#include <a href="sanitizer_allocator_internal.h.html">"sanitizer_allocator_internal.h"</a></u></td></tr>
+<tr><th id="16">16</th><td><u>#include <a href="sanitizer_placement_new.h.html">"sanitizer_placement_new.h"</a></u></td></tr>
+<tr><th id="17">17</th><td><u>#include <a href="sanitizer_mutex.h.html">"sanitizer_mutex.h"</a></u></td></tr>
+<tr><th id="18">18</th><td></td></tr>
+<tr><th id="19">19</th><td><u>#<span data-ppcond="19">if</span> <a class="macro" href="sanitizer_deadlock_detector_interface.h.html#19" title="1" data-ref="_M/SANITIZER_DEADLOCK_DETECTOR_VERSION">SANITIZER_DEADLOCK_DETECTOR_VERSION</a> == 2</u></td></tr>
+<tr><th id="20">20</th><td></td></tr>
+<tr><th id="21">21</th><td><b>namespace</b> __sanitizer {</td></tr>
+<tr><th id="22">22</th><td></td></tr>
+<tr><th id="23">23</th><td><em>const</em> <em>int</em> kMaxNesting = <var>64</var>;</td></tr>
+<tr><th id="24">24</th><td><em>const</em> u32 kNoId = -<var>1</var>;</td></tr>
+<tr><th id="25">25</th><td><em>const</em> u32 kEndId = -<var>2</var>;</td></tr>
+<tr><th id="26">26</th><td><em>const</em> <em>int</em> kMaxLink = <var>8</var>;</td></tr>
+<tr><th id="27">27</th><td><em>const</em> <em>int</em> kL1Size = <var>1024</var>;</td></tr>
+<tr><th id="28">28</th><td><em>const</em> <em>int</em> kL2Size = <var>1024</var>;</td></tr>
+<tr><th id="29">29</th><td><em>const</em> <em>int</em> kMaxMutex = kL1Size * kL2Size;</td></tr>
+<tr><th id="30">30</th><td></td></tr>
+<tr><th id="31">31</th><td><b>struct</b> Id {</td></tr>
+<tr><th id="32">32</th><td>  u32 id;</td></tr>
+<tr><th id="33">33</th><td>  u32 seq;</td></tr>
+<tr><th id="34">34</th><td></td></tr>
+<tr><th id="35">35</th><td>  <b>explicit</b> Id(u32 id = <var>0</var>, u32 seq = <var>0</var>)</td></tr>
+<tr><th id="36">36</th><td>      : id(id)</td></tr>
+<tr><th id="37">37</th><td>      , seq(seq) {</td></tr>
+<tr><th id="38">38</th><td>  }</td></tr>
+<tr><th id="39">39</th><td>};</td></tr>
+<tr><th id="40">40</th><td></td></tr>
+<tr><th id="41">41</th><td><b>struct</b> Link {</td></tr>
+<tr><th id="42">42</th><td>  u32 id;</td></tr>
+<tr><th id="43">43</th><td>  u32 seq;</td></tr>
+<tr><th id="44">44</th><td>  u32 tid;</td></tr>
+<tr><th id="45">45</th><td>  u32 stk0;</td></tr>
+<tr><th id="46">46</th><td>  u32 stk1;</td></tr>
+<tr><th id="47">47</th><td></td></tr>
+<tr><th id="48">48</th><td>  <b>explicit</b> Link(u32 id = <var>0</var>, u32 seq = <var>0</var>, u32 tid = <var>0</var>, u32 s0 = <var>0</var>, u32 s1 = <var>0</var>)</td></tr>
+<tr><th id="49">49</th><td>      : id(id)</td></tr>
+<tr><th id="50">50</th><td>      , seq(seq)</td></tr>
+<tr><th id="51">51</th><td>      , tid(tid)</td></tr>
+<tr><th id="52">52</th><td>      , stk0(s0)</td></tr>
+<tr><th id="53">53</th><td>      , stk1(s1) {</td></tr>
+<tr><th id="54">54</th><td>  }</td></tr>
+<tr><th id="55">55</th><td>};</td></tr>
+<tr><th id="56">56</th><td></td></tr>
+<tr><th id="57">57</th><td><b>struct</b> DDPhysicalThread {</td></tr>
+<tr><th id="58">58</th><td>  DDReport rep;</td></tr>
+<tr><th id="59">59</th><td>  <em>bool</em> report_pending;</td></tr>
+<tr><th id="60">60</th><td>  <em>bool</em> visited[kMaxMutex];</td></tr>
+<tr><th id="61">61</th><td>  Link pending[kMaxMutex];</td></tr>
+<tr><th id="62">62</th><td>  Link path[kMaxMutex];</td></tr>
+<tr><th id="63">63</th><td>};</td></tr>
+<tr><th id="64">64</th><td></td></tr>
+<tr><th id="65">65</th><td><b>struct</b> ThreadMutex {</td></tr>
+<tr><th id="66">66</th><td>  u32 id;</td></tr>
+<tr><th id="67">67</th><td>  u32 stk;</td></tr>
+<tr><th id="68">68</th><td>};</td></tr>
+<tr><th id="69">69</th><td></td></tr>
+<tr><th id="70">70</th><td><b>struct</b> DDLogicalThread {</td></tr>
+<tr><th id="71">71</th><td>  u64         ctx;</td></tr>
+<tr><th id="72">72</th><td>  ThreadMutex locked[kMaxNesting];</td></tr>
+<tr><th id="73">73</th><td>  <em>int</em>         nlocked;</td></tr>
+<tr><th id="74">74</th><td>};</td></tr>
+<tr><th id="75">75</th><td></td></tr>
+<tr><th id="76">76</th><td><b>struct</b> Mutex {</td></tr>
+<tr><th id="77">77</th><td>  StaticSpinMutex mtx;</td></tr>
+<tr><th id="78">78</th><td>  u32 seq;</td></tr>
+<tr><th id="79">79</th><td>  <em>int</em> nlink;</td></tr>
+<tr><th id="80">80</th><td>  Link link[kMaxLink];</td></tr>
+<tr><th id="81">81</th><td>};</td></tr>
+<tr><th id="82">82</th><td></td></tr>
+<tr><th id="83">83</th><td><b>struct</b> DD final : <b>public</b> DDetector {</td></tr>
+<tr><th id="84">84</th><td>  <b>explicit</b> DD(<em>const</em> DDFlags *flags);</td></tr>
+<tr><th id="85">85</th><td></td></tr>
+<tr><th id="86">86</th><td>  DDPhysicalThread* CreatePhysicalThread();</td></tr>
+<tr><th id="87">87</th><td>  <em>void</em> DestroyPhysicalThread(DDPhysicalThread *pt);</td></tr>
+<tr><th id="88">88</th><td></td></tr>
+<tr><th id="89">89</th><td>  DDLogicalThread* CreateLogicalThread(u64 ctx);</td></tr>
+<tr><th id="90">90</th><td>  <em>void</em> DestroyLogicalThread(DDLogicalThread *lt);</td></tr>
+<tr><th id="91">91</th><td></td></tr>
+<tr><th id="92">92</th><td>  <em>void</em> MutexInit(DDCallback *cb, DDMutex *m);</td></tr>
+<tr><th id="93">93</th><td>  <em>void</em> MutexBeforeLock(DDCallback *cb, DDMutex *m, <em>bool</em> wlock);</td></tr>
+<tr><th id="94">94</th><td>  <em>void</em> MutexAfterLock(DDCallback *cb, DDMutex *m, <em>bool</em> wlock,</td></tr>
+<tr><th id="95">95</th><td>      <em>bool</em> trylock);</td></tr>
+<tr><th id="96">96</th><td>  <em>void</em> MutexBeforeUnlock(DDCallback *cb, DDMutex *m, <em>bool</em> wlock);</td></tr>
+<tr><th id="97">97</th><td>  <em>void</em> MutexDestroy(DDCallback *cb, DDMutex *m);</td></tr>
+<tr><th id="98">98</th><td></td></tr>
+<tr><th id="99">99</th><td>  DDReport *GetReport(DDCallback *cb);</td></tr>
+<tr><th id="100">100</th><td></td></tr>
+<tr><th id="101">101</th><td>  <em>void</em> CycleCheck(DDPhysicalThread *pt, DDLogicalThread *lt, DDMutex *mtx);</td></tr>
+<tr><th id="102">102</th><td>  <em>void</em> Report(DDPhysicalThread *pt, DDLogicalThread *lt, <em>int</em> npath);</td></tr>
+<tr><th id="103">103</th><td>  u32 allocateId(DDCallback *cb);</td></tr>
+<tr><th id="104">104</th><td>  Mutex *getMutex(u32 id);</td></tr>
+<tr><th id="105">105</th><td>  u32 getMutexId(Mutex *m);</td></tr>
+<tr><th id="106">106</th><td></td></tr>
+<tr><th id="107">107</th><td>  DDFlags flags;</td></tr>
+<tr><th id="108">108</th><td></td></tr>
+<tr><th id="109">109</th><td>  Mutex* mutex[kL1Size];</td></tr>
+<tr><th id="110">110</th><td></td></tr>
+<tr><th id="111">111</th><td>  SpinMutex mtx;</td></tr>
+<tr><th id="112">112</th><td>  InternalMmapVector&lt;u32&gt; free_id;</td></tr>
+<tr><th id="113">113</th><td>  <em>int</em> id_gen = <var>0</var>;</td></tr>
+<tr><th id="114">114</th><td>};</td></tr>
+<tr><th id="115">115</th><td></td></tr>
+<tr><th id="116">116</th><td>DDetector *DDetector::Create(<em>const</em> DDFlags *flags) {</td></tr>
+<tr><th id="117">117</th><td>  (<em>void</em>)flags;</td></tr>
+<tr><th id="118">118</th><td>  <em>void</em> *mem = MmapOrDie(<b>sizeof</b>(DD), <q>"deadlock detector"</q>);</td></tr>
+<tr><th id="119">119</th><td>  <b>return</b> <b>new</b>(mem) DD(flags);</td></tr>
+<tr><th id="120">120</th><td>}</td></tr>
+<tr><th id="121">121</th><td></td></tr>
+<tr><th id="122">122</th><td>DD::DD(<em>const</em> DDFlags *flags) : flags(*flags) { free_id.reserve(<var>1024</var>); }</td></tr>
+<tr><th id="123">123</th><td></td></tr>
+<tr><th id="124">124</th><td>DDPhysicalThread* DD::CreatePhysicalThread() {</td></tr>
+<tr><th id="125">125</th><td>  DDPhysicalThread *pt = (DDPhysicalThread*)MmapOrDie(<b>sizeof</b>(DDPhysicalThread),</td></tr>
+<tr><th id="126">126</th><td>      <q>"deadlock detector (physical thread)"</q>);</td></tr>
+<tr><th id="127">127</th><td>  <b>return</b> pt;</td></tr>
+<tr><th id="128">128</th><td>}</td></tr>
+<tr><th id="129">129</th><td></td></tr>
+<tr><th id="130">130</th><td><em>void</em> DD::DestroyPhysicalThread(DDPhysicalThread *pt) {</td></tr>
+<tr><th id="131">131</th><td>  pt-&gt;~DDPhysicalThread();</td></tr>
+<tr><th id="132">132</th><td>  UnmapOrDie(pt, <b>sizeof</b>(DDPhysicalThread));</td></tr>
+<tr><th id="133">133</th><td>}</td></tr>
+<tr><th id="134">134</th><td></td></tr>
+<tr><th id="135">135</th><td>DDLogicalThread* DD::CreateLogicalThread(u64 ctx) {</td></tr>
+<tr><th id="136">136</th><td>  DDLogicalThread *lt = (DDLogicalThread*)InternalAlloc(</td></tr>
+<tr><th id="137">137</th><td>      <b>sizeof</b>(DDLogicalThread));</td></tr>
+<tr><th id="138">138</th><td>  lt-&gt;ctx = ctx;</td></tr>
+<tr><th id="139">139</th><td>  lt-&gt;nlocked = <var>0</var>;</td></tr>
+<tr><th id="140">140</th><td>  <b>return</b> lt;</td></tr>
+<tr><th id="141">141</th><td>}</td></tr>
+<tr><th id="142">142</th><td></td></tr>
+<tr><th id="143">143</th><td><em>void</em> DD::DestroyLogicalThread(DDLogicalThread *lt) {</td></tr>
+<tr><th id="144">144</th><td>  lt-&gt;~DDLogicalThread();</td></tr>
+<tr><th id="145">145</th><td>  InternalFree(lt);</td></tr>
+<tr><th id="146">146</th><td>}</td></tr>
+<tr><th id="147">147</th><td></td></tr>
+<tr><th id="148">148</th><td><em>void</em> DD::MutexInit(DDCallback *cb, DDMutex *m) {</td></tr>
+<tr><th id="149">149</th><td>  VPrintf(<var>2</var>, <q>"#%llu: DD::MutexInit(%p)\n"</q>, cb-&gt;lt-&gt;ctx, m);</td></tr>
+<tr><th id="150">150</th><td>  m-&gt;id = kNoId;</td></tr>
+<tr><th id="151">151</th><td>  m-&gt;recursion = <var>0</var>;</td></tr>
+<tr><th id="152">152</th><td>  atomic_store(&amp;m-&gt;owner, <var>0</var>, memory_order_relaxed);</td></tr>
+<tr><th id="153">153</th><td>}</td></tr>
+<tr><th id="154">154</th><td></td></tr>
+<tr><th id="155">155</th><td>Mutex *DD::getMutex(u32 id) {</td></tr>
+<tr><th id="156">156</th><td>  <b>return</b> &amp;mutex[id / kL2Size][id % kL2Size];</td></tr>
+<tr><th id="157">157</th><td>}</td></tr>
+<tr><th id="158">158</th><td></td></tr>
+<tr><th id="159">159</th><td>u32 DD::getMutexId(Mutex *m) {</td></tr>
+<tr><th id="160">160</th><td>  <b>for</b> (<em>int</em> i = <var>0</var>; i &lt; kL1Size; i++) {</td></tr>
+<tr><th id="161">161</th><td>    Mutex *tab = mutex[i];</td></tr>
+<tr><th id="162">162</th><td>    <b>if</b> (tab == <var>0</var>)</td></tr>
+<tr><th id="163">163</th><td>      <b>break</b>;</td></tr>
+<tr><th id="164">164</th><td>    <b>if</b> (m &gt;= tab &amp;&amp; m &lt; tab + kL2Size)</td></tr>
+<tr><th id="165">165</th><td>      <b>return</b> i * kL2Size + (m - tab);</td></tr>
+<tr><th id="166">166</th><td>  }</td></tr>
+<tr><th id="167">167</th><td>  <b>return</b> -<var>1</var>;</td></tr>
+<tr><th id="168">168</th><td>}</td></tr>
+<tr><th id="169">169</th><td></td></tr>
+<tr><th id="170">170</th><td>u32 DD::allocateId(DDCallback *cb) {</td></tr>
+<tr><th id="171">171</th><td>  u32 id = -<var>1</var>;</td></tr>
+<tr><th id="172">172</th><td>  SpinMutexLock l(&amp;mtx);</td></tr>
+<tr><th id="173">173</th><td>  <b>if</b> (free_id.size() &gt; <var>0</var>) {</td></tr>
+<tr><th id="174">174</th><td>    id = free_id.back();</td></tr>
+<tr><th id="175">175</th><td>    free_id.pop_back();</td></tr>
+<tr><th id="176">176</th><td>  } <b>else</b> {</td></tr>
+<tr><th id="177">177</th><td>    CHECK_LT(id_gen, kMaxMutex);</td></tr>
+<tr><th id="178">178</th><td>    <b>if</b> ((id_gen % kL2Size) == <var>0</var>) {</td></tr>
+<tr><th id="179">179</th><td>      mutex[id_gen / kL2Size] = (Mutex*)MmapOrDie(kL2Size * <b>sizeof</b>(Mutex),</td></tr>
+<tr><th id="180">180</th><td>          <q>"deadlock detector (mutex table)"</q>);</td></tr>
+<tr><th id="181">181</th><td>    }</td></tr>
+<tr><th id="182">182</th><td>    id = id_gen++;</td></tr>
+<tr><th id="183">183</th><td>  }</td></tr>
+<tr><th id="184">184</th><td>  CHECK_LE(id, kMaxMutex);</td></tr>
+<tr><th id="185">185</th><td>  VPrintf(<var>3</var>, <q>"#%llu: DD::allocateId assign id %d\n"</q>, cb-&gt;lt-&gt;ctx, id);</td></tr>
+<tr><th id="186">186</th><td>  <b>return</b> id;</td></tr>
+<tr><th id="187">187</th><td>}</td></tr>
+<tr><th id="188">188</th><td></td></tr>
+<tr><th id="189">189</th><td><em>void</em> DD::MutexBeforeLock(DDCallback *cb, DDMutex *m, <em>bool</em> wlock) {</td></tr>
+<tr><th id="190">190</th><td>  VPrintf(<var>2</var>, <q>"#%llu: DD::MutexBeforeLock(%p, wlock=%d) nlocked=%d\n"</q>,</td></tr>
+<tr><th id="191">191</th><td>      cb-&gt;lt-&gt;ctx, m, wlock, cb-&gt;lt-&gt;nlocked);</td></tr>
+<tr><th id="192">192</th><td>  DDPhysicalThread *pt = cb-&gt;pt;</td></tr>
+<tr><th id="193">193</th><td>  DDLogicalThread *lt = cb-&gt;lt;</td></tr>
+<tr><th id="194">194</th><td></td></tr>
+<tr><th id="195">195</th><td>  uptr owner = atomic_load(&amp;m-&gt;owner, memory_order_relaxed);</td></tr>
+<tr><th id="196">196</th><td>  <b>if</b> (owner == (uptr)cb-&gt;lt) {</td></tr>
+<tr><th id="197">197</th><td>    VPrintf(<var>3</var>, <q>"#%llu: DD::MutexBeforeLock recursive\n"</q>,</td></tr>
+<tr><th id="198">198</th><td>        cb-&gt;lt-&gt;ctx);</td></tr>
+<tr><th id="199">199</th><td>    <b>return</b>;</td></tr>
+<tr><th id="200">200</th><td>  }</td></tr>
+<tr><th id="201">201</th><td></td></tr>
+<tr><th id="202">202</th><td>  CHECK_LE(lt-&gt;nlocked, kMaxNesting);</td></tr>
+<tr><th id="203">203</th><td></td></tr>
+<tr><th id="204">204</th><td>  <i>// FIXME(dvyukov): don't allocate id if lt-&gt;nlocked == 0?</i></td></tr>
+<tr><th id="205">205</th><td>  <b>if</b> (m-&gt;id == kNoId)</td></tr>
+<tr><th id="206">206</th><td>    m-&gt;id = allocateId(cb);</td></tr>
+<tr><th id="207">207</th><td></td></tr>
+<tr><th id="208">208</th><td>  ThreadMutex *tm = &amp;lt-&gt;locked[lt-&gt;nlocked++];</td></tr>
+<tr><th id="209">209</th><td>  tm-&gt;id = m-&gt;id;</td></tr>
+<tr><th id="210">210</th><td>  <b>if</b> (flags.second_deadlock_stack)</td></tr>
+<tr><th id="211">211</th><td>    tm-&gt;stk = cb-&gt;Unwind();</td></tr>
+<tr><th id="212">212</th><td>  <b>if</b> (lt-&gt;nlocked == <var>1</var>) {</td></tr>
+<tr><th id="213">213</th><td>    VPrintf(<var>3</var>, <q>"#%llu: DD::MutexBeforeLock first mutex\n"</q>,</td></tr>
+<tr><th id="214">214</th><td>        cb-&gt;lt-&gt;ctx);</td></tr>
+<tr><th id="215">215</th><td>    <b>return</b>;</td></tr>
+<tr><th id="216">216</th><td>  }</td></tr>
+<tr><th id="217">217</th><td></td></tr>
+<tr><th id="218">218</th><td>  <em>bool</em> added = <b>false</b>;</td></tr>
+<tr><th id="219">219</th><td>  Mutex *mtx = getMutex(m-&gt;id);</td></tr>
+<tr><th id="220">220</th><td>  <b>for</b> (<em>int</em> i = <var>0</var>; i &lt; lt-&gt;nlocked - <var>1</var>; i++) {</td></tr>
+<tr><th id="221">221</th><td>    u32 id1 = lt-&gt;locked[i].id;</td></tr>
+<tr><th id="222">222</th><td>    u32 stk1 = lt-&gt;locked[i].stk;</td></tr>
+<tr><th id="223">223</th><td>    Mutex *mtx1 = getMutex(id1);</td></tr>
+<tr><th id="224">224</th><td>    SpinMutexLock l(&amp;mtx1-&gt;mtx);</td></tr>
+<tr><th id="225">225</th><td>    <b>if</b> (mtx1-&gt;nlink == kMaxLink) {</td></tr>
+<tr><th id="226">226</th><td>      <i>// FIXME(dvyukov): check stale links</i></td></tr>
+<tr><th id="227">227</th><td>      <b>continue</b>;</td></tr>
+<tr><th id="228">228</th><td>    }</td></tr>
+<tr><th id="229">229</th><td>    <em>int</em> li = <var>0</var>;</td></tr>
+<tr><th id="230">230</th><td>    <b>for</b> (; li &lt; mtx1-&gt;nlink; li++) {</td></tr>
+<tr><th id="231">231</th><td>      Link *link = &amp;mtx1-&gt;link[li];</td></tr>
+<tr><th id="232">232</th><td>      <b>if</b> (link-&gt;id == m-&gt;id) {</td></tr>
+<tr><th id="233">233</th><td>        <b>if</b> (link-&gt;seq != mtx-&gt;seq) {</td></tr>
+<tr><th id="234">234</th><td>          link-&gt;seq = mtx-&gt;seq;</td></tr>
+<tr><th id="235">235</th><td>          link-&gt;tid = lt-&gt;ctx;</td></tr>
+<tr><th id="236">236</th><td>          link-&gt;stk0 = stk1;</td></tr>
+<tr><th id="237">237</th><td>          link-&gt;stk1 = cb-&gt;Unwind();</td></tr>
+<tr><th id="238">238</th><td>          added = <b>true</b>;</td></tr>
+<tr><th id="239">239</th><td>          VPrintf(<var>3</var>, <q>"#%llu: DD::MutexBeforeLock added %d-&gt;%d link\n"</q>,</td></tr>
+<tr><th id="240">240</th><td>              cb-&gt;lt-&gt;ctx, getMutexId(mtx1), m-&gt;id);</td></tr>
+<tr><th id="241">241</th><td>        }</td></tr>
+<tr><th id="242">242</th><td>        <b>break</b>;</td></tr>
+<tr><th id="243">243</th><td>      }</td></tr>
+<tr><th id="244">244</th><td>    }</td></tr>
+<tr><th id="245">245</th><td>    <b>if</b> (li == mtx1-&gt;nlink) {</td></tr>
+<tr><th id="246">246</th><td>      <i>// FIXME(dvyukov): check stale links</i></td></tr>
+<tr><th id="247">247</th><td>      Link *link = &amp;mtx1-&gt;link[mtx1-&gt;nlink++];</td></tr>
+<tr><th id="248">248</th><td>      link-&gt;id = m-&gt;id;</td></tr>
+<tr><th id="249">249</th><td>      link-&gt;seq = mtx-&gt;seq;</td></tr>
+<tr><th id="250">250</th><td>      link-&gt;tid = lt-&gt;ctx;</td></tr>
+<tr><th id="251">251</th><td>      link-&gt;stk0 = stk1;</td></tr>
+<tr><th id="252">252</th><td>      link-&gt;stk1 = cb-&gt;Unwind();</td></tr>
+<tr><th id="253">253</th><td>      added = <b>true</b>;</td></tr>
+<tr><th id="254">254</th><td>      VPrintf(<var>3</var>, <q>"#%llu: DD::MutexBeforeLock added %d-&gt;%d link\n"</q>,</td></tr>
+<tr><th id="255">255</th><td>          cb-&gt;lt-&gt;ctx, getMutexId(mtx1), m-&gt;id);</td></tr>
+<tr><th id="256">256</th><td>    }</td></tr>
+<tr><th id="257">257</th><td>  }</td></tr>
+<tr><th id="258">258</th><td></td></tr>
+<tr><th id="259">259</th><td>  <b>if</b> (!added || mtx-&gt;nlink == <var>0</var>) {</td></tr>
+<tr><th id="260">260</th><td>    VPrintf(<var>3</var>, <q>"#%llu: DD::MutexBeforeLock don't check\n"</q>,</td></tr>
+<tr><th id="261">261</th><td>        cb-&gt;lt-&gt;ctx);</td></tr>
+<tr><th id="262">262</th><td>    <b>return</b>;</td></tr>
+<tr><th id="263">263</th><td>  }</td></tr>
+<tr><th id="264">264</th><td></td></tr>
+<tr><th id="265">265</th><td>  CycleCheck(pt, lt, m);</td></tr>
+<tr><th id="266">266</th><td>}</td></tr>
+<tr><th id="267">267</th><td></td></tr>
+<tr><th id="268">268</th><td><em>void</em> DD::MutexAfterLock(DDCallback *cb, DDMutex *m, <em>bool</em> wlock,</td></tr>
+<tr><th id="269">269</th><td>    <em>bool</em> trylock) {</td></tr>
+<tr><th id="270">270</th><td>  VPrintf(<var>2</var>, <q>"#%llu: DD::MutexAfterLock(%p, wlock=%d, try=%d) nlocked=%d\n"</q>,</td></tr>
+<tr><th id="271">271</th><td>      cb-&gt;lt-&gt;ctx, m, wlock, trylock, cb-&gt;lt-&gt;nlocked);</td></tr>
+<tr><th id="272">272</th><td>  DDLogicalThread *lt = cb-&gt;lt;</td></tr>
+<tr><th id="273">273</th><td></td></tr>
+<tr><th id="274">274</th><td>  uptr owner = atomic_load(&amp;m-&gt;owner, memory_order_relaxed);</td></tr>
+<tr><th id="275">275</th><td>  <b>if</b> (owner == (uptr)cb-&gt;lt) {</td></tr>
+<tr><th id="276">276</th><td>    VPrintf(<var>3</var>, <q>"#%llu: DD::MutexAfterLock recursive\n"</q>, cb-&gt;lt-&gt;ctx);</td></tr>
+<tr><th id="277">277</th><td>    CHECK(wlock);</td></tr>
+<tr><th id="278">278</th><td>    m-&gt;recursion++;</td></tr>
+<tr><th id="279">279</th><td>    <b>return</b>;</td></tr>
+<tr><th id="280">280</th><td>  }</td></tr>
+<tr><th id="281">281</th><td>  CHECK_EQ(owner, <var>0</var>);</td></tr>
+<tr><th id="282">282</th><td>  <b>if</b> (wlock) {</td></tr>
+<tr><th id="283">283</th><td>    VPrintf(<var>3</var>, <q>"#%llu: DD::MutexAfterLock set owner\n"</q>, cb-&gt;lt-&gt;ctx);</td></tr>
+<tr><th id="284">284</th><td>    CHECK_EQ(m-&gt;recursion, <var>0</var>);</td></tr>
+<tr><th id="285">285</th><td>    m-&gt;recursion = <var>1</var>;</td></tr>
+<tr><th id="286">286</th><td>    atomic_store(&amp;m-&gt;owner, (uptr)cb-&gt;lt, memory_order_relaxed);</td></tr>
+<tr><th id="287">287</th><td>  }</td></tr>
+<tr><th id="288">288</th><td></td></tr>
+<tr><th id="289">289</th><td>  <b>if</b> (!trylock)</td></tr>
+<tr><th id="290">290</th><td>    <b>return</b>;</td></tr>
+<tr><th id="291">291</th><td></td></tr>
+<tr><th id="292">292</th><td>  CHECK_LE(lt-&gt;nlocked, kMaxNesting);</td></tr>
+<tr><th id="293">293</th><td>  <b>if</b> (m-&gt;id == kNoId)</td></tr>
+<tr><th id="294">294</th><td>    m-&gt;id = allocateId(cb);</td></tr>
+<tr><th id="295">295</th><td>  ThreadMutex *tm = &amp;lt-&gt;locked[lt-&gt;nlocked++];</td></tr>
+<tr><th id="296">296</th><td>  tm-&gt;id = m-&gt;id;</td></tr>
+<tr><th id="297">297</th><td>  <b>if</b> (flags.second_deadlock_stack)</td></tr>
+<tr><th id="298">298</th><td>    tm-&gt;stk = cb-&gt;Unwind();</td></tr>
+<tr><th id="299">299</th><td>}</td></tr>
+<tr><th id="300">300</th><td></td></tr>
+<tr><th id="301">301</th><td><em>void</em> DD::MutexBeforeUnlock(DDCallback *cb, DDMutex *m, <em>bool</em> wlock) {</td></tr>
+<tr><th id="302">302</th><td>  VPrintf(<var>2</var>, <q>"#%llu: DD::MutexBeforeUnlock(%p, wlock=%d) nlocked=%d\n"</q>,</td></tr>
+<tr><th id="303">303</th><td>      cb-&gt;lt-&gt;ctx, m, wlock, cb-&gt;lt-&gt;nlocked);</td></tr>
+<tr><th id="304">304</th><td>  DDLogicalThread *lt = cb-&gt;lt;</td></tr>
+<tr><th id="305">305</th><td></td></tr>
+<tr><th id="306">306</th><td>  uptr owner = atomic_load(&amp;m-&gt;owner, memory_order_relaxed);</td></tr>
+<tr><th id="307">307</th><td>  <b>if</b> (owner == (uptr)cb-&gt;lt) {</td></tr>
+<tr><th id="308">308</th><td>    VPrintf(<var>3</var>, <q>"#%llu: DD::MutexBeforeUnlock recursive\n"</q>, cb-&gt;lt-&gt;ctx);</td></tr>
+<tr><th id="309">309</th><td>    <b>if</b> (--m-&gt;recursion &gt; <var>0</var>)</td></tr>
+<tr><th id="310">310</th><td>      <b>return</b>;</td></tr>
+<tr><th id="311">311</th><td>    VPrintf(<var>3</var>, <q>"#%llu: DD::MutexBeforeUnlock reset owner\n"</q>, cb-&gt;lt-&gt;ctx);</td></tr>
+<tr><th id="312">312</th><td>    atomic_store(&amp;m-&gt;owner, <var>0</var>, memory_order_relaxed);</td></tr>
+<tr><th id="313">313</th><td>  }</td></tr>
+<tr><th id="314">314</th><td>  CHECK_NE(m-&gt;id, kNoId);</td></tr>
+<tr><th id="315">315</th><td>  <em>int</em> last = lt-&gt;nlocked - <var>1</var>;</td></tr>
+<tr><th id="316">316</th><td>  <b>for</b> (<em>int</em> i = last; i &gt;= <var>0</var>; i--) {</td></tr>
+<tr><th id="317">317</th><td>    <b>if</b> (cb-&gt;lt-&gt;locked[i].id == m-&gt;id) {</td></tr>
+<tr><th id="318">318</th><td>      lt-&gt;locked[i] = lt-&gt;locked[last];</td></tr>
+<tr><th id="319">319</th><td>      lt-&gt;nlocked--;</td></tr>
+<tr><th id="320">320</th><td>      <b>break</b>;</td></tr>
+<tr><th id="321">321</th><td>    }</td></tr>
+<tr><th id="322">322</th><td>  }</td></tr>
+<tr><th id="323">323</th><td>}</td></tr>
+<tr><th id="324">324</th><td></td></tr>
+<tr><th id="325">325</th><td><em>void</em> DD::MutexDestroy(DDCallback *cb, DDMutex *m) {</td></tr>
+<tr><th id="326">326</th><td>  VPrintf(<var>2</var>, <q>"#%llu: DD::MutexDestroy(%p)\n"</q>,</td></tr>
+<tr><th id="327">327</th><td>      cb-&gt;lt-&gt;ctx, m);</td></tr>
+<tr><th id="328">328</th><td>  DDLogicalThread *lt = cb-&gt;lt;</td></tr>
+<tr><th id="329">329</th><td></td></tr>
+<tr><th id="330">330</th><td>  <b>if</b> (m-&gt;id == kNoId)</td></tr>
+<tr><th id="331">331</th><td>    <b>return</b>;</td></tr>
+<tr><th id="332">332</th><td></td></tr>
+<tr><th id="333">333</th><td>  <i>// Remove the mutex from lt-&gt;locked if there.</i></td></tr>
+<tr><th id="334">334</th><td>  <em>int</em> last = lt-&gt;nlocked - <var>1</var>;</td></tr>
+<tr><th id="335">335</th><td>  <b>for</b> (<em>int</em> i = last; i &gt;= <var>0</var>; i--) {</td></tr>
+<tr><th id="336">336</th><td>    <b>if</b> (lt-&gt;locked[i].id == m-&gt;id) {</td></tr>
+<tr><th id="337">337</th><td>      lt-&gt;locked[i] = lt-&gt;locked[last];</td></tr>
+<tr><th id="338">338</th><td>      lt-&gt;nlocked--;</td></tr>
+<tr><th id="339">339</th><td>      <b>break</b>;</td></tr>
+<tr><th id="340">340</th><td>    }</td></tr>
+<tr><th id="341">341</th><td>  }</td></tr>
+<tr><th id="342">342</th><td></td></tr>
+<tr><th id="343">343</th><td>  <i>// Clear and invalidate the mutex descriptor.</i></td></tr>
+<tr><th id="344">344</th><td>  {</td></tr>
+<tr><th id="345">345</th><td>    Mutex *mtx = getMutex(m-&gt;id);</td></tr>
+<tr><th id="346">346</th><td>    SpinMutexLock l(&amp;mtx-&gt;mtx);</td></tr>
+<tr><th id="347">347</th><td>    mtx-&gt;seq++;</td></tr>
+<tr><th id="348">348</th><td>    mtx-&gt;nlink = <var>0</var>;</td></tr>
+<tr><th id="349">349</th><td>  }</td></tr>
+<tr><th id="350">350</th><td></td></tr>
+<tr><th id="351">351</th><td>  <i>// Return id to cache.</i></td></tr>
+<tr><th id="352">352</th><td>  {</td></tr>
+<tr><th id="353">353</th><td>    SpinMutexLock l(&amp;mtx);</td></tr>
+<tr><th id="354">354</th><td>    free_id.push_back(m-&gt;id);</td></tr>
+<tr><th id="355">355</th><td>  }</td></tr>
+<tr><th id="356">356</th><td>}</td></tr>
+<tr><th id="357">357</th><td></td></tr>
+<tr><th id="358">358</th><td><em>void</em> DD::CycleCheck(DDPhysicalThread *pt, DDLogicalThread *lt,</td></tr>
+<tr><th id="359">359</th><td>    DDMutex *m) {</td></tr>
+<tr><th id="360">360</th><td>  internal_memset(pt-&gt;visited, <var>0</var>, <b>sizeof</b>(pt-&gt;visited));</td></tr>
+<tr><th id="361">361</th><td>  <em>int</em> npath = <var>0</var>;</td></tr>
+<tr><th id="362">362</th><td>  <em>int</em> npending = <var>0</var>;</td></tr>
+<tr><th id="363">363</th><td>  {</td></tr>
+<tr><th id="364">364</th><td>    Mutex *mtx = getMutex(m-&gt;id);</td></tr>
+<tr><th id="365">365</th><td>    SpinMutexLock l(&amp;mtx-&gt;mtx);</td></tr>
+<tr><th id="366">366</th><td>    <b>for</b> (<em>int</em> li = <var>0</var>; li &lt; mtx-&gt;nlink; li++)</td></tr>
+<tr><th id="367">367</th><td>      pt-&gt;pending[npending++] = mtx-&gt;link[li];</td></tr>
+<tr><th id="368">368</th><td>  }</td></tr>
+<tr><th id="369">369</th><td>  <b>while</b> (npending &gt; <var>0</var>) {</td></tr>
+<tr><th id="370">370</th><td>    Link link = pt-&gt;pending[--npending];</td></tr>
+<tr><th id="371">371</th><td>    <b>if</b> (link.id == kEndId) {</td></tr>
+<tr><th id="372">372</th><td>      npath--;</td></tr>
+<tr><th id="373">373</th><td>      <b>continue</b>;</td></tr>
+<tr><th id="374">374</th><td>    }</td></tr>
+<tr><th id="375">375</th><td>    <b>if</b> (pt-&gt;visited[link.id])</td></tr>
+<tr><th id="376">376</th><td>      <b>continue</b>;</td></tr>
+<tr><th id="377">377</th><td>    Mutex *mtx1 = getMutex(link.id);</td></tr>
+<tr><th id="378">378</th><td>    SpinMutexLock l(&amp;mtx1-&gt;mtx);</td></tr>
+<tr><th id="379">379</th><td>    <b>if</b> (mtx1-&gt;seq != link.seq)</td></tr>
+<tr><th id="380">380</th><td>      <b>continue</b>;</td></tr>
+<tr><th id="381">381</th><td>    pt-&gt;visited[link.id] = <b>true</b>;</td></tr>
+<tr><th id="382">382</th><td>    <b>if</b> (mtx1-&gt;nlink == <var>0</var>)</td></tr>
+<tr><th id="383">383</th><td>      <b>continue</b>;</td></tr>
+<tr><th id="384">384</th><td>    pt-&gt;path[npath++] = link;</td></tr>
+<tr><th id="385">385</th><td>    pt-&gt;pending[npending++] = Link(kEndId);</td></tr>
+<tr><th id="386">386</th><td>    <b>if</b> (link.id == m-&gt;id)</td></tr>
+<tr><th id="387">387</th><td>      <b>return</b> Report(pt, lt, npath);  <i>// Bingo!</i></td></tr>
+<tr><th id="388">388</th><td>    <b>for</b> (<em>int</em> li = <var>0</var>; li &lt; mtx1-&gt;nlink; li++) {</td></tr>
+<tr><th id="389">389</th><td>      Link *link1 = &amp;mtx1-&gt;link[li];</td></tr>
+<tr><th id="390">390</th><td>      <i>// Mutex *mtx2 = getMutex(link-&gt;id);</i></td></tr>
+<tr><th id="391">391</th><td><i>      // FIXME(dvyukov): fast seq check</i></td></tr>
+<tr><th id="392">392</th><td><i>      // FIXME(dvyukov): fast nlink != 0 check</i></td></tr>
+<tr><th id="393">393</th><td><i>      // FIXME(dvyukov): fast pending check?</i></td></tr>
+<tr><th id="394">394</th><td><i>      // FIXME(dvyukov): npending can be larger than kMaxMutex</i></td></tr>
+<tr><th id="395">395</th><td>      pt-&gt;pending[npending++] = *link1;</td></tr>
+<tr><th id="396">396</th><td>    }</td></tr>
+<tr><th id="397">397</th><td>  }</td></tr>
+<tr><th id="398">398</th><td>}</td></tr>
+<tr><th id="399">399</th><td></td></tr>
+<tr><th id="400">400</th><td><em>void</em> DD::Report(DDPhysicalThread *pt, DDLogicalThread *lt, <em>int</em> npath) {</td></tr>
+<tr><th id="401">401</th><td>  DDReport *rep = &amp;pt-&gt;rep;</td></tr>
+<tr><th id="402">402</th><td>  rep-&gt;n = npath;</td></tr>
+<tr><th id="403">403</th><td>  <b>for</b> (<em>int</em> i = <var>0</var>; i &lt; npath; i++) {</td></tr>
+<tr><th id="404">404</th><td>    Link *link = &amp;pt-&gt;path[i];</td></tr>
+<tr><th id="405">405</th><td>    Link *link0 = &amp;pt-&gt;path[i ? i - <var>1</var> : npath - <var>1</var>];</td></tr>
+<tr><th id="406">406</th><td>    rep-&gt;loop[i].thr_ctx = link-&gt;tid;</td></tr>
+<tr><th id="407">407</th><td>    rep-&gt;loop[i].mtx_ctx0 = link0-&gt;id;</td></tr>
+<tr><th id="408">408</th><td>    rep-&gt;loop[i].mtx_ctx1 = link-&gt;id;</td></tr>
+<tr><th id="409">409</th><td>    rep-&gt;loop[i].stk[<var>0</var>] = flags.second_deadlock_stack ? link-&gt;stk0 : <var>0</var>;</td></tr>
+<tr><th id="410">410</th><td>    rep-&gt;loop[i].stk[<var>1</var>] = link-&gt;stk1;</td></tr>
+<tr><th id="411">411</th><td>  }</td></tr>
+<tr><th id="412">412</th><td>  pt-&gt;report_pending = <b>true</b>;</td></tr>
+<tr><th id="413">413</th><td>}</td></tr>
+<tr><th id="414">414</th><td></td></tr>
+<tr><th id="415">415</th><td>DDReport *DD::GetReport(DDCallback *cb) {</td></tr>
+<tr><th id="416">416</th><td>  <b>if</b> (!cb-&gt;pt-&gt;report_pending)</td></tr>
+<tr><th id="417">417</th><td>    <b>return</b> <var>0</var>;</td></tr>
+<tr><th id="418">418</th><td>  cb-&gt;pt-&gt;report_pending = <b>false</b>;</td></tr>
+<tr><th id="419">419</th><td>  <b>return</b> &amp;cb-&gt;pt-&gt;rep;</td></tr>
+<tr><th id="420">420</th><td>}</td></tr>
+<tr><th id="421">421</th><td></td></tr>
+<tr><th id="422">422</th><td>}  <i>// namespace __sanitizer</i></td></tr>
+<tr><th id="423">423</th><td><u>#<span data-ppcond="19">endif</span>  // #if SANITIZER_DEADLOCK_DETECTOR_VERSION == 2</u></td></tr>
+<tr><th id="424">424</th><td></td></tr>
+</table><hr/><p id='footer'>
+Generated on <em>2021-Jul-01</em> from project llvm revision <em>12</em>

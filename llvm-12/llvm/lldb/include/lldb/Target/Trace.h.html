@@ -1,0 +1,220 @@
+<!doctype html>
+<html>
+<head>
+<meta name="viewport" content="width=device-width, initial-scale=1.0"><title>Trace.h source code [llvm/lldb/include/lldb/Target/Trace.h] - Woboq Code Browser</title>
+<meta name="woboq:interestingDefinitions" content="lldb_private::Trace "/>
+<link rel="stylesheet" href="../../../../.././data/qtcreator.css" title="QtCreator"/>
+<link rel="alternate stylesheet" href="../../../../.././data/kdevelop.css" title="KDevelop"/>
+<script type="text/javascript" src="../../../../.././data/jquery/jquery.min.js"></script>
+<script type="text/javascript" src="../../../../.././data/jquery/jquery-ui.min.js"></script>
+<script>var file = 'llvm/lldb/include/lldb/Target/Trace.h'; var root_path = '../../../../..'; var data_path = '../../../../.././data'; var ecma_script_api_version = 2;</script>
+<script src='../../../../.././data/codebrowser.js'></script>
+</head>
+<body><div id='header'><h1 id='breadcrumb'><span>Browse the source code of </span><a href='../../../..'>llvm</a>/<a href='../../..'>lldb</a>/<a href='../..'>include</a>/<a href='..'>lldb</a>/<a href='./'>Target</a>/<a href='Trace.h.html'>Trace.h</a></h1></div>
+<hr/><div id='content'><table class="code">
+<tr><th id="1">1</th><td><i>//===-- Trace.h -------------------------------------------------*- C++ -*-===//</i></td></tr>
+<tr><th id="2">2</th><td><i>//</i></td></tr>
+<tr><th id="3">3</th><td><i>// Part of the LLVM Project, under the Apache License v2.0 with LLVM Exceptions.</i></td></tr>
+<tr><th id="4">4</th><td><i>// See <a href="https://llvm.org/LICENSE.txt">https://llvm.org/LICENSE.txt</a> for license information.</i></td></tr>
+<tr><th id="5">5</th><td><i>// SPDX-License-Identifier: Apache-2.0 WITH LLVM-exception</i></td></tr>
+<tr><th id="6">6</th><td><i>//</i></td></tr>
+<tr><th id="7">7</th><td><i>//===----------------------------------------------------------------------===//</i></td></tr>
+<tr><th id="8">8</th><td></td></tr>
+<tr><th id="9">9</th><td><u>#<span data-ppcond="9">ifndef</span> <span class="macro" data-ref="_M/LLDB_TARGET_TRACE_H">LLDB_TARGET_TRACE_H</span></u></td></tr>
+<tr><th id="10">10</th><td><u>#define <dfn class="macro" id="_M/LLDB_TARGET_TRACE_H" data-ref="_M/LLDB_TARGET_TRACE_H">LLDB_TARGET_TRACE_H</dfn></u></td></tr>
+<tr><th id="11">11</th><td></td></tr>
+<tr><th id="12">12</th><td><u>#include <a href="../../../../llvm/include/llvm/Support/JSON.h.html">"llvm/Support/JSON.h"</a></u></td></tr>
+<tr><th id="13">13</th><td></td></tr>
+<tr><th id="14">14</th><td><u>#include <a href="../Core/PluginInterface.h.html">"lldb/Core/PluginInterface.h"</a></u></td></tr>
+<tr><th id="15">15</th><td><u>#include <a href="../Utility/ArchSpec.h.html">"lldb/Utility/ArchSpec.h"</a></u></td></tr>
+<tr><th id="16">16</th><td><u>#include <a href="../Utility/UnimplementedError.h.html">"lldb/Utility/UnimplementedError.h"</a></u></td></tr>
+<tr><th id="17">17</th><td><u>#include <a href="../lldb-private.h.html">"lldb/lldb-private.h"</a></u></td></tr>
+<tr><th id="18">18</th><td></td></tr>
+<tr><th id="19">19</th><td><b>namespace</b> <span class="namespace">lldb_private</span> {</td></tr>
+<tr><th id="20">20</th><td></td></tr>
+<tr><th id="21">21</th><td><i class="doc">/// <span class="command">\class</span> <span class="verb">Trace Trace.h "lldb/Target/Trace.h"</span></i></td></tr>
+<tr><th id="22">22</th><td><i class="doc">/// A plug-in interface definition class for trace information.</i></td></tr>
+<tr><th id="23">23</th><td><i class="doc">///</i></td></tr>
+<tr><th id="24">24</th><td><i class="doc">/// Trace plug-ins allow processor trace information to be loaded into LLDB so</i></td></tr>
+<tr><th id="25">25</th><td><i class="doc">/// that the data can be dumped, used for reverse and forward stepping to allow</i></td></tr>
+<tr><th id="26">26</th><td><i class="doc">/// introspection into the reason your process crashed or found its way to its</i></td></tr>
+<tr><th id="27">27</th><td><i class="doc">/// current state.</i></td></tr>
+<tr><th id="28">28</th><td><i class="doc">///</i></td></tr>
+<tr><th id="29">29</th><td><i class="doc">/// Trace information can be loaded into a target without a process to allow</i></td></tr>
+<tr><th id="30">30</th><td><i class="doc">/// introspection of the trace information during post mortem analysis, such as</i></td></tr>
+<tr><th id="31">31</th><td><i class="doc">/// when loading core files.</i></td></tr>
+<tr><th id="32">32</th><td><i class="doc">///</i></td></tr>
+<tr><th id="33">33</th><td><i class="doc">/// Processor trace information can also be fetched through the process</i></td></tr>
+<tr><th id="34">34</th><td><i class="doc">/// interfaces during a live debug session if your process supports gathering</i></td></tr>
+<tr><th id="35">35</th><td><i class="doc">/// this information.</i></td></tr>
+<tr><th id="36">36</th><td><i class="doc">///</i></td></tr>
+<tr><th id="37">37</th><td><i class="doc">/// In order to support live tracing, the name of the plug-in should match the</i></td></tr>
+<tr><th id="38">38</th><td><i class="doc">/// name of the tracing type returned by the gdb-remote packet</i></td></tr>
+<tr><th id="39">39</th><td><i class="doc">///<span class="command"> \a</span> <span class="arg">jLLDBTraceSupportedType.</span></i></td></tr>
+<tr><th id="40">40</th><td><b>class</b> <dfn class="type def" id="lldb_private::Trace" title='lldb_private::Trace' data-ref="lldb_private::Trace" data-ref-filename="lldb_private..Trace">Trace</dfn> : <b>public</b> <a class="type" href="../Core/PluginInterface.h.html#lldb_private::PluginInterface" title='lldb_private::PluginInterface' data-ref="lldb_private::PluginInterface" data-ref-filename="lldb_private..PluginInterface">PluginInterface</a>,</td></tr>
+<tr><th id="41">41</th><td>              <b>public</b> <span class="namespace">std::</span><span class='type' title='std::enable_shared_from_this' data-ref="std::enable_shared_from_this" data-ref-filename="std..enable_shared_from_this">enable_shared_from_this</span>&lt;<a class="type" href="#lldb_private::Trace" title='lldb_private::Trace' data-ref="lldb_private::Trace" data-ref-filename="lldb_private..Trace">Trace</a>&gt; {</td></tr>
+<tr><th id="42">42</th><td><b>public</b>:</td></tr>
+<tr><th id="43">43</th><td>  <b>enum</b> <b>class</b> <dfn class="type def" id="lldb_private::Trace::TraceDirection" title='lldb_private::Trace::TraceDirection' data-ref="lldb_private::Trace::TraceDirection" data-ref-filename="lldb_private..Trace..TraceDirection">TraceDirection</dfn> {</td></tr>
+<tr><th id="44">44</th><td>    <dfn class="enum" id="lldb_private::Trace::TraceDirection::Forwards" title='lldb_private::Trace::TraceDirection::Forwards' data-ref="lldb_private::Trace::TraceDirection::Forwards" data-ref-filename="lldb_private..Trace..TraceDirection..Forwards">Forwards</dfn> = <var>0</var>,</td></tr>
+<tr><th id="45">45</th><td>    <dfn class="enum" id="lldb_private::Trace::TraceDirection::Backwards" title='lldb_private::Trace::TraceDirection::Backwards' data-ref="lldb_private::Trace::TraceDirection::Backwards" data-ref-filename="lldb_private..Trace..TraceDirection..Backwards">Backwards</dfn>,</td></tr>
+<tr><th id="46">46</th><td>  };</td></tr>
+<tr><th id="47">47</th><td></td></tr>
+<tr><th id="48">48</th><td>  <i class="doc">/// Dump the trace data that this plug-in has access to.</i></td></tr>
+<tr><th id="49">49</th><td><i class="doc">  ///</i></td></tr>
+<tr><th id="50">50</th><td><i class="doc">  /// This function will dump all of the trace data for all threads in a user</i></td></tr>
+<tr><th id="51">51</th><td><i class="doc">  /// readable format. Options for dumping can be added as this API is iterated</i></td></tr>
+<tr><th id="52">52</th><td><i class="doc">  /// on.</i></td></tr>
+<tr><th id="53">53</th><td><i class="doc">  ///</i></td></tr>
+<tr><th id="54">54</th><td><i class="doc">  /// <span class="command">\param</span>[in] <span class="arg">s</span></i></td></tr>
+<tr><th id="55">55</th><td><i class="doc">  ///     A stream object to dump the information to.</i></td></tr>
+<tr><th id="56">56</th><td>  <b>virtual</b> <em>void</em> <dfn class="virtual decl fn" id="_ZNK12lldb_private5Trace4DumpEPNS_6StreamE" title='lldb_private::Trace::Dump' data-ref="_ZNK12lldb_private5Trace4DumpEPNS_6StreamE" data-ref-filename="_ZNK12lldb_private5Trace4DumpEPNS_6StreamE">Dump</dfn>(<a class="type" href="../Utility/Stream.h.html#lldb_private::Stream" title='lldb_private::Stream' data-ref="lldb_private::Stream" data-ref-filename="lldb_private..Stream">Stream</a> *<dfn class="local col1 decl" id="741s" title='s' data-type='lldb_private::Stream *' data-ref="741s" data-ref-filename="741s">s</dfn>) <em>const</em> = <var>0</var>;</td></tr>
+<tr><th id="57">57</th><td></td></tr>
+<tr><th id="58">58</th><td>  <i class="doc">/// Find a trace plug-in using JSON data.</i></td></tr>
+<tr><th id="59">59</th><td><i class="doc">  ///</i></td></tr>
+<tr><th id="60">60</th><td><i class="doc">  /// When loading trace data from disk, the information for the trace data</i></td></tr>
+<tr><th id="61">61</th><td><i class="doc">  /// can be contained in multiple files and require plug-in specific</i></td></tr>
+<tr><th id="62">62</th><td><i class="doc">  /// information about the CPU. Using data like JSON provides an</i></td></tr>
+<tr><th id="63">63</th><td><i class="doc">  /// easy way to specify all of the settings and information that we will need</i></td></tr>
+<tr><th id="64">64</th><td><i class="doc">  /// to load trace data into LLDB. This structured data can include:</i></td></tr>
+<tr><th id="65">65</th><td><i class="doc">  ///   - The plug-in name (this allows a specific plug-in to be selected)</i></td></tr>
+<tr><th id="66">66</th><td><i class="doc">  ///   - Architecture or target triple</i></td></tr>
+<tr><th id="67">67</th><td><i class="doc">  ///   - one or more paths to the trace data file on disk</i></td></tr>
+<tr><th id="68">68</th><td><i class="doc">  ///     - core trace data</i></td></tr>
+<tr><th id="69">69</th><td><i class="doc">  ///     - thread events or related information</i></td></tr>
+<tr><th id="70">70</th><td><i class="doc">  ///   - shared library load information to use for this trace data that</i></td></tr>
+<tr><th id="71">71</th><td><i class="doc">  ///     allows a target to be created so the trace information can be</i></td></tr>
+<tr><th id="72">72</th><td><i class="doc">  ///     symbolicated so that the trace information can be displayed to the</i></td></tr>
+<tr><th id="73">73</th><td><i class="doc">  ///     user</i></td></tr>
+<tr><th id="74">74</th><td><i class="doc">  ///     - shared library path</i></td></tr>
+<tr><th id="75">75</th><td><i class="doc">  ///     - load address</i></td></tr>
+<tr><th id="76">76</th><td><i class="doc">  ///     - information on how to fetch the shared library</i></td></tr>
+<tr><th id="77">77</th><td><i class="doc">  ///       - path to locally cached file on disk</i></td></tr>
+<tr><th id="78">78</th><td><i class="doc">  ///       - URL to download the file</i></td></tr>
+<tr><th id="79">79</th><td><i class="doc">  ///   - Any information needed to load the trace file</i></td></tr>
+<tr><th id="80">80</th><td><i class="doc">  ///     - CPU information</i></td></tr>
+<tr><th id="81">81</th><td><i class="doc">  ///     - Custom plug-in information needed to decode the trace information</i></td></tr>
+<tr><th id="82">82</th><td><i class="doc">  ///       correctly.</i></td></tr>
+<tr><th id="83">83</th><td><i class="doc">  ///</i></td></tr>
+<tr><th id="84">84</th><td><i class="doc">  /// <span class="command">\param</span>[in] <span class="arg">debugger</span></i></td></tr>
+<tr><th id="85">85</th><td><i class="doc">  ///     The debugger instance where new Targets will be created as part of the</i></td></tr>
+<tr><th id="86">86</th><td><i class="doc">  ///     JSON data parsing.</i></td></tr>
+<tr><th id="87">87</th><td><i class="doc">  ///</i></td></tr>
+<tr><th id="88">88</th><td><i class="doc">  /// <span class="command">\param</span>[in] <span class="arg">trace_session_file</span></i></td></tr>
+<tr><th id="89">89</th><td><i class="doc">  ///     The contents of the trace session file describing the trace session.</i></td></tr>
+<tr><th id="90">90</th><td><i class="doc">  ///     See<span class="command"> \a</span> <span class="arg">TraceSessionFileParser::BuildSchema</span> for more information about</i></td></tr>
+<tr><th id="91">91</th><td><i class="doc">  ///     the schema of this JSON file.</i></td></tr>
+<tr><th id="92">92</th><td><i class="doc">  ///</i></td></tr>
+<tr><th id="93">93</th><td><i class="doc">  /// <span class="command">\param</span>[in] <span class="arg">session_file_dir</span></i></td></tr>
+<tr><th id="94">94</th><td><i class="doc">  ///     The path to the directory that contains the session file. It's used to</i></td></tr>
+<tr><th id="95">95</th><td><i class="doc">  ///     resolved relative paths in the session file.</i></td></tr>
+<tr><th id="96">96</th><td>  <em>static</em> <span class="namespace">llvm::</span><a class="type" href="../../../../llvm/include/llvm/Support/raw_ostream.h.html#llvm::Expected" title='llvm::Expected' data-ref="llvm::Expected" data-ref-filename="llvm..Expected">Expected</a>&lt;<span class="namespace">lldb::</span><a class="typedef" href="../lldb-forward.h.html#lldb::TraceSP" title='lldb::TraceSP' data-type='std::shared_ptr&lt;lldb_private::Trace&gt;' data-ref="lldb::TraceSP" data-ref-filename="lldb..TraceSP">TraceSP</a>&gt;</td></tr>
+<tr><th id="97">97</th><td>  <dfn class="decl fn" id="_ZN12lldb_private5Trace10FindPluginERNS_8DebuggerERKN4llvm4json5ValueENS3_9StringRefE" title='lldb_private::Trace::FindPlugin' data-ref="_ZN12lldb_private5Trace10FindPluginERNS_8DebuggerERKN4llvm4json5ValueENS3_9StringRefE" data-ref-filename="_ZN12lldb_private5Trace10FindPluginERNS_8DebuggerERKN4llvm4json5ValueENS3_9StringRefE">FindPlugin</dfn>(<a class="type" href="../lldb-forward.h.html#lldb_private::Debugger" title='lldb_private::Debugger' data-ref="lldb_private::Debugger" data-ref-filename="lldb_private..Debugger">Debugger</a> &amp;<dfn class="local col2 decl" id="742debugger" title='debugger' data-type='lldb_private::Debugger &amp;' data-ref="742debugger" data-ref-filename="742debugger">debugger</dfn>, <em>const</em> <span class="namespace">llvm::json::</span><a class="type" href="../../../../llvm/include/llvm/Support/JSON.h.html#llvm::json::Value" title='llvm::json::Value' data-ref="llvm::json::Value" data-ref-filename="llvm..json..Value">Value</a> &amp;<dfn class="local col3 decl" id="743trace_session_file" title='trace_session_file' data-type='const llvm::json::Value &amp;' data-ref="743trace_session_file" data-ref-filename="743trace_session_file">trace_session_file</dfn>,</td></tr>
+<tr><th id="98">98</th><td>             <span class="namespace">llvm::</span><a class="type" href="../../../../llvm/include/llvm/ADT/StringRef.h.html#llvm::StringRef" title='llvm::StringRef' data-ref="llvm::StringRef" data-ref-filename="llvm..StringRef">StringRef</a> <dfn class="local col4 decl" id="744session_file_dir" title='session_file_dir' data-type='llvm::StringRef' data-ref="744session_file_dir" data-ref-filename="744session_file_dir">session_file_dir</dfn>);</td></tr>
+<tr><th id="99">99</th><td></td></tr>
+<tr><th id="100">100</th><td>  <i class="doc">/// Get the schema of a Trace plug-in given its name.</i></td></tr>
+<tr><th id="101">101</th><td><i class="doc">  ///</i></td></tr>
+<tr><th id="102">102</th><td><i class="doc">  /// <span class="command">\param</span>[in] <span class="arg">plugin_name</span></i></td></tr>
+<tr><th id="103">103</th><td><i class="doc">  ///     Name of the trace plugin.</i></td></tr>
+<tr><th id="104">104</th><td>  <em>static</em> <span class="namespace">llvm::</span><a class="type" href="../../../../llvm/include/llvm/Support/raw_ostream.h.html#llvm::Expected" title='llvm::Expected' data-ref="llvm::Expected" data-ref-filename="llvm..Expected">Expected</a>&lt;<span class="namespace">llvm::</span><a class="type" href="../../../../llvm/include/llvm/ADT/StringRef.h.html#llvm::StringRef" title='llvm::StringRef' data-ref="llvm::StringRef" data-ref-filename="llvm..StringRef">StringRef</a>&gt;</td></tr>
+<tr><th id="105">105</th><td>  <dfn class="decl fn" id="_ZN12lldb_private5Trace16FindPluginSchemaEN4llvm9StringRefE" title='lldb_private::Trace::FindPluginSchema' data-ref="_ZN12lldb_private5Trace16FindPluginSchemaEN4llvm9StringRefE" data-ref-filename="_ZN12lldb_private5Trace16FindPluginSchemaEN4llvm9StringRefE">FindPluginSchema</dfn>(<span class="namespace">llvm::</span><a class="type" href="../../../../llvm/include/llvm/ADT/StringRef.h.html#llvm::StringRef" title='llvm::StringRef' data-ref="llvm::StringRef" data-ref-filename="llvm..StringRef">StringRef</a> <dfn class="local col5 decl" id="745plugin_name" title='plugin_name' data-type='llvm::StringRef' data-ref="745plugin_name" data-ref-filename="745plugin_name">plugin_name</dfn>);</td></tr>
+<tr><th id="106">106</th><td></td></tr>
+<tr><th id="107">107</th><td>  <i class="doc">/// <span class="command">\return</span></i></td></tr>
+<tr><th id="108">108</th><td><i class="doc">  ///     The JSON schema of this Trace plug-in.</i></td></tr>
+<tr><th id="109">109</th><td>  <b>virtual</b> <span class="namespace">llvm::</span><a class="type" href="../../../../llvm/include/llvm/ADT/StringRef.h.html#llvm::StringRef" title='llvm::StringRef' data-ref="llvm::StringRef" data-ref-filename="llvm..StringRef">StringRef</a> <dfn class="virtual decl fn" id="_ZN12lldb_private5Trace9GetSchemaEv" title='lldb_private::Trace::GetSchema' data-ref="_ZN12lldb_private5Trace9GetSchemaEv" data-ref-filename="_ZN12lldb_private5Trace9GetSchemaEv">GetSchema</dfn>() = <var>0</var>;</td></tr>
+<tr><th id="110">110</th><td></td></tr>
+<tr><th id="111">111</th><td>  <i class="doc">/// Each decoded thread contains a cursor to the current position the user is</i></td></tr>
+<tr><th id="112">112</th><td><i class="doc">  /// stopped at. When reverse debugging, each operation like reverse-next or</i></td></tr>
+<tr><th id="113">113</th><td><i class="doc">  /// reverse-continue will move this cursor, which is then picked by any</i></td></tr>
+<tr><th id="114">114</th><td><i class="doc">  /// subsequent dump or reverse operation.</i></td></tr>
+<tr><th id="115">115</th><td><i class="doc">  ///</i></td></tr>
+<tr><th id="116">116</th><td><i class="doc">  /// The initial position for this cursor is the last element of the thread,</i></td></tr>
+<tr><th id="117">117</th><td><i class="doc">  /// which is the most recent chronologically.</i></td></tr>
+<tr><th id="118">118</th><td><i class="doc">  ///</i></td></tr>
+<tr><th id="119">119</th><td><i class="doc">  /// <span class="command">\return</span></i></td></tr>
+<tr><th id="120">120</th><td><i class="doc">  ///     The current position of the thread's trace or<span class="command"> \b</span> <span class="arg">0</span> if empty.</i></td></tr>
+<tr><th id="121">121</th><td>  <b>virtual</b> <span class='typedef' title='size_t' data-type='unsigned long' data-ref="size_t" data-ref-filename="size_t">size_t</span> <dfn class="virtual decl fn" id="_ZN12lldb_private5Trace17GetCursorPositionERKNS_6ThreadE" title='lldb_private::Trace::GetCursorPosition' data-ref="_ZN12lldb_private5Trace17GetCursorPositionERKNS_6ThreadE" data-ref-filename="_ZN12lldb_private5Trace17GetCursorPositionERKNS_6ThreadE">GetCursorPosition</dfn>(<em>const</em> <a class="type" href="Thread.h.html#lldb_private::Thread" title='lldb_private::Thread' data-ref="lldb_private::Thread" data-ref-filename="lldb_private..Thread">Thread</a> &amp;<dfn class="local col6 decl" id="746thread" title='thread' data-type='const lldb_private::Thread &amp;' data-ref="746thread" data-ref-filename="746thread">thread</dfn>) = <var>0</var>;</td></tr>
+<tr><th id="122">122</th><td></td></tr>
+<tr><th id="123">123</th><td>  <i class="doc">/// Dump<span class="command"> \a</span> <span class="arg">count</span> instructions of the given thread's trace ending at the</i></td></tr>
+<tr><th id="124">124</th><td><i class="doc">  /// given<span class="command"> \a</span> <span class="arg">end_position</span> position.</i></td></tr>
+<tr><th id="125">125</th><td><i class="doc">  ///</i></td></tr>
+<tr><th id="126">126</th><td><i class="doc">  /// The instructions are printed along with their indices or positions, which</i></td></tr>
+<tr><th id="127">127</th><td><i class="doc">  /// are increasing chronologically. This means that the<span class="command"> \a</span> <span class="arg">index</span> 0 represents</i></td></tr>
+<tr><th id="128">128</th><td><i class="doc">  /// the oldest instruction of the trace chronologically.</i></td></tr>
+<tr><th id="129">129</th><td><i class="doc">  ///</i></td></tr>
+<tr><th id="130">130</th><td><i class="doc">  /// <span class="command">\param</span>[in] <span class="arg">thread</span></i></td></tr>
+<tr><th id="131">131</th><td><i class="doc">  ///     The thread whose trace will be dumped.</i></td></tr>
+<tr><th id="132">132</th><td><i class="doc">  ///</i></td></tr>
+<tr><th id="133">133</th><td><i class="doc">  /// <span class="command">\param</span>[in] <span class="arg">s</span></i></td></tr>
+<tr><th id="134">134</th><td><i class="doc">  ///     The stream object where the instructions are printed.</i></td></tr>
+<tr><th id="135">135</th><td><i class="doc">  ///</i></td></tr>
+<tr><th id="136">136</th><td><i class="doc">  /// <span class="command">\param</span>[in] <span class="arg">count</span></i></td></tr>
+<tr><th id="137">137</th><td><i class="doc">  ///     The number of instructions to print.</i></td></tr>
+<tr><th id="138">138</th><td><i class="doc">  ///</i></td></tr>
+<tr><th id="139">139</th><td><i class="doc">  /// <span class="command">\param</span>[in] <span class="arg">end_position</span></i></td></tr>
+<tr><th id="140">140</th><td><i class="doc">  ///     The position of the last instruction to print.</i></td></tr>
+<tr><th id="141">141</th><td><i class="doc">  ///</i></td></tr>
+<tr><th id="142">142</th><td><i class="doc">  /// <span class="command">\param</span>[in] <span class="arg">raw</span></i></td></tr>
+<tr><th id="143">143</th><td><i class="doc">  ///     Dump only instruction addresses without disassembly nor symbol</i></td></tr>
+<tr><th id="144">144</th><td><i class="doc">  ///     information.</i></td></tr>
+<tr><th id="145">145</th><td>  <em>void</em> <dfn class="decl fn" id="_ZN12lldb_private5Trace21DumpTraceInstructionsERNS_6ThreadERNS_6StreamEmmb" title='lldb_private::Trace::DumpTraceInstructions' data-ref="_ZN12lldb_private5Trace21DumpTraceInstructionsERNS_6ThreadERNS_6StreamEmmb" data-ref-filename="_ZN12lldb_private5Trace21DumpTraceInstructionsERNS_6ThreadERNS_6StreamEmmb">DumpTraceInstructions</dfn>(<a class="type" href="Thread.h.html#lldb_private::Thread" title='lldb_private::Thread' data-ref="lldb_private::Thread" data-ref-filename="lldb_private..Thread">Thread</a> &amp;<dfn class="local col7 decl" id="747thread" title='thread' data-type='lldb_private::Thread &amp;' data-ref="747thread" data-ref-filename="747thread">thread</dfn>, <a class="type" href="../Utility/Stream.h.html#lldb_private::Stream" title='lldb_private::Stream' data-ref="lldb_private::Stream" data-ref-filename="lldb_private..Stream">Stream</a> &amp;<dfn class="local col8 decl" id="748s" title='s' data-type='lldb_private::Stream &amp;' data-ref="748s" data-ref-filename="748s">s</dfn>, <span class='typedef' title='size_t' data-type='unsigned long' data-ref="size_t" data-ref-filename="size_t">size_t</span> <dfn class="local col9 decl" id="749count" title='count' data-type='size_t' data-ref="749count" data-ref-filename="749count">count</dfn>,</td></tr>
+<tr><th id="146">146</th><td>                             <span class='typedef' title='size_t' data-type='unsigned long' data-ref="size_t" data-ref-filename="size_t">size_t</span> <dfn class="local col0 decl" id="750end_position" title='end_position' data-type='size_t' data-ref="750end_position" data-ref-filename="750end_position">end_position</dfn>, <em>bool</em> <dfn class="local col1 decl" id="751raw" title='raw' data-type='bool' data-ref="751raw" data-ref-filename="751raw">raw</dfn>);</td></tr>
+<tr><th id="147">147</th><td></td></tr>
+<tr><th id="148">148</th><td>  <i class="doc">/// Run the provided callback on the instructions of the trace of the given</i></td></tr>
+<tr><th id="149">149</th><td><i class="doc">  /// thread.</i></td></tr>
+<tr><th id="150">150</th><td><i class="doc">  ///</i></td></tr>
+<tr><th id="151">151</th><td><i class="doc">  /// The instructions will be traversed starting at the given<span class="command"> \a</span> <span class="arg">position</span></i></td></tr>
+<tr><th id="152">152</th><td><i class="doc">  /// sequentially until the callback returns<span class="command"> \b</span> <span class="arg">false,</span> in which case no more</i></td></tr>
+<tr><th id="153">153</th><td><i class="doc">  /// instructions are inspected.</i></td></tr>
+<tr><th id="154">154</th><td><i class="doc">  ///</i></td></tr>
+<tr><th id="155">155</th><td><i class="doc">  /// The purpose of this method is to allow inspecting traced instructions</i></td></tr>
+<tr><th id="156">156</th><td><i class="doc">  /// without exposing the internal representation of how they are stored on</i></td></tr>
+<tr><th id="157">157</th><td><i class="doc">  /// memory.</i></td></tr>
+<tr><th id="158">158</th><td><i class="doc">  ///</i></td></tr>
+<tr><th id="159">159</th><td><i class="doc">  /// <span class="command">\param</span>[in] <span class="arg">thread</span></i></td></tr>
+<tr><th id="160">160</th><td><i class="doc">  ///     The thread whose trace will be traversed.</i></td></tr>
+<tr><th id="161">161</th><td><i class="doc">  ///</i></td></tr>
+<tr><th id="162">162</th><td><i class="doc">  /// <span class="command">\param</span>[in] <span class="arg">position</span></i></td></tr>
+<tr><th id="163">163</th><td><i class="doc">  ///     The instruction position to start iterating on.</i></td></tr>
+<tr><th id="164">164</th><td><i class="doc">  ///</i></td></tr>
+<tr><th id="165">165</th><td><i class="doc">  /// <span class="command">\param</span>[in] <span class="arg">direction</span></i></td></tr>
+<tr><th id="166">166</th><td><i class="doc">  ///     If<span class="command"> \b</span> <span class="arg">TraceDirection::Forwards,</span> then then instructions will be</i></td></tr>
+<tr><th id="167">167</th><td><i class="doc">  ///     traversed forwards chronologically, i.e. with incrementing indices. If</i></td></tr>
+<tr><th id="168">168</th><td><i class="doc">  ///    <span class="command"> \b</span> <span class="arg">TraceDirection::Backwards,</span> the traversal is done backwards</i></td></tr>
+<tr><th id="169">169</th><td><i class="doc">  ///     chronologically, i.e. with decrementing indices.</i></td></tr>
+<tr><th id="170">170</th><td><i class="doc">  ///</i></td></tr>
+<tr><th id="171">171</th><td><i class="doc">  /// <span class="command">\param</span>[in] <span class="arg">callback</span></i></td></tr>
+<tr><th id="172">172</th><td><i class="doc">  ///     The callback to execute on each instruction. If it returns<span class="command"> \b</span> <span class="arg">false,</span></i></td></tr>
+<tr><th id="173">173</th><td><i class="doc">  ///     the iteration stops.</i></td></tr>
+<tr><th id="174">174</th><td>  <b>virtual</b> <em>void</em> <dfn class="virtual decl fn" id="_ZN12lldb_private5Trace20TraverseInstructionsERKNS_6ThreadEmNS0_14TraceDirectionESt8functionIFbmN4llvm8ExpectedImEEEE" title='lldb_private::Trace::TraverseInstructions' data-ref="_ZN12lldb_private5Trace20TraverseInstructionsERKNS_6ThreadEmNS0_14TraceDirectionESt8functionIFbmN4llvm8ExpectedImEEEE" data-ref-filename="_ZN12lldb_private5Trace20TraverseInstructionsERKNS_6ThreadEmNS0_14TraceDirectionESt8functionIFbmN4llvm8ExpectedImEEEE">TraverseInstructions</dfn>(</td></tr>
+<tr><th id="175">175</th><td>      <em>const</em> <a class="type" href="Thread.h.html#lldb_private::Thread" title='lldb_private::Thread' data-ref="lldb_private::Thread" data-ref-filename="lldb_private..Thread">Thread</a> &amp;<dfn class="local col2 decl" id="752thread" title='thread' data-type='const lldb_private::Thread &amp;' data-ref="752thread" data-ref-filename="752thread">thread</dfn>, <span class='typedef' title='size_t' data-type='unsigned long' data-ref="size_t" data-ref-filename="size_t">size_t</span> <dfn class="local col3 decl" id="753position" title='position' data-type='size_t' data-ref="753position" data-ref-filename="753position">position</dfn>, <a class="type" href="#lldb_private::Trace::TraceDirection" title='lldb_private::Trace::TraceDirection' data-ref="lldb_private::Trace::TraceDirection" data-ref-filename="lldb_private..Trace..TraceDirection">TraceDirection</a> <dfn class="local col4 decl" id="754direction" title='direction' data-type='lldb_private::Trace::TraceDirection' data-ref="754direction" data-ref-filename="754direction">direction</dfn>,</td></tr>
+<tr><th id="176">176</th><td>      <span class="namespace">std::</span><span class='type' title='std::function' data-ref="std::function" data-ref-filename="std..function">function</span>&lt;<em>bool</em>(<span class='typedef' title='size_t' data-type='unsigned long' data-ref="size_t" data-ref-filename="size_t">size_t</span> <dfn class="local col6 decl" id="756index" title='index' data-type='size_t' data-ref="756index" data-ref-filename="756index">index</dfn>, <span class="namespace">llvm::</span><a class="type" href="../../../../llvm/include/llvm/Support/raw_ostream.h.html#llvm::Expected" title='llvm::Expected' data-ref="llvm::Expected" data-ref-filename="llvm..Expected">Expected</a>&lt;<span class="namespace">lldb::</span><a class="typedef" href="../lldb-types.h.html#lldb::addr_t" title='lldb::addr_t' data-type='uint64_t' data-ref="lldb::addr_t" data-ref-filename="lldb..addr_t">addr_t</a>&gt; <dfn class="local col7 decl" id="757load_addr" title='load_addr' data-type='llvm::Expected&lt;lldb::addr_t&gt;' data-ref="757load_addr" data-ref-filename="757load_addr">load_addr</dfn>)&gt;</td></tr>
+<tr><th id="177">177</th><td>          <dfn class="local col5 decl" id="755callback" title='callback' data-type='std::function&lt;bool (size_t, llvm::Expected&lt;lldb::addr_t&gt;)&gt;' data-ref="755callback" data-ref-filename="755callback">callback</dfn>) = <var>0</var>;</td></tr>
+<tr><th id="178">178</th><td></td></tr>
+<tr><th id="179">179</th><td>  <i class="doc">/// Stop tracing a live thread</i></td></tr>
+<tr><th id="180">180</th><td><i class="doc">  ///</i></td></tr>
+<tr><th id="181">181</th><td><i class="doc">  /// <span class="command">\param</span>[in] <span class="arg">thread</span></i></td></tr>
+<tr><th id="182">182</th><td><i class="doc">  ///     The thread object to stop tracing.</i></td></tr>
+<tr><th id="183">183</th><td><i class="doc">  ///</i></td></tr>
+<tr><th id="184">184</th><td><i class="doc">  /// <span class="command">\return</span></i></td></tr>
+<tr><th id="185">185</th><td><i class="doc">  ///     An<span class="command"> \a</span> <span class="arg">llvm::Error</span> if stopping tracing failed, or<span class="command"> \b</span></i></td></tr>
+<tr><th id="186">186</th><td><i class="doc">  ///     <span class="arg">llvm::Error::success()</span> otherwise.</i></td></tr>
+<tr><th id="187">187</th><td>  <b>virtual</b> <span class="namespace">llvm::</span><a class="type" href="../../../../llvm/include/llvm/Support/Error.h.html#llvm::Error" title='llvm::Error' data-ref="llvm::Error" data-ref-filename="llvm..Error">Error</a> <dfn class="virtual decl def fn" id="_ZN12lldb_private5Trace17StopTracingThreadERKNS_6ThreadE" title='lldb_private::Trace::StopTracingThread' data-ref="_ZN12lldb_private5Trace17StopTracingThreadERKNS_6ThreadE" data-ref-filename="_ZN12lldb_private5Trace17StopTracingThreadERKNS_6ThreadE">StopTracingThread</dfn>(<em>const</em> <a class="type" href="Thread.h.html#lldb_private::Thread" title='lldb_private::Thread' data-ref="lldb_private::Thread" data-ref-filename="lldb_private..Thread">Thread</a> &amp;<dfn class="local col8 decl" id="758thread" title='thread' data-type='const lldb_private::Thread &amp;' data-ref="758thread" data-ref-filename="758thread">thread</dfn>) {</td></tr>
+<tr><th id="188">188</th><td>    <b>return</b> <span class="namespace">llvm::</span><a class="ref fn" href="../../../../llvm/include/llvm/Support/Error.h.html#_ZN4llvm10make_errorEDpOT0_" title='llvm::make_error' data-ref="_ZN4llvm10make_errorEDpOT0_" data-ref-filename="_ZN4llvm10make_errorEDpOT0_">make_error</a>&lt;<a class="type" href="../Utility/UnimplementedError.h.html#lldb_private::UnimplementedError" title='lldb_private::UnimplementedError' data-ref="lldb_private::UnimplementedError" data-ref-filename="lldb_private..UnimplementedError">UnimplementedError</a>&gt;();</td></tr>
+<tr><th id="189">189</th><td>  }</td></tr>
+<tr><th id="190">190</th><td></td></tr>
+<tr><th id="191">191</th><td>  <i class="doc">/// Get the number of available instructions in the trace of the given thread.</i></td></tr>
+<tr><th id="192">192</th><td><i class="doc">  ///</i></td></tr>
+<tr><th id="193">193</th><td><i class="doc">  /// <span class="command">\param</span>[in] <span class="arg">thread</span></i></td></tr>
+<tr><th id="194">194</th><td><i class="doc">  ///     The thread whose trace will be inspected.</i></td></tr>
+<tr><th id="195">195</th><td><i class="doc">  ///</i></td></tr>
+<tr><th id="196">196</th><td><i class="doc">  /// <span class="command">\return</span></i></td></tr>
+<tr><th id="197">197</th><td><i class="doc">  ///     The total number of instructions in the trace.</i></td></tr>
+<tr><th id="198">198</th><td>  <b>virtual</b> <span class='typedef' title='size_t' data-type='unsigned long' data-ref="size_t" data-ref-filename="size_t">size_t</span> <dfn class="virtual decl fn" id="_ZN12lldb_private5Trace19GetInstructionCountERKNS_6ThreadE" title='lldb_private::Trace::GetInstructionCount' data-ref="_ZN12lldb_private5Trace19GetInstructionCountERKNS_6ThreadE" data-ref-filename="_ZN12lldb_private5Trace19GetInstructionCountERKNS_6ThreadE">GetInstructionCount</dfn>(<em>const</em> <a class="type" href="Thread.h.html#lldb_private::Thread" title='lldb_private::Thread' data-ref="lldb_private::Thread" data-ref-filename="lldb_private..Thread">Thread</a> &amp;<dfn class="local col9 decl" id="759thread" title='thread' data-type='const lldb_private::Thread &amp;' data-ref="759thread" data-ref-filename="759thread">thread</dfn>) = <var>0</var>;</td></tr>
+<tr><th id="199">199</th><td>};</td></tr>
+<tr><th id="200">200</th><td></td></tr>
+<tr><th id="201">201</th><td>} <i>// namespace lldb_private</i></td></tr>
+<tr><th id="202">202</th><td></td></tr>
+<tr><th id="203">203</th><td><u>#<span data-ppcond="9">endif</span> // LLDB_TARGET_TRACE_H</u></td></tr>
+<tr><th id="204">204</th><td></td></tr>
+</table><hr/><p id='footer'>
+Generated while processing <a href='../../../source/API/SBAttachInfo.cpp.html'>llvm/lldb/source/API/SBAttachInfo.cpp</a><br/>Generated on <em>2021-Jul-01</em> from project llvm revision <em>12</em>

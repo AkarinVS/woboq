@@ -1,0 +1,21 @@
+<dec f='llvm/llvm/lib/Target/WebAssembly/MCTargetDesc/WebAssemblyTargetStreamer.h' l='62' type='llvm::formatted_raw_ostream &amp;'/>
+<offset>128</offset>
+<use f='llvm/llvm/lib/Target/WebAssembly/MCTargetDesc/WebAssemblyTargetStreamer.cpp' l='36' u='w' c='_ZN4llvm28WebAssemblyTargetAsmStreamerC1ERNS_10MCStreamerERNS_21formatted_raw_ostreamE'/>
+<use f='llvm/llvm/lib/Target/WebAssembly/MCTargetDesc/WebAssemblyTargetStreamer.cpp' l='56' u='m' c='_ZN4llvm28WebAssemblyTargetAsmStreamer9emitLocalENS_8ArrayRefINS_4wasm7ValTypeEEE'/>
+<use f='llvm/llvm/lib/Target/WebAssembly/MCTargetDesc/WebAssemblyTargetStreamer.cpp' l='57' u='a' c='_ZN4llvm28WebAssemblyTargetAsmStreamer9emitLocalENS_8ArrayRefINS_4wasm7ValTypeEEE'/>
+<use f='llvm/llvm/lib/Target/WebAssembly/MCTargetDesc/WebAssemblyTargetStreamer.cpp' l='61' u='m' c='_ZN4llvm28WebAssemblyTargetAsmStreamer11emitEndFuncEv'/>
+<use f='llvm/llvm/lib/Target/WebAssembly/MCTargetDesc/WebAssemblyTargetStreamer.cpp' l='65' u='m' c='_ZN4llvm28WebAssemblyTargetAsmStreamer16emitFunctionTypeEPKNS_12MCSymbolWasmE'/>
+<use f='llvm/llvm/lib/Target/WebAssembly/MCTargetDesc/WebAssemblyTargetStreamer.cpp' l='66' u='m' c='_ZN4llvm28WebAssemblyTargetAsmStreamer16emitFunctionTypeEPKNS_12MCSymbolWasmE'/>
+<use f='llvm/llvm/lib/Target/WebAssembly/MCTargetDesc/WebAssemblyTargetStreamer.cpp' l='67' u='m' c='_ZN4llvm28WebAssemblyTargetAsmStreamer16emitFunctionTypeEPKNS_12MCSymbolWasmE'/>
+<use f='llvm/llvm/lib/Target/WebAssembly/MCTargetDesc/WebAssemblyTargetStreamer.cpp' l='72' u='m' c='_ZN4llvm28WebAssemblyTargetAsmStreamer14emitGlobalTypeEPKNS_12MCSymbolWasmE'/>
+<use f='llvm/llvm/lib/Target/WebAssembly/MCTargetDesc/WebAssemblyTargetStreamer.cpp' l='76' u='m' c='_ZN4llvm28WebAssemblyTargetAsmStreamer14emitGlobalTypeEPKNS_12MCSymbolWasmE'/>
+<use f='llvm/llvm/lib/Target/WebAssembly/MCTargetDesc/WebAssemblyTargetStreamer.cpp' l='77' u='m' c='_ZN4llvm28WebAssemblyTargetAsmStreamer14emitGlobalTypeEPKNS_12MCSymbolWasmE'/>
+<use f='llvm/llvm/lib/Target/WebAssembly/MCTargetDesc/WebAssemblyTargetStreamer.cpp' l='82' u='m' c='_ZN4llvm28WebAssemblyTargetAsmStreamer13emitTableTypeEPKNS_12MCSymbolWasmE'/>
+<use f='llvm/llvm/lib/Target/WebAssembly/MCTargetDesc/WebAssemblyTargetStreamer.cpp' l='84' u='m' c='_ZN4llvm28WebAssemblyTargetAsmStreamer13emitTableTypeEPKNS_12MCSymbolWasmE'/>
+<use f='llvm/llvm/lib/Target/WebAssembly/MCTargetDesc/WebAssemblyTargetStreamer.cpp' l='89' u='m' c='_ZN4llvm28WebAssemblyTargetAsmStreamer13emitEventTypeEPKNS_12MCSymbolWasmE'/>
+<use f='llvm/llvm/lib/Target/WebAssembly/MCTargetDesc/WebAssemblyTargetStreamer.cpp' l='90' u='m' c='_ZN4llvm28WebAssemblyTargetAsmStreamer13emitEventTypeEPKNS_12MCSymbolWasmE'/>
+<use f='llvm/llvm/lib/Target/WebAssembly/MCTargetDesc/WebAssemblyTargetStreamer.cpp' l='91' u='m' c='_ZN4llvm28WebAssemblyTargetAsmStreamer13emitEventTypeEPKNS_12MCSymbolWasmE'/>
+<use f='llvm/llvm/lib/Target/WebAssembly/MCTargetDesc/WebAssemblyTargetStreamer.cpp' l='96' u='m' c='_ZN4llvm28WebAssemblyTargetAsmStreamer16emitImportModuleEPKNS_12MCSymbolWasmENS_9StringRefE'/>
+<use f='llvm/llvm/lib/Target/WebAssembly/MCTargetDesc/WebAssemblyTargetStreamer.cpp' l='102' u='m' c='_ZN4llvm28WebAssemblyTargetAsmStreamer14emitImportNameEPKNS_12MCSymbolWasmENS_9StringRefE'/>
+<use f='llvm/llvm/lib/Target/WebAssembly/MCTargetDesc/WebAssemblyTargetStreamer.cpp' l='108' u='m' c='_ZN4llvm28WebAssemblyTargetAsmStreamer14emitExportNameEPKNS_12MCSymbolWasmENS_9StringRefE'/>
+<use f='llvm/llvm/lib/Target/WebAssembly/MCTargetDesc/WebAssemblyTargetStreamer.cpp' l='113' u='m' c='_ZN4llvm28WebAssemblyTargetAsmStreamer10emitIndIdxEPKNS_6MCExprE'/>

@@ -1,0 +1,49 @@
+<dec f='llvm/clang/include/clang/Tooling/Transformer/RewriteRule.h' l='362' type='clang::transformer::RewriteRule clang::transformer::applyFirst(ArrayRef&lt;clang::transformer::RewriteRule&gt; Rules)'/>
+<def f='llvm/clang/lib/Tooling/Transformer/RewriteRule.cpp' l='369' ll='374' type='clang::transformer::RewriteRule clang::transformer::applyFirst(ArrayRef&lt;clang::transformer::RewriteRule&gt; Rules)'/>
+<doc f='llvm/clang/lib/Tooling/Transformer/RewriteRule.cpp' l='366'>// Simply gathers the contents of the various rules into a single rule. The
+// actual work to combine these into an ordered choice is deferred to matcher
+// registration.</doc>
+<doc f='llvm/clang/include/clang/Tooling/Transformer/RewriteRule.h' l='323'>/// Applies the first rule whose pattern matches; other rules are ignored.  If
+/// the matchers are independent then order doesn&apos;t matter. In that case,
+/// `applyFirst` is simply joining the set of rules into one.
+//
+// `applyFirst` is like an `anyOf` matcher with an edit action attached to each
+// of its cases. Anywhere you&apos;d use `anyOf(m1.bind(&quot;id1&quot;), m2.bind(&quot;id2&quot;))` and
+// then dispatch on those ids in your code for control flow, `applyFirst` lifts
+// that behavior to the rule level.  So, you can write `applyFirst({makeRule(m1,
+// action1), makeRule(m2, action2), ...});`
+//
+// For example, consider a type `T` with a deterministic serialization function,
+// `serialize()`.  For performance reasons, we would like to make it
+// non-deterministic.  Therefore, we want to drop the expectation that
+// `a.serialize() = b.serialize() iff a = b` (although we&apos;ll maintain
+// `deserialize(a.serialize()) = a`).
+//
+// We have three cases to consider (for some equality function, `eq`):
+// ```
+// eq(a.serialize(), b.serialize()) --&gt; eq(a,b)
+// eq(a, b.serialize())             --&gt; eq(deserialize(a), b)
+// eq(a.serialize(), b)             --&gt; eq(a, deserialize(b))
+// ```
+//
+// `applyFirst` allows us to specify each independently:
+// ```
+// auto eq_fun = functionDecl(...);
+// auto method_call = cxxMemberCallExpr(...);
+//
+// auto two_calls = callExpr(callee(eq_fun), hasArgument(0, method_call),
+//                           hasArgument(1, method_call));
+// auto left_call =
+//     callExpr(callee(eq_fun), callExpr(hasArgument(0, method_call)));
+// auto right_call =
+//     callExpr(callee(eq_fun), callExpr(hasArgument(1, method_call)));
+//
+// RewriteRule R = applyFirst({makeRule(two_calls, two_calls_action),
+//                             makeRule(left_call, left_call_action),
+//                             makeRule(right_call, right_call_action)});
+// ```</doc>
+<use f='llvm/clang/unittests/Tooling/TransformerTest.cpp' l='907' u='c' c='_ZN12_GLOBAL__N_141TransformerTest_OrderedRuleUnrelated_Test8TestBodyEv'/>
+<use f='llvm/clang/unittests/Tooling/TransformerTest.cpp' l='930' u='c' c='_ZN12_GLOBAL__N_139TransformerTest_OrderedRuleRelated_Test8TestBodyEv'/>
+<use f='llvm/clang/unittests/Tooling/TransformerTest.cpp' l='955' u='c' c='_ZN12_GLOBAL__N_146TransformerTest_OrderedRuleRelatedSwapped_Test8TestBodyEv'/>
+<use f='llvm/clang/unittests/Tooling/TransformerTest.cpp' l='986' u='c' c='_ZN12_GLOBAL__N_145TransformerTest_OrderedRuleMultipleKinds_Test8TestBodyEv'/>
+<use f='llvm/clang/unittests/Tooling/TransformerTest.cpp' l='1013' u='c' c='_ZN12_GLOBAL__N_147TransformerTest_OrderedRuleImplicitMatched_Test8TestBodyEv'/>

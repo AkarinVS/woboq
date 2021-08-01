@@ -1,0 +1,30 @@
+<use f='llvm/clang/include/clang/AST/DependenceFlags.h' l='134' u='w' c='_ZN5clang10DependenceC1Ev'/>
+<use f='llvm/clang/include/clang/AST/DependenceFlags.h' l='137' u='w' c='_ZN5clang10DependenceC1ENS_19TypeDependenceScope14TypeDependenceE'/>
+<use f='llvm/clang/include/clang/AST/DependenceFlags.h' l='144' u='w' c='_ZN5clang10DependenceC1ENS_19ExprDependenceScope14ExprDependenceE'/>
+<use f='llvm/clang/include/clang/AST/DependenceFlags.h' l='151' u='w' c='_ZN5clang10DependenceC1ENS_34NestedNameSpecifierDependenceScope29NestedNameSpecifierDependenceE'/>
+<use f='llvm/clang/include/clang/AST/DependenceFlags.h' l='157' u='w' c='_ZN5clang10DependenceC1ENS_31TemplateArgumentDependenceScope26TemplateArgumentDependenceE'/>
+<use f='llvm/clang/include/clang/AST/DependenceFlags.h' l='163' u='w' c='_ZN5clang10DependenceC1ENS_27TemplateNameDependenceScope22TemplateNameDependenceE'/>
+<use f='llvm/clang/include/clang/AST/DependenceFlags.h' l='169' u='r' c='_ZNK5clang10Dependence4typeEv'/>
+<use f='llvm/clang/include/clang/AST/DependenceFlags.h' l='170' u='r' c='_ZNK5clang10Dependence4typeEv'/>
+<use f='llvm/clang/include/clang/AST/DependenceFlags.h' l='171' u='r' c='_ZNK5clang10Dependence4typeEv'/>
+<use f='llvm/clang/include/clang/AST/DependenceFlags.h' l='172' u='r' c='_ZNK5clang10Dependence4typeEv'/>
+<use f='llvm/clang/include/clang/AST/DependenceFlags.h' l='173' u='r' c='_ZNK5clang10Dependence4typeEv'/>
+<use f='llvm/clang/include/clang/AST/DependenceFlags.h' l='177' u='r' c='_ZNK5clang10Dependence4exprEv'/>
+<use f='llvm/clang/include/clang/AST/DependenceFlags.h' l='178' u='r' c='_ZNK5clang10Dependence4exprEv'/>
+<use f='llvm/clang/include/clang/AST/DependenceFlags.h' l='179' u='r' c='_ZNK5clang10Dependence4exprEv'/>
+<use f='llvm/clang/include/clang/AST/DependenceFlags.h' l='180' u='r' c='_ZNK5clang10Dependence4exprEv'/>
+<use f='llvm/clang/include/clang/AST/DependenceFlags.h' l='181' u='r' c='_ZNK5clang10Dependence4exprEv'/>
+<use f='llvm/clang/include/clang/AST/DependenceFlags.h' l='185' u='r' c='_ZNK5clang10Dependence19nestedNameSpecifierEv'/>
+<use f='llvm/clang/include/clang/AST/DependenceFlags.h' l='186' u='r' c='_ZNK5clang10Dependence19nestedNameSpecifierEv'/>
+<use f='llvm/clang/include/clang/AST/DependenceFlags.h' l='187' u='r' c='_ZNK5clang10Dependence19nestedNameSpecifierEv'/>
+<use f='llvm/clang/include/clang/AST/DependenceFlags.h' l='188' u='r' c='_ZNK5clang10Dependence19nestedNameSpecifierEv'/>
+<use f='llvm/clang/include/clang/AST/DependenceFlags.h' l='192' u='r' c='_ZNK5clang10Dependence16templateArgumentEv'/>
+<use f='llvm/clang/include/clang/AST/DependenceFlags.h' l='193' u='r' c='_ZNK5clang10Dependence16templateArgumentEv'/>
+<use f='llvm/clang/include/clang/AST/DependenceFlags.h' l='194' u='r' c='_ZNK5clang10Dependence16templateArgumentEv'/>
+<use f='llvm/clang/include/clang/AST/DependenceFlags.h' l='195' u='r' c='_ZNK5clang10Dependence16templateArgumentEv'/>
+<use f='llvm/clang/include/clang/AST/DependenceFlags.h' l='199' u='r' c='_ZNK5clang10Dependence12templateNameEv'/>
+<use f='llvm/clang/include/clang/AST/DependenceFlags.h' l='200' u='r' c='_ZNK5clang10Dependence12templateNameEv'/>
+<use f='llvm/clang/include/clang/AST/DependenceFlags.h' l='201' u='r' c='_ZNK5clang10Dependence12templateNameEv'/>
+<use f='llvm/clang/include/clang/AST/DependenceFlags.h' l='202' u='r' c='_ZNK5clang10Dependence12templateNameEv'/>
+<dec f='llvm/clang/include/clang/AST/DependenceFlags.h' l='206' type='clang::Dependence::Bits'/>
+<offset>0</offset>

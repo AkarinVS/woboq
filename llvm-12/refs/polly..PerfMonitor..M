@@ -1,0 +1,20 @@
+<dec f='llvm/polly/include/polly/CodeGen/PerfMonitor.h' l='42' type='llvm::Module *'/>
+<offset>0</offset>
+<use f='llvm/polly/lib/CodeGen/PerfMonitor.cpp' l='23' u='r' c='_ZN5polly11PerfMonitor9getAtExitEv'/>
+<use f='llvm/polly/lib/CodeGen/PerfMonitor.cpp' l='29' u='r' c='_ZN5polly11PerfMonitor9getAtExitEv'/>
+<use f='llvm/polly/lib/CodeGen/PerfMonitor.cpp' l='37' u='r' c='_ZN5polly11PerfMonitor23addToGlobalConstructorsEPN4llvm8FunctionE'/>
+<use f='llvm/polly/lib/CodeGen/PerfMonitor.cpp' l='55' u='r' c='_ZN5polly11PerfMonitor23addToGlobalConstructorsEPN4llvm8FunctionE'/>
+<use f='llvm/polly/lib/CodeGen/PerfMonitor.cpp' l='61' u='r' c='_ZN5polly11PerfMonitor9getRDTSCPEv'/>
+<use f='llvm/polly/lib/CodeGen/PerfMonitor.cpp' l='65' u='w' c='_ZN5polly11PerfMonitorC1ERKNS_4ScopEPN4llvm6ModuleE'/>
+<use f='llvm/polly/lib/CodeGen/PerfMonitor.cpp' l='95' u='r' c='_ZN5polly11PerfMonitor14addScopCounterEv'/>
+<use f='llvm/polly/lib/CodeGen/PerfMonitor.cpp' l='98' u='r' c='_ZN5polly11PerfMonitor14addScopCounterEv'/>
+<use f='llvm/polly/lib/CodeGen/PerfMonitor.cpp' l='103' u='r' c='_ZN5polly11PerfMonitor18addGlobalVariablesEv'/>
+<use f='llvm/polly/lib/CodeGen/PerfMonitor.cpp' l='106' u='r' c='_ZN5polly11PerfMonitor18addGlobalVariablesEv'/>
+<use f='llvm/polly/lib/CodeGen/PerfMonitor.cpp' l='109' u='r' c='_ZN5polly11PerfMonitor18addGlobalVariablesEv'/>
+<use f='llvm/polly/lib/CodeGen/PerfMonitor.cpp' l='112' u='r' c='_ZN5polly11PerfMonitor18addGlobalVariablesEv'/>
+<use f='llvm/polly/lib/CodeGen/PerfMonitor.cpp' l='127' u='r' c='_ZN5polly11PerfMonitor20insertFinalReportingEv'/>
+<use f='llvm/polly/lib/CodeGen/PerfMonitor.cpp' l='128' u='r' c='_ZN5polly11PerfMonitor20insertFinalReportingEv'/>
+<use f='llvm/polly/lib/CodeGen/PerfMonitor.cpp' l='217' u='r' c='_ZN5polly11PerfMonitor18insertInitFunctionEPN4llvm8FunctionE'/>
+<use f='llvm/polly/lib/CodeGen/PerfMonitor.cpp' l='218' u='r' c='_ZN5polly11PerfMonitor18insertInitFunctionEPN4llvm8FunctionE'/>
+<use f='llvm/polly/lib/CodeGen/PerfMonitor.cpp' l='220' u='r' c='_ZN5polly11PerfMonitor18insertInitFunctionEPN4llvm8FunctionE'/>
+<use f='llvm/polly/lib/CodeGen/PerfMonitor.cpp' l='221' u='r' c='_ZN5polly11PerfMonitor18insertInitFunctionEPN4llvm8FunctionE'/>

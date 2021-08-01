@@ -1,0 +1,27 @@
+<dec f='llvm/clang/include/clang/Sema/AnalysisBasedWarnings.h' l='47' type='clang::Sema &amp;'/>
+<offset>0</offset>
+<use f='llvm/clang/lib/Sema/AnalysisBasedWarnings.cpp' l='2122' u='w' c='_ZN5clang4sema21AnalysisBasedWarningsC1ERNS_4SemaE'/>
+<use f='llvm/clang/lib/Sema/AnalysisBasedWarnings.cpp' l='2134' u='m' c='_ZN5clang4sema21AnalysisBasedWarningsC1ERNS_4SemaE'/>
+<use f='llvm/clang/lib/Sema/AnalysisBasedWarnings.cpp' l='2165' u='m' c='_ZN5clang4sema21AnalysisBasedWarnings13IssueWarningsENS1_6PolicyEPNS0_17FunctionScopeInfoEPKNS_4DeclENS_8QualTypeE'/>
+<use f='llvm/clang/lib/Sema/AnalysisBasedWarnings.cpp' l='2170' u='m' c='_ZN5clang4sema21AnalysisBasedWarnings13IssueWarningsENS1_6PolicyEPNS0_17FunctionScopeInfoEPKNS_4DeclENS_8QualTypeE'/>
+<use f='llvm/clang/lib/Sema/AnalysisBasedWarnings.cpp' l='2177' u='m' c='_ZN5clang4sema21AnalysisBasedWarnings13IssueWarningsENS1_6PolicyEPNS0_17FunctionScopeInfoEPKNS_4DeclENS_8QualTypeE'/>
+<use f='llvm/clang/lib/Sema/AnalysisBasedWarnings.cpp' l='2179' u='a' c='_ZN5clang4sema21AnalysisBasedWarnings13IssueWarningsENS1_6PolicyEPNS0_17FunctionScopeInfoEPKNS_4DeclENS_8QualTypeE'/>
+<use f='llvm/clang/lib/Sema/AnalysisBasedWarnings.cpp' l='2225' u='a' c='_ZN5clang4sema21AnalysisBasedWarnings13IssueWarningsENS1_6PolicyEPNS0_17FunctionScopeInfoEPKNS_4DeclENS_8QualTypeE'/>
+<use f='llvm/clang/lib/Sema/AnalysisBasedWarnings.cpp' l='2262' u='m' c='_ZN5clang4sema21AnalysisBasedWarnings13IssueWarningsENS1_6PolicyEPNS0_17FunctionScopeInfoEPKNS_4DeclENS_8QualTypeE'/>
+<use f='llvm/clang/lib/Sema/AnalysisBasedWarnings.cpp' l='2267' u='a' c='_ZN5clang4sema21AnalysisBasedWarnings13IssueWarningsENS1_6PolicyEPNS0_17FunctionScopeInfoEPKNS_4DeclENS_8QualTypeE'/>
+<use f='llvm/clang/lib/Sema/AnalysisBasedWarnings.cpp' l='2282' u='a' c='_ZN5clang4sema21AnalysisBasedWarnings13IssueWarningsENS1_6PolicyEPNS0_17FunctionScopeInfoEPKNS_4DeclENS_8QualTypeE'/>
+<use f='llvm/clang/lib/Sema/AnalysisBasedWarnings.cpp' l='2295' u='a' c='_ZN5clang4sema21AnalysisBasedWarnings13IssueWarningsENS1_6PolicyEPNS0_17FunctionScopeInfoEPKNS_4DeclENS_8QualTypeE'/>
+<use f='llvm/clang/lib/Sema/AnalysisBasedWarnings.cpp' l='2302' u='a' c='_ZN5clang4sema21AnalysisBasedWarnings13IssueWarningsENS1_6PolicyEPNS0_17FunctionScopeInfoEPKNS_4DeclENS_8QualTypeE'/>
+<use f='llvm/clang/lib/Sema/AnalysisBasedWarnings.cpp' l='2309' u='m' c='_ZN5clang4sema21AnalysisBasedWarnings13IssueWarningsENS1_6PolicyEPNS0_17FunctionScopeInfoEPKNS_4DeclENS_8QualTypeE'/>
+<use f='llvm/clang/lib/Sema/AnalysisBasedWarnings.cpp' l='2315' u='a' c='_ZN5clang4sema21AnalysisBasedWarnings13IssueWarningsENS1_6PolicyEPNS0_17FunctionScopeInfoEPKNS_4DeclENS_8QualTypeE'/>
+<use f='llvm/clang/lib/Sema/AnalysisBasedWarnings.cpp' l='2325' u='a' c='_ZN5clang4sema21AnalysisBasedWarnings13IssueWarningsENS1_6PolicyEPNS0_17FunctionScopeInfoEPKNS_4DeclENS_8QualTypeE'/>
+<use f='llvm/clang/lib/Sema/AnalysisBasedWarnings.cpp' l='2331' u='m' c='_ZN5clang4sema21AnalysisBasedWarnings13IssueWarningsENS1_6PolicyEPNS0_17FunctionScopeInfoEPKNS_4DeclENS_8QualTypeE'/>
+<use f='llvm/clang/lib/Sema/AnalysisBasedWarnings.cpp' l='2346' u='m' c='_ZN5clang4sema21AnalysisBasedWarnings13IssueWarningsENS1_6PolicyEPNS0_17FunctionScopeInfoEPKNS_4DeclENS_8QualTypeE'/>
+<use f='llvm/clang/lib/Sema/AnalysisBasedWarnings.cpp' l='2349' u='a' c='_ZN5clang4sema21AnalysisBasedWarnings13IssueWarningsENS1_6PolicyEPNS0_17FunctionScopeInfoEPKNS_4DeclENS_8QualTypeE'/>
+<use f='llvm/clang/lib/Sema/AnalysisBasedWarnings.cpp' l='2362' u='a' c='_ZN5clang4sema21AnalysisBasedWarnings13IssueWarningsENS1_6PolicyEPNS0_17FunctionScopeInfoEPKNS_4DeclENS_8QualTypeE'/>
+<use f='llvm/clang/lib/Sema/AnalysisBasedWarnings.cpp' l='2365' u='m' c='_ZN5clang4sema21AnalysisBasedWarnings13IssueWarningsENS1_6PolicyEPNS0_17FunctionScopeInfoEPKNS_4DeclENS_8QualTypeE'/>
+<use f='llvm/clang/lib/Sema/AnalysisBasedWarnings.cpp' l='2367' u='a' c='_ZN5clang4sema21AnalysisBasedWarnings13IssueWarningsENS1_6PolicyEPNS0_17FunctionScopeInfoEPKNS_4DeclENS_8QualTypeE'/>
+<use f='llvm/clang/lib/Sema/AnalysisBasedWarnings.cpp' l='2374' u='a' c='_ZN5clang4sema21AnalysisBasedWarnings13IssueWarningsENS1_6PolicyEPNS0_17FunctionScopeInfoEPKNS_4DeclENS_8QualTypeE'/>
+<use f='llvm/clang/lib/Sema/AnalysisBasedWarnings.cpp' l='2381' u='m' c='_ZN5clang4sema21AnalysisBasedWarnings13IssueWarningsENS1_6PolicyEPNS0_17FunctionScopeInfoEPKNS_4DeclENS_8QualTypeE'/>
+<use f='llvm/clang/lib/Sema/AnalysisBasedWarnings.cpp' l='2382' u='a' c='_ZN5clang4sema21AnalysisBasedWarnings13IssueWarningsENS1_6PolicyEPNS0_17FunctionScopeInfoEPKNS_4DeclENS_8QualTypeE'/>
+<use f='llvm/clang/lib/Sema/AnalysisBasedWarnings.cpp' l='2391' u='m' c='_ZN5clang4sema21AnalysisBasedWarnings13IssueWarningsENS1_6PolicyEPNS0_17FunctionScopeInfoEPKNS_4DeclENS_8QualTypeE'/>

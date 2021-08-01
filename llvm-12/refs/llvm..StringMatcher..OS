@@ -1,0 +1,21 @@
+<dec f='llvm/llvm/include/llvm/TableGen/StringMatcher.h' l='37' type='llvm::raw_ostream &amp;'/>
+<use f='llvm/llvm/include/llvm/TableGen/StringMatcher.h' l='42' u='w' c='_ZN4llvm13StringMatcherC1ENS_9StringRefERKSt6vectorISt4pairINSt7__cxx1112basic_stringIcSt11char_traitsIcESaIcEEES9_ESaISA_EERNS_11raw_ostreamE'/>
+<offset>192</offset>
+<use f='llvm/llvm/lib/TableGen/StringMatcher.cpp' l='64' u='m' c='_ZNK4llvm13StringMatcher24EmitStringMatcherForCharERKSt6vectorIPKSt4pairINSt7__cxx1112basic_stringIcSt11char_traitsIcESaIcEEES8_ESaISB_EEjjb'/>
+<use f='llvm/llvm/lib/TableGen/StringMatcher.cpp' l='69' u='m' c='_ZNK4llvm13StringMatcher24EmitStringMatcherForCharERKSt6vectorIPKSt4pairINSt7__cxx1112basic_stringIcSt11char_traitsIcESaIcEEES8_ESaISB_EEjjb'/>
+<use f='llvm/llvm/lib/TableGen/StringMatcher.cpp' l='92' u='m' c='_ZNK4llvm13StringMatcher24EmitStringMatcherForCharERKSt6vectorIPKSt4pairINSt7__cxx1112basic_stringIcSt11char_traitsIcESaIcEEES8_ESaISB_EEjjb'/>
+<use f='llvm/llvm/lib/TableGen/StringMatcher.cpp' l='94' u='m' c='_ZNK4llvm13StringMatcher24EmitStringMatcherForCharERKSt6vectorIPKSt4pairINSt7__cxx1112basic_stringIcSt11char_traitsIcESaIcEEES8_ESaISB_EEjjb'/>
+<use f='llvm/llvm/lib/TableGen/StringMatcher.cpp' l='98' u='m' c='_ZNK4llvm13StringMatcher24EmitStringMatcherForCharERKSt6vectorIPKSt4pairINSt7__cxx1112basic_stringIcSt11char_traitsIcESaIcEEES8_ESaISB_EEjjb'/>
+<use f='llvm/llvm/lib/TableGen/StringMatcher.cpp' l='101' u='m' c='_ZNK4llvm13StringMatcher24EmitStringMatcherForCharERKSt6vectorIPKSt4pairINSt7__cxx1112basic_stringIcSt11char_traitsIcESaIcEEES8_ESaISB_EEjjb'/>
+<use f='llvm/llvm/lib/TableGen/StringMatcher.cpp' l='110' u='m' c='_ZNK4llvm13StringMatcher24EmitStringMatcherForCharERKSt6vectorIPKSt4pairINSt7__cxx1112basic_stringIcSt11char_traitsIcESaIcEEES8_ESaISB_EEjjb'/>
+<use f='llvm/llvm/lib/TableGen/StringMatcher.cpp' l='111' u='m' c='_ZNK4llvm13StringMatcher24EmitStringMatcherForCharERKSt6vectorIPKSt4pairINSt7__cxx1112basic_stringIcSt11char_traitsIcESaIcEEES8_ESaISB_EEjjb'/>
+<use f='llvm/llvm/lib/TableGen/StringMatcher.cpp' l='116' u='m' c='_ZNK4llvm13StringMatcher24EmitStringMatcherForCharERKSt6vectorIPKSt4pairINSt7__cxx1112basic_stringIcSt11char_traitsIcESaIcEEES8_ESaISB_EEjjb'/>
+<use f='llvm/llvm/lib/TableGen/StringMatcher.cpp' l='118' u='m' c='_ZNK4llvm13StringMatcher24EmitStringMatcherForCharERKSt6vectorIPKSt4pairINSt7__cxx1112basic_stringIcSt11char_traitsIcESaIcEEES8_ESaISB_EEjjb'/>
+<use f='llvm/llvm/lib/TableGen/StringMatcher.cpp' l='119' u='m' c='_ZNK4llvm13StringMatcher24EmitStringMatcherForCharERKSt6vectorIPKSt4pairINSt7__cxx1112basic_stringIcSt11char_traitsIcESaIcEEES8_ESaISB_EEjjb'/>
+<use f='llvm/llvm/lib/TableGen/StringMatcher.cpp' l='122' u='m' c='_ZNK4llvm13StringMatcher24EmitStringMatcherForCharERKSt6vectorIPKSt4pairINSt7__cxx1112basic_stringIcSt11char_traitsIcESaIcEEES8_ESaISB_EEjjb'/>
+<use f='llvm/llvm/lib/TableGen/StringMatcher.cpp' l='125' u='m' c='_ZNK4llvm13StringMatcher24EmitStringMatcherForCharERKSt6vectorIPKSt4pairINSt7__cxx1112basic_stringIcSt11char_traitsIcESaIcEEES8_ESaISB_EEjjb'/>
+<use f='llvm/llvm/lib/TableGen/StringMatcher.cpp' l='143' u='m' c='_ZNK4llvm13StringMatcher4EmitEjb'/>
+<use f='llvm/llvm/lib/TableGen/StringMatcher.cpp' l='144' u='m' c='_ZNK4llvm13StringMatcher4EmitEjb'/>
+<use f='llvm/llvm/lib/TableGen/StringMatcher.cpp' l='148' u='m' c='_ZNK4llvm13StringMatcher4EmitEjb'/>
+<use f='llvm/llvm/lib/TableGen/StringMatcher.cpp' l='152' u='m' c='_ZNK4llvm13StringMatcher4EmitEjb'/>
+<use f='llvm/llvm/lib/TableGen/StringMatcher.cpp' l='155' u='m' c='_ZNK4llvm13StringMatcher4EmitEjb'/>

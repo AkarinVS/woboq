@@ -1,0 +1,98 @@
+<!doctype html>
+<html>
+<head>
+<meta name="viewport" content="width=device-width, initial-scale=1.0"><title>sanitizer_allocator.h source code [llvm/compiler-rt/lib/sanitizer_common/sanitizer_allocator.h] - Woboq Code Browser</title>
+<meta name="woboq:interestingDefinitions" content="__sanitizer::NoOpMapUnmapCallback "/>
+<link rel="stylesheet" href="../../../.././data/qtcreator.css" title="QtCreator"/>
+<link rel="alternate stylesheet" href="../../../.././data/kdevelop.css" title="KDevelop"/>
+<script type="text/javascript" src="../../../.././data/jquery/jquery.min.js"></script>
+<script type="text/javascript" src="../../../.././data/jquery/jquery-ui.min.js"></script>
+<script>var file = 'llvm/compiler-rt/lib/sanitizer_common/sanitizer_allocator.h'; var root_path = '../../../..'; var data_path = '../../../.././data'; var ecma_script_api_version = 2;</script>
+<script src='../../../.././data/codebrowser.js'></script>
+</head>
+<body><div id='header'><h1 id='breadcrumb'><span>Browse the source code of </span><a href='../../..'>llvm</a>/<a href='../..'>compiler-rt</a>/<a href='..'>lib</a>/<a href='./'>sanitizer_common</a>/<a href='sanitizer_allocator.h.html'>sanitizer_allocator.h</a></h1></div>
+<hr/><div id='content'><table class="code">
+<tr><th id="1">1</th><td><i>//===-- sanitizer_allocator.h -----------------------------------*- C++ -*-===//</i></td></tr>
+<tr><th id="2">2</th><td><i>//</i></td></tr>
+<tr><th id="3">3</th><td><i>// Part of the LLVM Project, under the Apache License v2.0 with LLVM Exceptions.</i></td></tr>
+<tr><th id="4">4</th><td><i>// See <a href="https://llvm.org/LICENSE.txt">https://llvm.org/LICENSE.txt</a> for license information.</i></td></tr>
+<tr><th id="5">5</th><td><i>// SPDX-License-Identifier: Apache-2.0 WITH LLVM-exception</i></td></tr>
+<tr><th id="6">6</th><td><i>//</i></td></tr>
+<tr><th id="7">7</th><td><i>//===----------------------------------------------------------------------===//</i></td></tr>
+<tr><th id="8">8</th><td><i>//</i></td></tr>
+<tr><th id="9">9</th><td><i>// Specialized memory allocator for ThreadSanitizer, MemorySanitizer, etc.</i></td></tr>
+<tr><th id="10">10</th><td><i>//</i></td></tr>
+<tr><th id="11">11</th><td><i>//===----------------------------------------------------------------------===//</i></td></tr>
+<tr><th id="12">12</th><td></td></tr>
+<tr><th id="13">13</th><td><u>#<span data-ppcond="13">ifndef</span> <span class="macro" data-ref="_M/SANITIZER_ALLOCATOR_H">SANITIZER_ALLOCATOR_H</span></u></td></tr>
+<tr><th id="14">14</th><td><u>#define <dfn class="macro" id="_M/SANITIZER_ALLOCATOR_H" data-ref="_M/SANITIZER_ALLOCATOR_H">SANITIZER_ALLOCATOR_H</dfn></u></td></tr>
+<tr><th id="15">15</th><td></td></tr>
+<tr><th id="16">16</th><td><u>#include <a href="sanitizer_common.h.html">"sanitizer_common.h"</a></u></td></tr>
+<tr><th id="17">17</th><td><u>#include <a href="sanitizer_internal_defs.h.html">"sanitizer_internal_defs.h"</a></u></td></tr>
+<tr><th id="18">18</th><td><u>#include <a href="sanitizer_lfstack.h.html">"sanitizer_lfstack.h"</a></u></td></tr>
+<tr><th id="19">19</th><td><u>#include <a href="sanitizer_libc.h.html">"sanitizer_libc.h"</a></u></td></tr>
+<tr><th id="20">20</th><td><u>#include <a href="sanitizer_list.h.html">"sanitizer_list.h"</a></u></td></tr>
+<tr><th id="21">21</th><td><u>#include <a href="sanitizer_local_address_space_view.h.html">"sanitizer_local_address_space_view.h"</a></u></td></tr>
+<tr><th id="22">22</th><td><u>#include <a href="sanitizer_mutex.h.html">"sanitizer_mutex.h"</a></u></td></tr>
+<tr><th id="23">23</th><td><u>#include <a href="sanitizer_procmaps.h.html">"sanitizer_procmaps.h"</a></u></td></tr>
+<tr><th id="24">24</th><td><u>#include <a href="sanitizer_type_traits.h.html">"sanitizer_type_traits.h"</a></u></td></tr>
+<tr><th id="25">25</th><td></td></tr>
+<tr><th id="26">26</th><td><b>namespace</b> <span class="namespace">__sanitizer</span> {</td></tr>
+<tr><th id="27">27</th><td></td></tr>
+<tr><th id="28">28</th><td><i>// Allows the tools to name their allocations appropriately.</i></td></tr>
+<tr><th id="29">29</th><td><b>extern</b> <em>const</em> <em>char</em> *<dfn class="decl" id="__sanitizer::PrimaryAllocatorName" title='__sanitizer::PrimaryAllocatorName' data-ref="__sanitizer::PrimaryAllocatorName" data-ref-filename="__sanitizer..PrimaryAllocatorName">PrimaryAllocatorName</dfn>;</td></tr>
+<tr><th id="30">30</th><td><b>extern</b> <em>const</em> <em>char</em> *<dfn class="decl" id="__sanitizer::SecondaryAllocatorName" title='__sanitizer::SecondaryAllocatorName' data-ref="__sanitizer::SecondaryAllocatorName" data-ref-filename="__sanitizer..SecondaryAllocatorName">SecondaryAllocatorName</dfn>;</td></tr>
+<tr><th id="31">31</th><td></td></tr>
+<tr><th id="32">32</th><td><i>// Since flags are immutable and allocator behavior can be changed at runtime</i></td></tr>
+<tr><th id="33">33</th><td><i>// (unit tests or ASan on Android are some examples), allocator_may_return_null</i></td></tr>
+<tr><th id="34">34</th><td><i>// flag value is cached here and can be altered later.</i></td></tr>
+<tr><th id="35">35</th><td><em>bool</em> <dfn class="decl fn" id="__sanitizer::AllocatorMayReturnNull" title='__sanitizer::AllocatorMayReturnNull' data-ref="__sanitizer::AllocatorMayReturnNull" data-ref-filename="__sanitizer..AllocatorMayReturnNull">AllocatorMayReturnNull</dfn>();</td></tr>
+<tr><th id="36">36</th><td><em>void</em> <dfn class="decl fn" id="__sanitizer::SetAllocatorMayReturnNull" title='__sanitizer::SetAllocatorMayReturnNull' data-ref="__sanitizer::SetAllocatorMayReturnNull" data-ref-filename="__sanitizer..SetAllocatorMayReturnNull">SetAllocatorMayReturnNull</dfn>(<em>bool</em> <dfn class="local col4 decl" id="954may_return_null" title='may_return_null' data-type='bool' data-ref="954may_return_null" data-ref-filename="954may_return_null">may_return_null</dfn>);</td></tr>
+<tr><th id="37">37</th><td></td></tr>
+<tr><th id="38">38</th><td><i>// Returns true if allocator detected OOM condition. Can be used to avoid memory</i></td></tr>
+<tr><th id="39">39</th><td><i>// hungry operations.</i></td></tr>
+<tr><th id="40">40</th><td><em>bool</em> <dfn class="decl fn" id="__sanitizer::IsAllocatorOutOfMemory" title='__sanitizer::IsAllocatorOutOfMemory' data-ref="__sanitizer::IsAllocatorOutOfMemory" data-ref-filename="__sanitizer..IsAllocatorOutOfMemory">IsAllocatorOutOfMemory</dfn>();</td></tr>
+<tr><th id="41">41</th><td><i>// Should be called by a particular allocator when OOM is detected.</i></td></tr>
+<tr><th id="42">42</th><td><em>void</em> <dfn class="decl fn" id="__sanitizer::SetAllocatorOutOfMemory" title='__sanitizer::SetAllocatorOutOfMemory' data-ref="__sanitizer::SetAllocatorOutOfMemory" data-ref-filename="__sanitizer..SetAllocatorOutOfMemory">SetAllocatorOutOfMemory</dfn>();</td></tr>
+<tr><th id="43">43</th><td></td></tr>
+<tr><th id="44">44</th><td><em>void</em> <dfn class="decl fn" id="__sanitizer::PrintHintAllocatorCannotReturnNull" title='__sanitizer::PrintHintAllocatorCannotReturnNull' data-ref="__sanitizer::PrintHintAllocatorCannotReturnNull" data-ref-filename="__sanitizer..PrintHintAllocatorCannotReturnNull">PrintHintAllocatorCannotReturnNull</dfn>();</td></tr>
+<tr><th id="45">45</th><td></td></tr>
+<tr><th id="46">46</th><td><i>// Allocators call these callbacks on mmap/munmap.</i></td></tr>
+<tr><th id="47">47</th><td><b>struct</b> <dfn class="type def" id="__sanitizer::NoOpMapUnmapCallback" title='__sanitizer::NoOpMapUnmapCallback' data-ref="__sanitizer::NoOpMapUnmapCallback" data-ref-filename="__sanitizer..NoOpMapUnmapCallback">NoOpMapUnmapCallback</dfn> {</td></tr>
+<tr><th id="48">48</th><td>  <em>void</em> <dfn class="decl def fn" id="__sanitizer::NoOpMapUnmapCallback::OnMap" title='__sanitizer::NoOpMapUnmapCallback::OnMap' data-ref="__sanitizer::NoOpMapUnmapCallback::OnMap" data-ref-filename="__sanitizer..NoOpMapUnmapCallback..OnMap">OnMap</dfn>(<a class="typedef" href="sanitizer_internal_defs.h.html#__sanitizer::uptr" title='__sanitizer::uptr' data-type='unsigned long' data-ref="__sanitizer::uptr" data-ref-filename="__sanitizer..uptr">uptr</a> <dfn class="local col5 decl" id="955p" title='p' data-type='__sanitizer::uptr' data-ref="955p" data-ref-filename="955p">p</dfn>, <a class="typedef" href="sanitizer_internal_defs.h.html#__sanitizer::uptr" title='__sanitizer::uptr' data-type='unsigned long' data-ref="__sanitizer::uptr" data-ref-filename="__sanitizer..uptr">uptr</a> <dfn class="local col6 decl" id="956size" title='size' data-type='__sanitizer::uptr' data-ref="956size" data-ref-filename="956size">size</dfn>) <em>const</em> { }</td></tr>
+<tr><th id="49">49</th><td>  <em>void</em> <dfn class="decl def fn" id="__sanitizer::NoOpMapUnmapCallback::OnUnmap" title='__sanitizer::NoOpMapUnmapCallback::OnUnmap' data-ref="__sanitizer::NoOpMapUnmapCallback::OnUnmap" data-ref-filename="__sanitizer..NoOpMapUnmapCallback..OnUnmap">OnUnmap</dfn>(<a class="typedef" href="sanitizer_internal_defs.h.html#__sanitizer::uptr" title='__sanitizer::uptr' data-type='unsigned long' data-ref="__sanitizer::uptr" data-ref-filename="__sanitizer..uptr">uptr</a> <dfn class="local col7 decl" id="957p" title='p' data-type='__sanitizer::uptr' data-ref="957p" data-ref-filename="957p">p</dfn>, <a class="typedef" href="sanitizer_internal_defs.h.html#__sanitizer::uptr" title='__sanitizer::uptr' data-type='unsigned long' data-ref="__sanitizer::uptr" data-ref-filename="__sanitizer..uptr">uptr</a> <dfn class="local col8 decl" id="958size" title='size' data-type='__sanitizer::uptr' data-ref="958size" data-ref-filename="958size">size</dfn>) <em>const</em> { }</td></tr>
+<tr><th id="50">50</th><td>};</td></tr>
+<tr><th id="51">51</th><td></td></tr>
+<tr><th id="52">52</th><td><i>// Callback type for iterating over chunks.</i></td></tr>
+<tr><th id="53">53</th><td><b>typedef</b> <em>void</em> (*<dfn class="typedef" id="__sanitizer::ForEachChunkCallback" title='__sanitizer::ForEachChunkCallback' data-type='void (*)(__sanitizer::uptr, void *)' data-ref="__sanitizer::ForEachChunkCallback" data-ref-filename="__sanitizer..ForEachChunkCallback">ForEachChunkCallback</dfn>)(<a class="typedef" href="sanitizer_internal_defs.h.html#__sanitizer::uptr" title='__sanitizer::uptr' data-type='unsigned long' data-ref="__sanitizer::uptr" data-ref-filename="__sanitizer..uptr">uptr</a> <dfn class="local col9 decl" id="959chunk" title='chunk' data-type='__sanitizer::uptr' data-ref="959chunk" data-ref-filename="959chunk">chunk</dfn>, <em>void</em> *<dfn class="local col0 decl" id="960arg" title='arg' data-type='void *' data-ref="960arg" data-ref-filename="960arg">arg</dfn>);</td></tr>
+<tr><th id="54">54</th><td></td></tr>
+<tr><th id="55">55</th><td><b>inline</b> <a class="typedef" href="sanitizer_internal_defs.h.html#__sanitizer::u32" title='__sanitizer::u32' data-type='unsigned int' data-ref="__sanitizer::u32" data-ref-filename="__sanitizer..u32">u32</a> <dfn class="decl def fn" id="__sanitizer::Rand" title='__sanitizer::Rand' data-ref="__sanitizer::Rand" data-ref-filename="__sanitizer..Rand">Rand</dfn>(<a class="typedef" href="sanitizer_internal_defs.h.html#__sanitizer::u32" title='__sanitizer::u32' data-type='unsigned int' data-ref="__sanitizer::u32" data-ref-filename="__sanitizer..u32">u32</a> *<dfn class="local col1 decl" id="961state" title='state' data-type='__sanitizer::u32 *' data-ref="961state" data-ref-filename="961state">state</dfn>) {  <i>// ANSI C linear congruential PRNG.</i></td></tr>
+<tr><th id="56">56</th><td>  <b>return</b> (*<a class="local col1 ref" href="#961state" title='state' data-ref="961state" data-ref-filename="961state">state</a> = *<a class="local col1 ref" href="#961state" title='state' data-ref="961state" data-ref-filename="961state">state</a> * <var>1103515245</var> + <var>12345</var>) &gt;&gt; <var>16</var>;</td></tr>
+<tr><th id="57">57</th><td>}</td></tr>
+<tr><th id="58">58</th><td></td></tr>
+<tr><th id="59">59</th><td><b>inline</b> <a class="typedef" href="sanitizer_internal_defs.h.html#__sanitizer::u32" title='__sanitizer::u32' data-type='unsigned int' data-ref="__sanitizer::u32" data-ref-filename="__sanitizer..u32">u32</a> <dfn class="decl def fn" id="__sanitizer::RandN" title='__sanitizer::RandN' data-ref="__sanitizer::RandN" data-ref-filename="__sanitizer..RandN">RandN</dfn>(<a class="typedef" href="sanitizer_internal_defs.h.html#__sanitizer::u32" title='__sanitizer::u32' data-type='unsigned int' data-ref="__sanitizer::u32" data-ref-filename="__sanitizer..u32">u32</a> *<dfn class="local col2 decl" id="962state" title='state' data-type='__sanitizer::u32 *' data-ref="962state" data-ref-filename="962state">state</dfn>, <a class="typedef" href="sanitizer_internal_defs.h.html#__sanitizer::u32" title='__sanitizer::u32' data-type='unsigned int' data-ref="__sanitizer::u32" data-ref-filename="__sanitizer..u32">u32</a> <dfn class="local col3 decl" id="963n" title='n' data-type='__sanitizer::u32' data-ref="963n" data-ref-filename="963n">n</dfn>) { <b>return</b> <a class="ref fn" href="#__sanitizer::Rand" title='__sanitizer::Rand' data-ref="__sanitizer::Rand" data-ref-filename="__sanitizer..Rand">Rand</a>(<a class="local col2 ref" href="#962state" title='state' data-ref="962state" data-ref-filename="962state">state</a>) % <a class="local col3 ref" href="#963n" title='n' data-ref="963n" data-ref-filename="963n">n</a>; }  <i>// [0, n)</i></td></tr>
+<tr><th id="60">60</th><td></td></tr>
+<tr><th id="61">61</th><td><b>template</b>&lt;<b>typename</b> T&gt;</td></tr>
+<tr><th id="62">62</th><td><b>inline</b> <em>void</em> <dfn class="decl def fn" id="__sanitizer::RandomShuffle" title='__sanitizer::RandomShuffle' data-ref="__sanitizer::RandomShuffle" data-ref-filename="__sanitizer..RandomShuffle">RandomShuffle</dfn>(T *<dfn class="local col4 decl" id="964a" title='a' data-type='T *' data-ref="964a" data-ref-filename="964a">a</dfn>, <a class="typedef" href="sanitizer_internal_defs.h.html#__sanitizer::u32" title='__sanitizer::u32' data-type='unsigned int' data-ref="__sanitizer::u32" data-ref-filename="__sanitizer..u32">u32</a> <dfn class="local col5 decl" id="965n" title='n' data-type='__sanitizer::u32' data-ref="965n" data-ref-filename="965n">n</dfn>, <a class="typedef" href="sanitizer_internal_defs.h.html#__sanitizer::u32" title='__sanitizer::u32' data-type='unsigned int' data-ref="__sanitizer::u32" data-ref-filename="__sanitizer..u32">u32</a> *<dfn class="local col6 decl" id="966rand_state" title='rand_state' data-type='__sanitizer::u32 *' data-ref="966rand_state" data-ref-filename="966rand_state">rand_state</dfn>) {</td></tr>
+<tr><th id="63">63</th><td>  <b>if</b> (<a class="local col5 ref" href="#965n" title='n' data-ref="965n" data-ref-filename="965n">n</a> &lt;= <var>1</var>) <b>return</b>;</td></tr>
+<tr><th id="64">64</th><td>  <a class="typedef" href="sanitizer_internal_defs.h.html#__sanitizer::u32" title='__sanitizer::u32' data-type='unsigned int' data-ref="__sanitizer::u32" data-ref-filename="__sanitizer..u32">u32</a> <dfn class="local col7 decl" id="967state" title='state' data-type='__sanitizer::u32' data-ref="967state" data-ref-filename="967state">state</dfn> = *<a class="local col6 ref" href="#966rand_state" title='rand_state' data-ref="966rand_state" data-ref-filename="966rand_state">rand_state</a>;</td></tr>
+<tr><th id="65">65</th><td>  <b>for</b> (<a class="typedef" href="sanitizer_internal_defs.h.html#__sanitizer::u32" title='__sanitizer::u32' data-type='unsigned int' data-ref="__sanitizer::u32" data-ref-filename="__sanitizer..u32">u32</a> <dfn class="local col8 decl" id="968i" title='i' data-type='__sanitizer::u32' data-ref="968i" data-ref-filename="968i">i</dfn> = <a class="local col5 ref" href="#965n" title='n' data-ref="965n" data-ref-filename="965n">n</a> - <var>1</var>; <a class="local col8 ref" href="#968i" title='i' data-ref="968i" data-ref-filename="968i">i</a> &gt; <var>0</var>; <a class="local col8 ref" href="#968i" title='i' data-ref="968i" data-ref-filename="968i">i</a>--)</td></tr>
+<tr><th id="66">66</th><td>    Swap(<a class="local col4 ref" href="#964a" title='a' data-ref="964a" data-ref-filename="964a">a</a>[<a class="local col8 ref" href="#968i" title='i' data-ref="968i" data-ref-filename="968i">i</a>], <a class="local col4 ref" href="#964a" title='a' data-ref="964a" data-ref-filename="964a">a</a>[<a class="ref fn" href="#__sanitizer::RandN" title='__sanitizer::RandN' data-ref="__sanitizer::RandN" data-ref-filename="__sanitizer..RandN">RandN</a>(&amp;<a class="local col7 ref" href="#967state" title='state' data-ref="967state" data-ref-filename="967state">state</a>, <a class="local col8 ref" href="#968i" title='i' data-ref="968i" data-ref-filename="968i">i</a> + <var>1</var>)]);</td></tr>
+<tr><th id="67">67</th><td>  *<a class="local col6 ref" href="#966rand_state" title='rand_state' data-ref="966rand_state" data-ref-filename="966rand_state">rand_state</a> = <a class="local col7 ref" href="#967state" title='state' data-ref="967state" data-ref-filename="967state">state</a>;</td></tr>
+<tr><th id="68">68</th><td>}</td></tr>
+<tr><th id="69">69</th><td></td></tr>
+<tr><th id="70">70</th><td><u>#include <a href="sanitizer_allocator_size_class_map.h.html">"sanitizer_allocator_size_class_map.h"</a></u></td></tr>
+<tr><th id="71">71</th><td><u>#include <a href="sanitizer_allocator_stats.h.html">"sanitizer_allocator_stats.h"</a></u></td></tr>
+<tr><th id="72">72</th><td><u>#include <a href="sanitizer_allocator_primary64.h.html">"sanitizer_allocator_primary64.h"</a></u></td></tr>
+<tr><th id="73">73</th><td><u>#include <a href="sanitizer_allocator_bytemap.h.html">"sanitizer_allocator_bytemap.h"</a></u></td></tr>
+<tr><th id="74">74</th><td><u>#include <a href="sanitizer_allocator_primary32.h.html">"sanitizer_allocator_primary32.h"</a></u></td></tr>
+<tr><th id="75">75</th><td><u>#include <a href="sanitizer_allocator_local_cache.h.html">"sanitizer_allocator_local_cache.h"</a></u></td></tr>
+<tr><th id="76">76</th><td><u>#include <a href="sanitizer_allocator_secondary.h.html">"sanitizer_allocator_secondary.h"</a></u></td></tr>
+<tr><th id="77">77</th><td><u>#include <a href="sanitizer_allocator_combined.h.html">"sanitizer_allocator_combined.h"</a></u></td></tr>
+<tr><th id="78">78</th><td></td></tr>
+<tr><th id="79">79</th><td>} <i>// namespace __sanitizer</i></td></tr>
+<tr><th id="80">80</th><td></td></tr>
+<tr><th id="81">81</th><td><u>#<span data-ppcond="13">endif</span> // SANITIZER_ALLOCATOR_H</u></td></tr>
+<tr><th id="82">82</th><td></td></tr>
+</table><hr/><p id='footer'>
+Generated while processing <a href='../asan/asan_activation.cpp.html'>llvm/compiler-rt/lib/asan/asan_activation.cpp</a><br/>Generated on <em>2021-Jul-01</em> from project llvm revision <em>12</em>

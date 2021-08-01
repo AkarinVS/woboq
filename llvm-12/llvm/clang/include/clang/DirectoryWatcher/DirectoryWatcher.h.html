@@ -1,0 +1,141 @@
+<!doctype html>
+<html>
+<head>
+<meta name="viewport" content="width=device-width, initial-scale=1.0"><title>DirectoryWatcher.h source code [llvm/clang/include/clang/DirectoryWatcher/DirectoryWatcher.h] - Woboq Code Browser</title>
+<meta name="woboq:interestingDefinitions" content="clang::DirectoryWatcher "/>
+<link rel="stylesheet" href="../../../../.././data/qtcreator.css" title="QtCreator"/>
+<link rel="alternate stylesheet" href="../../../../.././data/kdevelop.css" title="KDevelop"/>
+<script type="text/javascript" src="../../../../.././data/jquery/jquery.min.js"></script>
+<script type="text/javascript" src="../../../../.././data/jquery/jquery-ui.min.js"></script>
+<script>var file = 'llvm/clang/include/clang/DirectoryWatcher/DirectoryWatcher.h'; var root_path = '../../../../..'; var data_path = '../../../../.././data'; var ecma_script_api_version = 2;</script>
+<script src='../../../../.././data/codebrowser.js'></script>
+</head>
+<body><div id='header'><h1 id='breadcrumb'><span>Browse the source code of </span><a href='../../../..'>llvm</a>/<a href='../../..'>clang</a>/<a href='../..'>include</a>/<a href='..'>clang</a>/<a href='./'>DirectoryWatcher</a>/<a href='DirectoryWatcher.h.html'>DirectoryWatcher.h</a></h1></div>
+<hr/><div id='content'><table class="code">
+<tr><th id="1">1</th><td><i>//===- DirectoryWatcher.h - Listens for directory file changes --*- C++ -*-===//</i></td></tr>
+<tr><th id="2">2</th><td><i>//</i></td></tr>
+<tr><th id="3">3</th><td><i>// Part of the LLVM Project, under the Apache License v2.0 with LLVM Exceptions.</i></td></tr>
+<tr><th id="4">4</th><td><i>// See <a href="https://llvm.org/LICENSE.txt">https://llvm.org/LICENSE.txt</a> for license information.</i></td></tr>
+<tr><th id="5">5</th><td><i>// SPDX-License-Identifier: Apache-2.0 WITH LLVM-exception</i></td></tr>
+<tr><th id="6">6</th><td><i>//</i></td></tr>
+<tr><th id="7">7</th><td><i>//===----------------------------------------------------------------------===//</i></td></tr>
+<tr><th id="8">8</th><td></td></tr>
+<tr><th id="9">9</th><td><u>#<span data-ppcond="9">ifndef</span> <span class="macro" data-ref="_M/LLVM_CLANG_DIRECTORYWATCHER_DIRECTORYWATCHER_H">LLVM_CLANG_DIRECTORYWATCHER_DIRECTORYWATCHER_H</span></u></td></tr>
+<tr><th id="10">10</th><td><u>#define <dfn class="macro" id="_M/LLVM_CLANG_DIRECTORYWATCHER_DIRECTORYWATCHER_H" data-ref="_M/LLVM_CLANG_DIRECTORYWATCHER_DIRECTORYWATCHER_H">LLVM_CLANG_DIRECTORYWATCHER_DIRECTORYWATCHER_H</dfn></u></td></tr>
+<tr><th id="11">11</th><td></td></tr>
+<tr><th id="12">12</th><td><u>#include <a href="../../../../llvm/include/llvm/ADT/ArrayRef.h.html">"llvm/ADT/ArrayRef.h"</a></u></td></tr>
+<tr><th id="13">13</th><td><u>#include <a href="../../../../llvm/include/llvm/ADT/StringRef.h.html">"llvm/ADT/StringRef.h"</a></u></td></tr>
+<tr><th id="14">14</th><td><u>#include <a href="../../../../llvm/include/llvm/Support/Error.h.html">"llvm/Support/Error.h"</a></u></td></tr>
+<tr><th id="15">15</th><td><u>#include &lt;functional&gt;</u></td></tr>
+<tr><th id="16">16</th><td><u>#include &lt;memory&gt;</u></td></tr>
+<tr><th id="17">17</th><td><u>#include &lt;string&gt;</u></td></tr>
+<tr><th id="18">18</th><td></td></tr>
+<tr><th id="19">19</th><td><b>namespace</b> <span class="namespace">clang</span> {</td></tr>
+<tr><th id="20">20</th><td><i class="doc">/// Provides notifications for file changes in a directory.</i></td></tr>
+<tr><th id="21">21</th><td><i class="doc">///</i></td></tr>
+<tr><th id="22">22</th><td><i class="doc">/// Invokes client-provided function on every filesystem event in the watched</i></td></tr>
+<tr><th id="23">23</th><td><i class="doc">/// directory. Initially the the watched directory is scanned and for every file</i></td></tr>
+<tr><th id="24">24</th><td><i class="doc">/// found, an event is synthesized as if the file was added.</i></td></tr>
+<tr><th id="25">25</th><td><i class="doc">///</i></td></tr>
+<tr><th id="26">26</th><td><i class="doc">/// This is not a general purpose directory monitoring tool - list of</i></td></tr>
+<tr><th id="27">27</th><td><i class="doc">/// limitations follows.</i></td></tr>
+<tr><th id="28">28</th><td><i class="doc">///</i></td></tr>
+<tr><th id="29">29</th><td><i class="doc">/// Only flat directories with no subdirectories are supported. In case</i></td></tr>
+<tr><th id="30">30</th><td><i class="doc">/// subdirectories are present the behavior is unspecified - events *might* be</i></td></tr>
+<tr><th id="31">31</th><td><i class="doc">/// passed to Receiver on macOS (due to FSEvents being used) while they</i></td></tr>
+<tr><th id="32">32</th><td><i class="doc">/// *probably* won't be passed on Linux (due to inotify being used).</i></td></tr>
+<tr><th id="33">33</th><td><i class="doc">///</i></td></tr>
+<tr><th id="34">34</th><td><i class="doc">/// Known potential inconsistencies</i></td></tr>
+<tr><th id="35">35</th><td><i class="doc">/// - For files that are deleted befor the initial scan processed them, clients</i></td></tr>
+<tr><th id="36">36</th><td><i class="doc">/// might receive Removed notification without any prior Added notification.</i></td></tr>
+<tr><th id="37">37</th><td><i class="doc">/// - Multiple notifications might be produced when a file is added to the</i></td></tr>
+<tr><th id="38">38</th><td><i class="doc">/// watched directory during the initial scan. We are choosing the lesser evil</i></td></tr>
+<tr><th id="39">39</th><td><i class="doc">/// here as the only known alternative strategy would be to invalidate the</i></td></tr>
+<tr><th id="40">40</th><td><i class="doc">/// watcher instance and force user to create a new one whenever filesystem</i></td></tr>
+<tr><th id="41">41</th><td><i class="doc">/// event occurs during the initial scan but that would introduce continuous</i></td></tr>
+<tr><th id="42">42</th><td><i class="doc">/// restarting failure mode (watched directory is not always "owned" by the same</i></td></tr>
+<tr><th id="43">43</th><td><i class="doc">/// process that is consuming it). Since existing clients can handle duplicate</i></td></tr>
+<tr><th id="44">44</th><td><i class="doc">/// events well, we decided for simplicity.</i></td></tr>
+<tr><th id="45">45</th><td><i class="doc">///</i></td></tr>
+<tr><th id="46">46</th><td><i class="doc">/// Notifications are provided only for changes done through local user-space</i></td></tr>
+<tr><th id="47">47</th><td><i class="doc">/// filesystem interface. Specifically, it's unspecified if notification would</i></td></tr>
+<tr><th id="48">48</th><td><i class="doc">/// be provided in case of a:</i></td></tr>
+<tr><th id="49">49</th><td><i class="doc">/// - a file mmap-ed and changed</i></td></tr>
+<tr><th id="50">50</th><td><i class="doc">/// - a file changed via remote (NFS) or virtual (/proc) FS access to monitored</i></td></tr>
+<tr><th id="51">51</th><td><i class="doc">/// directory</i></td></tr>
+<tr><th id="52">52</th><td><i class="doc">/// - another filesystem mounted to the watched directory</i></td></tr>
+<tr><th id="53">53</th><td><i class="doc">///</i></td></tr>
+<tr><th id="54">54</th><td><i class="doc">/// No support for LLVM VFS.</i></td></tr>
+<tr><th id="55">55</th><td><i class="doc">///</i></td></tr>
+<tr><th id="56">56</th><td><i class="doc">/// It is unspecified whether notifications for files being deleted are sent in</i></td></tr>
+<tr><th id="57">57</th><td><i class="doc">/// case the whole watched directory is sent.</i></td></tr>
+<tr><th id="58">58</th><td><i class="doc">///</i></td></tr>
+<tr><th id="59">59</th><td><i class="doc">/// Directories containing "too many" files and/or receiving events "too</i></td></tr>
+<tr><th id="60">60</th><td><i class="doc">/// frequently" are not supported - if the initial scan can't be finished before</i></td></tr>
+<tr><th id="61">61</th><td><i class="doc">/// the watcher instance gets invalidated (see WatcherGotInvalidated) there's no</i></td></tr>
+<tr><th id="62">62</th><td><i class="doc">/// good error handling strategy - the only option for client is to destroy the</i></td></tr>
+<tr><th id="63">63</th><td><i class="doc">/// watcher, restart watching with new instance and hope it won't repeat.</i></td></tr>
+<tr><th id="64">64</th><td><b>class</b> <dfn class="type def" id="clang::DirectoryWatcher" title='clang::DirectoryWatcher' data-ref="clang::DirectoryWatcher" data-ref-filename="clang..DirectoryWatcher">DirectoryWatcher</dfn> {</td></tr>
+<tr><th id="65">65</th><td><b>public</b>:</td></tr>
+<tr><th id="66">66</th><td>  <b>struct</b> <dfn class="type def" id="clang::DirectoryWatcher::Event" title='clang::DirectoryWatcher::Event' data-ref="clang::DirectoryWatcher::Event" data-ref-filename="clang..DirectoryWatcher..Event">Event</dfn> {</td></tr>
+<tr><th id="67">67</th><td>    <b>enum</b> <b>class</b> <dfn class="type def" id="clang::DirectoryWatcher::Event::EventKind" title='clang::DirectoryWatcher::Event::EventKind' data-ref="clang::DirectoryWatcher::Event::EventKind" data-ref-filename="clang..DirectoryWatcher..Event..EventKind">EventKind</dfn> {</td></tr>
+<tr><th id="68">68</th><td>      <dfn class="enum" id="clang::DirectoryWatcher::Event::EventKind::Removed" title='clang::DirectoryWatcher::Event::EventKind::Removed' data-ref="clang::DirectoryWatcher::Event::EventKind::Removed" data-ref-filename="clang..DirectoryWatcher..Event..EventKind..Removed">Removed</dfn>,</td></tr>
+<tr><th id="69">69</th><td>      <i class="doc">/// Content of a file was modified.</i></td></tr>
+<tr><th id="70">70</th><td>      <dfn class="enum" id="clang::DirectoryWatcher::Event::EventKind::Modified" title='clang::DirectoryWatcher::Event::EventKind::Modified' data-ref="clang::DirectoryWatcher::Event::EventKind::Modified" data-ref-filename="clang..DirectoryWatcher..Event..EventKind..Modified">Modified</dfn>,</td></tr>
+<tr><th id="71">71</th><td>      <i class="doc">/// The watched directory got deleted.</i></td></tr>
+<tr><th id="72">72</th><td>      <dfn class="enum" id="clang::DirectoryWatcher::Event::EventKind::WatchedDirRemoved" title='clang::DirectoryWatcher::Event::EventKind::WatchedDirRemoved' data-ref="clang::DirectoryWatcher::Event::EventKind::WatchedDirRemoved" data-ref-filename="clang..DirectoryWatcher..Event..EventKind..WatchedDirRemoved">WatchedDirRemoved</dfn>,</td></tr>
+<tr><th id="73">73</th><td>      <i class="doc">/// The DirectoryWatcher that originated this event is no longer valid and</i></td></tr>
+<tr><th id="74">74</th><td><i class="doc">      /// its behavior is unspecified.</i></td></tr>
+<tr><th id="75">75</th><td><i class="doc">      ///</i></td></tr>
+<tr><th id="76">76</th><td><i class="doc">      /// The prime case is kernel signalling to OS-specific implementation of</i></td></tr>
+<tr><th id="77">77</th><td><i class="doc">      /// DirectoryWatcher some resource limit being hit.</i></td></tr>
+<tr><th id="78">78</th><td><i class="doc">      /// *Usually* kernel starts dropping or squashing events together after</i></td></tr>
+<tr><th id="79">79</th><td><i class="doc">      /// that and so would DirectoryWatcher. This means that *some* events</i></td></tr>
+<tr><th id="80">80</th><td><i class="doc">      /// might still be passed to Receiver but this behavior is unspecified.</i></td></tr>
+<tr><th id="81">81</th><td><i class="doc">      ///</i></td></tr>
+<tr><th id="82">82</th><td><i class="doc">      /// Another case is after the watched directory itself is deleted.</i></td></tr>
+<tr><th id="83">83</th><td><i class="doc">      /// WatcherGotInvalidated will be received at least once during</i></td></tr>
+<tr><th id="84">84</th><td><i class="doc">      /// DirectoryWatcher instance lifetime - when handling errors this is done</i></td></tr>
+<tr><th id="85">85</th><td><i class="doc">      /// on best effort basis, when an instance is being destroyed then this is</i></td></tr>
+<tr><th id="86">86</th><td><i class="doc">      /// guaranteed.</i></td></tr>
+<tr><th id="87">87</th><td><i class="doc">      ///</i></td></tr>
+<tr><th id="88">88</th><td><i class="doc">      /// The only proper response to this kind of event is to destruct the</i></td></tr>
+<tr><th id="89">89</th><td><i class="doc">      /// originating DirectoryWatcher instance and create a new one.</i></td></tr>
+<tr><th id="90">90</th><td>      <dfn class="enum" id="clang::DirectoryWatcher::Event::EventKind::WatcherGotInvalidated" title='clang::DirectoryWatcher::Event::EventKind::WatcherGotInvalidated' data-ref="clang::DirectoryWatcher::Event::EventKind::WatcherGotInvalidated" data-ref-filename="clang..DirectoryWatcher..Event..EventKind..WatcherGotInvalidated">WatcherGotInvalidated</dfn></td></tr>
+<tr><th id="91">91</th><td>    };</td></tr>
+<tr><th id="92">92</th><td></td></tr>
+<tr><th id="93">93</th><td>    <a class="type" href="#clang::DirectoryWatcher::Event::EventKind" title='clang::DirectoryWatcher::Event::EventKind' data-ref="clang::DirectoryWatcher::Event::EventKind" data-ref-filename="clang..DirectoryWatcher..Event..EventKind">EventKind</a> <dfn class="decl field" id="clang::DirectoryWatcher::Event::Kind" title='clang::DirectoryWatcher::Event::Kind' data-ref="clang::DirectoryWatcher::Event::Kind" data-ref-filename="clang..DirectoryWatcher..Event..Kind">Kind</dfn>;</td></tr>
+<tr><th id="94">94</th><td>    <i class="doc">/// Filename that this event is related to or an empty string in</i></td></tr>
+<tr><th id="95">95</th><td><i class="doc">    /// case this event is related to the watched directory itself.</i></td></tr>
+<tr><th id="96">96</th><td>    <span class="namespace">std::</span><span class='typedef' title='std::string' data-type='basic_string&lt;char&gt;' data-ref="std::string" data-ref-filename="std..string">string</span> <dfn class="decl field" id="clang::DirectoryWatcher::Event::Filename" title='clang::DirectoryWatcher::Event::Filename' data-ref="clang::DirectoryWatcher::Event::Filename" data-ref-filename="clang..DirectoryWatcher..Event..Filename">Filename</dfn>;</td></tr>
+<tr><th id="97">97</th><td></td></tr>
+<tr><th id="98">98</th><td>    <dfn class="decl def fn" id="_ZN5clang16DirectoryWatcher5EventC1ENS1_9EventKindEN4llvm9StringRefE" title='clang::DirectoryWatcher::Event::Event' data-ref="_ZN5clang16DirectoryWatcher5EventC1ENS1_9EventKindEN4llvm9StringRefE" data-ref-filename="_ZN5clang16DirectoryWatcher5EventC1ENS1_9EventKindEN4llvm9StringRefE">Event</dfn>(<a class="type" href="#clang::DirectoryWatcher::Event::EventKind" title='clang::DirectoryWatcher::Event::EventKind' data-ref="clang::DirectoryWatcher::Event::EventKind" data-ref-filename="clang..DirectoryWatcher..Event..EventKind">EventKind</a> <dfn class="local col1 decl" id="1Kind" title='Kind' data-type='clang::DirectoryWatcher::Event::EventKind' data-ref="1Kind" data-ref-filename="1Kind">Kind</dfn>, <span class="namespace">llvm::</span><a class="type" href="../../../../llvm/include/llvm/ADT/StringRef.h.html#llvm::StringRef" title='llvm::StringRef' data-ref="llvm::StringRef" data-ref-filename="llvm..StringRef">StringRef</a> <dfn class="local col2 decl" id="2Filename" title='Filename' data-type='llvm::StringRef' data-ref="2Filename" data-ref-filename="2Filename">Filename</dfn>)</td></tr>
+<tr><th id="99">99</th><td>        : <a class="member field" href="#clang::DirectoryWatcher::Event::Kind" title='clang::DirectoryWatcher::Event::Kind' data-ref="clang::DirectoryWatcher::Event::Kind" data-ref-filename="clang..DirectoryWatcher..Event..Kind">Kind</a>(<a class="local col1 ref" href="#1Kind" title='Kind' data-ref="1Kind" data-ref-filename="1Kind">Kind</a>), <a class="member field" href="#clang::DirectoryWatcher::Event::Filename" title='clang::DirectoryWatcher::Event::Filename' data-ref="clang::DirectoryWatcher::Event::Filename" data-ref-filename="clang..DirectoryWatcher..Event..Filename">Filename</a><span class='ref fn' title='std::__cxx11::basic_string::basic_string&lt;_CharT, _Traits, _Alloc&gt;' data-ref="_ZNSt7__cxx1112basic_stringC1EONS_12basic_stringIT_T0_T1_EE" data-ref-filename="_ZNSt7__cxx1112basic_stringC1EONS_12basic_stringIT_T0_T1_EE">(</span><a class="ref fn fake" href="../../../../llvm/include/llvm/ADT/StringRef.h.html#_ZNK4llvm9StringRefcvNSt7__cxx1112basic_stringIcSt11char_traitsIcESaIcEEEEv" title='llvm::StringRef::operator basic_string' data-ref="_ZNK4llvm9StringRefcvNSt7__cxx1112basic_stringIcSt11char_traitsIcESaIcEEEEv" data-ref-filename="_ZNK4llvm9StringRefcvNSt7__cxx1112basic_stringIcSt11char_traitsIcESaIcEEEEv"></a><a class="local col2 ref" href="#2Filename" title='Filename' data-ref="2Filename" data-ref-filename="2Filename">Filename</a>) {}</td></tr>
+<tr><th id="100">100</th><td>  };</td></tr>
+<tr><th id="101">101</th><td></td></tr>
+<tr><th id="102">102</th><td>  <i class="doc">/// llvm fatal_error if <span class="command">\param</span> <span class="arg">Path</span> doesn't exist or isn't a directory.</i></td></tr>
+<tr><th id="103">103</th><td><i class="doc">  /// Returns llvm::Expected Error if OS kernel API told us we can't start</i></td></tr>
+<tr><th id="104">104</th><td><i class="doc">  /// watching. In such case it's unclear whether just retrying has any chance</i></td></tr>
+<tr><th id="105">105</th><td><i class="doc">  /// to succeed.</i></td></tr>
+<tr><th id="106">106</th><td>  <em>static</em> <span class="namespace">llvm::</span><a class="type" href="../../../../llvm/include/llvm/Support/raw_ostream.h.html#llvm::Expected" title='llvm::Expected' data-ref="llvm::Expected" data-ref-filename="llvm..Expected">Expected</a>&lt;<span class="namespace">std::</span><span class='type' title='std::unique_ptr' data-ref="std::unique_ptr" data-ref-filename="std..unique_ptr">unique_ptr</span>&lt;<a class="type" href="#clang::DirectoryWatcher" title='clang::DirectoryWatcher' data-ref="clang::DirectoryWatcher" data-ref-filename="clang..DirectoryWatcher">DirectoryWatcher</a>&gt;&gt;</td></tr>
+<tr><th id="107">107</th><td>  <dfn class="decl fn" id="_ZN5clang16DirectoryWatcher6createEN4llvm9StringRefESt8functionIFvNS1_8ArrayRefINS0_5EventEEEbEEb" title='clang::DirectoryWatcher::create' data-ref="_ZN5clang16DirectoryWatcher6createEN4llvm9StringRefESt8functionIFvNS1_8ArrayRefINS0_5EventEEEbEEb" data-ref-filename="_ZN5clang16DirectoryWatcher6createEN4llvm9StringRefESt8functionIFvNS1_8ArrayRefINS0_5EventEEEbEEb">create</dfn>(<span class="namespace">llvm::</span><a class="type" href="../../../../llvm/include/llvm/ADT/StringRef.h.html#llvm::StringRef" title='llvm::StringRef' data-ref="llvm::StringRef" data-ref-filename="llvm..StringRef">StringRef</a> <dfn class="local col3 decl" id="3Path" title='Path' data-type='llvm::StringRef' data-ref="3Path" data-ref-filename="3Path">Path</dfn>,</td></tr>
+<tr><th id="108">108</th><td>         <span class="namespace">std::</span><span class='type' title='std::function' data-ref="std::function" data-ref-filename="std..function">function</span>&lt;<em>void</em>(<span class="namespace">llvm::</span><a class="type" href="../../../../llvm/include/llvm/ADT/ArrayRef.h.html#llvm::ArrayRef" title='llvm::ArrayRef' data-ref="llvm::ArrayRef" data-ref-filename="llvm..ArrayRef">ArrayRef</a>&lt;<a class="type" href="#clang::DirectoryWatcher" title='clang::DirectoryWatcher' data-ref="clang::DirectoryWatcher" data-ref-filename="clang..DirectoryWatcher">DirectoryWatcher</a>::<a class="type" href="#clang::DirectoryWatcher::Event" title='clang::DirectoryWatcher::Event' data-ref="clang::DirectoryWatcher::Event" data-ref-filename="clang..DirectoryWatcher..Event">Event</a>&gt; <dfn class="local col5 decl" id="5Events" title='Events' data-type='llvm::ArrayRef&lt;DirectoryWatcher::Event&gt;' data-ref="5Events" data-ref-filename="5Events">Events</dfn>,</td></tr>
+<tr><th id="109">109</th><td>                            <em>bool</em> <dfn class="local col6 decl" id="6IsInitial" title='IsInitial' data-type='bool' data-ref="6IsInitial" data-ref-filename="6IsInitial">IsInitial</dfn>)&gt;</td></tr>
+<tr><th id="110">110</th><td>             <dfn class="local col4 decl" id="4Receiver" title='Receiver' data-type='std::function&lt;void (llvm::ArrayRef&lt;DirectoryWatcher::Event&gt;, bool)&gt;' data-ref="4Receiver" data-ref-filename="4Receiver">Receiver</dfn>,</td></tr>
+<tr><th id="111">111</th><td>         <em>bool</em> <dfn class="local col7 decl" id="7WaitForInitialSync" title='WaitForInitialSync' data-type='bool' data-ref="7WaitForInitialSync" data-ref-filename="7WaitForInitialSync">WaitForInitialSync</dfn>);</td></tr>
+<tr><th id="112">112</th><td></td></tr>
+<tr><th id="113">113</th><td>  <b>virtual</b> <dfn class="virtual decl def fn" id="_ZN5clang16DirectoryWatcherD1Ev" title='clang::DirectoryWatcher::~DirectoryWatcher' data-ref="_ZN5clang16DirectoryWatcherD1Ev" data-ref-filename="_ZN5clang16DirectoryWatcherD1Ev">~DirectoryWatcher</dfn>() = <b>default</b>;</td></tr>
+<tr><th id="114">114</th><td>  <dfn class="decl def fn" id="_ZN5clang16DirectoryWatcherC1ERKS0_" title='clang::DirectoryWatcher::DirectoryWatcher' data-ref="_ZN5clang16DirectoryWatcherC1ERKS0_" data-ref-filename="_ZN5clang16DirectoryWatcherC1ERKS0_">DirectoryWatcher</dfn>(<em>const</em> <a class="type" href="#clang::DirectoryWatcher" title='clang::DirectoryWatcher' data-ref="clang::DirectoryWatcher" data-ref-filename="clang..DirectoryWatcher">DirectoryWatcher</a> &amp;) = <b>delete</b>;</td></tr>
+<tr><th id="115">115</th><td>  <a class="type" href="#clang::DirectoryWatcher" title='clang::DirectoryWatcher' data-ref="clang::DirectoryWatcher" data-ref-filename="clang..DirectoryWatcher">DirectoryWatcher</a> &amp;<dfn class="decl def fn" id="_ZN5clang16DirectoryWatcheraSERKS0_" title='clang::DirectoryWatcher::operator=' data-ref="_ZN5clang16DirectoryWatcheraSERKS0_" data-ref-filename="_ZN5clang16DirectoryWatcheraSERKS0_"><b>operator</b>=</dfn>(<em>const</em> <a class="type" href="#clang::DirectoryWatcher" title='clang::DirectoryWatcher' data-ref="clang::DirectoryWatcher" data-ref-filename="clang..DirectoryWatcher">DirectoryWatcher</a> &amp;) = <b>delete</b>;</td></tr>
+<tr><th id="116">116</th><td>  <dfn class="decl def fn" id="_ZN5clang16DirectoryWatcherC1EOS0_" title='clang::DirectoryWatcher::DirectoryWatcher' data-ref="_ZN5clang16DirectoryWatcherC1EOS0_" data-ref-filename="_ZN5clang16DirectoryWatcherC1EOS0_">DirectoryWatcher</dfn>(<a class="type" href="#clang::DirectoryWatcher" title='clang::DirectoryWatcher' data-ref="clang::DirectoryWatcher" data-ref-filename="clang..DirectoryWatcher">DirectoryWatcher</a> &amp;&amp;) = <b>default</b>;</td></tr>
+<tr><th id="117">117</th><td></td></tr>
+<tr><th id="118">118</th><td><b>protected</b>:</td></tr>
+<tr><th id="119">119</th><td>  <dfn class="decl def fn" id="_ZN5clang16DirectoryWatcherC1Ev" title='clang::DirectoryWatcher::DirectoryWatcher' data-ref="_ZN5clang16DirectoryWatcherC1Ev" data-ref-filename="_ZN5clang16DirectoryWatcherC1Ev">DirectoryWatcher</dfn>() = <b>default</b>;</td></tr>
+<tr><th id="120">120</th><td>};</td></tr>
+<tr><th id="121">121</th><td></td></tr>
+<tr><th id="122">122</th><td>} <i>// namespace clang</i></td></tr>
+<tr><th id="123">123</th><td></td></tr>
+<tr><th id="124">124</th><td><u>#<span data-ppcond="9">endif</span> // LLVM_CLANG_DIRECTORYWATCHER_DIRECTORYWATCHER_H</u></td></tr>
+<tr><th id="125">125</th><td></td></tr>
+</table><hr/><p id='footer'>
+Generated while processing <a href='../../../lib/DirectoryWatcher/DirectoryScanner.cpp.html'>llvm/clang/lib/DirectoryWatcher/DirectoryScanner.cpp</a><br/>Generated on <em>2021-Jul-01</em> from project llvm revision <em>12</em>

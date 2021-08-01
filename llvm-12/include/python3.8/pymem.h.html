@@ -1,0 +1,166 @@
+<!doctype html>
+<html>
+<head>
+<meta name="viewport" content="width=device-width, initial-scale=1.0"><title>pymem.h source code [include/python3.8/pymem.h] - Woboq Code Browser</title>
+<link rel="stylesheet" href="../.././data/qtcreator.css" title="QtCreator"/>
+<link rel="alternate stylesheet" href="../.././data/kdevelop.css" title="KDevelop"/>
+<script type="text/javascript" src="../.././data/jquery/jquery.min.js"></script>
+<script type="text/javascript" src="../.././data/jquery/jquery-ui.min.js"></script>
+<script>var file = 'include/python3.8/pymem.h'; var root_path = '../..'; var data_path = '../.././data'; var ecma_script_api_version = 2;</script>
+<script src='../.././data/codebrowser.js'></script>
+</head>
+<body><div id='header'><h1 id='breadcrumb'><span>Browse the source code of </span><a href='..'>include</a>/<a href='./'>python3.8</a>/<a href='pymem.h.html'>pymem.h</a></h1></div>
+<hr/><div id='content'><table class="code">
+<tr><th id="1">1</th><td><i>/* The PyMem_ family:  low-level memory allocation interfaces.</i></td></tr>
+<tr><th id="2">2</th><td><i>   See objimpl.h for the PyObject_ memory family.</i></td></tr>
+<tr><th id="3">3</th><td><i>*/</i></td></tr>
+<tr><th id="4">4</th><td></td></tr>
+<tr><th id="5">5</th><td><u>#<span data-ppcond="5">ifndef</span> <span class="macro" data-ref="_M/Py_PYMEM_H">Py_PYMEM_H</span></u></td></tr>
+<tr><th id="6">6</th><td><u>#define <dfn class="macro" id="_M/Py_PYMEM_H" data-ref="_M/Py_PYMEM_H">Py_PYMEM_H</dfn></u></td></tr>
+<tr><th id="7">7</th><td></td></tr>
+<tr><th id="8">8</th><td><u>#include <a href="pyport.h.html">"pyport.h"</a></u></td></tr>
+<tr><th id="9">9</th><td></td></tr>
+<tr><th id="10">10</th><td><u>#<span data-ppcond="10">ifdef</span> <span class="macro" data-ref="_M/__cplusplus">__cplusplus</span></u></td></tr>
+<tr><th id="11">11</th><td><b>extern</b> <q>"C"</q> {</td></tr>
+<tr><th id="12">12</th><td><u>#<span data-ppcond="10">endif</span></u></td></tr>
+<tr><th id="13">13</th><td></td></tr>
+<tr><th id="14">14</th><td><i>/* BEWARE:</i></td></tr>
+<tr><th id="15">15</th><td><i></i></td></tr>
+<tr><th id="16">16</th><td><i>   Each interface exports both functions and macros.  Extension modules should</i></td></tr>
+<tr><th id="17">17</th><td><i>   use the functions, to ensure binary compatibility across Python versions.</i></td></tr>
+<tr><th id="18">18</th><td><i>   Because the Python implementation is free to change internal details, and</i></td></tr>
+<tr><th id="19">19</th><td><i>   the macros may (or may not) expose details for speed, if you do use the</i></td></tr>
+<tr><th id="20">20</th><td><i>   macros you must recompile your extensions with each Python release.</i></td></tr>
+<tr><th id="21">21</th><td><i></i></td></tr>
+<tr><th id="22">22</th><td><i>   Never mix calls to PyMem_ with calls to the platform malloc/realloc/</i></td></tr>
+<tr><th id="23">23</th><td><i>   calloc/free.  For example, on Windows different DLLs may end up using</i></td></tr>
+<tr><th id="24">24</th><td><i>   different heaps, and if you use PyMem_Malloc you'll get the memory from the</i></td></tr>
+<tr><th id="25">25</th><td><i>   heap used by the Python DLL; it could be a disaster if you free()'ed that</i></td></tr>
+<tr><th id="26">26</th><td><i>   directly in your own extension.  Using PyMem_Free instead ensures Python</i></td></tr>
+<tr><th id="27">27</th><td><i>   can return the memory to the proper heap.  As another example, in</i></td></tr>
+<tr><th id="28">28</th><td><i>   PYMALLOC_DEBUG mode, Python wraps all calls to all PyMem_ and PyObject_</i></td></tr>
+<tr><th id="29">29</th><td><i>   memory functions in special debugging wrappers that add additional</i></td></tr>
+<tr><th id="30">30</th><td><i>   debugging info to dynamic memory blocks.  The system routines have no idea</i></td></tr>
+<tr><th id="31">31</th><td><i>   what to do with that stuff, and the Python wrappers have no idea what to do</i></td></tr>
+<tr><th id="32">32</th><td><i>   with raw blocks obtained directly by the system routines then.</i></td></tr>
+<tr><th id="33">33</th><td><i></i></td></tr>
+<tr><th id="34">34</th><td><i>   The GIL must be held when using these APIs.</i></td></tr>
+<tr><th id="35">35</th><td><i>*/</i></td></tr>
+<tr><th id="36">36</th><td></td></tr>
+<tr><th id="37">37</th><td><i>/*</i></td></tr>
+<tr><th id="38">38</th><td><i> * Raw memory interface</i></td></tr>
+<tr><th id="39">39</th><td><i> * ====================</i></td></tr>
+<tr><th id="40">40</th><td><i> */</i></td></tr>
+<tr><th id="41">41</th><td></td></tr>
+<tr><th id="42">42</th><td><i>/* Functions</i></td></tr>
+<tr><th id="43">43</th><td><i></i></td></tr>
+<tr><th id="44">44</th><td><i>   Functions supplying platform-independent semantics for malloc/realloc/</i></td></tr>
+<tr><th id="45">45</th><td><i>   free.  These functions make sure that allocating 0 bytes returns a distinct</i></td></tr>
+<tr><th id="46">46</th><td><i>   non-NULL pointer (whenever possible -- if we're flat out of memory, NULL</i></td></tr>
+<tr><th id="47">47</th><td><i>   may be returned), even if the platform malloc and realloc don't.</i></td></tr>
+<tr><th id="48">48</th><td><i>   Returned pointers must be checked for NULL explicitly.  No action is</i></td></tr>
+<tr><th id="49">49</th><td><i>   performed on failure (no exception is set, no warning is printed, etc).</i></td></tr>
+<tr><th id="50">50</th><td><i>*/</i></td></tr>
+<tr><th id="51">51</th><td></td></tr>
+<tr><th id="52">52</th><td><a class="macro" href="pyport.h.html#683" title="void *" data-ref="_M/PyAPI_FUNC">PyAPI_FUNC</a>(<em>void</em> *) <dfn class="decl fn" id="PyMem_Malloc" title='PyMem_Malloc' data-ref="PyMem_Malloc" data-ref-filename="PyMem_Malloc">PyMem_Malloc</dfn>(<span class='typedef' title='size_t' data-type='unsigned long' data-ref="size_t" data-ref-filename="size_t">size_t</span> <dfn class="local col5 decl" id="375size" title='size' data-type='size_t' data-ref="375size" data-ref-filename="375size">size</dfn>);</td></tr>
+<tr><th id="53">53</th><td><a class="macro" href="pyport.h.html#683" title="void *" data-ref="_M/PyAPI_FUNC">PyAPI_FUNC</a>(<em>void</em> *) <dfn class="decl fn" id="PyMem_Realloc" title='PyMem_Realloc' data-ref="PyMem_Realloc" data-ref-filename="PyMem_Realloc">PyMem_Realloc</dfn>(<em>void</em> *<dfn class="local col6 decl" id="376ptr" title='ptr' data-type='void *' data-ref="376ptr" data-ref-filename="376ptr">ptr</dfn>, <span class='typedef' title='size_t' data-type='unsigned long' data-ref="size_t" data-ref-filename="size_t">size_t</span> <dfn class="local col7 decl" id="377new_size" title='new_size' data-type='size_t' data-ref="377new_size" data-ref-filename="377new_size">new_size</dfn>);</td></tr>
+<tr><th id="54">54</th><td><a class="macro" href="pyport.h.html#683" title="void" data-ref="_M/PyAPI_FUNC">PyAPI_FUNC</a>(<em>void</em>) <dfn class="decl fn" id="PyMem_Free" title='PyMem_Free' data-ref="PyMem_Free" data-ref-filename="PyMem_Free">PyMem_Free</dfn>(<em>void</em> *<dfn class="local col8 decl" id="378ptr" title='ptr' data-type='void *' data-ref="378ptr" data-ref-filename="378ptr">ptr</dfn>);</td></tr>
+<tr><th id="55">55</th><td></td></tr>
+<tr><th id="56">56</th><td><i>/* Macros. */</i></td></tr>
+<tr><th id="57">57</th><td></td></tr>
+<tr><th id="58">58</th><td><i>/* PyMem_MALLOC(0) means malloc(1). Some systems would return NULL</i></td></tr>
+<tr><th id="59">59</th><td><i>   for malloc(0), which would be treated as an error. Some platforms</i></td></tr>
+<tr><th id="60">60</th><td><i>   would return a pointer with no memory behind it, which would break</i></td></tr>
+<tr><th id="61">61</th><td><i>   pymalloc. To solve these problems, allocate an extra byte. */</i></td></tr>
+<tr><th id="62">62</th><td><i>/* Returns NULL to indicate error if a negative size or size larger than</i></td></tr>
+<tr><th id="63">63</th><td><i>   Py_ssize_t can represent is supplied.  Helps prevents security holes. */</i></td></tr>
+<tr><th id="64">64</th><td><u>#define <dfn class="macro" id="_M/PyMem_MALLOC" data-ref="_M/PyMem_MALLOC">PyMem_MALLOC</dfn>(n)         PyMem_Malloc(n)</u></td></tr>
+<tr><th id="65">65</th><td><u>#define <dfn class="macro" id="_M/PyMem_REALLOC" data-ref="_M/PyMem_REALLOC">PyMem_REALLOC</dfn>(p, n)     PyMem_Realloc(p, n)</u></td></tr>
+<tr><th id="66">66</th><td><u>#define <dfn class="macro" id="_M/PyMem_FREE" data-ref="_M/PyMem_FREE">PyMem_FREE</dfn>(p)           PyMem_Free(p)</u></td></tr>
+<tr><th id="67">67</th><td></td></tr>
+<tr><th id="68">68</th><td><i>/*</i></td></tr>
+<tr><th id="69">69</th><td><i> * Type-oriented memory interface</i></td></tr>
+<tr><th id="70">70</th><td><i> * ==============================</i></td></tr>
+<tr><th id="71">71</th><td><i> *</i></td></tr>
+<tr><th id="72">72</th><td><i> * Allocate memory for n objects of the given type.  Returns a new pointer</i></td></tr>
+<tr><th id="73">73</th><td><i> * or NULL if the request was too large or memory allocation failed.  Use</i></td></tr>
+<tr><th id="74">74</th><td><i> * these macros rather than doing the multiplication yourself so that proper</i></td></tr>
+<tr><th id="75">75</th><td><i> * overflow checking is always done.</i></td></tr>
+<tr><th id="76">76</th><td><i> */</i></td></tr>
+<tr><th id="77">77</th><td></td></tr>
+<tr><th id="78">78</th><td><u>#define <dfn class="macro" id="_M/PyMem_New" data-ref="_M/PyMem_New">PyMem_New</dfn>(type, n) \</u></td></tr>
+<tr><th id="79">79</th><td><u>  ( ((size_t)(n) &gt; PY_SSIZE_T_MAX / sizeof(type)) ? NULL :      \</u></td></tr>
+<tr><th id="80">80</th><td><u>        ( (type *) PyMem_Malloc((n) * sizeof(type)) ) )</u></td></tr>
+<tr><th id="81">81</th><td><u>#define <dfn class="macro" id="_M/PyMem_NEW" data-ref="_M/PyMem_NEW">PyMem_NEW</dfn>(type, n) \</u></td></tr>
+<tr><th id="82">82</th><td><u>  ( ((size_t)(n) &gt; PY_SSIZE_T_MAX / sizeof(type)) ? NULL :      \</u></td></tr>
+<tr><th id="83">83</th><td><u>        ( (type *) PyMem_MALLOC((n) * sizeof(type)) ) )</u></td></tr>
+<tr><th id="84">84</th><td></td></tr>
+<tr><th id="85">85</th><td><i>/*</i></td></tr>
+<tr><th id="86">86</th><td><i> * The value of (p) is always clobbered by this macro regardless of success.</i></td></tr>
+<tr><th id="87">87</th><td><i> * The caller MUST check if (p) is NULL afterwards and deal with the memory</i></td></tr>
+<tr><th id="88">88</th><td><i> * error if so.  This means the original value of (p) MUST be saved for the</i></td></tr>
+<tr><th id="89">89</th><td><i> * caller's memory error handler to not lose track of it.</i></td></tr>
+<tr><th id="90">90</th><td><i> */</i></td></tr>
+<tr><th id="91">91</th><td><u>#define <dfn class="macro" id="_M/PyMem_Resize" data-ref="_M/PyMem_Resize">PyMem_Resize</dfn>(p, type, n) \</u></td></tr>
+<tr><th id="92">92</th><td><u>  ( (p) = ((size_t)(n) &gt; PY_SSIZE_T_MAX / sizeof(type)) ? NULL :        \</u></td></tr>
+<tr><th id="93">93</th><td><u>        (type *) PyMem_Realloc((p), (n) * sizeof(type)) )</u></td></tr>
+<tr><th id="94">94</th><td><u>#define <dfn class="macro" id="_M/PyMem_RESIZE" data-ref="_M/PyMem_RESIZE">PyMem_RESIZE</dfn>(p, type, n) \</u></td></tr>
+<tr><th id="95">95</th><td><u>  ( (p) = ((size_t)(n) &gt; PY_SSIZE_T_MAX / sizeof(type)) ? NULL :        \</u></td></tr>
+<tr><th id="96">96</th><td><u>        (type *) PyMem_REALLOC((p), (n) * sizeof(type)) )</u></td></tr>
+<tr><th id="97">97</th><td></td></tr>
+<tr><th id="98">98</th><td><i>/* PyMem{Del,DEL} are left over from ancient days, and shouldn't be used</i></td></tr>
+<tr><th id="99">99</th><td><i> * anymore.  They're just confusing aliases for PyMem_{Free,FREE} now.</i></td></tr>
+<tr><th id="100">100</th><td><i> */</i></td></tr>
+<tr><th id="101">101</th><td><u>#define <dfn class="macro" id="_M/PyMem_Del" data-ref="_M/PyMem_Del">PyMem_Del</dfn>               PyMem_Free</u></td></tr>
+<tr><th id="102">102</th><td><u>#define <dfn class="macro" id="_M/PyMem_DEL" data-ref="_M/PyMem_DEL">PyMem_DEL</dfn>               PyMem_FREE</u></td></tr>
+<tr><th id="103">103</th><td></td></tr>
+<tr><th id="104">104</th><td><i>/* bpo-35053: expose _Py_tracemalloc_config for performance:</i></td></tr>
+<tr><th id="105">105</th><td><i>   _Py_NewReference() needs an efficient check to test if tracemalloc is</i></td></tr>
+<tr><th id="106">106</th><td><i>   tracing.</i></td></tr>
+<tr><th id="107">107</th><td><i></i></td></tr>
+<tr><th id="108">108</th><td><i>   It has to be defined in pymem.h, before object.h is included. */</i></td></tr>
+<tr><th id="109">109</th><td><b>struct</b> <dfn class="type def" id="_PyTraceMalloc_Config" title='_PyTraceMalloc_Config' data-ref="_PyTraceMalloc_Config" data-ref-filename="_PyTraceMalloc_Config">_PyTraceMalloc_Config</dfn> {</td></tr>
+<tr><th id="110">110</th><td>    <i>/* Module initialized?</i></td></tr>
+<tr><th id="111">111</th><td><i>       Variable protected by the GIL */</i></td></tr>
+<tr><th id="112">112</th><td>    <b>enum</b> {</td></tr>
+<tr><th id="113">113</th><td>        <dfn class="enum" id="_PyTraceMalloc_Config::TRACEMALLOC_NOT_INITIALIZED" title='_PyTraceMalloc_Config::TRACEMALLOC_NOT_INITIALIZED' data-ref="_PyTraceMalloc_Config::TRACEMALLOC_NOT_INITIALIZED" data-ref-filename="_PyTraceMalloc_Config..TRACEMALLOC_NOT_INITIALIZED">TRACEMALLOC_NOT_INITIALIZED</dfn>,</td></tr>
+<tr><th id="114">114</th><td>        <dfn class="enum" id="_PyTraceMalloc_Config::TRACEMALLOC_INITIALIZED" title='_PyTraceMalloc_Config::TRACEMALLOC_INITIALIZED' data-ref="_PyTraceMalloc_Config::TRACEMALLOC_INITIALIZED" data-ref-filename="_PyTraceMalloc_Config..TRACEMALLOC_INITIALIZED">TRACEMALLOC_INITIALIZED</dfn>,</td></tr>
+<tr><th id="115">115</th><td>        <dfn class="enum" id="_PyTraceMalloc_Config::TRACEMALLOC_FINALIZED" title='_PyTraceMalloc_Config::TRACEMALLOC_FINALIZED' data-ref="_PyTraceMalloc_Config::TRACEMALLOC_FINALIZED" data-ref-filename="_PyTraceMalloc_Config..TRACEMALLOC_FINALIZED">TRACEMALLOC_FINALIZED</dfn></td></tr>
+<tr><th id="116">116</th><td>    } <dfn class="decl field" id="_PyTraceMalloc_Config::initialized" title='_PyTraceMalloc_Config::initialized' data-ref="_PyTraceMalloc_Config::initialized" data-ref-filename="_PyTraceMalloc_Config..initialized">initialized</dfn>;</td></tr>
+<tr><th id="117">117</th><td></td></tr>
+<tr><th id="118">118</th><td>    <i>/* Is tracemalloc tracing memory allocations?</i></td></tr>
+<tr><th id="119">119</th><td><i>       Variable protected by the GIL */</i></td></tr>
+<tr><th id="120">120</th><td>    <em>int</em> <dfn class="decl field" id="_PyTraceMalloc_Config::tracing" title='_PyTraceMalloc_Config::tracing' data-ref="_PyTraceMalloc_Config::tracing" data-ref-filename="_PyTraceMalloc_Config..tracing">tracing</dfn>;</td></tr>
+<tr><th id="121">121</th><td></td></tr>
+<tr><th id="122">122</th><td>    <i>/* limit of the number of frames in a traceback, 1 by default.</i></td></tr>
+<tr><th id="123">123</th><td><i>       Variable protected by the GIL. */</i></td></tr>
+<tr><th id="124">124</th><td>    <em>int</em> <dfn class="decl field" id="_PyTraceMalloc_Config::max_nframe" title='_PyTraceMalloc_Config::max_nframe' data-ref="_PyTraceMalloc_Config::max_nframe" data-ref-filename="_PyTraceMalloc_Config..max_nframe">max_nframe</dfn>;</td></tr>
+<tr><th id="125">125</th><td></td></tr>
+<tr><th id="126">126</th><td>    <i>/* use domain in trace key?</i></td></tr>
+<tr><th id="127">127</th><td><i>       Variable protected by the GIL. */</i></td></tr>
+<tr><th id="128">128</th><td>    <em>int</em> <dfn class="decl field" id="_PyTraceMalloc_Config::use_domain" title='_PyTraceMalloc_Config::use_domain' data-ref="_PyTraceMalloc_Config::use_domain" data-ref-filename="_PyTraceMalloc_Config..use_domain">use_domain</dfn>;</td></tr>
+<tr><th id="129">129</th><td>};</td></tr>
+<tr><th id="130">130</th><td></td></tr>
+<tr><th id="131">131</th><td><a class="macro" href="pyport.h.html#686" title="extern struct _PyTraceMalloc_Config" data-ref="_M/PyAPI_DATA">PyAPI_DATA</a>(<b>struct</b> <a class="type" href="#_PyTraceMalloc_Config" title='_PyTraceMalloc_Config' data-ref="_PyTraceMalloc_Config" data-ref-filename="_PyTraceMalloc_Config">_PyTraceMalloc_Config</a>) <dfn class="decl" id="_Py_tracemalloc_config" title='_Py_tracemalloc_config' data-ref="_Py_tracemalloc_config" data-ref-filename="_Py_tracemalloc_config">_Py_tracemalloc_config</dfn>;</td></tr>
+<tr><th id="132">132</th><td></td></tr>
+<tr><th id="133">133</th><td><u>#define <dfn class="macro" id="_M/_PyTraceMalloc_Config_INIT" data-ref="_M/_PyTraceMalloc_Config_INIT">_PyTraceMalloc_Config_INIT</dfn> \</u></td></tr>
+<tr><th id="134">134</th><td><u>    {.initialized = TRACEMALLOC_NOT_INITIALIZED, \</u></td></tr>
+<tr><th id="135">135</th><td><u>     .tracing = 0, \</u></td></tr>
+<tr><th id="136">136</th><td><u>     .max_nframe = 1, \</u></td></tr>
+<tr><th id="137">137</th><td><u>     .use_domain = 0}</u></td></tr>
+<tr><th id="138">138</th><td></td></tr>
+<tr><th id="139">139</th><td></td></tr>
+<tr><th id="140">140</th><td><u>#<span data-ppcond="140">ifndef</span> <span class="macro" data-ref="_M/Py_LIMITED_API">Py_LIMITED_API</span></u></td></tr>
+<tr><th id="141">141</th><td><u>#  define <dfn class="macro" id="_M/Py_CPYTHON_PYMEM_H" data-ref="_M/Py_CPYTHON_PYMEM_H">Py_CPYTHON_PYMEM_H</dfn></u></td></tr>
+<tr><th id="142">142</th><td><u>#  include  <a href="cpython/pymem.h.html">"cpython/pymem.h"</a></u></td></tr>
+<tr><th id="143">143</th><td><u>#  undef <a class="macro" href="#141" data-ref="_M/Py_CPYTHON_PYMEM_H">Py_CPYTHON_PYMEM_H</a></u></td></tr>
+<tr><th id="144">144</th><td><u>#<span data-ppcond="140">endif</span></u></td></tr>
+<tr><th id="145">145</th><td></td></tr>
+<tr><th id="146">146</th><td><u>#<span data-ppcond="146">ifdef</span> <span class="macro" data-ref="_M/__cplusplus">__cplusplus</span></u></td></tr>
+<tr><th id="147">147</th><td>}</td></tr>
+<tr><th id="148">148</th><td><u>#<span data-ppcond="146">endif</span></u></td></tr>
+<tr><th id="149">149</th><td></td></tr>
+<tr><th id="150">150</th><td><u>#<span data-ppcond="5">endif</span> /* !Py_PYMEM_H */</u></td></tr>
+<tr><th id="151">151</th><td></td></tr>
+</table><hr/><p id='footer'>
+Generated while processing <a href='../../llvm/build/tools/lldb/bindings/python/LLDBWrapPython.cpp.html'>llvm/build/tools/lldb/bindings/python/LLDBWrapPython.cpp</a><br/>Generated on <em>2021-Jul-01</em> from project include

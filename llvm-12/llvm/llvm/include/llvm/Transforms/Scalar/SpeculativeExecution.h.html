@@ -1,0 +1,108 @@
+<!doctype html>
+<html>
+<head>
+<meta name="viewport" content="width=device-width, initial-scale=1.0"><title>SpeculativeExecution.h source code [llvm/llvm/include/llvm/Transforms/Scalar/SpeculativeExecution.h] - Woboq Code Browser</title>
+<meta name="woboq:interestingDefinitions" content="llvm::SpeculativeExecutionPass "/>
+<link rel="stylesheet" href="../../../../../.././data/qtcreator.css" title="QtCreator"/>
+<link rel="alternate stylesheet" href="../../../../../.././data/kdevelop.css" title="KDevelop"/>
+<script type="text/javascript" src="../../../../../.././data/jquery/jquery.min.js"></script>
+<script type="text/javascript" src="../../../../../.././data/jquery/jquery-ui.min.js"></script>
+<script>var file = 'llvm/llvm/include/llvm/Transforms/Scalar/SpeculativeExecution.h'; var root_path = '../../../../../..'; var data_path = '../../../../../.././data'; var ecma_script_api_version = 2;</script>
+<script src='../../../../../.././data/codebrowser.js'></script>
+</head>
+<body><div id='header'><h1 id='breadcrumb'><span>Browse the source code of </span><a href='../../../../..'>llvm</a>/<a href='../../../..'>llvm</a>/<a href='../../..'>include</a>/<a href='../..'>llvm</a>/<a href='..'>Transforms</a>/<a href='./'>Scalar</a>/<a href='SpeculativeExecution.h.html'>SpeculativeExecution.h</a></h1></div>
+<hr/><div id='content'><table class="code">
+<tr><th id="1">1</th><td><i>//===- SpeculativeExecution.h -----------------------------------*- C++ -*-===//</i></td></tr>
+<tr><th id="2">2</th><td><i>//</i></td></tr>
+<tr><th id="3">3</th><td><i>// Part of the LLVM Project, under the Apache License v2.0 with LLVM Exceptions.</i></td></tr>
+<tr><th id="4">4</th><td><i>// See <a href="https://llvm.org/LICENSE.txt">https://llvm.org/LICENSE.txt</a> for license information.</i></td></tr>
+<tr><th id="5">5</th><td><i>// SPDX-License-Identifier: Apache-2.0 WITH LLVM-exception</i></td></tr>
+<tr><th id="6">6</th><td><i>//</i></td></tr>
+<tr><th id="7">7</th><td><i>//===----------------------------------------------------------------------===//</i></td></tr>
+<tr><th id="8">8</th><td><i>//</i></td></tr>
+<tr><th id="9">9</th><td><i>// This pass hoists instructions to enable speculative execution on</i></td></tr>
+<tr><th id="10">10</th><td><i>// targets where branches are expensive. This is aimed at GPUs. It</i></td></tr>
+<tr><th id="11">11</th><td><i>// currently works on simple if-then and if-then-else</i></td></tr>
+<tr><th id="12">12</th><td><i>// patterns.</i></td></tr>
+<tr><th id="13">13</th><td><i>//</i></td></tr>
+<tr><th id="14">14</th><td><i>// Removing branches is not the only motivation for this</i></td></tr>
+<tr><th id="15">15</th><td><i>// pass. E.g. consider this code and assume that there is no</i></td></tr>
+<tr><th id="16">16</th><td><i>// addressing mode for multiplying by sizeof(*a):</i></td></tr>
+<tr><th id="17">17</th><td><i>//</i></td></tr>
+<tr><th id="18">18</th><td><i>//   if (b &gt; 0)</i></td></tr>
+<tr><th id="19">19</th><td><i>//     c = a[i + 1]</i></td></tr>
+<tr><th id="20">20</th><td><i>//   if (d &gt; 0)</i></td></tr>
+<tr><th id="21">21</th><td><i>//     e = a[i + 2]</i></td></tr>
+<tr><th id="22">22</th><td><i>//</i></td></tr>
+<tr><th id="23">23</th><td><i>// turns into</i></td></tr>
+<tr><th id="24">24</th><td><i>//</i></td></tr>
+<tr><th id="25">25</th><td><i>//   p = &amp;a[i + 1];</i></td></tr>
+<tr><th id="26">26</th><td><i>//   if (b &gt; 0)</i></td></tr>
+<tr><th id="27">27</th><td><i>//     c = *p;</i></td></tr>
+<tr><th id="28">28</th><td><i>//   q = &amp;a[i + 2];</i></td></tr>
+<tr><th id="29">29</th><td><i>//   if (d &gt; 0)</i></td></tr>
+<tr><th id="30">30</th><td><i>//     e = *q;</i></td></tr>
+<tr><th id="31">31</th><td><i>//</i></td></tr>
+<tr><th id="32">32</th><td><i>// which could later be optimized to</i></td></tr>
+<tr><th id="33">33</th><td><i>//</i></td></tr>
+<tr><th id="34">34</th><td><i>//   r = &amp;a[i];</i></td></tr>
+<tr><th id="35">35</th><td><i>//   if (b &gt; 0)</i></td></tr>
+<tr><th id="36">36</th><td><i>//     c = r[1];</i></td></tr>
+<tr><th id="37">37</th><td><i>//   if (d &gt; 0)</i></td></tr>
+<tr><th id="38">38</th><td><i>//     e = r[2];</i></td></tr>
+<tr><th id="39">39</th><td><i>//</i></td></tr>
+<tr><th id="40">40</th><td><i>// Later passes sink back much of the speculated code that did not enable</i></td></tr>
+<tr><th id="41">41</th><td><i>// further optimization.</i></td></tr>
+<tr><th id="42">42</th><td><i>//</i></td></tr>
+<tr><th id="43">43</th><td><i>// This pass is more aggressive than the function SpeculativeyExecuteBB in</i></td></tr>
+<tr><th id="44">44</th><td><i>// SimplifyCFG. SimplifyCFG will not speculate if no selects are introduced and</i></td></tr>
+<tr><th id="45">45</th><td><i>// it will speculate at most one instruction. It also will not speculate if</i></td></tr>
+<tr><th id="46">46</th><td><i>// there is a value defined in the if-block that is only used in the then-block.</i></td></tr>
+<tr><th id="47">47</th><td><i>// These restrictions make sense since the speculation in SimplifyCFG seems</i></td></tr>
+<tr><th id="48">48</th><td><i>// aimed at introducing cheap selects, while this pass is intended to do more</i></td></tr>
+<tr><th id="49">49</th><td><i>// aggressive speculation while counting on later passes to either capitalize on</i></td></tr>
+<tr><th id="50">50</th><td><i>// that or clean it up.</i></td></tr>
+<tr><th id="51">51</th><td><i>//</i></td></tr>
+<tr><th id="52">52</th><td><i>// If the pass was created by calling</i></td></tr>
+<tr><th id="53">53</th><td><i>// createSpeculativeExecutionIfHasBranchDivergencePass or the</i></td></tr>
+<tr><th id="54">54</th><td><i>// -spec-exec-only-if-divergent-target option is present, this pass only has an</i></td></tr>
+<tr><th id="55">55</th><td><i>// effect on targets where TargetTransformInfo::hasBranchDivergence() is true;</i></td></tr>
+<tr><th id="56">56</th><td><i>// on other targets, it is a nop.</i></td></tr>
+<tr><th id="57">57</th><td><i>//</i></td></tr>
+<tr><th id="58">58</th><td><i>// This lets you include this pass unconditionally in the IR pass pipeline, but</i></td></tr>
+<tr><th id="59">59</th><td><i>// only enable it for relevant targets.</i></td></tr>
+<tr><th id="60">60</th><td><i>//</i></td></tr>
+<tr><th id="61">61</th><td><i>//===----------------------------------------------------------------------===//</i></td></tr>
+<tr><th id="62">62</th><td><u>#<span data-ppcond="62">ifndef</span> <span class="macro" data-ref="_M/LLVM_TRANSFORMS_SCALAR_SPECULATIVEEXECUTION_H">LLVM_TRANSFORMS_SCALAR_SPECULATIVEEXECUTION_H</span></u></td></tr>
+<tr><th id="63">63</th><td><u>#define <dfn class="macro" id="_M/LLVM_TRANSFORMS_SCALAR_SPECULATIVEEXECUTION_H" data-ref="_M/LLVM_TRANSFORMS_SCALAR_SPECULATIVEEXECUTION_H">LLVM_TRANSFORMS_SCALAR_SPECULATIVEEXECUTION_H</dfn></u></td></tr>
+<tr><th id="64">64</th><td></td></tr>
+<tr><th id="65">65</th><td><u>#include <a href="../../Analysis/TargetTransformInfo.h.html">"llvm/Analysis/TargetTransformInfo.h"</a></u></td></tr>
+<tr><th id="66">66</th><td><u>#include <a href="../../IR/PassManager.h.html">"llvm/IR/PassManager.h"</a></u></td></tr>
+<tr><th id="67">67</th><td></td></tr>
+<tr><th id="68">68</th><td><b>namespace</b> <span class="namespace">llvm</span> {</td></tr>
+<tr><th id="69">69</th><td><b>class</b> <dfn class="type def" id="llvm::SpeculativeExecutionPass" title='llvm::SpeculativeExecutionPass' data-ref="llvm::SpeculativeExecutionPass" data-ref-filename="llvm..SpeculativeExecutionPass">SpeculativeExecutionPass</dfn></td></tr>
+<tr><th id="70">70</th><td>    : <b>public</b> <a class="type" href="../../IR/PassManager.h.html#llvm::PassInfoMixin" title='llvm::PassInfoMixin' data-ref="llvm::PassInfoMixin" data-ref-filename="llvm..PassInfoMixin">PassInfoMixin</a>&lt;<a class="type" href="#llvm::SpeculativeExecutionPass" title='llvm::SpeculativeExecutionPass' data-ref="llvm::SpeculativeExecutionPass" data-ref-filename="llvm..SpeculativeExecutionPass">SpeculativeExecutionPass</a>&gt; {</td></tr>
+<tr><th id="71">71</th><td><b>public</b>:</td></tr>
+<tr><th id="72">72</th><td>  <dfn class="decl fn" id="_ZN4llvm24SpeculativeExecutionPassC1Eb" title='llvm::SpeculativeExecutionPass::SpeculativeExecutionPass' data-ref="_ZN4llvm24SpeculativeExecutionPassC1Eb" data-ref-filename="_ZN4llvm24SpeculativeExecutionPassC1Eb">SpeculativeExecutionPass</dfn>(<em>bool</em> <dfn class="local col2 decl" id="642OnlyIfDivergentTarget" title='OnlyIfDivergentTarget' data-type='bool' data-ref="642OnlyIfDivergentTarget" data-ref-filename="642OnlyIfDivergentTarget">OnlyIfDivergentTarget</dfn> = <b>false</b>);</td></tr>
+<tr><th id="73">73</th><td></td></tr>
+<tr><th id="74">74</th><td>  <a class="type" href="../../IR/PassManager.h.html#llvm::PreservedAnalyses" title='llvm::PreservedAnalyses' data-ref="llvm::PreservedAnalyses" data-ref-filename="llvm..PreservedAnalyses">PreservedAnalyses</a> <dfn class="decl fn" id="_ZN4llvm24SpeculativeExecutionPass3runERNS_8FunctionERNS_15AnalysisManagerIS1_JEEE" title='llvm::SpeculativeExecutionPass::run' data-ref="_ZN4llvm24SpeculativeExecutionPass3runERNS_8FunctionERNS_15AnalysisManagerIS1_JEEE" data-ref-filename="_ZN4llvm24SpeculativeExecutionPass3runERNS_8FunctionERNS_15AnalysisManagerIS1_JEEE">run</dfn>(<a class="type" href="../../IR/Function.h.html#llvm::Function" title='llvm::Function' data-ref="llvm::Function" data-ref-filename="llvm..Function">Function</a> &amp;<dfn class="local col3 decl" id="643F" title='F' data-type='llvm::Function &amp;' data-ref="643F" data-ref-filename="643F">F</dfn>, <a class="typedef" href="../../IR/PassManager.h.html#llvm::FunctionAnalysisManager" title='llvm::FunctionAnalysisManager' data-type='AnalysisManager&lt;llvm::Function&gt;' data-ref="llvm::FunctionAnalysisManager" data-ref-filename="llvm..FunctionAnalysisManager">FunctionAnalysisManager</a> &amp;<dfn class="local col4 decl" id="644AM" title='AM' data-type='llvm::FunctionAnalysisManager &amp;' data-ref="644AM" data-ref-filename="644AM">AM</dfn>);</td></tr>
+<tr><th id="75">75</th><td></td></tr>
+<tr><th id="76">76</th><td>  <i>// Glue for old PM</i></td></tr>
+<tr><th id="77">77</th><td>  <em>bool</em> <dfn class="decl fn" id="_ZN4llvm24SpeculativeExecutionPass7runImplERNS_8FunctionEPNS_19TargetTransformInfoE" title='llvm::SpeculativeExecutionPass::runImpl' data-ref="_ZN4llvm24SpeculativeExecutionPass7runImplERNS_8FunctionEPNS_19TargetTransformInfoE" data-ref-filename="_ZN4llvm24SpeculativeExecutionPass7runImplERNS_8FunctionEPNS_19TargetTransformInfoE">runImpl</dfn>(<a class="type" href="../../IR/Function.h.html#llvm::Function" title='llvm::Function' data-ref="llvm::Function" data-ref-filename="llvm..Function">Function</a> &amp;<dfn class="local col5 decl" id="645F" title='F' data-type='llvm::Function &amp;' data-ref="645F" data-ref-filename="645F">F</dfn>, <a class="type" href="../../Analysis/TargetTransformInfo.h.html#llvm::TargetTransformInfo" title='llvm::TargetTransformInfo' data-ref="llvm::TargetTransformInfo" data-ref-filename="llvm..TargetTransformInfo">TargetTransformInfo</a> *<dfn class="local col6 decl" id="646TTI" title='TTI' data-type='llvm::TargetTransformInfo *' data-ref="646TTI" data-ref-filename="646TTI">TTI</dfn>);</td></tr>
+<tr><th id="78">78</th><td></td></tr>
+<tr><th id="79">79</th><td><b>private</b>:</td></tr>
+<tr><th id="80">80</th><td>  <em>bool</em> <dfn class="decl fn" id="_ZN4llvm24SpeculativeExecutionPass15runOnBasicBlockERNS_10BasicBlockE" title='llvm::SpeculativeExecutionPass::runOnBasicBlock' data-ref="_ZN4llvm24SpeculativeExecutionPass15runOnBasicBlockERNS_10BasicBlockE" data-ref-filename="_ZN4llvm24SpeculativeExecutionPass15runOnBasicBlockERNS_10BasicBlockE">runOnBasicBlock</dfn>(<a class="type" href="../../IR/BasicBlock.h.html#llvm::BasicBlock" title='llvm::BasicBlock' data-ref="llvm::BasicBlock" data-ref-filename="llvm..BasicBlock">BasicBlock</a> &amp;<dfn class="local col7 decl" id="647B" title='B' data-type='llvm::BasicBlock &amp;' data-ref="647B" data-ref-filename="647B">B</dfn>);</td></tr>
+<tr><th id="81">81</th><td>  <em>bool</em> <dfn class="decl fn" id="_ZN4llvm24SpeculativeExecutionPass22considerHoistingFromToERNS_10BasicBlockES2_" title='llvm::SpeculativeExecutionPass::considerHoistingFromTo' data-ref="_ZN4llvm24SpeculativeExecutionPass22considerHoistingFromToERNS_10BasicBlockES2_" data-ref-filename="_ZN4llvm24SpeculativeExecutionPass22considerHoistingFromToERNS_10BasicBlockES2_">considerHoistingFromTo</dfn>(<a class="type" href="../../IR/BasicBlock.h.html#llvm::BasicBlock" title='llvm::BasicBlock' data-ref="llvm::BasicBlock" data-ref-filename="llvm..BasicBlock">BasicBlock</a> &amp;<dfn class="local col8 decl" id="648FromBlock" title='FromBlock' data-type='llvm::BasicBlock &amp;' data-ref="648FromBlock" data-ref-filename="648FromBlock">FromBlock</dfn>, <a class="type" href="../../IR/BasicBlock.h.html#llvm::BasicBlock" title='llvm::BasicBlock' data-ref="llvm::BasicBlock" data-ref-filename="llvm..BasicBlock">BasicBlock</a> &amp;<dfn class="local col9 decl" id="649ToBlock" title='ToBlock' data-type='llvm::BasicBlock &amp;' data-ref="649ToBlock" data-ref-filename="649ToBlock">ToBlock</dfn>);</td></tr>
+<tr><th id="82">82</th><td></td></tr>
+<tr><th id="83">83</th><td>  <i>// If true, this pass is a nop unless the target architecture has branch</i></td></tr>
+<tr><th id="84">84</th><td><i>  // divergence.</i></td></tr>
+<tr><th id="85">85</th><td>  <em>const</em> <em>bool</em> <dfn class="decl field" id="llvm::SpeculativeExecutionPass::OnlyIfDivergentTarget" title='llvm::SpeculativeExecutionPass::OnlyIfDivergentTarget' data-ref="llvm::SpeculativeExecutionPass::OnlyIfDivergentTarget" data-ref-filename="llvm..SpeculativeExecutionPass..OnlyIfDivergentTarget">OnlyIfDivergentTarget</dfn> = <b>false</b>;</td></tr>
+<tr><th id="86">86</th><td></td></tr>
+<tr><th id="87">87</th><td>  <a class="type" href="../../Analysis/TargetTransformInfo.h.html#llvm::TargetTransformInfo" title='llvm::TargetTransformInfo' data-ref="llvm::TargetTransformInfo" data-ref-filename="llvm..TargetTransformInfo">TargetTransformInfo</a> *<dfn class="decl field" id="llvm::SpeculativeExecutionPass::TTI" title='llvm::SpeculativeExecutionPass::TTI' data-ref="llvm::SpeculativeExecutionPass::TTI" data-ref-filename="llvm..SpeculativeExecutionPass..TTI">TTI</dfn> = <b>nullptr</b>;</td></tr>
+<tr><th id="88">88</th><td>};</td></tr>
+<tr><th id="89">89</th><td>}</td></tr>
+<tr><th id="90">90</th><td></td></tr>
+<tr><th id="91">91</th><td><u>#<span data-ppcond="62">endif</span> //LLVM_TRANSFORMS_SCALAR_SPECULATIVEEXECUTION_H</u></td></tr>
+<tr><th id="92">92</th><td></td></tr>
+</table><hr/><p id='footer'>
+Generated while processing <a href='../../../../lib/Passes/PassBuilder.cpp.html'>llvm/llvm/lib/Passes/PassBuilder.cpp</a><br/>Generated on <em>2021-Jul-01</em> from project llvm revision <em>12</em>

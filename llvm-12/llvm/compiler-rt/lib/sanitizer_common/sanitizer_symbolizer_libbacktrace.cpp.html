@@ -1,0 +1,225 @@
+<!doctype html>
+<html>
+<head>
+<meta name="viewport" content="width=device-width, initial-scale=1.0"><title>sanitizer_symbolizer_libbacktrace.cpp source code [llvm/compiler-rt/lib/sanitizer_common/sanitizer_symbolizer_libbacktrace.cpp] - Woboq Code Browser</title>
+<link rel="stylesheet" href="../../../.././data/qtcreator.css" title="QtCreator"/>
+<link rel="alternate stylesheet" href="../../../.././data/kdevelop.css" title="KDevelop"/>
+<script type="text/javascript" src="../../../.././data/jquery/jquery.min.js"></script>
+<script type="text/javascript" src="../../../.././data/jquery/jquery-ui.min.js"></script>
+<script>var file = 'llvm/compiler-rt/lib/sanitizer_common/sanitizer_symbolizer_libbacktrace.cpp'; var root_path = '../../../..'; var data_path = '../../../.././data'; var ecma_script_api_version = 2;</script>
+<script src='../../../.././data/codebrowser.js'></script>
+</head>
+<body><div id='header'><h1 id='breadcrumb'><span>Browse the source code of </span><a href='../../..'>llvm</a>/<a href='../..'>compiler-rt</a>/<a href='..'>lib</a>/<a href='./'>sanitizer_common</a>/<a href='sanitizer_symbolizer_libbacktrace.cpp.html'>sanitizer_symbolizer_libbacktrace.cpp</a></h1></div>
+<hr/><div id='content'><table class="code">
+<tr><th id="1">1</th><td><i>//===-- sanitizer_symbolizer_libbacktrace.cpp -----------------------------===//</i></td></tr>
+<tr><th id="2">2</th><td><i>//</i></td></tr>
+<tr><th id="3">3</th><td><i>// Part of the LLVM Project, under the Apache License v2.0 with LLVM Exceptions.</i></td></tr>
+<tr><th id="4">4</th><td><i>// See <a href="https://llvm.org/LICENSE.txt">https://llvm.org/LICENSE.txt</a> for license information.</i></td></tr>
+<tr><th id="5">5</th><td><i>// SPDX-License-Identifier: Apache-2.0 WITH LLVM-exception</i></td></tr>
+<tr><th id="6">6</th><td><i>//</i></td></tr>
+<tr><th id="7">7</th><td><i>//===----------------------------------------------------------------------===//</i></td></tr>
+<tr><th id="8">8</th><td><i>//</i></td></tr>
+<tr><th id="9">9</th><td><i>// This file is shared between AddressSanitizer and ThreadSanitizer</i></td></tr>
+<tr><th id="10">10</th><td><i>// run-time libraries.</i></td></tr>
+<tr><th id="11">11</th><td><i>// Libbacktrace implementation of symbolizer parts.</i></td></tr>
+<tr><th id="12">12</th><td><i>//===----------------------------------------------------------------------===//</i></td></tr>
+<tr><th id="13">13</th><td></td></tr>
+<tr><th id="14">14</th><td><u>#include <a href="sanitizer_platform.h.html">"sanitizer_platform.h"</a></u></td></tr>
+<tr><th id="15">15</th><td></td></tr>
+<tr><th id="16">16</th><td><u>#include <a href="sanitizer_internal_defs.h.html">"sanitizer_internal_defs.h"</a></u></td></tr>
+<tr><th id="17">17</th><td><u>#include <a href="sanitizer_symbolizer.h.html">"sanitizer_symbolizer.h"</a></u></td></tr>
+<tr><th id="18">18</th><td><u>#include <a href="sanitizer_symbolizer_libbacktrace.h.html">"sanitizer_symbolizer_libbacktrace.h"</a></u></td></tr>
+<tr><th id="19">19</th><td></td></tr>
+<tr><th id="20">20</th><td><u>#<span data-ppcond="20">if</span> <a class="macro" href="sanitizer_symbolizer_libbacktrace.h.html#22" title="0" data-ref="_M/SANITIZER_LIBBACKTRACE">SANITIZER_LIBBACKTRACE</a></u></td></tr>
+<tr><th id="21">21</th><td><u># include "backtrace-supported.h"</u></td></tr>
+<tr><th id="22">22</th><td><u># if SANITIZER_POSIX &amp;&amp; BACKTRACE_SUPPORTED &amp;&amp; !BACKTRACE_USES_MALLOC</u></td></tr>
+<tr><th id="23">23</th><td><u>#  include "backtrace.h"</u></td></tr>
+<tr><th id="24">24</th><td><u>#  if SANITIZER_CP_DEMANGLE</u></td></tr>
+<tr><th id="25">25</th><td><u>#   undef ARRAY_SIZE</u></td></tr>
+<tr><th id="26">26</th><td><u>#   include "demangle.h"</u></td></tr>
+<tr><th id="27">27</th><td><u>#  endif</u></td></tr>
+<tr><th id="28">28</th><td><u># else</u></td></tr>
+<tr><th id="29">29</th><td><u>#  define SANITIZER_LIBBACKTRACE 0</u></td></tr>
+<tr><th id="30">30</th><td><u># endif</u></td></tr>
+<tr><th id="31">31</th><td><u>#<span data-ppcond="20">endif</span></u></td></tr>
+<tr><th id="32">32</th><td></td></tr>
+<tr><th id="33">33</th><td><b>namespace</b> <span class="namespace">__sanitizer</span> {</td></tr>
+<tr><th id="34">34</th><td></td></tr>
+<tr><th id="35">35</th><td><em>static</em> <em>char</em> *<a class="tu decl fn" href="#__sanitizer::DemangleAlloc" title='__sanitizer::DemangleAlloc' data-type='char * __sanitizer::DemangleAlloc(const char * name, bool always_alloc)' data-ref="__sanitizer::DemangleAlloc" data-ref-filename="__sanitizer..DemangleAlloc">DemangleAlloc</a>(<em>const</em> <em>char</em> *<dfn class="local col8 decl" id="8name" title='name' data-type='const char *' data-ref="8name" data-ref-filename="8name">name</dfn>, <em>bool</em> <dfn class="local col9 decl" id="9always_alloc" title='always_alloc' data-type='bool' data-ref="9always_alloc" data-ref-filename="9always_alloc">always_alloc</dfn>);</td></tr>
+<tr><th id="36">36</th><td></td></tr>
+<tr><th id="37">37</th><td><u>#<span data-ppcond="37">if</span> <a class="macro" href="sanitizer_symbolizer_libbacktrace.h.html#22" title="0" data-ref="_M/SANITIZER_LIBBACKTRACE">SANITIZER_LIBBACKTRACE</a></u></td></tr>
+<tr><th id="38">38</th><td></td></tr>
+<tr><th id="39">39</th><td><b>namespace</b> {</td></tr>
+<tr><th id="40">40</th><td></td></tr>
+<tr><th id="41">41</th><td><u># if SANITIZER_CP_DEMANGLE</u></td></tr>
+<tr><th id="42">42</th><td><b>struct</b> CplusV3DemangleData {</td></tr>
+<tr><th id="43">43</th><td>  <em>char</em> *buf;</td></tr>
+<tr><th id="44">44</th><td>  uptr size, allocated;</td></tr>
+<tr><th id="45">45</th><td>};</td></tr>
+<tr><th id="46">46</th><td></td></tr>
+<tr><th id="47">47</th><td><b>extern</b> <q>"C"</q> {</td></tr>
+<tr><th id="48">48</th><td><em>static</em> <em>void</em> CplusV3DemangleCallback(<em>const</em> <em>char</em> *s, size_t l, <em>void</em> *vdata) {</td></tr>
+<tr><th id="49">49</th><td>  CplusV3DemangleData *data = (CplusV3DemangleData *)vdata;</td></tr>
+<tr><th id="50">50</th><td>  uptr needed = data-&gt;size + l + <var>1</var>;</td></tr>
+<tr><th id="51">51</th><td>  <b>if</b> (needed &gt; data-&gt;allocated) {</td></tr>
+<tr><th id="52">52</th><td>    data-&gt;allocated *= <var>2</var>;</td></tr>
+<tr><th id="53">53</th><td>    <b>if</b> (needed &gt; data-&gt;allocated)</td></tr>
+<tr><th id="54">54</th><td>      data-&gt;allocated = needed;</td></tr>
+<tr><th id="55">55</th><td>    <em>char</em> *buf = (<em>char</em> *)InternalAlloc(data-&gt;allocated);</td></tr>
+<tr><th id="56">56</th><td>    <b>if</b> (data-&gt;buf) {</td></tr>
+<tr><th id="57">57</th><td>      internal_memcpy(buf, data-&gt;buf, data-&gt;size);</td></tr>
+<tr><th id="58">58</th><td>      InternalFree(data-&gt;buf);</td></tr>
+<tr><th id="59">59</th><td>    }</td></tr>
+<tr><th id="60">60</th><td>    data-&gt;buf = buf;</td></tr>
+<tr><th id="61">61</th><td>  }</td></tr>
+<tr><th id="62">62</th><td>  internal_memcpy(data-&gt;buf + data-&gt;size, s, l);</td></tr>
+<tr><th id="63">63</th><td>  data-&gt;buf[data-&gt;size + l] = <kbd>'\0'</kbd>;</td></tr>
+<tr><th id="64">64</th><td>  data-&gt;size += l;</td></tr>
+<tr><th id="65">65</th><td>}</td></tr>
+<tr><th id="66">66</th><td>}  <i>// extern "C"</i></td></tr>
+<tr><th id="67">67</th><td></td></tr>
+<tr><th id="68">68</th><td><em>char</em> *CplusV3Demangle(<em>const</em> <em>char</em> *name) {</td></tr>
+<tr><th id="69">69</th><td>  CplusV3DemangleData data;</td></tr>
+<tr><th id="70">70</th><td>  data.buf = <var>0</var>;</td></tr>
+<tr><th id="71">71</th><td>  data.size = <var>0</var>;</td></tr>
+<tr><th id="72">72</th><td>  data.allocated = <var>0</var>;</td></tr>
+<tr><th id="73">73</th><td>  <b>if</b> (cplus_demangle_v3_callback(name, DMGL_PARAMS | DMGL_ANSI,</td></tr>
+<tr><th id="74">74</th><td>                                 CplusV3DemangleCallback, &amp;data)) {</td></tr>
+<tr><th id="75">75</th><td>    <b>if</b> (data.size + <var>64</var> &gt; data.allocated)</td></tr>
+<tr><th id="76">76</th><td>      <b>return</b> data.buf;</td></tr>
+<tr><th id="77">77</th><td>    <em>char</em> *buf = internal_strdup(data.buf);</td></tr>
+<tr><th id="78">78</th><td>    InternalFree(data.buf);</td></tr>
+<tr><th id="79">79</th><td>    <b>return</b> buf;</td></tr>
+<tr><th id="80">80</th><td>  }</td></tr>
+<tr><th id="81">81</th><td>  <b>if</b> (data.buf)</td></tr>
+<tr><th id="82">82</th><td>    InternalFree(data.buf);</td></tr>
+<tr><th id="83">83</th><td>  <b>return</b> <var>0</var>;</td></tr>
+<tr><th id="84">84</th><td>}</td></tr>
+<tr><th id="85">85</th><td><u># endif  // SANITIZER_CP_DEMANGLE</u></td></tr>
+<tr><th id="86">86</th><td></td></tr>
+<tr><th id="87">87</th><td><b>struct</b> SymbolizeCodeCallbackArg {</td></tr>
+<tr><th id="88">88</th><td>  SymbolizedStack *first;</td></tr>
+<tr><th id="89">89</th><td>  SymbolizedStack *last;</td></tr>
+<tr><th id="90">90</th><td>  uptr frames_symbolized;</td></tr>
+<tr><th id="91">91</th><td></td></tr>
+<tr><th id="92">92</th><td>  AddressInfo *get_new_frame(uintptr_t addr) {</td></tr>
+<tr><th id="93">93</th><td>    CHECK(last);</td></tr>
+<tr><th id="94">94</th><td>    <b>if</b> (frames_symbolized &gt; <var>0</var>) {</td></tr>
+<tr><th id="95">95</th><td>      SymbolizedStack *cur = SymbolizedStack::New(addr);</td></tr>
+<tr><th id="96">96</th><td>      AddressInfo *info = &amp;cur-&gt;info;</td></tr>
+<tr><th id="97">97</th><td>      info-&gt;FillModuleInfo(first-&gt;info.module, first-&gt;info.module_offset,</td></tr>
+<tr><th id="98">98</th><td>                           first-&gt;info.module_arch);</td></tr>
+<tr><th id="99">99</th><td>      last-&gt;next = cur;</td></tr>
+<tr><th id="100">100</th><td>      last = cur;</td></tr>
+<tr><th id="101">101</th><td>    }</td></tr>
+<tr><th id="102">102</th><td>    CHECK_EQ(addr, first-&gt;info.address);</td></tr>
+<tr><th id="103">103</th><td>    CHECK_EQ(addr, last-&gt;info.address);</td></tr>
+<tr><th id="104">104</th><td>    <b>return</b> &amp;last-&gt;info;</td></tr>
+<tr><th id="105">105</th><td>  }</td></tr>
+<tr><th id="106">106</th><td>};</td></tr>
+<tr><th id="107">107</th><td></td></tr>
+<tr><th id="108">108</th><td><b>extern</b> <q>"C"</q> {</td></tr>
+<tr><th id="109">109</th><td><em>static</em> <em>int</em> SymbolizeCodePCInfoCallback(<em>void</em> *vdata, uintptr_t addr,</td></tr>
+<tr><th id="110">110</th><td>                                       <em>const</em> <em>char</em> *filename, <em>int</em> lineno,</td></tr>
+<tr><th id="111">111</th><td>                                       <em>const</em> <em>char</em> *function) {</td></tr>
+<tr><th id="112">112</th><td>  SymbolizeCodeCallbackArg *cdata = (SymbolizeCodeCallbackArg *)vdata;</td></tr>
+<tr><th id="113">113</th><td>  <b>if</b> (function) {</td></tr>
+<tr><th id="114">114</th><td>    AddressInfo *info = cdata-&gt;get_new_frame(addr);</td></tr>
+<tr><th id="115">115</th><td>    info-&gt;function = DemangleAlloc(function, <i>/*always_alloc*/</i> <b>true</b>);</td></tr>
+<tr><th id="116">116</th><td>    <b>if</b> (filename)</td></tr>
+<tr><th id="117">117</th><td>      info-&gt;file = internal_strdup(filename);</td></tr>
+<tr><th id="118">118</th><td>    info-&gt;line = lineno;</td></tr>
+<tr><th id="119">119</th><td>    cdata-&gt;frames_symbolized++;</td></tr>
+<tr><th id="120">120</th><td>  }</td></tr>
+<tr><th id="121">121</th><td>  <b>return</b> <var>0</var>;</td></tr>
+<tr><th id="122">122</th><td>}</td></tr>
+<tr><th id="123">123</th><td></td></tr>
+<tr><th id="124">124</th><td><em>static</em> <em>void</em> SymbolizeCodeCallback(<em>void</em> *vdata, uintptr_t addr,</td></tr>
+<tr><th id="125">125</th><td>                                  <em>const</em> <em>char</em> *symname, uintptr_t, uintptr_t) {</td></tr>
+<tr><th id="126">126</th><td>  SymbolizeCodeCallbackArg *cdata = (SymbolizeCodeCallbackArg *)vdata;</td></tr>
+<tr><th id="127">127</th><td>  <b>if</b> (symname) {</td></tr>
+<tr><th id="128">128</th><td>    AddressInfo *info = cdata-&gt;get_new_frame(addr);</td></tr>
+<tr><th id="129">129</th><td>    info-&gt;function = DemangleAlloc(symname, <i>/*always_alloc*/</i> <b>true</b>);</td></tr>
+<tr><th id="130">130</th><td>    cdata-&gt;frames_symbolized++;</td></tr>
+<tr><th id="131">131</th><td>  }</td></tr>
+<tr><th id="132">132</th><td>}</td></tr>
+<tr><th id="133">133</th><td></td></tr>
+<tr><th id="134">134</th><td><em>static</em> <em>void</em> SymbolizeDataCallback(<em>void</em> *vdata, uintptr_t, <em>const</em> <em>char</em> *symname,</td></tr>
+<tr><th id="135">135</th><td>                                  uintptr_t symval, uintptr_t symsize) {</td></tr>
+<tr><th id="136">136</th><td>  DataInfo *info = (DataInfo *)vdata;</td></tr>
+<tr><th id="137">137</th><td>  <b>if</b> (symname &amp;&amp; symval) {</td></tr>
+<tr><th id="138">138</th><td>    info-&gt;name = DemangleAlloc(symname, <i>/*always_alloc*/</i> <b>true</b>);</td></tr>
+<tr><th id="139">139</th><td>    info-&gt;start = symval;</td></tr>
+<tr><th id="140">140</th><td>    info-&gt;size = symsize;</td></tr>
+<tr><th id="141">141</th><td>  }</td></tr>
+<tr><th id="142">142</th><td>}</td></tr>
+<tr><th id="143">143</th><td></td></tr>
+<tr><th id="144">144</th><td><em>static</em> <em>void</em> ErrorCallback(<em>void</em> *, <em>const</em> <em>char</em> *, <em>int</em>) {}</td></tr>
+<tr><th id="145">145</th><td>}  <i>// extern "C"</i></td></tr>
+<tr><th id="146">146</th><td></td></tr>
+<tr><th id="147">147</th><td>}  <i>// namespace</i></td></tr>
+<tr><th id="148">148</th><td></td></tr>
+<tr><th id="149">149</th><td>LibbacktraceSymbolizer *LibbacktraceSymbolizer::get(LowLevelAllocator *alloc) {</td></tr>
+<tr><th id="150">150</th><td>  <i>// State created in backtrace_create_state is leaked.</i></td></tr>
+<tr><th id="151">151</th><td>  <em>void</em> *state = (<em>void</em> *)(backtrace_create_state(<q>"/proc/self/exe"</q>, <var>0</var>,</td></tr>
+<tr><th id="152">152</th><td>                                                ErrorCallback, NULL));</td></tr>
+<tr><th id="153">153</th><td>  <b>if</b> (!state)</td></tr>
+<tr><th id="154">154</th><td>    <b>return</b> <var>0</var>;</td></tr>
+<tr><th id="155">155</th><td>  <b>return</b> <b>new</b>(*alloc) LibbacktraceSymbolizer(state);</td></tr>
+<tr><th id="156">156</th><td>}</td></tr>
+<tr><th id="157">157</th><td></td></tr>
+<tr><th id="158">158</th><td><em>bool</em> LibbacktraceSymbolizer::SymbolizePC(uptr addr, SymbolizedStack *stack) {</td></tr>
+<tr><th id="159">159</th><td>  SymbolizeCodeCallbackArg data;</td></tr>
+<tr><th id="160">160</th><td>  data.first = stack;</td></tr>
+<tr><th id="161">161</th><td>  data.last = stack;</td></tr>
+<tr><th id="162">162</th><td>  data.frames_symbolized = <var>0</var>;</td></tr>
+<tr><th id="163">163</th><td>  backtrace_pcinfo((backtrace_state *)state_, addr, SymbolizeCodePCInfoCallback,</td></tr>
+<tr><th id="164">164</th><td>                   ErrorCallback, &amp;data);</td></tr>
+<tr><th id="165">165</th><td>  <b>if</b> (data.frames_symbolized &gt; <var>0</var>)</td></tr>
+<tr><th id="166">166</th><td>    <b>return</b> <b>true</b>;</td></tr>
+<tr><th id="167">167</th><td>  backtrace_syminfo((backtrace_state *)state_, addr, SymbolizeCodeCallback,</td></tr>
+<tr><th id="168">168</th><td>                    ErrorCallback, &amp;data);</td></tr>
+<tr><th id="169">169</th><td>  <b>return</b> (data.frames_symbolized &gt; <var>0</var>);</td></tr>
+<tr><th id="170">170</th><td>}</td></tr>
+<tr><th id="171">171</th><td></td></tr>
+<tr><th id="172">172</th><td><em>bool</em> LibbacktraceSymbolizer::SymbolizeData(uptr addr, DataInfo *info) {</td></tr>
+<tr><th id="173">173</th><td>  backtrace_syminfo((backtrace_state *)state_, addr, SymbolizeDataCallback,</td></tr>
+<tr><th id="174">174</th><td>                    ErrorCallback, info);</td></tr>
+<tr><th id="175">175</th><td>  <b>return</b> <b>true</b>;</td></tr>
+<tr><th id="176">176</th><td>}</td></tr>
+<tr><th id="177">177</th><td></td></tr>
+<tr><th id="178">178</th><td><u>#<span data-ppcond="37">else</span>  // SANITIZER_LIBBACKTRACE</u></td></tr>
+<tr><th id="179">179</th><td></td></tr>
+<tr><th id="180">180</th><td><a class="type" href="sanitizer_symbolizer_libbacktrace.h.html#__sanitizer::LibbacktraceSymbolizer" title='__sanitizer::LibbacktraceSymbolizer' data-ref="__sanitizer::LibbacktraceSymbolizer" data-ref-filename="__sanitizer..LibbacktraceSymbolizer">LibbacktraceSymbolizer</a> *<a class="type" href="sanitizer_symbolizer_libbacktrace.h.html#__sanitizer::LibbacktraceSymbolizer" title='__sanitizer::LibbacktraceSymbolizer' data-ref="__sanitizer::LibbacktraceSymbolizer" data-ref-filename="__sanitizer..LibbacktraceSymbolizer">LibbacktraceSymbolizer</a>::<dfn class="decl def fn" id="__sanitizer::LibbacktraceSymbolizer::get" title='__sanitizer::LibbacktraceSymbolizer::get' data-ref="__sanitizer::LibbacktraceSymbolizer::get" data-ref-filename="__sanitizer..LibbacktraceSymbolizer..get">get</dfn>(<a class="type" href="sanitizer_common.h.html#__sanitizer::LowLevelAllocator" title='__sanitizer::LowLevelAllocator' data-ref="__sanitizer::LowLevelAllocator" data-ref-filename="__sanitizer..LowLevelAllocator">LowLevelAllocator</a> *<dfn class="local col0 decl" id="10alloc" title='alloc' data-type='__sanitizer::LowLevelAllocator *' data-ref="10alloc" data-ref-filename="10alloc">alloc</dfn>) {</td></tr>
+<tr><th id="181">181</th><td>  <b>return</b> <var>0</var>;</td></tr>
+<tr><th id="182">182</th><td>}</td></tr>
+<tr><th id="183">183</th><td></td></tr>
+<tr><th id="184">184</th><td><em>bool</em> <a class="type" href="sanitizer_symbolizer_libbacktrace.h.html#__sanitizer::LibbacktraceSymbolizer" title='__sanitizer::LibbacktraceSymbolizer' data-ref="__sanitizer::LibbacktraceSymbolizer" data-ref-filename="__sanitizer..LibbacktraceSymbolizer">LibbacktraceSymbolizer</a>::<dfn class="virtual decl def fn" id="__sanitizer::LibbacktraceSymbolizer::SymbolizePC" title='__sanitizer::LibbacktraceSymbolizer::SymbolizePC' data-ref="__sanitizer::LibbacktraceSymbolizer::SymbolizePC" data-ref-filename="__sanitizer..LibbacktraceSymbolizer..SymbolizePC">SymbolizePC</dfn>(<a class="typedef" href="sanitizer_internal_defs.h.html#__sanitizer::uptr" title='__sanitizer::uptr' data-type='unsigned long' data-ref="__sanitizer::uptr" data-ref-filename="__sanitizer..uptr">uptr</a> <dfn class="local col1 decl" id="11addr" title='addr' data-type='__sanitizer::uptr' data-ref="11addr" data-ref-filename="11addr">addr</dfn>, <a class="type" href="sanitizer_symbolizer.h.html#__sanitizer::SymbolizedStack" title='__sanitizer::SymbolizedStack' data-ref="__sanitizer::SymbolizedStack" data-ref-filename="__sanitizer..SymbolizedStack">SymbolizedStack</a> *<dfn class="local col2 decl" id="12stack" title='stack' data-type='__sanitizer::SymbolizedStack *' data-ref="12stack" data-ref-filename="12stack">stack</dfn>) {</td></tr>
+<tr><th id="185">185</th><td>  (<em>void</em>)<a class="member field" href="sanitizer_symbolizer_libbacktrace.h.html#__sanitizer::LibbacktraceSymbolizer::state_" title='__sanitizer::LibbacktraceSymbolizer::state_' data-ref="__sanitizer::LibbacktraceSymbolizer::state_" data-ref-filename="__sanitizer..LibbacktraceSymbolizer..state_">state_</a>;</td></tr>
+<tr><th id="186">186</th><td>  <b>return</b> <b>false</b>;</td></tr>
+<tr><th id="187">187</th><td>}</td></tr>
+<tr><th id="188">188</th><td></td></tr>
+<tr><th id="189">189</th><td><em>bool</em> <a class="type" href="sanitizer_symbolizer_libbacktrace.h.html#__sanitizer::LibbacktraceSymbolizer" title='__sanitizer::LibbacktraceSymbolizer' data-ref="__sanitizer::LibbacktraceSymbolizer" data-ref-filename="__sanitizer..LibbacktraceSymbolizer">LibbacktraceSymbolizer</a>::<dfn class="virtual decl def fn" id="__sanitizer::LibbacktraceSymbolizer::SymbolizeData" title='__sanitizer::LibbacktraceSymbolizer::SymbolizeData' data-ref="__sanitizer::LibbacktraceSymbolizer::SymbolizeData" data-ref-filename="__sanitizer..LibbacktraceSymbolizer..SymbolizeData">SymbolizeData</dfn>(<a class="typedef" href="sanitizer_internal_defs.h.html#__sanitizer::uptr" title='__sanitizer::uptr' data-type='unsigned long' data-ref="__sanitizer::uptr" data-ref-filename="__sanitizer..uptr">uptr</a> <dfn class="local col3 decl" id="13addr" title='addr' data-type='__sanitizer::uptr' data-ref="13addr" data-ref-filename="13addr">addr</dfn>, <a class="type" href="sanitizer_symbolizer.h.html#__sanitizer::DataInfo" title='__sanitizer::DataInfo' data-ref="__sanitizer::DataInfo" data-ref-filename="__sanitizer..DataInfo">DataInfo</a> *<dfn class="local col4 decl" id="14info" title='info' data-type='__sanitizer::DataInfo *' data-ref="14info" data-ref-filename="14info">info</dfn>) {</td></tr>
+<tr><th id="190">190</th><td>  <b>return</b> <b>false</b>;</td></tr>
+<tr><th id="191">191</th><td>}</td></tr>
+<tr><th id="192">192</th><td></td></tr>
+<tr><th id="193">193</th><td><u>#<span data-ppcond="37">endif</span>  // SANITIZER_LIBBACKTRACE</u></td></tr>
+<tr><th id="194">194</th><td></td></tr>
+<tr><th id="195">195</th><td><em>static</em> <em>char</em> *<dfn class="tu decl def fn" id="__sanitizer::DemangleAlloc" title='__sanitizer::DemangleAlloc' data-type='char * __sanitizer::DemangleAlloc(const char * name, bool always_alloc)' data-ref="__sanitizer::DemangleAlloc" data-ref-filename="__sanitizer..DemangleAlloc">DemangleAlloc</dfn>(<em>const</em> <em>char</em> *<dfn class="local col5 decl" id="15name" title='name' data-type='const char *' data-ref="15name" data-ref-filename="15name">name</dfn>, <em>bool</em> <dfn class="local col6 decl" id="16always_alloc" title='always_alloc' data-type='bool' data-ref="16always_alloc" data-ref-filename="16always_alloc">always_alloc</dfn>) {</td></tr>
+<tr><th id="196">196</th><td><u>#<span data-ppcond="196">if</span> <a class="macro" href="sanitizer_symbolizer_libbacktrace.h.html#22" title="0" data-ref="_M/SANITIZER_LIBBACKTRACE">SANITIZER_LIBBACKTRACE</a> &amp;&amp; <a class="macro" href="sanitizer_symbolizer_libbacktrace.h.html#26" title="0" data-ref="_M/SANITIZER_CP_DEMANGLE">SANITIZER_CP_DEMANGLE</a></u></td></tr>
+<tr><th id="197">197</th><td>  <b>if</b> (<em>char</em> *demangled = CplusV3Demangle(name))</td></tr>
+<tr><th id="198">198</th><td>    <b>return</b> demangled;</td></tr>
+<tr><th id="199">199</th><td><u>#<span data-ppcond="196">endif</span></u></td></tr>
+<tr><th id="200">200</th><td>  <b>if</b> (<a class="local col6 ref" href="#16always_alloc" title='always_alloc' data-ref="16always_alloc" data-ref-filename="16always_alloc">always_alloc</a>)</td></tr>
+<tr><th id="201">201</th><td>    <b>return</b> <a class="ref fn" href="sanitizer_libc.h.html#__sanitizer::internal_strdup" title='__sanitizer::internal_strdup' data-ref="__sanitizer::internal_strdup" data-ref-filename="__sanitizer..internal_strdup">internal_strdup</a>(<a class="local col5 ref" href="#15name" title='name' data-ref="15name" data-ref-filename="15name">name</a>);</td></tr>
+<tr><th id="202">202</th><td>  <b>return</b> <var>0</var>;</td></tr>
+<tr><th id="203">203</th><td>}</td></tr>
+<tr><th id="204">204</th><td></td></tr>
+<tr><th id="205">205</th><td><em>const</em> <em>char</em> *<a class="type" href="sanitizer_symbolizer_libbacktrace.h.html#__sanitizer::LibbacktraceSymbolizer" title='__sanitizer::LibbacktraceSymbolizer' data-ref="__sanitizer::LibbacktraceSymbolizer" data-ref-filename="__sanitizer..LibbacktraceSymbolizer">LibbacktraceSymbolizer</a>::<dfn class="virtual decl def fn" id="__sanitizer::LibbacktraceSymbolizer::Demangle" title='__sanitizer::LibbacktraceSymbolizer::Demangle' data-ref="__sanitizer::LibbacktraceSymbolizer::Demangle" data-ref-filename="__sanitizer..LibbacktraceSymbolizer..Demangle">Demangle</dfn>(<em>const</em> <em>char</em> *<dfn class="local col7 decl" id="17name" title='name' data-type='const char *' data-ref="17name" data-ref-filename="17name">name</dfn>) {</td></tr>
+<tr><th id="206">206</th><td>  <b>return</b> <a class="tu ref fn" href="#__sanitizer::DemangleAlloc" title='__sanitizer::DemangleAlloc' data-use='c' data-ref="__sanitizer::DemangleAlloc" data-ref-filename="__sanitizer..DemangleAlloc">DemangleAlloc</a>(<a class="local col7 ref" href="#17name" title='name' data-ref="17name" data-ref-filename="17name">name</a>, <i>/*always_alloc*/</i> <b>false</b>);</td></tr>
+<tr><th id="207">207</th><td>}</td></tr>
+<tr><th id="208">208</th><td></td></tr>
+<tr><th id="209">209</th><td>}  <i>// namespace __sanitizer</i></td></tr>
+<tr><th id="210">210</th><td></td></tr>
+</table><hr/><p id='footer'>
+Generated on <em>2021-Jul-01</em> from project llvm revision <em>12</em>

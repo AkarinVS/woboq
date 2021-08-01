@@ -1,0 +1,87 @@
+<!doctype html>
+<html>
+<head>
+<meta name="viewport" content="width=device-width, initial-scale=1.0"><title>VarBypassDetector.h source code [llvm/clang/lib/CodeGen/VarBypassDetector.h] - Woboq Code Browser</title>
+<meta name="woboq:interestingDefinitions" content="clang::CodeGen::VarBypassDetector "/>
+<link rel="stylesheet" href="../../../.././data/qtcreator.css" title="QtCreator"/>
+<link rel="alternate stylesheet" href="../../../.././data/kdevelop.css" title="KDevelop"/>
+<script type="text/javascript" src="../../../.././data/jquery/jquery.min.js"></script>
+<script type="text/javascript" src="../../../.././data/jquery/jquery-ui.min.js"></script>
+<script>var file = 'llvm/clang/lib/CodeGen/VarBypassDetector.h'; var root_path = '../../../..'; var data_path = '../../../.././data'; var ecma_script_api_version = 2;</script>
+<script src='../../../.././data/codebrowser.js'></script>
+</head>
+<body><div id='header'><h1 id='breadcrumb'><span>Browse the source code of </span><a href='../../..'>llvm</a>/<a href='../..'>clang</a>/<a href='..'>lib</a>/<a href='./'>CodeGen</a>/<a href='VarBypassDetector.h.html'>VarBypassDetector.h</a></h1></div>
+<hr/><div id='content'><table class="code">
+<tr><th id="1">1</th><td><i>//===--- VarBypassDetector.cpp - Bypass jumps detector ------------*- C++ -*-=//</i></td></tr>
+<tr><th id="2">2</th><td><i>//</i></td></tr>
+<tr><th id="3">3</th><td><i>// Part of the LLVM Project, under the Apache License v2.0 with LLVM Exceptions.</i></td></tr>
+<tr><th id="4">4</th><td><i>// See <a href="https://llvm.org/LICENSE.txt">https://llvm.org/LICENSE.txt</a> for license information.</i></td></tr>
+<tr><th id="5">5</th><td><i>// SPDX-License-Identifier: Apache-2.0 WITH LLVM-exception</i></td></tr>
+<tr><th id="6">6</th><td><i>//</i></td></tr>
+<tr><th id="7">7</th><td><i>//===----------------------------------------------------------------------===//</i></td></tr>
+<tr><th id="8">8</th><td><i>//</i></td></tr>
+<tr><th id="9">9</th><td><i>// This file contains VarBypassDetector class, which is used to detect</i></td></tr>
+<tr><th id="10">10</th><td><i>// local variable declarations which can be bypassed by jumps.</i></td></tr>
+<tr><th id="11">11</th><td><i>//</i></td></tr>
+<tr><th id="12">12</th><td><i>//===----------------------------------------------------------------------===//</i></td></tr>
+<tr><th id="13">13</th><td></td></tr>
+<tr><th id="14">14</th><td><u>#<span data-ppcond="14">ifndef</span> <span class="macro" data-ref="_M/LLVM_CLANG_LIB_CODEGEN_VARBYPASSDETECTOR_H">LLVM_CLANG_LIB_CODEGEN_VARBYPASSDETECTOR_H</span></u></td></tr>
+<tr><th id="15">15</th><td><u>#define <dfn class="macro" id="_M/LLVM_CLANG_LIB_CODEGEN_VARBYPASSDETECTOR_H" data-ref="_M/LLVM_CLANG_LIB_CODEGEN_VARBYPASSDETECTOR_H">LLVM_CLANG_LIB_CODEGEN_VARBYPASSDETECTOR_H</dfn></u></td></tr>
+<tr><th id="16">16</th><td></td></tr>
+<tr><th id="17">17</th><td><u>#include <a href="../../include/clang/AST/Decl.h.html">"clang/AST/Decl.h"</a></u></td></tr>
+<tr><th id="18">18</th><td><u>#include <a href="../../../llvm/include/llvm/ADT/DenseMap.h.html">"llvm/ADT/DenseMap.h"</a></u></td></tr>
+<tr><th id="19">19</th><td><u>#include <a href="../../../llvm/include/llvm/ADT/DenseSet.h.html">"llvm/ADT/DenseSet.h"</a></u></td></tr>
+<tr><th id="20">20</th><td><u>#include <a href="../../../llvm/include/llvm/ADT/SmallVector.h.html">"llvm/ADT/SmallVector.h"</a></u></td></tr>
+<tr><th id="21">21</th><td></td></tr>
+<tr><th id="22">22</th><td><b>namespace</b> <span class="namespace">clang</span> {</td></tr>
+<tr><th id="23">23</th><td></td></tr>
+<tr><th id="24">24</th><td><b>class</b> <a class="type" href="../../include/clang/AST/DeclBase.h.html#clang::Decl" title='clang::Decl' data-ref="clang::Decl" data-ref-filename="clang..Decl" id="clang::Decl">Decl</a>;</td></tr>
+<tr><th id="25">25</th><td><b>class</b> <a class="type" href="../../include/clang/AST/Stmt.h.html#clang::Stmt" title='clang::Stmt' data-ref="clang::Stmt" data-ref-filename="clang..Stmt" id="clang::Stmt">Stmt</a>;</td></tr>
+<tr><th id="26">26</th><td><b>class</b> <a class="type" href="../../include/clang/AST/Decl.h.html#clang::VarDecl" title='clang::VarDecl' data-ref="clang::VarDecl" data-ref-filename="clang..VarDecl" id="clang::VarDecl">VarDecl</a>;</td></tr>
+<tr><th id="27">27</th><td></td></tr>
+<tr><th id="28">28</th><td><b>namespace</b> <span class="namespace">CodeGen</span> {</td></tr>
+<tr><th id="29">29</th><td></td></tr>
+<tr><th id="30">30</th><td><i class="doc">/// The class detects jumps which bypass local variables declaration:</i></td></tr>
+<tr><th id="31">31</th><td><i class="doc">///    goto L;</i></td></tr>
+<tr><th id="32">32</th><td><i class="doc">///    int a;</i></td></tr>
+<tr><th id="33">33</th><td><i class="doc">///  L:</i></td></tr>
+<tr><th id="34">34</th><td><i class="doc">///</i></td></tr>
+<tr><th id="35">35</th><td><i class="doc">/// This is simplified version of JumpScopeChecker. Primary differences:</i></td></tr>
+<tr><th id="36">36</th><td><i class="doc">///  * Detects only jumps into the scope local variables.</i></td></tr>
+<tr><th id="37">37</th><td><i class="doc">///  * Does not detect jumps out of the scope of local variables.</i></td></tr>
+<tr><th id="38">38</th><td><i class="doc">///  * Not limited to variables with initializers, JumpScopeChecker is limited.</i></td></tr>
+<tr><th id="39">39</th><td><b>class</b> <dfn class="type def" id="clang::CodeGen::VarBypassDetector" title='clang::CodeGen::VarBypassDetector' data-ref="clang::CodeGen::VarBypassDetector" data-ref-filename="clang..CodeGen..VarBypassDetector">VarBypassDetector</dfn> {</td></tr>
+<tr><th id="40">40</th><td>  <i>// Scope information. Contains a parent scope and related variable</i></td></tr>
+<tr><th id="41">41</th><td><i>  // declaration.</i></td></tr>
+<tr><th id="42">42</th><td>  <span class="namespace">llvm::</span><a class="type" href="../../include/clang/Basic/LLVM.h.html#llvm::SmallVector" title='llvm::SmallVector' data-ref="llvm::SmallVector" data-ref-filename="llvm..SmallVector">SmallVector</a>&lt;<span class="namespace">std::</span><span class='type' title='std::pair' data-ref="std::pair" data-ref-filename="std..pair">pair</span>&lt;<em>unsigned</em>, <em>const</em> <a class="type" href="../../include/clang/AST/Decl.h.html#clang::VarDecl" title='clang::VarDecl' data-ref="clang::VarDecl" data-ref-filename="clang..VarDecl">VarDecl</a> *&gt;, <var>48</var>&gt; <dfn class="decl field" id="clang::CodeGen::VarBypassDetector::Scopes" title='clang::CodeGen::VarBypassDetector::Scopes' data-ref="clang::CodeGen::VarBypassDetector::Scopes" data-ref-filename="clang..CodeGen..VarBypassDetector..Scopes">Scopes</dfn>;</td></tr>
+<tr><th id="43">43</th><td>  <i>// List of jumps with scopes.</i></td></tr>
+<tr><th id="44">44</th><td>  <span class="namespace">llvm::</span><a class="type" href="../../include/clang/Basic/LLVM.h.html#llvm::SmallVector" title='llvm::SmallVector' data-ref="llvm::SmallVector" data-ref-filename="llvm..SmallVector">SmallVector</a>&lt;<span class="namespace">std::</span><span class='type' title='std::pair' data-ref="std::pair" data-ref-filename="std..pair">pair</span>&lt;<em>const</em> <a class="type" href="../../include/clang/AST/Stmt.h.html#clang::Stmt" title='clang::Stmt' data-ref="clang::Stmt" data-ref-filename="clang..Stmt">Stmt</a> *, <em>unsigned</em>&gt;, <var>16</var>&gt; <dfn class="decl field" id="clang::CodeGen::VarBypassDetector::FromScopes" title='clang::CodeGen::VarBypassDetector::FromScopes' data-ref="clang::CodeGen::VarBypassDetector::FromScopes" data-ref-filename="clang..CodeGen..VarBypassDetector..FromScopes">FromScopes</dfn>;</td></tr>
+<tr><th id="45">45</th><td>  <i>// Lookup map to find scope for destinations.</i></td></tr>
+<tr><th id="46">46</th><td>  <span class="namespace">llvm::</span><a class="type" href="../../../llvm/include/llvm/ADT/DenseMap.h.html#llvm::DenseMap" title='llvm::DenseMap' data-ref="llvm::DenseMap" data-ref-filename="llvm..DenseMap">DenseMap</a>&lt;<em>const</em> <a class="type" href="../../include/clang/AST/Stmt.h.html#clang::Stmt" title='clang::Stmt' data-ref="clang::Stmt" data-ref-filename="clang..Stmt">Stmt</a> *, <em>unsigned</em>&gt; <dfn class="decl field" id="clang::CodeGen::VarBypassDetector::ToScopes" title='clang::CodeGen::VarBypassDetector::ToScopes' data-ref="clang::CodeGen::VarBypassDetector::ToScopes" data-ref-filename="clang..CodeGen..VarBypassDetector..ToScopes">ToScopes</dfn>;</td></tr>
+<tr><th id="47">47</th><td>  <i>// Set of variables which were bypassed by some jump.</i></td></tr>
+<tr><th id="48">48</th><td>  <span class="namespace">llvm::</span><a class="type" href="../../../llvm/include/llvm/ADT/DenseSet.h.html#llvm::DenseSet" title='llvm::DenseSet' data-ref="llvm::DenseSet" data-ref-filename="llvm..DenseSet">DenseSet</a>&lt;<em>const</em> <a class="type" href="../../include/clang/AST/Decl.h.html#clang::VarDecl" title='clang::VarDecl' data-ref="clang::VarDecl" data-ref-filename="clang..VarDecl">VarDecl</a> *&gt; <dfn class="decl field" id="clang::CodeGen::VarBypassDetector::Bypasses" title='clang::CodeGen::VarBypassDetector::Bypasses' data-ref="clang::CodeGen::VarBypassDetector::Bypasses" data-ref-filename="clang..CodeGen..VarBypassDetector..Bypasses">Bypasses</dfn>;</td></tr>
+<tr><th id="49">49</th><td>  <i>// If true assume that all variables are being bypassed.</i></td></tr>
+<tr><th id="50">50</th><td>  <em>bool</em> <dfn class="decl field" id="clang::CodeGen::VarBypassDetector::AlwaysBypassed" title='clang::CodeGen::VarBypassDetector::AlwaysBypassed' data-ref="clang::CodeGen::VarBypassDetector::AlwaysBypassed" data-ref-filename="clang..CodeGen..VarBypassDetector..AlwaysBypassed">AlwaysBypassed</dfn> = <b>false</b>;</td></tr>
+<tr><th id="51">51</th><td></td></tr>
+<tr><th id="52">52</th><td><b>public</b>:</td></tr>
+<tr><th id="53">53</th><td>  <em>void</em> <dfn class="decl fn" id="_ZN5clang7CodeGen17VarBypassDetector4InitEPKNS_4StmtE" title='clang::CodeGen::VarBypassDetector::Init' data-ref="_ZN5clang7CodeGen17VarBypassDetector4InitEPKNS_4StmtE" data-ref-filename="_ZN5clang7CodeGen17VarBypassDetector4InitEPKNS_4StmtE">Init</dfn>(<em>const</em> <a class="type" href="../../include/clang/AST/Stmt.h.html#clang::Stmt" title='clang::Stmt' data-ref="clang::Stmt" data-ref-filename="clang..Stmt">Stmt</a> *<dfn class="local col0 decl" id="6580Body" title='Body' data-type='const clang::Stmt *' data-ref="6580Body" data-ref-filename="6580Body">Body</dfn>);</td></tr>
+<tr><th id="54">54</th><td></td></tr>
+<tr><th id="55">55</th><td>  <i class="doc">/// Returns true if the variable declaration was by bypassed by any goto or</i></td></tr>
+<tr><th id="56">56</th><td><i class="doc">  /// switch statement.</i></td></tr>
+<tr><th id="57">57</th><td>  <em>bool</em> <dfn class="decl def fn" id="_ZNK5clang7CodeGen17VarBypassDetector10IsBypassedEPKNS_7VarDeclE" title='clang::CodeGen::VarBypassDetector::IsBypassed' data-ref="_ZNK5clang7CodeGen17VarBypassDetector10IsBypassedEPKNS_7VarDeclE" data-ref-filename="_ZNK5clang7CodeGen17VarBypassDetector10IsBypassedEPKNS_7VarDeclE">IsBypassed</dfn>(<em>const</em> <a class="type" href="../../include/clang/AST/Decl.h.html#clang::VarDecl" title='clang::VarDecl' data-ref="clang::VarDecl" data-ref-filename="clang..VarDecl">VarDecl</a> *<dfn class="local col1 decl" id="6581D" title='D' data-type='const clang::VarDecl *' data-ref="6581D" data-ref-filename="6581D">D</dfn>) <em>const</em> {</td></tr>
+<tr><th id="58">58</th><td>    <b>return</b> <a class="member field" href="#clang::CodeGen::VarBypassDetector::AlwaysBypassed" title='clang::CodeGen::VarBypassDetector::AlwaysBypassed' data-ref="clang::CodeGen::VarBypassDetector::AlwaysBypassed" data-ref-filename="clang..CodeGen..VarBypassDetector..AlwaysBypassed">AlwaysBypassed</a> || <a class="member field" href="#clang::CodeGen::VarBypassDetector::Bypasses" title='clang::CodeGen::VarBypassDetector::Bypasses' data-ref="clang::CodeGen::VarBypassDetector::Bypasses" data-ref-filename="clang..CodeGen..VarBypassDetector..Bypasses">Bypasses</a>.<a class="ref fn" href="../../../llvm/include/llvm/ADT/DenseSet.h.html#_ZNK4llvm6detail12DenseSetImpl4findENS_26const_pointer_or_const_refIT_vE4typeE" title='llvm::detail::DenseSetImpl::find' data-ref="_ZNK4llvm6detail12DenseSetImpl4findENS_26const_pointer_or_const_refIT_vE4typeE" data-ref-filename="_ZNK4llvm6detail12DenseSetImpl4findENS_26const_pointer_or_const_refIT_vE4typeE">find</a>(<a class="local col1 ref" href="#6581D" title='D' data-ref="6581D" data-ref-filename="6581D">D</a>) <a class="ref fn" href="../../../llvm/include/llvm/ADT/DenseSet.h.html#_ZN4llvm6detailneERKNS0_12DenseSetImpl13ConstIteratorES4_" title='llvm::detail::operator!=' data-ref="_ZN4llvm6detailneERKNS0_12DenseSetImpl13ConstIteratorES4_" data-ref-filename="_ZN4llvm6detailneERKNS0_12DenseSetImpl13ConstIteratorES4_">!=</a> <a class="member field" href="#clang::CodeGen::VarBypassDetector::Bypasses" title='clang::CodeGen::VarBypassDetector::Bypasses' data-ref="clang::CodeGen::VarBypassDetector::Bypasses" data-ref-filename="clang..CodeGen..VarBypassDetector..Bypasses">Bypasses</a>.<a class="ref fn" href="../../../llvm/include/llvm/ADT/DenseSet.h.html#_ZNK4llvm6detail12DenseSetImpl3endEv" title='llvm::detail::DenseSetImpl::end' data-ref="_ZNK4llvm6detail12DenseSetImpl3endEv" data-ref-filename="_ZNK4llvm6detail12DenseSetImpl3endEv">end</a>();</td></tr>
+<tr><th id="59">59</th><td>  }</td></tr>
+<tr><th id="60">60</th><td></td></tr>
+<tr><th id="61">61</th><td><b>private</b>:</td></tr>
+<tr><th id="62">62</th><td>  <em>bool</em> <dfn class="decl fn" id="_ZN5clang7CodeGen17VarBypassDetector21BuildScopeInformationEPKNS_4DeclERj" title='clang::CodeGen::VarBypassDetector::BuildScopeInformation' data-ref="_ZN5clang7CodeGen17VarBypassDetector21BuildScopeInformationEPKNS_4DeclERj" data-ref-filename="_ZN5clang7CodeGen17VarBypassDetector21BuildScopeInformationEPKNS_4DeclERj">BuildScopeInformation</dfn>(<em>const</em> <a class="type" href="../../include/clang/AST/DeclBase.h.html#clang::Decl" title='clang::Decl' data-ref="clang::Decl" data-ref-filename="clang..Decl">Decl</a> *<dfn class="local col2 decl" id="6582D" title='D' data-type='const clang::Decl *' data-ref="6582D" data-ref-filename="6582D">D</dfn>, <em>unsigned</em> &amp;<dfn class="local col3 decl" id="6583ParentScope" title='ParentScope' data-type='unsigned int &amp;' data-ref="6583ParentScope" data-ref-filename="6583ParentScope">ParentScope</dfn>);</td></tr>
+<tr><th id="63">63</th><td>  <em>bool</em> <dfn class="decl fn" id="_ZN5clang7CodeGen17VarBypassDetector21BuildScopeInformationEPKNS_4StmtERj" title='clang::CodeGen::VarBypassDetector::BuildScopeInformation' data-ref="_ZN5clang7CodeGen17VarBypassDetector21BuildScopeInformationEPKNS_4StmtERj" data-ref-filename="_ZN5clang7CodeGen17VarBypassDetector21BuildScopeInformationEPKNS_4StmtERj">BuildScopeInformation</dfn>(<em>const</em> <a class="type" href="../../include/clang/AST/Stmt.h.html#clang::Stmt" title='clang::Stmt' data-ref="clang::Stmt" data-ref-filename="clang..Stmt">Stmt</a> *<dfn class="local col4 decl" id="6584S" title='S' data-type='const clang::Stmt *' data-ref="6584S" data-ref-filename="6584S">S</dfn>, <em>unsigned</em> &amp;<dfn class="local col5 decl" id="6585origParentScope" title='origParentScope' data-type='unsigned int &amp;' data-ref="6585origParentScope" data-ref-filename="6585origParentScope">origParentScope</dfn>);</td></tr>
+<tr><th id="64">64</th><td>  <em>void</em> <dfn class="decl fn" id="_ZN5clang7CodeGen17VarBypassDetector6DetectEv" title='clang::CodeGen::VarBypassDetector::Detect' data-ref="_ZN5clang7CodeGen17VarBypassDetector6DetectEv" data-ref-filename="_ZN5clang7CodeGen17VarBypassDetector6DetectEv">Detect</dfn>();</td></tr>
+<tr><th id="65">65</th><td>  <em>void</em> <dfn class="decl fn" id="_ZN5clang7CodeGen17VarBypassDetector6DetectEjj" title='clang::CodeGen::VarBypassDetector::Detect' data-ref="_ZN5clang7CodeGen17VarBypassDetector6DetectEjj" data-ref-filename="_ZN5clang7CodeGen17VarBypassDetector6DetectEjj">Detect</dfn>(<em>unsigned</em> <dfn class="local col6 decl" id="6586From" title='From' data-type='unsigned int' data-ref="6586From" data-ref-filename="6586From">From</dfn>, <em>unsigned</em> <dfn class="local col7 decl" id="6587To" title='To' data-type='unsigned int' data-ref="6587To" data-ref-filename="6587To">To</dfn>);</td></tr>
+<tr><th id="66">66</th><td>};</td></tr>
+<tr><th id="67">67</th><td>}</td></tr>
+<tr><th id="68">68</th><td>}</td></tr>
+<tr><th id="69">69</th><td></td></tr>
+<tr><th id="70">70</th><td><u>#<span data-ppcond="14">endif</span></u></td></tr>
+<tr><th id="71">71</th><td></td></tr>
+</table><hr/><p id='footer'>
+Generated while processing <a href='CGAtomic.cpp.html'>llvm/clang/lib/CodeGen/CGAtomic.cpp</a><br/>Generated on <em>2021-Jul-01</em> from project llvm revision <em>12</em>

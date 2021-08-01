@@ -1,0 +1,367 @@
+<!doctype html>
+<html>
+<head>
+<meta name="viewport" content="width=device-width, initial-scale=1.0"><title>SuffixTree.h source code [llvm/llvm/include/llvm/Support/SuffixTree.h] - Woboq Code Browser</title>
+<meta name="woboq:interestingDefinitions" content="llvm::SuffixTree,llvm::SuffixTreeNode "/>
+<link rel="stylesheet" href="../../../../.././data/qtcreator.css" title="QtCreator"/>
+<link rel="alternate stylesheet" href="../../../../.././data/kdevelop.css" title="KDevelop"/>
+<script type="text/javascript" src="../../../../.././data/jquery/jquery.min.js"></script>
+<script type="text/javascript" src="../../../../.././data/jquery/jquery-ui.min.js"></script>
+<script>var file = 'llvm/llvm/include/llvm/Support/SuffixTree.h'; var root_path = '../../../../..'; var data_path = '../../../../.././data'; var ecma_script_api_version = 2;</script>
+<script src='../../../../.././data/codebrowser.js'></script>
+</head>
+<body><div id='header'><h1 id='breadcrumb'><span>Browse the source code of </span><a href='../../../..'>llvm</a>/<a href='../../..'>llvm</a>/<a href='../..'>include</a>/<a href='..'>llvm</a>/<a href='./'>Support</a>/<a href='SuffixTree.h.html'>SuffixTree.h</a></h1></div>
+<hr/><div id='content'><table class="code">
+<tr><th id="1">1</th><td><i>//===- llvm/ADT/SuffixTree.h - Tree for substrings --------------*- C++ -*-===//</i></td></tr>
+<tr><th id="2">2</th><td><i>//</i></td></tr>
+<tr><th id="3">3</th><td><i>// Part of the LLVM Project, under the Apache License v2.0 with LLVM Exceptions.</i></td></tr>
+<tr><th id="4">4</th><td><i>// See <a href="https://llvm.org/LICENSE.txt">https://llvm.org/LICENSE.txt</a> for license information.</i></td></tr>
+<tr><th id="5">5</th><td><i>// SPDX-License-Identifier: Apache-2.0 WITH LLVM-exception</i></td></tr>
+<tr><th id="6">6</th><td><i>//</i></td></tr>
+<tr><th id="7">7</th><td><i>//===----------------------------------------------------------------------===//</i></td></tr>
+<tr><th id="8">8</th><td><i>//</i></td></tr>
+<tr><th id="9">9</th><td><i>// This file defines the Suffix Tree class and Suffix Tree Node struct.</i></td></tr>
+<tr><th id="10">10</th><td><i>//</i></td></tr>
+<tr><th id="11">11</th><td><i>//===----------------------------------------------------------------------===//</i></td></tr>
+<tr><th id="12">12</th><td><u>#<span data-ppcond="12">ifndef</span> <span class="macro" data-ref="_M/LLVM_SUPPORT_SUFFIXTREE_H">LLVM_SUPPORT_SUFFIXTREE_H</span></u></td></tr>
+<tr><th id="13">13</th><td><u>#define <dfn class="macro" id="_M/LLVM_SUPPORT_SUFFIXTREE_H" data-ref="_M/LLVM_SUPPORT_SUFFIXTREE_H">LLVM_SUPPORT_SUFFIXTREE_H</dfn></u></td></tr>
+<tr><th id="14">14</th><td></td></tr>
+<tr><th id="15">15</th><td><u>#include <a href="../ADT/ArrayRef.h.html">"llvm/ADT/ArrayRef.h"</a></u></td></tr>
+<tr><th id="16">16</th><td><u>#include <a href="../ADT/DenseMap.h.html">"llvm/ADT/DenseMap.h"</a></u></td></tr>
+<tr><th id="17">17</th><td><u>#include <a href="Allocator.h.html">"llvm/Support/Allocator.h"</a></u></td></tr>
+<tr><th id="18">18</th><td><u>#include &lt;vector&gt;</u></td></tr>
+<tr><th id="19">19</th><td></td></tr>
+<tr><th id="20">20</th><td><b>namespace</b> <span class="namespace">llvm</span> {</td></tr>
+<tr><th id="21">21</th><td></td></tr>
+<tr><th id="22">22</th><td><i class="doc">/// Represents an undefined index in the suffix tree.</i></td></tr>
+<tr><th id="23">23</th><td><em>const</em> <em>unsigned</em> <dfn class="decl def" id="llvm::EmptyIdx" title='llvm::EmptyIdx' data-ref="llvm::EmptyIdx" data-ref-filename="llvm..EmptyIdx">EmptyIdx</dfn> = -<var>1</var>;</td></tr>
+<tr><th id="24">24</th><td></td></tr>
+<tr><th id="25">25</th><td><i class="doc">/// A node in a suffix tree which represents a substring or suffix.</i></td></tr>
+<tr><th id="26">26</th><td><i class="doc">///</i></td></tr>
+<tr><th id="27">27</th><td><i class="doc">/// Each node has either no children or at least two children, with the root</i></td></tr>
+<tr><th id="28">28</th><td><i class="doc">/// being a exception in the empty tree.</i></td></tr>
+<tr><th id="29">29</th><td><i class="doc">///</i></td></tr>
+<tr><th id="30">30</th><td><i class="doc">/// Children are represented as a map between unsigned integers and nodes. If</i></td></tr>
+<tr><th id="31">31</th><td><i class="doc">/// a node N has a child M on unsigned integer k, then the mapping represented</i></td></tr>
+<tr><th id="32">32</th><td><i class="doc">/// by N is a proper prefix of the mapping represented by M. Note that this,</i></td></tr>
+<tr><th id="33">33</th><td><i class="doc">/// although similar to a trie is somewhat different: each node stores a full</i></td></tr>
+<tr><th id="34">34</th><td><i class="doc">/// substring of the full mapping rather than a single character state.</i></td></tr>
+<tr><th id="35">35</th><td><i class="doc">///</i></td></tr>
+<tr><th id="36">36</th><td><i class="doc">/// Each internal node contains a pointer to the internal node representing</i></td></tr>
+<tr><th id="37">37</th><td><i class="doc">/// the same string, but with the first character chopped off. This is stored</i></td></tr>
+<tr><th id="38">38</th><td><i class="doc">/// in<span class="command"> \p</span> <span class="arg">Link.</span> Each leaf node stores the start index of its respective</i></td></tr>
+<tr><th id="39">39</th><td><i class="doc">/// suffix in<span class="command"> \p</span> <span class="arg">SuffixIdx.</span></i></td></tr>
+<tr><th id="40">40</th><td><b>struct</b> <dfn class="type def" id="llvm::SuffixTreeNode" title='llvm::SuffixTreeNode' data-ref="llvm::SuffixTreeNode" data-ref-filename="llvm..SuffixTreeNode">SuffixTreeNode</dfn> {</td></tr>
+<tr><th id="41">41</th><td></td></tr>
+<tr><th id="42">42</th><td>  <i class="doc">/// The children of this node.</i></td></tr>
+<tr><th id="43">43</th><td><i class="doc">  ///</i></td></tr>
+<tr><th id="44">44</th><td><i class="doc">  /// A child existing on an unsigned integer implies that from the mapping</i></td></tr>
+<tr><th id="45">45</th><td><i class="doc">  /// represented by the current node, there is a way to reach another</i></td></tr>
+<tr><th id="46">46</th><td><i class="doc">  /// mapping by tacking that character on the end of the current string.</i></td></tr>
+<tr><th id="47">47</th><td>  <span class="namespace">llvm::</span><a class="type" href="../ADT/DenseMap.h.html#llvm::DenseMap" title='llvm::DenseMap' data-ref="llvm::DenseMap" data-ref-filename="llvm..DenseMap">DenseMap</a>&lt;<em>unsigned</em>, <a class="type" href="#llvm::SuffixTreeNode" title='llvm::SuffixTreeNode' data-ref="llvm::SuffixTreeNode" data-ref-filename="llvm..SuffixTreeNode">SuffixTreeNode</a> *&gt; <dfn class="decl field" id="llvm::SuffixTreeNode::Children" title='llvm::SuffixTreeNode::Children' data-ref="llvm::SuffixTreeNode::Children" data-ref-filename="llvm..SuffixTreeNode..Children">Children</dfn>;</td></tr>
+<tr><th id="48">48</th><td></td></tr>
+<tr><th id="49">49</th><td>  <i class="doc">/// The start index of this node's substring in the main string.</i></td></tr>
+<tr><th id="50">50</th><td>  <em>unsigned</em> <dfn class="decl field" id="llvm::SuffixTreeNode::StartIdx" title='llvm::SuffixTreeNode::StartIdx' data-ref="llvm::SuffixTreeNode::StartIdx" data-ref-filename="llvm..SuffixTreeNode..StartIdx">StartIdx</dfn> = <a class="ref" href="#llvm::EmptyIdx" title='llvm::EmptyIdx' data-ref="llvm::EmptyIdx" data-ref-filename="llvm..EmptyIdx">EmptyIdx</a>;</td></tr>
+<tr><th id="51">51</th><td></td></tr>
+<tr><th id="52">52</th><td>  <i class="doc">/// The end index of this node's substring in the main string.</i></td></tr>
+<tr><th id="53">53</th><td><i class="doc">  ///</i></td></tr>
+<tr><th id="54">54</th><td><i class="doc">  /// Every leaf node must have its<span class="command"> \p</span> <span class="arg">EndIdx</span> incremented at the end of every</i></td></tr>
+<tr><th id="55">55</th><td><i class="doc">  /// step in the construction algorithm. To avoid having to update O(N)</i></td></tr>
+<tr><th id="56">56</th><td><i class="doc">  /// nodes individually at the end of every step, the end index is stored</i></td></tr>
+<tr><th id="57">57</th><td><i class="doc">  /// as a pointer.</i></td></tr>
+<tr><th id="58">58</th><td>  <em>unsigned</em> *<dfn class="decl field" id="llvm::SuffixTreeNode::EndIdx" title='llvm::SuffixTreeNode::EndIdx' data-ref="llvm::SuffixTreeNode::EndIdx" data-ref-filename="llvm..SuffixTreeNode..EndIdx">EndIdx</dfn> = <b>nullptr</b>;</td></tr>
+<tr><th id="59">59</th><td></td></tr>
+<tr><th id="60">60</th><td>  <i class="doc">/// For leaves, the start index of the suffix represented by this node.</i></td></tr>
+<tr><th id="61">61</th><td><i class="doc">  ///</i></td></tr>
+<tr><th id="62">62</th><td><i class="doc">  /// For all other nodes, this is ignored.</i></td></tr>
+<tr><th id="63">63</th><td>  <em>unsigned</em> <dfn class="decl field" id="llvm::SuffixTreeNode::SuffixIdx" title='llvm::SuffixTreeNode::SuffixIdx' data-ref="llvm::SuffixTreeNode::SuffixIdx" data-ref-filename="llvm..SuffixTreeNode..SuffixIdx">SuffixIdx</dfn> = <a class="ref" href="#llvm::EmptyIdx" title='llvm::EmptyIdx' data-ref="llvm::EmptyIdx" data-ref-filename="llvm..EmptyIdx">EmptyIdx</a>;</td></tr>
+<tr><th id="64">64</th><td></td></tr>
+<tr><th id="65">65</th><td>  <i class="doc">/// For internal nodes, a pointer to the internal node representing</i></td></tr>
+<tr><th id="66">66</th><td><i class="doc">  /// the same sequence with the first character chopped off.</i></td></tr>
+<tr><th id="67">67</th><td><i class="doc">  ///</i></td></tr>
+<tr><th id="68">68</th><td><i class="doc">  /// This acts as a shortcut in Ukkonen's algorithm. One of the things that</i></td></tr>
+<tr><th id="69">69</th><td><i class="doc">  /// Ukkonen's algorithm does to achieve linear-time construction is</i></td></tr>
+<tr><th id="70">70</th><td><i class="doc">  /// keep track of which node the next insert should be at. This makes each</i></td></tr>
+<tr><th id="71">71</th><td><i class="doc">  /// insert O(1), and there are a total of O(N) inserts. The suffix link</i></td></tr>
+<tr><th id="72">72</th><td><i class="doc">  /// helps with inserting children of internal nodes.</i></td></tr>
+<tr><th id="73">73</th><td><i class="doc">  ///</i></td></tr>
+<tr><th id="74">74</th><td><i class="doc">  /// Say we add a child to an internal node with associated mapping S. The</i></td></tr>
+<tr><th id="75">75</th><td><i class="doc">  /// next insertion must be at the node representing S - its first character.</i></td></tr>
+<tr><th id="76">76</th><td><i class="doc">  /// This is given by the way that we iteratively build the tree in Ukkonen's</i></td></tr>
+<tr><th id="77">77</th><td><i class="doc">  /// algorithm. The main idea is to look at the suffixes of each prefix in the</i></td></tr>
+<tr><th id="78">78</th><td><i class="doc">  /// string, starting with the longest suffix of the prefix, and ending with</i></td></tr>
+<tr><th id="79">79</th><td><i class="doc">  /// the shortest. Therefore, if we keep pointers between such nodes, we can</i></td></tr>
+<tr><th id="80">80</th><td><i class="doc">  /// move to the next insertion point in O(1) time. If we don't, then we'd</i></td></tr>
+<tr><th id="81">81</th><td><i class="doc">  /// have to query from the root, which takes O(N) time. This would make the</i></td></tr>
+<tr><th id="82">82</th><td><i class="doc">  /// construction algorithm O(N^2) rather than O(N).</i></td></tr>
+<tr><th id="83">83</th><td>  <a class="type" href="#llvm::SuffixTreeNode" title='llvm::SuffixTreeNode' data-ref="llvm::SuffixTreeNode" data-ref-filename="llvm..SuffixTreeNode">SuffixTreeNode</a> *<dfn class="decl field" id="llvm::SuffixTreeNode::Link" title='llvm::SuffixTreeNode::Link' data-ref="llvm::SuffixTreeNode::Link" data-ref-filename="llvm..SuffixTreeNode..Link">Link</dfn> = <b>nullptr</b>;</td></tr>
+<tr><th id="84">84</th><td></td></tr>
+<tr><th id="85">85</th><td>  <i class="doc">/// The length of the string formed by concatenating the edge labels from the</i></td></tr>
+<tr><th id="86">86</th><td><i class="doc">  /// root to this node.</i></td></tr>
+<tr><th id="87">87</th><td>  <em>unsigned</em> <dfn class="decl field" id="llvm::SuffixTreeNode::ConcatLen" title='llvm::SuffixTreeNode::ConcatLen' data-ref="llvm::SuffixTreeNode::ConcatLen" data-ref-filename="llvm..SuffixTreeNode..ConcatLen">ConcatLen</dfn> = <var>0</var>;</td></tr>
+<tr><th id="88">88</th><td></td></tr>
+<tr><th id="89">89</th><td>  <i class="doc">/// Returns true if this node is a leaf.</i></td></tr>
+<tr><th id="90">90</th><td>  <em>bool</em> <dfn class="decl def fn" id="_ZNK4llvm14SuffixTreeNode6isLeafEv" title='llvm::SuffixTreeNode::isLeaf' data-ref="_ZNK4llvm14SuffixTreeNode6isLeafEv" data-ref-filename="_ZNK4llvm14SuffixTreeNode6isLeafEv">isLeaf</dfn>() <em>const</em> { <b>return</b> <a class="member field" href="#llvm::SuffixTreeNode::SuffixIdx" title='llvm::SuffixTreeNode::SuffixIdx' data-ref="llvm::SuffixTreeNode::SuffixIdx" data-ref-filename="llvm..SuffixTreeNode..SuffixIdx">SuffixIdx</a> != <a class="ref" href="#llvm::EmptyIdx" title='llvm::EmptyIdx' data-ref="llvm::EmptyIdx" data-ref-filename="llvm..EmptyIdx">EmptyIdx</a>; }</td></tr>
+<tr><th id="91">91</th><td></td></tr>
+<tr><th id="92">92</th><td>  <i class="doc">/// Returns true if this node is the root of its owning<span class="command"> \p</span> <span class="arg">SuffixTree.</span></i></td></tr>
+<tr><th id="93">93</th><td>  <em>bool</em> <dfn class="decl def fn" id="_ZNK4llvm14SuffixTreeNode6isRootEv" title='llvm::SuffixTreeNode::isRoot' data-ref="_ZNK4llvm14SuffixTreeNode6isRootEv" data-ref-filename="_ZNK4llvm14SuffixTreeNode6isRootEv">isRoot</dfn>() <em>const</em> { <b>return</b> <a class="member field" href="#llvm::SuffixTreeNode::StartIdx" title='llvm::SuffixTreeNode::StartIdx' data-ref="llvm::SuffixTreeNode::StartIdx" data-ref-filename="llvm..SuffixTreeNode..StartIdx">StartIdx</a> == <a class="ref" href="#llvm::EmptyIdx" title='llvm::EmptyIdx' data-ref="llvm::EmptyIdx" data-ref-filename="llvm..EmptyIdx">EmptyIdx</a>; }</td></tr>
+<tr><th id="94">94</th><td></td></tr>
+<tr><th id="95">95</th><td>  <i class="doc">/// Return the number of elements in the substring associated with this node.</i></td></tr>
+<tr><th id="96">96</th><td>  <span class='typedef' title='size_t' data-type='unsigned long' data-ref="size_t" data-ref-filename="size_t">size_t</span> <dfn class="decl def fn" id="_ZNK4llvm14SuffixTreeNode4sizeEv" title='llvm::SuffixTreeNode::size' data-ref="_ZNK4llvm14SuffixTreeNode4sizeEv" data-ref-filename="_ZNK4llvm14SuffixTreeNode4sizeEv">size</dfn>() <em>const</em> {</td></tr>
+<tr><th id="97">97</th><td></td></tr>
+<tr><th id="98">98</th><td>    <i>// Is it the root? If so, it's the empty string so return 0.</i></td></tr>
+<tr><th id="99">99</th><td>    <b>if</b> (<a class="member fn" href="#_ZNK4llvm14SuffixTreeNode6isRootEv" title='llvm::SuffixTreeNode::isRoot' data-ref="_ZNK4llvm14SuffixTreeNode6isRootEv" data-ref-filename="_ZNK4llvm14SuffixTreeNode6isRootEv">isRoot</a>())</td></tr>
+<tr><th id="100">100</th><td>      <b>return</b> <var>0</var>;</td></tr>
+<tr><th id="101">101</th><td></td></tr>
+<tr><th id="102">102</th><td>    <a class="macro" href="../../../../../include/assert.h.html#50" title="(static_cast&lt;void&gt; (0))" data-ref="_M/assert">assert</a>(*EndIdx != EmptyIdx &amp;&amp; <q>"EndIdx is undefined!"</q>);</td></tr>
+<tr><th id="103">103</th><td></td></tr>
+<tr><th id="104">104</th><td>    <i>// Size = the number of elements in the string.</i></td></tr>
+<tr><th id="105">105</th><td><i>    // For example, [0 1 2 3] has length 4, not 3. 3-0 = 3, so we have 3-0+1.</i></td></tr>
+<tr><th id="106">106</th><td>    <b>return</b> *<a class="member field" href="#llvm::SuffixTreeNode::EndIdx" title='llvm::SuffixTreeNode::EndIdx' data-ref="llvm::SuffixTreeNode::EndIdx" data-ref-filename="llvm..SuffixTreeNode..EndIdx">EndIdx</a> - <a class="member field" href="#llvm::SuffixTreeNode::StartIdx" title='llvm::SuffixTreeNode::StartIdx' data-ref="llvm::SuffixTreeNode::StartIdx" data-ref-filename="llvm..SuffixTreeNode..StartIdx">StartIdx</a> + <var>1</var>;</td></tr>
+<tr><th id="107">107</th><td>  }</td></tr>
+<tr><th id="108">108</th><td></td></tr>
+<tr><th id="109">109</th><td>  <dfn class="decl def fn" id="_ZN4llvm14SuffixTreeNodeC1EjPjPS0_" title='llvm::SuffixTreeNode::SuffixTreeNode' data-ref="_ZN4llvm14SuffixTreeNodeC1EjPjPS0_" data-ref-filename="_ZN4llvm14SuffixTreeNodeC1EjPjPS0_">SuffixTreeNode</dfn>(<em>unsigned</em> <dfn class="local col1 decl" id="81StartIdx" title='StartIdx' data-type='unsigned int' data-ref="81StartIdx" data-ref-filename="81StartIdx">StartIdx</dfn>, <em>unsigned</em> *<dfn class="local col2 decl" id="82EndIdx" title='EndIdx' data-type='unsigned int *' data-ref="82EndIdx" data-ref-filename="82EndIdx">EndIdx</dfn>, <a class="type" href="#llvm::SuffixTreeNode" title='llvm::SuffixTreeNode' data-ref="llvm::SuffixTreeNode" data-ref-filename="llvm..SuffixTreeNode">SuffixTreeNode</a> *<dfn class="local col3 decl" id="83Link" title='Link' data-type='llvm::SuffixTreeNode *' data-ref="83Link" data-ref-filename="83Link">Link</dfn>)</td></tr>
+<tr><th id="110">110</th><td>      : <a class="member field" href="#llvm::SuffixTreeNode::StartIdx" title='llvm::SuffixTreeNode::StartIdx' data-ref="llvm::SuffixTreeNode::StartIdx" data-ref-filename="llvm..SuffixTreeNode..StartIdx">StartIdx</a>(<a class="local col1 ref" href="#81StartIdx" title='StartIdx' data-ref="81StartIdx" data-ref-filename="81StartIdx">StartIdx</a>), <a class="member field" href="#llvm::SuffixTreeNode::EndIdx" title='llvm::SuffixTreeNode::EndIdx' data-ref="llvm::SuffixTreeNode::EndIdx" data-ref-filename="llvm..SuffixTreeNode..EndIdx">EndIdx</a>(<a class="local col2 ref" href="#82EndIdx" title='EndIdx' data-ref="82EndIdx" data-ref-filename="82EndIdx">EndIdx</a>), <a class="member field" href="#llvm::SuffixTreeNode::Link" title='llvm::SuffixTreeNode::Link' data-ref="llvm::SuffixTreeNode::Link" data-ref-filename="llvm..SuffixTreeNode..Link">Link</a>(<a class="local col3 ref" href="#83Link" title='Link' data-ref="83Link" data-ref-filename="83Link">Link</a>) {}</td></tr>
+<tr><th id="111">111</th><td></td></tr>
+<tr><th id="112">112</th><td>  <dfn class="decl def fn" id="_ZN4llvm14SuffixTreeNodeC1Ev" title='llvm::SuffixTreeNode::SuffixTreeNode' data-ref="_ZN4llvm14SuffixTreeNodeC1Ev" data-ref-filename="_ZN4llvm14SuffixTreeNodeC1Ev">SuffixTreeNode</dfn>() {}</td></tr>
+<tr><th id="113">113</th><td>};</td></tr>
+<tr><th id="114">114</th><td></td></tr>
+<tr><th id="115">115</th><td><i class="doc">/// A data structure for fast substring queries.</i></td></tr>
+<tr><th id="116">116</th><td><i class="doc">///</i></td></tr>
+<tr><th id="117">117</th><td><i class="doc">/// Suffix trees represent the suffixes of their input strings in their leaves.</i></td></tr>
+<tr><th id="118">118</th><td><i class="doc">/// A suffix tree is a type of compressed trie structure where each node</i></td></tr>
+<tr><th id="119">119</th><td><i class="doc">/// represents an entire substring rather than a single character. Each leaf</i></td></tr>
+<tr><th id="120">120</th><td><i class="doc">/// of the tree is a suffix.</i></td></tr>
+<tr><th id="121">121</th><td><i class="doc">///</i></td></tr>
+<tr><th id="122">122</th><td><i class="doc">/// A suffix tree can be seen as a type of state machine where each state is a</i></td></tr>
+<tr><th id="123">123</th><td><i class="doc">/// substring of the full string. The tree is structured so that, for a string</i></td></tr>
+<tr><th id="124">124</th><td><i class="doc">/// of length N, there are exactly N leaves in the tree. This structure allows</i></td></tr>
+<tr><th id="125">125</th><td><i class="doc">/// us to quickly find repeated substrings of the input string.</i></td></tr>
+<tr><th id="126">126</th><td><i class="doc">///</i></td></tr>
+<tr><th id="127">127</th><td><i class="doc">/// In this implementation, a "string" is a vector of unsigned integers.</i></td></tr>
+<tr><th id="128">128</th><td><i class="doc">/// These integers may result from hashing some data type. A suffix tree can</i></td></tr>
+<tr><th id="129">129</th><td><i class="doc">/// contain 1 or many strings, which can then be queried as one large string.</i></td></tr>
+<tr><th id="130">130</th><td><i class="doc">///</i></td></tr>
+<tr><th id="131">131</th><td><i class="doc">/// The suffix tree is implemented using Ukkonen's algorithm for linear-time</i></td></tr>
+<tr><th id="132">132</th><td><i class="doc">/// suffix tree construction. Ukkonen's algorithm is explained in more detail</i></td></tr>
+<tr><th id="133">133</th><td><i class="doc">/// in the paper by Esko Ukkonen "On-line construction of suffix trees. The</i></td></tr>
+<tr><th id="134">134</th><td><i class="doc">/// paper is available at</i></td></tr>
+<tr><th id="135">135</th><td><i class="doc">///</i></td></tr>
+<tr><th id="136">136</th><td><i class="doc">/// <a href="https://www.cs.helsinki.fi/u/ukkonen/SuffixT1withFigs.pdf">https://www.cs.helsinki.fi/u/ukkonen/SuffixT1withFigs.pdf</a></i></td></tr>
+<tr><th id="137">137</th><td><b>class</b> <dfn class="type def" id="llvm::SuffixTree" title='llvm::SuffixTree' data-ref="llvm::SuffixTree" data-ref-filename="llvm..SuffixTree">SuffixTree</dfn> {</td></tr>
+<tr><th id="138">138</th><td><b>public</b>:</td></tr>
+<tr><th id="139">139</th><td>  <i class="doc">/// Each element is an integer representing an instruction in the module.</i></td></tr>
+<tr><th id="140">140</th><td>  <span class="namespace">llvm::</span><a class="type" href="../ADT/APInt.h.html#llvm::ArrayRef" title='llvm::ArrayRef' data-ref="llvm::ArrayRef" data-ref-filename="llvm..ArrayRef">ArrayRef</a>&lt;<em>unsigned</em>&gt; <dfn class="decl field" id="llvm::SuffixTree::Str" title='llvm::SuffixTree::Str' data-ref="llvm::SuffixTree::Str" data-ref-filename="llvm..SuffixTree..Str">Str</dfn>;</td></tr>
+<tr><th id="141">141</th><td></td></tr>
+<tr><th id="142">142</th><td>  <i class="doc">/// A repeated substring in the tree.</i></td></tr>
+<tr><th id="143">143</th><td>  <b>struct</b> <dfn class="type def" id="llvm::SuffixTree::RepeatedSubstring" title='llvm::SuffixTree::RepeatedSubstring' data-ref="llvm::SuffixTree::RepeatedSubstring" data-ref-filename="llvm..SuffixTree..RepeatedSubstring">RepeatedSubstring</dfn> {</td></tr>
+<tr><th id="144">144</th><td>    <i class="doc">/// The length of the string.</i></td></tr>
+<tr><th id="145">145</th><td>    <em>unsigned</em> <dfn class="decl field" id="llvm::SuffixTree::RepeatedSubstring::Length" title='llvm::SuffixTree::RepeatedSubstring::Length' data-ref="llvm::SuffixTree::RepeatedSubstring::Length" data-ref-filename="llvm..SuffixTree..RepeatedSubstring..Length">Length</dfn>;</td></tr>
+<tr><th id="146">146</th><td></td></tr>
+<tr><th id="147">147</th><td>    <i class="doc">/// The start indices of each occurrence.</i></td></tr>
+<tr><th id="148">148</th><td>    <span class="namespace">std::</span><span class='type' title='std::vector' data-ref="std::vector" data-ref-filename="std..vector">vector</span>&lt;<em>unsigned</em>&gt; <dfn class="decl field" id="llvm::SuffixTree::RepeatedSubstring::StartIndices" title='llvm::SuffixTree::RepeatedSubstring::StartIndices' data-ref="llvm::SuffixTree::RepeatedSubstring::StartIndices" data-ref-filename="llvm..SuffixTree..RepeatedSubstring..StartIndices">StartIndices</dfn>;</td></tr>
+<tr><th id="149">149</th><td>  };</td></tr>
+<tr><th id="150">150</th><td></td></tr>
+<tr><th id="151">151</th><td><b>private</b>:</td></tr>
+<tr><th id="152">152</th><td>  <i class="doc">/// Maintains each node in the tree.</i></td></tr>
+<tr><th id="153">153</th><td>  <span class="namespace">llvm::</span><a class="type" href="Allocator.h.html#llvm::SpecificBumpPtrAllocator" title='llvm::SpecificBumpPtrAllocator' data-ref="llvm::SpecificBumpPtrAllocator" data-ref-filename="llvm..SpecificBumpPtrAllocator">SpecificBumpPtrAllocator</a>&lt;<a class="type" href="#llvm::SuffixTreeNode" title='llvm::SuffixTreeNode' data-ref="llvm::SuffixTreeNode" data-ref-filename="llvm..SuffixTreeNode">SuffixTreeNode</a>&gt; <dfn class="decl field" id="llvm::SuffixTree::NodeAllocator" title='llvm::SuffixTree::NodeAllocator' data-ref="llvm::SuffixTree::NodeAllocator" data-ref-filename="llvm..SuffixTree..NodeAllocator">NodeAllocator</dfn>;</td></tr>
+<tr><th id="154">154</th><td></td></tr>
+<tr><th id="155">155</th><td>  <i class="doc">/// The root of the suffix tree.</i></td></tr>
+<tr><th id="156">156</th><td><i class="doc">  ///</i></td></tr>
+<tr><th id="157">157</th><td><i class="doc">  /// The root represents the empty string. It is maintained by the</i></td></tr>
+<tr><th id="158">158</th><td><i class="doc">  ///<span class="command"> \p</span> <span class="arg">NodeAllocator</span> like every other node in the tree.</i></td></tr>
+<tr><th id="159">159</th><td>  <a class="type" href="#llvm::SuffixTreeNode" title='llvm::SuffixTreeNode' data-ref="llvm::SuffixTreeNode" data-ref-filename="llvm..SuffixTreeNode">SuffixTreeNode</a> *<dfn class="decl field" id="llvm::SuffixTree::Root" title='llvm::SuffixTree::Root' data-ref="llvm::SuffixTree::Root" data-ref-filename="llvm..SuffixTree..Root">Root</dfn> = <b>nullptr</b>;</td></tr>
+<tr><th id="160">160</th><td></td></tr>
+<tr><th id="161">161</th><td>  <i class="doc">/// Maintains the end indices of the internal nodes in the tree.</i></td></tr>
+<tr><th id="162">162</th><td><i class="doc">  ///</i></td></tr>
+<tr><th id="163">163</th><td><i class="doc">  /// Each internal node is guaranteed to never have its end index change</i></td></tr>
+<tr><th id="164">164</th><td><i class="doc">  /// during the construction algorithm; however, leaves must be updated at</i></td></tr>
+<tr><th id="165">165</th><td><i class="doc">  /// every step. Therefore, we need to store leaf end indices by reference</i></td></tr>
+<tr><th id="166">166</th><td><i class="doc">  /// to avoid updating O(N) leaves at every step of construction. Thus,</i></td></tr>
+<tr><th id="167">167</th><td><i class="doc">  /// every internal node must be allocated its own end index.</i></td></tr>
+<tr><th id="168">168</th><td>  <span class="namespace">llvm::</span><a class="typedef" href="Allocator.h.html#llvm::BumpPtrAllocator" title='llvm::BumpPtrAllocator' data-type='BumpPtrAllocatorImpl&lt;&gt;' data-ref="llvm::BumpPtrAllocator" data-ref-filename="llvm..BumpPtrAllocator">BumpPtrAllocator</a> <dfn class="decl field" id="llvm::SuffixTree::InternalEndIdxAllocator" title='llvm::SuffixTree::InternalEndIdxAllocator' data-ref="llvm::SuffixTree::InternalEndIdxAllocator" data-ref-filename="llvm..SuffixTree..InternalEndIdxAllocator">InternalEndIdxAllocator</dfn>;</td></tr>
+<tr><th id="169">169</th><td></td></tr>
+<tr><th id="170">170</th><td>  <i class="doc">/// The end index of each leaf in the tree.</i></td></tr>
+<tr><th id="171">171</th><td>  <em>unsigned</em> <dfn class="decl field" id="llvm::SuffixTree::LeafEndIdx" title='llvm::SuffixTree::LeafEndIdx' data-ref="llvm::SuffixTree::LeafEndIdx" data-ref-filename="llvm..SuffixTree..LeafEndIdx">LeafEndIdx</dfn> = -<var>1</var>;</td></tr>
+<tr><th id="172">172</th><td></td></tr>
+<tr><th id="173">173</th><td>  <i class="doc">/// Helper struct which keeps track of the next insertion point in</i></td></tr>
+<tr><th id="174">174</th><td><i class="doc">  /// Ukkonen's algorithm.</i></td></tr>
+<tr><th id="175">175</th><td>  <b>struct</b> <dfn class="type def" id="llvm::SuffixTree::ActiveState" title='llvm::SuffixTree::ActiveState' data-ref="llvm::SuffixTree::ActiveState" data-ref-filename="llvm..SuffixTree..ActiveState">ActiveState</dfn> {</td></tr>
+<tr><th id="176">176</th><td>    <i class="doc">/// The next node to insert at.</i></td></tr>
+<tr><th id="177">177</th><td>    <a class="type" href="#llvm::SuffixTreeNode" title='llvm::SuffixTreeNode' data-ref="llvm::SuffixTreeNode" data-ref-filename="llvm..SuffixTreeNode">SuffixTreeNode</a> *<dfn class="decl field" id="llvm::SuffixTree::ActiveState::Node" title='llvm::SuffixTree::ActiveState::Node' data-ref="llvm::SuffixTree::ActiveState::Node" data-ref-filename="llvm..SuffixTree..ActiveState..Node">Node</dfn> = <b>nullptr</b>;</td></tr>
+<tr><th id="178">178</th><td></td></tr>
+<tr><th id="179">179</th><td>    <i class="doc">/// The index of the first character in the substring currently being added.</i></td></tr>
+<tr><th id="180">180</th><td>    <em>unsigned</em> <dfn class="decl field" id="llvm::SuffixTree::ActiveState::Idx" title='llvm::SuffixTree::ActiveState::Idx' data-ref="llvm::SuffixTree::ActiveState::Idx" data-ref-filename="llvm..SuffixTree..ActiveState..Idx">Idx</dfn> = <a class="ref" href="#llvm::EmptyIdx" title='llvm::EmptyIdx' data-ref="llvm::EmptyIdx" data-ref-filename="llvm..EmptyIdx">EmptyIdx</a>;</td></tr>
+<tr><th id="181">181</th><td></td></tr>
+<tr><th id="182">182</th><td>    <i class="doc">/// The length of the substring we have to add at the current step.</i></td></tr>
+<tr><th id="183">183</th><td>    <em>unsigned</em> <dfn class="decl field" id="llvm::SuffixTree::ActiveState::Len" title='llvm::SuffixTree::ActiveState::Len' data-ref="llvm::SuffixTree::ActiveState::Len" data-ref-filename="llvm..SuffixTree..ActiveState..Len">Len</dfn> = <var>0</var>;</td></tr>
+<tr><th id="184">184</th><td>  };</td></tr>
+<tr><th id="185">185</th><td></td></tr>
+<tr><th id="186">186</th><td>  <i class="doc">/// The point the next insertion will take place at in the</i></td></tr>
+<tr><th id="187">187</th><td><i class="doc">  /// construction algorithm.</i></td></tr>
+<tr><th id="188">188</th><td>  <a class="type" href="#llvm::SuffixTree::ActiveState" title='llvm::SuffixTree::ActiveState' data-ref="llvm::SuffixTree::ActiveState" data-ref-filename="llvm..SuffixTree..ActiveState">ActiveState</a> <dfn class="decl field" id="llvm::SuffixTree::Active" title='llvm::SuffixTree::Active' data-ref="llvm::SuffixTree::Active" data-ref-filename="llvm..SuffixTree..Active">Active</dfn>;</td></tr>
+<tr><th id="189">189</th><td></td></tr>
+<tr><th id="190">190</th><td>  <i class="doc">/// Allocate a leaf node and add it to the tree.</i></td></tr>
+<tr><th id="191">191</th><td><i class="doc">  ///</i></td></tr>
+<tr><th id="192">192</th><td><i class="doc">  /// <span class="command">\param</span> <span class="arg">Parent</span> The parent of this node.</i></td></tr>
+<tr><th id="193">193</th><td><i class="doc">  /// <span class="command">\param</span> <span class="arg">StartIdx</span> The start index of this node's associated string.</i></td></tr>
+<tr><th id="194">194</th><td><i class="doc">  /// <span class="command">\param</span> <span class="arg">Edge</span> The label on the edge leaving<span class="command"> \p</span> <span class="arg">Parent</span> to this node.</i></td></tr>
+<tr><th id="195">195</th><td><i class="doc">  ///</i></td></tr>
+<tr><th id="196">196</th><td><i class="doc">  /// <span class="command">\returns</span> A pointer to the allocated leaf node.</i></td></tr>
+<tr><th id="197">197</th><td>  <a class="type" href="#llvm::SuffixTreeNode" title='llvm::SuffixTreeNode' data-ref="llvm::SuffixTreeNode" data-ref-filename="llvm..SuffixTreeNode">SuffixTreeNode</a> *<dfn class="decl fn" id="_ZN4llvm10SuffixTree10insertLeafERNS_14SuffixTreeNodeEjj" title='llvm::SuffixTree::insertLeaf' data-ref="_ZN4llvm10SuffixTree10insertLeafERNS_14SuffixTreeNodeEjj" data-ref-filename="_ZN4llvm10SuffixTree10insertLeafERNS_14SuffixTreeNodeEjj">insertLeaf</dfn>(<a class="type" href="#llvm::SuffixTreeNode" title='llvm::SuffixTreeNode' data-ref="llvm::SuffixTreeNode" data-ref-filename="llvm..SuffixTreeNode">SuffixTreeNode</a> &amp;<dfn class="local col4 decl" id="84Parent" title='Parent' data-type='llvm::SuffixTreeNode &amp;' data-ref="84Parent" data-ref-filename="84Parent">Parent</dfn>, <em>unsigned</em> <dfn class="local col5 decl" id="85StartIdx" title='StartIdx' data-type='unsigned int' data-ref="85StartIdx" data-ref-filename="85StartIdx">StartIdx</dfn>,</td></tr>
+<tr><th id="198">198</th><td>                             <em>unsigned</em> <dfn class="local col6 decl" id="86Edge" title='Edge' data-type='unsigned int' data-ref="86Edge" data-ref-filename="86Edge">Edge</dfn>);</td></tr>
+<tr><th id="199">199</th><td></td></tr>
+<tr><th id="200">200</th><td>  <i class="doc">/// Allocate an internal node and add it to the tree.</i></td></tr>
+<tr><th id="201">201</th><td><i class="doc">  ///</i></td></tr>
+<tr><th id="202">202</th><td><i class="doc">  /// <span class="command">\param</span> <span class="arg">Parent</span> The parent of this node. Only null when allocating the root.</i></td></tr>
+<tr><th id="203">203</th><td><i class="doc">  /// <span class="command">\param</span> <span class="arg">StartIdx</span> The start index of this node's associated string.</i></td></tr>
+<tr><th id="204">204</th><td><i class="doc">  /// <span class="command">\param</span> <span class="arg">EndIdx</span> The end index of this node's associated string.</i></td></tr>
+<tr><th id="205">205</th><td><i class="doc">  /// <span class="command">\param</span> <span class="arg">Edge</span> The label on the edge leaving<span class="command"> \p</span> <span class="arg">Parent</span> to this node.</i></td></tr>
+<tr><th id="206">206</th><td><i class="doc">  ///</i></td></tr>
+<tr><th id="207">207</th><td><i class="doc">  /// <span class="command">\returns</span> A pointer to the allocated internal node.</i></td></tr>
+<tr><th id="208">208</th><td>  <a class="type" href="#llvm::SuffixTreeNode" title='llvm::SuffixTreeNode' data-ref="llvm::SuffixTreeNode" data-ref-filename="llvm..SuffixTreeNode">SuffixTreeNode</a> *<dfn class="decl fn" id="_ZN4llvm10SuffixTree18insertInternalNodeEPNS_14SuffixTreeNodeEjjj" title='llvm::SuffixTree::insertInternalNode' data-ref="_ZN4llvm10SuffixTree18insertInternalNodeEPNS_14SuffixTreeNodeEjjj" data-ref-filename="_ZN4llvm10SuffixTree18insertInternalNodeEPNS_14SuffixTreeNodeEjjj">insertInternalNode</dfn>(<a class="type" href="#llvm::SuffixTreeNode" title='llvm::SuffixTreeNode' data-ref="llvm::SuffixTreeNode" data-ref-filename="llvm..SuffixTreeNode">SuffixTreeNode</a> *<dfn class="local col7 decl" id="87Parent" title='Parent' data-type='llvm::SuffixTreeNode *' data-ref="87Parent" data-ref-filename="87Parent">Parent</dfn>, <em>unsigned</em> <dfn class="local col8 decl" id="88StartIdx" title='StartIdx' data-type='unsigned int' data-ref="88StartIdx" data-ref-filename="88StartIdx">StartIdx</dfn>,</td></tr>
+<tr><th id="209">209</th><td>                                     <em>unsigned</em> <dfn class="local col9 decl" id="89EndIdx" title='EndIdx' data-type='unsigned int' data-ref="89EndIdx" data-ref-filename="89EndIdx">EndIdx</dfn>, <em>unsigned</em> <dfn class="local col0 decl" id="90Edge" title='Edge' data-type='unsigned int' data-ref="90Edge" data-ref-filename="90Edge">Edge</dfn>);</td></tr>
+<tr><th id="210">210</th><td></td></tr>
+<tr><th id="211">211</th><td>  <i class="doc">/// Set the suffix indices of the leaves to the start indices of their</i></td></tr>
+<tr><th id="212">212</th><td><i class="doc">  /// respective suffixes.</i></td></tr>
+<tr><th id="213">213</th><td>  <em>void</em> <dfn class="decl fn" id="_ZN4llvm10SuffixTree16setSuffixIndicesEv" title='llvm::SuffixTree::setSuffixIndices' data-ref="_ZN4llvm10SuffixTree16setSuffixIndicesEv" data-ref-filename="_ZN4llvm10SuffixTree16setSuffixIndicesEv">setSuffixIndices</dfn>();</td></tr>
+<tr><th id="214">214</th><td></td></tr>
+<tr><th id="215">215</th><td>  <i class="doc">/// Construct the suffix tree for the prefix of the input ending at</i></td></tr>
+<tr><th id="216">216</th><td><i class="doc">  ///<span class="command"> \p</span> <span class="arg">EndIdx.</span></i></td></tr>
+<tr><th id="217">217</th><td><i class="doc">  ///</i></td></tr>
+<tr><th id="218">218</th><td><i class="doc">  /// Used to construct the full suffix tree iteratively. At the end of each</i></td></tr>
+<tr><th id="219">219</th><td><i class="doc">  /// step, the constructed suffix tree is either a valid suffix tree, or a</i></td></tr>
+<tr><th id="220">220</th><td><i class="doc">  /// suffix tree with implicit suffixes. At the end of the final step, the</i></td></tr>
+<tr><th id="221">221</th><td><i class="doc">  /// suffix tree is a valid tree.</i></td></tr>
+<tr><th id="222">222</th><td><i class="doc">  ///</i></td></tr>
+<tr><th id="223">223</th><td><i class="doc">  /// <span class="command">\param</span> <span class="arg">EndIdx</span> The end index of the current prefix in the main string.</i></td></tr>
+<tr><th id="224">224</th><td><i class="doc">  /// <span class="command">\param</span> <span class="arg">SuffixesToAdd</span> The number of suffixes that must be added</i></td></tr>
+<tr><th id="225">225</th><td><i class="doc">  /// to complete the suffix tree at the current phase.</i></td></tr>
+<tr><th id="226">226</th><td><i class="doc">  ///</i></td></tr>
+<tr><th id="227">227</th><td><i class="doc">  /// <span class="command">\returns</span> The number of suffixes that have not been added at the end of</i></td></tr>
+<tr><th id="228">228</th><td><i class="doc">  /// this step.</i></td></tr>
+<tr><th id="229">229</th><td>  <em>unsigned</em> <dfn class="decl fn" id="_ZN4llvm10SuffixTree6extendEjj" title='llvm::SuffixTree::extend' data-ref="_ZN4llvm10SuffixTree6extendEjj" data-ref-filename="_ZN4llvm10SuffixTree6extendEjj">extend</dfn>(<em>unsigned</em> <dfn class="local col1 decl" id="91EndIdx" title='EndIdx' data-type='unsigned int' data-ref="91EndIdx" data-ref-filename="91EndIdx">EndIdx</dfn>, <em>unsigned</em> <dfn class="local col2 decl" id="92SuffixesToAdd" title='SuffixesToAdd' data-type='unsigned int' data-ref="92SuffixesToAdd" data-ref-filename="92SuffixesToAdd">SuffixesToAdd</dfn>);</td></tr>
+<tr><th id="230">230</th><td></td></tr>
+<tr><th id="231">231</th><td><b>public</b>:</td></tr>
+<tr><th id="232">232</th><td>  <i class="doc">/// Construct a suffix tree from a sequence of unsigned integers.</i></td></tr>
+<tr><th id="233">233</th><td><i class="doc">  ///</i></td></tr>
+<tr><th id="234">234</th><td><i class="doc">  /// <span class="command">\param</span> <span class="arg">Str</span> The string to construct the suffix tree for.</i></td></tr>
+<tr><th id="235">235</th><td>  <dfn class="decl fn" id="_ZN4llvm10SuffixTreeC1ERKSt6vectorIjSaIjEE" title='llvm::SuffixTree::SuffixTree' data-ref="_ZN4llvm10SuffixTreeC1ERKSt6vectorIjSaIjEE" data-ref-filename="_ZN4llvm10SuffixTreeC1ERKSt6vectorIjSaIjEE">SuffixTree</dfn>(<em>const</em> <span class="namespace">std::</span><span class='type' title='std::vector' data-ref="std::vector" data-ref-filename="std..vector">vector</span>&lt;<em>unsigned</em>&gt; &amp;<dfn class="local col3 decl" id="93Str" title='Str' data-type='const std::vector&lt;unsigned int&gt; &amp;' data-ref="93Str" data-ref-filename="93Str">Str</dfn>);</td></tr>
+<tr><th id="236">236</th><td></td></tr>
+<tr><th id="237">237</th><td>  <i class="doc">/// Iterator for finding all repeated substrings in the suffix tree.</i></td></tr>
+<tr><th id="238">238</th><td>  <b>struct</b> <dfn class="type def" id="llvm::SuffixTree::RepeatedSubstringIterator" title='llvm::SuffixTree::RepeatedSubstringIterator' data-ref="llvm::SuffixTree::RepeatedSubstringIterator" data-ref-filename="llvm..SuffixTree..RepeatedSubstringIterator">RepeatedSubstringIterator</dfn> {</td></tr>
+<tr><th id="239">239</th><td>  <b>private</b>:</td></tr>
+<tr><th id="240">240</th><td>    <i class="doc">/// The current node we're visiting.</i></td></tr>
+<tr><th id="241">241</th><td>    <a class="type" href="#llvm::SuffixTreeNode" title='llvm::SuffixTreeNode' data-ref="llvm::SuffixTreeNode" data-ref-filename="llvm..SuffixTreeNode">SuffixTreeNode</a> *<dfn class="decl field" id="llvm::SuffixTree::RepeatedSubstringIterator::N" title='llvm::SuffixTree::RepeatedSubstringIterator::N' data-ref="llvm::SuffixTree::RepeatedSubstringIterator::N" data-ref-filename="llvm..SuffixTree..RepeatedSubstringIterator..N">N</dfn> = <b>nullptr</b>;</td></tr>
+<tr><th id="242">242</th><td></td></tr>
+<tr><th id="243">243</th><td>    <i class="doc">/// The repeated substring associated with this node.</i></td></tr>
+<tr><th id="244">244</th><td>    <a class="type" href="#llvm::SuffixTree::RepeatedSubstring" title='llvm::SuffixTree::RepeatedSubstring' data-ref="llvm::SuffixTree::RepeatedSubstring" data-ref-filename="llvm..SuffixTree..RepeatedSubstring">RepeatedSubstring</a> <dfn class="decl field" id="llvm::SuffixTree::RepeatedSubstringIterator::RS" title='llvm::SuffixTree::RepeatedSubstringIterator::RS' data-ref="llvm::SuffixTree::RepeatedSubstringIterator::RS" data-ref-filename="llvm..SuffixTree..RepeatedSubstringIterator..RS">RS</dfn>;</td></tr>
+<tr><th id="245">245</th><td></td></tr>
+<tr><th id="246">246</th><td>    <i class="doc">/// The nodes left to visit.</i></td></tr>
+<tr><th id="247">247</th><td>    <span class="namespace">std::</span><span class='type' title='std::vector' data-ref="std::vector" data-ref-filename="std..vector">vector</span>&lt;<a class="type" href="#llvm::SuffixTreeNode" title='llvm::SuffixTreeNode' data-ref="llvm::SuffixTreeNode" data-ref-filename="llvm..SuffixTreeNode">SuffixTreeNode</a> *&gt; <dfn class="decl field" id="llvm::SuffixTree::RepeatedSubstringIterator::ToVisit" title='llvm::SuffixTree::RepeatedSubstringIterator::ToVisit' data-ref="llvm::SuffixTree::RepeatedSubstringIterator::ToVisit" data-ref-filename="llvm..SuffixTree..RepeatedSubstringIterator..ToVisit">ToVisit</dfn>;</td></tr>
+<tr><th id="248">248</th><td></td></tr>
+<tr><th id="249">249</th><td>    <i class="doc">/// The minimum length of a repeated substring to find.</i></td></tr>
+<tr><th id="250">250</th><td><i class="doc">    /// Since we're outlining, we want at least two instructions in the range.</i></td></tr>
+<tr><th id="251">251</th><td><i class="doc">    /// FIXME: This may not be true for targets like X86 which support many</i></td></tr>
+<tr><th id="252">252</th><td><i class="doc">    /// instruction lengths.</i></td></tr>
+<tr><th id="253">253</th><td>    <em>const</em> <em>unsigned</em> <dfn class="decl field" id="llvm::SuffixTree::RepeatedSubstringIterator::MinLength" title='llvm::SuffixTree::RepeatedSubstringIterator::MinLength' data-ref="llvm::SuffixTree::RepeatedSubstringIterator::MinLength" data-ref-filename="llvm..SuffixTree..RepeatedSubstringIterator..MinLength">MinLength</dfn> = <var>2</var>;</td></tr>
+<tr><th id="254">254</th><td></td></tr>
+<tr><th id="255">255</th><td>    <i class="doc">/// Move the iterator to the next repeated substring.</i></td></tr>
+<tr><th id="256">256</th><td>    <em>void</em> <dfn class="decl def fn" id="_ZN4llvm10SuffixTree25RepeatedSubstringIterator7advanceEv" title='llvm::SuffixTree::RepeatedSubstringIterator::advance' data-ref="_ZN4llvm10SuffixTree25RepeatedSubstringIterator7advanceEv" data-ref-filename="_ZN4llvm10SuffixTree25RepeatedSubstringIterator7advanceEv">advance</dfn>() {</td></tr>
+<tr><th id="257">257</th><td>      <i>// Clear the current state. If we're at the end of the range, then this</i></td></tr>
+<tr><th id="258">258</th><td><i>      // is the state we want to be in.</i></td></tr>
+<tr><th id="259">259</th><td>      <a class="member field" href="#llvm::SuffixTree::RepeatedSubstringIterator::RS" title='llvm::SuffixTree::RepeatedSubstringIterator::RS' data-ref="llvm::SuffixTree::RepeatedSubstringIterator::RS" data-ref-filename="llvm..SuffixTree..RepeatedSubstringIterator..RS">RS</a> <a class="ref fn" href="#143" title='llvm::SuffixTree::RepeatedSubstring::operator=' data-ref="_ZN4llvm10SuffixTree17RepeatedSubstringaSEOS1_" data-ref-filename="_ZN4llvm10SuffixTree17RepeatedSubstringaSEOS1_">=</a> <a class="type" href="#llvm::SuffixTree::RepeatedSubstring" title='llvm::SuffixTree::RepeatedSubstring' data-ref="llvm::SuffixTree::RepeatedSubstring" data-ref-filename="llvm..SuffixTree..RepeatedSubstring">RepeatedSubstring</a><a class="ref fn" href="#143" title='llvm::SuffixTree::RepeatedSubstring::RepeatedSubstring' data-ref="_ZN4llvm10SuffixTree17RepeatedSubstringC1Ev" data-ref-filename="_ZN4llvm10SuffixTree17RepeatedSubstringC1Ev">(</a>);</td></tr>
+<tr><th id="260">260</th><td>      <a class="member field" href="#llvm::SuffixTree::RepeatedSubstringIterator::N" title='llvm::SuffixTree::RepeatedSubstringIterator::N' data-ref="llvm::SuffixTree::RepeatedSubstringIterator::N" data-ref-filename="llvm..SuffixTree..RepeatedSubstringIterator..N">N</a> = <b>nullptr</b>;</td></tr>
+<tr><th id="261">261</th><td></td></tr>
+<tr><th id="262">262</th><td>      <i>// Each leaf node represents a repeat of a string.</i></td></tr>
+<tr><th id="263">263</th><td>      <span class="namespace">std::</span><span class='type' title='std::vector' data-ref="std::vector" data-ref-filename="std..vector">vector</span>&lt;<a class="type" href="#llvm::SuffixTreeNode" title='llvm::SuffixTreeNode' data-ref="llvm::SuffixTreeNode" data-ref-filename="llvm..SuffixTreeNode">SuffixTreeNode</a> *&gt; <span class='ref fn fake' title='std::vector::vector&lt;_Tp, _Alloc&gt;' data-ref="_ZNSt6vectorC1Ev" data-ref-filename="_ZNSt6vectorC1Ev"></span><dfn class="local col4 decl" id="94LeafChildren" title='LeafChildren' data-type='std::vector&lt;SuffixTreeNode *&gt;' data-ref="94LeafChildren" data-ref-filename="94LeafChildren">LeafChildren</dfn>;</td></tr>
+<tr><th id="264">264</th><td></td></tr>
+<tr><th id="265">265</th><td>      <i>// Continue visiting nodes until we find one which repeats more than once.</i></td></tr>
+<tr><th id="266">266</th><td>      <b>while</b> (!<a class="member field" href="#llvm::SuffixTree::RepeatedSubstringIterator::ToVisit" title='llvm::SuffixTree::RepeatedSubstringIterator::ToVisit' data-ref="llvm::SuffixTree::RepeatedSubstringIterator::ToVisit" data-ref-filename="llvm..SuffixTree..RepeatedSubstringIterator..ToVisit">ToVisit</a>.<span class='ref fn' title='std::vector::empty' data-ref="_ZNKSt6vector5emptyEv" data-ref-filename="_ZNKSt6vector5emptyEv">empty</span>()) {</td></tr>
+<tr><th id="267">267</th><td>        <a class="type" href="#llvm::SuffixTreeNode" title='llvm::SuffixTreeNode' data-ref="llvm::SuffixTreeNode" data-ref-filename="llvm..SuffixTreeNode">SuffixTreeNode</a> *<dfn class="local col5 decl" id="95Curr" title='Curr' data-type='llvm::SuffixTreeNode *' data-ref="95Curr" data-ref-filename="95Curr">Curr</dfn> = <a class="member field" href="#llvm::SuffixTree::RepeatedSubstringIterator::ToVisit" title='llvm::SuffixTree::RepeatedSubstringIterator::ToVisit' data-ref="llvm::SuffixTree::RepeatedSubstringIterator::ToVisit" data-ref-filename="llvm..SuffixTree..RepeatedSubstringIterator..ToVisit">ToVisit</a>.<span class='ref fn' title='std::vector::back' data-ref="_ZNSt6vector4backEv" data-ref-filename="_ZNSt6vector4backEv">back</span>();</td></tr>
+<tr><th id="268">268</th><td>        <a class="member field" href="#llvm::SuffixTree::RepeatedSubstringIterator::ToVisit" title='llvm::SuffixTree::RepeatedSubstringIterator::ToVisit' data-ref="llvm::SuffixTree::RepeatedSubstringIterator::ToVisit" data-ref-filename="llvm..SuffixTree..RepeatedSubstringIterator..ToVisit">ToVisit</a>.<span class='ref fn' title='std::vector::pop_back' data-ref="_ZNSt6vector8pop_backEv" data-ref-filename="_ZNSt6vector8pop_backEv">pop_back</span>();</td></tr>
+<tr><th id="269">269</th><td>        <a class="local col4 ref" href="#94LeafChildren" title='LeafChildren' data-ref="94LeafChildren" data-ref-filename="94LeafChildren">LeafChildren</a>.<span class='ref fn' title='std::vector::clear' data-ref="_ZNSt6vector5clearEv" data-ref-filename="_ZNSt6vector5clearEv">clear</span>();</td></tr>
+<tr><th id="270">270</th><td></td></tr>
+<tr><th id="271">271</th><td>        <i>// Keep track of the length of the string associated with the node. If</i></td></tr>
+<tr><th id="272">272</th><td><i>        // it's too short, we'll quit.</i></td></tr>
+<tr><th id="273">273</th><td>        <em>unsigned</em> <dfn class="local col6 decl" id="96Length" title='Length' data-type='unsigned int' data-ref="96Length" data-ref-filename="96Length">Length</dfn> = <a class="local col5 ref" href="#95Curr" title='Curr' data-ref="95Curr" data-ref-filename="95Curr">Curr</a>-&gt;<a class="ref field" href="#llvm::SuffixTreeNode::ConcatLen" title='llvm::SuffixTreeNode::ConcatLen' data-ref="llvm::SuffixTreeNode::ConcatLen" data-ref-filename="llvm..SuffixTreeNode..ConcatLen">ConcatLen</a>;</td></tr>
+<tr><th id="274">274</th><td></td></tr>
+<tr><th id="275">275</th><td>        <i>// Iterate over each child, saving internal nodes for visiting, and</i></td></tr>
+<tr><th id="276">276</th><td><i>        // leaf nodes in LeafChildren. Internal nodes represent individual</i></td></tr>
+<tr><th id="277">277</th><td><i>        // strings, which may repeat.</i></td></tr>
+<tr><th id="278">278</th><td>        <b>for</b> (<em>auto</em> &amp;<dfn class="local col7 decl" id="97ChildPair" title='ChildPair' data-type='llvm::detail::DenseMapPair&lt;unsigned int, llvm::SuffixTreeNode *&gt; &amp;' data-ref="97ChildPair" data-ref-filename="97ChildPair">ChildPair</dfn> : <a class="local col5 ref" href="#95Curr" title='Curr' data-ref="95Curr" data-ref-filename="95Curr">Curr</a>-&gt;<a class="ref field" href="#llvm::SuffixTreeNode::Children" title='llvm::SuffixTreeNode::Children' data-ref="llvm::SuffixTreeNode::Children" data-ref-filename="llvm..SuffixTreeNode..Children">Children</a>) {</td></tr>
+<tr><th id="279">279</th><td>          <i>// Save all of this node's children for processing.</i></td></tr>
+<tr><th id="280">280</th><td>          <b>if</b> (!<a class="local col7 ref" href="#97ChildPair" title='ChildPair' data-ref="97ChildPair" data-ref-filename="97ChildPair">ChildPair</a>.<span class='ref field' title='std::pair&lt;unsigned int, llvm::SuffixTreeNode *&gt;::second' data-ref="std::pair::second" data-ref-filename="std..pair..second">second</span>-&gt;<a class="ref fn" href="#_ZNK4llvm14SuffixTreeNode6isLeafEv" title='llvm::SuffixTreeNode::isLeaf' data-ref="_ZNK4llvm14SuffixTreeNode6isLeafEv" data-ref-filename="_ZNK4llvm14SuffixTreeNode6isLeafEv">isLeaf</a>())</td></tr>
+<tr><th id="281">281</th><td>            <a class="member field" href="#llvm::SuffixTree::RepeatedSubstringIterator::ToVisit" title='llvm::SuffixTree::RepeatedSubstringIterator::ToVisit' data-ref="llvm::SuffixTree::RepeatedSubstringIterator::ToVisit" data-ref-filename="llvm..SuffixTree..RepeatedSubstringIterator..ToVisit">ToVisit</a>.<span class='ref fn' title='std::vector::push_back' data-ref="_ZNSt6vector9push_backERKT_" data-ref-filename="_ZNSt6vector9push_backERKT_">push_back</span>(<a class="local col7 ref" href="#97ChildPair" title='ChildPair' data-ref="97ChildPair" data-ref-filename="97ChildPair">ChildPair</a>.<span class='ref field' title='std::pair&lt;unsigned int, llvm::SuffixTreeNode *&gt;::second' data-ref="std::pair::second" data-ref-filename="std..pair..second">second</span>);</td></tr>
+<tr><th id="282">282</th><td></td></tr>
+<tr><th id="283">283</th><td>          <i>// It's not an internal node, so it must be a leaf. If we have a</i></td></tr>
+<tr><th id="284">284</th><td><i>          // long enough string, then save the leaf children.</i></td></tr>
+<tr><th id="285">285</th><td>          <b>else</b> <b>if</b> (<a class="local col6 ref" href="#96Length" title='Length' data-ref="96Length" data-ref-filename="96Length">Length</a> &gt;= <a class="member field" href="#llvm::SuffixTree::RepeatedSubstringIterator::MinLength" title='llvm::SuffixTree::RepeatedSubstringIterator::MinLength' data-ref="llvm::SuffixTree::RepeatedSubstringIterator::MinLength" data-ref-filename="llvm..SuffixTree..RepeatedSubstringIterator..MinLength">MinLength</a>)</td></tr>
+<tr><th id="286">286</th><td>            <a class="local col4 ref" href="#94LeafChildren" title='LeafChildren' data-ref="94LeafChildren" data-ref-filename="94LeafChildren">LeafChildren</a>.<span class='ref fn' title='std::vector::push_back' data-ref="_ZNSt6vector9push_backERKT_" data-ref-filename="_ZNSt6vector9push_backERKT_">push_back</span>(<a class="local col7 ref" href="#97ChildPair" title='ChildPair' data-ref="97ChildPair" data-ref-filename="97ChildPair">ChildPair</a>.<span class='ref field' title='std::pair&lt;unsigned int, llvm::SuffixTreeNode *&gt;::second' data-ref="std::pair::second" data-ref-filename="std..pair..second">second</span>);</td></tr>
+<tr><th id="287">287</th><td>        }</td></tr>
+<tr><th id="288">288</th><td></td></tr>
+<tr><th id="289">289</th><td>        <i>// The root never represents a repeated substring. If we're looking at</i></td></tr>
+<tr><th id="290">290</th><td><i>        // that, then skip it.</i></td></tr>
+<tr><th id="291">291</th><td>        <b>if</b> (<a class="local col5 ref" href="#95Curr" title='Curr' data-ref="95Curr" data-ref-filename="95Curr">Curr</a>-&gt;<a class="ref fn" href="#_ZNK4llvm14SuffixTreeNode6isRootEv" title='llvm::SuffixTreeNode::isRoot' data-ref="_ZNK4llvm14SuffixTreeNode6isRootEv" data-ref-filename="_ZNK4llvm14SuffixTreeNode6isRootEv">isRoot</a>())</td></tr>
+<tr><th id="292">292</th><td>          <b>continue</b>;</td></tr>
+<tr><th id="293">293</th><td></td></tr>
+<tr><th id="294">294</th><td>        <i>// Do we have any repeated substrings?</i></td></tr>
+<tr><th id="295">295</th><td>        <b>if</b> (<a class="local col4 ref" href="#94LeafChildren" title='LeafChildren' data-ref="94LeafChildren" data-ref-filename="94LeafChildren">LeafChildren</a>.<span class='ref fn' title='std::vector::size' data-ref="_ZNKSt6vector4sizeEv" data-ref-filename="_ZNKSt6vector4sizeEv">size</span>() &gt;= <var>2</var>) {</td></tr>
+<tr><th id="296">296</th><td>          <i>// Yes. Update the state to reflect this, and then bail out.</i></td></tr>
+<tr><th id="297">297</th><td>          <a class="member field" href="#llvm::SuffixTree::RepeatedSubstringIterator::N" title='llvm::SuffixTree::RepeatedSubstringIterator::N' data-ref="llvm::SuffixTree::RepeatedSubstringIterator::N" data-ref-filename="llvm..SuffixTree..RepeatedSubstringIterator..N">N</a> = <a class="local col5 ref" href="#95Curr" title='Curr' data-ref="95Curr" data-ref-filename="95Curr">Curr</a>;</td></tr>
+<tr><th id="298">298</th><td>          <a class="member field" href="#llvm::SuffixTree::RepeatedSubstringIterator::RS" title='llvm::SuffixTree::RepeatedSubstringIterator::RS' data-ref="llvm::SuffixTree::RepeatedSubstringIterator::RS" data-ref-filename="llvm..SuffixTree..RepeatedSubstringIterator..RS">RS</a>.<a class="ref field" href="#llvm::SuffixTree::RepeatedSubstring::Length" title='llvm::SuffixTree::RepeatedSubstring::Length' data-ref="llvm::SuffixTree::RepeatedSubstring::Length" data-ref-filename="llvm..SuffixTree..RepeatedSubstring..Length">Length</a> = <a class="local col6 ref" href="#96Length" title='Length' data-ref="96Length" data-ref-filename="96Length">Length</a>;</td></tr>
+<tr><th id="299">299</th><td>          <b>for</b> (<a class="type" href="#llvm::SuffixTreeNode" title='llvm::SuffixTreeNode' data-ref="llvm::SuffixTreeNode" data-ref-filename="llvm..SuffixTreeNode">SuffixTreeNode</a> *<dfn class="local col8 decl" id="98Leaf" title='Leaf' data-type='llvm::SuffixTreeNode *' data-ref="98Leaf" data-ref-filename="98Leaf">Leaf</dfn> : <a class="local col4 ref" href="#94LeafChildren" title='LeafChildren' data-ref="94LeafChildren" data-ref-filename="94LeafChildren">LeafChildren</a>)</td></tr>
+<tr><th id="300">300</th><td>            <a class="member field" href="#llvm::SuffixTree::RepeatedSubstringIterator::RS" title='llvm::SuffixTree::RepeatedSubstringIterator::RS' data-ref="llvm::SuffixTree::RepeatedSubstringIterator::RS" data-ref-filename="llvm..SuffixTree..RepeatedSubstringIterator..RS">RS</a>.<a class="ref field" href="#llvm::SuffixTree::RepeatedSubstring::StartIndices" title='llvm::SuffixTree::RepeatedSubstring::StartIndices' data-ref="llvm::SuffixTree::RepeatedSubstring::StartIndices" data-ref-filename="llvm..SuffixTree..RepeatedSubstring..StartIndices">StartIndices</a>.<span class='ref fn' title='std::vector::push_back' data-ref="_ZNSt6vector9push_backERKT_" data-ref-filename="_ZNSt6vector9push_backERKT_">push_back</span>(<a class="local col8 ref" href="#98Leaf" title='Leaf' data-ref="98Leaf" data-ref-filename="98Leaf">Leaf</a>-&gt;<a class="ref field" href="#llvm::SuffixTreeNode::SuffixIdx" title='llvm::SuffixTreeNode::SuffixIdx' data-ref="llvm::SuffixTreeNode::SuffixIdx" data-ref-filename="llvm..SuffixTreeNode..SuffixIdx">SuffixIdx</a>);</td></tr>
+<tr><th id="301">301</th><td>          <b>break</b>;</td></tr>
+<tr><th id="302">302</th><td>        }</td></tr>
+<tr><th id="303">303</th><td>      }</td></tr>
+<tr><th id="304">304</th><td></td></tr>
+<tr><th id="305">305</th><td>      <i>// At this point, either NewRS is an empty RepeatedSubstring, or it was</i></td></tr>
+<tr><th id="306">306</th><td><i>      // set in the above loop. Similarly, N is either nullptr, or the node</i></td></tr>
+<tr><th id="307">307</th><td><i>      // associated with NewRS.</i></td></tr>
+<tr><th id="308">308</th><td>    }</td></tr>
+<tr><th id="309">309</th><td></td></tr>
+<tr><th id="310">310</th><td>  <b>public</b>:</td></tr>
+<tr><th id="311">311</th><td>    <i class="doc">/// Return the current repeated substring.</i></td></tr>
+<tr><th id="312">312</th><td>    <a class="type" href="#llvm::SuffixTree::RepeatedSubstring" title='llvm::SuffixTree::RepeatedSubstring' data-ref="llvm::SuffixTree::RepeatedSubstring" data-ref-filename="llvm..SuffixTree..RepeatedSubstring">RepeatedSubstring</a> &amp;<dfn class="decl def fn" id="_ZN4llvm10SuffixTree25RepeatedSubstringIteratordeEv" title='llvm::SuffixTree::RepeatedSubstringIterator::operator*' data-ref="_ZN4llvm10SuffixTree25RepeatedSubstringIteratordeEv" data-ref-filename="_ZN4llvm10SuffixTree25RepeatedSubstringIteratordeEv"><b>operator</b>*</dfn>() { <b>return</b> <a class="member field" href="#llvm::SuffixTree::RepeatedSubstringIterator::RS" title='llvm::SuffixTree::RepeatedSubstringIterator::RS' data-ref="llvm::SuffixTree::RepeatedSubstringIterator::RS" data-ref-filename="llvm..SuffixTree..RepeatedSubstringIterator..RS">RS</a>; }</td></tr>
+<tr><th id="313">313</th><td></td></tr>
+<tr><th id="314">314</th><td>    <a class="type" href="#llvm::SuffixTree::RepeatedSubstringIterator" title='llvm::SuffixTree::RepeatedSubstringIterator' data-ref="llvm::SuffixTree::RepeatedSubstringIterator" data-ref-filename="llvm..SuffixTree..RepeatedSubstringIterator">RepeatedSubstringIterator</a> &amp;<dfn class="decl def fn" id="_ZN4llvm10SuffixTree25RepeatedSubstringIteratorppEv" title='llvm::SuffixTree::RepeatedSubstringIterator::operator++' data-ref="_ZN4llvm10SuffixTree25RepeatedSubstringIteratorppEv" data-ref-filename="_ZN4llvm10SuffixTree25RepeatedSubstringIteratorppEv"><b>operator</b>++</dfn>() {</td></tr>
+<tr><th id="315">315</th><td>      <a class="member fn" href="#_ZN4llvm10SuffixTree25RepeatedSubstringIterator7advanceEv" title='llvm::SuffixTree::RepeatedSubstringIterator::advance' data-ref="_ZN4llvm10SuffixTree25RepeatedSubstringIterator7advanceEv" data-ref-filename="_ZN4llvm10SuffixTree25RepeatedSubstringIterator7advanceEv">advance</a>();</td></tr>
+<tr><th id="316">316</th><td>      <b>return</b> *<b>this</b>;</td></tr>
+<tr><th id="317">317</th><td>    }</td></tr>
+<tr><th id="318">318</th><td></td></tr>
+<tr><th id="319">319</th><td>    <a class="type" href="#llvm::SuffixTree::RepeatedSubstringIterator" title='llvm::SuffixTree::RepeatedSubstringIterator' data-ref="llvm::SuffixTree::RepeatedSubstringIterator" data-ref-filename="llvm..SuffixTree..RepeatedSubstringIterator">RepeatedSubstringIterator</a> <dfn class="decl def fn" id="_ZN4llvm10SuffixTree25RepeatedSubstringIteratorppEi" title='llvm::SuffixTree::RepeatedSubstringIterator::operator++' data-ref="_ZN4llvm10SuffixTree25RepeatedSubstringIteratorppEi" data-ref-filename="_ZN4llvm10SuffixTree25RepeatedSubstringIteratorppEi"><b>operator</b>++</dfn>(<em>int</em> <dfn class="local col9 decl" id="99I" title='I' data-type='int' data-ref="99I" data-ref-filename="99I">I</dfn>) {</td></tr>
+<tr><th id="320">320</th><td>      <a class="type" href="#llvm::SuffixTree::RepeatedSubstringIterator" title='llvm::SuffixTree::RepeatedSubstringIterator' data-ref="llvm::SuffixTree::RepeatedSubstringIterator" data-ref-filename="llvm..SuffixTree..RepeatedSubstringIterator">RepeatedSubstringIterator</a> <dfn class="local col0 decl" id="100It" title='It' data-type='llvm::SuffixTree::RepeatedSubstringIterator' data-ref="100It" data-ref-filename="100It">It</dfn><a class="ref fn" href="#238" title='llvm::SuffixTree::RepeatedSubstringIterator::RepeatedSubstringIterator' data-ref="_ZN4llvm10SuffixTree25RepeatedSubstringIteratorC1ERKS1_" data-ref-filename="_ZN4llvm10SuffixTree25RepeatedSubstringIteratorC1ERKS1_">(</a>*<b>this</b>);</td></tr>
+<tr><th id="321">321</th><td>      <a class="member fn" href="#_ZN4llvm10SuffixTree25RepeatedSubstringIterator7advanceEv" title='llvm::SuffixTree::RepeatedSubstringIterator::advance' data-ref="_ZN4llvm10SuffixTree25RepeatedSubstringIterator7advanceEv" data-ref-filename="_ZN4llvm10SuffixTree25RepeatedSubstringIterator7advanceEv">advance</a>();</td></tr>
+<tr><th id="322">322</th><td>      <b>return</b> <a class="local col0 ref" href="#100It" title='It' data-ref="100It" data-ref-filename="100It">It</a>;</td></tr>
+<tr><th id="323">323</th><td>    }</td></tr>
+<tr><th id="324">324</th><td></td></tr>
+<tr><th id="325">325</th><td>    <em>bool</em> <dfn class="decl def fn" id="_ZNK4llvm10SuffixTree25RepeatedSubstringIteratoreqERKS1_" title='llvm::SuffixTree::RepeatedSubstringIterator::operator==' data-ref="_ZNK4llvm10SuffixTree25RepeatedSubstringIteratoreqERKS1_" data-ref-filename="_ZNK4llvm10SuffixTree25RepeatedSubstringIteratoreqERKS1_"><b>operator</b>==</dfn>(<em>const</em> <a class="type" href="#llvm::SuffixTree::RepeatedSubstringIterator" title='llvm::SuffixTree::RepeatedSubstringIterator' data-ref="llvm::SuffixTree::RepeatedSubstringIterator" data-ref-filename="llvm..SuffixTree..RepeatedSubstringIterator">RepeatedSubstringIterator</a> &amp;<dfn class="local col1 decl" id="101Other" title='Other' data-type='const llvm::SuffixTree::RepeatedSubstringIterator &amp;' data-ref="101Other" data-ref-filename="101Other">Other</dfn>) <em>const</em> {</td></tr>
+<tr><th id="326">326</th><td>      <b>return</b> <a class="member field" href="#llvm::SuffixTree::RepeatedSubstringIterator::N" title='llvm::SuffixTree::RepeatedSubstringIterator::N' data-ref="llvm::SuffixTree::RepeatedSubstringIterator::N" data-ref-filename="llvm..SuffixTree..RepeatedSubstringIterator..N">N</a> == <a class="local col1 ref" href="#101Other" title='Other' data-ref="101Other" data-ref-filename="101Other">Other</a>.<a class="member field" href="#llvm::SuffixTree::RepeatedSubstringIterator::N" title='llvm::SuffixTree::RepeatedSubstringIterator::N' data-ref="llvm::SuffixTree::RepeatedSubstringIterator::N" data-ref-filename="llvm..SuffixTree..RepeatedSubstringIterator..N">N</a>;</td></tr>
+<tr><th id="327">327</th><td>    }</td></tr>
+<tr><th id="328">328</th><td>    <em>bool</em> <dfn class="decl def fn" id="_ZNK4llvm10SuffixTree25RepeatedSubstringIteratorneERKS1_" title='llvm::SuffixTree::RepeatedSubstringIterator::operator!=' data-ref="_ZNK4llvm10SuffixTree25RepeatedSubstringIteratorneERKS1_" data-ref-filename="_ZNK4llvm10SuffixTree25RepeatedSubstringIteratorneERKS1_"><b>operator</b>!=</dfn>(<em>const</em> <a class="type" href="#llvm::SuffixTree::RepeatedSubstringIterator" title='llvm::SuffixTree::RepeatedSubstringIterator' data-ref="llvm::SuffixTree::RepeatedSubstringIterator" data-ref-filename="llvm..SuffixTree..RepeatedSubstringIterator">RepeatedSubstringIterator</a> &amp;<dfn class="local col2 decl" id="102Other" title='Other' data-type='const llvm::SuffixTree::RepeatedSubstringIterator &amp;' data-ref="102Other" data-ref-filename="102Other">Other</dfn>) <em>const</em> {</td></tr>
+<tr><th id="329">329</th><td>      <b>return</b> !(*<b>this</b> <a class="member fn" href="#_ZNK4llvm10SuffixTree25RepeatedSubstringIteratoreqERKS1_" title='llvm::SuffixTree::RepeatedSubstringIterator::operator==' data-ref="_ZNK4llvm10SuffixTree25RepeatedSubstringIteratoreqERKS1_" data-ref-filename="_ZNK4llvm10SuffixTree25RepeatedSubstringIteratoreqERKS1_">==</a> <a class="local col2 ref" href="#102Other" title='Other' data-ref="102Other" data-ref-filename="102Other">Other</a>);</td></tr>
+<tr><th id="330">330</th><td>    }</td></tr>
+<tr><th id="331">331</th><td></td></tr>
+<tr><th id="332">332</th><td>    <dfn class="decl def fn" id="_ZN4llvm10SuffixTree25RepeatedSubstringIteratorC1EPNS_14SuffixTreeNodeE" title='llvm::SuffixTree::RepeatedSubstringIterator::RepeatedSubstringIterator' data-ref="_ZN4llvm10SuffixTree25RepeatedSubstringIteratorC1EPNS_14SuffixTreeNodeE" data-ref-filename="_ZN4llvm10SuffixTree25RepeatedSubstringIteratorC1EPNS_14SuffixTreeNodeE">RepeatedSubstringIterator</dfn>(<a class="type" href="#llvm::SuffixTreeNode" title='llvm::SuffixTreeNode' data-ref="llvm::SuffixTreeNode" data-ref-filename="llvm..SuffixTreeNode">SuffixTreeNode</a> *<dfn class="local col3 decl" id="103N" title='N' data-type='llvm::SuffixTreeNode *' data-ref="103N" data-ref-filename="103N">N</dfn>) : <a class="member field" href="#llvm::SuffixTree::RepeatedSubstringIterator::N" title='llvm::SuffixTree::RepeatedSubstringIterator::N' data-ref="llvm::SuffixTree::RepeatedSubstringIterator::N" data-ref-filename="llvm..SuffixTree..RepeatedSubstringIterator..N">N</a>(<a class="local col3 ref" href="#103N" title='N' data-ref="103N" data-ref-filename="103N">N</a>) {</td></tr>
+<tr><th id="333">333</th><td>      <i>// Do we have a non-null node?</i></td></tr>
+<tr><th id="334">334</th><td>      <b>if</b> (<a class="local col3 ref" href="#103N" title='N' data-ref="103N" data-ref-filename="103N">N</a>) {</td></tr>
+<tr><th id="335">335</th><td>        <i>// Yes. At the first step, we need to visit all of N's children.</i></td></tr>
+<tr><th id="336">336</th><td><i>        // Note: This means that we visit N last.</i></td></tr>
+<tr><th id="337">337</th><td>        <a class="member field" href="#llvm::SuffixTree::RepeatedSubstringIterator::ToVisit" title='llvm::SuffixTree::RepeatedSubstringIterator::ToVisit' data-ref="llvm::SuffixTree::RepeatedSubstringIterator::ToVisit" data-ref-filename="llvm..SuffixTree..RepeatedSubstringIterator..ToVisit">ToVisit</a>.<span class='ref fn' title='std::vector::push_back' data-ref="_ZNSt6vector9push_backERKT_" data-ref-filename="_ZNSt6vector9push_backERKT_">push_back</span>(<a class="local col3 ref" href="#103N" title='N' data-ref="103N" data-ref-filename="103N">N</a>);</td></tr>
+<tr><th id="338">338</th><td>        <a class="member fn" href="#_ZN4llvm10SuffixTree25RepeatedSubstringIterator7advanceEv" title='llvm::SuffixTree::RepeatedSubstringIterator::advance' data-ref="_ZN4llvm10SuffixTree25RepeatedSubstringIterator7advanceEv" data-ref-filename="_ZN4llvm10SuffixTree25RepeatedSubstringIterator7advanceEv">advance</a>();</td></tr>
+<tr><th id="339">339</th><td>      }</td></tr>
+<tr><th id="340">340</th><td>    }</td></tr>
+<tr><th id="341">341</th><td>  };</td></tr>
+<tr><th id="342">342</th><td></td></tr>
+<tr><th id="343">343</th><td>  <b>typedef</b> <a class="type" href="#llvm::SuffixTree::RepeatedSubstringIterator" title='llvm::SuffixTree::RepeatedSubstringIterator' data-ref="llvm::SuffixTree::RepeatedSubstringIterator" data-ref-filename="llvm..SuffixTree..RepeatedSubstringIterator">RepeatedSubstringIterator</a> <dfn class="typedef" id="llvm::SuffixTree::iterator" title='llvm::SuffixTree::iterator' data-type='llvm::SuffixTree::RepeatedSubstringIterator' data-ref="llvm::SuffixTree::iterator" data-ref-filename="llvm..SuffixTree..iterator">iterator</dfn>;</td></tr>
+<tr><th id="344">344</th><td>  <a class="typedef" href="#llvm::SuffixTree::iterator" title='llvm::SuffixTree::iterator' data-type='llvm::SuffixTree::RepeatedSubstringIterator' data-ref="llvm::SuffixTree::iterator" data-ref-filename="llvm..SuffixTree..iterator">iterator</a> <dfn class="decl def fn" id="_ZN4llvm10SuffixTree5beginEv" title='llvm::SuffixTree::begin' data-ref="_ZN4llvm10SuffixTree5beginEv" data-ref-filename="_ZN4llvm10SuffixTree5beginEv">begin</dfn>() { <b>return</b> <a class="typedef" href="#llvm::SuffixTree::iterator" title='llvm::SuffixTree::iterator' data-type='llvm::SuffixTree::RepeatedSubstringIterator' data-ref="llvm::SuffixTree::iterator" data-ref-filename="llvm..SuffixTree..iterator">iterator</a><a class="ref fn" href="#_ZN4llvm10SuffixTree25RepeatedSubstringIteratorC1EPNS_14SuffixTreeNodeE" title='llvm::SuffixTree::RepeatedSubstringIterator::RepeatedSubstringIterator' data-ref="_ZN4llvm10SuffixTree25RepeatedSubstringIteratorC1EPNS_14SuffixTreeNodeE" data-ref-filename="_ZN4llvm10SuffixTree25RepeatedSubstringIteratorC1EPNS_14SuffixTreeNodeE">(</a><a class="member field" href="#llvm::SuffixTree::Root" title='llvm::SuffixTree::Root' data-ref="llvm::SuffixTree::Root" data-ref-filename="llvm..SuffixTree..Root">Root</a>); }</td></tr>
+<tr><th id="345">345</th><td>  <a class="typedef" href="#llvm::SuffixTree::iterator" title='llvm::SuffixTree::iterator' data-type='llvm::SuffixTree::RepeatedSubstringIterator' data-ref="llvm::SuffixTree::iterator" data-ref-filename="llvm..SuffixTree..iterator">iterator</a> <dfn class="decl def fn" id="_ZN4llvm10SuffixTree3endEv" title='llvm::SuffixTree::end' data-ref="_ZN4llvm10SuffixTree3endEv" data-ref-filename="_ZN4llvm10SuffixTree3endEv">end</dfn>() { <b>return</b> <a class="typedef" href="#llvm::SuffixTree::iterator" title='llvm::SuffixTree::iterator' data-type='llvm::SuffixTree::RepeatedSubstringIterator' data-ref="llvm::SuffixTree::iterator" data-ref-filename="llvm..SuffixTree..iterator">iterator</a><a class="ref fn" href="#_ZN4llvm10SuffixTree25RepeatedSubstringIteratorC1EPNS_14SuffixTreeNodeE" title='llvm::SuffixTree::RepeatedSubstringIterator::RepeatedSubstringIterator' data-ref="_ZN4llvm10SuffixTree25RepeatedSubstringIteratorC1EPNS_14SuffixTreeNodeE" data-ref-filename="_ZN4llvm10SuffixTree25RepeatedSubstringIteratorC1EPNS_14SuffixTreeNodeE">(</a><b>nullptr</b>); }</td></tr>
+<tr><th id="346">346</th><td>};</td></tr>
+<tr><th id="347">347</th><td></td></tr>
+<tr><th id="348">348</th><td>} <i>// namespace llvm</i></td></tr>
+<tr><th id="349">349</th><td></td></tr>
+<tr><th id="350">350</th><td><u>#<span data-ppcond="12">endif</span> // LLVM_SUPPORT_SUFFIXTREE_H</u></td></tr>
+<tr><th id="351">351</th><td></td></tr>
+</table><hr/><p id='footer'>
+Generated while processing <a href='../../../lib/Analysis/IRSimilarityIdentifier.cpp.html'>llvm/llvm/lib/Analysis/IRSimilarityIdentifier.cpp</a><br/>Generated on <em>2021-Jul-01</em> from project llvm revision <em>12</em>

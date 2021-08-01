@@ -1,0 +1,238 @@
+<!doctype html>
+<html>
+<head>
+<meta name="viewport" content="width=device-width, initial-scale=1.0"><title>sanitizer_linux_s390.cpp source code [llvm/compiler-rt/lib/sanitizer_common/sanitizer_linux_s390.cpp] - Woboq Code Browser</title>
+<link rel="stylesheet" href="../../../.././data/qtcreator.css" title="QtCreator"/>
+<link rel="alternate stylesheet" href="../../../.././data/kdevelop.css" title="KDevelop"/>
+<script type="text/javascript" src="../../../.././data/jquery/jquery.min.js"></script>
+<script type="text/javascript" src="../../../.././data/jquery/jquery-ui.min.js"></script>
+<script>var file = 'llvm/compiler-rt/lib/sanitizer_common/sanitizer_linux_s390.cpp'; var root_path = '../../../..'; var data_path = '../../../.././data'; var ecma_script_api_version = 2;</script>
+<script src='../../../.././data/codebrowser.js'></script>
+</head>
+<body><div id='header'><h1 id='breadcrumb'><span>Browse the source code of </span><a href='../../..'>llvm</a>/<a href='../..'>compiler-rt</a>/<a href='..'>lib</a>/<a href='./'>sanitizer_common</a>/<a href='sanitizer_linux_s390.cpp.html'>sanitizer_linux_s390.cpp</a></h1></div>
+<hr/><div id='content'><table class="code">
+<tr><th id="1">1</th><td><i>//===-- sanitizer_linux_s390.cpp ------------------------------------------===//</i></td></tr>
+<tr><th id="2">2</th><td><i>//</i></td></tr>
+<tr><th id="3">3</th><td><i>// Part of the LLVM Project, under the Apache License v2.0 with LLVM Exceptions.</i></td></tr>
+<tr><th id="4">4</th><td><i>// See <a href="https://llvm.org/LICENSE.txt">https://llvm.org/LICENSE.txt</a> for license information.</i></td></tr>
+<tr><th id="5">5</th><td><i>// SPDX-License-Identifier: Apache-2.0 WITH LLVM-exception</i></td></tr>
+<tr><th id="6">6</th><td><i>//</i></td></tr>
+<tr><th id="7">7</th><td><i>//===----------------------------------------------------------------------===//</i></td></tr>
+<tr><th id="8">8</th><td><i>//</i></td></tr>
+<tr><th id="9">9</th><td><i>// This file is shared between AddressSanitizer and ThreadSanitizer</i></td></tr>
+<tr><th id="10">10</th><td><i>// run-time libraries and implements s390-linux-specific functions from</i></td></tr>
+<tr><th id="11">11</th><td><i>// sanitizer_libc.h.</i></td></tr>
+<tr><th id="12">12</th><td><i>//===----------------------------------------------------------------------===//</i></td></tr>
+<tr><th id="13">13</th><td></td></tr>
+<tr><th id="14">14</th><td><u>#include <a href="sanitizer_platform.h.html">"sanitizer_platform.h"</a></u></td></tr>
+<tr><th id="15">15</th><td></td></tr>
+<tr><th id="16">16</th><td><u>#<span data-ppcond="16">if</span> <a class="macro" href="sanitizer_platform.h.html#30" title="1" data-ref="_M/SANITIZER_LINUX">SANITIZER_LINUX</a> &amp;&amp; <a class="macro" href="sanitizer_platform.h.html#173" title="0" data-ref="_M/SANITIZER_S390">SANITIZER_S390</a></u></td></tr>
+<tr><th id="17">17</th><td></td></tr>
+<tr><th id="18">18</th><td><u>#include &lt;dlfcn.h&gt;</u></td></tr>
+<tr><th id="19">19</th><td><u>#include &lt;errno.h&gt;</u></td></tr>
+<tr><th id="20">20</th><td><u>#include &lt;sys/syscall.h&gt;</u></td></tr>
+<tr><th id="21">21</th><td><u>#include &lt;sys/utsname.h&gt;</u></td></tr>
+<tr><th id="22">22</th><td><u>#include &lt;unistd.h&gt;</u></td></tr>
+<tr><th id="23">23</th><td></td></tr>
+<tr><th id="24">24</th><td><u>#include "sanitizer_libc.h"</u></td></tr>
+<tr><th id="25">25</th><td><u>#include "sanitizer_linux.h"</u></td></tr>
+<tr><th id="26">26</th><td></td></tr>
+<tr><th id="27">27</th><td><b>namespace</b> __sanitizer {</td></tr>
+<tr><th id="28">28</th><td></td></tr>
+<tr><th id="29">29</th><td><i>// --------------- sanitizer_libc.h</i></td></tr>
+<tr><th id="30">30</th><td>uptr internal_mmap(<em>void</em> *addr, uptr length, <em>int</em> prot, <em>int</em> flags, <em>int</em> fd,</td></tr>
+<tr><th id="31">31</th><td>                   u64 offset) {</td></tr>
+<tr><th id="32">32</th><td>  <b>struct</b> s390_mmap_params {</td></tr>
+<tr><th id="33">33</th><td>    <em>unsigned</em> <em>long</em> addr;</td></tr>
+<tr><th id="34">34</th><td>    <em>unsigned</em> <em>long</em> length;</td></tr>
+<tr><th id="35">35</th><td>    <em>unsigned</em> <em>long</em> prot;</td></tr>
+<tr><th id="36">36</th><td>    <em>unsigned</em> <em>long</em> flags;</td></tr>
+<tr><th id="37">37</th><td>    <em>unsigned</em> <em>long</em> fd;</td></tr>
+<tr><th id="38">38</th><td>    <em>unsigned</em> <em>long</em> offset;</td></tr>
+<tr><th id="39">39</th><td>  } params = {</td></tr>
+<tr><th id="40">40</th><td>    (<em>unsigned</em> <em>long</em>)addr,</td></tr>
+<tr><th id="41">41</th><td>    (<em>unsigned</em> <em>long</em>)length,</td></tr>
+<tr><th id="42">42</th><td>    (<em>unsigned</em> <em>long</em>)prot,</td></tr>
+<tr><th id="43">43</th><td>    (<em>unsigned</em> <em>long</em>)flags,</td></tr>
+<tr><th id="44">44</th><td>    (<em>unsigned</em> <em>long</em>)fd,</td></tr>
+<tr><th id="45">45</th><td><u># ifdef __s390x__</u></td></tr>
+<tr><th id="46">46</th><td>    (<em>unsigned</em> <em>long</em>)offset,</td></tr>
+<tr><th id="47">47</th><td><u># else</u></td></tr>
+<tr><th id="48">48</th><td>    (<em>unsigned</em> <em>long</em>)(offset / <var>4096</var>),</td></tr>
+<tr><th id="49">49</th><td><u># endif</u></td></tr>
+<tr><th id="50">50</th><td>  };</td></tr>
+<tr><th id="51">51</th><td><u># ifdef __s390x__</u></td></tr>
+<tr><th id="52">52</th><td>  <b>return</b> syscall(__NR_mmap, &amp;params);</td></tr>
+<tr><th id="53">53</th><td><u># else</u></td></tr>
+<tr><th id="54">54</th><td>  <b>return</b> syscall(__NR_mmap2, &amp;params);</td></tr>
+<tr><th id="55">55</th><td><u># endif</u></td></tr>
+<tr><th id="56">56</th><td>}</td></tr>
+<tr><th id="57">57</th><td></td></tr>
+<tr><th id="58">58</th><td>uptr internal_clone(<em>int</em> (*fn)(<em>void</em> *), <em>void</em> *child_stack, <em>int</em> flags, <em>void</em> *arg,</td></tr>
+<tr><th id="59">59</th><td>                    <em>int</em> *parent_tidptr, <em>void</em> *newtls, <em>int</em> *child_tidptr) {</td></tr>
+<tr><th id="60">60</th><td>  <b>if</b> (!fn || !child_stack)</td></tr>
+<tr><th id="61">61</th><td>    <b>return</b> -EINVAL;</td></tr>
+<tr><th id="62">62</th><td>  CHECK_EQ(<var>0</var>, (uptr)child_stack % <var>16</var>);</td></tr>
+<tr><th id="63">63</th><td>  <i>// Minimum frame size.</i></td></tr>
+<tr><th id="64">64</th><td><u>#ifdef __s390x__</u></td></tr>
+<tr><th id="65">65</th><td>  child_stack = (<em>char</em> *)child_stack - <var>160</var>;</td></tr>
+<tr><th id="66">66</th><td><u>#else</u></td></tr>
+<tr><th id="67">67</th><td>  child_stack = (<em>char</em> *)child_stack - <var>96</var>;</td></tr>
+<tr><th id="68">68</th><td><u>#endif</u></td></tr>
+<tr><th id="69">69</th><td>  <i>// Terminate unwind chain.</i></td></tr>
+<tr><th id="70">70</th><td>  ((<em>unsigned</em> <em>long</em> *)child_stack)[<var>0</var>] = <var>0</var>;</td></tr>
+<tr><th id="71">71</th><td>  <i>// And pass parameters.</i></td></tr>
+<tr><th id="72">72</th><td>  ((<em>unsigned</em> <em>long</em> *)child_stack)[<var>1</var>] = (uptr)fn;</td></tr>
+<tr><th id="73">73</th><td>  ((<em>unsigned</em> <em>long</em> *)child_stack)[<var>2</var>] = (uptr)arg;</td></tr>
+<tr><th id="74">74</th><td>  <em>register</em> <em>long</em> res <b>__asm__</b>(<q>"r2"</q>);</td></tr>
+<tr><th id="75">75</th><td>  <em>register</em> <em>void</em> *__cstack      <b>__asm__</b>(<q>"r2"</q>) = child_stack;</td></tr>
+<tr><th id="76">76</th><td>  <em>register</em> <em>int</em> __flags         <b>__asm__</b>(<q>"r3"</q>) = flags;</td></tr>
+<tr><th id="77">77</th><td>  <em>register</em> <em>int</em> * __ptidptr     <b>__asm__</b>(<q>"r4"</q>) = parent_tidptr;</td></tr>
+<tr><th id="78">78</th><td>  <em>register</em> <em>int</em> * __ctidptr     <b>__asm__</b>(<q>"r5"</q>) = child_tidptr;</td></tr>
+<tr><th id="79">79</th><td>  <em>register</em> <em>void</em> * __newtls     <b>__asm__</b>(<q>"r6"</q>) = newtls;</td></tr>
+<tr><th id="80">80</th><td></td></tr>
+<tr><th id="81">81</th><td>  <b>__asm__</b> <em>__volatile__</em>(</td></tr>
+<tr><th id="82">82</th><td>                       <i>/* Clone. */</i></td></tr>
+<tr><th id="83">83</th><td>                       <q>"svc    %1\n"</q></td></tr>
+<tr><th id="84">84</th><td></td></tr>
+<tr><th id="85">85</th><td>                       <i>/* if (%r2 != 0)</i></td></tr>
+<tr><th id="86">86</th><td><i>                        *   return;</i></td></tr>
+<tr><th id="87">87</th><td><i>                        */</i></td></tr>
+<tr><th id="88">88</th><td><u>#ifdef __s390x__</u></td></tr>
+<tr><th id="89">89</th><td>                       <q>"cghi   %%r2, 0\n"</q></td></tr>
+<tr><th id="90">90</th><td><u>#else</u></td></tr>
+<tr><th id="91">91</th><td>                       <q>"chi    %%r2, 0\n"</q></td></tr>
+<tr><th id="92">92</th><td><u>#endif</u></td></tr>
+<tr><th id="93">93</th><td>                       <q>"jne    1f\n"</q></td></tr>
+<tr><th id="94">94</th><td></td></tr>
+<tr><th id="95">95</th><td>                       <i>/* Call "fn(arg)". */</i></td></tr>
+<tr><th id="96">96</th><td><u>#ifdef __s390x__</u></td></tr>
+<tr><th id="97">97</th><td>                       <q>"lmg    %%r1, %%r2, 8(%%r15)\n"</q></td></tr>
+<tr><th id="98">98</th><td><u>#else</u></td></tr>
+<tr><th id="99">99</th><td>                       <q>"lm     %%r1, %%r2, 4(%%r15)\n"</q></td></tr>
+<tr><th id="100">100</th><td><u>#endif</u></td></tr>
+<tr><th id="101">101</th><td>                       <q>"basr   %%r14, %%r1\n"</q></td></tr>
+<tr><th id="102">102</th><td></td></tr>
+<tr><th id="103">103</th><td>                       <i>/* Call _exit(%r2). */</i></td></tr>
+<tr><th id="104">104</th><td>                       <q>"svc %2\n"</q></td></tr>
+<tr><th id="105">105</th><td></td></tr>
+<tr><th id="106">106</th><td>                       <i>/* Return to parent. */</i></td></tr>
+<tr><th id="107">107</th><td>                     <q>"1:\n"</q></td></tr>
+<tr><th id="108">108</th><td>                       : <q>"=r"</q> (res)</td></tr>
+<tr><th id="109">109</th><td>                       : <q>"i"</q>(__NR_clone), <q>"i"</q>(__NR_exit),</td></tr>
+<tr><th id="110">110</th><td>                         <q>"r"</q>(__cstack),</td></tr>
+<tr><th id="111">111</th><td>                         <q>"r"</q>(__flags),</td></tr>
+<tr><th id="112">112</th><td>                         <q>"r"</q>(__ptidptr),</td></tr>
+<tr><th id="113">113</th><td>                         <q>"r"</q>(__ctidptr),</td></tr>
+<tr><th id="114">114</th><td>                         <q>"r"</q>(__newtls)</td></tr>
+<tr><th id="115">115</th><td>                       : <q>"memory"</q>, <q>"cc"</q>);</td></tr>
+<tr><th id="116">116</th><td>  <b>return</b> res;</td></tr>
+<tr><th id="117">117</th><td>}</td></tr>
+<tr><th id="118">118</th><td></td></tr>
+<tr><th id="119">119</th><td><u>#if SANITIZER_S390_64</u></td></tr>
+<tr><th id="120">120</th><td><em>static</em> <em>bool</em> FixedCVE_2016_2143() {</td></tr>
+<tr><th id="121">121</th><td>  <i>// Try to determine if the running kernel has a fix for CVE-2016-2143,</i></td></tr>
+<tr><th id="122">122</th><td><i>  // return false if in doubt (better safe than sorry).  Distros may want to</i></td></tr>
+<tr><th id="123">123</th><td><i>  // adjust this for their own kernels.</i></td></tr>
+<tr><th id="124">124</th><td>  <b>struct</b> utsname buf;</td></tr>
+<tr><th id="125">125</th><td>  <em>unsigned</em> <em>int</em> major, minor, patch = <var>0</var>;</td></tr>
+<tr><th id="126">126</th><td>  <i>// This should never fail, but just in case...</i></td></tr>
+<tr><th id="127">127</th><td>  <b>if</b> (internal_uname(&amp;buf))</td></tr>
+<tr><th id="128">128</th><td>    <b>return</b> <b>false</b>;</td></tr>
+<tr><th id="129">129</th><td>  <em>const</em> <em>char</em> *ptr = buf.release;</td></tr>
+<tr><th id="130">130</th><td>  major = internal_simple_strtoll(ptr, &amp;ptr, <var>10</var>);</td></tr>
+<tr><th id="131">131</th><td>  <i>// At least first 2 should be matched.</i></td></tr>
+<tr><th id="132">132</th><td>  <b>if</b> (ptr[<var>0</var>] != <kbd>'.'</kbd>)</td></tr>
+<tr><th id="133">133</th><td>    <b>return</b> <b>false</b>;</td></tr>
+<tr><th id="134">134</th><td>  minor = internal_simple_strtoll(ptr+<var>1</var>, &amp;ptr, <var>10</var>);</td></tr>
+<tr><th id="135">135</th><td>  <i>// Third is optional.</i></td></tr>
+<tr><th id="136">136</th><td>  <b>if</b> (ptr[<var>0</var>] == <kbd>'.'</kbd>)</td></tr>
+<tr><th id="137">137</th><td>    patch = internal_simple_strtoll(ptr+<var>1</var>, &amp;ptr, <var>10</var>);</td></tr>
+<tr><th id="138">138</th><td>  <b>if</b> (major &lt; <var>3</var>) {</td></tr>
+<tr><th id="139">139</th><td>    <b>if</b> (major == <var>2</var> &amp;&amp; minor == <var>6</var> &amp;&amp; patch == <var>32</var> &amp;&amp; ptr[<var>0</var>] == <kbd>'-'</kbd> &amp;&amp;</td></tr>
+<tr><th id="140">140</th><td>        internal_strstr(ptr, <q>".el6"</q>)) {</td></tr>
+<tr><th id="141">141</th><td>      <i>// Check RHEL6</i></td></tr>
+<tr><th id="142">142</th><td>      <em>int</em> r1 = internal_simple_strtoll(ptr+<var>1</var>, &amp;ptr, <var>10</var>);</td></tr>
+<tr><th id="143">143</th><td>      <b>if</b> (r1 &gt;= <var>657</var>) <i>// 2.6.32-657.el6 or later</i></td></tr>
+<tr><th id="144">144</th><td>        <b>return</b> <b>true</b>;</td></tr>
+<tr><th id="145">145</th><td>      <b>if</b> (r1 == <var>642</var> &amp;&amp; ptr[<var>0</var>] == <kbd>'.'</kbd>) {</td></tr>
+<tr><th id="146">146</th><td>        <em>int</em> r2 = internal_simple_strtoll(ptr+<var>1</var>, &amp;ptr, <var>10</var>);</td></tr>
+<tr><th id="147">147</th><td>        <b>if</b> (r2 &gt;= <var>9</var>) <i>// 2.6.32-642.9.1.el6 or later</i></td></tr>
+<tr><th id="148">148</th><td>          <b>return</b> <b>true</b>;</td></tr>
+<tr><th id="149">149</th><td>      }</td></tr>
+<tr><th id="150">150</th><td>    }</td></tr>
+<tr><th id="151">151</th><td>    <i>// &lt;3.0 is bad.</i></td></tr>
+<tr><th id="152">152</th><td>    <b>return</b> <b>false</b>;</td></tr>
+<tr><th id="153">153</th><td>  } <b>else</b> <b>if</b> (major == <var>3</var>) {</td></tr>
+<tr><th id="154">154</th><td>    <i>// 3.2.79+ is OK.</i></td></tr>
+<tr><th id="155">155</th><td>    <b>if</b> (minor == <var>2</var> &amp;&amp; patch &gt;= <var>79</var>)</td></tr>
+<tr><th id="156">156</th><td>      <b>return</b> <b>true</b>;</td></tr>
+<tr><th id="157">157</th><td>    <i>// 3.12.58+ is OK.</i></td></tr>
+<tr><th id="158">158</th><td>    <b>if</b> (minor == <var>12</var> &amp;&amp; patch &gt;= <var>58</var>)</td></tr>
+<tr><th id="159">159</th><td>      <b>return</b> <b>true</b>;</td></tr>
+<tr><th id="160">160</th><td>    <b>if</b> (minor == <var>10</var> &amp;&amp; patch == <var>0</var> &amp;&amp; ptr[<var>0</var>] == <kbd>'-'</kbd> &amp;&amp;</td></tr>
+<tr><th id="161">161</th><td>        internal_strstr(ptr, <q>".el7"</q>)) {</td></tr>
+<tr><th id="162">162</th><td>      <i>// Check RHEL7</i></td></tr>
+<tr><th id="163">163</th><td>      <em>int</em> r1 = internal_simple_strtoll(ptr+<var>1</var>, &amp;ptr, <var>10</var>);</td></tr>
+<tr><th id="164">164</th><td>      <b>if</b> (r1 &gt;= <var>426</var>) <i>// 3.10.0-426.el7 or later</i></td></tr>
+<tr><th id="165">165</th><td>        <b>return</b> <b>true</b>;</td></tr>
+<tr><th id="166">166</th><td>      <b>if</b> (r1 == <var>327</var> &amp;&amp; ptr[<var>0</var>] == <kbd>'.'</kbd>) {</td></tr>
+<tr><th id="167">167</th><td>        <em>int</em> r2 = internal_simple_strtoll(ptr+<var>1</var>, &amp;ptr, <var>10</var>);</td></tr>
+<tr><th id="168">168</th><td>        <b>if</b> (r2 &gt;= <var>27</var>) <i>// 3.10.0-327.27.1.el7 or later</i></td></tr>
+<tr><th id="169">169</th><td>          <b>return</b> <b>true</b>;</td></tr>
+<tr><th id="170">170</th><td>      }</td></tr>
+<tr><th id="171">171</th><td>    }</td></tr>
+<tr><th id="172">172</th><td>    <i>// Otherwise, bad.</i></td></tr>
+<tr><th id="173">173</th><td>    <b>return</b> <b>false</b>;</td></tr>
+<tr><th id="174">174</th><td>  } <b>else</b> <b>if</b> (major == <var>4</var>) {</td></tr>
+<tr><th id="175">175</th><td>    <i>// 4.1.21+ is OK.</i></td></tr>
+<tr><th id="176">176</th><td>    <b>if</b> (minor == <var>1</var> &amp;&amp; patch &gt;= <var>21</var>)</td></tr>
+<tr><th id="177">177</th><td>      <b>return</b> <b>true</b>;</td></tr>
+<tr><th id="178">178</th><td>    <i>// 4.4.6+ is OK.</i></td></tr>
+<tr><th id="179">179</th><td>    <b>if</b> (minor == <var>4</var> &amp;&amp; patch &gt;= <var>6</var>)</td></tr>
+<tr><th id="180">180</th><td>      <b>return</b> <b>true</b>;</td></tr>
+<tr><th id="181">181</th><td>    <b>if</b> (minor == <var>4</var> &amp;&amp; patch == <var>0</var> &amp;&amp; ptr[<var>0</var>] == <kbd>'-'</kbd> &amp;&amp;</td></tr>
+<tr><th id="182">182</th><td>        internal_strstr(buf.version, <q>"Ubuntu"</q>)) {</td></tr>
+<tr><th id="183">183</th><td>      <i>// Check Ubuntu 16.04</i></td></tr>
+<tr><th id="184">184</th><td>      <em>int</em> r1 = internal_simple_strtoll(ptr+<var>1</var>, &amp;ptr, <var>10</var>);</td></tr>
+<tr><th id="185">185</th><td>      <b>if</b> (r1 &gt;= <var>13</var>) <i>// 4.4.0-13 or later</i></td></tr>
+<tr><th id="186">186</th><td>        <b>return</b> <b>true</b>;</td></tr>
+<tr><th id="187">187</th><td>    }</td></tr>
+<tr><th id="188">188</th><td>    <i>// Otherwise, OK if 4.5+.</i></td></tr>
+<tr><th id="189">189</th><td>    <b>return</b> minor &gt;= <var>5</var>;</td></tr>
+<tr><th id="190">190</th><td>  } <b>else</b> {</td></tr>
+<tr><th id="191">191</th><td>    <i>// Linux 5 and up are fine.</i></td></tr>
+<tr><th id="192">192</th><td>    <b>return</b> <b>true</b>;</td></tr>
+<tr><th id="193">193</th><td>  }</td></tr>
+<tr><th id="194">194</th><td>}</td></tr>
+<tr><th id="195">195</th><td></td></tr>
+<tr><th id="196">196</th><td><em>void</em> AvoidCVE_2016_2143() {</td></tr>
+<tr><th id="197">197</th><td>  <i>// Older kernels are affected by CVE-2016-2143 - they will crash hard</i></td></tr>
+<tr><th id="198">198</th><td><i>  // if someone uses 4-level page tables (ie. virtual addresses &gt;= 4TB)</i></td></tr>
+<tr><th id="199">199</th><td><i>  // and fork() in the same process.  Unfortunately, sanitizers tend to</i></td></tr>
+<tr><th id="200">200</th><td><i>  // require such addresses.  Since this is very likely to crash the whole</i></td></tr>
+<tr><th id="201">201</th><td><i>  // machine (sanitizers themselves use fork() for llvm-symbolizer, for one),</i></td></tr>
+<tr><th id="202">202</th><td><i>  // abort the process at initialization instead.</i></td></tr>
+<tr><th id="203">203</th><td>  <b>if</b> (FixedCVE_2016_2143())</td></tr>
+<tr><th id="204">204</th><td>    <b>return</b>;</td></tr>
+<tr><th id="205">205</th><td>  <b>if</b> (GetEnv(<q>"SANITIZER_IGNORE_CVE_2016_2143"</q>))</td></tr>
+<tr><th id="206">206</th><td>    <b>return</b>;</td></tr>
+<tr><th id="207">207</th><td>  Report(</td></tr>
+<tr><th id="208">208</th><td>    <q>"ERROR: Your kernel seems to be vulnerable to CVE-2016-2143.  Using ASan,\n"</q></td></tr>
+<tr><th id="209">209</th><td>    <q>"MSan, TSan, DFSan or LSan with such kernel can and will crash your\n"</q></td></tr>
+<tr><th id="210">210</th><td>    <q>"machine, or worse.\n"</q></td></tr>
+<tr><th id="211">211</th><td>    <q>"\n"</q></td></tr>
+<tr><th id="212">212</th><td>    <q>"If you are certain your kernel is not vulnerable (you have compiled it\n"</q></td></tr>
+<tr><th id="213">213</th><td>    <q>"yourself, or are using an unrecognized distribution kernel), you can\n"</q></td></tr>
+<tr><th id="214">214</th><td>    <q>"override this safety check by exporting SANITIZER_IGNORE_CVE_2016_2143\n"</q></td></tr>
+<tr><th id="215">215</th><td>    <q>"with any value.\n"</q>);</td></tr>
+<tr><th id="216">216</th><td>  Die();</td></tr>
+<tr><th id="217">217</th><td>}</td></tr>
+<tr><th id="218">218</th><td><u>#endif</u></td></tr>
+<tr><th id="219">219</th><td></td></tr>
+<tr><th id="220">220</th><td>} <i>// namespace __sanitizer</i></td></tr>
+<tr><th id="221">221</th><td></td></tr>
+<tr><th id="222">222</th><td><u>#<span data-ppcond="16">endif</span> // SANITIZER_LINUX &amp;&amp; SANITIZER_S390</u></td></tr>
+<tr><th id="223">223</th><td></td></tr>
+</table><hr/><p id='footer'>
+Generated on <em>2021-Jul-01</em> from project llvm revision <em>12</em>

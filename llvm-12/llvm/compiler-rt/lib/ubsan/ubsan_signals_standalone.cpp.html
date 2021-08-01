@@ -1,0 +1,87 @@
+<!doctype html>
+<html>
+<head>
+<meta name="viewport" content="width=device-width, initial-scale=1.0"><title>ubsan_signals_standalone.cpp source code [llvm/compiler-rt/lib/ubsan/ubsan_signals_standalone.cpp] - Woboq Code Browser</title>
+<link rel="stylesheet" href="../../../.././data/qtcreator.css" title="QtCreator"/>
+<link rel="alternate stylesheet" href="../../../.././data/kdevelop.css" title="KDevelop"/>
+<script type="text/javascript" src="../../../.././data/jquery/jquery.min.js"></script>
+<script type="text/javascript" src="../../../.././data/jquery/jquery-ui.min.js"></script>
+<script>var file = 'llvm/compiler-rt/lib/ubsan/ubsan_signals_standalone.cpp'; var root_path = '../../../..'; var data_path = '../../../.././data'; var ecma_script_api_version = 2;</script>
+<script src='../../../.././data/codebrowser.js'></script>
+</head>
+<body><div id='header'><h1 id='breadcrumb'><span>Browse the source code of </span><a href='../../..'>llvm</a>/<a href='../..'>compiler-rt</a>/<a href='..'>lib</a>/<a href='./'>ubsan</a>/<a href='ubsan_signals_standalone.cpp.html'>ubsan_signals_standalone.cpp</a></h1></div>
+<hr/><div id='content'><table class="code">
+<tr><th id="1">1</th><td><i>//=-- ubsan_signals_standalone.cpp ----------------------------------------===//</i></td></tr>
+<tr><th id="2">2</th><td><i>//</i></td></tr>
+<tr><th id="3">3</th><td><i>// Part of the LLVM Project, under the Apache License v2.0 with LLVM Exceptions.</i></td></tr>
+<tr><th id="4">4</th><td><i>// See <a href="https://llvm.org/LICENSE.txt">https://llvm.org/LICENSE.txt</a> for license information.</i></td></tr>
+<tr><th id="5">5</th><td><i>// SPDX-License-Identifier: Apache-2.0 WITH LLVM-exception</i></td></tr>
+<tr><th id="6">6</th><td><i>//</i></td></tr>
+<tr><th id="7">7</th><td><i>//===----------------------------------------------------------------------===//</i></td></tr>
+<tr><th id="8">8</th><td><i>//</i></td></tr>
+<tr><th id="9">9</th><td><i>// Installs signal handlers and related interceptors for UBSan standalone.</i></td></tr>
+<tr><th id="10">10</th><td><i>//</i></td></tr>
+<tr><th id="11">11</th><td><i>//===----------------------------------------------------------------------===//</i></td></tr>
+<tr><th id="12">12</th><td></td></tr>
+<tr><th id="13">13</th><td><u>#include <a href="ubsan_platform.h.html">"ubsan_platform.h"</a></u></td></tr>
+<tr><th id="14">14</th><td><u>#include <a href="../sanitizer_common/sanitizer_platform.h.html">"sanitizer_common/sanitizer_platform.h"</a></u></td></tr>
+<tr><th id="15">15</th><td><u>#<span data-ppcond="15">if</span> <a class="macro" href="ubsan_platform.h.html#20" title="1" data-ref="_M/CAN_SANITIZE_UB">CAN_SANITIZE_UB</a></u></td></tr>
+<tr><th id="16">16</th><td><u>#include <a href="../interception/interception.h.html">"interception/interception.h"</a></u></td></tr>
+<tr><th id="17">17</th><td><u>#include <a href="../sanitizer_common/sanitizer_stacktrace.h.html">"sanitizer_common/sanitizer_stacktrace.h"</a></u></td></tr>
+<tr><th id="18">18</th><td><u>#include <a href="ubsan_diag.h.html">"ubsan_diag.h"</a></u></td></tr>
+<tr><th id="19">19</th><td><u>#include <a href="ubsan_init.h.html">"ubsan_init.h"</a></u></td></tr>
+<tr><th id="20">20</th><td></td></tr>
+<tr><th id="21">21</th><td><i>// Interception of signals breaks too many things on Android.</i></td></tr>
+<tr><th id="22">22</th><td><i>// * It requires that ubsan is the first dependency of the main executable for</i></td></tr>
+<tr><th id="23">23</th><td><i>// the interceptors to work correctly. This complicates deployment, as it</i></td></tr>
+<tr><th id="24">24</th><td><i>// prevents us from enabling ubsan on random platform modules independently.</i></td></tr>
+<tr><th id="25">25</th><td><i>// * For this to work with ART VM, ubsan signal handler has to be set after the</i></td></tr>
+<tr><th id="26">26</th><td><i>// debuggerd handler, but before the ART handler.</i></td></tr>
+<tr><th id="27">27</th><td><i>// * Interceptors don't work at all when ubsan runtime is loaded late, ex. when</i></td></tr>
+<tr><th id="28">28</th><td><i>// it is part of an APK that does not use wrap.sh method.</i></td></tr>
+<tr><th id="29">29</th><td><u>#<span data-ppcond="29">if</span> <a class="macro" href="../sanitizer_common/sanitizer_platform.h.html#111" title="0" data-ref="_M/SANITIZER_FUCHSIA">SANITIZER_FUCHSIA</a> || <a class="macro" href="../sanitizer_common/sanitizer_platform.h.html#105" title="0" data-ref="_M/SANITIZER_ANDROID">SANITIZER_ANDROID</a></u></td></tr>
+<tr><th id="30">30</th><td></td></tr>
+<tr><th id="31">31</th><td><b>namespace</b> __ubsan {</td></tr>
+<tr><th id="32">32</th><td><em>void</em> InitializeDeadlySignals() {}</td></tr>
+<tr><th id="33">33</th><td>}</td></tr>
+<tr><th id="34">34</th><td></td></tr>
+<tr><th id="35">35</th><td><u>#<span data-ppcond="29">else</span></u></td></tr>
+<tr><th id="36">36</th><td></td></tr>
+<tr><th id="37">37</th><td><u>#define <dfn class="macro" id="_M/COMMON_INTERCEPT_FUNCTION" data-ref="_M/COMMON_INTERCEPT_FUNCTION">COMMON_INTERCEPT_FUNCTION</dfn>(name) INTERCEPT_FUNCTION(name)</u></td></tr>
+<tr><th id="38">38</th><td><u>#include <a href="../sanitizer_common/sanitizer_signal_interceptors.inc.html">"sanitizer_common/sanitizer_signal_interceptors.inc"</a></u></td></tr>
+<tr><th id="39">39</th><td></td></tr>
+<tr><th id="40">40</th><td><i>// TODO(yln): Temporary workaround. Will be removed.</i></td></tr>
+<tr><th id="41">41</th><td><em>void</em> <dfn class="decl fn" id="_Z19ubsan_GetStackTracePN11__sanitizer18BufferedStackTraceEmmmPvb" title='ubsan_GetStackTrace' data-ref="_Z19ubsan_GetStackTracePN11__sanitizer18BufferedStackTraceEmmmPvb" data-ref-filename="_Z19ubsan_GetStackTracePN11__sanitizer18BufferedStackTraceEmmmPvb">ubsan_GetStackTrace</dfn>(<a class="type" href="../sanitizer_common/sanitizer_stacktrace.h.html#__sanitizer::BufferedStackTrace" title='__sanitizer::BufferedStackTrace' data-ref="__sanitizer::BufferedStackTrace" data-ref-filename="__sanitizer..BufferedStackTrace">BufferedStackTrace</a> *<dfn class="local col1 decl" id="1stack" title='stack' data-type='__sanitizer::BufferedStackTrace *' data-ref="1stack" data-ref-filename="1stack">stack</dfn>, <a class="typedef" href="../sanitizer_common/sanitizer_internal_defs.h.html#__sanitizer::uptr" title='__sanitizer::uptr' data-type='unsigned long' data-ref="__sanitizer::uptr" data-ref-filename="__sanitizer..uptr">uptr</a> <dfn class="local col2 decl" id="2max_depth" title='max_depth' data-type='__sanitizer::uptr' data-ref="2max_depth" data-ref-filename="2max_depth">max_depth</dfn>,</td></tr>
+<tr><th id="42">42</th><td>                         <a class="typedef" href="../sanitizer_common/sanitizer_internal_defs.h.html#__sanitizer::uptr" title='__sanitizer::uptr' data-type='unsigned long' data-ref="__sanitizer::uptr" data-ref-filename="__sanitizer..uptr">uptr</a> <dfn class="local col3 decl" id="3pc" title='pc' data-type='__sanitizer::uptr' data-ref="3pc" data-ref-filename="3pc">pc</dfn>, <a class="typedef" href="../sanitizer_common/sanitizer_internal_defs.h.html#__sanitizer::uptr" title='__sanitizer::uptr' data-type='unsigned long' data-ref="__sanitizer::uptr" data-ref-filename="__sanitizer..uptr">uptr</a> <dfn class="local col4 decl" id="4bp" title='bp' data-type='__sanitizer::uptr' data-ref="4bp" data-ref-filename="4bp">bp</dfn>, <em>void</em> *<dfn class="local col5 decl" id="5context" title='context' data-type='void *' data-ref="5context" data-ref-filename="5context">context</dfn>, <em>bool</em> <dfn class="local col6 decl" id="6fast" title='fast' data-type='bool' data-ref="6fast" data-ref-filename="6fast">fast</dfn>);</td></tr>
+<tr><th id="43">43</th><td></td></tr>
+<tr><th id="44">44</th><td><b>namespace</b> <span class="namespace">__ubsan</span> {</td></tr>
+<tr><th id="45">45</th><td></td></tr>
+<tr><th id="46">46</th><td><em>static</em> <em>void</em> <dfn class="tu decl def fn" id="__ubsan::OnStackUnwind" title='__ubsan::OnStackUnwind' data-type='void __ubsan::OnStackUnwind(const __sanitizer::SignalContext &amp; sig, const void * , __sanitizer::BufferedStackTrace * stack)' data-ref="__ubsan::OnStackUnwind" data-ref-filename="__ubsan..OnStackUnwind">OnStackUnwind</dfn>(<em>const</em> <a class="type" href="../sanitizer_common/sanitizer_common.h.html#__sanitizer::SignalContext" title='__sanitizer::SignalContext' data-ref="__sanitizer::SignalContext" data-ref-filename="__sanitizer..SignalContext">SignalContext</a> &amp;<dfn class="local col7 decl" id="7sig" title='sig' data-type='const __sanitizer::SignalContext &amp;' data-ref="7sig" data-ref-filename="7sig">sig</dfn>, <em>const</em> <em>void</em> *,</td></tr>
+<tr><th id="47">47</th><td>                          <a class="type" href="../sanitizer_common/sanitizer_stacktrace.h.html#__sanitizer::BufferedStackTrace" title='__sanitizer::BufferedStackTrace' data-ref="__sanitizer::BufferedStackTrace" data-ref-filename="__sanitizer..BufferedStackTrace">BufferedStackTrace</a> *<dfn class="local col8 decl" id="8stack" title='stack' data-type='__sanitizer::BufferedStackTrace *' data-ref="8stack" data-ref-filename="8stack">stack</dfn>) {</td></tr>
+<tr><th id="48">48</th><td>  <a class="ref fn" href="#_Z19ubsan_GetStackTracePN11__sanitizer18BufferedStackTraceEmmmPvb" title='ubsan_GetStackTrace' data-ref="_Z19ubsan_GetStackTracePN11__sanitizer18BufferedStackTraceEmmmPvb" data-ref-filename="_Z19ubsan_GetStackTracePN11__sanitizer18BufferedStackTraceEmmmPvb">ubsan_GetStackTrace</a>(<a class="local col8 ref" href="#8stack" title='stack' data-ref="8stack" data-ref-filename="8stack">stack</a>, <a class="ref" href="../sanitizer_common/sanitizer_stacktrace.h.html#__sanitizer::kStackTraceMax" title='__sanitizer::kStackTraceMax' data-ref="__sanitizer::kStackTraceMax" data-ref-filename="__sanitizer..kStackTraceMax">kStackTraceMax</a>,</td></tr>
+<tr><th id="49">49</th><td>                      <a class="type" href="../sanitizer_common/sanitizer_stacktrace.h.html#__sanitizer::StackTrace" title='__sanitizer::StackTrace' data-ref="__sanitizer::StackTrace" data-ref-filename="__sanitizer..StackTrace">StackTrace</a>::<a class="ref fn" href="../sanitizer_common/sanitizer_stacktrace.h.html#__sanitizer::StackTrace::GetNextInstructionPc" title='__sanitizer::StackTrace::GetNextInstructionPc' data-ref="__sanitizer::StackTrace::GetNextInstructionPc" data-ref-filename="__sanitizer..StackTrace..GetNextInstructionPc">GetNextInstructionPc</a>(<a class="local col7 ref" href="#7sig" title='sig' data-ref="7sig" data-ref-filename="7sig">sig</a>.<a class="ref field" href="../sanitizer_common/sanitizer_common.h.html#__sanitizer::SignalContext::pc" title='__sanitizer::SignalContext::pc' data-ref="__sanitizer::SignalContext::pc" data-ref-filename="__sanitizer..SignalContext..pc">pc</a>), <a class="local col7 ref" href="#7sig" title='sig' data-ref="7sig" data-ref-filename="7sig">sig</a>.<a class="ref field" href="../sanitizer_common/sanitizer_common.h.html#__sanitizer::SignalContext::bp" title='__sanitizer::SignalContext::bp' data-ref="__sanitizer::SignalContext::bp" data-ref-filename="__sanitizer..SignalContext..bp">bp</a>,</td></tr>
+<tr><th id="50">50</th><td>                      <a class="local col7 ref" href="#7sig" title='sig' data-ref="7sig" data-ref-filename="7sig">sig</a>.<a class="ref field" href="../sanitizer_common/sanitizer_common.h.html#__sanitizer::SignalContext::context" title='__sanitizer::SignalContext::context' data-ref="__sanitizer::SignalContext::context" data-ref-filename="__sanitizer..SignalContext..context">context</a>, <a class="ref fn" href="../sanitizer_common/sanitizer_flags.h.html#__sanitizer::common_flags" title='__sanitizer::common_flags' data-ref="__sanitizer::common_flags" data-ref-filename="__sanitizer..common_flags">common_flags</a>()-&gt;<a class="ref field" href="../sanitizer_common/sanitizer_flags.inc.html#40" title='__sanitizer::CommonFlags::fast_unwind_on_fatal' data-ref="__sanitizer::CommonFlags::fast_unwind_on_fatal" data-ref-filename="__sanitizer..CommonFlags..fast_unwind_on_fatal">fast_unwind_on_fatal</a>);</td></tr>
+<tr><th id="51">51</th><td>}</td></tr>
+<tr><th id="52">52</th><td></td></tr>
+<tr><th id="53">53</th><td><em>static</em> <em>void</em> <dfn class="tu decl def fn" id="__ubsan::UBsanOnDeadlySignal" title='__ubsan::UBsanOnDeadlySignal' data-type='void __ubsan::UBsanOnDeadlySignal(int signo, void * siginfo, void * context)' data-ref="__ubsan::UBsanOnDeadlySignal" data-ref-filename="__ubsan..UBsanOnDeadlySignal">UBsanOnDeadlySignal</dfn>(<em>int</em> <dfn class="local col9 decl" id="9signo" title='signo' data-type='int' data-ref="9signo" data-ref-filename="9signo">signo</dfn>, <em>void</em> *<dfn class="local col0 decl" id="10siginfo" title='siginfo' data-type='void *' data-ref="10siginfo" data-ref-filename="10siginfo">siginfo</dfn>, <em>void</em> *<dfn class="local col1 decl" id="11context" title='context' data-type='void *' data-ref="11context" data-ref-filename="11context">context</dfn>) {</td></tr>
+<tr><th id="54">54</th><td>  <a class="ref fn" href="../sanitizer_common/sanitizer_common.h.html#__sanitizer::HandleDeadlySignal" title='__sanitizer::HandleDeadlySignal' data-ref="__sanitizer::HandleDeadlySignal" data-ref-filename="__sanitizer..HandleDeadlySignal">HandleDeadlySignal</a>(<a class="local col0 ref" href="#10siginfo" title='siginfo' data-ref="10siginfo" data-ref-filename="10siginfo">siginfo</a>, <a class="local col1 ref" href="#11context" title='context' data-ref="11context" data-ref-filename="11context">context</a>, <a class="ref fn" href="../sanitizer_common/sanitizer_common.h.html#__sanitizer::GetTid" title='__sanitizer::GetTid' data-ref="__sanitizer::GetTid" data-ref-filename="__sanitizer..GetTid">GetTid</a>(), &amp;<a class="tu ref fn" href="#__ubsan::OnStackUnwind" title='__ubsan::OnStackUnwind' data-use='a' data-ref="__ubsan::OnStackUnwind" data-ref-filename="__ubsan..OnStackUnwind">OnStackUnwind</a>, <b>nullptr</b>);</td></tr>
+<tr><th id="55">55</th><td>}</td></tr>
+<tr><th id="56">56</th><td></td></tr>
+<tr><th id="57">57</th><td><em>static</em> <em>bool</em> <dfn class="tu decl def" id="__ubsan::is_initialized" title='__ubsan::is_initialized' data-type='bool' data-ref="__ubsan::is_initialized" data-ref-filename="__ubsan..is_initialized">is_initialized</dfn> = <b>false</b>;</td></tr>
+<tr><th id="58">58</th><td></td></tr>
+<tr><th id="59">59</th><td><em>void</em> <dfn class="decl def fn" id="__ubsan::InitializeDeadlySignals" title='__ubsan::InitializeDeadlySignals' data-ref="__ubsan::InitializeDeadlySignals" data-ref-filename="__ubsan..InitializeDeadlySignals">InitializeDeadlySignals</dfn>() {</td></tr>
+<tr><th id="60">60</th><td>  <b>if</b> (<a class="tu ref" href="#__ubsan::is_initialized" title='__ubsan::is_initialized' data-use='r' data-ref="__ubsan::is_initialized" data-ref-filename="__ubsan..is_initialized">is_initialized</a>)</td></tr>
+<tr><th id="61">61</th><td>    <b>return</b>;</td></tr>
+<tr><th id="62">62</th><td>  <a class="tu ref" href="#__ubsan::is_initialized" title='__ubsan::is_initialized' data-use='w' data-ref="__ubsan::is_initialized" data-ref-filename="__ubsan..is_initialized">is_initialized</a> = <b>true</b>;</td></tr>
+<tr><th id="63">63</th><td>  <a class="ref fn" href="../sanitizer_common/sanitizer_signal_interceptors.inc.html#_ZL28InitializeSignalInterceptorsv" title='InitializeSignalInterceptors' data-ref="_ZL28InitializeSignalInterceptorsv" data-ref-filename="_ZL28InitializeSignalInterceptorsv">InitializeSignalInterceptors</a>();</td></tr>
+<tr><th id="64">64</th><td>  <a class="ref fn" href="../sanitizer_common/sanitizer_common.h.html#__sanitizer::InstallDeadlySignalHandlers" title='__sanitizer::InstallDeadlySignalHandlers' data-ref="__sanitizer::InstallDeadlySignalHandlers" data-ref-filename="__sanitizer..InstallDeadlySignalHandlers">InstallDeadlySignalHandlers</a>(&amp;<a class="tu ref fn" href="#__ubsan::UBsanOnDeadlySignal" title='__ubsan::UBsanOnDeadlySignal' data-use='a' data-ref="__ubsan::UBsanOnDeadlySignal" data-ref-filename="__ubsan..UBsanOnDeadlySignal">UBsanOnDeadlySignal</a>);</td></tr>
+<tr><th id="65">65</th><td>}</td></tr>
+<tr><th id="66">66</th><td></td></tr>
+<tr><th id="67">67</th><td>} <i>// namespace __ubsan</i></td></tr>
+<tr><th id="68">68</th><td></td></tr>
+<tr><th id="69">69</th><td><u>#<span data-ppcond="29">endif</span></u></td></tr>
+<tr><th id="70">70</th><td></td></tr>
+<tr><th id="71">71</th><td><u>#<span data-ppcond="15">endif</span> // CAN_SANITIZE_UB</u></td></tr>
+<tr><th id="72">72</th><td></td></tr>
+</table><hr/><p id='footer'>
+Generated on <em>2021-Jul-01</em> from project llvm revision <em>12</em>

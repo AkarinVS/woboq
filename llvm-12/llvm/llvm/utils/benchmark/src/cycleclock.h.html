@@ -1,0 +1,222 @@
+<!doctype html>
+<html>
+<head>
+<meta name="viewport" content="width=device-width, initial-scale=1.0"><title>cycleclock.h source code [llvm/llvm/utils/benchmark/src/cycleclock.h] - Woboq Code Browser</title>
+<link rel="stylesheet" href="../../../../.././data/qtcreator.css" title="QtCreator"/>
+<link rel="alternate stylesheet" href="../../../../.././data/kdevelop.css" title="KDevelop"/>
+<script type="text/javascript" src="../../../../.././data/jquery/jquery.min.js"></script>
+<script type="text/javascript" src="../../../../.././data/jquery/jquery-ui.min.js"></script>
+<script>var file = 'llvm/llvm/utils/benchmark/src/cycleclock.h'; var root_path = '../../../../..'; var data_path = '../../../../.././data'; var ecma_script_api_version = 2;</script>
+<script src='../../../../.././data/codebrowser.js'></script>
+</head>
+<body><div id='header'><h1 id='breadcrumb'><span>Browse the source code of </span><a href='../../../..'>llvm</a>/<a href='../../..'>llvm</a>/<a href='../..'>utils</a>/<a href='..'>benchmark</a>/<a href='./'>src</a>/<a href='cycleclock.h.html'>cycleclock.h</a></h1></div>
+<hr/><div id='content'><table class="code">
+<tr><th id="1">1</th><td><i>// ----------------------------------------------------------------------</i></td></tr>
+<tr><th id="2">2</th><td><i>// CycleClock</i></td></tr>
+<tr><th id="3">3</th><td><i>//    A CycleClock tells you the current time in Cycles.  The "time"</i></td></tr>
+<tr><th id="4">4</th><td><i>//    is actually time since power-on.  This is like time() but doesn't</i></td></tr>
+<tr><th id="5">5</th><td><i>//    involve a system call and is much more precise.</i></td></tr>
+<tr><th id="6">6</th><td><i>//</i></td></tr>
+<tr><th id="7">7</th><td><i>// NOTE: Not all cpu/platform/kernel combinations guarantee that this</i></td></tr>
+<tr><th id="8">8</th><td><i>// clock increments at a constant rate or is synchronized across all logical</i></td></tr>
+<tr><th id="9">9</th><td><i>// cpus in a system.</i></td></tr>
+<tr><th id="10">10</th><td><i>//</i></td></tr>
+<tr><th id="11">11</th><td><i>// If you need the above guarantees, please consider using a different</i></td></tr>
+<tr><th id="12">12</th><td><i>// API. There are efforts to provide an interface which provides a millisecond</i></td></tr>
+<tr><th id="13">13</th><td><i>// granularity and implemented as a memory read. A memory read is generally</i></td></tr>
+<tr><th id="14">14</th><td><i>// cheaper than the CycleClock for many architectures.</i></td></tr>
+<tr><th id="15">15</th><td><i>//</i></td></tr>
+<tr><th id="16">16</th><td><i>// Also, in some out of order CPU implementations, the CycleClock is not</i></td></tr>
+<tr><th id="17">17</th><td><i>// serializing. So if you're trying to count at cycles granularity, your</i></td></tr>
+<tr><th id="18">18</th><td><i>// data might be inaccurate due to out of order instruction execution.</i></td></tr>
+<tr><th id="19">19</th><td><i>// ----------------------------------------------------------------------</i></td></tr>
+<tr><th id="20">20</th><td></td></tr>
+<tr><th id="21">21</th><td><u>#<span data-ppcond="21">ifndef</span> <span class="macro" data-ref="_M/BENCHMARK_CYCLECLOCK_H_">BENCHMARK_CYCLECLOCK_H_</span></u></td></tr>
+<tr><th id="22">22</th><td><u>#define <dfn class="macro" id="_M/BENCHMARK_CYCLECLOCK_H_" data-ref="_M/BENCHMARK_CYCLECLOCK_H_">BENCHMARK_CYCLECLOCK_H_</dfn></u></td></tr>
+<tr><th id="23">23</th><td></td></tr>
+<tr><th id="24">24</th><td><u>#include &lt;cstdint&gt;</u></td></tr>
+<tr><th id="25">25</th><td></td></tr>
+<tr><th id="26">26</th><td><u>#include <a href="../include/benchmark/benchmark.h.html">"benchmark/benchmark.h"</a></u></td></tr>
+<tr><th id="27">27</th><td><u>#include <a href="internal_macros.h.html">"internal_macros.h"</a></u></td></tr>
+<tr><th id="28">28</th><td></td></tr>
+<tr><th id="29">29</th><td><u>#<span data-ppcond="29">if</span> defined(<span class="macro" data-ref="_M/BENCHMARK_OS_MACOSX">BENCHMARK_OS_MACOSX</span>)</u></td></tr>
+<tr><th id="30">30</th><td><u>#include &lt;mach/mach_time.h&gt;</u></td></tr>
+<tr><th id="31">31</th><td><u>#<span data-ppcond="29">endif</span></u></td></tr>
+<tr><th id="32">32</th><td><i>// For MSVC, we want to use '_asm rdtsc' when possible (since it works</i></td></tr>
+<tr><th id="33">33</th><td><i>// with even ancient MSVC compilers), and when not possible the</i></td></tr>
+<tr><th id="34">34</th><td><i>// __rdtsc intrinsic, declared in &lt;intrin.h&gt;.  Unfortunately, in some</i></td></tr>
+<tr><th id="35">35</th><td><i>// environments, &lt;windows.h&gt; and &lt;intrin.h&gt; have conflicting</i></td></tr>
+<tr><th id="36">36</th><td><i>// declarations of some other intrinsics, breaking compilation.</i></td></tr>
+<tr><th id="37">37</th><td><i>// Therefore, we simply declare __rdtsc ourselves. See also</i></td></tr>
+<tr><th id="38">38</th><td><i>// <a href="http://connect.microsoft.com/VisualStudio/feedback/details/262047">http://connect.microsoft.com/VisualStudio/feedback/details/262047</a></i></td></tr>
+<tr><th id="39">39</th><td><u>#<span data-ppcond="39">if</span> defined(<span class="macro" data-ref="_M/COMPILER_MSVC">COMPILER_MSVC</span>) &amp;&amp; !defined(<span class="macro" data-ref="_M/_M_IX86">_M_IX86</span>)</u></td></tr>
+<tr><th id="40">40</th><td><b>extern</b> <q>"C"</q> uint64_t __rdtsc();</td></tr>
+<tr><th id="41">41</th><td><u>#pragma intrinsic(__rdtsc)</u></td></tr>
+<tr><th id="42">42</th><td><u>#<span data-ppcond="39">endif</span></u></td></tr>
+<tr><th id="43">43</th><td></td></tr>
+<tr><th id="44">44</th><td><u>#<span data-ppcond="44">if</span> !defined(<span class="macro" data-ref="_M/BENCHMARK_OS_WINDOWS">BENCHMARK_OS_WINDOWS</span>) || defined(<span class="macro" data-ref="_M/BENCHMARK_OS_MINGW">BENCHMARK_OS_MINGW</span>)</u></td></tr>
+<tr><th id="45">45</th><td><u>#include <a href="../../../../../include/sys/time.h.html">&lt;sys/time.h&gt;</a></u></td></tr>
+<tr><th id="46">46</th><td><u>#include <a href="../../../../../include/time.h.html">&lt;time.h&gt;</a></u></td></tr>
+<tr><th id="47">47</th><td><u>#<span data-ppcond="44">endif</span></u></td></tr>
+<tr><th id="48">48</th><td></td></tr>
+<tr><th id="49">49</th><td><u>#<span data-ppcond="49">ifdef</span> <span class="macro" data-ref="_M/BENCHMARK_OS_EMSCRIPTEN">BENCHMARK_OS_EMSCRIPTEN</span></u></td></tr>
+<tr><th id="50">50</th><td><u>#include &lt;emscripten.h&gt;</u></td></tr>
+<tr><th id="51">51</th><td><u>#<span data-ppcond="49">endif</span></u></td></tr>
+<tr><th id="52">52</th><td></td></tr>
+<tr><th id="53">53</th><td><b>namespace</b> <span class="namespace">benchmark</span> {</td></tr>
+<tr><th id="54">54</th><td><i>// NOTE: only i386 and x86_64 have been well tested.</i></td></tr>
+<tr><th id="55">55</th><td><i>// PPC, sparc, alpha, and ia64 are based on</i></td></tr>
+<tr><th id="56">56</th><td><i>//    <a href="http://peter.kuscsik.com/wordpress/?p=14">http://peter.kuscsik.com/wordpress/?p=14</a></i></td></tr>
+<tr><th id="57">57</th><td><i>// with modifications by m3b.  See also</i></td></tr>
+<tr><th id="58">58</th><td><i>//    <a href="https://setisvn.ssl.berkeley.edu/svn/lib/fftw-3.0.1/kernel/cycle.h">https://setisvn.ssl.berkeley.edu/svn/lib/fftw-3.0.1/kernel/cycle.h</a></i></td></tr>
+<tr><th id="59">59</th><td><b>namespace</b> <span class="namespace">cycleclock</span> {</td></tr>
+<tr><th id="60">60</th><td><i>// This should return the number of cycles since power-on.  Thread-safe.</i></td></tr>
+<tr><th id="61">61</th><td><b>inline</b> <a class="macro" href="../include/benchmark/benchmark.h.html#206" title="__attribute__((always_inline))" data-ref="_M/BENCHMARK_ALWAYS_INLINE">BENCHMARK_ALWAYS_INLINE</a> <a class="typedef" href="../../../../../include/bits/stdint-intn.h.html#int64_t" title='int64_t' data-type='__int64_t' data-ref="int64_t" data-ref-filename="int64_t">int64_t</a> <dfn class="decl def fn" id="_ZN9benchmark10cycleclock3NowEv" title='benchmark::cycleclock::Now' data-ref="_ZN9benchmark10cycleclock3NowEv" data-ref-filename="_ZN9benchmark10cycleclock3NowEv">Now</dfn>() {</td></tr>
+<tr><th id="62">62</th><td><u>#<span data-ppcond="62">if</span> defined(<span class="macro" data-ref="_M/BENCHMARK_OS_MACOSX">BENCHMARK_OS_MACOSX</span>)</u></td></tr>
+<tr><th id="63">63</th><td>  <i>// this goes at the top because we need ALL Macs, regardless of</i></td></tr>
+<tr><th id="64">64</th><td><i>  // architecture, to return the number of "mach time units" that</i></td></tr>
+<tr><th id="65">65</th><td><i>  // have passed since startup.  See sysinfo.cc where</i></td></tr>
+<tr><th id="66">66</th><td><i>  // InitializeSystemInfo() sets the supposed cpu clock frequency of</i></td></tr>
+<tr><th id="67">67</th><td><i>  // macs to the number of mach time units per second, not actual</i></td></tr>
+<tr><th id="68">68</th><td><i>  // CPU clock frequency (which can change in the face of CPU</i></td></tr>
+<tr><th id="69">69</th><td><i>  // frequency scaling).  Also note that when the Mac sleeps, this</i></td></tr>
+<tr><th id="70">70</th><td><i>  // counter pauses; it does not continue counting, nor does it</i></td></tr>
+<tr><th id="71">71</th><td><i>  // reset to zero.</i></td></tr>
+<tr><th id="72">72</th><td>  <b>return</b> mach_absolute_time();</td></tr>
+<tr><th id="73">73</th><td><u>#<span data-ppcond="62">elif</span> defined(<span class="macro" data-ref="_M/BENCHMARK_OS_EMSCRIPTEN">BENCHMARK_OS_EMSCRIPTEN</span>)</u></td></tr>
+<tr><th id="74">74</th><td>  <i>// this goes above x86-specific code because old versions of Emscripten</i></td></tr>
+<tr><th id="75">75</th><td><i>  // define __x86_64__, although they have nothing to do with it.</i></td></tr>
+<tr><th id="76">76</th><td>  <b>return</b> <b>static_cast</b>&lt;int64_t&gt;(emscripten_get_now() * <var>1e+6</var>);</td></tr>
+<tr><th id="77">77</th><td><u>#<span data-ppcond="62">elif</span> defined(<span class="macro" data-ref="_M/__i386__">__i386__</span>)</u></td></tr>
+<tr><th id="78">78</th><td>  int64_t ret;</td></tr>
+<tr><th id="79">79</th><td>  <b>__asm__</b> <em>volatile</em>(<q>"rdtsc"</q> : <q>"=A"</q>(ret));</td></tr>
+<tr><th id="80">80</th><td>  <b>return</b> ret;</td></tr>
+<tr><th id="81">81</th><td><u>#<span data-ppcond="62">elif</span> defined(<span class="macro" data-ref="_M/__x86_64__">__x86_64__</span>) || defined(<span class="macro" data-ref="_M/__amd64__">__amd64__</span>)</u></td></tr>
+<tr><th id="82">82</th><td>  <a class="typedef" href="../../../../../include/bits/stdint-uintn.h.html#uint64_t" title='uint64_t' data-type='__uint64_t' data-ref="uint64_t" data-ref-filename="uint64_t">uint64_t</a> <dfn class="local col1 decl" id="1low" title='low' data-type='uint64_t' data-ref="1low" data-ref-filename="1low">low</dfn>, <dfn class="local col2 decl" id="2high" title='high' data-type='uint64_t' data-ref="2high" data-ref-filename="2high">high</dfn>;</td></tr>
+<tr><th id="83">83</th><td>  <b>__asm__</b> <em>volatile</em>(<q>"rdtsc"</q> : <q>"=a"</q>(<a class="local col1 ref" href="#1low" title='low' data-ref="1low" data-ref-filename="1low">low</a>), <q>"=d"</q>(<a class="local col2 ref" href="#2high" title='high' data-ref="2high" data-ref-filename="2high">high</a>));</td></tr>
+<tr><th id="84">84</th><td>  <b>return</b> (<a class="local col2 ref" href="#2high" title='high' data-ref="2high" data-ref-filename="2high">high</a> &lt;&lt; <var>32</var>) | <a class="local col1 ref" href="#1low" title='low' data-ref="1low" data-ref-filename="1low">low</a>;</td></tr>
+<tr><th id="85">85</th><td><u>#<span data-ppcond="62">elif</span> defined(__powerpc__) || defined(__ppc__)</u></td></tr>
+<tr><th id="86">86</th><td>  <i>// This returns a time-base, which is not always precisely a cycle-count.</i></td></tr>
+<tr><th id="87">87</th><td><u>#if defined(__powerpc64__) || defined(__ppc64__)</u></td></tr>
+<tr><th id="88">88</th><td>  int64_t tb;</td></tr>
+<tr><th id="89">89</th><td>  <b>asm</b> <em>volatile</em>(<q>"mfspr %0, 268"</q> : <q>"=r"</q>(tb));</td></tr>
+<tr><th id="90">90</th><td>  <b>return</b> tb;</td></tr>
+<tr><th id="91">91</th><td><u>#else</u></td></tr>
+<tr><th id="92">92</th><td>  uint32_t tbl, tbu0, tbu1;</td></tr>
+<tr><th id="93">93</th><td>  <b>asm</b> <em>volatile</em>(</td></tr>
+<tr><th id="94">94</th><td>      <q>"mftbu %0\n"</q></td></tr>
+<tr><th id="95">95</th><td>      <q>"mftb %1\n"</q></td></tr>
+<tr><th id="96">96</th><td>      <q>"mftbu %2"</q></td></tr>
+<tr><th id="97">97</th><td>      : <q>"=r"</q>(tbu0), <q>"=r"</q>(tbl), <q>"=r"</q>(tbu1));</td></tr>
+<tr><th id="98">98</th><td>  tbl &amp;= -<b>static_cast</b>&lt;int32_t&gt;(tbu0 == tbu1);</td></tr>
+<tr><th id="99">99</th><td>  <i>// high 32 bits in tbu1; low 32 bits in tbl  (tbu0 is no longer needed)</i></td></tr>
+<tr><th id="100">100</th><td>  <b>return</b> (<b>static_cast</b>&lt;uint64_t&gt;(tbu1) &lt;&lt; <var>32</var>) | tbl;</td></tr>
+<tr><th id="101">101</th><td><u>#endif</u></td></tr>
+<tr><th id="102">102</th><td><u>#elif defined(__sparc__)</u></td></tr>
+<tr><th id="103">103</th><td>  int64_t tick;</td></tr>
+<tr><th id="104">104</th><td>  <b>asm</b>(<q>".byte 0x83, 0x41, 0x00, 0x00"</q>);</td></tr>
+<tr><th id="105">105</th><td>  <b>asm</b>(<q>"mov   %%g1, %0"</q> : <q>"=r"</q>(tick));</td></tr>
+<tr><th id="106">106</th><td>  <b>return</b> tick;</td></tr>
+<tr><th id="107">107</th><td><u>#elif defined(__ia64__)</u></td></tr>
+<tr><th id="108">108</th><td>  int64_t itc;</td></tr>
+<tr><th id="109">109</th><td>  <b>asm</b>(<q>"mov %0 = ar.itc"</q> : <q>"=r"</q>(itc));</td></tr>
+<tr><th id="110">110</th><td>  <b>return</b> itc;</td></tr>
+<tr><th id="111">111</th><td><u>#elif defined(COMPILER_MSVC) &amp;&amp; defined(_M_IX86)</u></td></tr>
+<tr><th id="112">112</th><td>  <i>// Older MSVC compilers (like 7.x) don't seem to support the</i></td></tr>
+<tr><th id="113">113</th><td><i>  // __rdtsc intrinsic properly, so I prefer to use _asm instead</i></td></tr>
+<tr><th id="114">114</th><td><i>  // when I know it will work.  Otherwise, I'll use __rdtsc and hope</i></td></tr>
+<tr><th id="115">115</th><td><i>  // the code is being compiled with a non-ancient compiler.</i></td></tr>
+<tr><th id="116">116</th><td>  _asm rdtsc</td></tr>
+<tr><th id="117">117</th><td><u>#elif defined(COMPILER_MSVC)</u></td></tr>
+<tr><th id="118">118</th><td>  <b>return</b> __rdtsc();</td></tr>
+<tr><th id="119">119</th><td><u>#elif defined(BENCHMARK_OS_NACL)</u></td></tr>
+<tr><th id="120">120</th><td>  <i>// Native Client validator on x86/x86-64 allows RDTSC instructions,</i></td></tr>
+<tr><th id="121">121</th><td><i>  // and this case is handled above. Native Client validator on ARM</i></td></tr>
+<tr><th id="122">122</th><td><i>  // rejects MRC instructions (used in the ARM-specific sequence below),</i></td></tr>
+<tr><th id="123">123</th><td><i>  // so we handle it here. Portable Native Client compiles to</i></td></tr>
+<tr><th id="124">124</th><td><i>  // architecture-agnostic bytecode, which doesn't provide any</i></td></tr>
+<tr><th id="125">125</th><td><i>  // cycle counter access mnemonics.</i></td></tr>
+<tr><th id="126">126</th><td><i></i></td></tr>
+<tr><th id="127">127</th><td><i>  // Native Client does not provide any API to access cycle counter.</i></td></tr>
+<tr><th id="128">128</th><td><i>  // Use clock_gettime(CLOCK_MONOTONIC, ...) instead of gettimeofday</i></td></tr>
+<tr><th id="129">129</th><td><i>  // because is provides nanosecond resolution (which is noticable at</i></td></tr>
+<tr><th id="130">130</th><td><i>  // least for PNaCl modules running on x86 Mac &amp; Linux).</i></td></tr>
+<tr><th id="131">131</th><td><i>  // Initialize to always return 0 if clock_gettime fails.</i></td></tr>
+<tr><th id="132">132</th><td>  <b>struct</b> timespec ts = { <var>0</var>, <var>0</var> };</td></tr>
+<tr><th id="133">133</th><td>  clock_gettime(CLOCK_MONOTONIC, &amp;ts);</td></tr>
+<tr><th id="134">134</th><td>  <b>return</b> <b>static_cast</b>&lt;int64_t&gt;(ts.tv_sec) * <var>1000000000</var> + ts.tv_nsec;</td></tr>
+<tr><th id="135">135</th><td><u>#elif defined(__aarch64__)</u></td></tr>
+<tr><th id="136">136</th><td>  <i>// System timer of ARMv8 runs at a different frequency than the CPU's.</i></td></tr>
+<tr><th id="137">137</th><td><i>  // The frequency is fixed, typically in the range 1-50MHz.  It can be</i></td></tr>
+<tr><th id="138">138</th><td><i>  // read at CNTFRQ special register.  We assume the OS has set up</i></td></tr>
+<tr><th id="139">139</th><td><i>  // the virtual timer properly.</i></td></tr>
+<tr><th id="140">140</th><td>  int64_t virtual_timer_value;</td></tr>
+<tr><th id="141">141</th><td>  <b>asm</b> <em>volatile</em>(<q>"mrs %0, cntvct_el0"</q> : <q>"=r"</q>(virtual_timer_value));</td></tr>
+<tr><th id="142">142</th><td>  <b>return</b> virtual_timer_value;</td></tr>
+<tr><th id="143">143</th><td><u>#elif defined(__ARM_ARCH)</u></td></tr>
+<tr><th id="144">144</th><td>  <i>// V6 is the earliest arch that has a standard cyclecount</i></td></tr>
+<tr><th id="145">145</th><td><i>  // Native Client validator doesn't allow MRC instructions.</i></td></tr>
+<tr><th id="146">146</th><td><u>#if (__ARM_ARCH &gt;= 6)</u></td></tr>
+<tr><th id="147">147</th><td>  uint32_t pmccntr;</td></tr>
+<tr><th id="148">148</th><td>  uint32_t pmuseren;</td></tr>
+<tr><th id="149">149</th><td>  uint32_t pmcntenset;</td></tr>
+<tr><th id="150">150</th><td>  <i>// Read the user mode perf monitor counter access permissions.</i></td></tr>
+<tr><th id="151">151</th><td>  <b>asm</b> <em>volatile</em>(<q>"mrc p15, 0, %0, c9, c14, 0"</q> : <q>"=r"</q>(pmuseren));</td></tr>
+<tr><th id="152">152</th><td>  <b>if</b> (pmuseren &amp; <var>1</var>) {  <i>// Allows reading perfmon counters for user mode code.</i></td></tr>
+<tr><th id="153">153</th><td>    <b>asm</b> <em>volatile</em>(<q>"mrc p15, 0, %0, c9, c12, 1"</q> : <q>"=r"</q>(pmcntenset));</td></tr>
+<tr><th id="154">154</th><td>    <b>if</b> (pmcntenset &amp; <var>0x80000000ul</var>) {  <i>// Is it counting?</i></td></tr>
+<tr><th id="155">155</th><td>      <b>asm</b> <em>volatile</em>(<q>"mrc p15, 0, %0, c9, c13, 0"</q> : <q>"=r"</q>(pmccntr));</td></tr>
+<tr><th id="156">156</th><td>      <i>// The counter is set up to count every 64th cycle</i></td></tr>
+<tr><th id="157">157</th><td>      <b>return</b> <b>static_cast</b>&lt;int64_t&gt;(pmccntr) * <var>64</var>;  <i>// Should optimize to &lt;&lt; 6</i></td></tr>
+<tr><th id="158">158</th><td>    }</td></tr>
+<tr><th id="159">159</th><td>  }</td></tr>
+<tr><th id="160">160</th><td><u>#endif</u></td></tr>
+<tr><th id="161">161</th><td>  <b>struct</b> timeval tv;</td></tr>
+<tr><th id="162">162</th><td>  gettimeofday(&amp;tv, <b>nullptr</b>);</td></tr>
+<tr><th id="163">163</th><td>  <b>return</b> <b>static_cast</b>&lt;int64_t&gt;(tv.tv_sec) * <var>1000000</var> + tv.tv_usec;</td></tr>
+<tr><th id="164">164</th><td><u>#elif defined(__mips__) || defined(__m68k__)</u></td></tr>
+<tr><th id="165">165</th><td>  <i>// mips apparently only allows rdtsc for superusers, so we fall</i></td></tr>
+<tr><th id="166">166</th><td><i>  // back to gettimeofday.  It's possible clock_gettime would be better.</i></td></tr>
+<tr><th id="167">167</th><td>  <b>struct</b> timeval tv;</td></tr>
+<tr><th id="168">168</th><td>  gettimeofday(&amp;tv, <b>nullptr</b>);</td></tr>
+<tr><th id="169">169</th><td>  <b>return</b> <b>static_cast</b>&lt;int64_t&gt;(tv.tv_sec) * <var>1000000</var> + tv.tv_usec;</td></tr>
+<tr><th id="170">170</th><td><u>#elif defined(__s390__) // Covers both s390 and s390x.</u></td></tr>
+<tr><th id="171">171</th><td>  <i>// Return the CPU clock.</i></td></tr>
+<tr><th id="172">172</th><td>  uint64_t tsc;</td></tr>
+<tr><th id="173">173</th><td>  <b>asm</b>(<q>"stck %0"</q> : <q>"=Q"</q> (tsc) : : <q>"cc"</q>);</td></tr>
+<tr><th id="174">174</th><td>  <b>return</b> tsc;</td></tr>
+<tr><th id="175">175</th><td><u>#elif defined(__riscv) // RISC-V</u></td></tr>
+<tr><th id="176">176</th><td>  <i>// Use RDCYCLE (and RDCYCLEH on riscv32)</i></td></tr>
+<tr><th id="177">177</th><td><u>#if __riscv_xlen == 32</u></td></tr>
+<tr><th id="178">178</th><td>  uint32_t cycles_lo, cycles_hi0, cycles_hi1;</td></tr>
+<tr><th id="179">179</th><td>  <i>// This asm also includes the PowerPC overflow handling strategy, as above.</i></td></tr>
+<tr><th id="180">180</th><td><i>  // Implemented in assembly because Clang insisted on branching.</i></td></tr>
+<tr><th id="181">181</th><td>  <b>asm</b> <em>volatile</em>(</td></tr>
+<tr><th id="182">182</th><td>      <q>"rdcycleh %0\n"</q></td></tr>
+<tr><th id="183">183</th><td>      <q>"rdcycle %1\n"</q></td></tr>
+<tr><th id="184">184</th><td>      <q>"rdcycleh %2\n"</q></td></tr>
+<tr><th id="185">185</th><td>      <q>"sub %0, %0, %2\n"</q></td></tr>
+<tr><th id="186">186</th><td>      <q>"seqz %0, %0\n"</q></td></tr>
+<tr><th id="187">187</th><td>      <q>"sub %0, zero, %0\n"</q></td></tr>
+<tr><th id="188">188</th><td>      <q>"and %1, %1, %0\n"</q></td></tr>
+<tr><th id="189">189</th><td>      : <q>"=r"</q>(cycles_hi0), <q>"=r"</q>(cycles_lo), <q>"=r"</q>(cycles_hi1));</td></tr>
+<tr><th id="190">190</th><td>  <b>return</b> (<b>static_cast</b>&lt;uint64_t&gt;(cycles_hi1) &lt;&lt; <var>32</var>) | cycles_lo;</td></tr>
+<tr><th id="191">191</th><td><u>#else</u></td></tr>
+<tr><th id="192">192</th><td>  uint64_t cycles;</td></tr>
+<tr><th id="193">193</th><td>  <b>asm</b> <em>volatile</em>(<q>"rdcycle %0"</q> : <q>"=r"</q>(cycles));</td></tr>
+<tr><th id="194">194</th><td>  <b>return</b> cycles;</td></tr>
+<tr><th id="195">195</th><td><u>#endif</u></td></tr>
+<tr><th id="196">196</th><td><u>#else</u></td></tr>
+<tr><th id="197">197</th><td><i>// The soft failover to a generic implementation is automatic only for ARM.</i></td></tr>
+<tr><th id="198">198</th><td><i>// For other platforms the developer is expected to make an attempt to create</i></td></tr>
+<tr><th id="199">199</th><td><i>// a fast implementation and use generic version if nothing better is available.</i></td></tr>
+<tr><th id="200">200</th><td><u>#error You need to define CycleTimer for your OS and CPU</u></td></tr>
+<tr><th id="201">201</th><td><u>#<span data-ppcond="62">endif</span></u></td></tr>
+<tr><th id="202">202</th><td>}</td></tr>
+<tr><th id="203">203</th><td>}  <i>// end namespace cycleclock</i></td></tr>
+<tr><th id="204">204</th><td>}  <i>// end namespace benchmark</i></td></tr>
+<tr><th id="205">205</th><td></td></tr>
+<tr><th id="206">206</th><td><u>#<span data-ppcond="21">endif</span>  // BENCHMARK_CYCLECLOCK_H_</u></td></tr>
+<tr><th id="207">207</th><td></td></tr>
+</table><hr/><p id='footer'>
+Generated while processing <a href='sysinfo.cc.html'>llvm/llvm/utils/benchmark/src/sysinfo.cc</a><br/>Generated on <em>2021-Jul-01</em> from project llvm revision <em>12</em>

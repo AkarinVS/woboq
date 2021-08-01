@@ -1,0 +1,7 @@
+<dec f='llvm/clang/lib/Serialization/ASTReaderInternals.h' l='46' type='clang::serialization::ModuleFile &amp;'/>
+<use f='llvm/clang/lib/Serialization/ASTReaderInternals.h' l='88' u='w' c='_ZN5clang13serialization6reader29ASTDeclContextNameLookupTraitC1ERNS_9ASTReaderERNS0_10ModuleFileE'/>
+<use f='llvm/clang/lib/Serialization/ASTReader.cpp' l='1084' u='a' c='_ZN5clang13serialization6reader29ASTDeclContextNameLookupTrait11ReadFileRefERPKh'/>
+<use f='llvm/clang/lib/Serialization/ASTReader.cpp' l='1107' u='a' c='_ZN5clang13serialization6reader29ASTDeclContextNameLookupTrait7ReadKeyEPKhj'/>
+<use f='llvm/clang/lib/Serialization/ASTReader.cpp' l='1114' u='a' c='_ZN5clang13serialization6reader29ASTDeclContextNameLookupTrait7ReadKeyEPKhj'/>
+<use f='llvm/clang/lib/Serialization/ASTReader.cpp' l='1139' u='a' c='_ZN5clang13serialization6reader29ASTDeclContextNameLookupTrait12ReadDataIntoENS0_18DeclarationNameKeyEPKhjRNS2_17data_type_builderE'/>
+<offset>64</offset>

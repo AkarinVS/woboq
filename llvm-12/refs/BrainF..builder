@@ -1,0 +1,32 @@
+<dec f='llvm/llvm/examples/BrainF/BrainF.h' l='90' type='IRBuilder&lt;&gt; *'/>
+<use f='llvm/llvm/examples/BrainF/BrainF.cpp' l='60' u='r' c='_ZN6BrainF5parseEPSiiNS_12CompileFlagsERN4llvm11LLVMContextE'/>
+<use f='llvm/llvm/examples/BrainF/BrainF.cpp' l='88' u='w' c='_ZN6BrainF6headerERN4llvm11LLVMContextE'/>
+<use f='llvm/llvm/examples/BrainF/BrainF.cpp' l='92' u='r' c='_ZN6BrainF6headerERN4llvm11LLVMContextE'/>
+<use f='llvm/llvm/examples/BrainF/BrainF.cpp' l='110' u='r' c='_ZN6BrainF6headerERN4llvm11LLVMContextE'/>
+<use f='llvm/llvm/examples/BrainF/BrainF.cpp' l='117' u='r' c='_ZN6BrainF6headerERN4llvm11LLVMContextE'/>
+<use f='llvm/llvm/examples/BrainF/BrainF.cpp' l='122' u='r' c='_ZN6BrainF6headerERN4llvm11LLVMContextE'/>
+<use f='llvm/llvm/examples/BrainF/BrainF.cpp' l='210' u='r' c='_ZN6BrainF8readloopEPN4llvm7PHINodeEPNS0_10BasicBlockES4_RNS0_11LLVMContextE'/>
+<use f='llvm/llvm/examples/BrainF/BrainF.cpp' l='215' u='r' c='_ZN6BrainF8readloopEPN4llvm7PHINodeEPNS0_10BasicBlockES4_RNS0_11LLVMContextE'/>
+<use f='llvm/llvm/examples/BrainF/BrainF.cpp' l='219' u='r' c='_ZN6BrainF8readloopEPN4llvm7PHINodeEPNS0_10BasicBlockES4_RNS0_11LLVMContextE'/>
+<use f='llvm/llvm/examples/BrainF/BrainF.cpp' l='226' u='r' c='_ZN6BrainF8readloopEPN4llvm7PHINodeEPNS0_10BasicBlockES4_RNS0_11LLVMContextE'/>
+<use f='llvm/llvm/examples/BrainF/BrainF.cpp' l='229' u='r' c='_ZN6BrainF8readloopEPN4llvm7PHINodeEPNS0_10BasicBlockES4_RNS0_11LLVMContextE'/>
+<use f='llvm/llvm/examples/BrainF/BrainF.cpp' l='236' u='r' c='_ZN6BrainF8readloopEPN4llvm7PHINodeEPNS0_10BasicBlockES4_RNS0_11LLVMContextE'/>
+<use f='llvm/llvm/examples/BrainF/BrainF.cpp' l='246' u='r' c='_ZN6BrainF8readloopEPN4llvm7PHINodeEPNS0_10BasicBlockES4_RNS0_11LLVMContextE'/>
+<use f='llvm/llvm/examples/BrainF/BrainF.cpp' l='254' u='r' c='_ZN6BrainF8readloopEPN4llvm7PHINodeEPNS0_10BasicBlockES4_RNS0_11LLVMContextE'/>
+<use f='llvm/llvm/examples/BrainF/BrainF.cpp' l='258' u='r' c='_ZN6BrainF8readloopEPN4llvm7PHINodeEPNS0_10BasicBlockES4_RNS0_11LLVMContextE'/>
+<use f='llvm/llvm/examples/BrainF/BrainF.cpp' l='262' u='r' c='_ZN6BrainF8readloopEPN4llvm7PHINodeEPNS0_10BasicBlockES4_RNS0_11LLVMContextE'/>
+<use f='llvm/llvm/examples/BrainF/BrainF.cpp' l='267' u='r' c='_ZN6BrainF8readloopEPN4llvm7PHINodeEPNS0_10BasicBlockES4_RNS0_11LLVMContextE'/>
+<use f='llvm/llvm/examples/BrainF/BrainF.cpp' l='270' u='r' c='_ZN6BrainF8readloopEPN4llvm7PHINodeEPNS0_10BasicBlockES4_RNS0_11LLVMContextE'/>
+<use f='llvm/llvm/examples/BrainF/BrainF.cpp' l='278' u='r' c='_ZN6BrainF8readloopEPN4llvm7PHINodeEPNS0_10BasicBlockES4_RNS0_11LLVMContextE'/>
+<use f='llvm/llvm/examples/BrainF/BrainF.cpp' l='281' u='r' c='_ZN6BrainF8readloopEPN4llvm7PHINodeEPNS0_10BasicBlockES4_RNS0_11LLVMContextE'/>
+<use f='llvm/llvm/examples/BrainF/BrainF.cpp' l='285' u='r' c='_ZN6BrainF8readloopEPN4llvm7PHINodeEPNS0_10BasicBlockES4_RNS0_11LLVMContextE'/>
+<use f='llvm/llvm/examples/BrainF/BrainF.cpp' l='293' u='r' c='_ZN6BrainF8readloopEPN4llvm7PHINodeEPNS0_10BasicBlockES4_RNS0_11LLVMContextE'/>
+<use f='llvm/llvm/examples/BrainF/BrainF.cpp' l='296' u='r' c='_ZN6BrainF8readloopEPN4llvm7PHINodeEPNS0_10BasicBlockES4_RNS0_11LLVMContextE'/>
+<use f='llvm/llvm/examples/BrainF/BrainF.cpp' l='298' u='r' c='_ZN6BrainF8readloopEPN4llvm7PHINodeEPNS0_10BasicBlockES4_RNS0_11LLVMContextE'/>
+<use f='llvm/llvm/examples/BrainF/BrainF.cpp' l='432' u='r' c='_ZN6BrainF8readloopEPN4llvm7PHINodeEPNS0_10BasicBlockES4_RNS0_11LLVMContextE'/>
+<use f='llvm/llvm/examples/BrainF/BrainF.cpp' l='438' u='r' c='_ZN6BrainF8readloopEPN4llvm7PHINodeEPNS0_10BasicBlockES4_RNS0_11LLVMContextE'/>
+<use f='llvm/llvm/examples/BrainF/BrainF.cpp' l='454' u='r' c='_ZN6BrainF8readloopEPN4llvm7PHINodeEPNS0_10BasicBlockES4_RNS0_11LLVMContextE'/>
+<use f='llvm/llvm/examples/BrainF/BrainF.cpp' l='457' u='r' c='_ZN6BrainF8readloopEPN4llvm7PHINodeEPNS0_10BasicBlockES4_RNS0_11LLVMContextE'/>
+<use f='llvm/llvm/examples/BrainF/BrainF.cpp' l='468' u='r' c='_ZN6BrainF8readloopEPN4llvm7PHINodeEPNS0_10BasicBlockES4_RNS0_11LLVMContextE'/>
+<offset>768</offset>
+<doc f='llvm/llvm/examples/BrainF/BrainF.h' l='89'>/// Variables</doc>

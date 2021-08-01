@@ -1,0 +1,62 @@
+<!doctype html>
+<html>
+<head>
+<meta name="viewport" content="width=device-width, initial-scale=1.0"><title>fixxfti.c source code [llvm/compiler-rt/lib/builtins/fixxfti.c] - Woboq Code Browser</title>
+<link rel="stylesheet" href="../../../.././data/qtcreator.css" title="QtCreator"/>
+<link rel="alternate stylesheet" href="../../../.././data/kdevelop.css" title="KDevelop"/>
+<script type="text/javascript" src="../../../.././data/jquery/jquery.min.js"></script>
+<script type="text/javascript" src="../../../.././data/jquery/jquery-ui.min.js"></script>
+<script>var file = 'llvm/compiler-rt/lib/builtins/fixxfti.c'; var root_path = '../../../..'; var data_path = '../../../.././data'; var ecma_script_api_version = 2;</script>
+<script src='../../../.././data/codebrowser.js'></script>
+</head>
+<body><div id='header'><h1 id='breadcrumb'><span>Browse the source code of </span><a href='../../..'>llvm</a>/<a href='../..'>compiler-rt</a>/<a href='..'>lib</a>/<a href='./'>builtins</a>/<a href='fixxfti.c.html'>fixxfti.c</a></h1></div>
+<hr/><div id='content'><table class="code">
+<tr><th id="1">1</th><td><i>//===-- fixxfti.c - Implement __fixxfti -----------------------------------===//</i></td></tr>
+<tr><th id="2">2</th><td><i>//</i></td></tr>
+<tr><th id="3">3</th><td><i>// Part of the LLVM Project, under the Apache License v2.0 with LLVM Exceptions.</i></td></tr>
+<tr><th id="4">4</th><td><i>// See <a href="https://llvm.org/LICENSE.txt">https://llvm.org/LICENSE.txt</a> for license information.</i></td></tr>
+<tr><th id="5">5</th><td><i>// SPDX-License-Identifier: Apache-2.0 WITH LLVM-exception</i></td></tr>
+<tr><th id="6">6</th><td><i>//</i></td></tr>
+<tr><th id="7">7</th><td><i>//===----------------------------------------------------------------------===//</i></td></tr>
+<tr><th id="8">8</th><td><i>//</i></td></tr>
+<tr><th id="9">9</th><td><i>// This file implements __fixxfti for the compiler_rt library.</i></td></tr>
+<tr><th id="10">10</th><td><i>//</i></td></tr>
+<tr><th id="11">11</th><td><i>//===----------------------------------------------------------------------===//</i></td></tr>
+<tr><th id="12">12</th><td></td></tr>
+<tr><th id="13">13</th><td><u>#include <a href="int_lib.h.html">"int_lib.h"</a></u></td></tr>
+<tr><th id="14">14</th><td></td></tr>
+<tr><th id="15">15</th><td><u>#<span data-ppcond="15">ifdef</span> <span class="macro" data-ref="_M/CRT_HAS_128BIT">CRT_HAS_128BIT</span></u></td></tr>
+<tr><th id="16">16</th><td></td></tr>
+<tr><th id="17">17</th><td><i>// Returns: convert a to a signed long long, rounding toward zero.</i></td></tr>
+<tr><th id="18">18</th><td><i></i></td></tr>
+<tr><th id="19">19</th><td><i>// Assumption: long double is an intel 80 bit floating point type padded with 6</i></td></tr>
+<tr><th id="20">20</th><td><i>// bytes ti_int is a 128 bit integral type value in long double is representable</i></td></tr>
+<tr><th id="21">21</th><td><i>// in ti_int</i></td></tr>
+<tr><th id="22">22</th><td><i></i></td></tr>
+<tr><th id="23">23</th><td><i>// gggg gggg gggg gggg gggg gggg gggg gggg | gggg gggg gggg gggg seee eeee eeee</i></td></tr>
+<tr><th id="24">24</th><td><i>// eeee | 1mmm mmmm mmmm mmmm mmmm mmmm mmmm mmmm | mmmm mmmm mmmm mmmm mmmm</i></td></tr>
+<tr><th id="25">25</th><td><i>// mmmm mmmm mmmm</i></td></tr>
+<tr><th id="26">26</th><td></td></tr>
+<tr><th id="27">27</th><td>COMPILER_RT_ABI ti_int __fixxfti(<em>long</em> <em>double</em> a) {</td></tr>
+<tr><th id="28">28</th><td>  <em>const</em> ti_int ti_max = (ti_int)((~(tu_int)<var>0</var>) / <var>2</var>);</td></tr>
+<tr><th id="29">29</th><td>  <em>const</em> ti_int ti_min = -ti_max - <var>1</var>;</td></tr>
+<tr><th id="30">30</th><td>  long_double_bits fb;</td></tr>
+<tr><th id="31">31</th><td>  fb.f = a;</td></tr>
+<tr><th id="32">32</th><td>  <em>int</em> e = (fb.u.high.s.low &amp; <var>0x00007FFF</var>) - <var>16383</var>;</td></tr>
+<tr><th id="33">33</th><td>  <b>if</b> (e &lt; <var>0</var>)</td></tr>
+<tr><th id="34">34</th><td>    <b>return</b> <var>0</var>;</td></tr>
+<tr><th id="35">35</th><td>  ti_int s = -(si_int)((fb.u.high.s.low &amp; <var>0x00008000</var>) &gt;&gt; <var>15</var>);</td></tr>
+<tr><th id="36">36</th><td>  ti_int r = fb.u.low.all;</td></tr>
+<tr><th id="37">37</th><td>  <b>if</b> ((<em>unsigned</em>)e &gt;= <b>sizeof</b>(ti_int) * CHAR_BIT)</td></tr>
+<tr><th id="38">38</th><td>    <b>return</b> a &gt; <var>0</var> ? ti_max : ti_min;</td></tr>
+<tr><th id="39">39</th><td>  <b>if</b> (e &gt; <var>63</var>)</td></tr>
+<tr><th id="40">40</th><td>    r &lt;&lt;= (e - <var>63</var>);</td></tr>
+<tr><th id="41">41</th><td>  <b>else</b></td></tr>
+<tr><th id="42">42</th><td>    r &gt;&gt;= (<var>63</var> - e);</td></tr>
+<tr><th id="43">43</th><td>  <b>return</b> (r ^ s) - s;</td></tr>
+<tr><th id="44">44</th><td>}</td></tr>
+<tr><th id="45">45</th><td></td></tr>
+<tr><th id="46">46</th><td><u>#<span data-ppcond="15">endif</span> // CRT_HAS_128BIT</u></td></tr>
+<tr><th id="47">47</th><td></td></tr>
+</table><hr/><p id='footer'>
+Generated on <em>2021-Jul-01</em> from project llvm revision <em>12</em>

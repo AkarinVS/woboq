@@ -1,0 +1,19 @@
+<dec f='llvm/llvm/tools/llvm-objcopy/MachO/MachOWriter.h' l='27' type='llvm::objcopy::Buffer &amp;'/>
+<use f='llvm/llvm/tools/llvm-objcopy/MachO/MachOWriter.h' l='58' u='w' c='_ZN4llvm7objcopy5macho11MachOWriterC1ERNS1_6ObjectEbbmRNS0_6BufferE'/>
+<offset>192</offset>
+<use f='llvm/llvm/tools/llvm-objcopy/MachO/MachOWriter.cpp' l='162' u='m' c='_ZN4llvm7objcopy5macho11MachOWriter11writeHeaderEv'/>
+<use f='llvm/llvm/tools/llvm-objcopy/MachO/MachOWriter.cpp' l='166' u='m' c='_ZN4llvm7objcopy5macho11MachOWriter17writeLoadCommandsEv'/>
+<use f='llvm/llvm/tools/llvm-objcopy/MachO/MachOWriter.cpp' l='260' u='m' c='_ZN4llvm7objcopy5macho11MachOWriter13writeSectionsEv'/>
+<use f='llvm/llvm/tools/llvm-objcopy/MachO/MachOWriter.cpp' l='273' u='m' c='_ZN4llvm7objcopy5macho11MachOWriter13writeSectionsEv'/>
+<use f='llvm/llvm/tools/llvm-objcopy/MachO/MachOWriter.cpp' l='303' u='m' c='_ZN4llvm7objcopy5macho11MachOWriter16writeStringTableEv'/>
+<use f='llvm/llvm/tools/llvm-objcopy/MachO/MachOWriter.cpp' l='314' u='m' c='_ZN4llvm7objcopy5macho11MachOWriter16writeSymbolTableEv'/>
+<use f='llvm/llvm/tools/llvm-objcopy/MachO/MachOWriter.cpp' l='333' u='m' c='_ZN4llvm7objcopy5macho11MachOWriter15writeRebaseInfoEv'/>
+<use f='llvm/llvm/tools/llvm-objcopy/MachO/MachOWriter.cpp' l='345' u='m' c='_ZN4llvm7objcopy5macho11MachOWriter13writeBindInfoEv'/>
+<use f='llvm/llvm/tools/llvm-objcopy/MachO/MachOWriter.cpp' l='357' u='m' c='_ZN4llvm7objcopy5macho11MachOWriter17writeWeakBindInfoEv'/>
+<use f='llvm/llvm/tools/llvm-objcopy/MachO/MachOWriter.cpp' l='369' u='m' c='_ZN4llvm7objcopy5macho11MachOWriter17writeLazyBindInfoEv'/>
+<use f='llvm/llvm/tools/llvm-objcopy/MachO/MachOWriter.cpp' l='381' u='m' c='_ZN4llvm7objcopy5macho11MachOWriter15writeExportInfoEv'/>
+<use f='llvm/llvm/tools/llvm-objcopy/MachO/MachOWriter.cpp' l='396' u='m' c='_ZN4llvm7objcopy5macho11MachOWriter24writeIndirectSymbolTableEv'/>
+<use f='llvm/llvm/tools/llvm-objcopy/MachO/MachOWriter.cpp' l='410' u='m' c='_ZN4llvm7objcopy5macho11MachOWriter13writeLinkDataENS_8OptionalImEERKNS1_8LinkDataE'/>
+<use f='llvm/llvm/tools/llvm-objcopy/MachO/MachOWriter.cpp' l='514' u='m' c='_ZN4llvm7objcopy5macho11MachOWriter5writeEv'/>
+<use f='llvm/llvm/tools/llvm-objcopy/MachO/MachOWriter.cpp' l='516' u='m' c='_ZN4llvm7objcopy5macho11MachOWriter5writeEv'/>
+<use f='llvm/llvm/tools/llvm-objcopy/MachO/MachOWriter.cpp' l='521' u='m' c='_ZN4llvm7objcopy5macho11MachOWriter5writeEv'/>

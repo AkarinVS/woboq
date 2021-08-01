@@ -1,0 +1,256 @@
+<!doctype html>
+<html>
+<head>
+<meta name="viewport" content="width=device-width, initial-scale=1.0"><title>sanitizer_solaris.cpp source code [llvm/compiler-rt/lib/sanitizer_common/sanitizer_solaris.cpp] - Woboq Code Browser</title>
+<link rel="stylesheet" href="../../../.././data/qtcreator.css" title="QtCreator"/>
+<link rel="alternate stylesheet" href="../../../.././data/kdevelop.css" title="KDevelop"/>
+<script type="text/javascript" src="../../../.././data/jquery/jquery.min.js"></script>
+<script type="text/javascript" src="../../../.././data/jquery/jquery-ui.min.js"></script>
+<script>var file = 'llvm/compiler-rt/lib/sanitizer_common/sanitizer_solaris.cpp'; var root_path = '../../../..'; var data_path = '../../../.././data'; var ecma_script_api_version = 2;</script>
+<script src='../../../.././data/codebrowser.js'></script>
+</head>
+<body><div id='header'><h1 id='breadcrumb'><span>Browse the source code of </span><a href='../../..'>llvm</a>/<a href='../..'>compiler-rt</a>/<a href='..'>lib</a>/<a href='./'>sanitizer_common</a>/<a href='sanitizer_solaris.cpp.html'>sanitizer_solaris.cpp</a></h1></div>
+<hr/><div id='content'><table class="code">
+<tr><th id="1">1</th><td><i>//===-- sanitizer_solaris.cpp ---------------------------------------------===//</i></td></tr>
+<tr><th id="2">2</th><td><i>//</i></td></tr>
+<tr><th id="3">3</th><td><i>// Part of the LLVM Project, under the Apache License v2.0 with LLVM Exceptions.</i></td></tr>
+<tr><th id="4">4</th><td><i>// See <a href="https://llvm.org/LICENSE.txt">https://llvm.org/LICENSE.txt</a> for license information.</i></td></tr>
+<tr><th id="5">5</th><td><i>// SPDX-License-Identifier: Apache-2.0 WITH LLVM-exception</i></td></tr>
+<tr><th id="6">6</th><td><i>//</i></td></tr>
+<tr><th id="7">7</th><td><i>//===----------------------------------------------------------------------===//</i></td></tr>
+<tr><th id="8">8</th><td><i>//</i></td></tr>
+<tr><th id="9">9</th><td><i>// This file is shared between various sanitizers' runtime libraries and</i></td></tr>
+<tr><th id="10">10</th><td><i>// implements Solaris-specific functions.</i></td></tr>
+<tr><th id="11">11</th><td><i>//===----------------------------------------------------------------------===//</i></td></tr>
+<tr><th id="12">12</th><td></td></tr>
+<tr><th id="13">13</th><td><u>#include <a href="sanitizer_platform.h.html">"sanitizer_platform.h"</a></u></td></tr>
+<tr><th id="14">14</th><td><u>#<span data-ppcond="14">if</span> <a class="macro" href="sanitizer_platform.h.html#56" title="0" data-ref="_M/SANITIZER_SOLARIS">SANITIZER_SOLARIS</a></u></td></tr>
+<tr><th id="15">15</th><td></td></tr>
+<tr><th id="16">16</th><td><u>#include &lt;stdio.h&gt;</u></td></tr>
+<tr><th id="17">17</th><td></td></tr>
+<tr><th id="18">18</th><td><u>#include "sanitizer_common.h"</u></td></tr>
+<tr><th id="19">19</th><td><u>#include "sanitizer_flags.h"</u></td></tr>
+<tr><th id="20">20</th><td><u>#include "sanitizer_internal_defs.h"</u></td></tr>
+<tr><th id="21">21</th><td><u>#include "sanitizer_libc.h"</u></td></tr>
+<tr><th id="22">22</th><td><u>#include "sanitizer_placement_new.h"</u></td></tr>
+<tr><th id="23">23</th><td><u>#include "sanitizer_platform_limits_posix.h"</u></td></tr>
+<tr><th id="24">24</th><td><u>#include "sanitizer_procmaps.h"</u></td></tr>
+<tr><th id="25">25</th><td></td></tr>
+<tr><th id="26">26</th><td><u>#include &lt;fcntl.h&gt;</u></td></tr>
+<tr><th id="27">27</th><td><u>#include &lt;pthread.h&gt;</u></td></tr>
+<tr><th id="28">28</th><td><u>#include &lt;sched.h&gt;</u></td></tr>
+<tr><th id="29">29</th><td><u>#include &lt;thread.h&gt;</u></td></tr>
+<tr><th id="30">30</th><td><u>#include &lt;synch.h&gt;</u></td></tr>
+<tr><th id="31">31</th><td><u>#include &lt;signal.h&gt;</u></td></tr>
+<tr><th id="32">32</th><td><u>#include &lt;sys/mman.h&gt;</u></td></tr>
+<tr><th id="33">33</th><td><u>#include &lt;sys/resource.h&gt;</u></td></tr>
+<tr><th id="34">34</th><td><u>#include &lt;sys/stat.h&gt;</u></td></tr>
+<tr><th id="35">35</th><td><u>#include &lt;sys/types.h&gt;</u></td></tr>
+<tr><th id="36">36</th><td><u>#include &lt;dirent.h&gt;</u></td></tr>
+<tr><th id="37">37</th><td><u>#include &lt;unistd.h&gt;</u></td></tr>
+<tr><th id="38">38</th><td><u>#include &lt;errno.h&gt;</u></td></tr>
+<tr><th id="39">39</th><td><u>#include &lt;stdlib.h&gt;</u></td></tr>
+<tr><th id="40">40</th><td></td></tr>
+<tr><th id="41">41</th><td><b>namespace</b> __sanitizer {</td></tr>
+<tr><th id="42">42</th><td></td></tr>
+<tr><th id="43">43</th><td><i>//#include "sanitizer_syscall_generic.inc"</i></td></tr>
+<tr><th id="44">44</th><td></td></tr>
+<tr><th id="45">45</th><td><u>#define _REAL(func) _ ## func</u></td></tr>
+<tr><th id="46">46</th><td><u>#define DECLARE__REAL(ret_type, func, ...) \</u></td></tr>
+<tr><th id="47">47</th><td><u>  extern "C" ret_type _REAL(func)(__VA_ARGS__)</u></td></tr>
+<tr><th id="48">48</th><td><u>#define DECLARE__REAL_AND_INTERNAL(ret_type, func, ...) \</u></td></tr>
+<tr><th id="49">49</th><td><u>  DECLARE__REAL(ret_type, func, __VA_ARGS__); \</u></td></tr>
+<tr><th id="50">50</th><td><u>  ret_type internal_ ## func(__VA_ARGS__)</u></td></tr>
+<tr><th id="51">51</th><td></td></tr>
+<tr><th id="52">52</th><td><u>#if !defined(_LP64) &amp;&amp; _FILE_OFFSET_BITS == 64</u></td></tr>
+<tr><th id="53">53</th><td><u>#define _REAL64(func) _ ## func ## 64</u></td></tr>
+<tr><th id="54">54</th><td><u>#else</u></td></tr>
+<tr><th id="55">55</th><td><u>#define _REAL64(func) _REAL(func)</u></td></tr>
+<tr><th id="56">56</th><td><u>#endif</u></td></tr>
+<tr><th id="57">57</th><td><u>#define DECLARE__REAL64(ret_type, func, ...) \</u></td></tr>
+<tr><th id="58">58</th><td><u>  extern "C" ret_type _REAL64(func)(__VA_ARGS__)</u></td></tr>
+<tr><th id="59">59</th><td><u>#define DECLARE__REAL_AND_INTERNAL64(ret_type, func, ...) \</u></td></tr>
+<tr><th id="60">60</th><td><u>  DECLARE__REAL64(ret_type, func, __VA_ARGS__); \</u></td></tr>
+<tr><th id="61">61</th><td><u>  ret_type internal_ ## func(__VA_ARGS__)</u></td></tr>
+<tr><th id="62">62</th><td></td></tr>
+<tr><th id="63">63</th><td><i>// ---------------------- sanitizer_libc.h</i></td></tr>
+<tr><th id="64">64</th><td>DECLARE__REAL_AND_INTERNAL64(uptr, mmap, <em>void</em> *addr, uptr <i>/*size_t*/</i> length,</td></tr>
+<tr><th id="65">65</th><td>                             <em>int</em> prot, <em>int</em> flags, <em>int</em> fd, OFF_T offset) {</td></tr>
+<tr><th id="66">66</th><td>  <b>return</b> (uptr)_REAL64(mmap)(addr, length, prot, flags, fd, offset);</td></tr>
+<tr><th id="67">67</th><td>}</td></tr>
+<tr><th id="68">68</th><td></td></tr>
+<tr><th id="69">69</th><td>DECLARE__REAL_AND_INTERNAL(uptr, munmap, <em>void</em> *addr, uptr length) {</td></tr>
+<tr><th id="70">70</th><td>  <b>return</b> _REAL(munmap)(addr, length);</td></tr>
+<tr><th id="71">71</th><td>}</td></tr>
+<tr><th id="72">72</th><td></td></tr>
+<tr><th id="73">73</th><td>DECLARE__REAL_AND_INTERNAL(<em>int</em>, mprotect, <em>void</em> *addr, uptr length, <em>int</em> prot) {</td></tr>
+<tr><th id="74">74</th><td>  <b>return</b> _REAL(mprotect)(addr, length, prot);</td></tr>
+<tr><th id="75">75</th><td>}</td></tr>
+<tr><th id="76">76</th><td></td></tr>
+<tr><th id="77">77</th><td><i>// Illumos' declaration of madvise cannot be made visible if _XOPEN_SOURCE</i></td></tr>
+<tr><th id="78">78</th><td><i>// is defined as g++ does on Solaris.</i></td></tr>
+<tr><th id="79">79</th><td><i>//</i></td></tr>
+<tr><th id="80">80</th><td><i>// This declaration is consistent with Solaris 11.4. Both Illumos and Solaris</i></td></tr>
+<tr><th id="81">81</th><td><i>// versions older than 11.4 declared madvise with a caddr_t as the first</i></td></tr>
+<tr><th id="82">82</th><td><i>// argument, but we don't currently support Solaris versions older than 11.4,</i></td></tr>
+<tr><th id="83">83</th><td><i>// and as mentioned above the declaration is not visible on Illumos so we can</i></td></tr>
+<tr><th id="84">84</th><td><i>// use any declaration we like on Illumos.</i></td></tr>
+<tr><th id="85">85</th><td><b>extern</b> <q>"C"</q> <em>int</em> madvise(<em>void</em> *, size_t, <em>int</em>);</td></tr>
+<tr><th id="86">86</th><td></td></tr>
+<tr><th id="87">87</th><td><em>int</em> internal_madvise(uptr addr, uptr length, <em>int</em> advice) {</td></tr>
+<tr><th id="88">88</th><td>  <b>return</b> madvise((<em>void</em> *)addr, length, advice);</td></tr>
+<tr><th id="89">89</th><td>}</td></tr>
+<tr><th id="90">90</th><td></td></tr>
+<tr><th id="91">91</th><td>DECLARE__REAL_AND_INTERNAL(uptr, close, fd_t fd) {</td></tr>
+<tr><th id="92">92</th><td>  <b>return</b> _REAL(close)(fd);</td></tr>
+<tr><th id="93">93</th><td>}</td></tr>
+<tr><th id="94">94</th><td></td></tr>
+<tr><th id="95">95</th><td><b>extern</b> <q>"C"</q> <em>int</em> _REAL64(open)(<em>const</em> <em>char</em> *, <em>int</em>, ...);</td></tr>
+<tr><th id="96">96</th><td></td></tr>
+<tr><th id="97">97</th><td>uptr internal_open(<em>const</em> <em>char</em> *filename, <em>int</em> flags) {</td></tr>
+<tr><th id="98">98</th><td>  <b>return</b> _REAL64(open)(filename, flags);</td></tr>
+<tr><th id="99">99</th><td>}</td></tr>
+<tr><th id="100">100</th><td></td></tr>
+<tr><th id="101">101</th><td>uptr internal_open(<em>const</em> <em>char</em> *filename, <em>int</em> flags, u32 mode) {</td></tr>
+<tr><th id="102">102</th><td>  <b>return</b> _REAL64(open)(filename, flags, mode);</td></tr>
+<tr><th id="103">103</th><td>}</td></tr>
+<tr><th id="104">104</th><td></td></tr>
+<tr><th id="105">105</th><td>DECLARE__REAL_AND_INTERNAL(uptr, read, fd_t fd, <em>void</em> *buf, uptr count) {</td></tr>
+<tr><th id="106">106</th><td>  <b>return</b> _REAL(read)(fd, buf, count);</td></tr>
+<tr><th id="107">107</th><td>}</td></tr>
+<tr><th id="108">108</th><td></td></tr>
+<tr><th id="109">109</th><td>DECLARE__REAL_AND_INTERNAL(uptr, write, fd_t fd, <em>const</em> <em>void</em> *buf, uptr count) {</td></tr>
+<tr><th id="110">110</th><td>  <b>return</b> _REAL(write)(fd, buf, count);</td></tr>
+<tr><th id="111">111</th><td>}</td></tr>
+<tr><th id="112">112</th><td></td></tr>
+<tr><th id="113">113</th><td><i>// FIXME: There's only _ftruncate64 beginning with Solaris 11.</i></td></tr>
+<tr><th id="114">114</th><td>DECLARE__REAL_AND_INTERNAL(uptr, ftruncate, fd_t fd, uptr size) {</td></tr>
+<tr><th id="115">115</th><td>  <b>return</b> ftruncate(fd, size);</td></tr>
+<tr><th id="116">116</th><td>}</td></tr>
+<tr><th id="117">117</th><td></td></tr>
+<tr><th id="118">118</th><td>DECLARE__REAL_AND_INTERNAL64(uptr, stat, <em>const</em> <em>char</em> *path, <em>void</em> *buf) {</td></tr>
+<tr><th id="119">119</th><td>  <b>return</b> _REAL64(stat)(path, (<b>struct</b> stat *)buf);</td></tr>
+<tr><th id="120">120</th><td>}</td></tr>
+<tr><th id="121">121</th><td></td></tr>
+<tr><th id="122">122</th><td>DECLARE__REAL_AND_INTERNAL64(uptr, lstat, <em>const</em> <em>char</em> *path, <em>void</em> *buf) {</td></tr>
+<tr><th id="123">123</th><td>  <b>return</b> _REAL64(lstat)(path, (<b>struct</b> stat *)buf);</td></tr>
+<tr><th id="124">124</th><td>}</td></tr>
+<tr><th id="125">125</th><td></td></tr>
+<tr><th id="126">126</th><td>DECLARE__REAL_AND_INTERNAL64(uptr, fstat, fd_t fd, <em>void</em> *buf) {</td></tr>
+<tr><th id="127">127</th><td>  <b>return</b> _REAL64(fstat)(fd, (<b>struct</b> stat *)buf);</td></tr>
+<tr><th id="128">128</th><td>}</td></tr>
+<tr><th id="129">129</th><td></td></tr>
+<tr><th id="130">130</th><td>uptr internal_filesize(fd_t fd) {</td></tr>
+<tr><th id="131">131</th><td>  <b>struct</b> stat st;</td></tr>
+<tr><th id="132">132</th><td>  <b>if</b> (internal_fstat(fd, &amp;st))</td></tr>
+<tr><th id="133">133</th><td>    <b>return</b> -<var>1</var>;</td></tr>
+<tr><th id="134">134</th><td>  <b>return</b> (uptr)st.st_size;</td></tr>
+<tr><th id="135">135</th><td>}</td></tr>
+<tr><th id="136">136</th><td></td></tr>
+<tr><th id="137">137</th><td>DECLARE__REAL_AND_INTERNAL(uptr, dup, <em>int</em> oldfd) {</td></tr>
+<tr><th id="138">138</th><td>  <b>return</b> _REAL(dup)(oldfd);</td></tr>
+<tr><th id="139">139</th><td>}</td></tr>
+<tr><th id="140">140</th><td></td></tr>
+<tr><th id="141">141</th><td>DECLARE__REAL_AND_INTERNAL(uptr, dup2, <em>int</em> oldfd, <em>int</em> newfd) {</td></tr>
+<tr><th id="142">142</th><td>  <b>return</b> _REAL(dup2)(oldfd, newfd);</td></tr>
+<tr><th id="143">143</th><td>}</td></tr>
+<tr><th id="144">144</th><td></td></tr>
+<tr><th id="145">145</th><td>DECLARE__REAL_AND_INTERNAL(uptr, readlink, <em>const</em> <em>char</em> *path, <em>char</em> *buf,</td></tr>
+<tr><th id="146">146</th><td>                           uptr bufsize) {</td></tr>
+<tr><th id="147">147</th><td>  <b>return</b> _REAL(readlink)(path, buf, bufsize);</td></tr>
+<tr><th id="148">148</th><td>}</td></tr>
+<tr><th id="149">149</th><td></td></tr>
+<tr><th id="150">150</th><td>DECLARE__REAL_AND_INTERNAL(uptr, unlink, <em>const</em> <em>char</em> *path) {</td></tr>
+<tr><th id="151">151</th><td>  <b>return</b> _REAL(unlink)(path);</td></tr>
+<tr><th id="152">152</th><td>}</td></tr>
+<tr><th id="153">153</th><td></td></tr>
+<tr><th id="154">154</th><td>DECLARE__REAL_AND_INTERNAL(uptr, rename, <em>const</em> <em>char</em> *oldpath,</td></tr>
+<tr><th id="155">155</th><td>                           <em>const</em> <em>char</em> *newpath) {</td></tr>
+<tr><th id="156">156</th><td>  <b>return</b> _REAL(rename)(oldpath, newpath);</td></tr>
+<tr><th id="157">157</th><td>}</td></tr>
+<tr><th id="158">158</th><td></td></tr>
+<tr><th id="159">159</th><td>DECLARE__REAL_AND_INTERNAL(uptr, sched_yield, <em>void</em>) {</td></tr>
+<tr><th id="160">160</th><td>  <b>return</b> sched_yield();</td></tr>
+<tr><th id="161">161</th><td>}</td></tr>
+<tr><th id="162">162</th><td></td></tr>
+<tr><th id="163">163</th><td>DECLARE__REAL_AND_INTERNAL(uptr, execve, <em>const</em> <em>char</em> *filename,</td></tr>
+<tr><th id="164">164</th><td>                           <em>char</em> *<em>const</em> argv[], <em>char</em> *<em>const</em> envp[]) {</td></tr>
+<tr><th id="165">165</th><td>  <b>return</b> _REAL(execve)(filename, argv, envp);</td></tr>
+<tr><th id="166">166</th><td>}</td></tr>
+<tr><th id="167">167</th><td></td></tr>
+<tr><th id="168">168</th><td>DECLARE__REAL_AND_INTERNAL(uptr, waitpid, <em>int</em> pid, <em>int</em> *status, <em>int</em> options) {</td></tr>
+<tr><th id="169">169</th><td>  <b>return</b> _REAL(waitpid)(pid, status, options);</td></tr>
+<tr><th id="170">170</th><td>}</td></tr>
+<tr><th id="171">171</th><td></td></tr>
+<tr><th id="172">172</th><td>DECLARE__REAL_AND_INTERNAL(uptr, getpid, <em>void</em>) {</td></tr>
+<tr><th id="173">173</th><td>  <b>return</b> _REAL(getpid)();</td></tr>
+<tr><th id="174">174</th><td>}</td></tr>
+<tr><th id="175">175</th><td></td></tr>
+<tr><th id="176">176</th><td><i>// FIXME: This might be wrong: _getdents doesn't take a struct linux_dirent *.</i></td></tr>
+<tr><th id="177">177</th><td>DECLARE__REAL_AND_INTERNAL64(uptr, getdents, fd_t fd, <b>struct</b> linux_dirent *dirp,</td></tr>
+<tr><th id="178">178</th><td>                             <em>unsigned</em> <em>int</em> count) {</td></tr>
+<tr><th id="179">179</th><td>  <b>return</b> _REAL64(getdents)(fd, dirp, count);</td></tr>
+<tr><th id="180">180</th><td>}</td></tr>
+<tr><th id="181">181</th><td></td></tr>
+<tr><th id="182">182</th><td>DECLARE__REAL_AND_INTERNAL64(uptr, lseek, fd_t fd, OFF_T offset, <em>int</em> whence) {</td></tr>
+<tr><th id="183">183</th><td>  <b>return</b> _REAL64(lseek)(fd, offset, whence);</td></tr>
+<tr><th id="184">184</th><td>}</td></tr>
+<tr><th id="185">185</th><td></td></tr>
+<tr><th id="186">186</th><td><i>// FIXME: This might be wrong: _sigfillset doesn't take a</i></td></tr>
+<tr><th id="187">187</th><td><i>// __sanitizer_sigset_t *.</i></td></tr>
+<tr><th id="188">188</th><td>DECLARE__REAL_AND_INTERNAL(<em>void</em>, sigfillset, __sanitizer_sigset_t *set) {</td></tr>
+<tr><th id="189">189</th><td>  _REAL(sigfillset)(set);</td></tr>
+<tr><th id="190">190</th><td>}</td></tr>
+<tr><th id="191">191</th><td></td></tr>
+<tr><th id="192">192</th><td><i>// FIXME: This might be wrong: _sigprocmask doesn't take __sanitizer_sigset_t *.</i></td></tr>
+<tr><th id="193">193</th><td>DECLARE__REAL_AND_INTERNAL(uptr, sigprocmask, <em>int</em> how,</td></tr>
+<tr><th id="194">194</th><td>                           __sanitizer_sigset_t *set,</td></tr>
+<tr><th id="195">195</th><td>                           __sanitizer_sigset_t *oldset) {</td></tr>
+<tr><th id="196">196</th><td>  <b>return</b> _REAL(sigprocmask)(how, set, oldset);</td></tr>
+<tr><th id="197">197</th><td>}</td></tr>
+<tr><th id="198">198</th><td></td></tr>
+<tr><th id="199">199</th><td>DECLARE__REAL_AND_INTERNAL(<em>int</em>, fork, <em>void</em>) {</td></tr>
+<tr><th id="200">200</th><td>  <i>// TODO(glider): this may call user's pthread_atfork() handlers which is bad.</i></td></tr>
+<tr><th id="201">201</th><td>  <b>return</b> _REAL(fork)();</td></tr>
+<tr><th id="202">202</th><td>}</td></tr>
+<tr><th id="203">203</th><td></td></tr>
+<tr><th id="204">204</th><td>u64 NanoTime() {</td></tr>
+<tr><th id="205">205</th><td>  <b>return</b> gethrtime();</td></tr>
+<tr><th id="206">206</th><td>}</td></tr>
+<tr><th id="207">207</th><td></td></tr>
+<tr><th id="208">208</th><td>uptr internal_clock_gettime(__sanitizer_clockid_t clk_id, <em>void</em> *tp) {</td></tr>
+<tr><th id="209">209</th><td>  <i>// FIXME: No internal variant.</i></td></tr>
+<tr><th id="210">210</th><td>  <b>return</b> clock_gettime(clk_id, (timespec *)tp);</td></tr>
+<tr><th id="211">211</th><td>}</td></tr>
+<tr><th id="212">212</th><td></td></tr>
+<tr><th id="213">213</th><td><i>// ----------------- sanitizer_common.h</i></td></tr>
+<tr><th id="214">214</th><td>BlockingMutex::BlockingMutex() {</td></tr>
+<tr><th id="215">215</th><td>  CHECK(<b>sizeof</b>(mutex_t) &lt;= <b>sizeof</b>(opaque_storage_));</td></tr>
+<tr><th id="216">216</th><td>  internal_memset(<b>this</b>, <var>0</var>, <b>sizeof</b>(*<b>this</b>));</td></tr>
+<tr><th id="217">217</th><td>  CHECK_EQ(mutex_init((mutex_t *)&amp;opaque_storage_, USYNC_THREAD, NULL), <var>0</var>);</td></tr>
+<tr><th id="218">218</th><td>}</td></tr>
+<tr><th id="219">219</th><td></td></tr>
+<tr><th id="220">220</th><td><em>void</em> BlockingMutex::Lock() {</td></tr>
+<tr><th id="221">221</th><td>  CHECK(<b>sizeof</b>(mutex_t) &lt;= <b>sizeof</b>(opaque_storage_));</td></tr>
+<tr><th id="222">222</th><td>  CHECK_NE(owner_, (uptr)thr_self());</td></tr>
+<tr><th id="223">223</th><td>  CHECK_EQ(mutex_lock((mutex_t *)&amp;opaque_storage_), <var>0</var>);</td></tr>
+<tr><th id="224">224</th><td>  CHECK(!owner_);</td></tr>
+<tr><th id="225">225</th><td>  owner_ = (uptr)thr_self();</td></tr>
+<tr><th id="226">226</th><td>}</td></tr>
+<tr><th id="227">227</th><td></td></tr>
+<tr><th id="228">228</th><td><em>void</em> BlockingMutex::Unlock() {</td></tr>
+<tr><th id="229">229</th><td>  CHECK(owner_ == (uptr)thr_self());</td></tr>
+<tr><th id="230">230</th><td>  owner_ = <var>0</var>;</td></tr>
+<tr><th id="231">231</th><td>  CHECK_EQ(mutex_unlock((mutex_t *)&amp;opaque_storage_), <var>0</var>);</td></tr>
+<tr><th id="232">232</th><td>}</td></tr>
+<tr><th id="233">233</th><td></td></tr>
+<tr><th id="234">234</th><td><em>void</em> BlockingMutex::CheckLocked() {</td></tr>
+<tr><th id="235">235</th><td>  CHECK_EQ((uptr)thr_self(), owner_);</td></tr>
+<tr><th id="236">236</th><td>}</td></tr>
+<tr><th id="237">237</th><td></td></tr>
+<tr><th id="238">238</th><td>}  <i>// namespace __sanitizer</i></td></tr>
+<tr><th id="239">239</th><td></td></tr>
+<tr><th id="240">240</th><td><u>#<span data-ppcond="14">endif</span>  // SANITIZER_SOLARIS</u></td></tr>
+<tr><th id="241">241</th><td></td></tr>
+</table><hr/><p id='footer'>
+Generated on <em>2021-Jul-01</em> from project llvm revision <em>12</em>

@@ -1,0 +1,327 @@
+<!doctype html>
+<html>
+<head>
+<meta name="viewport" content="width=device-width, initial-scale=1.0"><title>Threading.inc source code [llvm/llvm/lib/Support/Unix/Threading.inc] - Woboq Code Browser</title>
+<link rel="stylesheet" href="../../../../.././data/qtcreator.css" title="QtCreator"/>
+<link rel="alternate stylesheet" href="../../../../.././data/kdevelop.css" title="KDevelop"/>
+<script type="text/javascript" src="../../../../.././data/jquery/jquery.min.js"></script>
+<script type="text/javascript" src="../../../../.././data/jquery/jquery-ui.min.js"></script>
+<script>var file = 'llvm/llvm/lib/Support/Unix/Threading.inc'; var root_path = '../../../../..'; var data_path = '../../../../.././data'; var ecma_script_api_version = 2;</script>
+<script src='../../../../.././data/codebrowser.js'></script>
+</head>
+<body><div id='header'><h1 id='breadcrumb'><span>Browse the source code of </span><a href='../../../..'>llvm</a>/<a href='../../..'>llvm</a>/<a href='../..'>lib</a>/<a href='..'>Support</a>/<a href='./'>Unix</a>/<a href='Threading.inc.html'>Threading.inc</a></h1></div>
+<hr/><div id='content'><table class="code">
+<tr><th id="1">1</th><td><i>//===- Unix/Threading.inc - Unix Threading Implementation ----- -*- C++ -*-===//</i></td></tr>
+<tr><th id="2">2</th><td><i>//</i></td></tr>
+<tr><th id="3">3</th><td><i>// Part of the LLVM Project, under the Apache License v2.0 with LLVM Exceptions.</i></td></tr>
+<tr><th id="4">4</th><td><i>// See <a href="https://llvm.org/LICENSE.txt">https://llvm.org/LICENSE.txt</a> for license information.</i></td></tr>
+<tr><th id="5">5</th><td><i>// SPDX-License-Identifier: Apache-2.0 WITH LLVM-exception</i></td></tr>
+<tr><th id="6">6</th><td><i>//</i></td></tr>
+<tr><th id="7">7</th><td><i>//===----------------------------------------------------------------------===//</i></td></tr>
+<tr><th id="8">8</th><td><i>//</i></td></tr>
+<tr><th id="9">9</th><td><i>// This file provides the Unix specific implementation of Threading functions.</i></td></tr>
+<tr><th id="10">10</th><td><i>//</i></td></tr>
+<tr><th id="11">11</th><td><i>//===----------------------------------------------------------------------===//</i></td></tr>
+<tr><th id="12">12</th><td></td></tr>
+<tr><th id="13">13</th><td><u>#include <a href="Unix.h.html">"Unix.h"</a></u></td></tr>
+<tr><th id="14">14</th><td><u>#include <a href="../../../include/llvm/ADT/ScopeExit.h.html">"llvm/ADT/ScopeExit.h"</a></u></td></tr>
+<tr><th id="15">15</th><td><u>#include <a href="../../../include/llvm/ADT/SmallString.h.html">"llvm/ADT/SmallString.h"</a></u></td></tr>
+<tr><th id="16">16</th><td><u>#include <a href="../../../include/llvm/ADT/Twine.h.html">"llvm/ADT/Twine.h"</a></u></td></tr>
+<tr><th id="17">17</th><td></td></tr>
+<tr><th id="18">18</th><td><u>#<span data-ppcond="18">if</span> defined(<span class="macro" data-ref="_M/__APPLE__">__APPLE__</span>)</u></td></tr>
+<tr><th id="19">19</th><td><u>#include &lt;mach/mach_init.h&gt;</u></td></tr>
+<tr><th id="20">20</th><td><u>#include &lt;mach/mach_port.h&gt;</u></td></tr>
+<tr><th id="21">21</th><td><u>#<span data-ppcond="18">endif</span></u></td></tr>
+<tr><th id="22">22</th><td></td></tr>
+<tr><th id="23">23</th><td><u>#include <a href="../../../../../include/pthread.h.html">&lt;pthread.h&gt;</a></u></td></tr>
+<tr><th id="24">24</th><td></td></tr>
+<tr><th id="25">25</th><td><u>#<span data-ppcond="25">if</span> defined(<span class="macro" data-ref="_M/__FreeBSD__">__FreeBSD__</span>) || defined(<span class="macro" data-ref="_M/__OpenBSD__">__OpenBSD__</span>)</u></td></tr>
+<tr><th id="26">26</th><td><u>#include &lt;pthread_np.h&gt; // For pthread_getthreadid_np() / pthread_set_name_np()</u></td></tr>
+<tr><th id="27">27</th><td><u>#<span data-ppcond="25">endif</span></u></td></tr>
+<tr><th id="28">28</th><td></td></tr>
+<tr><th id="29">29</th><td><u>#<span data-ppcond="29">if</span> defined(<span class="macro" data-ref="_M/__FreeBSD__">__FreeBSD__</span>) || defined(<span class="macro" data-ref="_M/__FreeBSD_kernel__">__FreeBSD_kernel__</span>)</u></td></tr>
+<tr><th id="30">30</th><td><u>#include &lt;errno.h&gt;</u></td></tr>
+<tr><th id="31">31</th><td><u>#include &lt;sys/cpuset.h&gt;</u></td></tr>
+<tr><th id="32">32</th><td><u>#include &lt;sys/sysctl.h&gt;</u></td></tr>
+<tr><th id="33">33</th><td><u>#include &lt;sys/user.h&gt;</u></td></tr>
+<tr><th id="34">34</th><td><u>#include &lt;unistd.h&gt;</u></td></tr>
+<tr><th id="35">35</th><td><u>#<span data-ppcond="29">endif</span></u></td></tr>
+<tr><th id="36">36</th><td></td></tr>
+<tr><th id="37">37</th><td><u>#<span data-ppcond="37">if</span> defined(<span class="macro" data-ref="_M/__NetBSD__">__NetBSD__</span>)</u></td></tr>
+<tr><th id="38">38</th><td><u>#include &lt;lwp.h&gt; // For _lwp_self()</u></td></tr>
+<tr><th id="39">39</th><td><u>#<span data-ppcond="37">endif</span></u></td></tr>
+<tr><th id="40">40</th><td></td></tr>
+<tr><th id="41">41</th><td><u>#<span data-ppcond="41">if</span> defined(<span class="macro" data-ref="_M/__OpenBSD__">__OpenBSD__</span>)</u></td></tr>
+<tr><th id="42">42</th><td><u>#include &lt;unistd.h&gt; // For getthrid()</u></td></tr>
+<tr><th id="43">43</th><td><u>#<span data-ppcond="41">endif</span></u></td></tr>
+<tr><th id="44">44</th><td></td></tr>
+<tr><th id="45">45</th><td><u>#<span data-ppcond="45">if</span> defined(<span class="macro" data-ref="_M/__linux__">__linux__</span>)</u></td></tr>
+<tr><th id="46">46</th><td><u>#include <a href="../../../../../include/sched.h.html">&lt;sched.h&gt;</a>       // For sched_getaffinity</u></td></tr>
+<tr><th id="47">47</th><td><u>#include <a href="../../../../../include/sys/syscall.h.html">&lt;sys/syscall.h&gt;</a> // For syscall codes</u></td></tr>
+<tr><th id="48">48</th><td><u>#include <a href="../../../../../include/unistd.h.html">&lt;unistd.h&gt;</a>      // For syscall()</u></td></tr>
+<tr><th id="49">49</th><td><u>#<span data-ppcond="45">endif</span></u></td></tr>
+<tr><th id="50">50</th><td></td></tr>
+<tr><th id="51">51</th><td><em>static</em> <em>void</em> *<dfn class="decl def fn" id="_ZL14threadFuncSyncPv" title='threadFuncSync' data-ref="_ZL14threadFuncSyncPv" data-ref-filename="_ZL14threadFuncSyncPv">threadFuncSync</dfn>(<em>void</em> *<dfn class="local col2 decl" id="2Arg" title='Arg' data-type='void *' data-ref="2Arg" data-ref-filename="2Arg">Arg</dfn>) {</td></tr>
+<tr><th id="52">52</th><td>  <a class="tu type" href="../Threading.cpp.html#(anonymousnamespace)::SyncThreadInfo" title='(anonymous namespace)::SyncThreadInfo' data-ref="(anonymousnamespace)::SyncThreadInfo" data-ref-filename="(anonymousnamespace)..SyncThreadInfo">SyncThreadInfo</a> *<dfn class="local col3 decl" id="3TI" title='TI' data-type='(anonymous namespace)::SyncThreadInfo *' data-ref="3TI" data-ref-filename="3TI">TI</dfn> = <b>static_cast</b>&lt;<a class="tu type" href="../Threading.cpp.html#(anonymousnamespace)::SyncThreadInfo" title='(anonymous namespace)::SyncThreadInfo' data-ref="(anonymousnamespace)::SyncThreadInfo" data-ref-filename="(anonymousnamespace)..SyncThreadInfo">SyncThreadInfo</a> *&gt;(<a class="local col2 ref" href="#2Arg" title='Arg' data-ref="2Arg" data-ref-filename="2Arg">Arg</a>);</td></tr>
+<tr><th id="53">53</th><td>  <a class="local col3 ref" href="#3TI" title='TI' data-ref="3TI" data-ref-filename="3TI">TI</a>-&gt;<a class="tu ref field" href="../Threading.cpp.html#(anonymousnamespace)::SyncThreadInfo::UserFn" title='(anonymous namespace)::SyncThreadInfo::UserFn' data-use='r' data-ref="(anonymousnamespace)::SyncThreadInfo::UserFn" data-ref-filename="(anonymousnamespace)..SyncThreadInfo..UserFn">UserFn</a>(<a class="local col3 ref" href="#3TI" title='TI' data-ref="3TI" data-ref-filename="3TI">TI</a>-&gt;<a class="tu ref field" href="../Threading.cpp.html#(anonymousnamespace)::SyncThreadInfo::UserData" title='(anonymous namespace)::SyncThreadInfo::UserData' data-use='r' data-ref="(anonymousnamespace)::SyncThreadInfo::UserData" data-ref-filename="(anonymousnamespace)..SyncThreadInfo..UserData">UserData</a>);</td></tr>
+<tr><th id="54">54</th><td>  <b>return</b> <b>nullptr</b>;</td></tr>
+<tr><th id="55">55</th><td>}</td></tr>
+<tr><th id="56">56</th><td></td></tr>
+<tr><th id="57">57</th><td><em>static</em> <em>void</em> *<dfn class="decl def fn" id="_ZL15threadFuncAsyncPv" title='threadFuncAsync' data-ref="_ZL15threadFuncAsyncPv" data-ref-filename="_ZL15threadFuncAsyncPv">threadFuncAsync</dfn>(<em>void</em> *<dfn class="local col4 decl" id="4Arg" title='Arg' data-type='void *' data-ref="4Arg" data-ref-filename="4Arg">Arg</dfn>) {</td></tr>
+<tr><th id="58">58</th><td>  <span class="namespace">std::</span><span class='type' title='std::unique_ptr' data-ref="std::unique_ptr" data-ref-filename="std..unique_ptr">unique_ptr</span>&lt;<a class="tu typedef" href="../Threading.cpp.html#(anonymousnamespace)::AsyncThreadInfo" title='(anonymous namespace)::AsyncThreadInfo' data-type='llvm::unique_function&lt;void ()&gt;' data-ref="(anonymousnamespace)::AsyncThreadInfo" data-ref-filename="(anonymousnamespace)..AsyncThreadInfo">AsyncThreadInfo</a>&gt; <dfn class="local col5 decl" id="5Info" title='Info' data-type='std::unique_ptr&lt;AsyncThreadInfo&gt;' data-ref="5Info" data-ref-filename="5Info">Info</dfn><span class='ref fn' title='std::unique_ptr::unique_ptr&lt;_Tp, _Dp&gt;' data-ref="_ZNSt10unique_ptrC1ENSt15__uniq_ptr_implIT_T0_E7pointerE" data-ref-filename="_ZNSt10unique_ptrC1ENSt15__uniq_ptr_implIT_T0_E7pointerE">(</span><b>static_cast</b>&lt;<a class="tu typedef" href="../Threading.cpp.html#(anonymousnamespace)::AsyncThreadInfo" title='(anonymous namespace)::AsyncThreadInfo' data-type='llvm::unique_function&lt;void ()&gt;' data-ref="(anonymousnamespace)::AsyncThreadInfo" data-ref-filename="(anonymousnamespace)..AsyncThreadInfo">AsyncThreadInfo</a> *&gt;(<a class="local col4 ref" href="#4Arg" title='Arg' data-ref="4Arg" data-ref-filename="4Arg">Arg</a>));</td></tr>
+<tr><th id="59">59</th><td>  (<span class='ref fn' title='std::unique_ptr::operator*' data-ref="_ZNKSt10unique_ptrdeEv" data-ref-filename="_ZNKSt10unique_ptrdeEv">*</span><a class="local col5 ref" href="#5Info" title='Info' data-ref="5Info" data-ref-filename="5Info">Info</a>)<a class="ref fn" href="../../../include/llvm/ADT/FunctionExtras.h.html#_ZN4llvm15unique_functionIFT_DpT0_EEclES3_" title='llvm::unique_function&lt;type-parameter-0-0 (type-parameter-0-1...)&gt;::operator()' data-ref="_ZN4llvm15unique_functionIFT_DpT0_EEclES3_" data-ref-filename="_ZN4llvm15unique_functionIFT_DpT0_EEclES3_">()</a>;</td></tr>
+<tr><th id="60">60</th><td>  <b>return</b> <b>nullptr</b>;</td></tr>
+<tr><th id="61">61</th><td>}</td></tr>
+<tr><th id="62">62</th><td></td></tr>
+<tr><th id="63">63</th><td><em>static</em> <em>void</em></td></tr>
+<tr><th id="64">64</th><td><dfn class="decl def fn" id="_ZL27llvm_execute_on_thread_implPFPvS_ES_N4llvm8OptionalIjEEN12_GLOBAL__N_113JoiningPolicyE" title='llvm_execute_on_thread_impl' data-ref="_ZL27llvm_execute_on_thread_implPFPvS_ES_N4llvm8OptionalIjEEN12_GLOBAL__N_113JoiningPolicyE" data-ref-filename="_ZL27llvm_execute_on_thread_implPFPvS_ES_N4llvm8OptionalIjEEN12_GLOBAL__N_113JoiningPolicyE">llvm_execute_on_thread_impl</dfn>(<em>void</em> *(*<dfn class="local col6 decl" id="6ThreadFunc" title='ThreadFunc' data-type='void *(*)(void *)' data-ref="6ThreadFunc" data-ref-filename="6ThreadFunc">ThreadFunc</dfn>)(<em>void</em> *), <em>void</em> *<dfn class="local col7 decl" id="7Arg" title='Arg' data-type='void *' data-ref="7Arg" data-ref-filename="7Arg">Arg</dfn>,</td></tr>
+<tr><th id="65">65</th><td>                            <span class="namespace">llvm::</span><a class="type" href="../../../include/llvm/ADT/Optional.h.html#llvm::Optional" title='llvm::Optional' data-ref="llvm::Optional" data-ref-filename="llvm..Optional">Optional</a>&lt;<em>unsigned</em>&gt; <dfn class="local col8 decl" id="8StackSizeInBytes" title='StackSizeInBytes' data-type='llvm::Optional&lt;unsigned int&gt;' data-ref="8StackSizeInBytes" data-ref-filename="8StackSizeInBytes">StackSizeInBytes</dfn>,</td></tr>
+<tr><th id="66">66</th><td>                            <a class="tu type" href="../Threading.cpp.html#(anonymousnamespace)::JoiningPolicy" title='(anonymous namespace)::JoiningPolicy' data-ref="(anonymousnamespace)::JoiningPolicy" data-ref-filename="(anonymousnamespace)..JoiningPolicy">JoiningPolicy</a> <dfn class="local col9 decl" id="9JP" title='JP' data-type='(anonymous namespace)::JoiningPolicy' data-ref="9JP" data-ref-filename="9JP">JP</dfn>) {</td></tr>
+<tr><th id="67">67</th><td>  <em>int</em> <dfn class="local col0 decl" id="10errnum" title='errnum' data-type='int' data-ref="10errnum" data-ref-filename="10errnum">errnum</dfn>;</td></tr>
+<tr><th id="68">68</th><td></td></tr>
+<tr><th id="69">69</th><td>  <i>// Construct the attributes object.</i></td></tr>
+<tr><th id="70">70</th><td>  <a class="typedef" href="../../../../../include/bits/pthreadtypes.h.html#pthread_attr_t" title='pthread_attr_t' data-type='union pthread_attr_t' data-ref="pthread_attr_t" data-ref-filename="pthread_attr_t">pthread_attr_t</a> <a class="ref fn fake" href="../../../../../include/bits/pthreadtypes.h.html#56" title='pthread_attr_t::pthread_attr_t' data-ref="_ZN14pthread_attr_tC1Ev" data-ref-filename="_ZN14pthread_attr_tC1Ev"></a><dfn class="local col1 decl" id="11Attr" title='Attr' data-type='pthread_attr_t' data-ref="11Attr" data-ref-filename="11Attr">Attr</dfn>;</td></tr>
+<tr><th id="71">71</th><td>  <b>if</b> ((<a class="local col0 ref" href="#10errnum" title='errnum' data-ref="10errnum" data-ref-filename="10errnum">errnum</a> = ::<a class="ref fn" href="../../../../../include/pthread.h.html#pthread_attr_init" title='pthread_attr_init' data-ref="pthread_attr_init" data-ref-filename="pthread_attr_init">pthread_attr_init</a>(&amp;<a class="local col1 ref" href="#11Attr" title='Attr' data-ref="11Attr" data-ref-filename="11Attr">Attr</a>)) != <var>0</var>) {</td></tr>
+<tr><th id="72">72</th><td>    <a class="ref fn" href="Unix.h.html#_ZL17ReportErrnumFatalPKci" title='ReportErrnumFatal' data-ref="_ZL17ReportErrnumFatalPKci" data-ref-filename="_ZL17ReportErrnumFatalPKci">ReportErrnumFatal</a>(<q>"pthread_attr_init failed"</q>, <a class="local col0 ref" href="#10errnum" title='errnum' data-ref="10errnum" data-ref-filename="10errnum">errnum</a>);</td></tr>
+<tr><th id="73">73</th><td>  }</td></tr>
+<tr><th id="74">74</th><td></td></tr>
+<tr><th id="75">75</th><td>  <em>auto</em> <dfn class="local col2 decl" id="12AttrGuard" title='AttrGuard' data-type='llvm::detail::scope_exit&lt;(lambda at /fast/tmp/llvm-proj-12/llvm/lib/Support/Unix/Threading.inc:75:42)&gt;' data-ref="12AttrGuard" data-ref-filename="12AttrGuard">AttrGuard</dfn> = <span class="namespace">llvm::</span><a class="tu ref fn" href="../../../include/llvm/ADT/ScopeExit.h.html#_ZN4llvm15make_scope_exitEOT_" title='llvm::make_scope_exit' data-use='c' data-ref="_ZN4llvm15make_scope_exitEOT_" data-ref-filename="_ZN4llvm15make_scope_exitEOT_">make_scope_exit</a>([&amp;] {</td></tr>
+<tr><th id="76">76</th><td>    <b>if</b> ((<a class="local col0 ref" href="#10errnum" title='errnum' data-ref="10errnum" data-ref-filename="10errnum">errnum</a> = ::<a class="ref fn" href="../../../../../include/pthread.h.html#pthread_attr_destroy" title='pthread_attr_destroy' data-ref="pthread_attr_destroy" data-ref-filename="pthread_attr_destroy">pthread_attr_destroy</a>(&amp;<a class="local col1 ref" href="#11Attr" title='Attr' data-ref="11Attr" data-ref-filename="11Attr">Attr</a>)) != <var>0</var>) {</td></tr>
+<tr><th id="77">77</th><td>      <a class="ref fn" href="Unix.h.html#_ZL17ReportErrnumFatalPKci" title='ReportErrnumFatal' data-ref="_ZL17ReportErrnumFatalPKci" data-ref-filename="_ZL17ReportErrnumFatalPKci">ReportErrnumFatal</a>(<q>"pthread_attr_destroy failed"</q>, <a class="local col0 ref" href="#10errnum" title='errnum' data-ref="10errnum" data-ref-filename="10errnum">errnum</a>);</td></tr>
+<tr><th id="78">78</th><td>    }</td></tr>
+<tr><th id="79">79</th><td>  });</td></tr>
+<tr><th id="80">80</th><td></td></tr>
+<tr><th id="81">81</th><td>  <i>// Set the requested stack size, if given.</i></td></tr>
+<tr><th id="82">82</th><td>  <b>if</b> (<a class="ref fn fake" href="../../../include/llvm/ADT/Optional.h.html#_ZNK4llvm8OptionalcvbEv" title='llvm::Optional::operator bool' data-ref="_ZNK4llvm8OptionalcvbEv" data-ref-filename="_ZNK4llvm8OptionalcvbEv"></a><a class="local col8 ref" href="#8StackSizeInBytes" title='StackSizeInBytes' data-ref="8StackSizeInBytes" data-ref-filename="8StackSizeInBytes">StackSizeInBytes</a>) {</td></tr>
+<tr><th id="83">83</th><td>    <b>if</b> ((<a class="local col0 ref" href="#10errnum" title='errnum' data-ref="10errnum" data-ref-filename="10errnum">errnum</a> = ::<a class="ref fn" href="../../../../../include/pthread.h.html#pthread_attr_setstacksize" title='pthread_attr_setstacksize' data-ref="pthread_attr_setstacksize" data-ref-filename="pthread_attr_setstacksize">pthread_attr_setstacksize</a>(&amp;<a class="local col1 ref" href="#11Attr" title='Attr' data-ref="11Attr" data-ref-filename="11Attr">Attr</a>, <a class="ref fn" href="../../../include/llvm/ADT/Optional.h.html#_ZNR4llvm8OptionaldeEv" title='llvm::Optional::operator*' data-ref="_ZNR4llvm8OptionaldeEv" data-ref-filename="_ZNR4llvm8OptionaldeEv">*</a><a class="local col8 ref" href="#8StackSizeInBytes" title='StackSizeInBytes' data-ref="8StackSizeInBytes" data-ref-filename="8StackSizeInBytes">StackSizeInBytes</a>)) != <var>0</var>) {</td></tr>
+<tr><th id="84">84</th><td>      <a class="ref fn" href="Unix.h.html#_ZL17ReportErrnumFatalPKci" title='ReportErrnumFatal' data-ref="_ZL17ReportErrnumFatalPKci" data-ref-filename="_ZL17ReportErrnumFatalPKci">ReportErrnumFatal</a>(<q>"pthread_attr_setstacksize failed"</q>, <a class="local col0 ref" href="#10errnum" title='errnum' data-ref="10errnum" data-ref-filename="10errnum">errnum</a>);</td></tr>
+<tr><th id="85">85</th><td>    }</td></tr>
+<tr><th id="86">86</th><td>  }</td></tr>
+<tr><th id="87">87</th><td></td></tr>
+<tr><th id="88">88</th><td>  <i>// Construct and execute the thread.</i></td></tr>
+<tr><th id="89">89</th><td>  <a class="typedef" href="../../../../../include/bits/pthreadtypes.h.html#pthread_t" title='pthread_t' data-type='unsigned long' data-ref="pthread_t" data-ref-filename="pthread_t">pthread_t</a> <dfn class="local col3 decl" id="13Thread" title='Thread' data-type='pthread_t' data-ref="13Thread" data-ref-filename="13Thread">Thread</dfn>;</td></tr>
+<tr><th id="90">90</th><td>  <b>if</b> ((<a class="local col0 ref" href="#10errnum" title='errnum' data-ref="10errnum" data-ref-filename="10errnum">errnum</a> = ::<a class="ref fn" href="../../../../../include/pthread.h.html#pthread_create" title='pthread_create' data-ref="pthread_create" data-ref-filename="pthread_create">pthread_create</a>(&amp;<a class="local col3 ref" href="#13Thread" title='Thread' data-ref="13Thread" data-ref-filename="13Thread">Thread</a>, &amp;<a class="local col1 ref" href="#11Attr" title='Attr' data-ref="11Attr" data-ref-filename="11Attr">Attr</a>, <a class="local col6 ref" href="#6ThreadFunc" title='ThreadFunc' data-ref="6ThreadFunc" data-ref-filename="6ThreadFunc">ThreadFunc</a>, <a class="local col7 ref" href="#7Arg" title='Arg' data-ref="7Arg" data-ref-filename="7Arg">Arg</a>)) != <var>0</var>)</td></tr>
+<tr><th id="91">91</th><td>    <a class="ref fn" href="Unix.h.html#_ZL17ReportErrnumFatalPKci" title='ReportErrnumFatal' data-ref="_ZL17ReportErrnumFatalPKci" data-ref-filename="_ZL17ReportErrnumFatalPKci">ReportErrnumFatal</a>(<q>"pthread_create failed"</q>, <a class="local col0 ref" href="#10errnum" title='errnum' data-ref="10errnum" data-ref-filename="10errnum">errnum</a>);</td></tr>
+<tr><th id="92">92</th><td></td></tr>
+<tr><th id="93">93</th><td>  <b>if</b> (<a class="local col9 ref" href="#9JP" title='JP' data-ref="9JP" data-ref-filename="9JP">JP</a> == <a class="tu type" href="../Threading.cpp.html#(anonymousnamespace)::JoiningPolicy" title='(anonymous namespace)::JoiningPolicy' data-ref="(anonymousnamespace)::JoiningPolicy" data-ref-filename="(anonymousnamespace)..JoiningPolicy">JoiningPolicy</a>::<a class="tu enum" href="../Threading.cpp.html#(anonymousnamespace)::JoiningPolicy::Join" title='(anonymous namespace)::JoiningPolicy::Join' data-use='r' data-ref="(anonymousnamespace)::JoiningPolicy::Join" data-ref-filename="(anonymousnamespace)..JoiningPolicy..Join">Join</a>) {</td></tr>
+<tr><th id="94">94</th><td>    <i>// Wait for the thread</i></td></tr>
+<tr><th id="95">95</th><td>    <b>if</b> ((<a class="local col0 ref" href="#10errnum" title='errnum' data-ref="10errnum" data-ref-filename="10errnum">errnum</a> = ::<a class="ref fn" href="../../../../../include/pthread.h.html#pthread_join" title='pthread_join' data-ref="pthread_join" data-ref-filename="pthread_join">pthread_join</a>(<a class="local col3 ref" href="#13Thread" title='Thread' data-ref="13Thread" data-ref-filename="13Thread">Thread</a>, <b>nullptr</b>)) != <var>0</var>) {</td></tr>
+<tr><th id="96">96</th><td>      <a class="ref fn" href="Unix.h.html#_ZL17ReportErrnumFatalPKci" title='ReportErrnumFatal' data-ref="_ZL17ReportErrnumFatalPKci" data-ref-filename="_ZL17ReportErrnumFatalPKci">ReportErrnumFatal</a>(<q>"pthread_join failed"</q>, <a class="local col0 ref" href="#10errnum" title='errnum' data-ref="10errnum" data-ref-filename="10errnum">errnum</a>);</td></tr>
+<tr><th id="97">97</th><td>    }</td></tr>
+<tr><th id="98">98</th><td>  } <b>else</b> <b>if</b> (<a class="local col9 ref" href="#9JP" title='JP' data-ref="9JP" data-ref-filename="9JP">JP</a> == <a class="tu type" href="../Threading.cpp.html#(anonymousnamespace)::JoiningPolicy" title='(anonymous namespace)::JoiningPolicy' data-ref="(anonymousnamespace)::JoiningPolicy" data-ref-filename="(anonymousnamespace)..JoiningPolicy">JoiningPolicy</a>::<a class="tu enum" href="../Threading.cpp.html#(anonymousnamespace)::JoiningPolicy::Detach" title='(anonymous namespace)::JoiningPolicy::Detach' data-use='r' data-ref="(anonymousnamespace)::JoiningPolicy::Detach" data-ref-filename="(anonymousnamespace)..JoiningPolicy..Detach">Detach</a>) {</td></tr>
+<tr><th id="99">99</th><td>    <b>if</b> ((<a class="local col0 ref" href="#10errnum" title='errnum' data-ref="10errnum" data-ref-filename="10errnum">errnum</a> = ::<a class="ref fn" href="../../../../../include/pthread.h.html#pthread_detach" title='pthread_detach' data-ref="pthread_detach" data-ref-filename="pthread_detach">pthread_detach</a>(<a class="local col3 ref" href="#13Thread" title='Thread' data-ref="13Thread" data-ref-filename="13Thread">Thread</a>)) != <var>0</var>) {</td></tr>
+<tr><th id="100">100</th><td>      <a class="ref fn" href="Unix.h.html#_ZL17ReportErrnumFatalPKci" title='ReportErrnumFatal' data-ref="_ZL17ReportErrnumFatalPKci" data-ref-filename="_ZL17ReportErrnumFatalPKci">ReportErrnumFatal</a>(<q>"pthread_detach failed"</q>, <a class="local col0 ref" href="#10errnum" title='errnum' data-ref="10errnum" data-ref-filename="10errnum">errnum</a>);</td></tr>
+<tr><th id="101">101</th><td>    }</td></tr>
+<tr><th id="102">102</th><td>  }</td></tr>
+<tr><th id="103">103</th><td>}</td></tr>
+<tr><th id="104">104</th><td></td></tr>
+<tr><th id="105">105</th><td><a class="typedef" href="../../../../../include/bits/stdint-uintn.h.html#uint64_t" title='uint64_t' data-type='__uint64_t' data-ref="uint64_t" data-ref-filename="uint64_t">uint64_t</a> <span class="namespace">llvm::</span><dfn class="decl def fn" id="_ZN4llvm12get_threadidEv" title='llvm::get_threadid' data-ref="_ZN4llvm12get_threadidEv" data-ref-filename="_ZN4llvm12get_threadidEv">get_threadid</dfn>() {</td></tr>
+<tr><th id="106">106</th><td><u>#<span data-ppcond="106">if</span> defined(<span class="macro" data-ref="_M/__APPLE__">__APPLE__</span>)</u></td></tr>
+<tr><th id="107">107</th><td>  <i>// Calling "mach_thread_self()" bumps the reference count on the thread</i></td></tr>
+<tr><th id="108">108</th><td><i>  // port, so we need to deallocate it. mach_task_self() doesn't bump the ref</i></td></tr>
+<tr><th id="109">109</th><td><i>  // count.</i></td></tr>
+<tr><th id="110">110</th><td>  thread_port_t Self = mach_thread_self();</td></tr>
+<tr><th id="111">111</th><td>  mach_port_deallocate(mach_task_self(), Self);</td></tr>
+<tr><th id="112">112</th><td>  <b>return</b> Self;</td></tr>
+<tr><th id="113">113</th><td><u>#<span data-ppcond="106">elif</span> defined(<span class="macro" data-ref="_M/__FreeBSD__">__FreeBSD__</span>)</u></td></tr>
+<tr><th id="114">114</th><td>  <b>return</b> uint64_t(pthread_getthreadid_np());</td></tr>
+<tr><th id="115">115</th><td><u>#<span data-ppcond="106">elif</span> defined(<span class="macro" data-ref="_M/__NetBSD__">__NetBSD__</span>)</u></td></tr>
+<tr><th id="116">116</th><td>  <b>return</b> uint64_t(_lwp_self());</td></tr>
+<tr><th id="117">117</th><td><u>#<span data-ppcond="106">elif</span> defined(<span class="macro" data-ref="_M/__OpenBSD__">__OpenBSD__</span>)</u></td></tr>
+<tr><th id="118">118</th><td>  <b>return</b> uint64_t(getthrid());</td></tr>
+<tr><th id="119">119</th><td><u>#<span data-ppcond="106">elif</span> defined(<span class="macro" data-ref="_M/__ANDROID__">__ANDROID__</span>)</u></td></tr>
+<tr><th id="120">120</th><td>  <b>return</b> uint64_t(gettid());</td></tr>
+<tr><th id="121">121</th><td><u>#<span data-ppcond="106">elif</span> defined(<span class="macro" data-ref="_M/__linux__">__linux__</span>)</u></td></tr>
+<tr><th id="122">122</th><td>  <b>return</b> <a class="typedef" href="../../../../../include/bits/stdint-uintn.h.html#uint64_t" title='uint64_t' data-type='__uint64_t' data-ref="uint64_t" data-ref-filename="uint64_t">uint64_t</a>(<a class="ref fn" href="../../../../../include/unistd.h.html#syscall" title='syscall' data-ref="syscall" data-ref-filename="syscall">syscall</a>(<a class="macro" href="../../../../../include/bits/syscall.h.html#635" title="186" data-ref="_M/SYS_gettid">SYS_gettid</a>));</td></tr>
+<tr><th id="123">123</th><td><u>#<span data-ppcond="106">else</span></u></td></tr>
+<tr><th id="124">124</th><td>  <b>return</b> uint64_t(pthread_self());</td></tr>
+<tr><th id="125">125</th><td><u>#<span data-ppcond="106">endif</span></u></td></tr>
+<tr><th id="126">126</th><td>}</td></tr>
+<tr><th id="127">127</th><td></td></tr>
+<tr><th id="128">128</th><td></td></tr>
+<tr><th id="129">129</th><td><em>static</em> <b>constexpr</b> <a class="typedef" href="../../../../../include/bits/stdint-uintn.h.html#uint32_t" title='uint32_t' data-type='__uint32_t' data-ref="uint32_t" data-ref-filename="uint32_t">uint32_t</a> <dfn class="decl def fn" id="_ZL31get_max_thread_name_length_implv" title='get_max_thread_name_length_impl' data-ref="_ZL31get_max_thread_name_length_implv" data-ref-filename="_ZL31get_max_thread_name_length_implv">get_max_thread_name_length_impl</dfn>() {</td></tr>
+<tr><th id="130">130</th><td><u>#<span data-ppcond="130">if</span> defined(<span class="macro" data-ref="_M/__NetBSD__">__NetBSD__</span>)</u></td></tr>
+<tr><th id="131">131</th><td>  <b>return</b> PTHREAD_MAX_NAMELEN_NP;</td></tr>
+<tr><th id="132">132</th><td><u>#<span data-ppcond="130">elif</span> defined(<span class="macro" data-ref="_M/__APPLE__">__APPLE__</span>)</u></td></tr>
+<tr><th id="133">133</th><td>  <b>return</b> <var>64</var>;</td></tr>
+<tr><th id="134">134</th><td><u>#<span data-ppcond="130">elif</span> defined(<span class="macro" data-ref="_M/__linux__">__linux__</span>)</u></td></tr>
+<tr><th id="135">135</th><td><u>#<span data-ppcond="135">if</span> <a class="macro" href="../../../../build/include/llvm/Config/config.h.html#122" title="1" data-ref="_M/HAVE_PTHREAD_SETNAME_NP">HAVE_PTHREAD_SETNAME_NP</a></u></td></tr>
+<tr><th id="136">136</th><td>  <b>return</b> <var>16</var>;</td></tr>
+<tr><th id="137">137</th><td><u>#<span data-ppcond="135">else</span></u></td></tr>
+<tr><th id="138">138</th><td>  <b>return</b> <var>0</var>;</td></tr>
+<tr><th id="139">139</th><td><u>#<span data-ppcond="135">endif</span></u></td></tr>
+<tr><th id="140">140</th><td><u>#<span data-ppcond="130">elif</span> defined(__FreeBSD__) || defined(__FreeBSD_kernel__)</u></td></tr>
+<tr><th id="141">141</th><td>  <b>return</b> <var>16</var>;</td></tr>
+<tr><th id="142">142</th><td><u>#elif defined(__OpenBSD__)</u></td></tr>
+<tr><th id="143">143</th><td>  <b>return</b> <var>32</var>;</td></tr>
+<tr><th id="144">144</th><td><u>#else</u></td></tr>
+<tr><th id="145">145</th><td>  <b>return</b> <var>0</var>;</td></tr>
+<tr><th id="146">146</th><td><u>#<span data-ppcond="130">endif</span></u></td></tr>
+<tr><th id="147">147</th><td>}</td></tr>
+<tr><th id="148">148</th><td></td></tr>
+<tr><th id="149">149</th><td><a class="typedef" href="../../../../../include/bits/stdint-uintn.h.html#uint32_t" title='uint32_t' data-type='__uint32_t' data-ref="uint32_t" data-ref-filename="uint32_t">uint32_t</a> <span class="namespace">llvm::</span><dfn class="decl def fn" id="_ZN4llvm26get_max_thread_name_lengthEv" title='llvm::get_max_thread_name_length' data-ref="_ZN4llvm26get_max_thread_name_lengthEv" data-ref-filename="_ZN4llvm26get_max_thread_name_lengthEv">get_max_thread_name_length</dfn>() {</td></tr>
+<tr><th id="150">150</th><td>  <b>return</b> <a class="ref fn" href="#_ZL31get_max_thread_name_length_implv" title='get_max_thread_name_length_impl' data-ref="_ZL31get_max_thread_name_length_implv" data-ref-filename="_ZL31get_max_thread_name_length_implv">get_max_thread_name_length_impl</a>();</td></tr>
+<tr><th id="151">151</th><td>}</td></tr>
+<tr><th id="152">152</th><td></td></tr>
+<tr><th id="153">153</th><td><em>void</em> <span class="namespace">llvm::</span><dfn class="decl def fn" id="_ZN4llvm15set_thread_nameERKNS_5TwineE" title='llvm::set_thread_name' data-ref="_ZN4llvm15set_thread_nameERKNS_5TwineE" data-ref-filename="_ZN4llvm15set_thread_nameERKNS_5TwineE">set_thread_name</dfn>(<em>const</em> <a class="type" href="../../../include/llvm/ADT/Twine.h.html#llvm::Twine" title='llvm::Twine' data-ref="llvm::Twine" data-ref-filename="llvm..Twine">Twine</a> &amp;<dfn class="local col4 decl" id="14Name" title='Name' data-type='const llvm::Twine &amp;' data-ref="14Name" data-ref-filename="14Name">Name</dfn>) {</td></tr>
+<tr><th id="154">154</th><td>  <i>// Make sure the input is null terminated.</i></td></tr>
+<tr><th id="155">155</th><td>  <a class="type" href="../../../include/llvm/ADT/SmallString.h.html#llvm::SmallString" title='llvm::SmallString' data-ref="llvm::SmallString" data-ref-filename="llvm..SmallString">SmallString</a>&lt;<var>64</var>&gt; <a class="ref fn fake" href="../../../include/llvm/ADT/SmallString.h.html#_ZN4llvm11SmallStringC1Ev" title='llvm::SmallString::SmallString&lt;InternalLen&gt;' data-ref="_ZN4llvm11SmallStringC1Ev" data-ref-filename="_ZN4llvm11SmallStringC1Ev"></a><dfn class="local col5 decl" id="15Storage" title='Storage' data-type='SmallString&lt;64&gt;' data-ref="15Storage" data-ref-filename="15Storage">Storage</dfn>;</td></tr>
+<tr><th id="156">156</th><td>  <a class="type" href="../../../include/llvm/ADT/StringRef.h.html#llvm::StringRef" title='llvm::StringRef' data-ref="llvm::StringRef" data-ref-filename="llvm..StringRef">StringRef</a> <dfn class="local col6 decl" id="16NameStr" title='NameStr' data-type='llvm::StringRef' data-ref="16NameStr" data-ref-filename="16NameStr">NameStr</dfn> = <a class="local col4 ref" href="#14Name" title='Name' data-ref="14Name" data-ref-filename="14Name">Name</a>.<a class="ref fn" href="../../../include/llvm/ADT/Twine.h.html#_ZNK4llvm5Twine25toNullTerminatedStringRefERNS_15SmallVectorImplIcEE" title='llvm::Twine::toNullTerminatedStringRef' data-ref="_ZNK4llvm5Twine25toNullTerminatedStringRefERNS_15SmallVectorImplIcEE" data-ref-filename="_ZNK4llvm5Twine25toNullTerminatedStringRefERNS_15SmallVectorImplIcEE">toNullTerminatedStringRef</a>(<span class='refarg'><a class="local col5 ref" href="#15Storage" title='Storage' data-ref="15Storage" data-ref-filename="15Storage">Storage</a></span>);</td></tr>
+<tr><th id="157">157</th><td></td></tr>
+<tr><th id="158">158</th><td>  <i>// Truncate from the beginning, not the end, if the specified name is too</i></td></tr>
+<tr><th id="159">159</th><td><i>  // long.  For one, this ensures that the resulting string is still null</i></td></tr>
+<tr><th id="160">160</th><td><i>  // terminated, but additionally the end of a long thread name will usually</i></td></tr>
+<tr><th id="161">161</th><td><i>  // be more unique than the beginning, since a common pattern is for similar</i></td></tr>
+<tr><th id="162">162</th><td><i>  // threads to share a common prefix.</i></td></tr>
+<tr><th id="163">163</th><td><i>  // Note that the name length includes the null terminator.</i></td></tr>
+<tr><th id="164">164</th><td>  <b>if</b> (<a class="ref fn" href="#_ZN4llvm26get_max_thread_name_lengthEv" title='llvm::get_max_thread_name_length' data-ref="_ZN4llvm26get_max_thread_name_lengthEv" data-ref-filename="_ZN4llvm26get_max_thread_name_lengthEv">get_max_thread_name_length</a>() &gt; <var>0</var>)</td></tr>
+<tr><th id="165">165</th><td>    <a class="local col6 ref" href="#16NameStr" title='NameStr' data-ref="16NameStr" data-ref-filename="16NameStr">NameStr</a> <a class="ref fn" href="../../../include/llvm/ADT/StringRef.h.html#57" title='llvm::StringRef::operator=' data-ref="_ZN4llvm9StringRefaSEOS0_" data-ref-filename="_ZN4llvm9StringRefaSEOS0_">=</a> <a class="local col6 ref" href="#16NameStr" title='NameStr' data-ref="16NameStr" data-ref-filename="16NameStr">NameStr</a>.<a class="ref fn" href="../../../include/llvm/ADT/StringRef.h.html#_ZNK4llvm9StringRef9take_backEm" title='llvm::StringRef::take_back' data-ref="_ZNK4llvm9StringRef9take_backEm" data-ref-filename="_ZNK4llvm9StringRef9take_backEm">take_back</a>(<a class="ref fn" href="#_ZN4llvm26get_max_thread_name_lengthEv" title='llvm::get_max_thread_name_length' data-ref="_ZN4llvm26get_max_thread_name_lengthEv" data-ref-filename="_ZN4llvm26get_max_thread_name_lengthEv">get_max_thread_name_length</a>() - <var>1</var>);</td></tr>
+<tr><th id="166">166</th><td>  (<em>void</em>)<a class="local col6 ref" href="#16NameStr" title='NameStr' data-ref="16NameStr" data-ref-filename="16NameStr">NameStr</a>;</td></tr>
+<tr><th id="167">167</th><td><u>#<span data-ppcond="167">if</span> defined(<span class="macro" data-ref="_M/__linux__">__linux__</span>)</u></td></tr>
+<tr><th id="168">168</th><td><u>#<span data-ppcond="168">if</span> (defined(<a class="macro" href="../../../../../include/features.h.html#456" data-ref="_M/__GLIBC__">__GLIBC__</a>) &amp;&amp; defined(<span class="macro" data-ref="_M/_GNU_SOURCE">_GNU_SOURCE</span>)) || defined(<span class="macro" data-ref="_M/__ANDROID__">__ANDROID__</span>)</u></td></tr>
+<tr><th id="169">169</th><td><u>#<span data-ppcond="169">if</span> <a class="macro" href="../../../../build/include/llvm/Config/config.h.html#122" title="1" data-ref="_M/HAVE_PTHREAD_SETNAME_NP">HAVE_PTHREAD_SETNAME_NP</a></u></td></tr>
+<tr><th id="170">170</th><td>  ::<a class="ref fn" href="../../../../../include/pthread.h.html#pthread_setname_np" title='pthread_setname_np' data-ref="pthread_setname_np" data-ref-filename="pthread_setname_np">pthread_setname_np</a>(::<a class="ref fn" href="../../../../../include/pthread.h.html#pthread_self" title='pthread_self' data-ref="pthread_self" data-ref-filename="pthread_self">pthread_self</a>(), <a class="local col6 ref" href="#16NameStr" title='NameStr' data-ref="16NameStr" data-ref-filename="16NameStr">NameStr</a>.<a class="ref fn" href="../../../include/llvm/ADT/StringRef.h.html#_ZNK4llvm9StringRef4dataEv" title='llvm::StringRef::data' data-ref="_ZNK4llvm9StringRef4dataEv" data-ref-filename="_ZNK4llvm9StringRef4dataEv">data</a>());</td></tr>
+<tr><th id="171">171</th><td><u>#<span data-ppcond="169">endif</span></u></td></tr>
+<tr><th id="172">172</th><td><u>#<span data-ppcond="168">endif</span></u></td></tr>
+<tr><th id="173">173</th><td><u>#<span data-ppcond="167">elif</span> defined(__FreeBSD__) || defined(__OpenBSD__)</u></td></tr>
+<tr><th id="174">174</th><td>  ::pthread_set_name_np(::pthread_self(), NameStr.data());</td></tr>
+<tr><th id="175">175</th><td><u>#elif defined(__NetBSD__)</u></td></tr>
+<tr><th id="176">176</th><td>  ::pthread_setname_np(::pthread_self(), <q>"%s"</q>,</td></tr>
+<tr><th id="177">177</th><td>    <b>const_cast</b>&lt;<em>char</em> *&gt;(NameStr.data()));</td></tr>
+<tr><th id="178">178</th><td><u>#elif defined(__APPLE__)</u></td></tr>
+<tr><th id="179">179</th><td>  ::pthread_setname_np(NameStr.data());</td></tr>
+<tr><th id="180">180</th><td><u>#<span data-ppcond="167">endif</span></u></td></tr>
+<tr><th id="181">181</th><td>}</td></tr>
+<tr><th id="182">182</th><td></td></tr>
+<tr><th id="183">183</th><td><em>void</em> <span class="namespace">llvm::</span><dfn class="decl def fn" id="_ZN4llvm15get_thread_nameERNS_15SmallVectorImplIcEE" title='llvm::get_thread_name' data-ref="_ZN4llvm15get_thread_nameERNS_15SmallVectorImplIcEE" data-ref-filename="_ZN4llvm15get_thread_nameERNS_15SmallVectorImplIcEE">get_thread_name</dfn>(<a class="type" href="../../../include/llvm/ADT/SmallVector.h.html#llvm::SmallVectorImpl" title='llvm::SmallVectorImpl' data-ref="llvm::SmallVectorImpl" data-ref-filename="llvm..SmallVectorImpl">SmallVectorImpl</a>&lt;<em>char</em>&gt; &amp;<dfn class="local col7 decl" id="17Name" title='Name' data-type='SmallVectorImpl&lt;char&gt; &amp;' data-ref="17Name" data-ref-filename="17Name">Name</dfn>) {</td></tr>
+<tr><th id="184">184</th><td>  <a class="local col7 ref" href="#17Name" title='Name' data-ref="17Name" data-ref-filename="17Name">Name</a>.<a class="ref fn" href="../../../include/llvm/ADT/SmallVector.h.html#_ZN4llvm15SmallVectorImpl5clearEv" title='llvm::SmallVectorImpl::clear' data-ref="_ZN4llvm15SmallVectorImpl5clearEv" data-ref-filename="_ZN4llvm15SmallVectorImpl5clearEv">clear</a>();</td></tr>
+<tr><th id="185">185</th><td></td></tr>
+<tr><th id="186">186</th><td><u>#<span data-ppcond="186">if</span> defined(<span class="macro" data-ref="_M/__FreeBSD__">__FreeBSD__</span>) || defined(<span class="macro" data-ref="_M/__FreeBSD_kernel__">__FreeBSD_kernel__</span>)</u></td></tr>
+<tr><th id="187">187</th><td>  <em>int</em> pid = ::getpid();</td></tr>
+<tr><th id="188">188</th><td>  uint64_t tid = get_threadid();</td></tr>
+<tr><th id="189">189</th><td></td></tr>
+<tr><th id="190">190</th><td>  <b>struct</b> kinfo_proc *kp = <b>nullptr</b>, *nkp;</td></tr>
+<tr><th id="191">191</th><td>  size_t len = <var>0</var>;</td></tr>
+<tr><th id="192">192</th><td>  <em>int</em> error;</td></tr>
+<tr><th id="193">193</th><td>  <em>int</em> ctl[<var>4</var>] = { CTL_KERN, KERN_PROC, KERN_PROC_PID | KERN_PROC_INC_THREAD,</td></tr>
+<tr><th id="194">194</th><td>    (<em>int</em>)pid };</td></tr>
+<tr><th id="195">195</th><td></td></tr>
+<tr><th id="196">196</th><td>  <b>while</b> (<var>1</var>) {</td></tr>
+<tr><th id="197">197</th><td>    error = sysctl(ctl, <var>4</var>, kp, &amp;len, <b>nullptr</b>, <var>0</var>);</td></tr>
+<tr><th id="198">198</th><td>    <b>if</b> (kp == <b>nullptr</b> || (error != <var>0</var> &amp;&amp; errno == ENOMEM)) {</td></tr>
+<tr><th id="199">199</th><td>      <i>// Add extra space in case threads are added before next call.</i></td></tr>
+<tr><th id="200">200</th><td>      len += <b>sizeof</b>(*kp) + len / <var>10</var>;</td></tr>
+<tr><th id="201">201</th><td>      nkp = (<b>struct</b> kinfo_proc *)::realloc(kp, len);</td></tr>
+<tr><th id="202">202</th><td>      <b>if</b> (nkp == <b>nullptr</b>) {</td></tr>
+<tr><th id="203">203</th><td>        free(kp);</td></tr>
+<tr><th id="204">204</th><td>        <b>return</b>;</td></tr>
+<tr><th id="205">205</th><td>      }</td></tr>
+<tr><th id="206">206</th><td>      kp = nkp;</td></tr>
+<tr><th id="207">207</th><td>      <b>continue</b>;</td></tr>
+<tr><th id="208">208</th><td>    }</td></tr>
+<tr><th id="209">209</th><td>    <b>if</b> (error != <var>0</var>)</td></tr>
+<tr><th id="210">210</th><td>      len = <var>0</var>;</td></tr>
+<tr><th id="211">211</th><td>    <b>break</b>;</td></tr>
+<tr><th id="212">212</th><td>  }</td></tr>
+<tr><th id="213">213</th><td></td></tr>
+<tr><th id="214">214</th><td>  <b>for</b> (size_t i = <var>0</var>; i &lt; len / <b>sizeof</b>(*kp); i++) {</td></tr>
+<tr><th id="215">215</th><td>    <b>if</b> (kp[i].ki_tid == (lwpid_t)tid) {</td></tr>
+<tr><th id="216">216</th><td>      Name.append(kp[i].ki_tdname, kp[i].ki_tdname + strlen(kp[i].ki_tdname));</td></tr>
+<tr><th id="217">217</th><td>      <b>break</b>;</td></tr>
+<tr><th id="218">218</th><td>    }</td></tr>
+<tr><th id="219">219</th><td>  }</td></tr>
+<tr><th id="220">220</th><td>  free(kp);</td></tr>
+<tr><th id="221">221</th><td>  <b>return</b>;</td></tr>
+<tr><th id="222">222</th><td><u>#<span data-ppcond="186">elif</span> defined(<span class="macro" data-ref="_M/__NetBSD__">__NetBSD__</span>)</u></td></tr>
+<tr><th id="223">223</th><td>  <b>constexpr</b> uint32_t len = get_max_thread_name_length_impl();</td></tr>
+<tr><th id="224">224</th><td>  <em>char</em> buf[len];</td></tr>
+<tr><th id="225">225</th><td>  ::pthread_getname_np(::pthread_self(), buf, len);</td></tr>
+<tr><th id="226">226</th><td></td></tr>
+<tr><th id="227">227</th><td>  Name.append(buf, buf + strlen(buf));</td></tr>
+<tr><th id="228">228</th><td><u>#<span data-ppcond="186">elif</span> defined(<span class="macro" data-ref="_M/__OpenBSD__">__OpenBSD__</span>)</u></td></tr>
+<tr><th id="229">229</th><td>  <b>constexpr</b> uint32_t len = get_max_thread_name_length_impl();</td></tr>
+<tr><th id="230">230</th><td>  <em>char</em> buf[len];</td></tr>
+<tr><th id="231">231</th><td>  ::pthread_get_name_np(::pthread_self(), buf, len);</td></tr>
+<tr><th id="232">232</th><td></td></tr>
+<tr><th id="233">233</th><td>  Name.append(buf, buf + strlen(buf));</td></tr>
+<tr><th id="234">234</th><td><u>#<span data-ppcond="186">elif</span> defined(<span class="macro" data-ref="_M/__linux__">__linux__</span>)</u></td></tr>
+<tr><th id="235">235</th><td><u>#<span data-ppcond="235">if</span> <a class="macro" href="../../../../build/include/llvm/Config/config.h.html#119" title="1" data-ref="_M/HAVE_PTHREAD_GETNAME_NP">HAVE_PTHREAD_GETNAME_NP</a></u></td></tr>
+<tr><th id="236">236</th><td>  <b>constexpr</b> <a class="typedef" href="../../../../../include/bits/stdint-uintn.h.html#uint32_t" title='uint32_t' data-type='__uint32_t' data-ref="uint32_t" data-ref-filename="uint32_t">uint32_t</a> <dfn class="local col8 decl" id="18len" title='len' data-type='const uint32_t' data-ref="18len" data-ref-filename="18len">len</dfn> = <a class="ref fn" href="#_ZL31get_max_thread_name_length_implv" title='get_max_thread_name_length_impl' data-ref="_ZL31get_max_thread_name_length_implv" data-ref-filename="_ZL31get_max_thread_name_length_implv">get_max_thread_name_length_impl</a>();</td></tr>
+<tr><th id="237">237</th><td>  <em>char</em> <dfn class="local col9 decl" id="19Buffer" title='Buffer' data-type='char [16]' data-ref="19Buffer" data-ref-filename="19Buffer">Buffer</dfn>[<a class="local col8 ref" href="#18len" title='len' data-ref="18len" data-ref-filename="18len">len</a>] = {<kbd>'\0'</kbd>};  <i>// FIXME: working around MSan false positive.</i></td></tr>
+<tr><th id="238">238</th><td>  <b>if</b> (<var>0</var> == ::<a class="ref fn" href="../../../../../include/pthread.h.html#pthread_getname_np" title='pthread_getname_np' data-ref="pthread_getname_np" data-ref-filename="pthread_getname_np">pthread_getname_np</a>(::<a class="ref fn" href="../../../../../include/pthread.h.html#pthread_self" title='pthread_self' data-ref="pthread_self" data-ref-filename="pthread_self">pthread_self</a>(), <a class="local col9 ref" href="#19Buffer" title='Buffer' data-ref="19Buffer" data-ref-filename="19Buffer">Buffer</a>, <a class="local col8 ref" href="#18len" title='len' data-ref="18len" data-ref-filename="18len">len</a>))</td></tr>
+<tr><th id="239">239</th><td>    <a class="local col7 ref" href="#17Name" title='Name' data-ref="17Name" data-ref-filename="17Name">Name</a>.<a class="ref fn" href="../../../include/llvm/ADT/SmallVector.h.html#_ZN4llvm15SmallVectorImpl6appendETL0__S1_" title='llvm::SmallVectorImpl::append' data-ref="_ZN4llvm15SmallVectorImpl6appendETL0__S1_" data-ref-filename="_ZN4llvm15SmallVectorImpl6appendETL0__S1_">append</a>(<a class="local col9 ref" href="#19Buffer" title='Buffer' data-ref="19Buffer" data-ref-filename="19Buffer">Buffer</a>, <a class="local col9 ref" href="#19Buffer" title='Buffer' data-ref="19Buffer" data-ref-filename="19Buffer">Buffer</a> + <a class="ref fn" href="../../../../../include/string.h.html#strlen" title='strlen' data-ref="strlen" data-ref-filename="strlen">strlen</a>(<a class="local col9 ref" href="#19Buffer" title='Buffer' data-ref="19Buffer" data-ref-filename="19Buffer">Buffer</a>));</td></tr>
+<tr><th id="240">240</th><td><u>#<span data-ppcond="235">endif</span></u></td></tr>
+<tr><th id="241">241</th><td><u>#<span data-ppcond="186">endif</span></u></td></tr>
+<tr><th id="242">242</th><td>}</td></tr>
+<tr><th id="243">243</th><td></td></tr>
+<tr><th id="244">244</th><td><a class="type" href="../../../include/llvm/Support/Threading.h.html#llvm::SetThreadPriorityResult" title='llvm::SetThreadPriorityResult' data-ref="llvm::SetThreadPriorityResult" data-ref-filename="llvm..SetThreadPriorityResult">SetThreadPriorityResult</a> <span class="namespace">llvm::</span><dfn class="decl def fn" id="_ZN4llvm19set_thread_priorityENS_14ThreadPriorityE" title='llvm::set_thread_priority' data-ref="_ZN4llvm19set_thread_priorityENS_14ThreadPriorityE" data-ref-filename="_ZN4llvm19set_thread_priorityENS_14ThreadPriorityE">set_thread_priority</dfn>(<a class="type" href="../../../include/llvm/Support/Threading.h.html#llvm::ThreadPriority" title='llvm::ThreadPriority' data-ref="llvm::ThreadPriority" data-ref-filename="llvm..ThreadPriority">ThreadPriority</a> <dfn class="local col0 decl" id="20Priority" title='Priority' data-type='llvm::ThreadPriority' data-ref="20Priority" data-ref-filename="20Priority">Priority</dfn>) {</td></tr>
+<tr><th id="245">245</th><td><u>#<span data-ppcond="245">if</span> defined(<span class="macro" data-ref="_M/__linux__">__linux__</span>) &amp;&amp; defined(<a class="macro" href="../../../../../include/bits/sched.h.html#34" data-ref="_M/SCHED_IDLE">SCHED_IDLE</a>)</u></td></tr>
+<tr><th id="246">246</th><td>  <i>// Some *really* old glibcs are missing SCHED_IDLE.</i></td></tr>
+<tr><th id="247">247</th><td><i>  // <a href="http://man7.org/linux/man-pages/man3/pthread_setschedparam.3.html">http://man7.org/linux/man-pages/man3/pthread_setschedparam.3.html</a></i></td></tr>
+<tr><th id="248">248</th><td><i>  // <a href="http://man7.org/linux/man-pages/man2/sched_setscheduler.2.html">http://man7.org/linux/man-pages/man2/sched_setscheduler.2.html</a></i></td></tr>
+<tr><th id="249">249</th><td>  <a class="type" href="../../../../../include/bits/types/struct_sched_param.h.html#sched_param" title='sched_param' data-ref="sched_param" data-ref-filename="sched_param">sched_param</a> <a class="ref fn fake" href="../../../../../include/bits/types/struct_sched_param.h.html#23" title='sched_param::sched_param' data-ref="_ZN11sched_paramC1Ev" data-ref-filename="_ZN11sched_paramC1Ev"></a><dfn class="local col1 decl" id="21priority" title='priority' data-type='sched_param' data-ref="21priority" data-ref-filename="21priority">priority</dfn>;</td></tr>
+<tr><th id="250">250</th><td>  <i>// For each of the above policies, param-&gt;sched_priority must be 0.</i></td></tr>
+<tr><th id="251">251</th><td>  <a class="local col1 ref" href="#21priority" title='priority' data-ref="21priority" data-ref-filename="21priority">priority</a>.<a class="macro" href="../../../../../include/sched.h.html#47" title="sched_priority" data-ref="_M/sched_priority">sched_priority</a> = <var>0</var>;</td></tr>
+<tr><th id="252">252</th><td>  <i>// SCHED_IDLE    for running very low priority background jobs.</i></td></tr>
+<tr><th id="253">253</th><td><i>  // SCHED_OTHER   the standard round-robin time-sharing policy;</i></td></tr>
+<tr><th id="254">254</th><td>  <b>return</b> !<a class="ref fn" href="../../../../../include/pthread.h.html#pthread_setschedparam" title='pthread_setschedparam' data-ref="pthread_setschedparam" data-ref-filename="pthread_setschedparam">pthread_setschedparam</a>(</td></tr>
+<tr><th id="255">255</th><td>             <a class="ref fn" href="../../../../../include/pthread.h.html#pthread_self" title='pthread_self' data-ref="pthread_self" data-ref-filename="pthread_self">pthread_self</a>(),</td></tr>
+<tr><th id="256">256</th><td>             <a class="local col0 ref" href="#20Priority" title='Priority' data-ref="20Priority" data-ref-filename="20Priority">Priority</a> == <a class="type" href="../../../include/llvm/Support/Threading.h.html#llvm::ThreadPriority" title='llvm::ThreadPriority' data-ref="llvm::ThreadPriority" data-ref-filename="llvm..ThreadPriority">ThreadPriority</a>::<a class="enum" href="../../../include/llvm/Support/Threading.h.html#llvm::ThreadPriority::Background" title='llvm::ThreadPriority::Background' data-ref="llvm::ThreadPriority::Background" data-ref-filename="llvm..ThreadPriority..Background">Background</a> ? <a class="macro" href="../../../../../include/bits/sched.h.html#34" title="5" data-ref="_M/SCHED_IDLE">SCHED_IDLE</a> : <a class="macro" href="../../../../../include/bits/sched.h.html#28" title="0" data-ref="_M/SCHED_OTHER">SCHED_OTHER</a>,</td></tr>
+<tr><th id="257">257</th><td>             &amp;<a class="local col1 ref" href="#21priority" title='priority' data-ref="21priority" data-ref-filename="21priority">priority</a>)</td></tr>
+<tr><th id="258">258</th><td>             ? <a class="type" href="../../../include/llvm/Support/Threading.h.html#llvm::SetThreadPriorityResult" title='llvm::SetThreadPriorityResult' data-ref="llvm::SetThreadPriorityResult" data-ref-filename="llvm..SetThreadPriorityResult">SetThreadPriorityResult</a>::<a class="enum" href="../../../include/llvm/Support/Threading.h.html#llvm::SetThreadPriorityResult::SUCCESS" title='llvm::SetThreadPriorityResult::SUCCESS' data-ref="llvm::SetThreadPriorityResult::SUCCESS" data-ref-filename="llvm..SetThreadPriorityResult..SUCCESS">SUCCESS</a></td></tr>
+<tr><th id="259">259</th><td>             : <a class="type" href="../../../include/llvm/Support/Threading.h.html#llvm::SetThreadPriorityResult" title='llvm::SetThreadPriorityResult' data-ref="llvm::SetThreadPriorityResult" data-ref-filename="llvm..SetThreadPriorityResult">SetThreadPriorityResult</a>::<a class="enum" href="../../../include/llvm/Support/Threading.h.html#llvm::SetThreadPriorityResult::FAILURE" title='llvm::SetThreadPriorityResult::FAILURE' data-ref="llvm::SetThreadPriorityResult::FAILURE" data-ref-filename="llvm..SetThreadPriorityResult..FAILURE">FAILURE</a>;</td></tr>
+<tr><th id="260">260</th><td><u>#<span data-ppcond="245">elif</span> defined(__APPLE__)</u></td></tr>
+<tr><th id="261">261</th><td>  <i>// <a href="https://developer.apple.com/library/archive/documentation/System/Conceptual/ManPages_iPhoneOS/man2/getpriority.2.html">https://developer.apple.com/library/archive/documentation/System/Conceptual/ManPages_iPhoneOS/man2/getpriority.2.html</a></i></td></tr>
+<tr><th id="262">262</th><td><i>  // When setting a thread into background state the scheduling priority is set</i></td></tr>
+<tr><th id="263">263</th><td><i>  // to lowest value, disk and network IO are throttled. Network IO will be</i></td></tr>
+<tr><th id="264">264</th><td><i>  // throttled for any sockets the thread opens after going into background</i></td></tr>
+<tr><th id="265">265</th><td><i>  // state. Any previously opened sockets are not affected.</i></td></tr>
+<tr><th id="266">266</th><td><i></i></td></tr>
+<tr><th id="267">267</th><td><i>  // <a href="https://developer.apple.com/library/archive/documentation/System/Conceptual/ManPages_iPhoneOS/man3/getiopolicy_np.3.html">https://developer.apple.com/library/archive/documentation/System/Conceptual/ManPages_iPhoneOS/man3/getiopolicy_np.3.html</a></i></td></tr>
+<tr><th id="268">268</th><td><i>  // I/Os with THROTTLE policy are called THROTTLE I/Os. If a THROTTLE I/O</i></td></tr>
+<tr><th id="269">269</th><td><i>  // request occurs within a small time window (usually a fraction of a second)</i></td></tr>
+<tr><th id="270">270</th><td><i>  // of another NORMAL I/O request, the thread that issues the THROTTLE I/O is</i></td></tr>
+<tr><th id="271">271</th><td><i>  // forced to sleep for a certain interval. This slows down the thread that</i></td></tr>
+<tr><th id="272">272</th><td><i>  // issues the THROTTLE I/O so that NORMAL I/Os can utilize most of the disk</i></td></tr>
+<tr><th id="273">273</th><td><i>  // I/O bandwidth.</i></td></tr>
+<tr><th id="274">274</th><td>  <b>return</b> !setpriority(PRIO_DARWIN_THREAD, <var>0</var>,</td></tr>
+<tr><th id="275">275</th><td>                      Priority == ThreadPriority::Background ? PRIO_DARWIN_BG</td></tr>
+<tr><th id="276">276</th><td>                                                             : <var>0</var>)</td></tr>
+<tr><th id="277">277</th><td>             ? SetThreadPriorityResult::SUCCESS</td></tr>
+<tr><th id="278">278</th><td>             : SetThreadPriorityResult::FAILURE;</td></tr>
+<tr><th id="279">279</th><td><u>#<span data-ppcond="245">endif</span></u></td></tr>
+<tr><th id="280">280</th><td>  <b>return</b> <a class="type" href="../../../include/llvm/Support/Threading.h.html#llvm::SetThreadPriorityResult" title='llvm::SetThreadPriorityResult' data-ref="llvm::SetThreadPriorityResult" data-ref-filename="llvm..SetThreadPriorityResult">SetThreadPriorityResult</a>::<a class="enum" href="../../../include/llvm/Support/Threading.h.html#llvm::SetThreadPriorityResult::FAILURE" title='llvm::SetThreadPriorityResult::FAILURE' data-ref="llvm::SetThreadPriorityResult::FAILURE" data-ref-filename="llvm..SetThreadPriorityResult..FAILURE">FAILURE</a>;</td></tr>
+<tr><th id="281">281</th><td>}</td></tr>
+<tr><th id="282">282</th><td></td></tr>
+<tr><th id="283">283</th><td><u>#include &lt;thread&gt;</u></td></tr>
+<tr><th id="284">284</th><td></td></tr>
+<tr><th id="285">285</th><td><em>int</em> <dfn class="decl def fn" id="_Z29computeHostNumHardwareThreadsv" title='computeHostNumHardwareThreads' data-ref="_Z29computeHostNumHardwareThreadsv" data-ref-filename="_Z29computeHostNumHardwareThreadsv">computeHostNumHardwareThreads</dfn>() {</td></tr>
+<tr><th id="286">286</th><td><u>#<span data-ppcond="286">if</span> defined(<span class="macro" data-ref="_M/__FreeBSD__">__FreeBSD__</span>)</u></td></tr>
+<tr><th id="287">287</th><td>  cpuset_t mask;</td></tr>
+<tr><th id="288">288</th><td>  CPU_ZERO(&amp;mask);</td></tr>
+<tr><th id="289">289</th><td>  <b>if</b> (cpuset_getaffinity(CPU_LEVEL_WHICH, CPU_WHICH_TID, -<var>1</var>, <b>sizeof</b>(mask),</td></tr>
+<tr><th id="290">290</th><td>                         &amp;mask) == <var>0</var>)</td></tr>
+<tr><th id="291">291</th><td>    <b>return</b> CPU_COUNT(&amp;mask);</td></tr>
+<tr><th id="292">292</th><td><u>#<span data-ppcond="286">elif</span> defined(<span class="macro" data-ref="_M/__linux__">__linux__</span>)</u></td></tr>
+<tr><th id="293">293</th><td>  <a class="typedef" href="../../../../../include/bits/cpu-set.h.html#cpu_set_t" title='cpu_set_t' data-type='struct cpu_set_t' data-ref="cpu_set_t" data-ref-filename="cpu_set_t">cpu_set_t</a> <a class="ref fn fake" href="../../../../../include/bits/cpu-set.h.html#39" title='(anonymous struct)::' data-ref="_ZN9cpu_set_tC1Ev" data-ref-filename="_ZN9cpu_set_tC1Ev"></a><dfn class="local col2 decl" id="22Set" title='Set' data-type='cpu_set_t' data-ref="22Set" data-ref-filename="22Set">Set</dfn>;</td></tr>
+<tr><th id="294">294</th><td>  <b>if</b> (<a class="ref fn" href="../../../../../include/sched.h.html#sched_getaffinity" title='sched_getaffinity' data-ref="sched_getaffinity" data-ref-filename="sched_getaffinity">sched_getaffinity</a>(<var>0</var>, <b>sizeof</b>(<a class="local col2 ref" href="#22Set" title='Set' data-ref="22Set" data-ref-filename="22Set">Set</a>), &amp;<a class="local col2 ref" href="#22Set" title='Set' data-ref="22Set" data-ref-filename="22Set">Set</a>) == <var>0</var>)</td></tr>
+<tr><th id="295">295</th><td>    <b>return</b> <a class="macro" href="../../../../../include/sched.h.html#88" title="__sched_cpucount (sizeof (cpu_set_t), &amp;Set)" data-ref="_M/CPU_COUNT">CPU_COUNT</a>(&amp;<a class="local col2 ref" href="#22Set" title='Set' data-ref="22Set" data-ref-filename="22Set">Set</a>);</td></tr>
+<tr><th id="296">296</th><td><u>#<span data-ppcond="286">endif</span></u></td></tr>
+<tr><th id="297">297</th><td>  <i>// Guard against std::thread::hardware_concurrency() returning 0.</i></td></tr>
+<tr><th id="298">298</th><td>  <b>if</b> (<em>unsigned</em> <dfn class="local col3 decl" id="23Val" title='Val' data-type='unsigned int' data-ref="23Val" data-ref-filename="23Val"><a class="local col3 ref" href="#23Val" title='Val' data-ref="23Val" data-ref-filename="23Val">Val</a></dfn> = <span class="namespace">std::</span><span class='type' title='std::thread' data-ref="std::thread" data-ref-filename="std..thread">thread</span>::<span class='ref fn' title='std::thread::hardware_concurrency' data-ref="_ZNSt6thread20hardware_concurrencyEv" data-ref-filename="_ZNSt6thread20hardware_concurrencyEv">hardware_concurrency</span>())</td></tr>
+<tr><th id="299">299</th><td>    <b>return</b> <a class="local col3 ref" href="#23Val" title='Val' data-ref="23Val" data-ref-filename="23Val">Val</a>;</td></tr>
+<tr><th id="300">300</th><td>  <b>return</b> <var>1</var>;</td></tr>
+<tr><th id="301">301</th><td>}</td></tr>
+<tr><th id="302">302</th><td></td></tr>
+<tr><th id="303">303</th><td><em>void</em> <span class="namespace">llvm::</span><a class="type" href="../../../include/llvm/Support/Threading.h.html#llvm::ThreadPoolStrategy" title='llvm::ThreadPoolStrategy' data-ref="llvm::ThreadPoolStrategy" data-ref-filename="llvm..ThreadPoolStrategy">ThreadPoolStrategy</a>::<dfn class="decl def fn" id="_ZNK4llvm18ThreadPoolStrategy21apply_thread_strategyEj" title='llvm::ThreadPoolStrategy::apply_thread_strategy' data-ref="_ZNK4llvm18ThreadPoolStrategy21apply_thread_strategyEj" data-ref-filename="_ZNK4llvm18ThreadPoolStrategy21apply_thread_strategyEj">apply_thread_strategy</dfn>(</td></tr>
+<tr><th id="304">304</th><td>    <em>unsigned</em> <dfn class="local col4 decl" id="24ThreadPoolNum" title='ThreadPoolNum' data-type='unsigned int' data-ref="24ThreadPoolNum" data-ref-filename="24ThreadPoolNum">ThreadPoolNum</dfn>) <em>const</em> {}</td></tr>
+<tr><th id="305">305</th><td></td></tr>
+<tr><th id="306">306</th><td><span class="namespace">llvm::</span><a class="type" href="../../../include/llvm/ADT/BitVector.h.html#llvm::BitVector" title='llvm::BitVector' data-ref="llvm::BitVector" data-ref-filename="llvm..BitVector">BitVector</a> <span class="namespace">llvm::</span><dfn class="decl def fn" id="_ZN4llvm24get_thread_affinity_maskEv" title='llvm::get_thread_affinity_mask' data-ref="_ZN4llvm24get_thread_affinity_maskEv" data-ref-filename="_ZN4llvm24get_thread_affinity_maskEv">get_thread_affinity_mask</dfn>() {</td></tr>
+<tr><th id="307">307</th><td>  <i>// FIXME: Implement</i></td></tr>
+<tr><th id="308">308</th><td>  <a class="macro" href="../../../include/llvm/Support/ErrorHandling.h.html#139" title="__builtin_unreachable()" data-ref="_M/llvm_unreachable">llvm_unreachable</a>(<q>"Not implemented!"</q>);</td></tr>
+<tr><th id="309">309</th><td>}</td></tr>
+<tr><th id="310">310</th><td></td></tr>
+<tr><th id="311">311</th><td><em>unsigned</em> <span class="namespace">llvm::</span><dfn class="decl def fn" id="_ZN4llvm8get_cpusEv" title='llvm::get_cpus' data-ref="_ZN4llvm8get_cpusEv" data-ref-filename="_ZN4llvm8get_cpusEv">get_cpus</dfn>() { <b>return</b> <var>1</var>; }</td></tr>
+<tr><th id="312">312</th><td></td></tr>
+</table><hr/><p id='footer'>
+Generated while processing <a href='../Threading.cpp.html'>llvm/llvm/lib/Support/Threading.cpp</a><br/>Generated on <em>2021-Jul-01</em> from project llvm revision <em>12</em>

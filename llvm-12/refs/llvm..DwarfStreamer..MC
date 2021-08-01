@@ -1,0 +1,34 @@
+<dec f='llvm/llvm/include/llvm/DWARFLinker/DWARFStreamer.h' l='177' type='std::unique_ptr&lt;MCContext&gt;'/>
+<use f='llvm/llvm/lib/DWARFLinker/DWARFStreamer.cpp' l='54' u='m' c='_ZN4llvm13DwarfStreamer4initENS_6TripleE'/>
+<use f='llvm/llvm/lib/DWARFLinker/DWARFStreamer.cpp' l='55' u='m' c='_ZN4llvm13DwarfStreamer4initENS_6TripleE'/>
+<use f='llvm/llvm/lib/DWARFLinker/DWARFStreamer.cpp' l='69' u='m' c='_ZN4llvm13DwarfStreamer4initENS_6TripleE'/>
+<use f='llvm/llvm/lib/DWARFLinker/DWARFStreamer.cpp' l='78' u='m' c='_ZN4llvm13DwarfStreamer4initENS_6TripleE'/>
+<use f='llvm/llvm/lib/DWARFLinker/DWARFStreamer.cpp' l='85' u='m' c='_ZN4llvm13DwarfStreamer4initENS_6TripleE'/>
+<use f='llvm/llvm/lib/DWARFLinker/DWARFStreamer.cpp' l='119' u='m' c='_ZN4llvm13DwarfStreamer24switchToDebugInfoSectionEj'/>
+<use f='llvm/llvm/lib/DWARFLinker/DWARFStreamer.cpp' l='177' u='m' c='_ZN4llvm13DwarfStreamer11emitAbbrevsERKSt6vectorISt10unique_ptrINS_9DIEAbbrevESt14default_deleteIS3_EESaIS6_EEj'/>
+<use f='llvm/llvm/lib/DWARFLinker/DWARFStreamer.cpp' l='192' u='m' c='_ZN4llvm13DwarfStreamer19emitSectionContentsENS_9StringRefES1_'/>
+<use f='llvm/llvm/lib/DWARFLinker/DWARFStreamer.cpp' l='193' u='m' c='_ZN4llvm13DwarfStreamer19emitSectionContentsENS_9StringRefES1_'/>
+<use f='llvm/llvm/lib/DWARFLinker/DWARFStreamer.cpp' l='195' u='m' c='_ZN4llvm13DwarfStreamer19emitSectionContentsENS_9StringRefES1_'/>
+<use f='llvm/llvm/lib/DWARFLinker/DWARFStreamer.cpp' l='196' u='m' c='_ZN4llvm13DwarfStreamer19emitSectionContentsENS_9StringRefES1_'/>
+<use f='llvm/llvm/lib/DWARFLinker/DWARFStreamer.cpp' l='198' u='m' c='_ZN4llvm13DwarfStreamer19emitSectionContentsENS_9StringRefES1_'/>
+<use f='llvm/llvm/lib/DWARFLinker/DWARFStreamer.cpp' l='314' u='m' c='_ZN4llvm13DwarfStreamer17emitRangesEntriesElmRKNS_11IntervalMapImlLj8ENS_23IntervalMapHalfOpenInfoImEEE14const_iteratorERKSt6vectorINS_19DWARFDebugRan4256301'/>
+<use f='llvm/llvm/lib/DWARFLinker/DWARFStreamer.cpp' l='366' u='m' c='_ZN4llvm13DwarfStreamer21emitUnitRangesEntriesERNS_11CompileUnitEb'/>
+<use f='llvm/llvm/lib/DWARFLinker/DWARFStreamer.cpp' l='408' u='m' c='_ZN4llvm13DwarfStreamer21emitUnitRangesEntriesERNS_11CompileUnitEb'/>
+<use f='llvm/llvm/lib/DWARFLinker/DWARFStreamer.cpp' l='436' u='m' c='_ZN4llvm13DwarfStreamer20emitLocationsForUnitERKNS_11CompileUnitERNS_12DWARFContextESt8functionIFvNS_9StringRefERNS_15SmallVectorImplIhEEEE'/>
+<use f='llvm/llvm/lib/DWARFLinker/DWARFStreamer.cpp' l='498' u='m' c='_ZN4llvm13DwarfStreamer20emitLineTableForUnitENS_22MCDwarfLineTableParamsENS_9StringRefEjRSt6vectorINS_14DWARFDebugLine3RowESaIS5_EEj'/>
+<use f='llvm/llvm/lib/DWARFLinker/DWARFStreamer.cpp' l='499' u='m' c='_ZN4llvm13DwarfStreamer20emitLineTableForUnitENS_22MCDwarfLineTableParamsENS_9StringRefEjRSt6vectorINS_14DWARFDebugLine3RowESaIS5_EEj'/>
+<use f='llvm/llvm/lib/DWARFLinker/DWARFStreamer.cpp' l='500' u='m' c='_ZN4llvm13DwarfStreamer20emitLineTableForUnitENS_22MCDwarfLineTableParamsENS_9StringRefEjRSt6vectorINS_14DWARFDebugLine3RowESaIS5_EEj'/>
+<use f='llvm/llvm/lib/DWARFLinker/DWARFStreamer.cpp' l='516' u='m' c='_ZN4llvm13DwarfStreamer20emitLineTableForUnitENS_22MCDwarfLineTableParamsENS_9StringRefEjRSt6vectorINS_14DWARFDebugLine3RowESaIS5_EEj'/>
+<use f='llvm/llvm/lib/DWARFLinker/DWARFStreamer.cpp' l='598' u='m' c='_ZN4llvm13DwarfStreamer20emitLineTableForUnitENS_22MCDwarfLineTableParamsENS_9StringRefEjRSt6vectorINS_14DWARFDebugLine3RowESaIS5_EEj'/>
+<use f='llvm/llvm/lib/DWARFLinker/DWARFStreamer.cpp' l='616' u='m' c='_ZN4llvm13DwarfStreamer20emitLineTableForUnitENS_22MCDwarfLineTableParamsENS_9StringRefEjRSt6vectorINS_14DWARFDebugLine3RowESaIS5_EEj'/>
+<use f='llvm/llvm/lib/DWARFLinker/DWARFStreamer.cpp' l='628' u='m' c='_ZN4llvm13DwarfStreamer20emitLineTableForUnitENS_22MCDwarfLineTableParamsENS_9StringRefEjRSt6vectorINS_14DWARFDebugLine3RowESaIS5_EEj'/>
+<use f='llvm/llvm/lib/DWARFLinker/DWARFStreamer.cpp' l='641' u='m' c='_ZN4llvm13DwarfStreamer18translateLineTableENS_13DataExtractorEm'/>
+<use f='llvm/llvm/lib/DWARFLinker/DWARFStreamer.cpp' l='649' u='m' c='_ZN4llvm13DwarfStreamer18translateLineTableENS_13DataExtractorEm'/>
+<use f='llvm/llvm/lib/DWARFLinker/DWARFStreamer.cpp' l='650' u='m' c='_ZN4llvm13DwarfStreamer18translateLineTableENS_13DataExtractorEm'/>
+<use f='llvm/llvm/lib/DWARFLinker/DWARFStreamer.cpp' l='664' u='m' c='_ZN4llvm13DwarfStreamer18translateLineTableENS_13DataExtractorEm'/>
+<use f='llvm/llvm/lib/DWARFLinker/DWARFStreamer.cpp' l='665' u='m' c='_ZN4llvm13DwarfStreamer18translateLineTableENS_13DataExtractorEm'/>
+<use f='llvm/llvm/lib/DWARFLinker/DWARFStreamer.cpp' l='766' u='m' c='_ZN4llvm13DwarfStreamer19emitPubNamesForUnitERKNS_11CompileUnitE'/>
+<use f='llvm/llvm/lib/DWARFLinker/DWARFStreamer.cpp' l='774' u='m' c='_ZN4llvm13DwarfStreamer19emitPubTypesForUnitERKNS_11CompileUnitE'/>
+<use f='llvm/llvm/lib/DWARFLinker/DWARFStreamer.cpp' l='780' u='m' c='_ZN4llvm13DwarfStreamer7emitCIEENS_9StringRefE'/>
+<use f='llvm/llvm/lib/DWARFLinker/DWARFStreamer.cpp' l='791' u='m' c='_ZN4llvm13DwarfStreamer7emitFDEEjjjNS_9StringRefE'/>
+<offset>256</offset>

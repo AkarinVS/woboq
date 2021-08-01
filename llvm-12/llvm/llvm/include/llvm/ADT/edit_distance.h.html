@@ -1,0 +1,118 @@
+<!doctype html>
+<html>
+<head>
+<meta name="viewport" content="width=device-width, initial-scale=1.0"><title>edit_distance.h source code [llvm/llvm/include/llvm/ADT/edit_distance.h] - Woboq Code Browser</title>
+<link rel="stylesheet" href="../../../../.././data/qtcreator.css" title="QtCreator"/>
+<link rel="alternate stylesheet" href="../../../../.././data/kdevelop.css" title="KDevelop"/>
+<script type="text/javascript" src="../../../../.././data/jquery/jquery.min.js"></script>
+<script type="text/javascript" src="../../../../.././data/jquery/jquery-ui.min.js"></script>
+<script>var file = 'llvm/llvm/include/llvm/ADT/edit_distance.h'; var root_path = '../../../../..'; var data_path = '../../../../.././data'; var ecma_script_api_version = 2;</script>
+<script src='../../../../.././data/codebrowser.js'></script>
+</head>
+<body><div id='header'><h1 id='breadcrumb'><span>Browse the source code of </span><a href='../../../..'>llvm</a>/<a href='../../..'>llvm</a>/<a href='../..'>include</a>/<a href='..'>llvm</a>/<a href='./'>ADT</a>/<a href='edit_distance.h.html'>edit_distance.h</a></h1></div>
+<hr/><div id='content'><table class="code">
+<tr><th id="1">1</th><td><i>//===-- llvm/ADT/edit_distance.h - Array edit distance function --- C++ -*-===//</i></td></tr>
+<tr><th id="2">2</th><td><i>//</i></td></tr>
+<tr><th id="3">3</th><td><i>// Part of the LLVM Project, under the Apache License v2.0 with LLVM Exceptions.</i></td></tr>
+<tr><th id="4">4</th><td><i>// See <a href="https://llvm.org/LICENSE.txt">https://llvm.org/LICENSE.txt</a> for license information.</i></td></tr>
+<tr><th id="5">5</th><td><i>// SPDX-License-Identifier: Apache-2.0 WITH LLVM-exception</i></td></tr>
+<tr><th id="6">6</th><td><i>//</i></td></tr>
+<tr><th id="7">7</th><td><i>//===----------------------------------------------------------------------===//</i></td></tr>
+<tr><th id="8">8</th><td><i>//</i></td></tr>
+<tr><th id="9">9</th><td><i>// This file defines a Levenshtein distance function that works for any two</i></td></tr>
+<tr><th id="10">10</th><td><i>// sequences, with each element of each sequence being analogous to a character</i></td></tr>
+<tr><th id="11">11</th><td><i>// in a string.</i></td></tr>
+<tr><th id="12">12</th><td><i>//</i></td></tr>
+<tr><th id="13">13</th><td><i>//===----------------------------------------------------------------------===//</i></td></tr>
+<tr><th id="14">14</th><td></td></tr>
+<tr><th id="15">15</th><td><u>#<span data-ppcond="15">ifndef</span> <span class="macro" data-ref="_M/LLVM_ADT_EDIT_DISTANCE_H">LLVM_ADT_EDIT_DISTANCE_H</span></u></td></tr>
+<tr><th id="16">16</th><td><u>#define <dfn class="macro" id="_M/LLVM_ADT_EDIT_DISTANCE_H" data-ref="_M/LLVM_ADT_EDIT_DISTANCE_H">LLVM_ADT_EDIT_DISTANCE_H</dfn></u></td></tr>
+<tr><th id="17">17</th><td></td></tr>
+<tr><th id="18">18</th><td><u>#include <a href="ArrayRef.h.html">"llvm/ADT/ArrayRef.h"</a></u></td></tr>
+<tr><th id="19">19</th><td><u>#include &lt;algorithm&gt;</u></td></tr>
+<tr><th id="20">20</th><td><u>#include &lt;memory&gt;</u></td></tr>
+<tr><th id="21">21</th><td></td></tr>
+<tr><th id="22">22</th><td><b>namespace</b> <span class="namespace">llvm</span> {</td></tr>
+<tr><th id="23">23</th><td></td></tr>
+<tr><th id="24">24</th><td><i class="doc">/// Determine the edit distance between two sequences.</i></td></tr>
+<tr><th id="25">25</th><td><i class="doc">///</i></td></tr>
+<tr><th id="26">26</th><td><i class="doc">/// <span class="command">\param</span> <span class="arg">FromArray</span> the first sequence to compare.</i></td></tr>
+<tr><th id="27">27</th><td><i class="doc">///</i></td></tr>
+<tr><th id="28">28</th><td><i class="doc">/// <span class="command">\param</span> <span class="arg">ToArray</span> the second sequence to compare.</i></td></tr>
+<tr><th id="29">29</th><td><i class="doc">///</i></td></tr>
+<tr><th id="30">30</th><td><i class="doc">/// <span class="command">\param</span> <span class="arg">AllowReplacements</span> whether to allow element replacements (change one</i></td></tr>
+<tr><th id="31">31</th><td><i class="doc">/// element into another) as a single operation, rather than as two operations</i></td></tr>
+<tr><th id="32">32</th><td><i class="doc">/// (an insertion and a removal).</i></td></tr>
+<tr><th id="33">33</th><td><i class="doc">///</i></td></tr>
+<tr><th id="34">34</th><td><i class="doc">/// <span class="command">\param</span> <span class="arg">MaxEditDistance</span> If non-zero, the maximum edit distance that this</i></td></tr>
+<tr><th id="35">35</th><td><i class="doc">/// routine is allowed to compute. If the edit distance will exceed that</i></td></tr>
+<tr><th id="36">36</th><td><i class="doc">/// maximum, returns<span class="command"> \c</span> <span class="arg">MaxEditDistance+1.</span></i></td></tr>
+<tr><th id="37">37</th><td><i class="doc">///</i></td></tr>
+<tr><th id="38">38</th><td><i class="doc">/// <span class="command">\returns</span> the minimum number of element insertions, removals, or (if</i></td></tr>
+<tr><th id="39">39</th><td><i class="doc">///<span class="command"> \p</span> <span class="arg">AllowReplacements</span> is<span class="command"> \c</span> <span class="arg">true)</span> replacements needed to transform one of</i></td></tr>
+<tr><th id="40">40</th><td><i class="doc">/// the given sequences into the other. If zero, the sequences are identical.</i></td></tr>
+<tr><th id="41">41</th><td><b>template</b>&lt;<b>typename</b> T&gt;</td></tr>
+<tr><th id="42">42</th><td><em>unsigned</em> <dfn class="decl def fn" id="_ZN4llvm19ComputeEditDistanceENS_8ArrayRefIT_EES2_bj" title='llvm::ComputeEditDistance' data-ref="_ZN4llvm19ComputeEditDistanceENS_8ArrayRefIT_EES2_bj" data-ref-filename="_ZN4llvm19ComputeEditDistanceENS_8ArrayRefIT_EES2_bj">ComputeEditDistance</dfn>(<a class="type" href="../../../../clang/include/clang/Basic/LLVM.h.html#llvm::ArrayRef" title='llvm::ArrayRef' data-ref="llvm::ArrayRef" data-ref-filename="llvm..ArrayRef">ArrayRef</a>&lt;T&gt; <dfn class="local col1 decl" id="1FromArray" title='FromArray' data-type='ArrayRef&lt;T&gt;' data-ref="1FromArray" data-ref-filename="1FromArray">FromArray</dfn>, <a class="type" href="../../../../clang/include/clang/Basic/LLVM.h.html#llvm::ArrayRef" title='llvm::ArrayRef' data-ref="llvm::ArrayRef" data-ref-filename="llvm..ArrayRef">ArrayRef</a>&lt;T&gt; <dfn class="local col2 decl" id="2ToArray" title='ToArray' data-type='ArrayRef&lt;T&gt;' data-ref="2ToArray" data-ref-filename="2ToArray">ToArray</dfn>,</td></tr>
+<tr><th id="43">43</th><td>                             <em>bool</em> <dfn class="local col3 decl" id="3AllowReplacements" title='AllowReplacements' data-type='bool' data-ref="3AllowReplacements" data-ref-filename="3AllowReplacements">AllowReplacements</dfn> = <b>true</b>,</td></tr>
+<tr><th id="44">44</th><td>                             <em>unsigned</em> <dfn class="local col4 decl" id="4MaxEditDistance" title='MaxEditDistance' data-type='unsigned int' data-ref="4MaxEditDistance" data-ref-filename="4MaxEditDistance">MaxEditDistance</dfn> = <var>0</var>) {</td></tr>
+<tr><th id="45">45</th><td>  <i>// The algorithm implemented below is the "classic"</i></td></tr>
+<tr><th id="46">46</th><td><i>  // dynamic-programming algorithm for computing the Levenshtein</i></td></tr>
+<tr><th id="47">47</th><td><i>  // distance, which is described here:</i></td></tr>
+<tr><th id="48">48</th><td><i>  //</i></td></tr>
+<tr><th id="49">49</th><td><i>  //   <a href="http://en.wikipedia.org/wiki/Levenshtein_distance">http://en.wikipedia.org/wiki/Levenshtein_distance</a></i></td></tr>
+<tr><th id="50">50</th><td><i>  //</i></td></tr>
+<tr><th id="51">51</th><td><i>  // Although the algorithm is typically described using an m x n</i></td></tr>
+<tr><th id="52">52</th><td><i>  // array, only one row plus one element are used at a time, so this</i></td></tr>
+<tr><th id="53">53</th><td><i>  // implementation just keeps one vector for the row.  To update one entry,</i></td></tr>
+<tr><th id="54">54</th><td><i>  // only the entries to the left, top, and top-left are needed.  The left</i></td></tr>
+<tr><th id="55">55</th><td><i>  // entry is in Row[x-1], the top entry is what's in Row[x] from the last</i></td></tr>
+<tr><th id="56">56</th><td><i>  // iteration, and the top-left entry is stored in Previous.</i></td></tr>
+<tr><th id="57">57</th><td>  <b>typename</b> <a class="type" href="../../../../clang/include/clang/Basic/LLVM.h.html#llvm::ArrayRef" title='llvm::ArrayRef' data-ref="llvm::ArrayRef" data-ref-filename="llvm..ArrayRef">ArrayRef</a>&lt;T&gt;::size_type <dfn class="local col5 decl" id="5m" title='m' data-type='typename ArrayRef&lt;T&gt;::size_type' data-ref="5m" data-ref-filename="5m">m</dfn> = <a class="local col1 ref" href="#1FromArray" title='FromArray' data-ref="1FromArray" data-ref-filename="1FromArray">FromArray</a>.size();</td></tr>
+<tr><th id="58">58</th><td>  <b>typename</b> <a class="type" href="../../../../clang/include/clang/Basic/LLVM.h.html#llvm::ArrayRef" title='llvm::ArrayRef' data-ref="llvm::ArrayRef" data-ref-filename="llvm..ArrayRef">ArrayRef</a>&lt;T&gt;::size_type <dfn class="local col6 decl" id="6n" title='n' data-type='typename ArrayRef&lt;T&gt;::size_type' data-ref="6n" data-ref-filename="6n">n</dfn> = <a class="local col2 ref" href="#2ToArray" title='ToArray' data-ref="2ToArray" data-ref-filename="2ToArray">ToArray</a>.size();</td></tr>
+<tr><th id="59">59</th><td></td></tr>
+<tr><th id="60">60</th><td>  <em>const</em> <em>unsigned</em> <dfn class="local col7 decl" id="7SmallBufferSize" title='SmallBufferSize' data-type='const unsigned int' data-ref="7SmallBufferSize" data-ref-filename="7SmallBufferSize">SmallBufferSize</dfn> = <var>64</var>;</td></tr>
+<tr><th id="61">61</th><td>  <em>unsigned</em> <dfn class="local col8 decl" id="8SmallBuffer" title='SmallBuffer' data-type='unsigned int [64]' data-ref="8SmallBuffer" data-ref-filename="8SmallBuffer">SmallBuffer</dfn>[<a class="local col7 ref" href="#7SmallBufferSize" title='SmallBufferSize' data-ref="7SmallBufferSize" data-ref-filename="7SmallBufferSize">SmallBufferSize</a>];</td></tr>
+<tr><th id="62">62</th><td>  <span class="namespace">std::</span><span class='type' title='std::unique_ptr' data-ref="std::unique_ptr" data-ref-filename="std..unique_ptr">unique_ptr</span>&lt;<em>unsigned</em>[]&gt; <span class='ref fn fake' title='std::unique_ptr&lt;type-parameter-0-0 [], type-parameter-0-1&gt;::unique_ptr&lt;type-parameter-0-0 [], type-parameter-0-1&gt;' data-ref="_ZNSt10unique_ptrIA_T_T0_EC1Ev" data-ref-filename="_ZNSt10unique_ptrIA_T_T0_EC1Ev"></span><dfn class="local col9 decl" id="9Allocated" title='Allocated' data-type='std::unique_ptr&lt;unsigned int []&gt;' data-ref="9Allocated" data-ref-filename="9Allocated">Allocated</dfn>;</td></tr>
+<tr><th id="63">63</th><td>  <em>unsigned</em> *<dfn class="local col0 decl" id="10Row" title='Row' data-type='unsigned int *' data-ref="10Row" data-ref-filename="10Row">Row</dfn> = <a class="local col8 ref" href="#8SmallBuffer" title='SmallBuffer' data-ref="8SmallBuffer" data-ref-filename="8SmallBuffer">SmallBuffer</a>;</td></tr>
+<tr><th id="64">64</th><td>  <b>if</b> (<a class="local col6 ref" href="#6n" title='n' data-ref="6n" data-ref-filename="6n">n</a> + <var>1</var> &gt; <a class="local col7 ref" href="#7SmallBufferSize" title='SmallBufferSize' data-ref="7SmallBufferSize" data-ref-filename="7SmallBufferSize">SmallBufferSize</a>) {</td></tr>
+<tr><th id="65">65</th><td>    <a class="local col0 ref" href="#10Row" title='Row' data-ref="10Row" data-ref-filename="10Row">Row</a> = <b>new</b> <em>unsigned</em>[<a class="local col6 ref" href="#6n" title='n' data-ref="6n" data-ref-filename="6n">n</a> + <var>1</var>];</td></tr>
+<tr><th id="66">66</th><td>    <a class="local col9 ref" href="#9Allocated" title='Allocated' data-ref="9Allocated" data-ref-filename="9Allocated">Allocated</a>.<span class='ref fn' title='std::unique_ptr&lt;type-parameter-0-0 [], type-parameter-0-1&gt;::reset' data-ref="_ZNSt10unique_ptrIA_T_T0_E5resetETL0__" data-ref-filename="_ZNSt10unique_ptrIA_T_T0_E5resetETL0__">reset</span>(<a class="local col0 ref" href="#10Row" title='Row' data-ref="10Row" data-ref-filename="10Row">Row</a>);</td></tr>
+<tr><th id="67">67</th><td>  }</td></tr>
+<tr><th id="68">68</th><td></td></tr>
+<tr><th id="69">69</th><td>  <b>for</b> (<em>unsigned</em> <dfn class="local col1 decl" id="11i" title='i' data-type='unsigned int' data-ref="11i" data-ref-filename="11i">i</dfn> = <var>1</var>; <a class="local col1 ref" href="#11i" title='i' data-ref="11i" data-ref-filename="11i">i</a> &lt;= <a class="local col6 ref" href="#6n" title='n' data-ref="6n" data-ref-filename="6n">n</a>; ++<a class="local col1 ref" href="#11i" title='i' data-ref="11i" data-ref-filename="11i">i</a>)</td></tr>
+<tr><th id="70">70</th><td>    <a class="local col0 ref" href="#10Row" title='Row' data-ref="10Row" data-ref-filename="10Row">Row</a>[<a class="local col1 ref" href="#11i" title='i' data-ref="11i" data-ref-filename="11i">i</a>] = <a class="local col1 ref" href="#11i" title='i' data-ref="11i" data-ref-filename="11i">i</a>;</td></tr>
+<tr><th id="71">71</th><td></td></tr>
+<tr><th id="72">72</th><td>  <b>for</b> (<b>typename</b> <a class="type" href="../../../../clang/include/clang/Basic/LLVM.h.html#llvm::ArrayRef" title='llvm::ArrayRef' data-ref="llvm::ArrayRef" data-ref-filename="llvm..ArrayRef">ArrayRef</a>&lt;T&gt;::size_type <dfn class="local col2 decl" id="12y" title='y' data-type='typename ArrayRef&lt;T&gt;::size_type' data-ref="12y" data-ref-filename="12y">y</dfn> = <var>1</var>; <a class="local col2 ref" href="#12y" title='y' data-ref="12y" data-ref-filename="12y">y</a> &lt;= <a class="local col5 ref" href="#5m" title='m' data-ref="5m" data-ref-filename="5m">m</a>; ++<a class="local col2 ref" href="#12y" title='y' data-ref="12y" data-ref-filename="12y">y</a>) {</td></tr>
+<tr><th id="73">73</th><td>    <a class="local col0 ref" href="#10Row" title='Row' data-ref="10Row" data-ref-filename="10Row">Row</a>[<var>0</var>] = <a class="local col2 ref" href="#12y" title='y' data-ref="12y" data-ref-filename="12y">y</a>;</td></tr>
+<tr><th id="74">74</th><td>    <em>unsigned</em> <dfn class="local col3 decl" id="13BestThisRow" title='BestThisRow' data-type='unsigned int' data-ref="13BestThisRow" data-ref-filename="13BestThisRow">BestThisRow</dfn> = <a class="local col0 ref" href="#10Row" title='Row' data-ref="10Row" data-ref-filename="10Row">Row</a>[<var>0</var>];</td></tr>
+<tr><th id="75">75</th><td></td></tr>
+<tr><th id="76">76</th><td>    <em>unsigned</em> <dfn class="local col4 decl" id="14Previous" title='Previous' data-type='unsigned int' data-ref="14Previous" data-ref-filename="14Previous">Previous</dfn> = <a class="local col2 ref" href="#12y" title='y' data-ref="12y" data-ref-filename="12y">y</a> - <var>1</var>;</td></tr>
+<tr><th id="77">77</th><td>    <b>for</b> (<b>typename</b> <a class="type" href="../../../../clang/include/clang/Basic/LLVM.h.html#llvm::ArrayRef" title='llvm::ArrayRef' data-ref="llvm::ArrayRef" data-ref-filename="llvm..ArrayRef">ArrayRef</a>&lt;T&gt;::size_type <dfn class="local col5 decl" id="15x" title='x' data-type='typename ArrayRef&lt;T&gt;::size_type' data-ref="15x" data-ref-filename="15x">x</dfn> = <var>1</var>; <a class="local col5 ref" href="#15x" title='x' data-ref="15x" data-ref-filename="15x">x</a> &lt;= <a class="local col6 ref" href="#6n" title='n' data-ref="6n" data-ref-filename="6n">n</a>; ++<a class="local col5 ref" href="#15x" title='x' data-ref="15x" data-ref-filename="15x">x</a>) {</td></tr>
+<tr><th id="78">78</th><td>      <em>int</em> <dfn class="local col6 decl" id="16OldRow" title='OldRow' data-type='int' data-ref="16OldRow" data-ref-filename="16OldRow">OldRow</dfn> = <a class="local col0 ref" href="#10Row" title='Row' data-ref="10Row" data-ref-filename="10Row">Row</a>[<a class="local col5 ref" href="#15x" title='x' data-ref="15x" data-ref-filename="15x">x</a>];</td></tr>
+<tr><th id="79">79</th><td>      <b>if</b> (<a class="local col3 ref" href="#3AllowReplacements" title='AllowReplacements' data-ref="3AllowReplacements" data-ref-filename="3AllowReplacements">AllowReplacements</a>) {</td></tr>
+<tr><th id="80">80</th><td>        <a class="local col0 ref" href="#10Row" title='Row' data-ref="10Row" data-ref-filename="10Row">Row</a>[<a class="local col5 ref" href="#15x" title='x' data-ref="15x" data-ref-filename="15x">x</a>] = <span class="namespace">std::</span>min(</td></tr>
+<tr><th id="81">81</th><td>            <a class="local col4 ref" href="#14Previous" title='Previous' data-ref="14Previous" data-ref-filename="14Previous">Previous</a> + (<a class="local col1 ref" href="#1FromArray" title='FromArray' data-ref="1FromArray" data-ref-filename="1FromArray">FromArray</a>[<a class="local col2 ref" href="#12y" title='y' data-ref="12y" data-ref-filename="12y">y</a>-<var>1</var>] == <a class="local col2 ref" href="#2ToArray" title='ToArray' data-ref="2ToArray" data-ref-filename="2ToArray">ToArray</a>[<a class="local col5 ref" href="#15x" title='x' data-ref="15x" data-ref-filename="15x">x</a>-<var>1</var>] ? <var>0u</var> : <var>1u</var>),</td></tr>
+<tr><th id="82">82</th><td>            <span class="namespace">std::</span>min(<a class="local col0 ref" href="#10Row" title='Row' data-ref="10Row" data-ref-filename="10Row">Row</a>[<a class="local col5 ref" href="#15x" title='x' data-ref="15x" data-ref-filename="15x">x</a>-<var>1</var>], <a class="local col0 ref" href="#10Row" title='Row' data-ref="10Row" data-ref-filename="10Row">Row</a>[<a class="local col5 ref" href="#15x" title='x' data-ref="15x" data-ref-filename="15x">x</a>])+<var>1</var>);</td></tr>
+<tr><th id="83">83</th><td>      }</td></tr>
+<tr><th id="84">84</th><td>      <b>else</b> {</td></tr>
+<tr><th id="85">85</th><td>        <b>if</b> (<a class="local col1 ref" href="#1FromArray" title='FromArray' data-ref="1FromArray" data-ref-filename="1FromArray">FromArray</a>[<a class="local col2 ref" href="#12y" title='y' data-ref="12y" data-ref-filename="12y">y</a>-<var>1</var>] == <a class="local col2 ref" href="#2ToArray" title='ToArray' data-ref="2ToArray" data-ref-filename="2ToArray">ToArray</a>[<a class="local col5 ref" href="#15x" title='x' data-ref="15x" data-ref-filename="15x">x</a>-<var>1</var>]) <a class="local col0 ref" href="#10Row" title='Row' data-ref="10Row" data-ref-filename="10Row">Row</a>[<a class="local col5 ref" href="#15x" title='x' data-ref="15x" data-ref-filename="15x">x</a>] = <a class="local col4 ref" href="#14Previous" title='Previous' data-ref="14Previous" data-ref-filename="14Previous">Previous</a>;</td></tr>
+<tr><th id="86">86</th><td>        <b>else</b> <a class="local col0 ref" href="#10Row" title='Row' data-ref="10Row" data-ref-filename="10Row">Row</a>[<a class="local col5 ref" href="#15x" title='x' data-ref="15x" data-ref-filename="15x">x</a>] = <span class="namespace">std::</span>min(<a class="local col0 ref" href="#10Row" title='Row' data-ref="10Row" data-ref-filename="10Row">Row</a>[<a class="local col5 ref" href="#15x" title='x' data-ref="15x" data-ref-filename="15x">x</a>-<var>1</var>], <a class="local col0 ref" href="#10Row" title='Row' data-ref="10Row" data-ref-filename="10Row">Row</a>[<a class="local col5 ref" href="#15x" title='x' data-ref="15x" data-ref-filename="15x">x</a>]) + <var>1</var>;</td></tr>
+<tr><th id="87">87</th><td>      }</td></tr>
+<tr><th id="88">88</th><td>      <a class="local col4 ref" href="#14Previous" title='Previous' data-ref="14Previous" data-ref-filename="14Previous">Previous</a> = <a class="local col6 ref" href="#16OldRow" title='OldRow' data-ref="16OldRow" data-ref-filename="16OldRow">OldRow</a>;</td></tr>
+<tr><th id="89">89</th><td>      <a class="local col3 ref" href="#13BestThisRow" title='BestThisRow' data-ref="13BestThisRow" data-ref-filename="13BestThisRow">BestThisRow</a> = <span class="namespace">std::</span>min(<a class="local col3 ref" href="#13BestThisRow" title='BestThisRow' data-ref="13BestThisRow" data-ref-filename="13BestThisRow">BestThisRow</a>, <a class="local col0 ref" href="#10Row" title='Row' data-ref="10Row" data-ref-filename="10Row">Row</a>[<a class="local col5 ref" href="#15x" title='x' data-ref="15x" data-ref-filename="15x">x</a>]);</td></tr>
+<tr><th id="90">90</th><td>    }</td></tr>
+<tr><th id="91">91</th><td></td></tr>
+<tr><th id="92">92</th><td>    <b>if</b> (<a class="local col4 ref" href="#4MaxEditDistance" title='MaxEditDistance' data-ref="4MaxEditDistance" data-ref-filename="4MaxEditDistance">MaxEditDistance</a> &amp;&amp; <a class="local col3 ref" href="#13BestThisRow" title='BestThisRow' data-ref="13BestThisRow" data-ref-filename="13BestThisRow">BestThisRow</a> &gt; <a class="local col4 ref" href="#4MaxEditDistance" title='MaxEditDistance' data-ref="4MaxEditDistance" data-ref-filename="4MaxEditDistance">MaxEditDistance</a>)</td></tr>
+<tr><th id="93">93</th><td>      <b>return</b> <a class="local col4 ref" href="#4MaxEditDistance" title='MaxEditDistance' data-ref="4MaxEditDistance" data-ref-filename="4MaxEditDistance">MaxEditDistance</a> + <var>1</var>;</td></tr>
+<tr><th id="94">94</th><td>  }</td></tr>
+<tr><th id="95">95</th><td></td></tr>
+<tr><th id="96">96</th><td>  <em>unsigned</em> <dfn class="local col7 decl" id="17Result" title='Result' data-type='unsigned int' data-ref="17Result" data-ref-filename="17Result">Result</dfn> = <a class="local col0 ref" href="#10Row" title='Row' data-ref="10Row" data-ref-filename="10Row">Row</a>[<a class="local col6 ref" href="#6n" title='n' data-ref="6n" data-ref-filename="6n">n</a>];</td></tr>
+<tr><th id="97">97</th><td>  <b>return</b> <a class="local col7 ref" href="#17Result" title='Result' data-ref="17Result" data-ref-filename="17Result">Result</a>;</td></tr>
+<tr><th id="98">98</th><td>}</td></tr>
+<tr><th id="99">99</th><td></td></tr>
+<tr><th id="100">100</th><td>} <i>// End llvm namespace</i></td></tr>
+<tr><th id="101">101</th><td></td></tr>
+<tr><th id="102">102</th><td><u>#<span data-ppcond="15">endif</span></u></td></tr>
+<tr><th id="103">103</th><td></td></tr>
+</table><hr/><p id='footer'>
+Generated while processing <a href='../../../../clang/lib/Sema/SemaLookup.cpp.html'>llvm/clang/lib/Sema/SemaLookup.cpp</a><br/>Generated on <em>2021-Jul-01</em> from project llvm revision <em>12</em>

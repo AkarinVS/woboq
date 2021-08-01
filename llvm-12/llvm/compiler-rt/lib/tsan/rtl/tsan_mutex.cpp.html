@@ -1,0 +1,306 @@
+<!doctype html>
+<html>
+<head>
+<meta name="viewport" content="width=device-width, initial-scale=1.0"><title>tsan_mutex.cpp source code [llvm/compiler-rt/lib/tsan/rtl/tsan_mutex.cpp] - Woboq Code Browser</title>
+<meta name="woboq:interestingDefinitions" content="__tsan::Backoff "/>
+<link rel="stylesheet" href="../../../../.././data/qtcreator.css" title="QtCreator"/>
+<link rel="alternate stylesheet" href="../../../../.././data/kdevelop.css" title="KDevelop"/>
+<script type="text/javascript" src="../../../../.././data/jquery/jquery.min.js"></script>
+<script type="text/javascript" src="../../../../.././data/jquery/jquery-ui.min.js"></script>
+<script>var file = 'llvm/compiler-rt/lib/tsan/rtl/tsan_mutex.cpp'; var root_path = '../../../../..'; var data_path = '../../../../.././data'; var ecma_script_api_version = 2;</script>
+<script src='../../../../.././data/codebrowser.js'></script>
+</head>
+<body><div id='header'><h1 id='breadcrumb'><span>Browse the source code of </span><a href='../../../..'>llvm</a>/<a href='../../..'>compiler-rt</a>/<a href='../..'>lib</a>/<a href='..'>tsan</a>/<a href='./'>rtl</a>/<a href='tsan_mutex.cpp.html'>tsan_mutex.cpp</a></h1></div>
+<hr/><div id='content'><table class="code">
+<tr><th id="1">1</th><td><i>//===-- tsan_mutex.cpp ----------------------------------------------------===//</i></td></tr>
+<tr><th id="2">2</th><td><i>//</i></td></tr>
+<tr><th id="3">3</th><td><i>// Part of the LLVM Project, under the Apache License v2.0 with LLVM Exceptions.</i></td></tr>
+<tr><th id="4">4</th><td><i>// See <a href="https://llvm.org/LICENSE.txt">https://llvm.org/LICENSE.txt</a> for license information.</i></td></tr>
+<tr><th id="5">5</th><td><i>// SPDX-License-Identifier: Apache-2.0 WITH LLVM-exception</i></td></tr>
+<tr><th id="6">6</th><td><i>//</i></td></tr>
+<tr><th id="7">7</th><td><i>//===----------------------------------------------------------------------===//</i></td></tr>
+<tr><th id="8">8</th><td><i>//</i></td></tr>
+<tr><th id="9">9</th><td><i>// This file is a part of ThreadSanitizer (TSan), a race detector.</i></td></tr>
+<tr><th id="10">10</th><td><i>//</i></td></tr>
+<tr><th id="11">11</th><td><i>//===----------------------------------------------------------------------===//</i></td></tr>
+<tr><th id="12">12</th><td><u>#include <a href="../../sanitizer_common/sanitizer_libc.h.html">"sanitizer_common/sanitizer_libc.h"</a></u></td></tr>
+<tr><th id="13">13</th><td><u>#include <a href="tsan_mutex.h.html">"tsan_mutex.h"</a></u></td></tr>
+<tr><th id="14">14</th><td><u>#include <a href="tsan_platform.h.html">"tsan_platform.h"</a></u></td></tr>
+<tr><th id="15">15</th><td><u>#include <a href="tsan_rtl.h.html">"tsan_rtl.h"</a></u></td></tr>
+<tr><th id="16">16</th><td></td></tr>
+<tr><th id="17">17</th><td><b>namespace</b> <span class="namespace">__tsan</span> {</td></tr>
+<tr><th id="18">18</th><td></td></tr>
+<tr><th id="19">19</th><td><i>// Simple reader-writer spin-mutex. Optimized for not-so-contended case.</i></td></tr>
+<tr><th id="20">20</th><td><i>// Readers have preference, can possibly starvate writers.</i></td></tr>
+<tr><th id="21">21</th><td><i></i></td></tr>
+<tr><th id="22">22</th><td><i>// The table fixes what mutexes can be locked under what mutexes.</i></td></tr>
+<tr><th id="23">23</th><td><i>// E.g. if the row for MutexTypeThreads contains MutexTypeReport,</i></td></tr>
+<tr><th id="24">24</th><td><i>// then Report mutex can be locked while under Threads mutex.</i></td></tr>
+<tr><th id="25">25</th><td><i>// The leaf mutexes can be locked under any other mutexes.</i></td></tr>
+<tr><th id="26">26</th><td><i>// Recursive locking is not supported.</i></td></tr>
+<tr><th id="27">27</th><td><u>#<span data-ppcond="27">if</span> <a class="macro" href="../../sanitizer_common/sanitizer_internal_defs.h.html#18" title="0" data-ref="_M/SANITIZER_DEBUG">SANITIZER_DEBUG</a> &amp;&amp; !<a class="macro" href="../../sanitizer_common/sanitizer_platform.h.html#339" title="0" data-ref="_M/SANITIZER_GO">SANITIZER_GO</a></u></td></tr>
+<tr><th id="28">28</th><td><em>const</em> MutexType MutexTypeLeaf = (MutexType)-<var>1</var>;</td></tr>
+<tr><th id="29">29</th><td><em>static</em> MutexType CanLockTab[MutexTypeCount][MutexTypeCount] = {</td></tr>
+<tr><th id="30">30</th><td>  <i>/*0  MutexTypeInvalid*/</i>     {},</td></tr>
+<tr><th id="31">31</th><td>  <i>/*1  MutexTypeTrace*/</i>       {MutexTypeLeaf},</td></tr>
+<tr><th id="32">32</th><td>  <i>/*2  MutexTypeThreads*/</i>     {MutexTypeReport},</td></tr>
+<tr><th id="33">33</th><td>  <i>/*3  MutexTypeReport*/</i>      {MutexTypeSyncVar,</td></tr>
+<tr><th id="34">34</th><td>                               MutexTypeMBlock, MutexTypeJavaMBlock},</td></tr>
+<tr><th id="35">35</th><td>  <i>/*4  MutexTypeSyncVar*/</i>     {MutexTypeDDetector},</td></tr>
+<tr><th id="36">36</th><td>  <i>/*5  MutexTypeSyncTab*/</i>     {},  <i>// unused</i></td></tr>
+<tr><th id="37">37</th><td>  <i>/*6  MutexTypeSlab*/</i>        {MutexTypeLeaf},</td></tr>
+<tr><th id="38">38</th><td>  <i>/*7  MutexTypeAnnotations*/</i> {},</td></tr>
+<tr><th id="39">39</th><td>  <i>/*8  MutexTypeAtExit*/</i>      {MutexTypeSyncVar},</td></tr>
+<tr><th id="40">40</th><td>  <i>/*9  MutexTypeMBlock*/</i>      {MutexTypeSyncVar},</td></tr>
+<tr><th id="41">41</th><td>  <i>/*10 MutexTypeJavaMBlock*/</i>  {MutexTypeSyncVar},</td></tr>
+<tr><th id="42">42</th><td>  <i>/*11 MutexTypeDDetector*/</i>   {},</td></tr>
+<tr><th id="43">43</th><td>  <i>/*12 MutexTypeFired*/</i>       {MutexTypeLeaf},</td></tr>
+<tr><th id="44">44</th><td>  <i>/*13 MutexTypeRacy*/</i>        {MutexTypeLeaf},</td></tr>
+<tr><th id="45">45</th><td>  <i>/*14 MutexTypeGlobalProc*/</i>  {},</td></tr>
+<tr><th id="46">46</th><td>};</td></tr>
+<tr><th id="47">47</th><td></td></tr>
+<tr><th id="48">48</th><td><em>static</em> <em>bool</em> CanLockAdj[MutexTypeCount][MutexTypeCount];</td></tr>
+<tr><th id="49">49</th><td><u>#<span data-ppcond="27">endif</span></u></td></tr>
+<tr><th id="50">50</th><td></td></tr>
+<tr><th id="51">51</th><td><em>void</em> <dfn class="decl def fn" id="__tsan::InitializeMutex" title='__tsan::InitializeMutex' data-ref="__tsan::InitializeMutex" data-ref-filename="__tsan..InitializeMutex">InitializeMutex</dfn>() {</td></tr>
+<tr><th id="52">52</th><td><u>#<span data-ppcond="52">if</span> <a class="macro" href="../../sanitizer_common/sanitizer_internal_defs.h.html#18" title="0" data-ref="_M/SANITIZER_DEBUG">SANITIZER_DEBUG</a> &amp;&amp; !<a class="macro" href="../../sanitizer_common/sanitizer_platform.h.html#339" title="0" data-ref="_M/SANITIZER_GO">SANITIZER_GO</a></u></td></tr>
+<tr><th id="53">53</th><td>  <i>// Build the "can lock" adjacency matrix.</i></td></tr>
+<tr><th id="54">54</th><td><i>  // If [i][j]==true, then one can lock mutex j while under mutex i.</i></td></tr>
+<tr><th id="55">55</th><td>  <em>const</em> <em>int</em> N = MutexTypeCount;</td></tr>
+<tr><th id="56">56</th><td>  <em>int</em> cnt[N] = {};</td></tr>
+<tr><th id="57">57</th><td>  <em>bool</em> leaf[N] = {};</td></tr>
+<tr><th id="58">58</th><td>  <b>for</b> (<em>int</em> i = <var>1</var>; i &lt; N; i++) {</td></tr>
+<tr><th id="59">59</th><td>    <b>for</b> (<em>int</em> j = <var>0</var>; j &lt; N; j++) {</td></tr>
+<tr><th id="60">60</th><td>      MutexType z = CanLockTab[i][j];</td></tr>
+<tr><th id="61">61</th><td>      <b>if</b> (z == MutexTypeInvalid)</td></tr>
+<tr><th id="62">62</th><td>        <b>continue</b>;</td></tr>
+<tr><th id="63">63</th><td>      <b>if</b> (z == MutexTypeLeaf) {</td></tr>
+<tr><th id="64">64</th><td>        CHECK(!leaf[i]);</td></tr>
+<tr><th id="65">65</th><td>        leaf[i] = <b>true</b>;</td></tr>
+<tr><th id="66">66</th><td>        <b>continue</b>;</td></tr>
+<tr><th id="67">67</th><td>      }</td></tr>
+<tr><th id="68">68</th><td>      CHECK(!CanLockAdj[i][(<em>int</em>)z]);</td></tr>
+<tr><th id="69">69</th><td>      CanLockAdj[i][(<em>int</em>)z] = <b>true</b>;</td></tr>
+<tr><th id="70">70</th><td>      cnt[i]++;</td></tr>
+<tr><th id="71">71</th><td>    }</td></tr>
+<tr><th id="72">72</th><td>  }</td></tr>
+<tr><th id="73">73</th><td>  <b>for</b> (<em>int</em> i = <var>0</var>; i &lt; N; i++) {</td></tr>
+<tr><th id="74">74</th><td>    CHECK(!leaf[i] || cnt[i] == <var>0</var>);</td></tr>
+<tr><th id="75">75</th><td>  }</td></tr>
+<tr><th id="76">76</th><td>  <i>// Add leaf mutexes.</i></td></tr>
+<tr><th id="77">77</th><td>  <b>for</b> (<em>int</em> i = <var>0</var>; i &lt; N; i++) {</td></tr>
+<tr><th id="78">78</th><td>    <b>if</b> (!leaf[i])</td></tr>
+<tr><th id="79">79</th><td>      <b>continue</b>;</td></tr>
+<tr><th id="80">80</th><td>    <b>for</b> (<em>int</em> j = <var>0</var>; j &lt; N; j++) {</td></tr>
+<tr><th id="81">81</th><td>      <b>if</b> (i == j || leaf[j] || j == MutexTypeInvalid)</td></tr>
+<tr><th id="82">82</th><td>        <b>continue</b>;</td></tr>
+<tr><th id="83">83</th><td>      CHECK(!CanLockAdj[j][i]);</td></tr>
+<tr><th id="84">84</th><td>      CanLockAdj[j][i] = <b>true</b>;</td></tr>
+<tr><th id="85">85</th><td>    }</td></tr>
+<tr><th id="86">86</th><td>  }</td></tr>
+<tr><th id="87">87</th><td>  <i>// Build the transitive closure.</i></td></tr>
+<tr><th id="88">88</th><td>  <em>bool</em> CanLockAdj2[MutexTypeCount][MutexTypeCount];</td></tr>
+<tr><th id="89">89</th><td>  <b>for</b> (<em>int</em> i = <var>0</var>; i &lt; N; i++) {</td></tr>
+<tr><th id="90">90</th><td>    <b>for</b> (<em>int</em> j = <var>0</var>; j &lt; N; j++) {</td></tr>
+<tr><th id="91">91</th><td>      CanLockAdj2[i][j] = CanLockAdj[i][j];</td></tr>
+<tr><th id="92">92</th><td>    }</td></tr>
+<tr><th id="93">93</th><td>  }</td></tr>
+<tr><th id="94">94</th><td>  <b>for</b> (<em>int</em> k = <var>0</var>; k &lt; N; k++) {</td></tr>
+<tr><th id="95">95</th><td>    <b>for</b> (<em>int</em> i = <var>0</var>; i &lt; N; i++) {</td></tr>
+<tr><th id="96">96</th><td>      <b>for</b> (<em>int</em> j = <var>0</var>; j &lt; N; j++) {</td></tr>
+<tr><th id="97">97</th><td>        <b>if</b> (CanLockAdj2[i][k] &amp;&amp; CanLockAdj2[k][j]) {</td></tr>
+<tr><th id="98">98</th><td>          CanLockAdj2[i][j] = <b>true</b>;</td></tr>
+<tr><th id="99">99</th><td>        }</td></tr>
+<tr><th id="100">100</th><td>      }</td></tr>
+<tr><th id="101">101</th><td>    }</td></tr>
+<tr><th id="102">102</th><td>  }</td></tr>
+<tr><th id="103">103</th><td><u>#if 0</u></td></tr>
+<tr><th id="104">104</th><td>  Printf(<q>"Can lock graph:\n"</q>);</td></tr>
+<tr><th id="105">105</th><td>  <b>for</b> (<em>int</em> i = <var>0</var>; i &lt; N; i++) {</td></tr>
+<tr><th id="106">106</th><td>    <b>for</b> (<em>int</em> j = <var>0</var>; j &lt; N; j++) {</td></tr>
+<tr><th id="107">107</th><td>      Printf(<q>"%d "</q>, CanLockAdj[i][j]);</td></tr>
+<tr><th id="108">108</th><td>    }</td></tr>
+<tr><th id="109">109</th><td>    Printf(<q>"\n"</q>);</td></tr>
+<tr><th id="110">110</th><td>  }</td></tr>
+<tr><th id="111">111</th><td>  Printf(<q>"Can lock graph closure:\n"</q>);</td></tr>
+<tr><th id="112">112</th><td>  <b>for</b> (<em>int</em> i = <var>0</var>; i &lt; N; i++) {</td></tr>
+<tr><th id="113">113</th><td>    <b>for</b> (<em>int</em> j = <var>0</var>; j &lt; N; j++) {</td></tr>
+<tr><th id="114">114</th><td>      Printf(<q>"%d "</q>, CanLockAdj2[i][j]);</td></tr>
+<tr><th id="115">115</th><td>    }</td></tr>
+<tr><th id="116">116</th><td>    Printf(<q>"\n"</q>);</td></tr>
+<tr><th id="117">117</th><td>  }</td></tr>
+<tr><th id="118">118</th><td><u>#endif</u></td></tr>
+<tr><th id="119">119</th><td>  <i>// Verify that the graph is acyclic.</i></td></tr>
+<tr><th id="120">120</th><td>  <b>for</b> (<em>int</em> i = <var>0</var>; i &lt; N; i++) {</td></tr>
+<tr><th id="121">121</th><td>    <b>if</b> (CanLockAdj2[i][i]) {</td></tr>
+<tr><th id="122">122</th><td>      Printf(<q>"Mutex %d participates in a cycle\n"</q>, i);</td></tr>
+<tr><th id="123">123</th><td>      Die();</td></tr>
+<tr><th id="124">124</th><td>    }</td></tr>
+<tr><th id="125">125</th><td>  }</td></tr>
+<tr><th id="126">126</th><td><u>#<span data-ppcond="52">endif</span></u></td></tr>
+<tr><th id="127">127</th><td>}</td></tr>
+<tr><th id="128">128</th><td></td></tr>
+<tr><th id="129">129</th><td><a class="type" href="tsan_mutex.h.html#__tsan::InternalDeadlockDetector" title='__tsan::InternalDeadlockDetector' data-ref="__tsan::InternalDeadlockDetector" data-ref-filename="__tsan..InternalDeadlockDetector">InternalDeadlockDetector</a>::<dfn class="decl def fn" id="__tsan::InternalDeadlockDetector::InternalDeadlockDetector" title='__tsan::InternalDeadlockDetector::InternalDeadlockDetector' data-ref="__tsan::InternalDeadlockDetector::InternalDeadlockDetector" data-ref-filename="__tsan..InternalDeadlockDetector..InternalDeadlockDetector">InternalDeadlockDetector</dfn>() {</td></tr>
+<tr><th id="130">130</th><td>  <i>// Rely on zero initialization because some mutexes can be locked before ctor.</i></td></tr>
+<tr><th id="131">131</th><td>}</td></tr>
+<tr><th id="132">132</th><td></td></tr>
+<tr><th id="133">133</th><td><u>#<span data-ppcond="133">if</span> <a class="macro" href="../../sanitizer_common/sanitizer_internal_defs.h.html#18" title="0" data-ref="_M/SANITIZER_DEBUG">SANITIZER_DEBUG</a> &amp;&amp; !<a class="macro" href="../../sanitizer_common/sanitizer_platform.h.html#339" title="0" data-ref="_M/SANITIZER_GO">SANITIZER_GO</a></u></td></tr>
+<tr><th id="134">134</th><td><em>void</em> InternalDeadlockDetector::Lock(MutexType t) {</td></tr>
+<tr><th id="135">135</th><td>  <i>// Printf("LOCK %d @%zu\n", t, seq_ + 1);</i></td></tr>
+<tr><th id="136">136</th><td>  CHECK_GT(t, MutexTypeInvalid);</td></tr>
+<tr><th id="137">137</th><td>  CHECK_LT(t, MutexTypeCount);</td></tr>
+<tr><th id="138">138</th><td>  u64 max_seq = <var>0</var>;</td></tr>
+<tr><th id="139">139</th><td>  u64 max_idx = MutexTypeInvalid;</td></tr>
+<tr><th id="140">140</th><td>  <b>for</b> (<em>int</em> i = <var>0</var>; i != MutexTypeCount; i++) {</td></tr>
+<tr><th id="141">141</th><td>    <b>if</b> (locked_[i] == <var>0</var>)</td></tr>
+<tr><th id="142">142</th><td>      <b>continue</b>;</td></tr>
+<tr><th id="143">143</th><td>    CHECK_NE(locked_[i], max_seq);</td></tr>
+<tr><th id="144">144</th><td>    <b>if</b> (max_seq &lt; locked_[i]) {</td></tr>
+<tr><th id="145">145</th><td>      max_seq = locked_[i];</td></tr>
+<tr><th id="146">146</th><td>      max_idx = i;</td></tr>
+<tr><th id="147">147</th><td>    }</td></tr>
+<tr><th id="148">148</th><td>  }</td></tr>
+<tr><th id="149">149</th><td>  locked_[t] = ++seq_;</td></tr>
+<tr><th id="150">150</th><td>  <b>if</b> (max_idx == MutexTypeInvalid)</td></tr>
+<tr><th id="151">151</th><td>    <b>return</b>;</td></tr>
+<tr><th id="152">152</th><td>  <i>// Printf("  last %d @%zu\n", max_idx, max_seq);</i></td></tr>
+<tr><th id="153">153</th><td>  <b>if</b> (!CanLockAdj[max_idx][t]) {</td></tr>
+<tr><th id="154">154</th><td>    Printf(<q>"ThreadSanitizer: internal deadlock detected\n"</q>);</td></tr>
+<tr><th id="155">155</th><td>    Printf(<q>"ThreadSanitizer: can't lock %d while under %zu\n"</q>,</td></tr>
+<tr><th id="156">156</th><td>               t, (uptr)max_idx);</td></tr>
+<tr><th id="157">157</th><td>    CHECK(<var>0</var>);</td></tr>
+<tr><th id="158">158</th><td>  }</td></tr>
+<tr><th id="159">159</th><td>}</td></tr>
+<tr><th id="160">160</th><td></td></tr>
+<tr><th id="161">161</th><td><em>void</em> InternalDeadlockDetector::Unlock(MutexType t) {</td></tr>
+<tr><th id="162">162</th><td>  <i>// Printf("UNLO %d @%zu #%zu\n", t, seq_, locked_[t]);</i></td></tr>
+<tr><th id="163">163</th><td>  CHECK(locked_[t]);</td></tr>
+<tr><th id="164">164</th><td>  locked_[t] = <var>0</var>;</td></tr>
+<tr><th id="165">165</th><td>}</td></tr>
+<tr><th id="166">166</th><td></td></tr>
+<tr><th id="167">167</th><td><em>void</em> InternalDeadlockDetector::CheckNoLocks() {</td></tr>
+<tr><th id="168">168</th><td>  <b>for</b> (<em>int</em> i = <var>0</var>; i != MutexTypeCount; i++) {</td></tr>
+<tr><th id="169">169</th><td>    CHECK_EQ(locked_[i], <var>0</var>);</td></tr>
+<tr><th id="170">170</th><td>  }</td></tr>
+<tr><th id="171">171</th><td>}</td></tr>
+<tr><th id="172">172</th><td><u>#<span data-ppcond="133">endif</span></u></td></tr>
+<tr><th id="173">173</th><td></td></tr>
+<tr><th id="174">174</th><td><em>void</em> <dfn class="decl def fn" id="__tsan::CheckNoLocks" title='__tsan::CheckNoLocks' data-ref="__tsan::CheckNoLocks" data-ref-filename="__tsan..CheckNoLocks">CheckNoLocks</dfn>(<a class="type" href="tsan_rtl.h.html#__tsan::ThreadState" title='__tsan::ThreadState' data-ref="__tsan::ThreadState" data-ref-filename="__tsan..ThreadState">ThreadState</a> *<dfn class="local col1 decl" id="1thr" title='thr' data-type='__tsan::ThreadState *' data-ref="1thr" data-ref-filename="1thr">thr</dfn>) {</td></tr>
+<tr><th id="175">175</th><td><u>#<span data-ppcond="175">if</span> <a class="macro" href="../../sanitizer_common/sanitizer_internal_defs.h.html#18" title="0" data-ref="_M/SANITIZER_DEBUG">SANITIZER_DEBUG</a> &amp;&amp; !<a class="macro" href="../../sanitizer_common/sanitizer_platform.h.html#339" title="0" data-ref="_M/SANITIZER_GO">SANITIZER_GO</a></u></td></tr>
+<tr><th id="176">176</th><td>  thr-&gt;internal_deadlock_detector.CheckNoLocks();</td></tr>
+<tr><th id="177">177</th><td><u>#<span data-ppcond="175">endif</span></u></td></tr>
+<tr><th id="178">178</th><td>}</td></tr>
+<tr><th id="179">179</th><td></td></tr>
+<tr><th id="180">180</th><td><em>const</em> <a class="typedef" href="../../sanitizer_common/sanitizer_internal_defs.h.html#__sanitizer::uptr" title='__sanitizer::uptr' data-type='unsigned long' data-ref="__sanitizer::uptr" data-ref-filename="__sanitizer..uptr">uptr</a> <dfn class="tu decl def" id="__tsan::kUnlocked" title='__tsan::kUnlocked' data-type='const __sanitizer::uptr' data-ref="__tsan::kUnlocked" data-ref-filename="__tsan..kUnlocked">kUnlocked</dfn> = <var>0</var>;</td></tr>
+<tr><th id="181">181</th><td><em>const</em> <a class="typedef" href="../../sanitizer_common/sanitizer_internal_defs.h.html#__sanitizer::uptr" title='__sanitizer::uptr' data-type='unsigned long' data-ref="__sanitizer::uptr" data-ref-filename="__sanitizer..uptr">uptr</a> <dfn class="tu decl def" id="__tsan::kWriteLock" title='__tsan::kWriteLock' data-type='const __sanitizer::uptr' data-ref="__tsan::kWriteLock" data-ref-filename="__tsan..kWriteLock">kWriteLock</dfn> = <var>1</var>;</td></tr>
+<tr><th id="182">182</th><td><em>const</em> <a class="typedef" href="../../sanitizer_common/sanitizer_internal_defs.h.html#__sanitizer::uptr" title='__sanitizer::uptr' data-type='unsigned long' data-ref="__sanitizer::uptr" data-ref-filename="__sanitizer..uptr">uptr</a> <dfn class="tu decl def" id="__tsan::kReadLock" title='__tsan::kReadLock' data-type='const __sanitizer::uptr' data-ref="__tsan::kReadLock" data-ref-filename="__tsan..kReadLock">kReadLock</dfn> = <var>2</var>;</td></tr>
+<tr><th id="183">183</th><td></td></tr>
+<tr><th id="184">184</th><td><b>class</b> <dfn class="type def" id="__tsan::Backoff" title='__tsan::Backoff' data-ref="__tsan::Backoff" data-ref-filename="__tsan..Backoff">Backoff</dfn> {</td></tr>
+<tr><th id="185">185</th><td> <b>public</b>:</td></tr>
+<tr><th id="186">186</th><td>  <dfn class="tu decl def fn" id="__tsan::Backoff::Backoff" title='__tsan::Backoff::Backoff' data-type='void __tsan::Backoff::Backoff()' data-ref="__tsan::Backoff::Backoff" data-ref-filename="__tsan..Backoff..Backoff">Backoff</dfn>()</td></tr>
+<tr><th id="187">187</th><td>    : <a class="tu member field" href="#__tsan::Backoff::iter_" title='__tsan::Backoff::iter_' data-use='w' data-ref="__tsan::Backoff::iter_" data-ref-filename="__tsan..Backoff..iter_">iter_</a>() {</td></tr>
+<tr><th id="188">188</th><td>  }</td></tr>
+<tr><th id="189">189</th><td></td></tr>
+<tr><th id="190">190</th><td>  <em>bool</em> <dfn class="tu decl def fn" id="__tsan::Backoff::Do" title='__tsan::Backoff::Do' data-type='bool __tsan::Backoff::Do()' data-ref="__tsan::Backoff::Do" data-ref-filename="__tsan..Backoff..Do">Do</dfn>() {</td></tr>
+<tr><th id="191">191</th><td>    <b>if</b> (<a class="tu member field" href="#__tsan::Backoff::iter_" title='__tsan::Backoff::iter_' data-use='w' data-ref="__tsan::Backoff::iter_" data-ref-filename="__tsan..Backoff..iter_">iter_</a>++ &lt; <a class="tu member" href="#__tsan::Backoff::kActiveSpinIters" title='__tsan::Backoff::kActiveSpinIters' data-use='r' data-ref="__tsan::Backoff::kActiveSpinIters" data-ref-filename="__tsan..Backoff..kActiveSpinIters">kActiveSpinIters</a>)</td></tr>
+<tr><th id="192">192</th><td>      <a class="ref fn" href="../../sanitizer_common/sanitizer_atomic_clang_x86.h.html#__sanitizer::proc_yield" title='__sanitizer::proc_yield' data-ref="__sanitizer::proc_yield" data-ref-filename="__sanitizer..proc_yield">proc_yield</a>(<a class="tu member" href="#__tsan::Backoff::kActiveSpinCnt" title='__tsan::Backoff::kActiveSpinCnt' data-use='r' data-ref="__tsan::Backoff::kActiveSpinCnt" data-ref-filename="__tsan..Backoff..kActiveSpinCnt">kActiveSpinCnt</a>);</td></tr>
+<tr><th id="193">193</th><td>    <b>else</b></td></tr>
+<tr><th id="194">194</th><td>      <a class="ref fn" href="../../sanitizer_common/sanitizer_libc.h.html#__sanitizer::internal_sched_yield" title='__sanitizer::internal_sched_yield' data-ref="__sanitizer::internal_sched_yield" data-ref-filename="__sanitizer..internal_sched_yield">internal_sched_yield</a>();</td></tr>
+<tr><th id="195">195</th><td>    <b>return</b> <b>true</b>;</td></tr>
+<tr><th id="196">196</th><td>  }</td></tr>
+<tr><th id="197">197</th><td></td></tr>
+<tr><th id="198">198</th><td>  <a class="typedef" href="../../sanitizer_common/sanitizer_internal_defs.h.html#__sanitizer::u64" title='__sanitizer::u64' data-type='unsigned long long' data-ref="__sanitizer::u64" data-ref-filename="__sanitizer..u64">u64</a> <dfn class="tu decl def fn" id="__tsan::Backoff::Contention" title='__tsan::Backoff::Contention' data-type='__sanitizer::u64 __tsan::Backoff::Contention() const' data-ref="__tsan::Backoff::Contention" data-ref-filename="__tsan..Backoff..Contention">Contention</dfn>() <em>const</em> {</td></tr>
+<tr><th id="199">199</th><td>    <a class="typedef" href="../../sanitizer_common/sanitizer_internal_defs.h.html#__sanitizer::u64" title='__sanitizer::u64' data-type='unsigned long long' data-ref="__sanitizer::u64" data-ref-filename="__sanitizer..u64">u64</a> <dfn class="local col2 decl" id="2active" title='active' data-type='__sanitizer::u64' data-ref="2active" data-ref-filename="2active">active</dfn> = <a class="tu member field" href="#__tsan::Backoff::iter_" title='__tsan::Backoff::iter_' data-use='r' data-ref="__tsan::Backoff::iter_" data-ref-filename="__tsan..Backoff..iter_">iter_</a> % <a class="tu member" href="#__tsan::Backoff::kActiveSpinIters" title='__tsan::Backoff::kActiveSpinIters' data-use='r' data-ref="__tsan::Backoff::kActiveSpinIters" data-ref-filename="__tsan..Backoff..kActiveSpinIters">kActiveSpinIters</a>;</td></tr>
+<tr><th id="200">200</th><td>    <a class="typedef" href="../../sanitizer_common/sanitizer_internal_defs.h.html#__sanitizer::u64" title='__sanitizer::u64' data-type='unsigned long long' data-ref="__sanitizer::u64" data-ref-filename="__sanitizer..u64">u64</a> <dfn class="local col3 decl" id="3passive" title='passive' data-type='__sanitizer::u64' data-ref="3passive" data-ref-filename="3passive">passive</dfn> = <a class="tu member field" href="#__tsan::Backoff::iter_" title='__tsan::Backoff::iter_' data-use='r' data-ref="__tsan::Backoff::iter_" data-ref-filename="__tsan..Backoff..iter_">iter_</a> - <a class="local col2 ref" href="#2active" title='active' data-ref="2active" data-ref-filename="2active">active</a>;</td></tr>
+<tr><th id="201">201</th><td>    <b>return</b> <a class="local col2 ref" href="#2active" title='active' data-ref="2active" data-ref-filename="2active">active</a> + <var>10</var> * <a class="local col3 ref" href="#3passive" title='passive' data-ref="3passive" data-ref-filename="3passive">passive</a>;</td></tr>
+<tr><th id="202">202</th><td>  }</td></tr>
+<tr><th id="203">203</th><td></td></tr>
+<tr><th id="204">204</th><td> <b>private</b>:</td></tr>
+<tr><th id="205">205</th><td>  <em>int</em> <dfn class="tu decl field" id="__tsan::Backoff::iter_" title='__tsan::Backoff::iter_' data-type='int' data-ref="__tsan::Backoff::iter_" data-ref-filename="__tsan..Backoff..iter_">iter_</dfn>;</td></tr>
+<tr><th id="206">206</th><td>  <em>static</em> <em>const</em> <em>int</em> <dfn class="tu decl" id="__tsan::Backoff::kActiveSpinIters" title='__tsan::Backoff::kActiveSpinIters' data-type='const int' data-ref="__tsan::Backoff::kActiveSpinIters" data-ref-filename="__tsan..Backoff..kActiveSpinIters">kActiveSpinIters</dfn> = <var>10</var>;</td></tr>
+<tr><th id="207">207</th><td>  <em>static</em> <em>const</em> <em>int</em> <dfn class="tu decl" id="__tsan::Backoff::kActiveSpinCnt" title='__tsan::Backoff::kActiveSpinCnt' data-type='const int' data-ref="__tsan::Backoff::kActiveSpinCnt" data-ref-filename="__tsan..Backoff..kActiveSpinCnt">kActiveSpinCnt</dfn> = <var>20</var>;</td></tr>
+<tr><th id="208">208</th><td>};</td></tr>
+<tr><th id="209">209</th><td></td></tr>
+<tr><th id="210">210</th><td><a class="type" href="tsan_mutex.h.html#__tsan::Mutex" title='__tsan::Mutex' data-ref="__tsan::Mutex" data-ref-filename="__tsan..Mutex">Mutex</a>::<dfn class="decl def fn" id="__tsan::Mutex::Mutex" title='__tsan::Mutex::Mutex' data-ref="__tsan::Mutex::Mutex" data-ref-filename="__tsan..Mutex..Mutex">Mutex</dfn>(<a class="type" href="tsan_mutex.h.html#__tsan::MutexType" title='__tsan::MutexType' data-ref="__tsan::MutexType" data-ref-filename="__tsan..MutexType">MutexType</a> <dfn class="local col4 decl" id="4type" title='type' data-type='__tsan::MutexType' data-ref="4type" data-ref-filename="4type">type</dfn>, <a class="type" href="tsan_stat.h.html#__tsan::StatType" title='__tsan::StatType' data-ref="__tsan::StatType" data-ref-filename="__tsan..StatType">StatType</a> <dfn class="local col5 decl" id="5stat_type" title='stat_type' data-type='__tsan::StatType' data-ref="5stat_type" data-ref-filename="5stat_type">stat_type</dfn>) {</td></tr>
+<tr><th id="211">211</th><td>  <a class="macro" href="../../sanitizer_common/sanitizer_internal_defs.h.html#304" title="do { __sanitizer::u64 v1 = (__sanitizer::u64)((type)); __sanitizer::u64 v2 = (__sanitizer::u64)((MutexTypeInvalid)); if (__builtin_expect(!!(!(v1 &gt; v2)), 0)) __sanitizer::CheckFailed(&quot;/fast/tmp/llvm-proj-12/compiler-rt/lib/tsan/rtl/tsan_mutex.cpp&quot;, 211, &quot;(&quot; &quot;(type)&quot; &quot;) &quot; &quot;&gt;&quot; &quot; (&quot; &quot;(MutexTypeInvalid)&quot; &quot;)&quot;, v1, v2); } while (false)" data-ref="_M/CHECK_GT">CHECK_GT</a>(<a class="local col4 ref" href="#4type" title='type' data-ref="4type" data-ref-filename="4type">type</a>, <a class="enum" href="tsan_mutex.h.html#__tsan::MutexTypeInvalid" title='__tsan::MutexTypeInvalid' data-ref="__tsan::MutexTypeInvalid" data-ref-filename="__tsan..MutexTypeInvalid">MutexTypeInvalid</a>);</td></tr>
+<tr><th id="212">212</th><td>  <a class="macro" href="../../sanitizer_common/sanitizer_internal_defs.h.html#302" title="do { __sanitizer::u64 v1 = (__sanitizer::u64)((type)); __sanitizer::u64 v2 = (__sanitizer::u64)((MutexTypeCount)); if (__builtin_expect(!!(!(v1 &lt; v2)), 0)) __sanitizer::CheckFailed(&quot;/fast/tmp/llvm-proj-12/compiler-rt/lib/tsan/rtl/tsan_mutex.cpp&quot;, 212, &quot;(&quot; &quot;(type)&quot; &quot;) &quot; &quot;&lt;&quot; &quot; (&quot; &quot;(MutexTypeCount)&quot; &quot;)&quot;, v1, v2); } while (false)" data-ref="_M/CHECK_LT">CHECK_LT</a>(<a class="local col4 ref" href="#4type" title='type' data-ref="4type" data-ref-filename="4type">type</a>, <a class="enum" href="tsan_mutex.h.html#__tsan::MutexTypeCount" title='__tsan::MutexTypeCount' data-ref="__tsan::MutexTypeCount" data-ref-filename="__tsan..MutexTypeCount">MutexTypeCount</a>);</td></tr>
+<tr><th id="213">213</th><td><u>#<span data-ppcond="213">if</span> <a class="macro" href="../../sanitizer_common/sanitizer_internal_defs.h.html#18" title="0" data-ref="_M/SANITIZER_DEBUG">SANITIZER_DEBUG</a></u></td></tr>
+<tr><th id="214">214</th><td>  type_ = type;</td></tr>
+<tr><th id="215">215</th><td><u>#<span data-ppcond="213">endif</span></u></td></tr>
+<tr><th id="216">216</th><td><u>#<span data-ppcond="216">if</span> <a class="macro" href="tsan_defs.h.html#27" title="0" data-ref="_M/TSAN_COLLECT_STATS">TSAN_COLLECT_STATS</a></u></td></tr>
+<tr><th id="217">217</th><td>  stat_type_ = stat_type;</td></tr>
+<tr><th id="218">218</th><td><u>#<span data-ppcond="216">endif</span></u></td></tr>
+<tr><th id="219">219</th><td>  <a class="ref fn" href="../../sanitizer_common/sanitizer_atomic_clang_x86.h.html#__sanitizer::atomic_store" title='__sanitizer::atomic_store' data-ref="__sanitizer::atomic_store" data-ref-filename="__sanitizer..atomic_store">atomic_store</a>(&amp;<a class="member field" href="tsan_mutex.h.html#__tsan::Mutex::state_" title='__tsan::Mutex::state_' data-ref="__tsan::Mutex::state_" data-ref-filename="__tsan..Mutex..state_">state_</a>, <a class="tu ref" href="#__tsan::kUnlocked" title='__tsan::kUnlocked' data-use='r' data-ref="__tsan::kUnlocked" data-ref-filename="__tsan..kUnlocked">kUnlocked</a>, <a class="enum" href="../../sanitizer_common/sanitizer_atomic.h.html#__sanitizer::memory_order_relaxed" title='__sanitizer::memory_order_relaxed' data-ref="__sanitizer::memory_order_relaxed" data-ref-filename="__sanitizer..memory_order_relaxed">memory_order_relaxed</a>);</td></tr>
+<tr><th id="220">220</th><td>}</td></tr>
+<tr><th id="221">221</th><td></td></tr>
+<tr><th id="222">222</th><td><a class="type" href="tsan_mutex.h.html#__tsan::Mutex" title='__tsan::Mutex' data-ref="__tsan::Mutex" data-ref-filename="__tsan..Mutex">Mutex</a>::<dfn class="decl def fn" id="__tsan::Mutex::~Mutex" title='__tsan::Mutex::~Mutex' data-ref="__tsan::Mutex::~Mutex" data-ref-filename="__tsan..Mutex..~Mutex">~Mutex</dfn>() {</td></tr>
+<tr><th id="223">223</th><td>  <a class="macro" href="../../sanitizer_common/sanitizer_internal_defs.h.html#300" title="do { __sanitizer::u64 v1 = (__sanitizer::u64)((atomic_load(&amp;state_, memory_order_relaxed))); __sanitizer::u64 v2 = (__sanitizer::u64)((kUnlocked)); if (__builtin_expect(!!(!(v1 == v2)), 0)) __sanitizer::CheckFailed(&quot;/fast/tmp/llvm-proj-12/compiler-rt/lib/tsan/rtl/tsan_mutex.cpp&quot;, 223, &quot;(&quot; &quot;(atomic_load(&amp;state_, memory_order_relaxed))&quot; &quot;) &quot; &quot;==&quot; &quot; (&quot; &quot;(kUnlocked)&quot; &quot;)&quot;, v1, v2); } while (false)" data-ref="_M/CHECK_EQ">CHECK_EQ</a>(<a class="ref fn" href="../../sanitizer_common/sanitizer_atomic_clang_x86.h.html#__sanitizer::atomic_load" title='__sanitizer::atomic_load' data-ref="__sanitizer::atomic_load" data-ref-filename="__sanitizer..atomic_load">atomic_load</a>(&amp;<a class="member field" href="tsan_mutex.h.html#__tsan::Mutex::state_" title='__tsan::Mutex::state_' data-ref="__tsan::Mutex::state_" data-ref-filename="__tsan..Mutex..state_">state_</a>, <a class="enum" href="../../sanitizer_common/sanitizer_atomic.h.html#__sanitizer::memory_order_relaxed" title='__sanitizer::memory_order_relaxed' data-ref="__sanitizer::memory_order_relaxed" data-ref-filename="__sanitizer..memory_order_relaxed">memory_order_relaxed</a>), <a class="tu ref" href="#__tsan::kUnlocked" title='__tsan::kUnlocked' data-use='r' data-ref="__tsan::kUnlocked" data-ref-filename="__tsan..kUnlocked">kUnlocked</a>);</td></tr>
+<tr><th id="224">224</th><td>}</td></tr>
+<tr><th id="225">225</th><td></td></tr>
+<tr><th id="226">226</th><td><em>void</em> <a class="type" href="tsan_mutex.h.html#__tsan::Mutex" title='__tsan::Mutex' data-ref="__tsan::Mutex" data-ref-filename="__tsan..Mutex">Mutex</a>::<dfn class="decl def fn" id="__tsan::Mutex::Lock" title='__tsan::Mutex::Lock' data-ref="__tsan::Mutex::Lock" data-ref-filename="__tsan..Mutex..Lock">Lock</dfn>() {</td></tr>
+<tr><th id="227">227</th><td><u>#<span data-ppcond="227">if</span> <a class="macro" href="../../sanitizer_common/sanitizer_internal_defs.h.html#18" title="0" data-ref="_M/SANITIZER_DEBUG">SANITIZER_DEBUG</a> &amp;&amp; !<a class="macro" href="../../sanitizer_common/sanitizer_platform.h.html#339" title="0" data-ref="_M/SANITIZER_GO">SANITIZER_GO</a></u></td></tr>
+<tr><th id="228">228</th><td>  cur_thread()-&gt;internal_deadlock_detector.Lock(type_);</td></tr>
+<tr><th id="229">229</th><td><u>#<span data-ppcond="227">endif</span></u></td></tr>
+<tr><th id="230">230</th><td>  <a class="typedef" href="../../sanitizer_common/sanitizer_internal_defs.h.html#__sanitizer::uptr" title='__sanitizer::uptr' data-type='unsigned long' data-ref="__sanitizer::uptr" data-ref-filename="__sanitizer..uptr">uptr</a> <dfn class="local col6 decl" id="6cmp" title='cmp' data-type='__sanitizer::uptr' data-ref="6cmp" data-ref-filename="6cmp">cmp</dfn> = <a class="tu ref" href="#__tsan::kUnlocked" title='__tsan::kUnlocked' data-use='r' data-ref="__tsan::kUnlocked" data-ref-filename="__tsan..kUnlocked">kUnlocked</a>;</td></tr>
+<tr><th id="231">231</th><td>  <b>if</b> (<a class="ref fn" href="../../sanitizer_common/sanitizer_atomic_clang.h.html#__sanitizer::atomic_compare_exchange_strong" title='__sanitizer::atomic_compare_exchange_strong' data-ref="__sanitizer::atomic_compare_exchange_strong" data-ref-filename="__sanitizer..atomic_compare_exchange_strong">atomic_compare_exchange_strong</a>(&amp;<a class="member field" href="tsan_mutex.h.html#__tsan::Mutex::state_" title='__tsan::Mutex::state_' data-ref="__tsan::Mutex::state_" data-ref-filename="__tsan..Mutex..state_">state_</a>, &amp;<a class="local col6 ref" href="#6cmp" title='cmp' data-ref="6cmp" data-ref-filename="6cmp">cmp</a>, <a class="tu ref" href="#__tsan::kWriteLock" title='__tsan::kWriteLock' data-use='r' data-ref="__tsan::kWriteLock" data-ref-filename="__tsan..kWriteLock">kWriteLock</a>,</td></tr>
+<tr><th id="232">232</th><td>                                     <a class="enum" href="../../sanitizer_common/sanitizer_atomic.h.html#__sanitizer::memory_order_acquire" title='__sanitizer::memory_order_acquire' data-ref="__sanitizer::memory_order_acquire" data-ref-filename="__sanitizer..memory_order_acquire">memory_order_acquire</a>))</td></tr>
+<tr><th id="233">233</th><td>    <b>return</b>;</td></tr>
+<tr><th id="234">234</th><td>  <b>for</b> (<a class="type" href="#__tsan::Backoff" title='__tsan::Backoff' data-ref="__tsan::Backoff" data-ref-filename="__tsan..Backoff">Backoff</a> <a class="tu ref fn fake" href="#__tsan::Backoff::Backoff" title='__tsan::Backoff::Backoff' data-use='c' data-ref="__tsan::Backoff::Backoff" data-ref-filename="__tsan..Backoff..Backoff"></a><dfn class="local col7 decl" id="7backoff" title='backoff' data-type='__tsan::Backoff' data-ref="7backoff" data-ref-filename="7backoff">backoff</dfn>; <a class="local col7 ref" href="#7backoff" title='backoff' data-ref="7backoff" data-ref-filename="7backoff">backoff</a>.<a class="tu ref fn" href="#__tsan::Backoff::Do" title='__tsan::Backoff::Do' data-use='c' data-ref="__tsan::Backoff::Do" data-ref-filename="__tsan..Backoff..Do">Do</a>();) {</td></tr>
+<tr><th id="235">235</th><td>    <b>if</b> (<a class="ref fn" href="../../sanitizer_common/sanitizer_atomic_clang_x86.h.html#__sanitizer::atomic_load" title='__sanitizer::atomic_load' data-ref="__sanitizer::atomic_load" data-ref-filename="__sanitizer..atomic_load">atomic_load</a>(&amp;<a class="member field" href="tsan_mutex.h.html#__tsan::Mutex::state_" title='__tsan::Mutex::state_' data-ref="__tsan::Mutex::state_" data-ref-filename="__tsan..Mutex..state_">state_</a>, <a class="enum" href="../../sanitizer_common/sanitizer_atomic.h.html#__sanitizer::memory_order_relaxed" title='__sanitizer::memory_order_relaxed' data-ref="__sanitizer::memory_order_relaxed" data-ref-filename="__sanitizer..memory_order_relaxed">memory_order_relaxed</a>) == <a class="tu ref" href="#__tsan::kUnlocked" title='__tsan::kUnlocked' data-use='r' data-ref="__tsan::kUnlocked" data-ref-filename="__tsan..kUnlocked">kUnlocked</a>) {</td></tr>
+<tr><th id="236">236</th><td>      <a class="local col6 ref" href="#6cmp" title='cmp' data-ref="6cmp" data-ref-filename="6cmp">cmp</a> = <a class="tu ref" href="#__tsan::kUnlocked" title='__tsan::kUnlocked' data-use='r' data-ref="__tsan::kUnlocked" data-ref-filename="__tsan..kUnlocked">kUnlocked</a>;</td></tr>
+<tr><th id="237">237</th><td>      <b>if</b> (<a class="ref fn" href="../../sanitizer_common/sanitizer_atomic_clang.h.html#__sanitizer::atomic_compare_exchange_weak" title='__sanitizer::atomic_compare_exchange_weak' data-ref="__sanitizer::atomic_compare_exchange_weak" data-ref-filename="__sanitizer..atomic_compare_exchange_weak">atomic_compare_exchange_weak</a>(&amp;<a class="member field" href="tsan_mutex.h.html#__tsan::Mutex::state_" title='__tsan::Mutex::state_' data-ref="__tsan::Mutex::state_" data-ref-filename="__tsan..Mutex..state_">state_</a>, &amp;<a class="local col6 ref" href="#6cmp" title='cmp' data-ref="6cmp" data-ref-filename="6cmp">cmp</a>, <a class="tu ref" href="#__tsan::kWriteLock" title='__tsan::kWriteLock' data-use='r' data-ref="__tsan::kWriteLock" data-ref-filename="__tsan..kWriteLock">kWriteLock</a>,</td></tr>
+<tr><th id="238">238</th><td>                                       <a class="enum" href="../../sanitizer_common/sanitizer_atomic.h.html#__sanitizer::memory_order_acquire" title='__sanitizer::memory_order_acquire' data-ref="__sanitizer::memory_order_acquire" data-ref-filename="__sanitizer..memory_order_acquire">memory_order_acquire</a>)) {</td></tr>
+<tr><th id="239">239</th><td><u>#<span data-ppcond="239">if</span> <a class="macro" href="tsan_defs.h.html#27" title="0" data-ref="_M/TSAN_COLLECT_STATS">TSAN_COLLECT_STATS</a> &amp;&amp; !<a class="macro" href="../../sanitizer_common/sanitizer_platform.h.html#339" title="0" data-ref="_M/SANITIZER_GO">SANITIZER_GO</a></u></td></tr>
+<tr><th id="240">240</th><td>        StatInc(cur_thread(), stat_type_, backoff.Contention());</td></tr>
+<tr><th id="241">241</th><td><u>#<span data-ppcond="239">endif</span></u></td></tr>
+<tr><th id="242">242</th><td>        <b>return</b>;</td></tr>
+<tr><th id="243">243</th><td>      }</td></tr>
+<tr><th id="244">244</th><td>    }</td></tr>
+<tr><th id="245">245</th><td>  }</td></tr>
+<tr><th id="246">246</th><td>}</td></tr>
+<tr><th id="247">247</th><td></td></tr>
+<tr><th id="248">248</th><td><em>void</em> <a class="type" href="tsan_mutex.h.html#__tsan::Mutex" title='__tsan::Mutex' data-ref="__tsan::Mutex" data-ref-filename="__tsan..Mutex">Mutex</a>::<dfn class="decl def fn" id="__tsan::Mutex::Unlock" title='__tsan::Mutex::Unlock' data-ref="__tsan::Mutex::Unlock" data-ref-filename="__tsan..Mutex..Unlock">Unlock</dfn>() {</td></tr>
+<tr><th id="249">249</th><td>  <a class="typedef" href="../../sanitizer_common/sanitizer_internal_defs.h.html#__sanitizer::uptr" title='__sanitizer::uptr' data-type='unsigned long' data-ref="__sanitizer::uptr" data-ref-filename="__sanitizer..uptr">uptr</a> <dfn class="local col8 decl" id="8prev" title='prev' data-type='__sanitizer::uptr' data-ref="8prev" data-ref-filename="8prev">prev</dfn> = <a class="ref fn" href="../../sanitizer_common/sanitizer_atomic_clang.h.html#__sanitizer::atomic_fetch_sub" title='__sanitizer::atomic_fetch_sub' data-ref="__sanitizer::atomic_fetch_sub" data-ref-filename="__sanitizer..atomic_fetch_sub">atomic_fetch_sub</a>(&amp;<a class="member field" href="tsan_mutex.h.html#__tsan::Mutex::state_" title='__tsan::Mutex::state_' data-ref="__tsan::Mutex::state_" data-ref-filename="__tsan..Mutex..state_">state_</a>, <a class="tu ref" href="#__tsan::kWriteLock" title='__tsan::kWriteLock' data-use='r' data-ref="__tsan::kWriteLock" data-ref-filename="__tsan..kWriteLock">kWriteLock</a>, <a class="enum" href="../../sanitizer_common/sanitizer_atomic.h.html#__sanitizer::memory_order_release" title='__sanitizer::memory_order_release' data-ref="__sanitizer::memory_order_release" data-ref-filename="__sanitizer..memory_order_release">memory_order_release</a>);</td></tr>
+<tr><th id="250">250</th><td>  (<em>void</em>)<a class="local col8 ref" href="#8prev" title='prev' data-ref="8prev" data-ref-filename="8prev">prev</a>;</td></tr>
+<tr><th id="251">251</th><td>  <a class="macro" href="../../sanitizer_common/sanitizer_internal_defs.h.html#318" title="" data-ref="_M/DCHECK_NE">DCHECK_NE</a>(prev &amp; kWriteLock, <var>0</var>);</td></tr>
+<tr><th id="252">252</th><td><u>#<span data-ppcond="252">if</span> <a class="macro" href="../../sanitizer_common/sanitizer_internal_defs.h.html#18" title="0" data-ref="_M/SANITIZER_DEBUG">SANITIZER_DEBUG</a> &amp;&amp; !<a class="macro" href="../../sanitizer_common/sanitizer_platform.h.html#339" title="0" data-ref="_M/SANITIZER_GO">SANITIZER_GO</a></u></td></tr>
+<tr><th id="253">253</th><td>  cur_thread()-&gt;internal_deadlock_detector.Unlock(type_);</td></tr>
+<tr><th id="254">254</th><td><u>#<span data-ppcond="252">endif</span></u></td></tr>
+<tr><th id="255">255</th><td>}</td></tr>
+<tr><th id="256">256</th><td></td></tr>
+<tr><th id="257">257</th><td><em>void</em> <a class="type" href="tsan_mutex.h.html#__tsan::Mutex" title='__tsan::Mutex' data-ref="__tsan::Mutex" data-ref-filename="__tsan..Mutex">Mutex</a>::<dfn class="decl def fn" id="__tsan::Mutex::ReadLock" title='__tsan::Mutex::ReadLock' data-ref="__tsan::Mutex::ReadLock" data-ref-filename="__tsan..Mutex..ReadLock">ReadLock</dfn>() {</td></tr>
+<tr><th id="258">258</th><td><u>#<span data-ppcond="258">if</span> <a class="macro" href="../../sanitizer_common/sanitizer_internal_defs.h.html#18" title="0" data-ref="_M/SANITIZER_DEBUG">SANITIZER_DEBUG</a> &amp;&amp; !<a class="macro" href="../../sanitizer_common/sanitizer_platform.h.html#339" title="0" data-ref="_M/SANITIZER_GO">SANITIZER_GO</a></u></td></tr>
+<tr><th id="259">259</th><td>  cur_thread()-&gt;internal_deadlock_detector.Lock(type_);</td></tr>
+<tr><th id="260">260</th><td><u>#<span data-ppcond="258">endif</span></u></td></tr>
+<tr><th id="261">261</th><td>  <a class="typedef" href="../../sanitizer_common/sanitizer_internal_defs.h.html#__sanitizer::uptr" title='__sanitizer::uptr' data-type='unsigned long' data-ref="__sanitizer::uptr" data-ref-filename="__sanitizer..uptr">uptr</a> <dfn class="local col9 decl" id="9prev" title='prev' data-type='__sanitizer::uptr' data-ref="9prev" data-ref-filename="9prev">prev</dfn> = <a class="ref fn" href="../../sanitizer_common/sanitizer_atomic_clang.h.html#__sanitizer::atomic_fetch_add" title='__sanitizer::atomic_fetch_add' data-ref="__sanitizer::atomic_fetch_add" data-ref-filename="__sanitizer..atomic_fetch_add">atomic_fetch_add</a>(&amp;<a class="member field" href="tsan_mutex.h.html#__tsan::Mutex::state_" title='__tsan::Mutex::state_' data-ref="__tsan::Mutex::state_" data-ref-filename="__tsan..Mutex..state_">state_</a>, <a class="tu ref" href="#__tsan::kReadLock" title='__tsan::kReadLock' data-use='r' data-ref="__tsan::kReadLock" data-ref-filename="__tsan..kReadLock">kReadLock</a>, <a class="enum" href="../../sanitizer_common/sanitizer_atomic.h.html#__sanitizer::memory_order_acquire" title='__sanitizer::memory_order_acquire' data-ref="__sanitizer::memory_order_acquire" data-ref-filename="__sanitizer..memory_order_acquire">memory_order_acquire</a>);</td></tr>
+<tr><th id="262">262</th><td>  <b>if</b> ((<a class="local col9 ref" href="#9prev" title='prev' data-ref="9prev" data-ref-filename="9prev">prev</a> &amp; <a class="tu ref" href="#__tsan::kWriteLock" title='__tsan::kWriteLock' data-use='r' data-ref="__tsan::kWriteLock" data-ref-filename="__tsan..kWriteLock">kWriteLock</a>) == <var>0</var>)</td></tr>
+<tr><th id="263">263</th><td>    <b>return</b>;</td></tr>
+<tr><th id="264">264</th><td>  <b>for</b> (<a class="type" href="#__tsan::Backoff" title='__tsan::Backoff' data-ref="__tsan::Backoff" data-ref-filename="__tsan..Backoff">Backoff</a> <a class="tu ref fn fake" href="#__tsan::Backoff::Backoff" title='__tsan::Backoff::Backoff' data-use='c' data-ref="__tsan::Backoff::Backoff" data-ref-filename="__tsan..Backoff..Backoff"></a><dfn class="local col0 decl" id="10backoff" title='backoff' data-type='__tsan::Backoff' data-ref="10backoff" data-ref-filename="10backoff">backoff</dfn>; <a class="local col0 ref" href="#10backoff" title='backoff' data-ref="10backoff" data-ref-filename="10backoff">backoff</a>.<a class="tu ref fn" href="#__tsan::Backoff::Do" title='__tsan::Backoff::Do' data-use='c' data-ref="__tsan::Backoff::Do" data-ref-filename="__tsan..Backoff..Do">Do</a>();) {</td></tr>
+<tr><th id="265">265</th><td>    <a class="local col9 ref" href="#9prev" title='prev' data-ref="9prev" data-ref-filename="9prev">prev</a> = <a class="ref fn" href="../../sanitizer_common/sanitizer_atomic_clang_x86.h.html#__sanitizer::atomic_load" title='__sanitizer::atomic_load' data-ref="__sanitizer::atomic_load" data-ref-filename="__sanitizer..atomic_load">atomic_load</a>(&amp;<a class="member field" href="tsan_mutex.h.html#__tsan::Mutex::state_" title='__tsan::Mutex::state_' data-ref="__tsan::Mutex::state_" data-ref-filename="__tsan..Mutex..state_">state_</a>, <a class="enum" href="../../sanitizer_common/sanitizer_atomic.h.html#__sanitizer::memory_order_acquire" title='__sanitizer::memory_order_acquire' data-ref="__sanitizer::memory_order_acquire" data-ref-filename="__sanitizer..memory_order_acquire">memory_order_acquire</a>);</td></tr>
+<tr><th id="266">266</th><td>    <b>if</b> ((<a class="local col9 ref" href="#9prev" title='prev' data-ref="9prev" data-ref-filename="9prev">prev</a> &amp; <a class="tu ref" href="#__tsan::kWriteLock" title='__tsan::kWriteLock' data-use='r' data-ref="__tsan::kWriteLock" data-ref-filename="__tsan..kWriteLock">kWriteLock</a>) == <var>0</var>) {</td></tr>
+<tr><th id="267">267</th><td><u>#<span data-ppcond="267">if</span> <a class="macro" href="tsan_defs.h.html#27" title="0" data-ref="_M/TSAN_COLLECT_STATS">TSAN_COLLECT_STATS</a> &amp;&amp; !<a class="macro" href="../../sanitizer_common/sanitizer_platform.h.html#339" title="0" data-ref="_M/SANITIZER_GO">SANITIZER_GO</a></u></td></tr>
+<tr><th id="268">268</th><td>      StatInc(cur_thread(), stat_type_, backoff.Contention());</td></tr>
+<tr><th id="269">269</th><td><u>#<span data-ppcond="267">endif</span></u></td></tr>
+<tr><th id="270">270</th><td>      <b>return</b>;</td></tr>
+<tr><th id="271">271</th><td>    }</td></tr>
+<tr><th id="272">272</th><td>  }</td></tr>
+<tr><th id="273">273</th><td>}</td></tr>
+<tr><th id="274">274</th><td></td></tr>
+<tr><th id="275">275</th><td><em>void</em> <a class="type" href="tsan_mutex.h.html#__tsan::Mutex" title='__tsan::Mutex' data-ref="__tsan::Mutex" data-ref-filename="__tsan..Mutex">Mutex</a>::<dfn class="decl def fn" id="__tsan::Mutex::ReadUnlock" title='__tsan::Mutex::ReadUnlock' data-ref="__tsan::Mutex::ReadUnlock" data-ref-filename="__tsan..Mutex..ReadUnlock">ReadUnlock</dfn>() {</td></tr>
+<tr><th id="276">276</th><td>  <a class="typedef" href="../../sanitizer_common/sanitizer_internal_defs.h.html#__sanitizer::uptr" title='__sanitizer::uptr' data-type='unsigned long' data-ref="__sanitizer::uptr" data-ref-filename="__sanitizer..uptr">uptr</a> <dfn class="local col1 decl" id="11prev" title='prev' data-type='__sanitizer::uptr' data-ref="11prev" data-ref-filename="11prev">prev</dfn> = <a class="ref fn" href="../../sanitizer_common/sanitizer_atomic_clang.h.html#__sanitizer::atomic_fetch_sub" title='__sanitizer::atomic_fetch_sub' data-ref="__sanitizer::atomic_fetch_sub" data-ref-filename="__sanitizer..atomic_fetch_sub">atomic_fetch_sub</a>(&amp;<a class="member field" href="tsan_mutex.h.html#__tsan::Mutex::state_" title='__tsan::Mutex::state_' data-ref="__tsan::Mutex::state_" data-ref-filename="__tsan..Mutex..state_">state_</a>, <a class="tu ref" href="#__tsan::kReadLock" title='__tsan::kReadLock' data-use='r' data-ref="__tsan::kReadLock" data-ref-filename="__tsan..kReadLock">kReadLock</a>, <a class="enum" href="../../sanitizer_common/sanitizer_atomic.h.html#__sanitizer::memory_order_release" title='__sanitizer::memory_order_release' data-ref="__sanitizer::memory_order_release" data-ref-filename="__sanitizer..memory_order_release">memory_order_release</a>);</td></tr>
+<tr><th id="277">277</th><td>  (<em>void</em>)<a class="local col1 ref" href="#11prev" title='prev' data-ref="11prev" data-ref-filename="11prev">prev</a>;</td></tr>
+<tr><th id="278">278</th><td>  <a class="macro" href="../../sanitizer_common/sanitizer_internal_defs.h.html#317" title="" data-ref="_M/DCHECK_EQ">DCHECK_EQ</a>(prev &amp; kWriteLock, <var>0</var>);</td></tr>
+<tr><th id="279">279</th><td>  <a class="macro" href="../../sanitizer_common/sanitizer_internal_defs.h.html#321" title="" data-ref="_M/DCHECK_GT">DCHECK_GT</a>(prev &amp; ~kWriteLock, <var>0</var>);</td></tr>
+<tr><th id="280">280</th><td><u>#<span data-ppcond="280">if</span> <a class="macro" href="../../sanitizer_common/sanitizer_internal_defs.h.html#18" title="0" data-ref="_M/SANITIZER_DEBUG">SANITIZER_DEBUG</a> &amp;&amp; !<a class="macro" href="../../sanitizer_common/sanitizer_platform.h.html#339" title="0" data-ref="_M/SANITIZER_GO">SANITIZER_GO</a></u></td></tr>
+<tr><th id="281">281</th><td>  cur_thread()-&gt;internal_deadlock_detector.Unlock(type_);</td></tr>
+<tr><th id="282">282</th><td><u>#<span data-ppcond="280">endif</span></u></td></tr>
+<tr><th id="283">283</th><td>}</td></tr>
+<tr><th id="284">284</th><td></td></tr>
+<tr><th id="285">285</th><td><em>void</em> <a class="type" href="tsan_mutex.h.html#__tsan::Mutex" title='__tsan::Mutex' data-ref="__tsan::Mutex" data-ref-filename="__tsan..Mutex">Mutex</a>::<dfn class="decl def fn" id="__tsan::Mutex::CheckLocked" title='__tsan::Mutex::CheckLocked' data-ref="__tsan::Mutex::CheckLocked" data-ref-filename="__tsan..Mutex..CheckLocked">CheckLocked</dfn>() {</td></tr>
+<tr><th id="286">286</th><td>  <a class="macro" href="../../sanitizer_common/sanitizer_internal_defs.h.html#301" title="do { __sanitizer::u64 v1 = (__sanitizer::u64)((atomic_load(&amp;state_, memory_order_relaxed))); __sanitizer::u64 v2 = (__sanitizer::u64)((0)); if (__builtin_expect(!!(!(v1 != v2)), 0)) __sanitizer::CheckFailed(&quot;/fast/tmp/llvm-proj-12/compiler-rt/lib/tsan/rtl/tsan_mutex.cpp&quot;, 286, &quot;(&quot; &quot;(atomic_load(&amp;state_, memory_order_relaxed))&quot; &quot;) &quot; &quot;!=&quot; &quot; (&quot; &quot;(0)&quot; &quot;)&quot;, v1, v2); } while (false)" data-ref="_M/CHECK_NE">CHECK_NE</a>(<a class="ref fn" href="../../sanitizer_common/sanitizer_atomic_clang_x86.h.html#__sanitizer::atomic_load" title='__sanitizer::atomic_load' data-ref="__sanitizer::atomic_load" data-ref-filename="__sanitizer..atomic_load">atomic_load</a>(&amp;<a class="member field" href="tsan_mutex.h.html#__tsan::Mutex::state_" title='__tsan::Mutex::state_' data-ref="__tsan::Mutex::state_" data-ref-filename="__tsan..Mutex..state_">state_</a>, <a class="enum" href="../../sanitizer_common/sanitizer_atomic.h.html#__sanitizer::memory_order_relaxed" title='__sanitizer::memory_order_relaxed' data-ref="__sanitizer::memory_order_relaxed" data-ref-filename="__sanitizer..memory_order_relaxed">memory_order_relaxed</a>), <var>0</var>);</td></tr>
+<tr><th id="287">287</th><td>}</td></tr>
+<tr><th id="288">288</th><td></td></tr>
+<tr><th id="289">289</th><td>}  <i>// namespace __tsan</i></td></tr>
+<tr><th id="290">290</th><td></td></tr>
+</table><hr/><p id='footer'>
+Generated on <em>2021-Jul-01</em> from project llvm revision <em>12</em>

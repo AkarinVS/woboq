@@ -1,0 +1,248 @@
+<use f='llvm/lldb/include/lldb/lldb-private-interfaces.h' l='58'/>
+<inh f='llvm/lldb/include/lldb/Core/PluginInterface.h' l='16' c='lldb_private::PluginInterface'/>
+<def f='llvm/lldb/include/lldb/Core/EmulateInstruction.h' l='93' ll='504'/>
+<use f='llvm/lldb/include/lldb/Core/EmulateInstruction.h' l='95' c='_ZN12lldb_private18EmulateInstruction10FindPluginERKNS_8ArchSpecENS_15InstructionTypeEPKc'/>
+<use f='llvm/lldb/include/lldb/Core/EmulateInstruction.h' l='323' c='_ZNK12lldb_private18EmulateInstruction7Context4DumpERNS_6StreamEPS0_'/>
+<use f='llvm/lldb/include/lldb/Core/EmulateInstruction.h' l='326'/>
+<use f='llvm/lldb/include/lldb/Core/EmulateInstruction.h' l='331'/>
+<use f='llvm/lldb/include/lldb/Core/EmulateInstruction.h' l='336'/>
+<use f='llvm/lldb/include/lldb/Core/EmulateInstruction.h' l='341'/>
+<use f='llvm/lldb/include/lldb/Core/EmulateInstruction.h' l='434' c='_ZN12lldb_private18EmulateInstruction15ReadMemoryFrameEPS0_PvRKNS0_7ContextEmS2_m'/>
+<use f='llvm/lldb/include/lldb/Core/EmulateInstruction.h' l='438' c='_ZN12lldb_private18EmulateInstruction16WriteMemoryFrameEPS0_PvRKNS0_7ContextEmPKvm'/>
+<use f='llvm/lldb/include/lldb/Core/EmulateInstruction.h' l='442' c='_ZN12lldb_private18EmulateInstruction17ReadRegisterFrameEPS0_PvPKNS_12RegisterInfoERNS_13RegisterValueE'/>
+<use f='llvm/lldb/include/lldb/Core/EmulateInstruction.h' l='446' c='_ZN12lldb_private18EmulateInstruction18WriteRegisterFrameEPS0_PvRKNS0_7ContextEPKNS_12RegisterInfoERKNS_13RegisterValueE'/>
+<use f='llvm/lldb/include/lldb/Core/EmulateInstruction.h' l='451' c='_ZN12lldb_private18EmulateInstruction17ReadMemoryDefaultEPS0_PvRKNS0_7ContextEmS2_m'/>
+<use f='llvm/lldb/include/lldb/Core/EmulateInstruction.h' l='455' c='_ZN12lldb_private18EmulateInstruction18WriteMemoryDefaultEPS0_PvRKNS0_7ContextEmPKvm'/>
+<use f='llvm/lldb/include/lldb/Core/EmulateInstruction.h' l='459' c='_ZN12lldb_private18EmulateInstruction19ReadRegisterDefaultEPS0_PvPKNS_12RegisterInfoERNS_13RegisterValueE'/>
+<use f='llvm/lldb/include/lldb/Core/EmulateInstruction.h' l='463' c='_ZN12lldb_private18EmulateInstruction20WriteRegisterDefaultEPS0_PvRKNS0_7ContextEPKNS_12RegisterInfoERKNS_13RegisterValueE'/>
+<use f='llvm/lldb/include/lldb/Core/EmulateInstruction.h' l='502' c='_ZN12lldb_private18EmulateInstructionC1ERKS0_'/>
+<use f='llvm/lldb/include/lldb/Core/EmulateInstruction.h' l='503' c='_ZN12lldb_private18EmulateInstructionaSERKS0_'/>
+<use f='llvm/lldb/include/lldb/Core/EmulateInstruction.h' l='503' c='_ZN12lldb_private18EmulateInstructionaSERKS0_'/>
+<size>176</size>
+<doc f='llvm/lldb/include/lldb/Core/EmulateInstruction.h' l='35'>/// \class EmulateInstruction EmulateInstruction.h
+/// &quot;lldb/Core/EmulateInstruction.h&quot;
+/// A class that allows emulation of CPU opcodes.
+///
+/// This class is a plug-in interface that is accessed through the standard
+/// static FindPlugin function call in the EmulateInstruction class. The
+/// FindPlugin takes a target triple and returns a new object if there is a
+/// plug-in that supports the architecture and OS. Four callbacks and a baton
+/// are provided. The four callbacks are read register, write register, read
+/// memory and write memory.
+///
+/// This class is currently designed for these main use cases: - Auto
+/// generation of Call Frame Information (CFI) from assembly code - Predicting
+/// single step breakpoint locations - Emulating instructions for breakpoint
+/// traps
+///
+/// Objects can be asked to read an instruction which will cause a call to the
+/// read register callback to get the PC, followed by a read memory call to
+/// read the opcode. If ReadInstruction () returns true, then a call to
+/// EmulateInstruction::EvaluateInstruction () can be made. At this point the
+/// EmulateInstruction subclass will use all of the callbacks to emulate an
+/// instruction.
+///
+/// Clients that provide the callbacks can either do the read/write
+/// registers/memory to actually emulate the instruction on a real or virtual
+/// CPU, or watch for the EmulateInstruction::Context which is context for the
+/// read/write register/memory which explains why the callback is being
+/// called. Examples of a context are: &quot;pushing register 3 onto the stack at
+/// offset -12&quot;, or &quot;adjusting stack pointer by -16&quot;. This extra context
+/// allows the generation of
+/// CFI information from assembly code without having to actually do
+/// the read/write register/memory.
+///
+/// Clients must be prepared that not all instructions for an Instruction Set
+/// Architecture (ISA) will be emulated.
+///
+/// Subclasses at the very least should implement the instructions that save
+/// and restore registers onto the stack and adjustment to the stack pointer.
+/// By just implementing a few instructions for an ISA that are the typical
+/// prologue opcodes, you can then generate CFI using a class that will soon
+/// be available.
+///
+/// Implementing all of the instructions that affect the PC can then allow
+/// single step prediction support.
+///
+/// Implementing all of the instructions allows for emulation of opcodes for
+/// breakpoint traps and will pave the way for &quot;thread centric&quot; debugging. The
+/// current debugging model is &quot;process centric&quot; where all threads must be
+/// stopped when any thread is stopped; when hitting software breakpoints we
+/// must disable the breakpoint by restoring the original breakpoint opcode,
+/// single stepping and restoring the breakpoint trap. If all threads were
+/// allowed to run then other threads could miss the breakpoint.
+///
+/// This class centralizes the code that usually is done in separate code
+/// paths in a debugger (single step prediction, finding save restore
+/// locations of registers for unwinding stack frame variables) and emulating
+/// the instruction is just a bonus.</doc>
+<fun r='_ZN12lldb_private18EmulateInstruction10FindPluginERKNS_8ArchSpecENS_15InstructionTypeEPKc'/>
+<mbr r='lldb_private::EmulateInstruction::InfoType' o='64' t='enum InfoType'/>
+<smbr r='lldb_private::EmulateInstruction::UnconditionalCondition' t='const lldb_private::EmulateInstruction::InstructionCondition'/>
+<fun r='_ZN12lldb_private18EmulateInstructionC1ERKNS_8ArchSpecE'/>
+<fun r='_ZN12lldb_private18EmulateInstructionD1Ev'/>
+<fun r='_ZN12lldb_private18EmulateInstruction35SupportsEmulatingInstructionsOfTypeENS_15InstructionTypeE'/>
+<fun r='_ZN12lldb_private18EmulateInstruction15SetTargetTripleERKNS_8ArchSpecE'/>
+<fun r='_ZN12lldb_private18EmulateInstruction15ReadInstructionEv'/>
+<fun r='_ZN12lldb_private18EmulateInstruction19EvaluateInstructionEj'/>
+<fun r='_ZN12lldb_private18EmulateInstruction23GetInstructionConditionEv'/>
+<fun r='_ZN12lldb_private18EmulateInstruction13TestEmulationEPNS_6StreamERNS_8ArchSpecEPNS_21OptionValueDictionaryE'/>
+<fun r='_ZN12lldb_private18EmulateInstruction15GetRegisterInfoEN4lldb12RegisterKindEjRNS_12RegisterInfoE'/>
+<fun r='_ZN12lldb_private18EmulateInstruction14SetInstructionERKNS_6OpcodeERKNS_7AddressEPNS_6TargetE'/>
+<fun r='_ZN12lldb_private18EmulateInstruction25CreateFunctionEntryUnwindERNS_10UnwindPlanE'/>
+<fun r='_ZN12lldb_private18EmulateInstruction17TranslateRegisterEN4lldb12RegisterKindEjRNSt7__cxx1112basic_stringIcSt11char_traitsIcESaIcEEE'/>
+<fun r='_ZN12lldb_private18EmulateInstruction12ReadRegisterEPKNS_12RegisterInfoERNS_13RegisterValueE'/>
+<fun r='_ZN12lldb_private18EmulateInstruction20ReadRegisterUnsignedEPKNS_12RegisterInfoEmPb'/>
+<fun r='_ZN12lldb_private18EmulateInstruction13WriteRegisterERKNS0_7ContextEPKNS_12RegisterInfoERKNS_13RegisterValueE'/>
+<fun r='_ZN12lldb_private18EmulateInstruction21WriteRegisterUnsignedERKNS0_7ContextEPKNS_12RegisterInfoEm'/>
+<fun r='_ZN12lldb_private18EmulateInstruction12ReadRegisterEN4lldb12RegisterKindEjRNS_13RegisterValueE'/>
+<fun r='_ZN12lldb_private18EmulateInstruction13WriteRegisterERKNS0_7ContextEN4lldb12RegisterKindEjRKNS_13RegisterValueE'/>
+<fun r='_ZN12lldb_private18EmulateInstruction20ReadRegisterUnsignedEN4lldb12RegisterKindEjmPb'/>
+<fun r='_ZN12lldb_private18EmulateInstruction21WriteRegisterUnsignedERKNS0_7ContextEN4lldb12RegisterKindEjm'/>
+<fun r='_ZN12lldb_private18EmulateInstruction10ReadMemoryERKNS0_7ContextEmPvm'/>
+<fun r='_ZN12lldb_private18EmulateInstruction18ReadMemoryUnsignedERKNS0_7ContextEmmmPb'/>
+<fun r='_ZN12lldb_private18EmulateInstruction11WriteMemoryERKNS0_7ContextEmPKvm'/>
+<fun r='_ZN12lldb_private18EmulateInstruction19WriteMemoryUnsignedERKNS0_7ContextEmmm'/>
+<fun r='_ZNK12lldb_private18EmulateInstruction18GetAddressByteSizeEv'/>
+<fun r='_ZNK12lldb_private18EmulateInstruction12GetByteOrderEv'/>
+<fun r='_ZNK12lldb_private18EmulateInstruction9GetOpcodeEv'/>
+<fun r='_ZNK12lldb_private18EmulateInstruction10GetAddressEv'/>
+<fun r='_ZNK12lldb_private18EmulateInstruction15GetArchitectureEv'/>
+<fun r='_ZN12lldb_private18EmulateInstruction15ReadMemoryFrameEPS0_PvRKNS0_7ContextEmS2_m'/>
+<fun r='_ZN12lldb_private18EmulateInstruction16WriteMemoryFrameEPS0_PvRKNS0_7ContextEmPKvm'/>
+<fun r='_ZN12lldb_private18EmulateInstruction17ReadRegisterFrameEPS0_PvPKNS_12RegisterInfoERNS_13RegisterValueE'/>
+<fun r='_ZN12lldb_private18EmulateInstruction18WriteRegisterFrameEPS0_PvRKNS0_7ContextEPKNS_12RegisterInfoERKNS_13RegisterValueE'/>
+<fun r='_ZN12lldb_private18EmulateInstruction17ReadMemoryDefaultEPS0_PvRKNS0_7ContextEmS2_m'/>
+<fun r='_ZN12lldb_private18EmulateInstruction18WriteMemoryDefaultEPS0_PvRKNS0_7ContextEmPKvm'/>
+<fun r='_ZN12lldb_private18EmulateInstruction19ReadRegisterDefaultEPS0_PvPKNS_12RegisterInfoERNS_13RegisterValueE'/>
+<fun r='_ZN12lldb_private18EmulateInstruction20WriteRegisterDefaultEPS0_PvRKNS0_7ContextEPKNS_12RegisterInfoERKNS_13RegisterValueE'/>
+<fun r='_ZN12lldb_private18EmulateInstruction8SetBatonEPv'/>
+<fun r='_ZN12lldb_private18EmulateInstruction12SetCallbacksEPFmPS0_PvRKNS0_7ContextEmS2_mEPFmS1_S2_S5_mPKvmEPFbS1_S2_PKNS_12RegisterInfoERNS_13RegisterValueEE7733379'/>
+<fun r='_ZN12lldb_private18EmulateInstruction18SetReadMemCallbackEPFmPS0_PvRKNS0_7ContextEmS2_mE'/>
+<fun r='_ZN12lldb_private18EmulateInstruction19SetWriteMemCallbackEPFmPS0_PvRKNS0_7ContextEmPKvmE'/>
+<fun r='_ZN12lldb_private18EmulateInstruction18SetReadRegCallbackEPFbPS0_PvPKNS_12RegisterInfoERNS_13RegisterValueEE'/>
+<fun r='_ZN12lldb_private18EmulateInstruction19SetWriteRegCallbackEPFbPS0_PvRKNS0_7ContextEPKNS_12RegisterInfoERKNS_13RegisterValueEE'/>
+<fun r='_ZN12lldb_private18EmulateInstruction28GetBestRegisterKindAndNumberEPKNS_12RegisterInfoERN4lldb12RegisterKindERj'/>
+<fun r='_ZN12lldb_private18EmulateInstruction25GetInternalRegisterNumberEPNS_15RegisterContextERKNS_12RegisterInfoE'/>
+<mbr r='lldb_private::EmulateInstruction::m_arch' o='128' t='lldb_private::ArchSpec'/>
+<mbr r='lldb_private::EmulateInstruction::m_baton' o='768' t='void *'/>
+<mbr r='lldb_private::EmulateInstruction::m_read_mem_callback' o='832' t='lldb_private::EmulateInstruction::ReadMemoryCallback'/>
+<mbr r='lldb_private::EmulateInstruction::m_write_mem_callback' o='896' t='lldb_private::EmulateInstruction::WriteMemoryCallback'/>
+<mbr r='lldb_private::EmulateInstruction::m_read_reg_callback' o='960' t='lldb_private::EmulateInstruction::ReadRegisterCallback'/>
+<mbr r='lldb_private::EmulateInstruction::m_write_reg_callback' o='1024' t='lldb_private::EmulateInstruction::WriteRegisterCallback'/>
+<mbr r='lldb_private::EmulateInstruction::m_addr' o='1088' t='lldb::addr_t'/>
+<mbr r='lldb_private::EmulateInstruction::m_opcode' o='1152' t='lldb_private::Opcode'/>
+<fun r='_ZN12lldb_private18EmulateInstructionC1ERKS0_'/>
+<fun r='_ZN12lldb_private18EmulateInstructionaSERKS0_'/>
+<use f='llvm/lldb/source/Core/Disassembler.cpp' l='640' c='_ZN12lldb_private11Instruction13DumpEmulationERKNS_8ArchSpecE'/>
+<use f='llvm/lldb/source/Core/Disassembler.cpp' l='891' c='_ZN12lldb_private11Instruction13TestEmulationEPNS_6StreamEPKc'/>
+<use f='llvm/lldb/source/Core/Disassembler.cpp' l='911' c='_ZN12lldb_private11Instruction7EmulateERKNS_8ArchSpecEjPvPFmPNS_18EmulateInstructionES4_RKNS5_7ContextEmS4_mEPFmS6_S4_S9_mPKvmEPFbS6_S4_PKNS_12Registe12468401'/>
+<size>176</size>
+<use f='llvm/lldb/source/Core/EmulateInstruction.cpp' l='43' c='_ZN12lldb_private18EmulateInstruction10FindPluginERKNS_8ArchSpecENS_15InstructionTypeEPKc'/>
+<use f='llvm/lldb/source/Core/EmulateInstruction.cpp' l='54' c='_ZN12lldb_private18EmulateInstruction10FindPluginERKNS_8ArchSpecENS_15InstructionTypeEPKc'/>
+<use f='llvm/lldb/source/Core/EmulateInstruction.cpp' l='65' c='_ZN12lldb_private18EmulateInstruction10FindPluginERKNS_8ArchSpecENS_15InstructionTypeEPKc'/>
+<use f='llvm/lldb/source/Core/EmulateInstruction.cpp' l='248' c='_ZN12lldb_private18EmulateInstruction15ReadMemoryFrameEPS0_PvRKNS0_7ContextEmS2_m'/>
+<use f='llvm/lldb/source/Core/EmulateInstruction.cpp' l='265' c='_ZN12lldb_private18EmulateInstruction16WriteMemoryFrameEPS0_PvRKNS0_7ContextEmPKvm'/>
+<use f='llvm/lldb/source/Core/EmulateInstruction.cpp' l='283' c='_ZN12lldb_private18EmulateInstruction17ReadRegisterFrameEPS0_PvPKNS_12RegisterInfoERNS_13RegisterValueE'/>
+<use f='llvm/lldb/source/Core/EmulateInstruction.cpp' l='294' c='_ZN12lldb_private18EmulateInstruction18WriteRegisterFrameEPS0_PvRKNS0_7ContextEPKNS_12RegisterInfoERKNS_13RegisterValueE'/>
+<use f='llvm/lldb/source/Core/EmulateInstruction.cpp' l='305' c='_ZN12lldb_private18EmulateInstruction17ReadMemoryDefaultEPS0_PvRKNS0_7ContextEmS2_m'/>
+<use f='llvm/lldb/source/Core/EmulateInstruction.cpp' l='320' c='_ZN12lldb_private18EmulateInstruction18WriteMemoryDefaultEPS0_PvRKNS0_7ContextEmPKvm'/>
+<use f='llvm/lldb/source/Core/EmulateInstruction.cpp' l='334' c='_ZN12lldb_private18EmulateInstruction19ReadRegisterDefaultEPS0_PvPKNS_12RegisterInfoERNS_13RegisterValueE'/>
+<use f='llvm/lldb/source/Core/EmulateInstruction.cpp' l='350' c='_ZN12lldb_private18EmulateInstruction20WriteRegisterDefaultEPS0_PvRKNS0_7ContextEPKNS_12RegisterInfoERKNS_13RegisterValueE'/>
+<use f='llvm/lldb/source/Core/EmulateInstruction.cpp' l='365' c='_ZNK12lldb_private18EmulateInstruction7Context4DumpERNS_6StreamEPS0_'/>
+<size>176</size>
+<fun r='_ZN12lldb_private18EmulateInstruction10FindPluginERKNS_8ArchSpecENS_15InstructionTypeEPKc'/>
+<fun r='_ZN12lldb_private18EmulateInstructionC1ERKNS_8ArchSpecE'/>
+<fun r='_ZN12lldb_private18EmulateInstruction12ReadRegisterEPKNS_12RegisterInfoERNS_13RegisterValueE'/>
+<fun r='_ZN12lldb_private18EmulateInstruction12ReadRegisterEN4lldb12RegisterKindEjRNS_13RegisterValueE'/>
+<fun r='_ZN12lldb_private18EmulateInstruction20ReadRegisterUnsignedEN4lldb12RegisterKindEjmPb'/>
+<fun r='_ZN12lldb_private18EmulateInstruction20ReadRegisterUnsignedEPKNS_12RegisterInfoEmPb'/>
+<fun r='_ZN12lldb_private18EmulateInstruction13WriteRegisterERKNS0_7ContextEPKNS_12RegisterInfoERKNS_13RegisterValueE'/>
+<fun r='_ZN12lldb_private18EmulateInstruction13WriteRegisterERKNS0_7ContextEN4lldb12RegisterKindEjRKNS_13RegisterValueE'/>
+<fun r='_ZN12lldb_private18EmulateInstruction21WriteRegisterUnsignedERKNS0_7ContextEN4lldb12RegisterKindEjm'/>
+<fun r='_ZN12lldb_private18EmulateInstruction21WriteRegisterUnsignedERKNS0_7ContextEPKNS_12RegisterInfoEm'/>
+<fun r='_ZN12lldb_private18EmulateInstruction10ReadMemoryERKNS0_7ContextEmPvm'/>
+<fun r='_ZN12lldb_private18EmulateInstruction18ReadMemoryUnsignedERKNS0_7ContextEmmmPb'/>
+<fun r='_ZN12lldb_private18EmulateInstruction19WriteMemoryUnsignedERKNS0_7ContextEmmm'/>
+<fun r='_ZN12lldb_private18EmulateInstruction11WriteMemoryERKNS0_7ContextEmPKvm'/>
+<fun r='_ZN12lldb_private18EmulateInstruction8SetBatonEPv'/>
+<fun r='_ZN12lldb_private18EmulateInstruction12SetCallbacksEPFmPS0_PvRKNS0_7ContextEmS2_mEPFmS1_S2_S5_mPKvmEPFbS1_S2_PKNS_12RegisterInfoERNS_13RegisterValueEE7733379'/>
+<fun r='_ZN12lldb_private18EmulateInstruction18SetReadMemCallbackEPFmPS0_PvRKNS0_7ContextEmS2_mE'/>
+<fun r='_ZN12lldb_private18EmulateInstruction19SetWriteMemCallbackEPFmPS0_PvRKNS0_7ContextEmPKvmE'/>
+<fun r='_ZN12lldb_private18EmulateInstruction18SetReadRegCallbackEPFbPS0_PvPKNS_12RegisterInfoERNS_13RegisterValueEE'/>
+<fun r='_ZN12lldb_private18EmulateInstruction19SetWriteRegCallbackEPFbPS0_PvRKNS0_7ContextEPKNS_12RegisterInfoERKNS_13RegisterValueEE'/>
+<fun r='_ZN12lldb_private18EmulateInstruction15ReadMemoryFrameEPS0_PvRKNS0_7ContextEmS2_m'/>
+<fun r='_ZN12lldb_private18EmulateInstruction16WriteMemoryFrameEPS0_PvRKNS0_7ContextEmPKvm'/>
+<fun r='_ZN12lldb_private18EmulateInstruction17ReadRegisterFrameEPS0_PvPKNS_12RegisterInfoERNS_13RegisterValueE'/>
+<fun r='_ZN12lldb_private18EmulateInstruction18WriteRegisterFrameEPS0_PvRKNS0_7ContextEPKNS_12RegisterInfoERKNS_13RegisterValueE'/>
+<fun r='_ZN12lldb_private18EmulateInstruction17ReadMemoryDefaultEPS0_PvRKNS0_7ContextEmS2_m'/>
+<fun r='_ZN12lldb_private18EmulateInstruction18WriteMemoryDefaultEPS0_PvRKNS0_7ContextEmPKvm'/>
+<fun r='_ZN12lldb_private18EmulateInstruction19ReadRegisterDefaultEPS0_PvPKNS_12RegisterInfoERNS_13RegisterValueE'/>
+<fun r='_ZN12lldb_private18EmulateInstruction20WriteRegisterDefaultEPS0_PvRKNS0_7ContextEPKNS_12RegisterInfoERKNS_13RegisterValueE'/>
+<fun r='_ZN12lldb_private18EmulateInstruction14SetInstructionERKNS_6OpcodeERKNS_7AddressEPNS_6TargetE'/>
+<fun r='_ZN12lldb_private18EmulateInstruction28GetBestRegisterKindAndNumberEPKNS_12RegisterInfoERN4lldb12RegisterKindERj'/>
+<fun r='_ZN12lldb_private18EmulateInstruction25GetInternalRegisterNumberEPNS_15RegisterContextERKNS_12RegisterInfoE'/>
+<fun r='_ZN12lldb_private18EmulateInstruction25CreateFunctionEntryUnwindERNS_10UnwindPlanE'/>
+<ovr f='llvm/lldb/source/Plugins/Instruction/ARM/EmulateInstructionARM.h' l='46' c='lldb_private::EmulateInstructionARM'/>
+<use f='llvm/lldb/source/Plugins/Instruction/ARM/EmulateInstructionARM.h' l='46'/>
+<use f='llvm/lldb/source/Plugins/Instruction/ARM/EmulateInstructionARM.h' l='69' c='_ZN12lldb_private21EmulateInstructionARM14CreateInstanceERKNS_8ArchSpecENS_15InstructionTypeE'/>
+<use f='llvm/lldb/source/Plugins/Instruction/ARM/EmulateInstructionARM.h' l='97' c='_ZN12lldb_private21EmulateInstructionARMC1ERKNS_8ArchSpecE'/>
+<use f='llvm/lldb/source/Plugins/Instruction/ARM/EmulationStateARM.h' l='42' c='_ZN17EmulationStateARM16ReadPseudoMemoryEPN12lldb_private18EmulateInstructionEPvRKNS1_7ContextEmS3_m'/>
+<use f='llvm/lldb/source/Plugins/Instruction/ARM/EmulationStateARM.h' l='47' c='_ZN17EmulationStateARM17WritePseudoMemoryEPN12lldb_private18EmulateInstructionEPvRKNS1_7ContextEmPKvm'/>
+<use f='llvm/lldb/source/Plugins/Instruction/ARM/EmulationStateARM.h' l='51' c='_ZN17EmulationStateARM18ReadPseudoRegisterEPN12lldb_private18EmulateInstructionEPvPKNS0_12RegisterInfoERNS0_13RegisterValueE'/>
+<use f='llvm/lldb/source/Plugins/Instruction/ARM/EmulationStateARM.h' l='57' c='_ZN17EmulationStateARM19WritePseudoRegisterEPN12lldb_private18EmulateInstructionEPvRKNS1_7ContextEPKNS0_12RegisterInfoERKNS0_13RegisterValueE'/>
+<use f='llvm/lldb/source/Plugins/Instruction/ARM/EmulateInstructionARM.cpp' l='725' c='_ZN12lldb_private21EmulateInstructionARM14CreateInstanceERKNS_8ArchSpecENS_15InstructionTypeE'/>
+<size>176</size>
+<use f='llvm/lldb/source/Plugins/Instruction/ARM/EmulationStateARM.cpp' l='144' c='_ZN17EmulationStateARM16ReadPseudoMemoryEPN12lldb_private18EmulateInstructionEPvRKNS1_7ContextEmS3_m'/>
+<use f='llvm/lldb/source/Plugins/Instruction/ARM/EmulationStateARM.cpp' l='185' c='_ZN17EmulationStateARM17WritePseudoMemoryEPN12lldb_private18EmulateInstructionEPvRKNS1_7ContextEmPKvm'/>
+<use f='llvm/lldb/source/Plugins/Instruction/ARM/EmulationStateARM.cpp' l='221' c='_ZN17EmulationStateARM18ReadPseudoRegisterEPN12lldb_private18EmulateInstructionEPvPKNS0_12RegisterInfoERNS0_13RegisterValueE'/>
+<use f='llvm/lldb/source/Plugins/Instruction/ARM/EmulationStateARM.cpp' l='240' c='_ZN17EmulationStateARM19WritePseudoRegisterEPN12lldb_private18EmulateInstructionEPvRKNS1_7ContextEPKNS0_12RegisterInfoERKNS0_13RegisterValueE'/>
+<size>176</size>
+<ovr f='llvm/lldb/source/Plugins/Instruction/ARM64/EmulateInstructionARM64.h' l='17' c='EmulateInstructionARM64'/>
+<use f='llvm/lldb/source/Plugins/Instruction/ARM64/EmulateInstructionARM64.h' l='17'/>
+<use f='llvm/lldb/source/Plugins/Instruction/ARM64/EmulateInstructionARM64.h' l='20' c='_ZN23EmulateInstructionARM64C1ERKN12lldb_private8ArchSpecE'/>
+<use f='llvm/lldb/source/Plugins/Instruction/ARM64/EmulateInstructionARM64.h' l='31' c='_ZN23EmulateInstructionARM6414CreateInstanceERKN12lldb_private8ArchSpecENS0_15InstructionTypeE'/>
+<use f='llvm/lldb/source/Plugins/Instruction/ARM64/EmulateInstructionARM64.cpp' l='134' c='_ZN23EmulateInstructionARM6414CreateInstanceERKN12lldb_private8ArchSpecENS0_15InstructionTypeE'/>
+<size>176</size>
+<ovr f='llvm/lldb/source/Plugins/Instruction/MIPS/EmulateInstructionMIPS.h' l='30' c='EmulateInstructionMIPS'/>
+<use f='llvm/lldb/source/Plugins/Instruction/MIPS/EmulateInstructionMIPS.h' l='30'/>
+<use f='llvm/lldb/source/Plugins/Instruction/MIPS/EmulateInstructionMIPS.h' l='40' c='_ZN22EmulateInstructionMIPS14CreateInstanceERKN12lldb_private8ArchSpecENS0_15InstructionTypeE'/>
+<use f='llvm/lldb/source/Plugins/Instruction/MIPS/EmulateInstructionMIPS.cpp' l='64' c='_ZN22EmulateInstructionMIPSC1ERKN12lldb_private8ArchSpecE'/>
+<use f='llvm/lldb/source/Plugins/Instruction/MIPS/EmulateInstructionMIPS.cpp' l='210' c='_ZN22EmulateInstructionMIPS14CreateInstanceERKN12lldb_private8ArchSpecENS0_15InstructionTypeE'/>
+<size>176</size>
+<ovr f='llvm/lldb/source/Plugins/Instruction/MIPS64/EmulateInstructionMIPS64.h' l='26' c='EmulateInstructionMIPS64'/>
+<use f='llvm/lldb/source/Plugins/Instruction/MIPS64/EmulateInstructionMIPS64.h' l='26'/>
+<use f='llvm/lldb/source/Plugins/Instruction/MIPS64/EmulateInstructionMIPS64.h' l='38' c='_ZN24EmulateInstructionMIPS6414CreateInstanceERKN12lldb_private8ArchSpecENS0_15InstructionTypeE'/>
+<use f='llvm/lldb/source/Plugins/Instruction/MIPS64/EmulateInstructionMIPS64.cpp' l='64' c='_ZN24EmulateInstructionMIPS64C1ERKN12lldb_private8ArchSpecE'/>
+<use f='llvm/lldb/source/Plugins/Instruction/MIPS64/EmulateInstructionMIPS64.cpp' l='197' c='_ZN24EmulateInstructionMIPS6414CreateInstanceERKN12lldb_private8ArchSpecENS0_15InstructionTypeE'/>
+<size>176</size>
+<ovr f='llvm/lldb/source/Plugins/Instruction/PPC64/EmulateInstructionPPC64.h' l='18' c='lldb_private::EmulateInstructionPPC64'/>
+<use f='llvm/lldb/source/Plugins/Instruction/PPC64/EmulateInstructionPPC64.h' l='18'/>
+<use f='llvm/lldb/source/Plugins/Instruction/PPC64/EmulateInstructionPPC64.h' l='30' c='_ZN12lldb_private23EmulateInstructionPPC6414CreateInstanceERKNS_8ArchSpecENS_15InstructionTypeE'/>
+<use f='llvm/lldb/source/Plugins/Instruction/PPC64/EmulateInstructionPPC64.cpp' l='31' c='_ZN12lldb_private23EmulateInstructionPPC64C1ERKNS_8ArchSpecE'/>
+<use f='llvm/lldb/source/Plugins/Instruction/PPC64/EmulateInstructionPPC64.cpp' l='56' c='_ZN12lldb_private23EmulateInstructionPPC6414CreateInstanceERKNS_8ArchSpecENS_15InstructionTypeE'/>
+<size>176</size>
+<use f='llvm/lldb/source/Plugins/Process/Linux/NativeProcessLinux.cpp' l='878' c='_ZL18ReadMemoryCallbackPN12lldb_private18EmulateInstructionEPvRKNS0_7ContextEmS2_m'/>
+<use f='llvm/lldb/source/Plugins/Process/Linux/NativeProcessLinux.cpp' l='888' c='_ZL20ReadRegisterCallbackPN12lldb_private18EmulateInstructionEPvPKNS_12RegisterInfoERNS_13RegisterValueE'/>
+<use f='llvm/lldb/source/Plugins/Process/Linux/NativeProcessLinux.cpp' l='915' c='_ZL21WriteRegisterCallbackPN12lldb_private18EmulateInstructionEPvRKNS0_7ContextEPKNS_12RegisterInfoERKNS_13RegisterValueE'/>
+<use f='llvm/lldb/source/Plugins/Process/Linux/NativeProcessLinux.cpp' l='925' c='_ZL19WriteMemoryCallbackPN12lldb_private18EmulateInstructionEPvRKNS0_7ContextEmPKvm'/>
+<use f='llvm/lldb/source/Plugins/Process/Linux/NativeProcessLinux.cpp' l='944' c='_ZN12lldb_private13process_linux18NativeProcessLinux27SetupSoftwareSingleSteppingERNS0_17NativeThreadLinuxE'/>
+<size>176</size>
+<use f='llvm/lldb/source/Plugins/UnwindAssembly/InstEmulation/UnwindAssemblyInstEmulation.h' l='66' c='_ZN27UnwindAssemblyInstEmulationC1ERKN12lldb_private8ArchSpecEPNS0_18EmulateInstructionE'/>
+<use f='llvm/lldb/source/Plugins/UnwindAssembly/InstEmulation/UnwindAssemblyInstEmulation.h' l='80' c='_ZN27UnwindAssemblyInstEmulation10ReadMemoryEPN12lldb_private18EmulateInstructionEPvRKNS1_7ContextEmS3_m'/>
+<use f='llvm/lldb/source/Plugins/UnwindAssembly/InstEmulation/UnwindAssemblyInstEmulation.h' l='85' c='_ZN27UnwindAssemblyInstEmulation11WriteMemoryEPN12lldb_private18EmulateInstructionEPvRKNS1_7ContextEmPKvm'/>
+<use f='llvm/lldb/source/Plugins/UnwindAssembly/InstEmulation/UnwindAssemblyInstEmulation.h' l='89' c='_ZN27UnwindAssemblyInstEmulation12ReadRegisterEPN12lldb_private18EmulateInstructionEPvPKNS0_12RegisterInfoERNS0_13RegisterValueE'/>
+<use f='llvm/lldb/source/Plugins/UnwindAssembly/InstEmulation/UnwindAssemblyInstEmulation.h' l='95' c='_ZN27UnwindAssemblyInstEmulation13WriteRegisterEPN12lldb_private18EmulateInstructionEPvRKNS1_7ContextEPKNS0_12RegisterInfoERKNS0_13RegisterValueE'/>
+<use f='llvm/lldb/source/Plugins/UnwindAssembly/InstEmulation/UnwindAssemblyInstEmulation.h' l='107' c='_ZN27UnwindAssemblyInstEmulation11WriteMemoryEPN12lldb_private18EmulateInstructionERKNS1_7ContextEmPKvm'/>
+<use f='llvm/lldb/source/Plugins/UnwindAssembly/InstEmulation/UnwindAssemblyInstEmulation.h' l='111' c='_ZN27UnwindAssemblyInstEmulation12ReadRegisterEPN12lldb_private18EmulateInstructionEPKNS0_12RegisterInfoERNS0_13RegisterValueE'/>
+<use f='llvm/lldb/source/Plugins/UnwindAssembly/InstEmulation/UnwindAssemblyInstEmulation.h' l='115' c='_ZN27UnwindAssemblyInstEmulation13WriteRegisterEPN12lldb_private18EmulateInstructionERKNS1_7ContextEPKNS0_12RegisterInfoERKNS0_13RegisterValueE'/>
+<use f='llvm/lldb/source/Plugins/UnwindAssembly/InstEmulation/UnwindAssemblyInstEmulation.h' l='129'/>
+<use f='llvm/lldb/source/Plugins/UnwindAssembly/InstEmulation/UnwindAssemblyInstEmulation.cpp' l='327' c='_ZN27UnwindAssemblyInstEmulation14CreateInstanceERKN12lldb_private8ArchSpecE'/>
+<use f='llvm/lldb/source/Plugins/UnwindAssembly/InstEmulation/UnwindAssemblyInstEmulation.cpp' l='391' c='_ZN27UnwindAssemblyInstEmulation10ReadMemoryEPN12lldb_private18EmulateInstructionEPvRKNS1_7ContextEmS3_m'/>
+<use f='llvm/lldb/source/Plugins/UnwindAssembly/InstEmulation/UnwindAssemblyInstEmulation.cpp' l='410' c='_ZN27UnwindAssemblyInstEmulation11WriteMemoryEPN12lldb_private18EmulateInstructionEPvRKNS1_7ContextEmPKvm'/>
+<use f='llvm/lldb/source/Plugins/UnwindAssembly/InstEmulation/UnwindAssemblyInstEmulation.cpp' l='420' c='_ZN27UnwindAssemblyInstEmulation11WriteMemoryEPN12lldb_private18EmulateInstructionERKNS1_7ContextEmPKvm'/>
+<use f='llvm/lldb/source/Plugins/UnwindAssembly/InstEmulation/UnwindAssemblyInstEmulation.cpp' l='492' c='_ZN27UnwindAssemblyInstEmulation12ReadRegisterEPN12lldb_private18EmulateInstructionEPvPKNS0_12RegisterInfoERNS0_13RegisterValueE'/>
+<use f='llvm/lldb/source/Plugins/UnwindAssembly/InstEmulation/UnwindAssemblyInstEmulation.cpp' l='502' c='_ZN27UnwindAssemblyInstEmulation12ReadRegisterEPN12lldb_private18EmulateInstructionEPKNS0_12RegisterInfoERNS0_13RegisterValueE'/>
+<use f='llvm/lldb/source/Plugins/UnwindAssembly/InstEmulation/UnwindAssemblyInstEmulation.cpp' l='522' c='_ZN27UnwindAssemblyInstEmulation13WriteRegisterEPN12lldb_private18EmulateInstructionEPvRKNS1_7ContextEPKNS0_12RegisterInfoERKNS0_13RegisterValueE'/>
+<use f='llvm/lldb/source/Plugins/UnwindAssembly/InstEmulation/UnwindAssemblyInstEmulation.cpp' l='531' c='_ZN27UnwindAssemblyInstEmulation13WriteRegisterEPN12lldb_private18EmulateInstructionERKNS1_7ContextEPKNS0_12RegisterInfoERKNS0_13RegisterValueE'/>
+<size>176</size>

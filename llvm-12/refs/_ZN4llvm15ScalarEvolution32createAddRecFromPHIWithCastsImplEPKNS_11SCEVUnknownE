@@ -1,0 +1,66 @@
+<dec f='llvm/llvm/include/llvm/Analysis/ScalarEvolution.h' l='1967' type='Optional&lt;std::pair&lt;const SCEV *, SmallVector&lt;const SCEVPredicate *, 3&gt; &gt; &gt; llvm::ScalarEvolution::createAddRecFromPHIWithCastsImpl(const llvm::SCEVUnknown * SymbolicPHI)'/>
+<doc f='llvm/llvm/include/llvm/Analysis/ScalarEvolution.h' l='1956'>/// Similar to createAddRecFromPHI, but with the additional flexibility of
+  /// suggesting runtime overflow checks in case casts are encountered.
+  /// If successful, the analysis records that for this loop, \p SymbolicPHI,
+  /// which is the UnknownSCEV currently representing the PHI, can be rewritten
+  /// into an AddRec, assuming some predicates; The function then returns the
+  /// AddRec and the predicates as a pair, and caches this pair in
+  /// PredicatedSCEVRewrites.
+  /// If the analysis is not successful, a mapping from the \p SymbolicPHI to
+  /// itself (with no predicates) is recorded, and a nullptr with an empty
+  /// predicates vector is returned as a pair.</doc>
+<def f='llvm/llvm/lib/Analysis/ScalarEvolution.cpp' l='4762' ll='4971' type='Optional&lt;std::pair&lt;const SCEV *, SmallVector&lt;const SCEVPredicate *, 3&gt; &gt; &gt; llvm::ScalarEvolution::createAddRecFromPHIWithCastsImpl(const llvm::SCEVUnknown * SymbolicPHI)'/>
+<use f='llvm/llvm/lib/Analysis/ScalarEvolution.cpp' l='4996' u='c' c='_ZN4llvm15ScalarEvolution28createAddRecFromPHIWithCastsEPKNS_11SCEVUnknownE'/>
+<doc f='llvm/llvm/lib/Analysis/ScalarEvolution.cpp' l='4709'>// Analyze \p SymbolicPHI, a SCEV expression of a phi node, and check if the
+// computation that updates the phi follows the following pattern:
+//   (SExt/ZExt ix (Trunc iy (%SymbolicPHI) to ix) to iy) + InvariantAccum
+// which correspond to a phi-&gt;trunc-&gt;sext/zext-&gt;add-&gt;phi update chain.
+// If so, try to see if it can be rewritten as an AddRecExpr under some
+// Predicates. If successful, return them as a pair. Also cache the results
+// of the analysis.
+//
+// Example usage scenario:
+//    Say the Rewriter is called for the following SCEV:
+//         8 * ((sext i32 (trunc i64 %X to i32) to i64) + %Step)
+//    where:
+//         %X = phi i64 (%Start, %BEValue)
+//    It will visitMul-&gt;visitAdd-&gt;visitSExt-&gt;visitTrunc-&gt;visitUnknown(%X),
+//    and call this function with %SymbolicPHI = %X.
+//
+//    The analysis will find that the value coming around the backedge has
+//    the following SCEV:
+//         BEValue = ((sext i32 (trunc i64 %X to i32) to i64) + %Step)
+//    Upon concluding that this matches the desired pattern, the function
+//    will return the pair {NewAddRec, SmallPredsVec} where:
+//         NewAddRec = {%Start,+,%Step}
+//         SmallPredsVec = {P1, P2, P3} as follows:
+//           P1(WrapPred): AR: {trunc(%Start),+,(trunc %Step)}&lt;nsw&gt; Flags: &lt;nssw&gt;
+//           P2(EqualPred): %Start == (sext i32 (trunc i64 %Start to i32) to i64)
+//           P3(EqualPred): %Step == (sext i32 (trunc i64 %Step to i32) to i64)
+//    The returned pair means that SymbolicPHI can be rewritten into NewAddRec
+//    under the predicates {P1,P2,P3}.
+//    This predicated rewrite will be cached in PredicatedSCEVRewrites:
+//         PredicatedSCEVRewrites[{%X,L}] = {NewAddRec, {P1,P2,P3)}
+//
+// TODO&apos;s:
+//
+// 1) Extend the Induction descriptor to also support inductions that involve
+//    casts: When needed (namely, when we are called in the context of the
+//    vectorizer induction analysis), a Set of cast instructions will be
+//    populated by this method, and provided back to isInductionPHI. This is
+//    needed to allow the vectorizer to properly record them to be ignored by
+//    the cost model and to avoid vectorizing them (otherwise these casts,
+//    which are redundant under the runtime overflow checks, will be
+//    vectorized, which can be costly).
+//
+// 2) Support additional induction/PHISCEV patterns: We also want to support
+//    inductions where the sext-trunc / zext-trunc operations (partly) occur
+//    after the induction update operation (the induction increment):
+//
+//      (Trunc iy (SExt/ZExt ix (%SymbolicPHI + InvariantAccum) to iy) to ix)
+//    which correspond to a phi-&gt;add-&gt;trunc-&gt;sext/zext-&gt;phi update chain.
+//
+//      (Trunc iy ((SExt/ZExt ix (%SymbolicPhi) to iy) + InvariantAccum) to ix)
+//    which correspond to a phi-&gt;trunc-&gt;add-&gt;sext/zext-&gt;phi update chain.
+//
+// 3) Outline common code with createAddRecFromPHI to avoid duplication.</doc>

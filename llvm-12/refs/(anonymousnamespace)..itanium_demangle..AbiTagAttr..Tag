@@ -1,0 +1,5 @@
+<dec f='llvm/libcxxabi/src/demangle/ItaniumDemangle.h' l='417' type='(anonymous namespace)::itanium_demangle::StringView'/>
+<use f='llvm/libcxxabi/src/demangle/ItaniumDemangle.h' l='422' u='w' c='_ZN12_GLOBAL__N_116itanium_demangle10AbiTagAttrC1EPNS0_4NodeENS0_10StringViewE'/>
+<use f='llvm/libcxxabi/src/demangle/ItaniumDemangle.h' l='424' c='_ZNK12_GLOBAL__N_116itanium_demangle10AbiTagAttr5matchET_'/>
+<use f='llvm/libcxxabi/src/demangle/ItaniumDemangle.h' l='429' u='r' c='_ZNK12_GLOBAL__N_116itanium_demangle10AbiTagAttr9printLeftERNS0_12OutputStreamE'/>
+<offset>192</offset>

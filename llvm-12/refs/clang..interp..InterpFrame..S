@@ -1,0 +1,35 @@
+<dec f='llvm/clang/lib/AST/Interp/InterpFrame.h' l='131' type='clang::interp::InterpState &amp;'/>
+<offset>128</offset>
+<doc f='llvm/clang/lib/AST/Interp/InterpFrame.h' l='130'>/// Reference to the interpreter state.</doc>
+<use f='llvm/clang/lib/AST/Interp/InterpFrame.cpp' l='22' u='w' c='_ZN5clang6interp11InterpFrameC1ERNS0_11InterpStateEPNS0_8FunctionEPS1_NS0_7CodePtrEONS0_7PointerE'/>
+<use f='llvm/clang/lib/AST/Interp/InterpFrame.cpp' l='42' u='m' c='_ZN5clang6interp11InterpFrameD1Ev'/>
+<use f='llvm/clang/lib/AST/Interp/InterpFrame.cpp' l='47' u='m' c='_ZN5clang6interp11InterpFrame7destroyEj'/>
+<use f='llvm/clang/lib/AST/Interp/InterpFrame.cpp' l='53' u='m' c='_ZN5clang6interp11InterpFrame7popArgsEv'/>
+<use f='llvm/clang/lib/AST/Interp/InterpFrame.cpp' l='53' u='m' c='_ZN5clang6interp11InterpFrame7popArgsEv'/>
+<use f='llvm/clang/lib/AST/Interp/InterpFrame.cpp' l='53' u='m' c='_ZN5clang6interp11InterpFrame7popArgsEv'/>
+<use f='llvm/clang/lib/AST/Interp/InterpFrame.cpp' l='53' u='m' c='_ZN5clang6interp11InterpFrame7popArgsEv'/>
+<use f='llvm/clang/lib/AST/Interp/InterpFrame.cpp' l='53' u='m' c='_ZN5clang6interp11InterpFrame7popArgsEv'/>
+<use f='llvm/clang/lib/AST/Interp/InterpFrame.cpp' l='53' u='m' c='_ZN5clang6interp11InterpFrame7popArgsEv'/>
+<use f='llvm/clang/lib/AST/Interp/InterpFrame.cpp' l='53' u='m' c='_ZN5clang6interp11InterpFrame7popArgsEv'/>
+<use f='llvm/clang/lib/AST/Interp/InterpFrame.cpp' l='53' u='m' c='_ZN5clang6interp11InterpFrame7popArgsEv'/>
+<use f='llvm/clang/lib/AST/Interp/InterpFrame.cpp' l='53' u='m' c='_ZN5clang6interp11InterpFrame7popArgsEv'/>
+<use f='llvm/clang/lib/AST/Interp/InterpFrame.cpp' l='53' u='m' c='_ZN5clang6interp11InterpFrame7popArgsEv'/>
+<use f='llvm/clang/lib/AST/Interp/InterpFrame.cpp' l='116' u='m' c='_ZN5clang6interp11InterpFrame8describeERN4llvm11raw_ostreamE'/>
+<use f='llvm/clang/lib/AST/Interp/InterpFrame.cpp' l='116' u='m' c='_ZN5clang6interp11InterpFrame8describeERN4llvm11raw_ostreamE'/>
+<use f='llvm/clang/lib/AST/Interp/InterpFrame.cpp' l='125' u='m' c='_ZN5clang6interp11InterpFrame8describeERN4llvm11raw_ostreamE'/>
+<use f='llvm/clang/lib/AST/Interp/InterpFrame.cpp' l='131' u='m' c='_ZN5clang6interp11InterpFrame8describeERN4llvm11raw_ostreamE'/>
+<use f='llvm/clang/lib/AST/Interp/InterpFrame.cpp' l='131' u='m' c='_ZN5clang6interp11InterpFrame8describeERN4llvm11raw_ostreamE'/>
+<use f='llvm/clang/lib/AST/Interp/InterpFrame.cpp' l='131' u='m' c='_ZN5clang6interp11InterpFrame8describeERN4llvm11raw_ostreamE'/>
+<use f='llvm/clang/lib/AST/Interp/InterpFrame.cpp' l='131' u='m' c='_ZN5clang6interp11InterpFrame8describeERN4llvm11raw_ostreamE'/>
+<use f='llvm/clang/lib/AST/Interp/InterpFrame.cpp' l='131' u='m' c='_ZN5clang6interp11InterpFrame8describeERN4llvm11raw_ostreamE'/>
+<use f='llvm/clang/lib/AST/Interp/InterpFrame.cpp' l='131' u='m' c='_ZN5clang6interp11InterpFrame8describeERN4llvm11raw_ostreamE'/>
+<use f='llvm/clang/lib/AST/Interp/InterpFrame.cpp' l='131' u='m' c='_ZN5clang6interp11InterpFrame8describeERN4llvm11raw_ostreamE'/>
+<use f='llvm/clang/lib/AST/Interp/InterpFrame.cpp' l='131' u='m' c='_ZN5clang6interp11InterpFrame8describeERN4llvm11raw_ostreamE'/>
+<use f='llvm/clang/lib/AST/Interp/InterpFrame.cpp' l='131' u='m' c='_ZN5clang6interp11InterpFrame8describeERN4llvm11raw_ostreamE'/>
+<use f='llvm/clang/lib/AST/Interp/InterpFrame.cpp' l='131' u='m' c='_ZN5clang6interp11InterpFrame8describeERN4llvm11raw_ostreamE'/>
+<use f='llvm/clang/lib/AST/Interp/InterpFrame.cpp' l='142' u='m' c='_ZNK5clang6interp11InterpFrame9getCallerEv'/>
+<use f='llvm/clang/lib/AST/Interp/InterpFrame.cpp' l='147' u='m' c='_ZNK5clang6interp11InterpFrame15getCallLocationEv'/>
+<use f='llvm/clang/lib/AST/Interp/InterpFrame.cpp' l='148' u='m' c='_ZNK5clang6interp11InterpFrame15getCallLocationEv'/>
+<use f='llvm/clang/lib/AST/Interp/InterpFrame.cpp' l='183' u='m' c='_ZNK5clang6interp11InterpFrame9getSourceENS0_7CodePtrE'/>
+<use f='llvm/clang/lib/AST/Interp/InterpFrame.cpp' l='187' u='m' c='_ZNK5clang6interp11InterpFrame7getExprENS0_7CodePtrE'/>
+<use f='llvm/clang/lib/AST/Interp/InterpFrame.cpp' l='191' u='m' c='_ZNK5clang6interp11InterpFrame11getLocationENS0_7CodePtrE'/>

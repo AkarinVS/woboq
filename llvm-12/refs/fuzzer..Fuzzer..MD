@@ -1,0 +1,19 @@
+<use f='llvm/compiler-rt/lib/fuzzer/FuzzerInternal.h' l='77' u='a' c='_ZN6fuzzer6Fuzzer5GetMDEv'/>
+<dec f='llvm/compiler-rt/lib/fuzzer/FuzzerInternal.h' l='131' type='fuzzer::MutationDispatcher &amp;'/>
+<offset>832</offset>
+<use f='llvm/compiler-rt/lib/fuzzer/FuzzerLoop.cpp' l='140' u='w' c='_ZN6fuzzer6FuzzerC1EPFiPKhmERNS_11InputCorpusERNS_18MutationDispatcherENS_14FuzzingOptionsE'/>
+<use f='llvm/compiler-rt/lib/fuzzer/FuzzerLoop.cpp' l='180' u='m' c='_ZN6fuzzer6Fuzzer15DumpCurrentUnitEPKc'/>
+<use f='llvm/compiler-rt/lib/fuzzer/FuzzerLoop.cpp' l='534' u='m' c='_ZN6fuzzer6Fuzzer6RunOneEPKhmbPNS_9InputInfoEbPb'/>
+<use f='llvm/compiler-rt/lib/fuzzer/FuzzerLoop.cpp' l='643' u='m' c='_ZN6fuzzer6Fuzzer21PrintStatusForNewUnitERKNSt8__Fuzzer6vectorIhNS_16fuzzer_allocatorIhEEEEPKc'/>
+<use f='llvm/compiler-rt/lib/fuzzer/FuzzerLoop.cpp' l='650' u='m' c='_ZN6fuzzer6Fuzzer17ReportNewCoverageEPNS_9InputInfoERKNSt8__Fuzzer6vectorIhNS_16fuzzer_allocatorIhEEEE'/>
+<use f='llvm/compiler-rt/lib/fuzzer/FuzzerLoop.cpp' l='704' u='m' c='_ZN6fuzzer6Fuzzer16MutateAndTestOneEv'/>
+<use f='llvm/compiler-rt/lib/fuzzer/FuzzerLoop.cpp' l='706' u='m' c='_ZN6fuzzer6Fuzzer16MutateAndTestOneEv'/>
+<use f='llvm/compiler-rt/lib/fuzzer/FuzzerLoop.cpp' l='709' u='m' c='_ZN6fuzzer6Fuzzer16MutateAndTestOneEv'/>
+<use f='llvm/compiler-rt/lib/fuzzer/FuzzerLoop.cpp' l='710' u='m' c='_ZN6fuzzer6Fuzzer16MutateAndTestOneEv'/>
+<use f='llvm/compiler-rt/lib/fuzzer/FuzzerLoop.cpp' l='732' u='m' c='_ZN6fuzzer6Fuzzer16MutateAndTestOneEv'/>
+<use f='llvm/compiler-rt/lib/fuzzer/FuzzerLoop.cpp' l='737' u='m' c='_ZN6fuzzer6Fuzzer16MutateAndTestOneEv'/>
+<use f='llvm/compiler-rt/lib/fuzzer/FuzzerLoop.cpp' l='803' u='m' c='_ZN6fuzzer6Fuzzer25ReadAndExecuteSeedCorporaERNSt8__Fuzzer6vectorINS_9SizedFileENS_16fuzzer_allocatorIS3_EEEE'/>
+<use f='llvm/compiler-rt/lib/fuzzer/FuzzerLoop.cpp' l='843' u='m' c='_ZN6fuzzer6Fuzzer4LoopERNSt8__Fuzzer6vectorINS_9SizedFileENS_16fuzzer_allocatorIS3_EEEE'/>
+<use f='llvm/compiler-rt/lib/fuzzer/FuzzerLoop.cpp' l='889' u='m' c='_ZN6fuzzer6Fuzzer4LoopERNSt8__Fuzzer6vectorINS_9SizedFileENS_16fuzzer_allocatorIS3_EEEE'/>
+<use f='llvm/compiler-rt/lib/fuzzer/FuzzerLoop.cpp' l='896' u='m' c='_ZN6fuzzer6Fuzzer17MinimizeCrashLoopERKNSt8__Fuzzer6vectorIhNS_16fuzzer_allocatorIhEEEE'/>
+<use f='llvm/compiler-rt/lib/fuzzer/FuzzerLoop.cpp' l='899' u='m' c='_ZN6fuzzer6Fuzzer17MinimizeCrashLoopERKNSt8__Fuzzer6vectorIhNS_16fuzzer_allocatorIhEEEE'/>

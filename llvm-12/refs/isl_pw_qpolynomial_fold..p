@@ -1,0 +1,37 @@
+<dec f='llvm/polly/lib/External/isl/isl_polynomial_private.h' l='112' type='struct isl_pw_qpolynomial_fold_piece [1]'/>
+<offset>256</offset>
+<use f='llvm/polly/lib/External/isl/isl_pw_lift_templ.c' l='61' u='m' c='isl_pw_qpolynomial_fold_foreach_lifted_piece'/>
+<use f='llvm/polly/lib/External/isl/isl_pw_lift_templ.c' l='64' u='m' c='isl_pw_qpolynomial_fold_foreach_lifted_piece'/>
+<use f='llvm/polly/lib/External/isl/isl_pw_lift_templ.c' l='65' u='m' c='isl_pw_qpolynomial_fold_foreach_lifted_piece'/>
+<use f='llvm/polly/lib/External/isl/isl_pw_morph_templ.c' l='33' u='m' c='isl_pw_qpolynomial_fold_morph_domain'/>
+<use f='llvm/polly/lib/External/isl/isl_pw_morph_templ.c' l='33' u='m' c='isl_pw_qpolynomial_fold_morph_domain'/>
+<use f='llvm/polly/lib/External/isl/isl_pw_morph_templ.c' l='34' u='m' c='isl_pw_qpolynomial_fold_morph_domain'/>
+<use f='llvm/polly/lib/External/isl/isl_pw_morph_templ.c' l='36' u='m' c='isl_pw_qpolynomial_fold_morph_domain'/>
+<use f='llvm/polly/lib/External/isl/isl_pw_morph_templ.c' l='36' u='m' c='isl_pw_qpolynomial_fold_morph_domain'/>
+<use f='llvm/polly/lib/External/isl/isl_pw_morph_templ.c' l='38' u='m' c='isl_pw_qpolynomial_fold_morph_domain'/>
+<use f='llvm/polly/lib/External/isl/isl_pw_opt_templ.c' l='30' u='m' c='isl_pw_qpolynomial_fold_opt'/>
+<use f='llvm/polly/lib/External/isl/isl_pw_opt_templ.c' l='31' u='m' c='isl_pw_qpolynomial_fold_opt'/>
+<use f='llvm/polly/lib/External/isl/isl_pw_opt_templ.c' l='34' u='m' c='isl_pw_qpolynomial_fold_opt'/>
+<use f='llvm/polly/lib/External/isl/isl_pw_opt_templ.c' l='35' u='m' c='isl_pw_qpolynomial_fold_opt'/>
+<use f='llvm/polly/lib/External/isl/isl_fold.c' l='1146' u='m' c='isl_pw_qpolynomial_fold_fold'/>
+<use f='llvm/polly/lib/External/isl/isl_fold.c' l='1151' u='m' c='isl_pw_qpolynomial_fold_fold'/>
+<use f='llvm/polly/lib/External/isl/isl_fold.c' l='1152' u='m' c='isl_pw_qpolynomial_fold_fold'/>
+<use f='llvm/polly/lib/External/isl/isl_fold.c' l='1153' u='m' c='isl_pw_qpolynomial_fold_fold'/>
+<use f='llvm/polly/lib/External/isl/isl_fold.c' l='1160' u='m' c='isl_pw_qpolynomial_fold_fold'/>
+<use f='llvm/polly/lib/External/isl/isl_fold.c' l='1161' u='m' c='isl_pw_qpolynomial_fold_fold'/>
+<use f='llvm/polly/lib/External/isl/isl_fold.c' l='1166' u='m' c='isl_pw_qpolynomial_fold_fold'/>
+<use f='llvm/polly/lib/External/isl/isl_fold.c' l='1170' u='m' c='isl_pw_qpolynomial_fold_fold'/>
+<use f='llvm/polly/lib/External/isl/isl_fold.c' l='1172' u='m' c='isl_pw_qpolynomial_fold_fold'/>
+<use f='llvm/polly/lib/External/isl/isl_fold.c' l='1174' u='m' c='isl_pw_qpolynomial_fold_fold'/>
+<use f='llvm/polly/lib/External/isl/isl_fold.c' l='1441' u='m' c='isl_pw_qpolynomial_fold_size'/>
+<use f='llvm/polly/lib/External/isl/isl_fold.c' l='1573' u='m' c='isl_pw_qpolynomial_fold_covers'/>
+<use f='llvm/polly/lib/External/isl/isl_fold.c' l='1574' u='m' c='isl_pw_qpolynomial_fold_covers'/>
+<use f='llvm/polly/lib/External/isl/isl_fold.c' l='1583' u='m' c='isl_pw_qpolynomial_fold_covers'/>
+<use f='llvm/polly/lib/External/isl/isl_fold.c' l='1583' u='m' c='isl_pw_qpolynomial_fold_covers'/>
+<use f='llvm/polly/lib/External/isl/isl_output.c' l='2106' u='m' c='isl_pwf_print_isl_body'/>
+<use f='llvm/polly/lib/External/isl/isl_output.c' l='2111' u='m' c='isl_pwf_print_isl_body'/>
+<use f='llvm/polly/lib/External/isl/isl_output.c' l='2112' u='m' c='isl_pwf_print_isl_body'/>
+<use f='llvm/polly/lib/External/isl/isl_output.c' l='2400' u='m' c='print_pw_qpolynomial_fold_c'/>
+<use f='llvm/polly/lib/External/isl/isl_output.c' l='2401' u='m' c='print_pw_qpolynomial_fold_c'/>
+<use f='llvm/polly/lib/External/isl/isl_output.c' l='2408' u='m' c='print_pw_qpolynomial_fold_c'/>
+<use f='llvm/polly/lib/External/isl/isl_output.c' l='2410' u='m' c='print_pw_qpolynomial_fold_c'/>

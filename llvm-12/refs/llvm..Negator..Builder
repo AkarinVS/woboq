@@ -1,0 +1,29 @@
+<dec f='llvm/llvm/lib/Transforms/InstCombine/InstCombineInternal.h' l='740' type='llvm::Negator::BuilderTy'/>
+<offset>1152</offset>
+<use f='llvm/llvm/lib/Transforms/InstCombine/InstCombineNegator.cpp' l='105' u='w' c='_ZN4llvm7NegatorC1ERNS_11LLVMContextERKNS_10DataLayoutERNS_15AssumptionCacheERKNS_13DominatorTreeEb'/>
+<use f='llvm/llvm/lib/Transforms/InstCombine/InstCombineNegator.cpp' l='168' u='a' c='_ZN4llvm7Negator9visitImplEPNS_5ValueEj'/>
+<use f='llvm/llvm/lib/Transforms/InstCombine/InstCombineNegator.cpp' l='171' u='m' c='_ZN4llvm7Negator9visitImplEPNS_5ValueEj'/>
+<use f='llvm/llvm/lib/Transforms/InstCombine/InstCombineNegator.cpp' l='179' u='m' c='_ZN4llvm7Negator9visitImplEPNS_5ValueEj'/>
+<use f='llvm/llvm/lib/Transforms/InstCombine/InstCombineNegator.cpp' l='185' u='m' c='_ZN4llvm7Negator9visitImplEPNS_5ValueEj'/>
+<use f='llvm/llvm/lib/Transforms/InstCombine/InstCombineNegator.cpp' l='194' u='m' c='_ZN4llvm7Negator9visitImplEPNS_5ValueEj'/>
+<use f='llvm/llvm/lib/Transforms/InstCombine/InstCombineNegator.cpp' l='195' u='m' c='_ZN4llvm7Negator9visitImplEPNS_5ValueEj'/>
+<use f='llvm/llvm/lib/Transforms/InstCombine/InstCombineNegator.cpp' l='213' u='m' c='_ZN4llvm7Negator9visitImplEPNS_5ValueEj'/>
+<use f='llvm/llvm/lib/Transforms/InstCombine/InstCombineNegator.cpp' l='215' u='m' c='_ZN4llvm7Negator9visitImplEPNS_5ValueEj'/>
+<use f='llvm/llvm/lib/Transforms/InstCombine/InstCombineNegator.cpp' l='227' u='m' c='_ZN4llvm7Negator9visitImplEPNS_5ValueEj'/>
+<use f='llvm/llvm/lib/Transforms/InstCombine/InstCombineNegator.cpp' l='245' u='m' c='_ZN4llvm7Negator9visitImplEPNS_5ValueEj'/>
+<use f='llvm/llvm/lib/Transforms/InstCombine/InstCombineNegator.cpp' l='269' u='m' c='_ZN4llvm7Negator9visitImplEPNS_5ValueEj'/>
+<use f='llvm/llvm/lib/Transforms/InstCombine/InstCombineNegator.cpp' l='281' u='m' c='_ZN4llvm7Negator9visitImplEPNS_5ValueEj'/>
+<use f='llvm/llvm/lib/Transforms/InstCombine/InstCombineNegator.cpp' l='296' u='m' c='_ZN4llvm7Negator9visitImplEPNS_5ValueEj'/>
+<use f='llvm/llvm/lib/Transforms/InstCombine/InstCombineNegator.cpp' l='307' u='m' c='_ZN4llvm7Negator9visitImplEPNS_5ValueEj'/>
+<use f='llvm/llvm/lib/Transforms/InstCombine/InstCombineNegator.cpp' l='319' u='m' c='_ZN4llvm7Negator9visitImplEPNS_5ValueEj'/>
+<use f='llvm/llvm/lib/Transforms/InstCombine/InstCombineNegator.cpp' l='328' u='m' c='_ZN4llvm7Negator9visitImplEPNS_5ValueEj'/>
+<use f='llvm/llvm/lib/Transforms/InstCombine/InstCombineNegator.cpp' l='341' u='m' c='_ZN4llvm7Negator9visitImplEPNS_5ValueEj'/>
+<use f='llvm/llvm/lib/Transforms/InstCombine/InstCombineNegator.cpp' l='349' u='m' c='_ZN4llvm7Negator9visitImplEPNS_5ValueEj'/>
+<use f='llvm/llvm/lib/Transforms/InstCombine/InstCombineNegator.cpp' l='354' u='m' c='_ZN4llvm7Negator9visitImplEPNS_5ValueEj'/>
+<use f='llvm/llvm/lib/Transforms/InstCombine/InstCombineNegator.cpp' l='359' u='m' c='_ZN4llvm7Negator9visitImplEPNS_5ValueEj'/>
+<use f='llvm/llvm/lib/Transforms/InstCombine/InstCombineNegator.cpp' l='372' u='m' c='_ZN4llvm7Negator9visitImplEPNS_5ValueEj'/>
+<use f='llvm/llvm/lib/Transforms/InstCombine/InstCombineNegator.cpp' l='395' u='m' c='_ZN4llvm7Negator9visitImplEPNS_5ValueEj'/>
+<use f='llvm/llvm/lib/Transforms/InstCombine/InstCombineNegator.cpp' l='402' u='m' c='_ZN4llvm7Negator9visitImplEPNS_5ValueEj'/>
+<use f='llvm/llvm/lib/Transforms/InstCombine/InstCombineNegator.cpp' l='410' u='m' c='_ZN4llvm7Negator9visitImplEPNS_5ValueEj'/>
+<use f='llvm/llvm/lib/Transforms/InstCombine/InstCombineNegator.cpp' l='411' u='m' c='_ZN4llvm7Negator9visitImplEPNS_5ValueEj'/>
+<use f='llvm/llvm/lib/Transforms/InstCombine/InstCombineNegator.cpp' l='431' u='m' c='_ZN4llvm7Negator9visitImplEPNS_5ValueEj'/>

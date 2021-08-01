@@ -1,0 +1,21 @@
+<dec f='llvm/llvm/lib/CodeGen/SelectionDAG/ScheduleDAGSDNodes.h' l='48' type='llvm::MachineBasicBlock *'/>
+<use f='llvm/llvm/lib/CodeGen/SelectionDAG/ScheduleDAGFast.cpp' l='763' u='r' c='_ZN12_GLOBAL__N_120ScheduleDAGLinearize12EmitScheduleERN4llvm26MachineInstrBundleIteratorINS1_12MachineInstrELb0EEE'/>
+<offset>4928</offset>
+<use f='llvm/llvm/lib/CodeGen/SelectionDAG/ScheduleDAGRRList.cpp' l='2810' u='r' c='_ZN12_GLOBAL__N_118RegReductionPQBase9initNodesERSt6vectorIN4llvm5SUnitESaIS3_EE'/>
+<use f='llvm/llvm/lib/CodeGen/SelectionDAG/ScheduleDAGRRList.cpp' l='2810' u='r' c='_ZN12_GLOBAL__N_118RegReductionPQBase9initNodesERSt6vectorIN4llvm5SUnitESaIS3_EE'/>
+<use f='llvm/llvm/lib/CodeGen/SelectionDAG/ScheduleDAGSDNodes.cpp' l='50' u='w' c='_ZN4llvm18ScheduleDAGSDNodesC1ERNS_15MachineFunctionE'/>
+<use f='llvm/llvm/lib/CodeGen/SelectionDAG/ScheduleDAGSDNodes.cpp' l='56' u='w' c='_ZN4llvm18ScheduleDAGSDNodes3RunEPNS_12SelectionDAGEPNS_17MachineBasicBlockE'/>
+<use f='llvm/llvm/lib/CodeGen/SelectionDAG/ScheduleDAGSDNodes.cpp' l='661' u='r' c='_ZNK4llvm18ScheduleDAGSDNodes21computeOperandLatencyEPNS_6SDNodeES2_jRNS_4SDepE'/>
+<use f='llvm/llvm/lib/CodeGen/SelectionDAG/ScheduleDAGSDNodes.cpp' l='810' u='r' c='_ZN4llvm18ScheduleDAGSDNodes15EmitPhysRegCopyEPNS_5SUnitERNS_8DenseMapIS2_NS_8RegisterENS_12DenseMapInfoIS2_EENS_6detail12DenseMapPairIS2_S4_EEEENS_2610352'/>
+<use f='llvm/llvm/lib/CodeGen/SelectionDAG/ScheduleDAGSDNodes.cpp' l='819' u='r' c='_ZN4llvm18ScheduleDAGSDNodes15EmitPhysRegCopyEPNS_5SUnitERNS_8DenseMapIS2_NS_8RegisterENS_12DenseMapInfoIS2_EENS_6detail12DenseMapPairIS2_S4_EEEENS_2610352'/>
+<use f='llvm/llvm/lib/CodeGen/SelectionDAG/ScheduleDAGSDNodes.cpp' l='832' u='r' c='_ZN4llvm18ScheduleDAGSDNodes12EmitScheduleERNS_26MachineInstrBundleIteratorINS_12MachineInstrELb0EEE'/>
+<use f='llvm/llvm/lib/CodeGen/SelectionDAG/ScheduleDAGSDNodes.cpp' l='846' u='r' c='_ZN4llvm18ScheduleDAGSDNodes12EmitScheduleERNS_26MachineInstrBundleIteratorINS_12MachineInstrELb0EEE'/>
+<use f='llvm/llvm/lib/CodeGen/SelectionDAG/ScheduleDAGSDNodes.cpp' l='847' u='r' c='_ZN4llvm18ScheduleDAGSDNodes12EmitScheduleERNS_26MachineInstrBundleIteratorINS_12MachineInstrELb0EEE'/>
+<use f='llvm/llvm/lib/CodeGen/SelectionDAG/ScheduleDAGSDNodes.cpp' l='861' u='r' c='_ZN4llvm18ScheduleDAGSDNodes12EmitScheduleERNS_26MachineInstrBundleIteratorINS_12MachineInstrELb0EEE'/>
+<use f='llvm/llvm/lib/CodeGen/SelectionDAG/ScheduleDAGSDNodes.cpp' l='882' u='r' c='_ZN4llvm18ScheduleDAGSDNodes12EmitScheduleERNS_26MachineInstrBundleIteratorINS_12MachineInstrELb0EEE'/>
+<use f='llvm/llvm/lib/CodeGen/SelectionDAG/ScheduleDAGSDNodes.cpp' l='882' u='r' c='_ZN4llvm18ScheduleDAGSDNodes12EmitScheduleERNS_26MachineInstrBundleIteratorINS_12MachineInstrELb0EEE'/>
+<use f='llvm/llvm/lib/CodeGen/SelectionDAG/ScheduleDAGSDNodes.cpp' l='888' u='r' c='_ZN4llvm18ScheduleDAGSDNodes12EmitScheduleERNS_26MachineInstrBundleIteratorINS_12MachineInstrELb0EEE'/>
+<use f='llvm/llvm/lib/CodeGen/SelectionDAG/ScheduleDAGSDNodes.cpp' l='944' u='r' c='_ZN4llvm18ScheduleDAGSDNodes12EmitScheduleERNS_26MachineInstrBundleIteratorINS_12MachineInstrELb0EEE'/>
+<use f='llvm/llvm/lib/CodeGen/SelectionDAG/ScheduleDAGSDNodes.cpp' l='974' u='r' c='_ZN4llvm18ScheduleDAGSDNodes12EmitScheduleERNS_26MachineInstrBundleIteratorINS_12MachineInstrELb0EEE'/>
+<use f='llvm/llvm/lib/CodeGen/SelectionDAG/ScheduleDAGSDNodes.cpp' l='1019' u='r' c='_ZN4llvm18ScheduleDAGSDNodes12EmitScheduleERNS_26MachineInstrBundleIteratorINS_12MachineInstrELb0EEE'/>
+<use f='llvm/llvm/lib/CodeGen/SelectionDAG/ScheduleDAGSDNodes.cpp' l='1063' u='r' c='_ZNK4llvm18ScheduleDAGSDNodes10getDAGNameB5cxx11Ev'/>

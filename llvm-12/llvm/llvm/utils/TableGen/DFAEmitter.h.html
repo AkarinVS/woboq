@@ -1,0 +1,124 @@
+<!doctype html>
+<html>
+<head>
+<meta name="viewport" content="width=device-width, initial-scale=1.0"><title>DFAEmitter.h source code [llvm/llvm/utils/TableGen/DFAEmitter.h] - Woboq Code Browser</title>
+<meta name="woboq:interestingDefinitions" content="llvm::DfaEmitter "/>
+<link rel="stylesheet" href="../../../.././data/qtcreator.css" title="QtCreator"/>
+<link rel="alternate stylesheet" href="../../../.././data/kdevelop.css" title="KDevelop"/>
+<script type="text/javascript" src="../../../.././data/jquery/jquery.min.js"></script>
+<script type="text/javascript" src="../../../.././data/jquery/jquery-ui.min.js"></script>
+<script>var file = 'llvm/llvm/utils/TableGen/DFAEmitter.h'; var root_path = '../../../..'; var data_path = '../../../.././data'; var ecma_script_api_version = 2;</script>
+<script src='../../../.././data/codebrowser.js'></script>
+</head>
+<body><div id='header'><h1 id='breadcrumb'><span>Browse the source code of </span><a href='../../..'>llvm</a>/<a href='../..'>llvm</a>/<a href='..'>utils</a>/<a href='./'>TableGen</a>/<a href='DFAEmitter.h.html'>DFAEmitter.h</a></h1></div>
+<hr/><div id='content'><table class="code">
+<tr><th id="1">1</th><td><i>//===--------------------- DfaEmitter.h -----------------------------------===//</i></td></tr>
+<tr><th id="2">2</th><td><i>//</i></td></tr>
+<tr><th id="3">3</th><td><i>// Part of the LLVM Project, under the Apache License v2.0 with LLVM Exceptions.</i></td></tr>
+<tr><th id="4">4</th><td><i>// See <a href="https://llvm.org/LICENSE.txt">https://llvm.org/LICENSE.txt</a> for license information.</i></td></tr>
+<tr><th id="5">5</th><td><i>// SPDX-License-Identifier: Apache-2.0 WITH LLVM-exception</i></td></tr>
+<tr><th id="6">6</th><td><i>//</i></td></tr>
+<tr><th id="7">7</th><td><i>//===----------------------------------------------------------------------===//</i></td></tr>
+<tr><th id="8">8</th><td><i>// Defines a generic automaton builder. This takes a set of transitions and</i></td></tr>
+<tr><th id="9">9</th><td><i>// states that represent a nondeterministic finite state automaton (NFA) and</i></td></tr>
+<tr><th id="10">10</th><td><i>// emits a determinized DFA in a form that include/llvm/Support/Automaton.h can</i></td></tr>
+<tr><th id="11">11</th><td><i>// drive.</i></td></tr>
+<tr><th id="12">12</th><td><i>//</i></td></tr>
+<tr><th id="13">13</th><td><i>// See file llvm/TableGen/Automaton.td for the TableGen API definition.</i></td></tr>
+<tr><th id="14">14</th><td><i>//</i></td></tr>
+<tr><th id="15">15</th><td><i>//===----------------------------------------------------------------------===//</i></td></tr>
+<tr><th id="16">16</th><td></td></tr>
+<tr><th id="17">17</th><td><u>#<span data-ppcond="17">ifndef</span> <span class="macro" data-ref="_M/LLVM_UTILS_TABLEGEN_DFAEMITTER_H">LLVM_UTILS_TABLEGEN_DFAEMITTER_H</span></u></td></tr>
+<tr><th id="18">18</th><td><u>#define <dfn class="macro" id="_M/LLVM_UTILS_TABLEGEN_DFAEMITTER_H" data-ref="_M/LLVM_UTILS_TABLEGEN_DFAEMITTER_H">LLVM_UTILS_TABLEGEN_DFAEMITTER_H</dfn></u></td></tr>
+<tr><th id="19">19</th><td></td></tr>
+<tr><th id="20">20</th><td><u>#include <a href="../../include/llvm/ADT/SmallVector.h.html">"llvm/ADT/SmallVector.h"</a></u></td></tr>
+<tr><th id="21">21</th><td><u>#include <a href="../../include/llvm/ADT/UniqueVector.h.html">"llvm/ADT/UniqueVector.h"</a></u></td></tr>
+<tr><th id="22">22</th><td><u>#include &lt;map&gt;</u></td></tr>
+<tr><th id="23">23</th><td><u>#include &lt;set&gt;</u></td></tr>
+<tr><th id="24">24</th><td></td></tr>
+<tr><th id="25">25</th><td><b>namespace</b> <span class="namespace">llvm</span> {</td></tr>
+<tr><th id="26">26</th><td></td></tr>
+<tr><th id="27">27</th><td><b>class</b> <a class="type" href="../../include/llvm/Support/raw_ostream.h.html#llvm::raw_ostream" title='llvm::raw_ostream' data-ref="llvm::raw_ostream" data-ref-filename="llvm..raw_ostream" id="llvm::raw_ostream">raw_ostream</a>;</td></tr>
+<tr><th id="28">28</th><td><b>class</b> <a class="type" href="../../include/llvm/ADT/StringRef.h.html#llvm::StringRef" title='llvm::StringRef' data-ref="llvm::StringRef" data-ref-filename="llvm..StringRef" id="llvm::StringRef">StringRef</a>;</td></tr>
+<tr><th id="29">29</th><td></td></tr>
+<tr><th id="30">30</th><td><i class="doc">/// Construct a deterministic finite state automaton from possible</i></td></tr>
+<tr><th id="31">31</th><td><i class="doc">/// nondeterministic state and transition data.</i></td></tr>
+<tr><th id="32">32</th><td><i class="doc">///</i></td></tr>
+<tr><th id="33">33</th><td><i class="doc">/// The state type is a 64-bit unsigned integer. The generated automaton is</i></td></tr>
+<tr><th id="34">34</th><td><i class="doc">/// invariant to the sparsity of the state representation - its size is only</i></td></tr>
+<tr><th id="35">35</th><td><i class="doc">/// a function of the cardinality of the set of states.</i></td></tr>
+<tr><th id="36">36</th><td><i class="doc">///</i></td></tr>
+<tr><th id="37">37</th><td><i class="doc">/// The inputs to this emitter are considered to define a nondeterministic</i></td></tr>
+<tr><th id="38">38</th><td><i class="doc">/// finite state automaton (NFA). This is then converted to a DFA during</i></td></tr>
+<tr><th id="39">39</th><td><i class="doc">/// emission. The emitted tables can be used to by</i></td></tr>
+<tr><th id="40">40</th><td><i class="doc">/// include/llvm/Support/Automaton.h.</i></td></tr>
+<tr><th id="41">41</th><td><b>class</b> <dfn class="type def" id="llvm::DfaEmitter" title='llvm::DfaEmitter' data-ref="llvm::DfaEmitter" data-ref-filename="llvm..DfaEmitter">DfaEmitter</dfn> {</td></tr>
+<tr><th id="42">42</th><td><b>public</b>:</td></tr>
+<tr><th id="43">43</th><td>  <i>// The type of an NFA state. The initial state is always zero.</i></td></tr>
+<tr><th id="44">44</th><td>  <b>using</b> <dfn class="typedef" id="llvm::DfaEmitter::state_type" title='llvm::DfaEmitter::state_type' data-type='uint64_t' data-ref="llvm::DfaEmitter::state_type" data-ref-filename="llvm..DfaEmitter..state_type">state_type</dfn> = <a class="typedef" href="../../../../include/bits/stdint-uintn.h.html#uint64_t" title='uint64_t' data-type='__uint64_t' data-ref="uint64_t" data-ref-filename="uint64_t">uint64_t</a>;</td></tr>
+<tr><th id="45">45</th><td>  <i>// The type of an action.</i></td></tr>
+<tr><th id="46">46</th><td>  <b>using</b> <dfn class="typedef" id="llvm::DfaEmitter::action_type" title='llvm::DfaEmitter::action_type' data-type='uint64_t' data-ref="llvm::DfaEmitter::action_type" data-ref-filename="llvm..DfaEmitter..action_type">action_type</dfn> = <a class="typedef" href="../../../../include/bits/stdint-uintn.h.html#uint64_t" title='uint64_t' data-type='__uint64_t' data-ref="uint64_t" data-ref-filename="uint64_t">uint64_t</a>;</td></tr>
+<tr><th id="47">47</th><td></td></tr>
+<tr><th id="48">48</th><td>  <dfn class="decl def fn" id="_ZN4llvm10DfaEmitterC1Ev" title='llvm::DfaEmitter::DfaEmitter' data-ref="_ZN4llvm10DfaEmitterC1Ev" data-ref-filename="_ZN4llvm10DfaEmitterC1Ev">DfaEmitter</dfn>() = <b>default</b>;</td></tr>
+<tr><th id="49">49</th><td>  <b>virtual</b> <dfn class="virtual decl def fn" id="_ZN4llvm10DfaEmitterD1Ev" title='llvm::DfaEmitter::~DfaEmitter' data-ref="_ZN4llvm10DfaEmitterD1Ev" data-ref-filename="_ZN4llvm10DfaEmitterD1Ev">~DfaEmitter</dfn>() = <b>default</b>;</td></tr>
+<tr><th id="50">50</th><td></td></tr>
+<tr><th id="51">51</th><td>  <em>void</em> <a class="decl fn" href="DFAEmitter.cpp.html#_ZN4llvm10DfaEmitter13addTransitionEmmm" title='llvm::DfaEmitter::addTransition' data-ref="_ZN4llvm10DfaEmitter13addTransitionEmmm" data-ref-filename="_ZN4llvm10DfaEmitter13addTransitionEmmm" id="_ZN4llvm10DfaEmitter13addTransitionEmmm">addTransition</a>(<a class="typedef" href="#llvm::DfaEmitter::state_type" title='llvm::DfaEmitter::state_type' data-type='uint64_t' data-ref="llvm::DfaEmitter::state_type" data-ref-filename="llvm..DfaEmitter..state_type">state_type</a> <dfn class="local col1 decl" id="1From" title='From' data-type='llvm::DfaEmitter::state_type' data-ref="1From" data-ref-filename="1From">From</dfn>, <a class="typedef" href="#llvm::DfaEmitter::state_type" title='llvm::DfaEmitter::state_type' data-type='uint64_t' data-ref="llvm::DfaEmitter::state_type" data-ref-filename="llvm..DfaEmitter..state_type">state_type</a> <dfn class="local col2 decl" id="2To" title='To' data-type='llvm::DfaEmitter::state_type' data-ref="2To" data-ref-filename="2To">To</dfn>, <a class="typedef" href="#llvm::DfaEmitter::action_type" title='llvm::DfaEmitter::action_type' data-type='uint64_t' data-ref="llvm::DfaEmitter::action_type" data-ref-filename="llvm..DfaEmitter..action_type">action_type</a> <dfn class="local col3 decl" id="3A" title='A' data-type='llvm::DfaEmitter::action_type' data-ref="3A" data-ref-filename="3A">A</dfn>);</td></tr>
+<tr><th id="52">52</th><td>  <em>void</em> <a class="decl fn" href="DFAEmitter.cpp.html#_ZN4llvm10DfaEmitter4emitENS_9StringRefERNS_11raw_ostreamE" title='llvm::DfaEmitter::emit' data-ref="_ZN4llvm10DfaEmitter4emitENS_9StringRefERNS_11raw_ostreamE" data-ref-filename="_ZN4llvm10DfaEmitter4emitENS_9StringRefERNS_11raw_ostreamE" id="_ZN4llvm10DfaEmitter4emitENS_9StringRefERNS_11raw_ostreamE">emit</a>(<a class="type" href="../../include/llvm/ADT/StringRef.h.html#llvm::StringRef" title='llvm::StringRef' data-ref="llvm::StringRef" data-ref-filename="llvm..StringRef">StringRef</a> <dfn class="local col4 decl" id="4Name" title='Name' data-type='llvm::StringRef' data-ref="4Name" data-ref-filename="4Name">Name</dfn>, <a class="type" href="../../include/llvm/Support/raw_ostream.h.html#llvm::raw_ostream" title='llvm::raw_ostream' data-ref="llvm::raw_ostream" data-ref-filename="llvm..raw_ostream">raw_ostream</a> &amp;<dfn class="local col5 decl" id="5OS" title='OS' data-type='llvm::raw_ostream &amp;' data-ref="5OS" data-ref-filename="5OS">OS</dfn>);</td></tr>
+<tr><th id="53">53</th><td></td></tr>
+<tr><th id="54">54</th><td><b>protected</b>:</td></tr>
+<tr><th id="55">55</th><td>  <i class="doc">/// Emit the C++ type of an action to OS.</i></td></tr>
+<tr><th id="56">56</th><td>  <b>virtual</b> <em>void</em> <a class="virtual decl fn" href="DFAEmitter.cpp.html#_ZN4llvm10DfaEmitter15printActionTypeERNS_11raw_ostreamE" title='llvm::DfaEmitter::printActionType' data-ref="_ZN4llvm10DfaEmitter15printActionTypeERNS_11raw_ostreamE" data-ref-filename="_ZN4llvm10DfaEmitter15printActionTypeERNS_11raw_ostreamE" id="_ZN4llvm10DfaEmitter15printActionTypeERNS_11raw_ostreamE">printActionType</a>(<a class="type" href="../../include/llvm/Support/raw_ostream.h.html#llvm::raw_ostream" title='llvm::raw_ostream' data-ref="llvm::raw_ostream" data-ref-filename="llvm..raw_ostream">raw_ostream</a> &amp;<dfn class="local col6 decl" id="6OS" title='OS' data-type='llvm::raw_ostream &amp;' data-ref="6OS" data-ref-filename="6OS">OS</dfn>);</td></tr>
+<tr><th id="57">57</th><td>  <i class="doc">/// Emit the C++ value of an action A to OS.</i></td></tr>
+<tr><th id="58">58</th><td>  <b>virtual</b> <em>void</em> <a class="virtual decl fn" href="DFAEmitter.cpp.html#_ZN4llvm10DfaEmitter16printActionValueEmRNS_11raw_ostreamE" title='llvm::DfaEmitter::printActionValue' data-ref="_ZN4llvm10DfaEmitter16printActionValueEmRNS_11raw_ostreamE" data-ref-filename="_ZN4llvm10DfaEmitter16printActionValueEmRNS_11raw_ostreamE" id="_ZN4llvm10DfaEmitter16printActionValueEmRNS_11raw_ostreamE">printActionValue</a>(<a class="typedef" href="#llvm::DfaEmitter::action_type" title='llvm::DfaEmitter::action_type' data-type='uint64_t' data-ref="llvm::DfaEmitter::action_type" data-ref-filename="llvm..DfaEmitter..action_type">action_type</a> <dfn class="local col7 decl" id="7A" title='A' data-type='llvm::DfaEmitter::action_type' data-ref="7A" data-ref-filename="7A">A</dfn>, <a class="type" href="../../include/llvm/Support/raw_ostream.h.html#llvm::raw_ostream" title='llvm::raw_ostream' data-ref="llvm::raw_ostream" data-ref-filename="llvm..raw_ostream">raw_ostream</a> &amp;<dfn class="local col8 decl" id="8OS" title='OS' data-type='llvm::raw_ostream &amp;' data-ref="8OS" data-ref-filename="8OS">OS</dfn>);</td></tr>
+<tr><th id="59">59</th><td></td></tr>
+<tr><th id="60">60</th><td><b>private</b>:</td></tr>
+<tr><th id="61">61</th><td>  <i class="doc">/// The state type of deterministic states. These are only used internally to</i></td></tr>
+<tr><th id="62">62</th><td><i class="doc">  /// this class. This is an ID into the DfaStates UniqueVector.</i></td></tr>
+<tr><th id="63">63</th><td>  <b>using</b> <dfn class="typedef" id="llvm::DfaEmitter::dfa_state_type" title='llvm::DfaEmitter::dfa_state_type' data-type='unsigned int' data-ref="llvm::DfaEmitter::dfa_state_type" data-ref-filename="llvm..DfaEmitter..dfa_state_type">dfa_state_type</dfn> = <em>unsigned</em>;</td></tr>
+<tr><th id="64">64</th><td></td></tr>
+<tr><th id="65">65</th><td>  <i class="doc">/// The actual representation of a DFA state, which is a union of one or more</i></td></tr>
+<tr><th id="66">66</th><td><i class="doc">  /// NFA states.</i></td></tr>
+<tr><th id="67">67</th><td>  <b>using</b> <dfn class="typedef" id="llvm::DfaEmitter::DfaState" title='llvm::DfaEmitter::DfaState' data-type='SmallVector&lt;llvm::DfaEmitter::state_type, 4&gt;' data-ref="llvm::DfaEmitter::DfaState" data-ref-filename="llvm..DfaEmitter..DfaState">DfaState</dfn> = <a class="type" href="../../include/llvm/ADT/SmallVector.h.html#llvm::SmallVector" title='llvm::SmallVector' data-ref="llvm::SmallVector" data-ref-filename="llvm..SmallVector">SmallVector</a>&lt;<a class="typedef" href="#llvm::DfaEmitter::state_type" title='llvm::DfaEmitter::state_type' data-type='uint64_t' data-ref="llvm::DfaEmitter::state_type" data-ref-filename="llvm..DfaEmitter..state_type">state_type</a>, <var>4</var>&gt;;</td></tr>
+<tr><th id="68">68</th><td></td></tr>
+<tr><th id="69">69</th><td>  <i class="doc">/// A DFA transition consists of a set of NFA states transitioning to a</i></td></tr>
+<tr><th id="70">70</th><td><i class="doc">  /// new set of NFA states. The DfaTransitionInfo tracks, for every</i></td></tr>
+<tr><th id="71">71</th><td><i class="doc">  /// transitioned-from NFA state, a set of valid transitioned-to states.</i></td></tr>
+<tr><th id="72">72</th><td><i class="doc">  ///</i></td></tr>
+<tr><th id="73">73</th><td><i class="doc">  /// Emission of this transition relation allows algorithmic determination of</i></td></tr>
+<tr><th id="74">74</th><td><i class="doc">  /// the possible candidate NFA paths taken under a given input sequence to</i></td></tr>
+<tr><th id="75">75</th><td><i class="doc">  /// reach a given DFA state.</i></td></tr>
+<tr><th id="76">76</th><td>  <b>using</b> <dfn class="typedef" id="llvm::DfaEmitter::DfaTransitionInfo" title='llvm::DfaEmitter::DfaTransitionInfo' data-type='SmallVector&lt;std::pair&lt;state_type, state_type&gt;, 4&gt;' data-ref="llvm::DfaEmitter::DfaTransitionInfo" data-ref-filename="llvm..DfaEmitter..DfaTransitionInfo">DfaTransitionInfo</dfn> = <a class="type" href="../../include/llvm/ADT/SmallVector.h.html#llvm::SmallVector" title='llvm::SmallVector' data-ref="llvm::SmallVector" data-ref-filename="llvm..SmallVector">SmallVector</a>&lt;<span class="namespace">std::</span><span class='type' title='std::pair' data-ref="std::pair" data-ref-filename="std..pair">pair</span>&lt;<a class="typedef" href="#llvm::DfaEmitter::state_type" title='llvm::DfaEmitter::state_type' data-type='uint64_t' data-ref="llvm::DfaEmitter::state_type" data-ref-filename="llvm..DfaEmitter..state_type">state_type</a>, <a class="typedef" href="#llvm::DfaEmitter::state_type" title='llvm::DfaEmitter::state_type' data-type='uint64_t' data-ref="llvm::DfaEmitter::state_type" data-ref-filename="llvm..DfaEmitter..state_type">state_type</a>&gt;, <var>4</var>&gt;;</td></tr>
+<tr><th id="77">77</th><td></td></tr>
+<tr><th id="78">78</th><td>  <i class="doc">/// The set of all possible actions.</i></td></tr>
+<tr><th id="79">79</th><td>  <span class="namespace">std::</span><span class='type' title='std::set' data-ref="std::set" data-ref-filename="std..set">set</span>&lt;<a class="typedef" href="#llvm::DfaEmitter::action_type" title='llvm::DfaEmitter::action_type' data-type='uint64_t' data-ref="llvm::DfaEmitter::action_type" data-ref-filename="llvm..DfaEmitter..action_type">action_type</a>&gt; <dfn class="decl field" id="llvm::DfaEmitter::Actions" title='llvm::DfaEmitter::Actions' data-ref="llvm::DfaEmitter::Actions" data-ref-filename="llvm..DfaEmitter..Actions">Actions</dfn>;</td></tr>
+<tr><th id="80">80</th><td></td></tr>
+<tr><th id="81">81</th><td>  <i class="doc">/// The set of nondeterministic transitions. A state-action pair can</i></td></tr>
+<tr><th id="82">82</th><td><i class="doc">  /// transition to multiple target states.</i></td></tr>
+<tr><th id="83">83</th><td>  <span class="namespace">std::</span><span class='type' title='std::map' data-ref="std::map" data-ref-filename="std..map">map</span>&lt;<span class="namespace">std::</span><span class='type' title='std::pair' data-ref="std::pair" data-ref-filename="std..pair">pair</span>&lt;<a class="typedef" href="#llvm::DfaEmitter::state_type" title='llvm::DfaEmitter::state_type' data-type='uint64_t' data-ref="llvm::DfaEmitter::state_type" data-ref-filename="llvm..DfaEmitter..state_type">state_type</a>, <a class="typedef" href="#llvm::DfaEmitter::action_type" title='llvm::DfaEmitter::action_type' data-type='uint64_t' data-ref="llvm::DfaEmitter::action_type" data-ref-filename="llvm..DfaEmitter..action_type">action_type</a>&gt;, <span class="namespace">std::</span><span class='type' title='std::vector' data-ref="std::vector" data-ref-filename="std..vector">vector</span>&lt;<a class="typedef" href="#llvm::DfaEmitter::state_type" title='llvm::DfaEmitter::state_type' data-type='uint64_t' data-ref="llvm::DfaEmitter::state_type" data-ref-filename="llvm..DfaEmitter..state_type">state_type</a>&gt;&gt;</td></tr>
+<tr><th id="84">84</th><td>      <dfn class="decl field" id="llvm::DfaEmitter::NfaTransitions" title='llvm::DfaEmitter::NfaTransitions' data-ref="llvm::DfaEmitter::NfaTransitions" data-ref-filename="llvm..DfaEmitter..NfaTransitions">NfaTransitions</dfn>;</td></tr>
+<tr><th id="85">85</th><td>  <span class="namespace">std::</span><span class='type' title='std::set' data-ref="std::set" data-ref-filename="std..set">set</span>&lt;<a class="typedef" href="#llvm::DfaEmitter::state_type" title='llvm::DfaEmitter::state_type' data-type='uint64_t' data-ref="llvm::DfaEmitter::state_type" data-ref-filename="llvm..DfaEmitter..state_type">state_type</a>&gt; <dfn class="decl field" id="llvm::DfaEmitter::NfaStates" title='llvm::DfaEmitter::NfaStates' data-ref="llvm::DfaEmitter::NfaStates" data-ref-filename="llvm..DfaEmitter..NfaStates">NfaStates</dfn>;</td></tr>
+<tr><th id="86">86</th><td>  <em>unsigned</em> <dfn class="decl field" id="llvm::DfaEmitter::NumNfaTransitions" title='llvm::DfaEmitter::NumNfaTransitions' data-ref="llvm::DfaEmitter::NumNfaTransitions" data-ref-filename="llvm..DfaEmitter..NumNfaTransitions">NumNfaTransitions</dfn> = <var>0</var>;</td></tr>
+<tr><th id="87">87</th><td></td></tr>
+<tr><th id="88">88</th><td>  <i class="doc">/// The set of deterministic states. DfaStates.getId(DfaState) returns an ID,</i></td></tr>
+<tr><th id="89">89</th><td><i class="doc">  /// which is dfa_state_type. Note that because UniqueVector reserves state</i></td></tr>
+<tr><th id="90">90</th><td><i class="doc">  /// zero, the initial DFA state is always 1.</i></td></tr>
+<tr><th id="91">91</th><td>  <a class="type" href="../../include/llvm/ADT/UniqueVector.h.html#llvm::UniqueVector" title='llvm::UniqueVector' data-ref="llvm::UniqueVector" data-ref-filename="llvm..UniqueVector">UniqueVector</a>&lt;<a class="typedef" href="#llvm::DfaEmitter::DfaState" title='llvm::DfaEmitter::DfaState' data-type='SmallVector&lt;llvm::DfaEmitter::state_type, 4&gt;' data-ref="llvm::DfaEmitter::DfaState" data-ref-filename="llvm..DfaEmitter..DfaState">DfaState</a>&gt; <dfn class="decl field" id="llvm::DfaEmitter::DfaStates" title='llvm::DfaEmitter::DfaStates' data-ref="llvm::DfaEmitter::DfaStates" data-ref-filename="llvm..DfaEmitter..DfaStates">DfaStates</dfn>;</td></tr>
+<tr><th id="92">92</th><td>  <i class="doc">/// The set of deterministic transitions. A state-action pair has only a</i></td></tr>
+<tr><th id="93">93</th><td><i class="doc">  /// single target state.</i></td></tr>
+<tr><th id="94">94</th><td>  <span class="namespace">std::</span><span class='type' title='std::map' data-ref="std::map" data-ref-filename="std..map">map</span>&lt;<span class="namespace">std::</span><span class='type' title='std::pair' data-ref="std::pair" data-ref-filename="std..pair">pair</span>&lt;<a class="typedef" href="#llvm::DfaEmitter::dfa_state_type" title='llvm::DfaEmitter::dfa_state_type' data-type='unsigned int' data-ref="llvm::DfaEmitter::dfa_state_type" data-ref-filename="llvm..DfaEmitter..dfa_state_type">dfa_state_type</a>, <a class="typedef" href="#llvm::DfaEmitter::action_type" title='llvm::DfaEmitter::action_type' data-type='uint64_t' data-ref="llvm::DfaEmitter::action_type" data-ref-filename="llvm..DfaEmitter..action_type">action_type</a>&gt;,</td></tr>
+<tr><th id="95">95</th><td>           <span class="namespace">std::</span><span class='type' title='std::pair' data-ref="std::pair" data-ref-filename="std..pair">pair</span>&lt;<a class="typedef" href="#llvm::DfaEmitter::dfa_state_type" title='llvm::DfaEmitter::dfa_state_type' data-type='unsigned int' data-ref="llvm::DfaEmitter::dfa_state_type" data-ref-filename="llvm..DfaEmitter..dfa_state_type">dfa_state_type</a>, <a class="typedef" href="#llvm::DfaEmitter::DfaTransitionInfo" title='llvm::DfaEmitter::DfaTransitionInfo' data-type='SmallVector&lt;std::pair&lt;state_type, state_type&gt;, 4&gt;' data-ref="llvm::DfaEmitter::DfaTransitionInfo" data-ref-filename="llvm..DfaEmitter..DfaTransitionInfo">DfaTransitionInfo</a>&gt;&gt;</td></tr>
+<tr><th id="96">96</th><td>      <dfn class="decl field" id="llvm::DfaEmitter::DfaTransitions" title='llvm::DfaEmitter::DfaTransitions' data-ref="llvm::DfaEmitter::DfaTransitions" data-ref-filename="llvm..DfaEmitter..DfaTransitions">DfaTransitions</dfn>;</td></tr>
+<tr><th id="97">97</th><td></td></tr>
+<tr><th id="98">98</th><td>  <i class="doc">/// Visit all NFA states and construct the DFA.</i></td></tr>
+<tr><th id="99">99</th><td>  <em>void</em> <a class="decl fn" href="DFAEmitter.cpp.html#_ZN4llvm10DfaEmitter12constructDfaEv" title='llvm::DfaEmitter::constructDfa' data-ref="_ZN4llvm10DfaEmitter12constructDfaEv" data-ref-filename="_ZN4llvm10DfaEmitter12constructDfaEv" id="_ZN4llvm10DfaEmitter12constructDfaEv">constructDfa</a>();</td></tr>
+<tr><th id="100">100</th><td>  <i class="doc">/// Visit a single DFA state and construct all possible transitions to new DFA</i></td></tr>
+<tr><th id="101">101</th><td><i class="doc">  /// states.</i></td></tr>
+<tr><th id="102">102</th><td>  <em>void</em> <a class="decl fn" href="DFAEmitter.cpp.html#_ZN4llvm10DfaEmitter13visitDfaStateERKNS_11SmallVectorImLj4EEE" title='llvm::DfaEmitter::visitDfaState' data-ref="_ZN4llvm10DfaEmitter13visitDfaStateERKNS_11SmallVectorImLj4EEE" data-ref-filename="_ZN4llvm10DfaEmitter13visitDfaStateERKNS_11SmallVectorImLj4EEE" id="_ZN4llvm10DfaEmitter13visitDfaStateERKNS_11SmallVectorImLj4EEE">visitDfaState</a>(<em>const</em> <a class="typedef" href="#llvm::DfaEmitter::DfaState" title='llvm::DfaEmitter::DfaState' data-type='SmallVector&lt;llvm::DfaEmitter::state_type, 4&gt;' data-ref="llvm::DfaEmitter::DfaState" data-ref-filename="llvm..DfaEmitter..DfaState">DfaState</a> &amp;<dfn class="local col9 decl" id="9DS" title='DS' data-type='const llvm::DfaEmitter::DfaState &amp;' data-ref="9DS" data-ref-filename="9DS">DS</dfn>);</td></tr>
+<tr><th id="103">103</th><td>};</td></tr>
+<tr><th id="104">104</th><td></td></tr>
+<tr><th id="105">105</th><td>} <i>// namespace llvm</i></td></tr>
+<tr><th id="106">106</th><td></td></tr>
+<tr><th id="107">107</th><td><u>#<span data-ppcond="17">endif</span></u></td></tr>
+<tr><th id="108">108</th><td></td></tr>
+</table><hr/><p id='footer'>
+Generated while processing <a href='DFAEmitter.cpp.html'>llvm/llvm/utils/TableGen/DFAEmitter.cpp</a><br/>Generated on <em>2021-Jul-01</em> from project llvm revision <em>12</em>

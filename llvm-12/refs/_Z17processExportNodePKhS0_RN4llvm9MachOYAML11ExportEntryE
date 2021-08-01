@@ -1,0 +1,63 @@
+<def f='llvm/llvm/tools/obj2yaml/macho2yaml.cpp' l='508' ll='550' type='const uint8_t * processExportNode(const uint8_t * CurrPtr, const uint8_t *const End, MachOYAML::ExportEntry &amp; Entry)'/>
+<use f='llvm/llvm/tools/obj2yaml/macho2yaml.cpp' l='547' u='c' c='_Z17processExportNodePKhS0_RN4llvm9MachOYAML11ExportEntryE'/>
+<use f='llvm/llvm/tools/obj2yaml/macho2yaml.cpp' l='555' u='c' c='_ZN11MachODumper14dumpExportTrieERSt10unique_ptrIN4llvm9MachOYAML6ObjectESt14default_deleteIS3_EE'/>
+<doc f='llvm/llvm/tools/obj2yaml/macho2yaml.cpp' l='447'>/*!
+ * /brief processes a node from the export trie, and its children.
+ *
+ * To my knowledge there is no documentation of the encoded format of this data
+ * other than in the heads of the Apple linker engineers. To that end hopefully
+ * this comment and the implementation below can serve to light the way for
+ * anyone crazy enough to come down this path in the future.
+ *
+ * This function reads and preserves the trie structure of the export trie. To
+ * my knowledge there is no code anywhere else that reads the data and preserves
+ * the Trie. LD64 (sources available at opensource.apple.com) has a similar
+ * implementation that parses the export trie into a vector. That code as well
+ * as LLVM&apos;s libObject MachO implementation were the basis for this.
+ *
+ * The export trie is an encoded trie. The node serialization is a bit awkward.
+ * The below pseudo-code is the best description I&apos;ve come up with for it.
+ *
+ * struct SerializedNode {
+ *   ULEB128 TerminalSize;
+ *   struct TerminalData { &lt;-- This is only present if TerminalSize &gt; 0
+ *     ULEB128 Flags;
+ *     ULEB128 Address; &lt;-- Present if (! Flags &amp; REEXPORT )
+ *     ULEB128 Other; &lt;-- Present if ( Flags &amp; REEXPORT ||
+ *                                     Flags &amp; STUB_AND_RESOLVER )
+ *     char[] ImportName; &lt;-- Present if ( Flags &amp; REEXPORT )
+ *   }
+ *   uint8_t ChildrenCount;
+ *   Pair&lt;char[], ULEB128&gt; ChildNameOffsetPair[ChildrenCount];
+ *   SerializedNode Children[ChildrenCount]
+ * }
+ *
+ * Terminal nodes are nodes that represent actual exports. They can appear
+ * anywhere in the tree other than at the root; they do not need to be leaf
+ * nodes. When reading the data out of the trie this routine reads it in-order,
+ * but it puts the child names and offsets directly into the child nodes. This
+ * results in looping over the children twice during serialization and
+ * de-serialization, but it makes the YAML representation more human readable.
+ *
+ * Below is an example of the graph from a &quot;Hello World&quot; executable:
+ *
+ * -------
+ * | &apos;&apos;  |
+ * -------
+ *    |
+ * -------
+ * | &apos;_&apos; |
+ * -------
+ *    |
+ *    |----------------------------------------|
+ *    |                                        |
+ *  ------------------------      ---------------------
+ *  | &apos;_mh_execute_header&apos; |      | &apos;main&apos;            |
+ *  | Flags: 0x00000000    |      | Flags: 0x00000000 |
+ *  | Addr:  0x00000000    |      | Addr:  0x00001160 |
+ *  ------------------------      ---------------------
+ *
+ * This graph represents the trie for the exports &quot;__mh_execute_header&quot; and
+ * &quot;_main&quot;. In the graph only the &quot;_main&quot; and &quot;__mh_execute_header&quot; nodes are
+ * terminal.
+*/</doc>

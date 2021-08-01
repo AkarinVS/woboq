@@ -1,0 +1,207 @@
+<!doctype html>
+<html>
+<head>
+<meta name="viewport" content="width=device-width, initial-scale=1.0"><title>lsan_mac.cpp source code [llvm/compiler-rt/lib/lsan/lsan_mac.cpp] - Woboq Code Browser</title>
+<link rel="stylesheet" href="../../../.././data/qtcreator.css" title="QtCreator"/>
+<link rel="alternate stylesheet" href="../../../.././data/kdevelop.css" title="KDevelop"/>
+<script type="text/javascript" src="../../../.././data/jquery/jquery.min.js"></script>
+<script type="text/javascript" src="../../../.././data/jquery/jquery-ui.min.js"></script>
+<script>var file = 'llvm/compiler-rt/lib/lsan/lsan_mac.cpp'; var root_path = '../../../..'; var data_path = '../../../.././data'; var ecma_script_api_version = 2;</script>
+<script src='../../../.././data/codebrowser.js'></script>
+</head>
+<body><div id='header'><h1 id='breadcrumb'><span>Browse the source code of </span><a href='../../..'>llvm</a>/<a href='../..'>compiler-rt</a>/<a href='..'>lib</a>/<a href='./'>lsan</a>/<a href='lsan_mac.cpp.html'>lsan_mac.cpp</a></h1></div>
+<hr/><div id='content'><table class="code">
+<tr><th id="1">1</th><td><i>//===-- lsan_mac.cpp ------------------------------------------------------===//</i></td></tr>
+<tr><th id="2">2</th><td><i>//</i></td></tr>
+<tr><th id="3">3</th><td><i>// Part of the LLVM Project, under the Apache License v2.0 with LLVM Exceptions.</i></td></tr>
+<tr><th id="4">4</th><td><i>// See <a href="https://llvm.org/LICENSE.txt">https://llvm.org/LICENSE.txt</a> for license information.</i></td></tr>
+<tr><th id="5">5</th><td><i>// SPDX-License-Identifier: Apache-2.0 WITH LLVM-exception</i></td></tr>
+<tr><th id="6">6</th><td><i>//</i></td></tr>
+<tr><th id="7">7</th><td><i>//===----------------------------------------------------------------------===//</i></td></tr>
+<tr><th id="8">8</th><td><i>//</i></td></tr>
+<tr><th id="9">9</th><td><i>// This file is a part of LeakSanitizer, a memory leak checker.</i></td></tr>
+<tr><th id="10">10</th><td><i>//</i></td></tr>
+<tr><th id="11">11</th><td><i>// Mac-specific details.</i></td></tr>
+<tr><th id="12">12</th><td><i>//===----------------------------------------------------------------------===//</i></td></tr>
+<tr><th id="13">13</th><td></td></tr>
+<tr><th id="14">14</th><td><u>#include <a href="../sanitizer_common/sanitizer_platform.h.html">"sanitizer_common/sanitizer_platform.h"</a></u></td></tr>
+<tr><th id="15">15</th><td><u>#<span data-ppcond="15">if</span> <a class="macro" href="../sanitizer_common/sanitizer_platform.h.html#73" title="0" data-ref="_M/SANITIZER_MAC">SANITIZER_MAC</a></u></td></tr>
+<tr><th id="16">16</th><td></td></tr>
+<tr><th id="17">17</th><td><u>#include "interception/interception.h"</u></td></tr>
+<tr><th id="18">18</th><td><u>#include "lsan.h"</u></td></tr>
+<tr><th id="19">19</th><td><u>#include "lsan_allocator.h"</u></td></tr>
+<tr><th id="20">20</th><td><u>#include "lsan_thread.h"</u></td></tr>
+<tr><th id="21">21</th><td></td></tr>
+<tr><th id="22">22</th><td><u>#include &lt;pthread.h&gt;</u></td></tr>
+<tr><th id="23">23</th><td></td></tr>
+<tr><th id="24">24</th><td><b>namespace</b> __lsan {</td></tr>
+<tr><th id="25">25</th><td><i>// Support for the following functions from libdispatch on Mac OS:</i></td></tr>
+<tr><th id="26">26</th><td><i>//   dispatch_async_f()</i></td></tr>
+<tr><th id="27">27</th><td><i>//   dispatch_async()</i></td></tr>
+<tr><th id="28">28</th><td><i>//   dispatch_sync_f()</i></td></tr>
+<tr><th id="29">29</th><td><i>//   dispatch_sync()</i></td></tr>
+<tr><th id="30">30</th><td><i>//   dispatch_after_f()</i></td></tr>
+<tr><th id="31">31</th><td><i>//   dispatch_after()</i></td></tr>
+<tr><th id="32">32</th><td><i>//   dispatch_group_async_f()</i></td></tr>
+<tr><th id="33">33</th><td><i>//   dispatch_group_async()</i></td></tr>
+<tr><th id="34">34</th><td><i>// TODO(glider): libdispatch API contains other functions that we don't support</i></td></tr>
+<tr><th id="35">35</th><td><i>// yet.</i></td></tr>
+<tr><th id="36">36</th><td><i>//</i></td></tr>
+<tr><th id="37">37</th><td><i>// dispatch_sync() and dispatch_sync_f() are synchronous, although chances are</i></td></tr>
+<tr><th id="38">38</th><td><i>// they can cause jobs to run on a thread different from the current one.</i></td></tr>
+<tr><th id="39">39</th><td><i>// TODO(glider): if so, we need a test for this (otherwise we should remove</i></td></tr>
+<tr><th id="40">40</th><td><i>// them).</i></td></tr>
+<tr><th id="41">41</th><td><i>//</i></td></tr>
+<tr><th id="42">42</th><td><i>// The following functions use dispatch_barrier_async_f() (which isn't a library</i></td></tr>
+<tr><th id="43">43</th><td><i>// function but is exported) and are thus supported:</i></td></tr>
+<tr><th id="44">44</th><td><i>//   dispatch_source_set_cancel_handler_f()</i></td></tr>
+<tr><th id="45">45</th><td><i>//   dispatch_source_set_cancel_handler()</i></td></tr>
+<tr><th id="46">46</th><td><i>//   dispatch_source_set_event_handler_f()</i></td></tr>
+<tr><th id="47">47</th><td><i>//   dispatch_source_set_event_handler()</i></td></tr>
+<tr><th id="48">48</th><td><i>//</i></td></tr>
+<tr><th id="49">49</th><td><i>// The reference manual for Grand Central Dispatch is available at</i></td></tr>
+<tr><th id="50">50</th><td><i>//   <a href="http://developer.apple.com/library/mac/#documentation/Performance/Reference/GCD_libdispatch_Ref/Reference/reference.html">http://developer.apple.com/library/mac/#documentation/Performance/Reference/GCD_libdispatch_Ref/Reference/reference.html</a></i></td></tr>
+<tr><th id="51">51</th><td><i>// The implementation details are at</i></td></tr>
+<tr><th id="52">52</th><td><i>//   <a href="http://libdispatch.macosforge.org/trac/browser/trunk/src/queue.c">http://libdispatch.macosforge.org/trac/browser/trunk/src/queue.c</a></i></td></tr>
+<tr><th id="53">53</th><td></td></tr>
+<tr><th id="54">54</th><td><b>typedef</b> <em>void</em> *dispatch_group_t;</td></tr>
+<tr><th id="55">55</th><td><b>typedef</b> <em>void</em> *dispatch_queue_t;</td></tr>
+<tr><th id="56">56</th><td><b>typedef</b> <em>void</em> *dispatch_source_t;</td></tr>
+<tr><th id="57">57</th><td><b>typedef</b> u64 dispatch_time_t;</td></tr>
+<tr><th id="58">58</th><td><b>typedef</b> <em>void</em> (*dispatch_function_t)(<em>void</em> *block);</td></tr>
+<tr><th id="59">59</th><td><b>typedef</b> <em>void</em> *(*worker_t)(<em>void</em> *block);</td></tr>
+<tr><th id="60">60</th><td></td></tr>
+<tr><th id="61">61</th><td><i>// A wrapper for the ObjC blocks used to support libdispatch.</i></td></tr>
+<tr><th id="62">62</th><td><b>typedef</b> <b>struct</b> {</td></tr>
+<tr><th id="63">63</th><td>  <em>void</em> *block;</td></tr>
+<tr><th id="64">64</th><td>  dispatch_function_t func;</td></tr>
+<tr><th id="65">65</th><td>  u32 parent_tid;</td></tr>
+<tr><th id="66">66</th><td>} lsan_block_context_t;</td></tr>
+<tr><th id="67">67</th><td></td></tr>
+<tr><th id="68">68</th><td>ALWAYS_INLINE</td></tr>
+<tr><th id="69">69</th><td><em>void</em> lsan_register_worker_thread(<em>int</em> parent_tid) {</td></tr>
+<tr><th id="70">70</th><td>  <b>if</b> (GetCurrentThread() == kInvalidTid) {</td></tr>
+<tr><th id="71">71</th><td>    u32 tid = ThreadCreate(parent_tid, <var>0</var>, <b>true</b>);</td></tr>
+<tr><th id="72">72</th><td>    ThreadStart(tid, GetTid());</td></tr>
+<tr><th id="73">73</th><td>    SetCurrentThread(tid);</td></tr>
+<tr><th id="74">74</th><td>  }</td></tr>
+<tr><th id="75">75</th><td>}</td></tr>
+<tr><th id="76">76</th><td></td></tr>
+<tr><th id="77">77</th><td><i>// For use by only those functions that allocated the context via</i></td></tr>
+<tr><th id="78">78</th><td><i>// alloc_lsan_context().</i></td></tr>
+<tr><th id="79">79</th><td><b>extern</b> <q>"C"</q> <em>void</em> lsan_dispatch_call_block_and_release(<em>void</em> *block) {</td></tr>
+<tr><th id="80">80</th><td>  lsan_block_context_t *context = (lsan_block_context_t *)block;</td></tr>
+<tr><th id="81">81</th><td>  VReport(<var>2</var>,</td></tr>
+<tr><th id="82">82</th><td>          <q>"lsan_dispatch_call_block_and_release(): "</q></td></tr>
+<tr><th id="83">83</th><td>          <q>"context: %p, pthread_self: %p\n"</q>,</td></tr>
+<tr><th id="84">84</th><td>          block, pthread_self());</td></tr>
+<tr><th id="85">85</th><td>  lsan_register_worker_thread(context-&gt;parent_tid);</td></tr>
+<tr><th id="86">86</th><td>  <i>// Call the original dispatcher for the block.</i></td></tr>
+<tr><th id="87">87</th><td>  context-&gt;func(context-&gt;block);</td></tr>
+<tr><th id="88">88</th><td>  lsan_free(context);</td></tr>
+<tr><th id="89">89</th><td>}</td></tr>
+<tr><th id="90">90</th><td></td></tr>
+<tr><th id="91">91</th><td>}  <i>// namespace __lsan</i></td></tr>
+<tr><th id="92">92</th><td></td></tr>
+<tr><th id="93">93</th><td><b>using</b> <b>namespace</b> __lsan;</td></tr>
+<tr><th id="94">94</th><td></td></tr>
+<tr><th id="95">95</th><td><i>// Wrap |ctxt| and |func| into an lsan_block_context_t.</i></td></tr>
+<tr><th id="96">96</th><td><i>// The caller retains control of the allocated context.</i></td></tr>
+<tr><th id="97">97</th><td><b>extern</b> <q>"C"</q> lsan_block_context_t *alloc_lsan_context(<em>void</em> *ctxt,</td></tr>
+<tr><th id="98">98</th><td>                                                    dispatch_function_t func) {</td></tr>
+<tr><th id="99">99</th><td>  GET_STACK_TRACE_THREAD;</td></tr>
+<tr><th id="100">100</th><td>  lsan_block_context_t *lsan_ctxt =</td></tr>
+<tr><th id="101">101</th><td>      (lsan_block_context_t *)lsan_malloc(<b>sizeof</b>(lsan_block_context_t), stack);</td></tr>
+<tr><th id="102">102</th><td>  lsan_ctxt-&gt;block = ctxt;</td></tr>
+<tr><th id="103">103</th><td>  lsan_ctxt-&gt;func = func;</td></tr>
+<tr><th id="104">104</th><td>  lsan_ctxt-&gt;parent_tid = GetCurrentThread();</td></tr>
+<tr><th id="105">105</th><td>  <b>return</b> lsan_ctxt;</td></tr>
+<tr><th id="106">106</th><td>}</td></tr>
+<tr><th id="107">107</th><td></td></tr>
+<tr><th id="108">108</th><td><i>// Define interceptor for dispatch_*_f function with the three most common</i></td></tr>
+<tr><th id="109">109</th><td><i>// parameters: dispatch_queue_t, context, dispatch_function_t.</i></td></tr>
+<tr><th id="110">110</th><td><u>#define INTERCEPT_DISPATCH_X_F_3(dispatch_x_f)                        \</u></td></tr>
+<tr><th id="111">111</th><td><u>  INTERCEPTOR(void, dispatch_x_f, dispatch_queue_t dq, void *ctxt,    \</u></td></tr>
+<tr><th id="112">112</th><td><u>              dispatch_function_t func) {                             \</u></td></tr>
+<tr><th id="113">113</th><td><u>    lsan_block_context_t *lsan_ctxt = alloc_lsan_context(ctxt, func); \</u></td></tr>
+<tr><th id="114">114</th><td><u>    return REAL(dispatch_x_f)(dq, (void *)lsan_ctxt,                  \</u></td></tr>
+<tr><th id="115">115</th><td><u>                              lsan_dispatch_call_block_and_release);  \</u></td></tr>
+<tr><th id="116">116</th><td><u>  }</u></td></tr>
+<tr><th id="117">117</th><td></td></tr>
+<tr><th id="118">118</th><td>INTERCEPT_DISPATCH_X_F_3(dispatch_async_f)</td></tr>
+<tr><th id="119">119</th><td>INTERCEPT_DISPATCH_X_F_3(dispatch_sync_f)</td></tr>
+<tr><th id="120">120</th><td>INTERCEPT_DISPATCH_X_F_3(dispatch_barrier_async_f)</td></tr>
+<tr><th id="121">121</th><td></td></tr>
+<tr><th id="122">122</th><td>INTERCEPTOR(<em>void</em>, dispatch_after_f, dispatch_time_t when, dispatch_queue_t dq,</td></tr>
+<tr><th id="123">123</th><td>            <em>void</em> *ctxt, dispatch_function_t func) {</td></tr>
+<tr><th id="124">124</th><td>  lsan_block_context_t *lsan_ctxt = alloc_lsan_context(ctxt, func);</td></tr>
+<tr><th id="125">125</th><td>  <b>return</b> REAL(dispatch_after_f)(when, dq, (<em>void</em> *)lsan_ctxt,</td></tr>
+<tr><th id="126">126</th><td>                                lsan_dispatch_call_block_and_release);</td></tr>
+<tr><th id="127">127</th><td>}</td></tr>
+<tr><th id="128">128</th><td></td></tr>
+<tr><th id="129">129</th><td>INTERCEPTOR(<em>void</em>, dispatch_group_async_f, dispatch_group_t group,</td></tr>
+<tr><th id="130">130</th><td>            dispatch_queue_t dq, <em>void</em> *ctxt, dispatch_function_t func) {</td></tr>
+<tr><th id="131">131</th><td>  lsan_block_context_t *lsan_ctxt = alloc_lsan_context(ctxt, func);</td></tr>
+<tr><th id="132">132</th><td>  REAL(dispatch_group_async_f)</td></tr>
+<tr><th id="133">133</th><td>  (group, dq, (<em>void</em> *)lsan_ctxt, lsan_dispatch_call_block_and_release);</td></tr>
+<tr><th id="134">134</th><td>}</td></tr>
+<tr><th id="135">135</th><td></td></tr>
+<tr><th id="136">136</th><td><u>#if !defined(MISSING_BLOCKS_SUPPORT)</u></td></tr>
+<tr><th id="137">137</th><td><b>extern</b> <q>"C"</q> {</td></tr>
+<tr><th id="138">138</th><td><em>void</em> dispatch_async(dispatch_queue_t dq, <em>void</em> (^work)(<em>void</em>));</td></tr>
+<tr><th id="139">139</th><td><em>void</em> dispatch_group_async(dispatch_group_t dg, dispatch_queue_t dq,</td></tr>
+<tr><th id="140">140</th><td>                          <em>void</em> (^work)(<em>void</em>));</td></tr>
+<tr><th id="141">141</th><td><em>void</em> dispatch_after(dispatch_time_t when, dispatch_queue_t queue,</td></tr>
+<tr><th id="142">142</th><td>                    <em>void</em> (^work)(<em>void</em>));</td></tr>
+<tr><th id="143">143</th><td><em>void</em> dispatch_source_set_cancel_handler(dispatch_source_t ds,</td></tr>
+<tr><th id="144">144</th><td>                                        <em>void</em> (^work)(<em>void</em>));</td></tr>
+<tr><th id="145">145</th><td><em>void</em> dispatch_source_set_event_handler(dispatch_source_t ds,</td></tr>
+<tr><th id="146">146</th><td>                                       <em>void</em> (^work)(<em>void</em>));</td></tr>
+<tr><th id="147">147</th><td>}</td></tr>
+<tr><th id="148">148</th><td></td></tr>
+<tr><th id="149">149</th><td><u>#define GET_LSAN_BLOCK(work)                 \</u></td></tr>
+<tr><th id="150">150</th><td><u>  void (^lsan_block)(void);                  \</u></td></tr>
+<tr><th id="151">151</th><td><u>  int parent_tid = GetCurrentThread();       \</u></td></tr>
+<tr><th id="152">152</th><td><u>  lsan_block = ^(void) {                     \</u></td></tr>
+<tr><th id="153">153</th><td><u>    lsan_register_worker_thread(parent_tid); \</u></td></tr>
+<tr><th id="154">154</th><td><u>    work();                                  \</u></td></tr>
+<tr><th id="155">155</th><td><u>  }</u></td></tr>
+<tr><th id="156">156</th><td></td></tr>
+<tr><th id="157">157</th><td>INTERCEPTOR(<em>void</em>, dispatch_async, dispatch_queue_t dq, <em>void</em> (^work)(<em>void</em>)) {</td></tr>
+<tr><th id="158">158</th><td>  GET_LSAN_BLOCK(work);</td></tr>
+<tr><th id="159">159</th><td>  REAL(dispatch_async)(dq, lsan_block);</td></tr>
+<tr><th id="160">160</th><td>}</td></tr>
+<tr><th id="161">161</th><td></td></tr>
+<tr><th id="162">162</th><td>INTERCEPTOR(<em>void</em>, dispatch_group_async, dispatch_group_t dg,</td></tr>
+<tr><th id="163">163</th><td>            dispatch_queue_t dq, <em>void</em> (^work)(<em>void</em>)) {</td></tr>
+<tr><th id="164">164</th><td>  GET_LSAN_BLOCK(work);</td></tr>
+<tr><th id="165">165</th><td>  REAL(dispatch_group_async)(dg, dq, lsan_block);</td></tr>
+<tr><th id="166">166</th><td>}</td></tr>
+<tr><th id="167">167</th><td></td></tr>
+<tr><th id="168">168</th><td>INTERCEPTOR(<em>void</em>, dispatch_after, dispatch_time_t when, dispatch_queue_t queue,</td></tr>
+<tr><th id="169">169</th><td>            <em>void</em> (^work)(<em>void</em>)) {</td></tr>
+<tr><th id="170">170</th><td>  GET_LSAN_BLOCK(work);</td></tr>
+<tr><th id="171">171</th><td>  REAL(dispatch_after)(when, queue, lsan_block);</td></tr>
+<tr><th id="172">172</th><td>}</td></tr>
+<tr><th id="173">173</th><td></td></tr>
+<tr><th id="174">174</th><td>INTERCEPTOR(<em>void</em>, dispatch_source_set_cancel_handler, dispatch_source_t ds,</td></tr>
+<tr><th id="175">175</th><td>            <em>void</em> (^work)(<em>void</em>)) {</td></tr>
+<tr><th id="176">176</th><td>  <b>if</b> (!work) {</td></tr>
+<tr><th id="177">177</th><td>    REAL(dispatch_source_set_cancel_handler)(ds, work);</td></tr>
+<tr><th id="178">178</th><td>    <b>return</b>;</td></tr>
+<tr><th id="179">179</th><td>  }</td></tr>
+<tr><th id="180">180</th><td>  GET_LSAN_BLOCK(work);</td></tr>
+<tr><th id="181">181</th><td>  REAL(dispatch_source_set_cancel_handler)(ds, lsan_block);</td></tr>
+<tr><th id="182">182</th><td>}</td></tr>
+<tr><th id="183">183</th><td></td></tr>
+<tr><th id="184">184</th><td>INTERCEPTOR(<em>void</em>, dispatch_source_set_event_handler, dispatch_source_t ds,</td></tr>
+<tr><th id="185">185</th><td>            <em>void</em> (^work)(<em>void</em>)) {</td></tr>
+<tr><th id="186">186</th><td>  GET_LSAN_BLOCK(work);</td></tr>
+<tr><th id="187">187</th><td>  REAL(dispatch_source_set_event_handler)(ds, lsan_block);</td></tr>
+<tr><th id="188">188</th><td>}</td></tr>
+<tr><th id="189">189</th><td><u>#endif</u></td></tr>
+<tr><th id="190">190</th><td></td></tr>
+<tr><th id="191">191</th><td><u>#<span data-ppcond="15">endif</span>  // SANITIZER_MAC</u></td></tr>
+<tr><th id="192">192</th><td></td></tr>
+</table><hr/><p id='footer'>
+Generated on <em>2021-Jul-01</em> from project llvm revision <em>12</em>

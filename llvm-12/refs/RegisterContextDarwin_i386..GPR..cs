@@ -1,0 +1,3 @@
+<dec f='llvm/lldb/source/Plugins/Process/Utility/RegisterContextDarwin_i386.h' l='59' type='uint32_t'/>
+<offset>352</offset>
+<use f='llvm/lldb/source/Plugins/Process/Utility/RegisterContextDarwin_i386.cpp' l='250'/>

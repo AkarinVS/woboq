@@ -1,0 +1,45 @@
+<dec f='llvm/lldb/source/Plugins/TypeSystem/Clang/TypeSystemClang.h' l='840' type='uint32_t lldb_private::TypeSystemClang::CountDeclLevels(clang::DeclContext * frame_decl_ctx, clang::DeclContext * child_decl_ctx, lldb_private::ConstString * child_name = nullptr, lldb_private::CompilerType * child_type = nullptr)'/>
+<doc f='llvm/lldb/source/Plugins/TypeSystem/Clang/TypeSystemClang.h' l='838'>// LLDB_INVALID_DECL_LEVEL is returned by CountDeclLevels if child_decl_ctx
+  // could not be found in decl_ctx.</doc>
+<use f='llvm/lldb/source/Plugins/ExpressionParser/Clang/ClangExpressionDeclMap.cpp' l='1172' u='c' c='_ZN12lldb_private22ClangExpressionDeclMap31SearchFunctionsInSymbolContextsERKNS_17SymbolContextListERKNS_19CompilerDeclContextE'/>
+<def f='llvm/lldb/source/Plugins/TypeSystem/Clang/TypeSystemClang.cpp' l='9331' ll='9411' type='uint32_t lldb_private::TypeSystemClang::CountDeclLevels(clang::DeclContext * frame_decl_ctx, clang::DeclContext * child_decl_ctx, lldb_private::ConstString * child_name = nullptr, lldb_private::CompilerType * child_type = nullptr)'/>
+<doc f='llvm/lldb/source/Plugins/TypeSystem/Clang/TypeSystemClang.cpp' l='9291'>// Look for child_decl_ctx&apos;s lookup scope in frame_decl_ctx and its parents,
+// and return the number of levels it took to find it, or
+// LLDB_INVALID_DECL_LEVEL if not found.  If the decl was imported via a using
+// declaration, its name and/or type, if set, will be used to check that the
+// decl found in the scope is a match.
+//
+// The optional name is required by languages (like C++) to handle using
+// declarations like:
+//
+//     void poo();
+//     namespace ns {
+//         void foo();
+//         void goo();
+//     }
+//     void bar() {
+//         using ns::foo;
+//         // CountDeclLevels returns 0 for &apos;foo&apos;, 1 for &apos;poo&apos;, and
+//         // LLDB_INVALID_DECL_LEVEL for &apos;goo&apos;.
+//     }
+//
+// The optional type is useful in the case that there&apos;s a specific overload
+// that we&apos;re looking for that might otherwise be shadowed, like:
+//
+//     void foo(int);
+//     namespace ns {
+//         void foo();
+//     }
+//     void bar() {
+//         using ns::foo;
+//         // CountDeclLevels returns 0 for { &apos;foo&apos;, void() },
+//         // 1 for { &apos;foo&apos;, void(int) }, and
+//         // LLDB_INVALID_DECL_LEVEL for { &apos;foo&apos;, void(int, int) }.
+//     }
+//
+// NOTE: Because file statics are at the TranslationUnit along with globals, a
+// function at file scope will return the same level as a function at global
+// scope. Ideally we&apos;d like to treat the file scope as an additional scope just
+// below the global scope.  More work needs to be done to recognise that, if
+// the decl we&apos;re trying to look up is static, we should compare its source
+// file with that of the current scope and return a lower number for it.</doc>

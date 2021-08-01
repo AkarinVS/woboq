@@ -1,0 +1,186 @@
+<!doctype html>
+<html>
+<head>
+<meta name="viewport" content="width=device-width, initial-scale=1.0"><title>SpillPlacement.h source code [llvm/llvm/lib/CodeGen/SpillPlacement.h] - Woboq Code Browser</title>
+<meta name="woboq:interestingDefinitions" content="llvm::SpillPlacement "/>
+<link rel="stylesheet" href="../../../.././data/qtcreator.css" title="QtCreator"/>
+<link rel="alternate stylesheet" href="../../../.././data/kdevelop.css" title="KDevelop"/>
+<script type="text/javascript" src="../../../.././data/jquery/jquery.min.js"></script>
+<script type="text/javascript" src="../../../.././data/jquery/jquery-ui.min.js"></script>
+<script>var file = 'llvm/llvm/lib/CodeGen/SpillPlacement.h'; var root_path = '../../../..'; var data_path = '../../../.././data'; var ecma_script_api_version = 2;</script>
+<script src='../../../.././data/codebrowser.js'></script>
+</head>
+<body><div id='header'><h1 id='breadcrumb'><span>Browse the source code of </span><a href='../../..'>llvm</a>/<a href='../..'>llvm</a>/<a href='..'>lib</a>/<a href='./'>CodeGen</a>/<a href='SpillPlacement.h.html'>SpillPlacement.h</a></h1></div>
+<hr/><div id='content'><table class="code">
+<tr><th id="1">1</th><td><i>//===- SpillPlacement.h - Optimal Spill Code Placement ---------*- C++ -*--===//</i></td></tr>
+<tr><th id="2">2</th><td><i>//</i></td></tr>
+<tr><th id="3">3</th><td><i>// Part of the LLVM Project, under the Apache License v2.0 with LLVM Exceptions.</i></td></tr>
+<tr><th id="4">4</th><td><i>// See <a href="https://llvm.org/LICENSE.txt">https://llvm.org/LICENSE.txt</a> for license information.</i></td></tr>
+<tr><th id="5">5</th><td><i>// SPDX-License-Identifier: Apache-2.0 WITH LLVM-exception</i></td></tr>
+<tr><th id="6">6</th><td><i>//</i></td></tr>
+<tr><th id="7">7</th><td><i>//===----------------------------------------------------------------------===//</i></td></tr>
+<tr><th id="8">8</th><td><i>//</i></td></tr>
+<tr><th id="9">9</th><td><i>// This analysis computes the optimal spill code placement between basic blocks.</i></td></tr>
+<tr><th id="10">10</th><td><i>//</i></td></tr>
+<tr><th id="11">11</th><td><i>// The runOnMachineFunction() method only precomputes some profiling information</i></td></tr>
+<tr><th id="12">12</th><td><i>// about the CFG. The real work is done by prepare(), addConstraints(), and</i></td></tr>
+<tr><th id="13">13</th><td><i>// finish() which are called by the register allocator.</i></td></tr>
+<tr><th id="14">14</th><td><i>//</i></td></tr>
+<tr><th id="15">15</th><td><i>// Given a variable that is live across multiple basic blocks, and given</i></td></tr>
+<tr><th id="16">16</th><td><i>// constraints on the basic blocks where the variable is live, determine which</i></td></tr>
+<tr><th id="17">17</th><td><i>// edge bundles should have the variable in a register and which edge bundles</i></td></tr>
+<tr><th id="18">18</th><td><i>// should have the variable in a stack slot.</i></td></tr>
+<tr><th id="19">19</th><td><i>//</i></td></tr>
+<tr><th id="20">20</th><td><i>// The returned bit vector can be used to place optimal spill code at basic</i></td></tr>
+<tr><th id="21">21</th><td><i>// block entries and exits. Spill code placement inside a basic block is not</i></td></tr>
+<tr><th id="22">22</th><td><i>// considered.</i></td></tr>
+<tr><th id="23">23</th><td><i>//</i></td></tr>
+<tr><th id="24">24</th><td><i>//===----------------------------------------------------------------------===//</i></td></tr>
+<tr><th id="25">25</th><td></td></tr>
+<tr><th id="26">26</th><td><u>#<span data-ppcond="26">ifndef</span> <span class="macro" data-ref="_M/LLVM_LIB_CODEGEN_SPILLPLACEMENT_H">LLVM_LIB_CODEGEN_SPILLPLACEMENT_H</span></u></td></tr>
+<tr><th id="27">27</th><td><u>#define <dfn class="macro" id="_M/LLVM_LIB_CODEGEN_SPILLPLACEMENT_H" data-ref="_M/LLVM_LIB_CODEGEN_SPILLPLACEMENT_H">LLVM_LIB_CODEGEN_SPILLPLACEMENT_H</dfn></u></td></tr>
+<tr><th id="28">28</th><td></td></tr>
+<tr><th id="29">29</th><td><u>#include <a href="../../include/llvm/ADT/ArrayRef.h.html">"llvm/ADT/ArrayRef.h"</a></u></td></tr>
+<tr><th id="30">30</th><td><u>#include <a href="../../include/llvm/ADT/SmallVector.h.html">"llvm/ADT/SmallVector.h"</a></u></td></tr>
+<tr><th id="31">31</th><td><u>#include <a href="../../include/llvm/ADT/SparseSet.h.html">"llvm/ADT/SparseSet.h"</a></u></td></tr>
+<tr><th id="32">32</th><td><u>#include <a href="../../include/llvm/CodeGen/MachineFunctionPass.h.html">"llvm/CodeGen/MachineFunctionPass.h"</a></u></td></tr>
+<tr><th id="33">33</th><td><u>#include <a href="../../include/llvm/Support/BlockFrequency.h.html">"llvm/Support/BlockFrequency.h"</a></u></td></tr>
+<tr><th id="34">34</th><td></td></tr>
+<tr><th id="35">35</th><td><b>namespace</b> <span class="namespace">llvm</span> {</td></tr>
+<tr><th id="36">36</th><td></td></tr>
+<tr><th id="37">37</th><td><b>class</b> <a class="type" href="../../include/llvm/ADT/BitVector.h.html#llvm::BitVector" title='llvm::BitVector' data-ref="llvm::BitVector" data-ref-filename="llvm..BitVector" id="llvm::BitVector">BitVector</a>;</td></tr>
+<tr><th id="38">38</th><td><b>class</b> <a class="type" href="../../include/llvm/CodeGen/EdgeBundles.h.html#llvm::EdgeBundles" title='llvm::EdgeBundles' data-ref="llvm::EdgeBundles" data-ref-filename="llvm..EdgeBundles" id="llvm::EdgeBundles">EdgeBundles</a>;</td></tr>
+<tr><th id="39">39</th><td><b>class</b> <a class="type" href="../../include/llvm/CodeGen/MachineBlockFrequencyInfo.h.html#llvm::MachineBlockFrequencyInfo" title='llvm::MachineBlockFrequencyInfo' data-ref="llvm::MachineBlockFrequencyInfo" data-ref-filename="llvm..MachineBlockFrequencyInfo" id="llvm::MachineBlockFrequencyInfo">MachineBlockFrequencyInfo</a>;</td></tr>
+<tr><th id="40">40</th><td><b>class</b> <a class="type" href="../../include/llvm/CodeGen/MachineFunction.h.html#llvm::MachineFunction" title='llvm::MachineFunction' data-ref="llvm::MachineFunction" data-ref-filename="llvm..MachineFunction" id="llvm::MachineFunction">MachineFunction</a>;</td></tr>
+<tr><th id="41">41</th><td><b>class</b> <a class="type" href="../../include/llvm/CodeGen/MachineLoopInfo.h.html#llvm::MachineLoopInfo" title='llvm::MachineLoopInfo' data-ref="llvm::MachineLoopInfo" data-ref-filename="llvm..MachineLoopInfo" id="llvm::MachineLoopInfo">MachineLoopInfo</a>;</td></tr>
+<tr><th id="42">42</th><td></td></tr>
+<tr><th id="43">43</th><td><b>class</b> <dfn class="type def" id="llvm::SpillPlacement" title='llvm::SpillPlacement' data-ref="llvm::SpillPlacement" data-ref-filename="llvm..SpillPlacement">SpillPlacement</dfn> : <b>public</b> <a class="type" href="../../include/llvm/CodeGen/MachineFunctionPass.h.html#llvm::MachineFunctionPass" title='llvm::MachineFunctionPass' data-ref="llvm::MachineFunctionPass" data-ref-filename="llvm..MachineFunctionPass">MachineFunctionPass</a> {</td></tr>
+<tr><th id="44">44</th><td>  <b>struct</b> <dfn class="type" id="llvm::SpillPlacement::Node" title='llvm::SpillPlacement::Node' data-ref="llvm::SpillPlacement::Node" data-ref-filename="llvm..SpillPlacement..Node">Node</dfn>;</td></tr>
+<tr><th id="45">45</th><td>  <em>const</em> <a class="type" href="../../include/llvm/CodeGen/MachineFunction.h.html#llvm::MachineFunction" title='llvm::MachineFunction' data-ref="llvm::MachineFunction" data-ref-filename="llvm..MachineFunction">MachineFunction</a> *<dfn class="decl field" id="llvm::SpillPlacement::MF" title='llvm::SpillPlacement::MF' data-ref="llvm::SpillPlacement::MF" data-ref-filename="llvm..SpillPlacement..MF">MF</dfn>;</td></tr>
+<tr><th id="46">46</th><td>  <em>const</em> <a class="type" href="../../include/llvm/CodeGen/EdgeBundles.h.html#llvm::EdgeBundles" title='llvm::EdgeBundles' data-ref="llvm::EdgeBundles" data-ref-filename="llvm..EdgeBundles">EdgeBundles</a> *<dfn class="decl field" id="llvm::SpillPlacement::bundles" title='llvm::SpillPlacement::bundles' data-ref="llvm::SpillPlacement::bundles" data-ref-filename="llvm..SpillPlacement..bundles">bundles</dfn>;</td></tr>
+<tr><th id="47">47</th><td>  <em>const</em> <a class="type" href="../../include/llvm/CodeGen/MachineLoopInfo.h.html#llvm::MachineLoopInfo" title='llvm::MachineLoopInfo' data-ref="llvm::MachineLoopInfo" data-ref-filename="llvm..MachineLoopInfo">MachineLoopInfo</a> *<dfn class="decl field" id="llvm::SpillPlacement::loops" title='llvm::SpillPlacement::loops' data-ref="llvm::SpillPlacement::loops" data-ref-filename="llvm..SpillPlacement..loops">loops</dfn>;</td></tr>
+<tr><th id="48">48</th><td>  <em>const</em> <a class="type" href="../../include/llvm/CodeGen/MachineBlockFrequencyInfo.h.html#llvm::MachineBlockFrequencyInfo" title='llvm::MachineBlockFrequencyInfo' data-ref="llvm::MachineBlockFrequencyInfo" data-ref-filename="llvm..MachineBlockFrequencyInfo">MachineBlockFrequencyInfo</a> *<dfn class="decl field" id="llvm::SpillPlacement::MBFI" title='llvm::SpillPlacement::MBFI' data-ref="llvm::SpillPlacement::MBFI" data-ref-filename="llvm..SpillPlacement..MBFI">MBFI</dfn>;</td></tr>
+<tr><th id="49">49</th><td>  <a class="type" href="#llvm::SpillPlacement::Node" title='llvm::SpillPlacement::Node' data-ref="llvm::SpillPlacement::Node" data-ref-filename="llvm..SpillPlacement..Node">Node</a> *<dfn class="decl field" id="llvm::SpillPlacement::nodes" title='llvm::SpillPlacement::nodes' data-ref="llvm::SpillPlacement::nodes" data-ref-filename="llvm..SpillPlacement..nodes">nodes</dfn> = <b>nullptr</b>;</td></tr>
+<tr><th id="50">50</th><td></td></tr>
+<tr><th id="51">51</th><td>  <i>// Nodes that are active in the current computation. Owned by the prepare()</i></td></tr>
+<tr><th id="52">52</th><td><i>  // caller.</i></td></tr>
+<tr><th id="53">53</th><td>  <a class="type" href="../../include/llvm/ADT/BitVector.h.html#llvm::BitVector" title='llvm::BitVector' data-ref="llvm::BitVector" data-ref-filename="llvm..BitVector">BitVector</a> *<dfn class="decl field" id="llvm::SpillPlacement::ActiveNodes" title='llvm::SpillPlacement::ActiveNodes' data-ref="llvm::SpillPlacement::ActiveNodes" data-ref-filename="llvm..SpillPlacement..ActiveNodes">ActiveNodes</dfn>;</td></tr>
+<tr><th id="54">54</th><td></td></tr>
+<tr><th id="55">55</th><td>  <i>// Nodes with active links. Populated by scanActiveBundles.</i></td></tr>
+<tr><th id="56">56</th><td>  <a class="type" href="../../include/llvm/ADT/SmallVector.h.html#llvm::SmallVector" title='llvm::SmallVector' data-ref="llvm::SmallVector" data-ref-filename="llvm..SmallVector">SmallVector</a>&lt;<em>unsigned</em>, <var>8</var>&gt; <dfn class="decl field" id="llvm::SpillPlacement::Linked" title='llvm::SpillPlacement::Linked' data-ref="llvm::SpillPlacement::Linked" data-ref-filename="llvm..SpillPlacement..Linked">Linked</dfn>;</td></tr>
+<tr><th id="57">57</th><td></td></tr>
+<tr><th id="58">58</th><td>  <i>// Nodes that went positive during the last call to scanActiveBundles or</i></td></tr>
+<tr><th id="59">59</th><td><i>  // iterate.</i></td></tr>
+<tr><th id="60">60</th><td>  <a class="type" href="../../include/llvm/ADT/SmallVector.h.html#llvm::SmallVector" title='llvm::SmallVector' data-ref="llvm::SmallVector" data-ref-filename="llvm..SmallVector">SmallVector</a>&lt;<em>unsigned</em>, <var>8</var>&gt; <dfn class="decl field" id="llvm::SpillPlacement::RecentPositive" title='llvm::SpillPlacement::RecentPositive' data-ref="llvm::SpillPlacement::RecentPositive" data-ref-filename="llvm..SpillPlacement..RecentPositive">RecentPositive</dfn>;</td></tr>
+<tr><th id="61">61</th><td></td></tr>
+<tr><th id="62">62</th><td>  <i>// Block frequencies are computed once. Indexed by block number.</i></td></tr>
+<tr><th id="63">63</th><td>  <a class="type" href="../../include/llvm/ADT/SmallVector.h.html#llvm::SmallVector" title='llvm::SmallVector' data-ref="llvm::SmallVector" data-ref-filename="llvm..SmallVector">SmallVector</a>&lt;<a class="type" href="../../include/llvm/Support/BlockFrequency.h.html#llvm::BlockFrequency" title='llvm::BlockFrequency' data-ref="llvm::BlockFrequency" data-ref-filename="llvm..BlockFrequency">BlockFrequency</a>, <var>8</var>&gt; <dfn class="decl field" id="llvm::SpillPlacement::BlockFrequencies" title='llvm::SpillPlacement::BlockFrequencies' data-ref="llvm::SpillPlacement::BlockFrequencies" data-ref-filename="llvm..SpillPlacement..BlockFrequencies">BlockFrequencies</dfn>;</td></tr>
+<tr><th id="64">64</th><td></td></tr>
+<tr><th id="65">65</th><td>  <i class="doc">/// Decision threshold. A node gets the output value 0 if the weighted sum of</i></td></tr>
+<tr><th id="66">66</th><td><i class="doc">  /// its inputs falls in the open interval (-Threshold;Threshold).</i></td></tr>
+<tr><th id="67">67</th><td>  <a class="type" href="../../include/llvm/Support/BlockFrequency.h.html#llvm::BlockFrequency" title='llvm::BlockFrequency' data-ref="llvm::BlockFrequency" data-ref-filename="llvm..BlockFrequency">BlockFrequency</a> <dfn class="decl field" id="llvm::SpillPlacement::Threshold" title='llvm::SpillPlacement::Threshold' data-ref="llvm::SpillPlacement::Threshold" data-ref-filename="llvm..SpillPlacement..Threshold">Threshold</dfn>;</td></tr>
+<tr><th id="68">68</th><td></td></tr>
+<tr><th id="69">69</th><td>  <i class="doc">/// List of nodes that need to be updated in ::iterate.</i></td></tr>
+<tr><th id="70">70</th><td>  <a class="type" href="../../include/llvm/ADT/SparseSet.h.html#llvm::SparseSet" title='llvm::SparseSet' data-ref="llvm::SparseSet" data-ref-filename="llvm..SparseSet">SparseSet</a>&lt;<em>unsigned</em>&gt; <dfn class="decl field" id="llvm::SpillPlacement::TodoList" title='llvm::SpillPlacement::TodoList' data-ref="llvm::SpillPlacement::TodoList" data-ref-filename="llvm..SpillPlacement..TodoList">TodoList</dfn>;</td></tr>
+<tr><th id="71">71</th><td></td></tr>
+<tr><th id="72">72</th><td><b>public</b>:</td></tr>
+<tr><th id="73">73</th><td>  <em>static</em> <em>char</em> <dfn class="decl" id="llvm::SpillPlacement::ID" title='llvm::SpillPlacement::ID' data-ref="llvm::SpillPlacement::ID" data-ref-filename="llvm..SpillPlacement..ID">ID</dfn>; <i>// Pass identification, replacement for typeid.</i></td></tr>
+<tr><th id="74">74</th><td></td></tr>
+<tr><th id="75">75</th><td>  <dfn class="decl def fn" id="_ZN4llvm14SpillPlacementC1Ev" title='llvm::SpillPlacement::SpillPlacement' data-ref="_ZN4llvm14SpillPlacementC1Ev" data-ref-filename="_ZN4llvm14SpillPlacementC1Ev">SpillPlacement</dfn>() : <a class="type" href="../../include/llvm/CodeGen/MachineFunctionPass.h.html#llvm::MachineFunctionPass" title='llvm::MachineFunctionPass' data-ref="llvm::MachineFunctionPass" data-ref-filename="llvm..MachineFunctionPass">MachineFunctionPass</a><a class="ref fn" href="../../include/llvm/CodeGen/MachineFunctionPass.h.html#_ZN4llvm19MachineFunctionPassC1ERc" title='llvm::MachineFunctionPass::MachineFunctionPass' data-ref="_ZN4llvm19MachineFunctionPassC1ERc" data-ref-filename="_ZN4llvm19MachineFunctionPassC1ERc">(</a><a class="member" href="#llvm::SpillPlacement::ID" title='llvm::SpillPlacement::ID' data-ref="llvm::SpillPlacement::ID" data-ref-filename="llvm..SpillPlacement..ID">ID</a>) {}</td></tr>
+<tr><th id="76">76</th><td>  <dfn class="virtual decl def fn" id="_ZN4llvm14SpillPlacementD1Ev" title='llvm::SpillPlacement::~SpillPlacement' data-ref="_ZN4llvm14SpillPlacementD1Ev" data-ref-filename="_ZN4llvm14SpillPlacementD1Ev">~SpillPlacement</dfn>() override { <a class="virtual member fn" href="#_ZN4llvm14SpillPlacement13releaseMemoryEv" title='llvm::SpillPlacement::releaseMemory' data-ref="_ZN4llvm14SpillPlacement13releaseMemoryEv" data-ref-filename="_ZN4llvm14SpillPlacement13releaseMemoryEv">releaseMemory</a>(); }</td></tr>
+<tr><th id="77">77</th><td></td></tr>
+<tr><th id="78">78</th><td>  <i class="doc">/// BorderConstraint - A basic block has separate constraints for entry and</i></td></tr>
+<tr><th id="79">79</th><td><i class="doc">  /// exit.</i></td></tr>
+<tr><th id="80">80</th><td>  <b>enum</b> <dfn class="type def" id="llvm::SpillPlacement::BorderConstraint" title='llvm::SpillPlacement::BorderConstraint' data-ref="llvm::SpillPlacement::BorderConstraint" data-ref-filename="llvm..SpillPlacement..BorderConstraint">BorderConstraint</dfn> {</td></tr>
+<tr><th id="81">81</th><td>    <dfn class="enum" id="llvm::SpillPlacement::DontCare" title='llvm::SpillPlacement::DontCare' data-ref="llvm::SpillPlacement::DontCare" data-ref-filename="llvm..SpillPlacement..DontCare">DontCare</dfn>,  <i class="doc">///&lt; Block doesn't care / variable not live.</i></td></tr>
+<tr><th id="82">82</th><td>    <dfn class="enum" id="llvm::SpillPlacement::PrefReg" title='llvm::SpillPlacement::PrefReg' data-ref="llvm::SpillPlacement::PrefReg" data-ref-filename="llvm..SpillPlacement..PrefReg">PrefReg</dfn>,   <i class="doc">///&lt; Block entry/exit prefers a register.</i></td></tr>
+<tr><th id="83">83</th><td>    <dfn class="enum" id="llvm::SpillPlacement::PrefSpill" title='llvm::SpillPlacement::PrefSpill' data-ref="llvm::SpillPlacement::PrefSpill" data-ref-filename="llvm..SpillPlacement..PrefSpill">PrefSpill</dfn>, <i class="doc">///&lt; Block entry/exit prefers a stack slot.</i></td></tr>
+<tr><th id="84">84</th><td>    <dfn class="enum" id="llvm::SpillPlacement::PrefBoth" title='llvm::SpillPlacement::PrefBoth' data-ref="llvm::SpillPlacement::PrefBoth" data-ref-filename="llvm..SpillPlacement..PrefBoth">PrefBoth</dfn>,  <i class="doc">///&lt; Block entry prefers both register and stack.</i></td></tr>
+<tr><th id="85">85</th><td>    <dfn class="enum" id="llvm::SpillPlacement::MustSpill" title='llvm::SpillPlacement::MustSpill' data-ref="llvm::SpillPlacement::MustSpill" data-ref-filename="llvm..SpillPlacement..MustSpill">MustSpill</dfn>  <i class="doc">///&lt; A register is impossible, variable must be spilled.</i></td></tr>
+<tr><th id="86">86</th><td>  };</td></tr>
+<tr><th id="87">87</th><td></td></tr>
+<tr><th id="88">88</th><td>  <i class="doc">/// BlockConstraint - Entry and exit constraints for a basic block.</i></td></tr>
+<tr><th id="89">89</th><td>  <b>struct</b> <dfn class="type def" id="llvm::SpillPlacement::BlockConstraint" title='llvm::SpillPlacement::BlockConstraint' data-ref="llvm::SpillPlacement::BlockConstraint" data-ref-filename="llvm..SpillPlacement..BlockConstraint">BlockConstraint</dfn> {</td></tr>
+<tr><th id="90">90</th><td>    <em>unsigned</em> <dfn class="decl field" id="llvm::SpillPlacement::BlockConstraint::Number" title='llvm::SpillPlacement::BlockConstraint::Number' data-ref="llvm::SpillPlacement::BlockConstraint::Number" data-ref-filename="llvm..SpillPlacement..BlockConstraint..Number">Number</dfn>;            <i class="doc">///&lt; Basic block number (from MBB::getNumber()).</i></td></tr>
+<tr><th id="91">91</th><td>    <a class="type" href="#llvm::SpillPlacement::BorderConstraint" title='llvm::SpillPlacement::BorderConstraint' data-ref="llvm::SpillPlacement::BorderConstraint" data-ref-filename="llvm..SpillPlacement..BorderConstraint">BorderConstraint</a> <dfn class="decl field" id="llvm::SpillPlacement::BlockConstraint::Entry" title='llvm::SpillPlacement::BlockConstraint::Entry' data-ref="llvm::SpillPlacement::BlockConstraint::Entry" data-ref-filename="llvm..SpillPlacement..BlockConstraint..Entry">Entry</dfn> : <var>8</var>; <i class="doc">///&lt; Constraint on block entry.</i></td></tr>
+<tr><th id="92">92</th><td>    <a class="type" href="#llvm::SpillPlacement::BorderConstraint" title='llvm::SpillPlacement::BorderConstraint' data-ref="llvm::SpillPlacement::BorderConstraint" data-ref-filename="llvm..SpillPlacement..BorderConstraint">BorderConstraint</a> <dfn class="decl field" id="llvm::SpillPlacement::BlockConstraint::Exit" title='llvm::SpillPlacement::BlockConstraint::Exit' data-ref="llvm::SpillPlacement::BlockConstraint::Exit" data-ref-filename="llvm..SpillPlacement..BlockConstraint..Exit">Exit</dfn> : <var>8</var>;  <i class="doc">///&lt; Constraint on block exit.</i></td></tr>
+<tr><th id="93">93</th><td></td></tr>
+<tr><th id="94">94</th><td>    <i class="doc">/// True when this block changes the value of the live range. This means</i></td></tr>
+<tr><th id="95">95</th><td><i class="doc">    /// the block has a non-PHI def.  When this is false, a live-in value on</i></td></tr>
+<tr><th id="96">96</th><td><i class="doc">    /// the stack can be live-out on the stack without inserting a spill.</i></td></tr>
+<tr><th id="97">97</th><td>    <em>bool</em> <dfn class="decl field" id="llvm::SpillPlacement::BlockConstraint::ChangesValue" title='llvm::SpillPlacement::BlockConstraint::ChangesValue' data-ref="llvm::SpillPlacement::BlockConstraint::ChangesValue" data-ref-filename="llvm..SpillPlacement..BlockConstraint..ChangesValue">ChangesValue</dfn>;</td></tr>
+<tr><th id="98">98</th><td>  };</td></tr>
+<tr><th id="99">99</th><td></td></tr>
+<tr><th id="100">100</th><td>  <i class="doc">/// prepare - Reset state and prepare for a new spill placement computation.</i></td></tr>
+<tr><th id="101">101</th><td><i class="doc">  /// <span class="command">@param</span> <span class="arg">RegBundles</span> Bit vector to receive the edge bundles where the</i></td></tr>
+<tr><th id="102">102</th><td><i class="doc">  ///                   variable should be kept in a register. Each bit</i></td></tr>
+<tr><th id="103">103</th><td><i class="doc">  ///                   corresponds to an edge bundle, a set bit means the</i></td></tr>
+<tr><th id="104">104</th><td><i class="doc">  ///                   variable should be kept in a register through the</i></td></tr>
+<tr><th id="105">105</th><td><i class="doc">  ///                   bundle. A clear bit means the variable should be</i></td></tr>
+<tr><th id="106">106</th><td><i class="doc">  ///                   spilled. This vector is retained.</i></td></tr>
+<tr><th id="107">107</th><td>  <em>void</em> <dfn class="decl fn" id="_ZN4llvm14SpillPlacement7prepareERNS_9BitVectorE" title='llvm::SpillPlacement::prepare' data-ref="_ZN4llvm14SpillPlacement7prepareERNS_9BitVectorE" data-ref-filename="_ZN4llvm14SpillPlacement7prepareERNS_9BitVectorE">prepare</dfn>(<a class="type" href="../../include/llvm/ADT/BitVector.h.html#llvm::BitVector" title='llvm::BitVector' data-ref="llvm::BitVector" data-ref-filename="llvm..BitVector">BitVector</a> &amp;<dfn class="local col1 decl" id="1RegBundles" title='RegBundles' data-type='llvm::BitVector &amp;' data-ref="1RegBundles" data-ref-filename="1RegBundles">RegBundles</dfn>);</td></tr>
+<tr><th id="108">108</th><td></td></tr>
+<tr><th id="109">109</th><td>  <i class="doc">/// addConstraints - Add constraints and biases. This method may be called</i></td></tr>
+<tr><th id="110">110</th><td><i class="doc">  /// more than once to accumulate constraints.</i></td></tr>
+<tr><th id="111">111</th><td><i class="doc">  /// <span class="command">@param</span> <span class="arg">LiveBlocks</span> Constraints for blocks that have the variable live in or</i></td></tr>
+<tr><th id="112">112</th><td><i class="doc">  ///                   live out.</i></td></tr>
+<tr><th id="113">113</th><td>  <em>void</em> <dfn class="decl fn" id="_ZN4llvm14SpillPlacement14addConstraintsENS_8ArrayRefINS0_15BlockConstraintEEE" title='llvm::SpillPlacement::addConstraints' data-ref="_ZN4llvm14SpillPlacement14addConstraintsENS_8ArrayRefINS0_15BlockConstraintEEE" data-ref-filename="_ZN4llvm14SpillPlacement14addConstraintsENS_8ArrayRefINS0_15BlockConstraintEEE">addConstraints</dfn>(<a class="type" href="../../include/llvm/ADT/ArrayRef.h.html#llvm::ArrayRef" title='llvm::ArrayRef' data-ref="llvm::ArrayRef" data-ref-filename="llvm..ArrayRef">ArrayRef</a>&lt;<a class="type" href="#llvm::SpillPlacement::BlockConstraint" title='llvm::SpillPlacement::BlockConstraint' data-ref="llvm::SpillPlacement::BlockConstraint" data-ref-filename="llvm..SpillPlacement..BlockConstraint">BlockConstraint</a>&gt; <dfn class="local col2 decl" id="2LiveBlocks" title='LiveBlocks' data-type='ArrayRef&lt;llvm::SpillPlacement::BlockConstraint&gt;' data-ref="2LiveBlocks" data-ref-filename="2LiveBlocks">LiveBlocks</dfn>);</td></tr>
+<tr><th id="114">114</th><td></td></tr>
+<tr><th id="115">115</th><td>  <i class="doc">/// addPrefSpill - Add PrefSpill constraints to all blocks listed.  This is</i></td></tr>
+<tr><th id="116">116</th><td><i class="doc">  /// equivalent to calling addConstraint with identical BlockConstraints with</i></td></tr>
+<tr><th id="117">117</th><td><i class="doc">  /// Entry = Exit = PrefSpill, and ChangesValue = false.</i></td></tr>
+<tr><th id="118">118</th><td><i class="doc">  ///</i></td></tr>
+<tr><th id="119">119</th><td><i class="doc">  /// <span class="command">@param</span> <span class="arg">Blocks</span> Array of block numbers that prefer to spill in and out.</i></td></tr>
+<tr><th id="120">120</th><td><i class="doc">  /// <span class="command">@param</span> <span class="arg">Strong</span> When true, double the negative bias for these blocks.</i></td></tr>
+<tr><th id="121">121</th><td>  <em>void</em> <dfn class="decl fn" id="_ZN4llvm14SpillPlacement12addPrefSpillENS_8ArrayRefIjEEb" title='llvm::SpillPlacement::addPrefSpill' data-ref="_ZN4llvm14SpillPlacement12addPrefSpillENS_8ArrayRefIjEEb" data-ref-filename="_ZN4llvm14SpillPlacement12addPrefSpillENS_8ArrayRefIjEEb">addPrefSpill</dfn>(<a class="type" href="../../include/llvm/ADT/ArrayRef.h.html#llvm::ArrayRef" title='llvm::ArrayRef' data-ref="llvm::ArrayRef" data-ref-filename="llvm..ArrayRef">ArrayRef</a>&lt;<em>unsigned</em>&gt; <dfn class="local col3 decl" id="3Blocks" title='Blocks' data-type='ArrayRef&lt;unsigned int&gt;' data-ref="3Blocks" data-ref-filename="3Blocks">Blocks</dfn>, <em>bool</em> <dfn class="local col4 decl" id="4Strong" title='Strong' data-type='bool' data-ref="4Strong" data-ref-filename="4Strong">Strong</dfn>);</td></tr>
+<tr><th id="122">122</th><td></td></tr>
+<tr><th id="123">123</th><td>  <i class="doc">/// addLinks - Add transparent blocks with the given numbers.</i></td></tr>
+<tr><th id="124">124</th><td>  <em>void</em> <dfn class="decl fn" id="_ZN4llvm14SpillPlacement8addLinksENS_8ArrayRefIjEE" title='llvm::SpillPlacement::addLinks' data-ref="_ZN4llvm14SpillPlacement8addLinksENS_8ArrayRefIjEE" data-ref-filename="_ZN4llvm14SpillPlacement8addLinksENS_8ArrayRefIjEE">addLinks</dfn>(<a class="type" href="../../include/llvm/ADT/ArrayRef.h.html#llvm::ArrayRef" title='llvm::ArrayRef' data-ref="llvm::ArrayRef" data-ref-filename="llvm..ArrayRef">ArrayRef</a>&lt;<em>unsigned</em>&gt; <dfn class="local col5 decl" id="5Links" title='Links' data-type='ArrayRef&lt;unsigned int&gt;' data-ref="5Links" data-ref-filename="5Links">Links</dfn>);</td></tr>
+<tr><th id="125">125</th><td></td></tr>
+<tr><th id="126">126</th><td>  <i class="doc">/// scanActiveBundles - Perform an initial scan of all bundles activated by</i></td></tr>
+<tr><th id="127">127</th><td><i class="doc">  /// addConstraints and addLinks, updating their state. Add all the bundles</i></td></tr>
+<tr><th id="128">128</th><td><i class="doc">  /// that now prefer a register to RecentPositive.</i></td></tr>
+<tr><th id="129">129</th><td><i class="doc">  /// Prepare internal data structures for iterate.</i></td></tr>
+<tr><th id="130">130</th><td><i class="doc">  /// Return true is there are any positive nodes.</i></td></tr>
+<tr><th id="131">131</th><td>  <em>bool</em> <dfn class="decl fn" id="_ZN4llvm14SpillPlacement17scanActiveBundlesEv" title='llvm::SpillPlacement::scanActiveBundles' data-ref="_ZN4llvm14SpillPlacement17scanActiveBundlesEv" data-ref-filename="_ZN4llvm14SpillPlacement17scanActiveBundlesEv">scanActiveBundles</dfn>();</td></tr>
+<tr><th id="132">132</th><td></td></tr>
+<tr><th id="133">133</th><td>  <i class="doc">/// iterate - Update the network iteratively until convergence, or new bundles</i></td></tr>
+<tr><th id="134">134</th><td><i class="doc">  /// are found.</i></td></tr>
+<tr><th id="135">135</th><td>  <em>void</em> <dfn class="decl fn" id="_ZN4llvm14SpillPlacement7iterateEv" title='llvm::SpillPlacement::iterate' data-ref="_ZN4llvm14SpillPlacement7iterateEv" data-ref-filename="_ZN4llvm14SpillPlacement7iterateEv">iterate</dfn>();</td></tr>
+<tr><th id="136">136</th><td></td></tr>
+<tr><th id="137">137</th><td>  <i class="doc">/// getRecentPositive - Return an array of bundles that became positive during</i></td></tr>
+<tr><th id="138">138</th><td><i class="doc">  /// the previous call to scanActiveBundles or iterate.</i></td></tr>
+<tr><th id="139">139</th><td>  <a class="type" href="../../include/llvm/ADT/ArrayRef.h.html#llvm::ArrayRef" title='llvm::ArrayRef' data-ref="llvm::ArrayRef" data-ref-filename="llvm..ArrayRef">ArrayRef</a>&lt;<em>unsigned</em>&gt; <dfn class="decl def fn" id="_ZN4llvm14SpillPlacement17getRecentPositiveEv" title='llvm::SpillPlacement::getRecentPositive' data-ref="_ZN4llvm14SpillPlacement17getRecentPositiveEv" data-ref-filename="_ZN4llvm14SpillPlacement17getRecentPositiveEv">getRecentPositive</dfn>() { <b>return</b> <a class="ref fn fake" href="../../include/llvm/ADT/ArrayRef.h.html#_ZN4llvm8ArrayRefC1ERKNS_25SmallVectorTemplateCommonIT_TL0__EE" title='llvm::ArrayRef::ArrayRef&lt;T&gt;' data-ref="_ZN4llvm8ArrayRefC1ERKNS_25SmallVectorTemplateCommonIT_TL0__EE" data-ref-filename="_ZN4llvm8ArrayRefC1ERKNS_25SmallVectorTemplateCommonIT_TL0__EE"></a><a class="member field" href="#llvm::SpillPlacement::RecentPositive" title='llvm::SpillPlacement::RecentPositive' data-ref="llvm::SpillPlacement::RecentPositive" data-ref-filename="llvm..SpillPlacement..RecentPositive">RecentPositive</a>; }</td></tr>
+<tr><th id="140">140</th><td></td></tr>
+<tr><th id="141">141</th><td>  <i class="doc">/// finish - Compute the optimal spill code placement given the</i></td></tr>
+<tr><th id="142">142</th><td><i class="doc">  /// constraints. No MustSpill constraints will be violated, and the smallest</i></td></tr>
+<tr><th id="143">143</th><td><i class="doc">  /// possible number of PrefX constraints will be violated, weighted by</i></td></tr>
+<tr><th id="144">144</th><td><i class="doc">  /// expected execution frequencies.</i></td></tr>
+<tr><th id="145">145</th><td><i class="doc">  /// The selected bundles are returned in the bitvector passed to prepare().</i></td></tr>
+<tr><th id="146">146</th><td><i class="doc">  /// <span class="command">@return</span> True if a perfect solution was found, allowing the variable to be</i></td></tr>
+<tr><th id="147">147</th><td><i class="doc">  ///         in a register through all relevant bundles.</i></td></tr>
+<tr><th id="148">148</th><td>  <em>bool</em> <dfn class="decl fn" id="_ZN4llvm14SpillPlacement6finishEv" title='llvm::SpillPlacement::finish' data-ref="_ZN4llvm14SpillPlacement6finishEv" data-ref-filename="_ZN4llvm14SpillPlacement6finishEv">finish</dfn>();</td></tr>
+<tr><th id="149">149</th><td></td></tr>
+<tr><th id="150">150</th><td>  <i class="doc">/// getBlockFrequency - Return the estimated block execution frequency per</i></td></tr>
+<tr><th id="151">151</th><td><i class="doc">  /// function invocation.</i></td></tr>
+<tr><th id="152">152</th><td>  <a class="type" href="../../include/llvm/Support/BlockFrequency.h.html#llvm::BlockFrequency" title='llvm::BlockFrequency' data-ref="llvm::BlockFrequency" data-ref-filename="llvm..BlockFrequency">BlockFrequency</a> <dfn class="decl def fn" id="_ZNK4llvm14SpillPlacement17getBlockFrequencyEj" title='llvm::SpillPlacement::getBlockFrequency' data-ref="_ZNK4llvm14SpillPlacement17getBlockFrequencyEj" data-ref-filename="_ZNK4llvm14SpillPlacement17getBlockFrequencyEj">getBlockFrequency</dfn>(<em>unsigned</em> <dfn class="local col6 decl" id="6Number" title='Number' data-type='unsigned int' data-ref="6Number" data-ref-filename="6Number">Number</dfn>) <em>const</em> {</td></tr>
+<tr><th id="153">153</th><td>    <b>return</b> <a class="ref fn fake" href="../../include/llvm/Support/BlockFrequency.h.html#24" title='llvm::BlockFrequency::BlockFrequency' data-ref="_ZN4llvm14BlockFrequencyC1ERKS0_" data-ref-filename="_ZN4llvm14BlockFrequencyC1ERKS0_"></a><a class="member field" href="#llvm::SpillPlacement::BlockFrequencies" title='llvm::SpillPlacement::BlockFrequencies' data-ref="llvm::SpillPlacement::BlockFrequencies" data-ref-filename="llvm..SpillPlacement..BlockFrequencies">BlockFrequencies</a><a class="ref fn" href="../../include/llvm/ADT/SmallVector.h.html#_ZNK4llvm25SmallVectorTemplateCommonixEm" title='llvm::SmallVectorTemplateCommon::operator[]' data-ref="_ZNK4llvm25SmallVectorTemplateCommonixEm" data-ref-filename="_ZNK4llvm25SmallVectorTemplateCommonixEm">[<a class="local col6 ref" href="#6Number" title='Number' data-ref="6Number" data-ref-filename="6Number">Number</a>]</a>;</td></tr>
+<tr><th id="154">154</th><td>  }</td></tr>
+<tr><th id="155">155</th><td></td></tr>
+<tr><th id="156">156</th><td><b>private</b>:</td></tr>
+<tr><th id="157">157</th><td>  <em>bool</em> <dfn class="virtual decl fn" id="_ZN4llvm14SpillPlacement20runOnMachineFunctionERNS_15MachineFunctionE" title='llvm::SpillPlacement::runOnMachineFunction' data-ref="_ZN4llvm14SpillPlacement20runOnMachineFunctionERNS_15MachineFunctionE" data-ref-filename="_ZN4llvm14SpillPlacement20runOnMachineFunctionERNS_15MachineFunctionE">runOnMachineFunction</dfn>(<a class="type" href="../../include/llvm/CodeGen/MachineFunction.h.html#llvm::MachineFunction" title='llvm::MachineFunction' data-ref="llvm::MachineFunction" data-ref-filename="llvm..MachineFunction">MachineFunction</a> &amp;<dfn class="local col7 decl" id="7mf" title='mf' data-type='llvm::MachineFunction &amp;' data-ref="7mf" data-ref-filename="7mf">mf</dfn>) override;</td></tr>
+<tr><th id="158">158</th><td>  <em>void</em> <dfn class="virtual decl fn" id="_ZNK4llvm14SpillPlacement16getAnalysisUsageERNS_13AnalysisUsageE" title='llvm::SpillPlacement::getAnalysisUsage' data-ref="_ZNK4llvm14SpillPlacement16getAnalysisUsageERNS_13AnalysisUsageE" data-ref-filename="_ZNK4llvm14SpillPlacement16getAnalysisUsageERNS_13AnalysisUsageE">getAnalysisUsage</dfn>(<a class="type" href="../../include/llvm/PassAnalysisSupport.h.html#llvm::AnalysisUsage" title='llvm::AnalysisUsage' data-ref="llvm::AnalysisUsage" data-ref-filename="llvm..AnalysisUsage">AnalysisUsage</a> &amp;<dfn class="local col8 decl" id="8AU" title='AU' data-type='llvm::AnalysisUsage &amp;' data-ref="8AU" data-ref-filename="8AU">AU</dfn>) <em>const</em> override;</td></tr>
+<tr><th id="159">159</th><td>  <em>void</em> <dfn class="virtual decl fn" id="_ZN4llvm14SpillPlacement13releaseMemoryEv" title='llvm::SpillPlacement::releaseMemory' data-ref="_ZN4llvm14SpillPlacement13releaseMemoryEv" data-ref-filename="_ZN4llvm14SpillPlacement13releaseMemoryEv">releaseMemory</dfn>() override;</td></tr>
+<tr><th id="160">160</th><td></td></tr>
+<tr><th id="161">161</th><td>  <em>void</em> <dfn class="decl fn" id="_ZN4llvm14SpillPlacement8activateEj" title='llvm::SpillPlacement::activate' data-ref="_ZN4llvm14SpillPlacement8activateEj" data-ref-filename="_ZN4llvm14SpillPlacement8activateEj">activate</dfn>(<em>unsigned</em> <dfn class="local col9 decl" id="9n" title='n' data-type='unsigned int' data-ref="9n" data-ref-filename="9n">n</dfn>);</td></tr>
+<tr><th id="162">162</th><td>  <em>void</em> <dfn class="decl fn" id="_ZN4llvm14SpillPlacement12setThresholdERKNS_14BlockFrequencyE" title='llvm::SpillPlacement::setThreshold' data-ref="_ZN4llvm14SpillPlacement12setThresholdERKNS_14BlockFrequencyE" data-ref-filename="_ZN4llvm14SpillPlacement12setThresholdERKNS_14BlockFrequencyE">setThreshold</dfn>(<em>const</em> <a class="type" href="../../include/llvm/Support/BlockFrequency.h.html#llvm::BlockFrequency" title='llvm::BlockFrequency' data-ref="llvm::BlockFrequency" data-ref-filename="llvm..BlockFrequency">BlockFrequency</a> &amp;<dfn class="local col0 decl" id="10Entry" title='Entry' data-type='const llvm::BlockFrequency &amp;' data-ref="10Entry" data-ref-filename="10Entry">Entry</dfn>);</td></tr>
+<tr><th id="163">163</th><td></td></tr>
+<tr><th id="164">164</th><td>  <em>bool</em> <dfn class="decl fn" id="_ZN4llvm14SpillPlacement6updateEj" title='llvm::SpillPlacement::update' data-ref="_ZN4llvm14SpillPlacement6updateEj" data-ref-filename="_ZN4llvm14SpillPlacement6updateEj">update</dfn>(<em>unsigned</em> <dfn class="local col1 decl" id="11n" title='n' data-type='unsigned int' data-ref="11n" data-ref-filename="11n">n</dfn>);</td></tr>
+<tr><th id="165">165</th><td>};</td></tr>
+<tr><th id="166">166</th><td></td></tr>
+<tr><th id="167">167</th><td>} <i>// end namespace llvm</i></td></tr>
+<tr><th id="168">168</th><td></td></tr>
+<tr><th id="169">169</th><td><u>#<span data-ppcond="26">endif</span> // LLVM_LIB_CODEGEN_SPILLPLACEMENT_H</u></td></tr>
+<tr><th id="170">170</th><td></td></tr>
+</table><hr/><p id='footer'>
+Generated while processing <a href='RegAllocGreedy.cpp.html'>llvm/llvm/lib/CodeGen/RegAllocGreedy.cpp</a><br/>Generated on <em>2021-Jul-01</em> from project llvm revision <em>12</em>

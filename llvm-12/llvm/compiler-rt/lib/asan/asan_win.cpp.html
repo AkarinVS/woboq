@@ -1,0 +1,418 @@
+<!doctype html>
+<html>
+<head>
+<meta name="viewport" content="width=device-width, initial-scale=1.0"><title>asan_win.cpp source code [llvm/compiler-rt/lib/asan/asan_win.cpp] - Woboq Code Browser</title>
+<link rel="stylesheet" href="../../../.././data/qtcreator.css" title="QtCreator"/>
+<link rel="alternate stylesheet" href="../../../.././data/kdevelop.css" title="KDevelop"/>
+<script type="text/javascript" src="../../../.././data/jquery/jquery.min.js"></script>
+<script type="text/javascript" src="../../../.././data/jquery/jquery-ui.min.js"></script>
+<script>var file = 'llvm/compiler-rt/lib/asan/asan_win.cpp'; var root_path = '../../../..'; var data_path = '../../../.././data'; var ecma_script_api_version = 2;</script>
+<script src='../../../.././data/codebrowser.js'></script>
+</head>
+<body><div id='header'><h1 id='breadcrumb'><span>Browse the source code of </span><a href='../../..'>llvm</a>/<a href='../..'>compiler-rt</a>/<a href='..'>lib</a>/<a href='./'>asan</a>/<a href='asan_win.cpp.html'>asan_win.cpp</a></h1></div>
+<hr/><div id='content'><table class="code">
+<tr><th id="1">1</th><td><i>//===-- asan_win.cpp ------------------------------------------------------===//</i></td></tr>
+<tr><th id="2">2</th><td><i>//</i></td></tr>
+<tr><th id="3">3</th><td><i>// Part of the LLVM Project, under the Apache License v2.0 with LLVM Exceptions.</i></td></tr>
+<tr><th id="4">4</th><td><i>// See <a href="https://llvm.org/LICENSE.txt">https://llvm.org/LICENSE.txt</a> for license information.</i></td></tr>
+<tr><th id="5">5</th><td><i>// SPDX-License-Identifier: Apache-2.0 WITH LLVM-exception</i></td></tr>
+<tr><th id="6">6</th><td><i>//</i></td></tr>
+<tr><th id="7">7</th><td><i>//===----------------------------------------------------------------------===//</i></td></tr>
+<tr><th id="8">8</th><td><i>//</i></td></tr>
+<tr><th id="9">9</th><td><i>// This file is a part of AddressSanitizer, an address sanity checker.</i></td></tr>
+<tr><th id="10">10</th><td><i>//</i></td></tr>
+<tr><th id="11">11</th><td><i>// Windows-specific details.</i></td></tr>
+<tr><th id="12">12</th><td><i>//===----------------------------------------------------------------------===//</i></td></tr>
+<tr><th id="13">13</th><td></td></tr>
+<tr><th id="14">14</th><td><u>#include <a href="../sanitizer_common/sanitizer_platform.h.html">"sanitizer_common/sanitizer_platform.h"</a></u></td></tr>
+<tr><th id="15">15</th><td><u>#<span data-ppcond="15">if</span> <a class="macro" href="../sanitizer_common/sanitizer_platform.h.html#93" title="0" data-ref="_M/SANITIZER_WINDOWS">SANITIZER_WINDOWS</a></u></td></tr>
+<tr><th id="16">16</th><td><u>#define WIN32_LEAN_AND_MEAN</u></td></tr>
+<tr><th id="17">17</th><td><u>#include &lt;windows.h&gt;</u></td></tr>
+<tr><th id="18">18</th><td></td></tr>
+<tr><th id="19">19</th><td><u>#include &lt;stdlib.h&gt;</u></td></tr>
+<tr><th id="20">20</th><td></td></tr>
+<tr><th id="21">21</th><td><u>#include "asan_interceptors.h"</u></td></tr>
+<tr><th id="22">22</th><td><u>#include "asan_internal.h"</u></td></tr>
+<tr><th id="23">23</th><td><u>#include "asan_mapping.h"</u></td></tr>
+<tr><th id="24">24</th><td><u>#include "asan_report.h"</u></td></tr>
+<tr><th id="25">25</th><td><u>#include "asan_stack.h"</u></td></tr>
+<tr><th id="26">26</th><td><u>#include "asan_thread.h"</u></td></tr>
+<tr><th id="27">27</th><td><u>#include "sanitizer_common/sanitizer_libc.h"</u></td></tr>
+<tr><th id="28">28</th><td><u>#include "sanitizer_common/sanitizer_mutex.h"</u></td></tr>
+<tr><th id="29">29</th><td><u>#include "sanitizer_common/sanitizer_win.h"</u></td></tr>
+<tr><th id="30">30</th><td><u>#include "sanitizer_common/sanitizer_win_defs.h"</u></td></tr>
+<tr><th id="31">31</th><td></td></tr>
+<tr><th id="32">32</th><td><b>using</b> <b>namespace</b> __asan;</td></tr>
+<tr><th id="33">33</th><td></td></tr>
+<tr><th id="34">34</th><td><b>extern</b> <q>"C"</q> {</td></tr>
+<tr><th id="35">35</th><td>SANITIZER_INTERFACE_ATTRIBUTE</td></tr>
+<tr><th id="36">36</th><td><em>int</em> __asan_should_detect_stack_use_after_return() {</td></tr>
+<tr><th id="37">37</th><td>  __asan_init();</td></tr>
+<tr><th id="38">38</th><td>  <b>return</b> __asan_option_detect_stack_use_after_return;</td></tr>
+<tr><th id="39">39</th><td>}</td></tr>
+<tr><th id="40">40</th><td></td></tr>
+<tr><th id="41">41</th><td>SANITIZER_INTERFACE_ATTRIBUTE</td></tr>
+<tr><th id="42">42</th><td>uptr __asan_get_shadow_memory_dynamic_address() {</td></tr>
+<tr><th id="43">43</th><td>  __asan_init();</td></tr>
+<tr><th id="44">44</th><td>  <b>return</b> __asan_shadow_memory_dynamic_address;</td></tr>
+<tr><th id="45">45</th><td>}</td></tr>
+<tr><th id="46">46</th><td>}  <i>// extern "C"</i></td></tr>
+<tr><th id="47">47</th><td></td></tr>
+<tr><th id="48">48</th><td><i>// ---------------------- Windows-specific interceptors ---------------- {{{</i></td></tr>
+<tr><th id="49">49</th><td><em>static</em> LPTOP_LEVEL_EXCEPTION_FILTER default_seh_handler;</td></tr>
+<tr><th id="50">50</th><td><em>static</em> LPTOP_LEVEL_EXCEPTION_FILTER user_seh_handler;</td></tr>
+<tr><th id="51">51</th><td></td></tr>
+<tr><th id="52">52</th><td><b>extern</b> <q>"C"</q> SANITIZER_INTERFACE_ATTRIBUTE</td></tr>
+<tr><th id="53">53</th><td><em>long</em> __asan_unhandled_exception_filter(EXCEPTION_POINTERS *info) {</td></tr>
+<tr><th id="54">54</th><td>  EXCEPTION_RECORD *exception_record = info-&gt;ExceptionRecord;</td></tr>
+<tr><th id="55">55</th><td>  CONTEXT *context = info-&gt;ContextRecord;</td></tr>
+<tr><th id="56">56</th><td></td></tr>
+<tr><th id="57">57</th><td>  <i>// FIXME: Handle EXCEPTION_STACK_OVERFLOW here.</i></td></tr>
+<tr><th id="58">58</th><td></td></tr>
+<tr><th id="59">59</th><td>  SignalContext sig(exception_record, context);</td></tr>
+<tr><th id="60">60</th><td>  ReportDeadlySignal(sig);</td></tr>
+<tr><th id="61">61</th><td>  UNREACHABLE(<q>"returned from reporting deadly signal"</q>);</td></tr>
+<tr><th id="62">62</th><td>}</td></tr>
+<tr><th id="63">63</th><td></td></tr>
+<tr><th id="64">64</th><td><i>// Wrapper SEH Handler. If the exception should be handled by asan, we call</i></td></tr>
+<tr><th id="65">65</th><td><i>// __asan_unhandled_exception_filter, otherwise, we execute the user provided</i></td></tr>
+<tr><th id="66">66</th><td><i>// exception handler or the default.</i></td></tr>
+<tr><th id="67">67</th><td><em>static</em> <em>long</em> WINAPI SEHHandler(EXCEPTION_POINTERS *info) {</td></tr>
+<tr><th id="68">68</th><td>  DWORD exception_code = info-&gt;ExceptionRecord-&gt;ExceptionCode;</td></tr>
+<tr><th id="69">69</th><td>  <b>if</b> (__sanitizer::IsHandledDeadlyException(exception_code))</td></tr>
+<tr><th id="70">70</th><td>    <b>return</b> __asan_unhandled_exception_filter(info);</td></tr>
+<tr><th id="71">71</th><td>  <b>if</b> (user_seh_handler)</td></tr>
+<tr><th id="72">72</th><td>    <b>return</b> user_seh_handler(info);</td></tr>
+<tr><th id="73">73</th><td>  <i>// Bubble out to the default exception filter.</i></td></tr>
+<tr><th id="74">74</th><td>  <b>if</b> (default_seh_handler)</td></tr>
+<tr><th id="75">75</th><td>    <b>return</b> default_seh_handler(info);</td></tr>
+<tr><th id="76">76</th><td>  <b>return</b> EXCEPTION_CONTINUE_SEARCH;</td></tr>
+<tr><th id="77">77</th><td>}</td></tr>
+<tr><th id="78">78</th><td></td></tr>
+<tr><th id="79">79</th><td>INTERCEPTOR_WINAPI(LPTOP_LEVEL_EXCEPTION_FILTER, SetUnhandledExceptionFilter,</td></tr>
+<tr><th id="80">80</th><td>                   LPTOP_LEVEL_EXCEPTION_FILTER ExceptionFilter) {</td></tr>
+<tr><th id="81">81</th><td>  CHECK(REAL(SetUnhandledExceptionFilter));</td></tr>
+<tr><th id="82">82</th><td>  <b>if</b> (ExceptionFilter == &amp;SEHHandler)</td></tr>
+<tr><th id="83">83</th><td>    <b>return</b> REAL(SetUnhandledExceptionFilter)(ExceptionFilter);</td></tr>
+<tr><th id="84">84</th><td>  <i>// We record the user provided exception handler to be called for all the</i></td></tr>
+<tr><th id="85">85</th><td><i>  // exceptions unhandled by asan.</i></td></tr>
+<tr><th id="86">86</th><td>  Swap(ExceptionFilter, user_seh_handler);</td></tr>
+<tr><th id="87">87</th><td>  <b>return</b> ExceptionFilter;</td></tr>
+<tr><th id="88">88</th><td>}</td></tr>
+<tr><th id="89">89</th><td></td></tr>
+<tr><th id="90">90</th><td>INTERCEPTOR_WINAPI(<em>void</em>, RtlRaiseException, EXCEPTION_RECORD *ExceptionRecord) {</td></tr>
+<tr><th id="91">91</th><td>  CHECK(REAL(RtlRaiseException));</td></tr>
+<tr><th id="92">92</th><td>  <i>// This is a noreturn function, unless it's one of the exceptions raised to</i></td></tr>
+<tr><th id="93">93</th><td><i>  // communicate with the debugger, such as the one from OutputDebugString.</i></td></tr>
+<tr><th id="94">94</th><td>  <b>if</b> (ExceptionRecord-&gt;ExceptionCode != DBG_PRINTEXCEPTION_C)</td></tr>
+<tr><th id="95">95</th><td>    __asan_handle_no_return();</td></tr>
+<tr><th id="96">96</th><td>  REAL(RtlRaiseException)(ExceptionRecord);</td></tr>
+<tr><th id="97">97</th><td>}</td></tr>
+<tr><th id="98">98</th><td></td></tr>
+<tr><th id="99">99</th><td>INTERCEPTOR_WINAPI(<em>void</em>, RaiseException, <em>void</em> *a, <em>void</em> *b, <em>void</em> *c, <em>void</em> *d) {</td></tr>
+<tr><th id="100">100</th><td>  CHECK(REAL(RaiseException));</td></tr>
+<tr><th id="101">101</th><td>  __asan_handle_no_return();</td></tr>
+<tr><th id="102">102</th><td>  REAL(RaiseException)(a, b, c, d);</td></tr>
+<tr><th id="103">103</th><td>}</td></tr>
+<tr><th id="104">104</th><td></td></tr>
+<tr><th id="105">105</th><td><u>#ifdef _WIN64</u></td></tr>
+<tr><th id="106">106</th><td></td></tr>
+<tr><th id="107">107</th><td>INTERCEPTOR_WINAPI(EXCEPTION_DISPOSITION, __C_specific_handler,</td></tr>
+<tr><th id="108">108</th><td>                   _EXCEPTION_RECORD *a, <em>void</em> *b, _CONTEXT *c,</td></tr>
+<tr><th id="109">109</th><td>                   _DISPATCHER_CONTEXT *d) {</td></tr>
+<tr><th id="110">110</th><td>  CHECK(REAL(__C_specific_handler));</td></tr>
+<tr><th id="111">111</th><td>  __asan_handle_no_return();</td></tr>
+<tr><th id="112">112</th><td>  <b>return</b> REAL(__C_specific_handler)(a, b, c, d);</td></tr>
+<tr><th id="113">113</th><td>}</td></tr>
+<tr><th id="114">114</th><td></td></tr>
+<tr><th id="115">115</th><td><u>#else</u></td></tr>
+<tr><th id="116">116</th><td></td></tr>
+<tr><th id="117">117</th><td>INTERCEPTOR(<em>int</em>, _except_handler3, <em>void</em> *a, <em>void</em> *b, <em>void</em> *c, <em>void</em> *d) {</td></tr>
+<tr><th id="118">118</th><td>  CHECK(REAL(_except_handler3));</td></tr>
+<tr><th id="119">119</th><td>  __asan_handle_no_return();</td></tr>
+<tr><th id="120">120</th><td>  <b>return</b> REAL(_except_handler3)(a, b, c, d);</td></tr>
+<tr><th id="121">121</th><td>}</td></tr>
+<tr><th id="122">122</th><td></td></tr>
+<tr><th id="123">123</th><td><u>#if ASAN_DYNAMIC</u></td></tr>
+<tr><th id="124">124</th><td><i>// This handler is named differently in -MT and -MD CRTs.</i></td></tr>
+<tr><th id="125">125</th><td><u>#define _except_handler4 _except_handler4_common</u></td></tr>
+<tr><th id="126">126</th><td><u>#endif</u></td></tr>
+<tr><th id="127">127</th><td>INTERCEPTOR(<em>int</em>, _except_handler4, <em>void</em> *a, <em>void</em> *b, <em>void</em> *c, <em>void</em> *d) {</td></tr>
+<tr><th id="128">128</th><td>  CHECK(REAL(_except_handler4));</td></tr>
+<tr><th id="129">129</th><td>  __asan_handle_no_return();</td></tr>
+<tr><th id="130">130</th><td>  <b>return</b> REAL(_except_handler4)(a, b, c, d);</td></tr>
+<tr><th id="131">131</th><td>}</td></tr>
+<tr><th id="132">132</th><td><u>#endif</u></td></tr>
+<tr><th id="133">133</th><td></td></tr>
+<tr><th id="134">134</th><td><em>static</em> thread_return_t THREAD_CALLING_CONV asan_thread_start(<em>void</em> *arg) {</td></tr>
+<tr><th id="135">135</th><td>  AsanThread *t = (AsanThread *)arg;</td></tr>
+<tr><th id="136">136</th><td>  SetCurrentThread(t);</td></tr>
+<tr><th id="137">137</th><td>  <b>return</b> t-&gt;ThreadStart(GetTid());</td></tr>
+<tr><th id="138">138</th><td>}</td></tr>
+<tr><th id="139">139</th><td></td></tr>
+<tr><th id="140">140</th><td>INTERCEPTOR_WINAPI(HANDLE, CreateThread, LPSECURITY_ATTRIBUTES security,</td></tr>
+<tr><th id="141">141</th><td>                   SIZE_T stack_size, LPTHREAD_START_ROUTINE start_routine,</td></tr>
+<tr><th id="142">142</th><td>                   <em>void</em> *arg, DWORD thr_flags, DWORD *tid) {</td></tr>
+<tr><th id="143">143</th><td>  <i>// Strict init-order checking is thread-hostile.</i></td></tr>
+<tr><th id="144">144</th><td>  <b>if</b> (flags()-&gt;strict_init_order)</td></tr>
+<tr><th id="145">145</th><td>    StopInitOrderChecking();</td></tr>
+<tr><th id="146">146</th><td>  GET_STACK_TRACE_THREAD;</td></tr>
+<tr><th id="147">147</th><td>  <i>// FIXME: The CreateThread interceptor is not the same as a pthread_create</i></td></tr>
+<tr><th id="148">148</th><td><i>  // one.  This is a bandaid fix for PR22025.</i></td></tr>
+<tr><th id="149">149</th><td>  <em>bool</em> detached = <b>false</b>;  <i>// FIXME: how can we determine it on Windows?</i></td></tr>
+<tr><th id="150">150</th><td>  u32 current_tid = GetCurrentTidOrInvalid();</td></tr>
+<tr><th id="151">151</th><td>  AsanThread *t =</td></tr>
+<tr><th id="152">152</th><td>      AsanThread::Create(start_routine, arg, current_tid, &amp;stack, detached);</td></tr>
+<tr><th id="153">153</th><td>  <b>return</b> REAL(CreateThread)(security, stack_size, asan_thread_start, t,</td></tr>
+<tr><th id="154">154</th><td>                            thr_flags, tid);</td></tr>
+<tr><th id="155">155</th><td>}</td></tr>
+<tr><th id="156">156</th><td></td></tr>
+<tr><th id="157">157</th><td><i>// }}}</i></td></tr>
+<tr><th id="158">158</th><td></td></tr>
+<tr><th id="159">159</th><td><b>namespace</b> __asan {</td></tr>
+<tr><th id="160">160</th><td></td></tr>
+<tr><th id="161">161</th><td><em>void</em> InitializePlatformInterceptors() {</td></tr>
+<tr><th id="162">162</th><td>  <i>// The interceptors were not designed to be removable, so we have to keep this</i></td></tr>
+<tr><th id="163">163</th><td><i>  // module alive for the life of the process.</i></td></tr>
+<tr><th id="164">164</th><td>  HMODULE pinned;</td></tr>
+<tr><th id="165">165</th><td>  CHECK(GetModuleHandleExW(</td></tr>
+<tr><th id="166">166</th><td>      GET_MODULE_HANDLE_EX_FLAG_FROM_ADDRESS | GET_MODULE_HANDLE_EX_FLAG_PIN,</td></tr>
+<tr><th id="167">167</th><td>      (LPCWSTR)&amp;InitializePlatformInterceptors, &amp;pinned));</td></tr>
+<tr><th id="168">168</th><td></td></tr>
+<tr><th id="169">169</th><td>  ASAN_INTERCEPT_FUNC(CreateThread);</td></tr>
+<tr><th id="170">170</th><td>  ASAN_INTERCEPT_FUNC(SetUnhandledExceptionFilter);</td></tr>
+<tr><th id="171">171</th><td></td></tr>
+<tr><th id="172">172</th><td><u>#ifdef _WIN64</u></td></tr>
+<tr><th id="173">173</th><td>  ASAN_INTERCEPT_FUNC(__C_specific_handler);</td></tr>
+<tr><th id="174">174</th><td><u>#else</u></td></tr>
+<tr><th id="175">175</th><td>  ASAN_INTERCEPT_FUNC(_except_handler3);</td></tr>
+<tr><th id="176">176</th><td>  ASAN_INTERCEPT_FUNC(_except_handler4);</td></tr>
+<tr><th id="177">177</th><td><u>#endif</u></td></tr>
+<tr><th id="178">178</th><td></td></tr>
+<tr><th id="179">179</th><td>  <i>// Try to intercept kernel32!RaiseException, and if that fails, intercept</i></td></tr>
+<tr><th id="180">180</th><td><i>  // ntdll!RtlRaiseException instead.</i></td></tr>
+<tr><th id="181">181</th><td>  <b>if</b> (!::__interception::OverrideFunction(<q>"RaiseException"</q>,</td></tr>
+<tr><th id="182">182</th><td>                                          (uptr)WRAP(RaiseException),</td></tr>
+<tr><th id="183">183</th><td>                                          (uptr *)&amp;REAL(RaiseException))) {</td></tr>
+<tr><th id="184">184</th><td>    CHECK(::__interception::OverrideFunction(<q>"RtlRaiseException"</q>,</td></tr>
+<tr><th id="185">185</th><td>                                             (uptr)WRAP(RtlRaiseException),</td></tr>
+<tr><th id="186">186</th><td>                                             (uptr *)&amp;REAL(RtlRaiseException)));</td></tr>
+<tr><th id="187">187</th><td>  }</td></tr>
+<tr><th id="188">188</th><td>}</td></tr>
+<tr><th id="189">189</th><td></td></tr>
+<tr><th id="190">190</th><td><em>void</em> AsanApplyToGlobals(globals_op_fptr op, <em>const</em> <em>void</em> *needle) {</td></tr>
+<tr><th id="191">191</th><td>  UNIMPLEMENTED();</td></tr>
+<tr><th id="192">192</th><td>}</td></tr>
+<tr><th id="193">193</th><td></td></tr>
+<tr><th id="194">194</th><td><em>void</em> FlushUnneededASanShadowMemory(uptr p, uptr size) {</td></tr>
+<tr><th id="195">195</th><td>  <i>// Since asan's mapping is compacting, the shadow chunk may be</i></td></tr>
+<tr><th id="196">196</th><td><i>  // not page-aligned, so we only flush the page-aligned portion.</i></td></tr>
+<tr><th id="197">197</th><td>  ReleaseMemoryPagesToOS(MemToShadow(p), MemToShadow(p + size));</td></tr>
+<tr><th id="198">198</th><td>}</td></tr>
+<tr><th id="199">199</th><td></td></tr>
+<tr><th id="200">200</th><td><i>// ---------------------- TSD ---------------- {{{</i></td></tr>
+<tr><th id="201">201</th><td><em>static</em> <em>bool</em> tsd_key_inited = <b>false</b>;</td></tr>
+<tr><th id="202">202</th><td></td></tr>
+<tr><th id="203">203</th><td><em>static</em> __declspec(thread) <em>void</em> *fake_tsd = <var>0</var>;</td></tr>
+<tr><th id="204">204</th><td></td></tr>
+<tr><th id="205">205</th><td><i>// <a href="https://docs.microsoft.com/en-us/windows/desktop/api/winternl/ns-winternl-_teb">https://docs.microsoft.com/en-us/windows/desktop/api/winternl/ns-winternl-_teb</a></i></td></tr>
+<tr><th id="206">206</th><td><i>// "[This structure may be altered in future versions of Windows. Applications</i></td></tr>
+<tr><th id="207">207</th><td><i>// should use the alternate functions listed in this topic.]"</i></td></tr>
+<tr><th id="208">208</th><td><b>typedef</b> <b>struct</b> _TEB {</td></tr>
+<tr><th id="209">209</th><td>  PVOID Reserved1[<var>12</var>];</td></tr>
+<tr><th id="210">210</th><td>  <i>// PVOID ThreadLocalStoragePointer; is here, at the last field in Reserved1.</i></td></tr>
+<tr><th id="211">211</th><td>  PVOID ProcessEnvironmentBlock;</td></tr>
+<tr><th id="212">212</th><td>  PVOID Reserved2[<var>399</var>];</td></tr>
+<tr><th id="213">213</th><td>  BYTE Reserved3[<var>1952</var>];</td></tr>
+<tr><th id="214">214</th><td>  PVOID TlsSlots[<var>64</var>];</td></tr>
+<tr><th id="215">215</th><td>  BYTE Reserved4[<var>8</var>];</td></tr>
+<tr><th id="216">216</th><td>  PVOID Reserved5[<var>26</var>];</td></tr>
+<tr><th id="217">217</th><td>  PVOID ReservedForOle;</td></tr>
+<tr><th id="218">218</th><td>  PVOID Reserved6[<var>4</var>];</td></tr>
+<tr><th id="219">219</th><td>  PVOID TlsExpansionSlots;</td></tr>
+<tr><th id="220">220</th><td>} TEB, *PTEB;</td></tr>
+<tr><th id="221">221</th><td></td></tr>
+<tr><th id="222">222</th><td><b>constexpr</b> size_t TEB_RESERVED_FIELDS_THREAD_LOCAL_STORAGE_OFFSET = <var>11</var>;</td></tr>
+<tr><th id="223">223</th><td>BOOL IsTlsInitialized() {</td></tr>
+<tr><th id="224">224</th><td>  PTEB teb = (PTEB)NtCurrentTeb();</td></tr>
+<tr><th id="225">225</th><td>  <b>return</b> teb-&gt;Reserved1[TEB_RESERVED_FIELDS_THREAD_LOCAL_STORAGE_OFFSET] !=</td></tr>
+<tr><th id="226">226</th><td>         <b>nullptr</b>;</td></tr>
+<tr><th id="227">227</th><td>}</td></tr>
+<tr><th id="228">228</th><td></td></tr>
+<tr><th id="229">229</th><td><em>void</em> AsanTSDInit(<em>void</em> (*destructor)(<em>void</em> *tsd)) {</td></tr>
+<tr><th id="230">230</th><td>  <i>// FIXME: we're ignoring the destructor for now.</i></td></tr>
+<tr><th id="231">231</th><td>  tsd_key_inited = <b>true</b>;</td></tr>
+<tr><th id="232">232</th><td>}</td></tr>
+<tr><th id="233">233</th><td></td></tr>
+<tr><th id="234">234</th><td><em>void</em> *AsanTSDGet() {</td></tr>
+<tr><th id="235">235</th><td>  CHECK(tsd_key_inited);</td></tr>
+<tr><th id="236">236</th><td>  <b>return</b> IsTlsInitialized() ? fake_tsd : <b>nullptr</b>;</td></tr>
+<tr><th id="237">237</th><td>}</td></tr>
+<tr><th id="238">238</th><td></td></tr>
+<tr><th id="239">239</th><td><em>void</em> AsanTSDSet(<em>void</em> *tsd) {</td></tr>
+<tr><th id="240">240</th><td>  CHECK(tsd_key_inited);</td></tr>
+<tr><th id="241">241</th><td>  fake_tsd = tsd;</td></tr>
+<tr><th id="242">242</th><td>}</td></tr>
+<tr><th id="243">243</th><td></td></tr>
+<tr><th id="244">244</th><td><em>void</em> PlatformTSDDtor(<em>void</em> *tsd) { AsanThread::TSDDtor(tsd); }</td></tr>
+<tr><th id="245">245</th><td><i>// }}}</i></td></tr>
+<tr><th id="246">246</th><td><i></i></td></tr>
+<tr><th id="247">247</th><td><i>// ---------------------- Various stuff ---------------- {{{</i></td></tr>
+<tr><th id="248">248</th><td><em>void</em> *AsanDoesNotSupportStaticLinkage() {</td></tr>
+<tr><th id="249">249</th><td><u>#if defined(_DEBUG)</u></td></tr>
+<tr><th id="250">250</th><td><u>#error Please build the runtime with a non-debug CRT: /MD or /MT</u></td></tr>
+<tr><th id="251">251</th><td><u>#endif</u></td></tr>
+<tr><th id="252">252</th><td>  <b>return</b> <var>0</var>;</td></tr>
+<tr><th id="253">253</th><td>}</td></tr>
+<tr><th id="254">254</th><td></td></tr>
+<tr><th id="255">255</th><td>uptr FindDynamicShadowStart() {</td></tr>
+<tr><th id="256">256</th><td>  <b>return</b> MapDynamicShadow(MemToShadowSize(kHighMemEnd), SHADOW_SCALE,</td></tr>
+<tr><th id="257">257</th><td>                          <i>/*min_shadow_base_alignment*/</i> <var>0</var>, kHighMemEnd);</td></tr>
+<tr><th id="258">258</th><td>}</td></tr>
+<tr><th id="259">259</th><td></td></tr>
+<tr><th id="260">260</th><td><em>void</em> AsanCheckDynamicRTPrereqs() {}</td></tr>
+<tr><th id="261">261</th><td></td></tr>
+<tr><th id="262">262</th><td><em>void</em> AsanCheckIncompatibleRT() {}</td></tr>
+<tr><th id="263">263</th><td></td></tr>
+<tr><th id="264">264</th><td><em>void</em> ReadContextStack(<em>void</em> *context, uptr *stack, uptr *ssize) {</td></tr>
+<tr><th id="265">265</th><td>  UNIMPLEMENTED();</td></tr>
+<tr><th id="266">266</th><td>}</td></tr>
+<tr><th id="267">267</th><td></td></tr>
+<tr><th id="268">268</th><td><em>void</em> AsanOnDeadlySignal(<em>int</em>, <em>void</em> *siginfo, <em>void</em> *context) { UNIMPLEMENTED(); }</td></tr>
+<tr><th id="269">269</th><td></td></tr>
+<tr><th id="270">270</th><td><em>bool</em> PlatformUnpoisonStacks() { <b>return</b> <b>false</b>; }</td></tr>
+<tr><th id="271">271</th><td></td></tr>
+<tr><th id="272">272</th><td><u>#if SANITIZER_WINDOWS64</u></td></tr>
+<tr><th id="273">273</th><td><i>// Exception handler for dealing with shadow memory.</i></td></tr>
+<tr><th id="274">274</th><td><em>static</em> LONG CALLBACK</td></tr>
+<tr><th id="275">275</th><td>ShadowExceptionHandler(PEXCEPTION_POINTERS exception_pointers) {</td></tr>
+<tr><th id="276">276</th><td>  uptr page_size = GetPageSizeCached();</td></tr>
+<tr><th id="277">277</th><td>  <i>// Only handle access violations.</i></td></tr>
+<tr><th id="278">278</th><td>  <b>if</b> (exception_pointers-&gt;ExceptionRecord-&gt;ExceptionCode !=</td></tr>
+<tr><th id="279">279</th><td>          EXCEPTION_ACCESS_VIOLATION ||</td></tr>
+<tr><th id="280">280</th><td>      exception_pointers-&gt;ExceptionRecord-&gt;NumberParameters &lt; <var>2</var>) {</td></tr>
+<tr><th id="281">281</th><td>    __asan_handle_no_return();</td></tr>
+<tr><th id="282">282</th><td>    <b>return</b> EXCEPTION_CONTINUE_SEARCH;</td></tr>
+<tr><th id="283">283</th><td>  }</td></tr>
+<tr><th id="284">284</th><td></td></tr>
+<tr><th id="285">285</th><td>  <i>// Only handle access violations that land within the shadow memory.</i></td></tr>
+<tr><th id="286">286</th><td>  uptr addr =</td></tr>
+<tr><th id="287">287</th><td>      (uptr)(exception_pointers-&gt;ExceptionRecord-&gt;ExceptionInformation[<var>1</var>]);</td></tr>
+<tr><th id="288">288</th><td></td></tr>
+<tr><th id="289">289</th><td>  <i>// Check valid shadow range.</i></td></tr>
+<tr><th id="290">290</th><td>  <b>if</b> (!AddrIsInShadow(addr)) {</td></tr>
+<tr><th id="291">291</th><td>    __asan_handle_no_return();</td></tr>
+<tr><th id="292">292</th><td>    <b>return</b> EXCEPTION_CONTINUE_SEARCH;</td></tr>
+<tr><th id="293">293</th><td>  }</td></tr>
+<tr><th id="294">294</th><td></td></tr>
+<tr><th id="295">295</th><td>  <i>// This is an access violation while trying to read from the shadow. Commit</i></td></tr>
+<tr><th id="296">296</th><td><i>  // the relevant page and let execution continue.</i></td></tr>
+<tr><th id="297">297</th><td><i></i></td></tr>
+<tr><th id="298">298</th><td><i>  // Determine the address of the page that is being accessed.</i></td></tr>
+<tr><th id="299">299</th><td>  uptr page = RoundDownTo(addr, page_size);</td></tr>
+<tr><th id="300">300</th><td></td></tr>
+<tr><th id="301">301</th><td>  <i>// Commit the page.</i></td></tr>
+<tr><th id="302">302</th><td>  uptr result =</td></tr>
+<tr><th id="303">303</th><td>      (uptr)::VirtualAlloc((LPVOID)page, page_size, MEM_COMMIT, PAGE_READWRITE);</td></tr>
+<tr><th id="304">304</th><td>  <b>if</b> (result != page)</td></tr>
+<tr><th id="305">305</th><td>    <b>return</b> EXCEPTION_CONTINUE_SEARCH;</td></tr>
+<tr><th id="306">306</th><td></td></tr>
+<tr><th id="307">307</th><td>  <i>// The page mapping succeeded, so continue execution as usual.</i></td></tr>
+<tr><th id="308">308</th><td>  <b>return</b> EXCEPTION_CONTINUE_EXECUTION;</td></tr>
+<tr><th id="309">309</th><td>}</td></tr>
+<tr><th id="310">310</th><td></td></tr>
+<tr><th id="311">311</th><td><u>#endif</u></td></tr>
+<tr><th id="312">312</th><td></td></tr>
+<tr><th id="313">313</th><td><em>void</em> InitializePlatformExceptionHandlers() {</td></tr>
+<tr><th id="314">314</th><td><u>#if SANITIZER_WINDOWS64</u></td></tr>
+<tr><th id="315">315</th><td>  <i>// On Win64, we map memory on demand with access violation handler.</i></td></tr>
+<tr><th id="316">316</th><td><i>  // Install our exception handler.</i></td></tr>
+<tr><th id="317">317</th><td>  CHECK(AddVectoredExceptionHandler(TRUE, &amp;ShadowExceptionHandler));</td></tr>
+<tr><th id="318">318</th><td><u>#endif</u></td></tr>
+<tr><th id="319">319</th><td>}</td></tr>
+<tr><th id="320">320</th><td></td></tr>
+<tr><th id="321">321</th><td><em>bool</em> IsSystemHeapAddress(uptr addr) {</td></tr>
+<tr><th id="322">322</th><td>  <b>return</b> ::HeapValidate(GetProcessHeap(), <var>0</var>, (<em>void</em> *)addr) != FALSE;</td></tr>
+<tr><th id="323">323</th><td>}</td></tr>
+<tr><th id="324">324</th><td></td></tr>
+<tr><th id="325">325</th><td><i>// We want to install our own exception handler (EH) to print helpful reports</i></td></tr>
+<tr><th id="326">326</th><td><i>// on access violations and whatnot.  Unfortunately, the CRT initializers assume</i></td></tr>
+<tr><th id="327">327</th><td><i>// they are run before any user code and drop any previously-installed EHs on</i></td></tr>
+<tr><th id="328">328</th><td><i>// the floor, so we can't install our handler inside __asan_init.</i></td></tr>
+<tr><th id="329">329</th><td><i>// (See crt0dat.c in the CRT sources for the details)</i></td></tr>
+<tr><th id="330">330</th><td><i>//</i></td></tr>
+<tr><th id="331">331</th><td><i>// Things get even more complicated with the dynamic runtime, as it finishes its</i></td></tr>
+<tr><th id="332">332</th><td><i>// initialization before the .exe module CRT begins to initialize.</i></td></tr>
+<tr><th id="333">333</th><td><i>//</i></td></tr>
+<tr><th id="334">334</th><td><i>// For the static runtime (-MT), it's enough to put a callback to</i></td></tr>
+<tr><th id="335">335</th><td><i>// __asan_set_seh_filter in the last section for C initializers.</i></td></tr>
+<tr><th id="336">336</th><td><i>//</i></td></tr>
+<tr><th id="337">337</th><td><i>// For the dynamic runtime (-MD), we want link the same</i></td></tr>
+<tr><th id="338">338</th><td><i>// asan_dynamic_runtime_thunk.lib to all the modules, thus __asan_set_seh_filter</i></td></tr>
+<tr><th id="339">339</th><td><i>// will be called for each instrumented module.  This ensures that at least one</i></td></tr>
+<tr><th id="340">340</th><td><i>// __asan_set_seh_filter call happens after the .exe module CRT is initialized.</i></td></tr>
+<tr><th id="341">341</th><td><b>extern</b> <q>"C"</q> SANITIZER_INTERFACE_ATTRIBUTE <em>int</em> __asan_set_seh_filter() {</td></tr>
+<tr><th id="342">342</th><td>  <i>// We should only store the previous handler if it's not our own handler in</i></td></tr>
+<tr><th id="343">343</th><td><i>  // order to avoid loops in the EH chain.</i></td></tr>
+<tr><th id="344">344</th><td>  <em>auto</em> prev_seh_handler = SetUnhandledExceptionFilter(SEHHandler);</td></tr>
+<tr><th id="345">345</th><td>  <b>if</b> (prev_seh_handler != &amp;SEHHandler)</td></tr>
+<tr><th id="346">346</th><td>    default_seh_handler = prev_seh_handler;</td></tr>
+<tr><th id="347">347</th><td>  <b>return</b> <var>0</var>;</td></tr>
+<tr><th id="348">348</th><td>}</td></tr>
+<tr><th id="349">349</th><td></td></tr>
+<tr><th id="350">350</th><td><em>bool</em> HandleDlopenInit() {</td></tr>
+<tr><th id="351">351</th><td>  <i>// Not supported on this platform.</i></td></tr>
+<tr><th id="352">352</th><td>  <b>static_assert</b>(!SANITIZER_SUPPORTS_INIT_FOR_DLOPEN,</td></tr>
+<tr><th id="353">353</th><td>                <q>"Expected SANITIZER_SUPPORTS_INIT_FOR_DLOPEN to be false"</q>);</td></tr>
+<tr><th id="354">354</th><td>  <b>return</b> <b>false</b>;</td></tr>
+<tr><th id="355">355</th><td>}</td></tr>
+<tr><th id="356">356</th><td></td></tr>
+<tr><th id="357">357</th><td><u>#if !ASAN_DYNAMIC</u></td></tr>
+<tr><th id="358">358</th><td><i>// The CRT runs initializers in this order:</i></td></tr>
+<tr><th id="359">359</th><td><i>// - C initializers, from XIA to XIZ</i></td></tr>
+<tr><th id="360">360</th><td><i>// - C++ initializers, from XCA to XCZ</i></td></tr>
+<tr><th id="361">361</th><td><i>// Prior to 2015, the CRT set the unhandled exception filter at priority XIY,</i></td></tr>
+<tr><th id="362">362</th><td><i>// near the end of C initialization. Starting in 2015, it was moved to the</i></td></tr>
+<tr><th id="363">363</th><td><i>// beginning of C++ initialization. We set our priority to XCAB to run</i></td></tr>
+<tr><th id="364">364</th><td><i>// immediately after the CRT runs. This way, our exception filter is called</i></td></tr>
+<tr><th id="365">365</th><td><i>// first and we can delegate to their filter if appropriate.</i></td></tr>
+<tr><th id="366">366</th><td><u>#pragma section(".CRT$XCAB", long, read)</u></td></tr>
+<tr><th id="367">367</th><td>__declspec(allocate(<q>".CRT$XCAB"</q>)) <em>int</em> (*__intercept_seh)() =</td></tr>
+<tr><th id="368">368</th><td>    __asan_set_seh_filter;</td></tr>
+<tr><th id="369">369</th><td></td></tr>
+<tr><th id="370">370</th><td><i>// Piggyback on the TLS initialization callback directory to initialize asan as</i></td></tr>
+<tr><th id="371">371</th><td><i>// early as possible. Initializers in .CRT$XL* are called directly by ntdll,</i></td></tr>
+<tr><th id="372">372</th><td><i>// which run before the CRT. Users also add code to .CRT$XLC, so it's important</i></td></tr>
+<tr><th id="373">373</th><td><i>// to run our initializers first.</i></td></tr>
+<tr><th id="374">374</th><td><em>static</em> <em>void</em> NTAPI asan_thread_init(<em>void</em> *module, DWORD reason, <em>void</em> *reserved) {</td></tr>
+<tr><th id="375">375</th><td>  <b>if</b> (reason == DLL_PROCESS_ATTACH)</td></tr>
+<tr><th id="376">376</th><td>    __asan_init();</td></tr>
+<tr><th id="377">377</th><td>}</td></tr>
+<tr><th id="378">378</th><td></td></tr>
+<tr><th id="379">379</th><td><u>#pragma section(".CRT$XLAB", long, read)</u></td></tr>
+<tr><th id="380">380</th><td>__declspec(allocate(<q>".CRT$XLAB"</q>)) <em>void</em>(NTAPI *__asan_tls_init)(</td></tr>
+<tr><th id="381">381</th><td>    <em>void</em> *, <em>unsigned</em> <em>long</em>, <em>void</em> *) = asan_thread_init;</td></tr>
+<tr><th id="382">382</th><td><u>#endif</u></td></tr>
+<tr><th id="383">383</th><td></td></tr>
+<tr><th id="384">384</th><td><em>static</em> <em>void</em> NTAPI asan_thread_exit(<em>void</em> *module, DWORD reason, <em>void</em> *reserved) {</td></tr>
+<tr><th id="385">385</th><td>  <b>if</b> (reason == DLL_THREAD_DETACH) {</td></tr>
+<tr><th id="386">386</th><td>    <i>// Unpoison the thread's stack because the memory may be re-used.</i></td></tr>
+<tr><th id="387">387</th><td>    NT_TIB *tib = (NT_TIB *)NtCurrentTeb();</td></tr>
+<tr><th id="388">388</th><td>    uptr stackSize = (uptr)tib-&gt;StackBase - (uptr)tib-&gt;StackLimit;</td></tr>
+<tr><th id="389">389</th><td>    __asan_unpoison_memory_region(tib-&gt;StackLimit, stackSize);</td></tr>
+<tr><th id="390">390</th><td>  }</td></tr>
+<tr><th id="391">391</th><td>}</td></tr>
+<tr><th id="392">392</th><td></td></tr>
+<tr><th id="393">393</th><td><u>#pragma section(".CRT$XLY", long, read)</u></td></tr>
+<tr><th id="394">394</th><td>__declspec(allocate(<q>".CRT$XLY"</q>)) <em>void</em>(NTAPI *__asan_tls_exit)(</td></tr>
+<tr><th id="395">395</th><td>    <em>void</em> *, <em>unsigned</em> <em>long</em>, <em>void</em> *) = asan_thread_exit;</td></tr>
+<tr><th id="396">396</th><td></td></tr>
+<tr><th id="397">397</th><td>WIN_FORCE_LINK(__asan_dso_reg_hook)</td></tr>
+<tr><th id="398">398</th><td></td></tr>
+<tr><th id="399">399</th><td><i>// }}}</i></td></tr>
+<tr><th id="400">400</th><td>}  <i>// namespace __asan</i></td></tr>
+<tr><th id="401">401</th><td></td></tr>
+<tr><th id="402">402</th><td><u>#<span data-ppcond="15">endif</span>  // SANITIZER_WINDOWS</u></td></tr>
+<tr><th id="403">403</th><td></td></tr>
+</table><hr/><p id='footer'>
+Generated on <em>2021-Jul-01</em> from project llvm revision <em>12</em>

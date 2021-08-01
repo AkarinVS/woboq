@@ -1,0 +1,10 @@
+<dec f='llvm/llvm/include/llvm/XRay/Graph.h' l='281' type='llvm::xray::Graph::VertexView::GraphT &amp;'/>
+<use f='llvm/llvm/include/llvm/XRay/Graph.h' l='284' u='c' c='_ZN4llvm4xray5Graph10VertexView5beginEv'/>
+<use f='llvm/llvm/include/llvm/XRay/Graph.h' l='285' u='c' c='_ZN4llvm4xray5Graph10VertexView3endEv'/>
+<use f='llvm/llvm/include/llvm/XRay/Graph.h' l='286' u='c' c='_ZNK4llvm4xray5Graph10VertexView6cbeginEv'/>
+<use f='llvm/llvm/include/llvm/XRay/Graph.h' l='287' u='c' c='_ZNK4llvm4xray5Graph10VertexView4cendEv'/>
+<use f='llvm/llvm/include/llvm/XRay/Graph.h' l='288' u='c' c='_ZNK4llvm4xray5Graph10VertexView5beginEv'/>
+<use f='llvm/llvm/include/llvm/XRay/Graph.h' l='289' u='c' c='_ZNK4llvm4xray5Graph10VertexView3endEv'/>
+<use f='llvm/llvm/include/llvm/XRay/Graph.h' l='290' u='c' c='_ZNK4llvm4xray5Graph10VertexView4sizeEv'/>
+<use f='llvm/llvm/include/llvm/XRay/Graph.h' l='291' u='c' c='_ZNK4llvm4xray5Graph10VertexView5emptyEv'/>
+<use f='llvm/llvm/include/llvm/XRay/Graph.h' l='292' u='w' c='_ZN4llvm4xray5Graph10VertexViewC1ERNSt11conditionalIXTL0__EKNS0_5GraphIT_T0_T1_EES9_E4typeE'/>

@@ -1,0 +1,138 @@
+<!doctype html>
+<html>
+<head>
+<meta name="viewport" content="width=device-width, initial-scale=1.0"><title>Signposts.cpp source code [llvm/llvm/lib/Support/Signposts.cpp] - Woboq Code Browser</title>
+<link rel="stylesheet" href="../../../.././data/qtcreator.css" title="QtCreator"/>
+<link rel="alternate stylesheet" href="../../../.././data/kdevelop.css" title="KDevelop"/>
+<script type="text/javascript" src="../../../.././data/jquery/jquery.min.js"></script>
+<script type="text/javascript" src="../../../.././data/jquery/jquery-ui.min.js"></script>
+<script>var file = 'llvm/llvm/lib/Support/Signposts.cpp'; var root_path = '../../../..'; var data_path = '../../../.././data'; var ecma_script_api_version = 2;</script>
+<script src='../../../.././data/codebrowser.js'></script>
+</head>
+<body><div id='header'><h1 id='breadcrumb'><span>Browse the source code of </span><a href='../../..'>llvm</a>/<a href='../..'>llvm</a>/<a href='..'>lib</a>/<a href='./'>Support</a>/<a href='Signposts.cpp.html'>Signposts.cpp</a></h1></div>
+<hr/><div id='content'><table class="code">
+<tr><th id="1">1</th><td><i>//===-- Signposts.cpp - Interval debug annotations ------------------------===//</i></td></tr>
+<tr><th id="2">2</th><td><i>//</i></td></tr>
+<tr><th id="3">3</th><td><i>//                     The LLVM Compiler Infrastructure</i></td></tr>
+<tr><th id="4">4</th><td><i>//</i></td></tr>
+<tr><th id="5">5</th><td><i>// This file is distributed under the University of Illinois Open Source</i></td></tr>
+<tr><th id="6">6</th><td><i>// License. See LICENSE.TXT for details.</i></td></tr>
+<tr><th id="7">7</th><td><i>//</i></td></tr>
+<tr><th id="8">8</th><td><i>//===----------------------------------------------------------------------===//</i></td></tr>
+<tr><th id="9">9</th><td></td></tr>
+<tr><th id="10">10</th><td><u>#include <a href="../../include/llvm/Support/Signposts.h.html">"llvm/Support/Signposts.h"</a></u></td></tr>
+<tr><th id="11">11</th><td><u>#include <a href="../../include/llvm/Support/Timer.h.html">"llvm/Support/Timer.h"</a></u></td></tr>
+<tr><th id="12">12</th><td></td></tr>
+<tr><th id="13">13</th><td><u>#include <a href="../../../build/include/llvm/Config/config.h.html">"llvm/Config/config.h"</a></u></td></tr>
+<tr><th id="14">14</th><td><u>#<span data-ppcond="14">if</span> <a class="macro" href="../../../build/include/llvm/Config/config.h.html#351" title="0" data-ref="_M/LLVM_SUPPORT_XCODE_SIGNPOSTS">LLVM_SUPPORT_XCODE_SIGNPOSTS</a></u></td></tr>
+<tr><th id="15">15</th><td><u>#include "llvm/ADT/DenseMap.h"</u></td></tr>
+<tr><th id="16">16</th><td><u>#include "llvm/Support/Mutex.h"</u></td></tr>
+<tr><th id="17">17</th><td><u>#include &lt;os/signpost.h&gt;</u></td></tr>
+<tr><th id="18">18</th><td><u>#<span data-ppcond="14">endif</span> // if LLVM_SUPPORT_XCODE_SIGNPOSTS</u></td></tr>
+<tr><th id="19">19</th><td></td></tr>
+<tr><th id="20">20</th><td><b>using</b> <b>namespace</b> <span class="namespace">llvm</span>;</td></tr>
+<tr><th id="21">21</th><td></td></tr>
+<tr><th id="22">22</th><td><u>#<span data-ppcond="22">if</span> <a class="macro" href="../../../build/include/llvm/Config/config.h.html#351" title="0" data-ref="_M/LLVM_SUPPORT_XCODE_SIGNPOSTS">LLVM_SUPPORT_XCODE_SIGNPOSTS</a></u></td></tr>
+<tr><th id="23">23</th><td><b>namespace</b> {</td></tr>
+<tr><th id="24">24</th><td>os_log_t *LogCreator() {</td></tr>
+<tr><th id="25">25</th><td>  os_log_t *X = <b>new</b> os_log_t;</td></tr>
+<tr><th id="26">26</th><td>  *X = os_log_create(<q>"org.llvm.signposts"</q>, OS_LOG_CATEGORY_POINTS_OF_INTEREST);</td></tr>
+<tr><th id="27">27</th><td>  <b>return</b> X;</td></tr>
+<tr><th id="28">28</th><td>}</td></tr>
+<tr><th id="29">29</th><td><em>void</em> LogDeleter(os_log_t *X) {</td></tr>
+<tr><th id="30">30</th><td>  os_release(*X);</td></tr>
+<tr><th id="31">31</th><td>  <b>delete</b> X;</td></tr>
+<tr><th id="32">32</th><td>}</td></tr>
+<tr><th id="33">33</th><td>} <i>// end anonymous namespace</i></td></tr>
+<tr><th id="34">34</th><td></td></tr>
+<tr><th id="35">35</th><td><b>namespace</b> llvm {</td></tr>
+<tr><th id="36">36</th><td><b>class</b> SignpostEmitterImpl {</td></tr>
+<tr><th id="37">37</th><td>  <b>using</b> LogPtrTy = std::unique_ptr&lt;os_log_t, std::function&lt;<em>void</em>(os_log_t *)&gt;&gt;;</td></tr>
+<tr><th id="38">38</th><td>  <b>using</b> LogTy = LogPtrTy::element_type;</td></tr>
+<tr><th id="39">39</th><td></td></tr>
+<tr><th id="40">40</th><td>  LogPtrTy SignpostLog;</td></tr>
+<tr><th id="41">41</th><td>  DenseMap&lt;<em>const</em> <em>void</em> *, os_signpost_id_t&gt; Signposts;</td></tr>
+<tr><th id="42">42</th><td>  sys::SmartMutex&lt;<b>true</b>&gt; Mutex;</td></tr>
+<tr><th id="43">43</th><td></td></tr>
+<tr><th id="44">44</th><td>  LogTy &amp;getLogger() <em>const</em> { <b>return</b> *SignpostLog; }</td></tr>
+<tr><th id="45">45</th><td>  os_signpost_id_t getSignpostForObject(<em>const</em> <em>void</em> *O) {</td></tr>
+<tr><th id="46">46</th><td>    sys::SmartScopedLock&lt;<b>true</b>&gt; Lock(Mutex);</td></tr>
+<tr><th id="47">47</th><td>    <em>const</em> <em>auto</em> &amp;I = Signposts.find(O);</td></tr>
+<tr><th id="48">48</th><td>    <b>if</b> (I != Signposts.end())</td></tr>
+<tr><th id="49">49</th><td>      <b>return</b> I-&gt;second;</td></tr>
+<tr><th id="50">50</th><td></td></tr>
+<tr><th id="51">51</th><td>    <em>const</em> <em>auto</em> &amp;Inserted = Signposts.insert(</td></tr>
+<tr><th id="52">52</th><td>        std::make_pair(O, os_signpost_id_make_with_pointer(getLogger(), O)));</td></tr>
+<tr><th id="53">53</th><td>    <b>return</b> Inserted.first-&gt;second;</td></tr>
+<tr><th id="54">54</th><td>  }</td></tr>
+<tr><th id="55">55</th><td></td></tr>
+<tr><th id="56">56</th><td><b>public</b>:</td></tr>
+<tr><th id="57">57</th><td>  SignpostEmitterImpl() : SignpostLog(LogCreator(), LogDeleter), Signposts() {}</td></tr>
+<tr><th id="58">58</th><td></td></tr>
+<tr><th id="59">59</th><td>  <em>bool</em> isEnabled() <em>const</em> { <b>return</b> os_signpost_enabled(*SignpostLog); }</td></tr>
+<tr><th id="60">60</th><td></td></tr>
+<tr><th id="61">61</th><td>  <em>void</em> startInterval(<em>const</em> <em>void</em> *O, llvm::StringRef Name) {</td></tr>
+<tr><th id="62">62</th><td>    <b>if</b> (isEnabled()) {</td></tr>
+<tr><th id="63">63</th><td>      <i>// Both strings used here are required to be constant literal strings.</i></td></tr>
+<tr><th id="64">64</th><td>      os_signpost_interval_begin(getLogger(), getSignpostForObject(O),</td></tr>
+<tr><th id="65">65</th><td>                                 <q>"LLVM Timers"</q>, <q>"Begin %s"</q>, Name.data());</td></tr>
+<tr><th id="66">66</th><td>    }</td></tr>
+<tr><th id="67">67</th><td>  }</td></tr>
+<tr><th id="68">68</th><td></td></tr>
+<tr><th id="69">69</th><td>  <em>void</em> endInterval(<em>const</em> <em>void</em> *O, llvm::StringRef Name) {</td></tr>
+<tr><th id="70">70</th><td>    <b>if</b> (isEnabled()) {</td></tr>
+<tr><th id="71">71</th><td>      <i>// Both strings used here are required to be constant literal strings.</i></td></tr>
+<tr><th id="72">72</th><td>      os_signpost_interval_end(getLogger(), getSignpostForObject(O),</td></tr>
+<tr><th id="73">73</th><td>                               <q>"LLVM Timers"</q>, <q>"End %s"</q>, Name.data());</td></tr>
+<tr><th id="74">74</th><td>    }</td></tr>
+<tr><th id="75">75</th><td>  }</td></tr>
+<tr><th id="76">76</th><td>};</td></tr>
+<tr><th id="77">77</th><td>} <i>// end namespace llvm</i></td></tr>
+<tr><th id="78">78</th><td><u>#<span data-ppcond="22">endif</span> // if LLVM_SUPPORT_XCODE_SIGNPOSTS</u></td></tr>
+<tr><th id="79">79</th><td></td></tr>
+<tr><th id="80">80</th><td><u>#<span data-ppcond="80">if</span> <a class="macro" href="../../../build/include/llvm/Config/config.h.html#351" title="0" data-ref="_M/LLVM_SUPPORT_XCODE_SIGNPOSTS">LLVM_SUPPORT_XCODE_SIGNPOSTS</a></u></td></tr>
+<tr><th id="81">81</th><td><u>#define HAVE_ANY_SIGNPOST_IMPL 1</u></td></tr>
+<tr><th id="82">82</th><td><u>#<span data-ppcond="80">else</span></u></td></tr>
+<tr><th id="83">83</th><td><u>#define <dfn class="macro" id="_M/HAVE_ANY_SIGNPOST_IMPL" data-ref="_M/HAVE_ANY_SIGNPOST_IMPL">HAVE_ANY_SIGNPOST_IMPL</dfn> 0</u></td></tr>
+<tr><th id="84">84</th><td><u>#<span data-ppcond="80">endif</span></u></td></tr>
+<tr><th id="85">85</th><td></td></tr>
+<tr><th id="86">86</th><td><a class="type" href="../../include/llvm/Support/Signposts.h.html#llvm::SignpostEmitter" title='llvm::SignpostEmitter' data-ref="llvm::SignpostEmitter" data-ref-filename="llvm..SignpostEmitter">SignpostEmitter</a>::<dfn class="decl def fn" id="_ZN4llvm15SignpostEmitterC1Ev" title='llvm::SignpostEmitter::SignpostEmitter' data-ref="_ZN4llvm15SignpostEmitterC1Ev" data-ref-filename="_ZN4llvm15SignpostEmitterC1Ev">SignpostEmitter</dfn>() {</td></tr>
+<tr><th id="87">87</th><td><u>#<span data-ppcond="87">if</span> <a class="macro" href="#83" title="0" data-ref="_M/HAVE_ANY_SIGNPOST_IMPL">HAVE_ANY_SIGNPOST_IMPL</a></u></td></tr>
+<tr><th id="88">88</th><td>  Impl = <b>new</b> SignpostEmitterImpl();</td></tr>
+<tr><th id="89">89</th><td><u>#<span data-ppcond="87">else</span>  // if HAVE_ANY_SIGNPOST_IMPL</u></td></tr>
+<tr><th id="90">90</th><td>  <a class="member field" href="../../include/llvm/Support/Signposts.h.html#llvm::SignpostEmitter::Impl" title='llvm::SignpostEmitter::Impl' data-ref="llvm::SignpostEmitter::Impl" data-ref-filename="llvm..SignpostEmitter..Impl">Impl</a> = <b>nullptr</b>;</td></tr>
+<tr><th id="91">91</th><td><u>#<span data-ppcond="87">endif</span> // if !HAVE_ANY_SIGNPOST_IMPL</u></td></tr>
+<tr><th id="92">92</th><td>}</td></tr>
+<tr><th id="93">93</th><td></td></tr>
+<tr><th id="94">94</th><td><a class="type" href="../../include/llvm/Support/Signposts.h.html#llvm::SignpostEmitter" title='llvm::SignpostEmitter' data-ref="llvm::SignpostEmitter" data-ref-filename="llvm..SignpostEmitter">SignpostEmitter</a>::<dfn class="decl def fn" id="_ZN4llvm15SignpostEmitterD1Ev" title='llvm::SignpostEmitter::~SignpostEmitter' data-ref="_ZN4llvm15SignpostEmitterD1Ev" data-ref-filename="_ZN4llvm15SignpostEmitterD1Ev">~SignpostEmitter</dfn>() {</td></tr>
+<tr><th id="95">95</th><td><u>#<span data-ppcond="95">if</span> <a class="macro" href="#83" title="0" data-ref="_M/HAVE_ANY_SIGNPOST_IMPL">HAVE_ANY_SIGNPOST_IMPL</a></u></td></tr>
+<tr><th id="96">96</th><td>  <b>delete</b> Impl;</td></tr>
+<tr><th id="97">97</th><td><u>#<span data-ppcond="95">endif</span> // if HAVE_ANY_SIGNPOST_IMPL</u></td></tr>
+<tr><th id="98">98</th><td>}</td></tr>
+<tr><th id="99">99</th><td></td></tr>
+<tr><th id="100">100</th><td><em>bool</em> <a class="type" href="../../include/llvm/Support/Signposts.h.html#llvm::SignpostEmitter" title='llvm::SignpostEmitter' data-ref="llvm::SignpostEmitter" data-ref-filename="llvm..SignpostEmitter">SignpostEmitter</a>::<dfn class="decl def fn" id="_ZNK4llvm15SignpostEmitter9isEnabledEv" title='llvm::SignpostEmitter::isEnabled' data-ref="_ZNK4llvm15SignpostEmitter9isEnabledEv" data-ref-filename="_ZNK4llvm15SignpostEmitter9isEnabledEv">isEnabled</dfn>() <em>const</em> {</td></tr>
+<tr><th id="101">101</th><td><u>#<span data-ppcond="101">if</span> <a class="macro" href="#83" title="0" data-ref="_M/HAVE_ANY_SIGNPOST_IMPL">HAVE_ANY_SIGNPOST_IMPL</a></u></td></tr>
+<tr><th id="102">102</th><td>  <b>return</b> Impl-&gt;isEnabled();</td></tr>
+<tr><th id="103">103</th><td><u>#<span data-ppcond="101">else</span></u></td></tr>
+<tr><th id="104">104</th><td>  <b>return</b> <b>false</b>;</td></tr>
+<tr><th id="105">105</th><td><u>#<span data-ppcond="101">endif</span> // if !HAVE_ANY_SIGNPOST_IMPL</u></td></tr>
+<tr><th id="106">106</th><td>}</td></tr>
+<tr><th id="107">107</th><td></td></tr>
+<tr><th id="108">108</th><td><em>void</em> <a class="type" href="../../include/llvm/Support/Signposts.h.html#llvm::SignpostEmitter" title='llvm::SignpostEmitter' data-ref="llvm::SignpostEmitter" data-ref-filename="llvm..SignpostEmitter">SignpostEmitter</a>::<dfn class="decl def fn" id="_ZN4llvm15SignpostEmitter13startIntervalEPKvNS_9StringRefE" title='llvm::SignpostEmitter::startInterval' data-ref="_ZN4llvm15SignpostEmitter13startIntervalEPKvNS_9StringRefE" data-ref-filename="_ZN4llvm15SignpostEmitter13startIntervalEPKvNS_9StringRefE">startInterval</dfn>(<em>const</em> <em>void</em> *<dfn class="local col1 decl" id="1O" title='O' data-type='const void *' data-ref="1O" data-ref-filename="1O">O</dfn>, <a class="type" href="../../include/llvm/ADT/StringRef.h.html#llvm::StringRef" title='llvm::StringRef' data-ref="llvm::StringRef" data-ref-filename="llvm..StringRef">StringRef</a> <dfn class="local col2 decl" id="2Name" title='Name' data-type='llvm::StringRef' data-ref="2Name" data-ref-filename="2Name">Name</dfn>) {</td></tr>
+<tr><th id="109">109</th><td><u>#<span data-ppcond="109">if</span> <a class="macro" href="#83" title="0" data-ref="_M/HAVE_ANY_SIGNPOST_IMPL">HAVE_ANY_SIGNPOST_IMPL</a></u></td></tr>
+<tr><th id="110">110</th><td>  <b>if</b> (Impl == <b>nullptr</b>)</td></tr>
+<tr><th id="111">111</th><td>    <b>return</b>;</td></tr>
+<tr><th id="112">112</th><td>  <b>return</b> Impl-&gt;startInterval(O, Name);</td></tr>
+<tr><th id="113">113</th><td><u>#<span data-ppcond="109">endif</span> // if !HAVE_ANY_SIGNPOST_IMPL</u></td></tr>
+<tr><th id="114">114</th><td>}</td></tr>
+<tr><th id="115">115</th><td></td></tr>
+<tr><th id="116">116</th><td><em>void</em> <a class="type" href="../../include/llvm/Support/Signposts.h.html#llvm::SignpostEmitter" title='llvm::SignpostEmitter' data-ref="llvm::SignpostEmitter" data-ref-filename="llvm..SignpostEmitter">SignpostEmitter</a>::<dfn class="decl def fn" id="_ZN4llvm15SignpostEmitter11endIntervalEPKvNS_9StringRefE" title='llvm::SignpostEmitter::endInterval' data-ref="_ZN4llvm15SignpostEmitter11endIntervalEPKvNS_9StringRefE" data-ref-filename="_ZN4llvm15SignpostEmitter11endIntervalEPKvNS_9StringRefE">endInterval</dfn>(<em>const</em> <em>void</em> *<dfn class="local col3 decl" id="3O" title='O' data-type='const void *' data-ref="3O" data-ref-filename="3O">O</dfn>, <a class="type" href="../../include/llvm/ADT/StringRef.h.html#llvm::StringRef" title='llvm::StringRef' data-ref="llvm::StringRef" data-ref-filename="llvm..StringRef">StringRef</a> <dfn class="local col4 decl" id="4Name" title='Name' data-type='llvm::StringRef' data-ref="4Name" data-ref-filename="4Name">Name</dfn>) {</td></tr>
+<tr><th id="117">117</th><td><u>#<span data-ppcond="117">if</span> <a class="macro" href="#83" title="0" data-ref="_M/HAVE_ANY_SIGNPOST_IMPL">HAVE_ANY_SIGNPOST_IMPL</a></u></td></tr>
+<tr><th id="118">118</th><td>  <b>if</b> (Impl == <b>nullptr</b>)</td></tr>
+<tr><th id="119">119</th><td>    <b>return</b>;</td></tr>
+<tr><th id="120">120</th><td>  Impl-&gt;endInterval(O, Name);</td></tr>
+<tr><th id="121">121</th><td><u>#<span data-ppcond="117">endif</span> // if !HAVE_ANY_SIGNPOST_IMPL</u></td></tr>
+<tr><th id="122">122</th><td>}</td></tr>
+<tr><th id="123">123</th><td></td></tr>
+</table><hr/><p id='footer'>
+Generated on <em>2021-Jul-01</em> from project llvm revision <em>12</em>

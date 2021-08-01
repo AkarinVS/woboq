@@ -1,0 +1,21 @@
+<dec f='llvm/llvm/include/llvm/XRay/BlockPrinter.h' l='34' type='llvm::raw_ostream &amp;'/>
+<use f='llvm/llvm/include/llvm/XRay/BlockPrinter.h' l='40' u='w' c='_ZN4llvm4xray12BlockPrinterC1ERNS_11raw_ostreamERNS0_13RecordPrinterE'/>
+<use f='llvm/llvm/lib/XRay/BlockPrinter.cpp' l='14' u='m' c='_ZN4llvm4xray12BlockPrinter5visitERNS0_13BufferExtentsE'/>
+<use f='llvm/llvm/lib/XRay/BlockPrinter.cpp' l='22' u='m' c='_ZN4llvm4xray12BlockPrinter5visitERNS0_15NewBufferRecordE'/>
+<use f='llvm/llvm/lib/XRay/BlockPrinter.cpp' l='24' u='m' c='_ZN4llvm4xray12BlockPrinter5visitERNS0_15NewBufferRecordE'/>
+<use f='llvm/llvm/lib/XRay/BlockPrinter.cpp' l='42' u='m' c='_ZN4llvm4xray12BlockPrinter5visitERNS0_14NewCPUIDRecordE'/>
+<use f='llvm/llvm/lib/XRay/BlockPrinter.cpp' l='44' u='m' c='_ZN4llvm4xray12BlockPrinter5visitERNS0_14NewCPUIDRecordE'/>
+<use f='llvm/llvm/lib/XRay/BlockPrinter.cpp' l='46' u='m' c='_ZN4llvm4xray12BlockPrinter5visitERNS0_14NewCPUIDRecordE'/>
+<use f='llvm/llvm/lib/XRay/BlockPrinter.cpp' l='53' u='m' c='_ZN4llvm4xray12BlockPrinter5visitERNS0_13TSCWrapRecordE'/>
+<use f='llvm/llvm/lib/XRay/BlockPrinter.cpp' l='55' u='m' c='_ZN4llvm4xray12BlockPrinter5visitERNS0_13TSCWrapRecordE'/>
+<use f='llvm/llvm/lib/XRay/BlockPrinter.cpp' l='63' u='m' c='_ZN4llvm4xray12BlockPrinter5visitERNS0_17CustomEventRecordE'/>
+<use f='llvm/llvm/lib/XRay/BlockPrinter.cpp' l='65' u='m' c='_ZN4llvm4xray12BlockPrinter5visitERNS0_17CustomEventRecordE'/>
+<use f='llvm/llvm/lib/XRay/BlockPrinter.cpp' l='72' u='m' c='_ZN4llvm4xray12BlockPrinter5visitERNS0_19CustomEventRecordV5E'/>
+<use f='llvm/llvm/lib/XRay/BlockPrinter.cpp' l='74' u='m' c='_ZN4llvm4xray12BlockPrinter5visitERNS0_19CustomEventRecordV5E'/>
+<use f='llvm/llvm/lib/XRay/BlockPrinter.cpp' l='81' u='m' c='_ZN4llvm4xray12BlockPrinter5visitERNS0_16TypedEventRecordE'/>
+<use f='llvm/llvm/lib/XRay/BlockPrinter.cpp' l='83' u='m' c='_ZN4llvm4xray12BlockPrinter5visitERNS0_16TypedEventRecordE'/>
+<use f='llvm/llvm/lib/XRay/BlockPrinter.cpp' l='91' u='m' c='_ZN4llvm4xray12BlockPrinter5visitERNS0_14FunctionRecordE'/>
+<use f='llvm/llvm/lib/XRay/BlockPrinter.cpp' l='93' u='m' c='_ZN4llvm4xray12BlockPrinter5visitERNS0_14FunctionRecordE'/>
+<use f='llvm/llvm/lib/XRay/BlockPrinter.cpp' l='100' u='m' c='_ZN4llvm4xray12BlockPrinter5visitERNS0_13CallArgRecordE'/>
+<use f='llvm/llvm/lib/XRay/BlockPrinter.cpp' l='107' u='m' c='_ZN4llvm4xray12BlockPrinter5visitERNS0_15EndBufferRecordE'/>
+<offset>64</offset>

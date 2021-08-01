@@ -1,0 +1,236 @@
+<!doctype html>
+<html>
+<head>
+<meta name="viewport" content="width=device-width, initial-scale=1.0"><title>PassSupport.h source code [llvm/llvm/include/llvm/PassSupport.h] - Woboq Code Browser</title>
+<meta name="woboq:interestingDefinitions" content="llvm::PassRegistrationListener,llvm::RegisterAGBase,llvm::RegisterAnalysisGroup,llvm::RegisterPass "/>
+<link rel="stylesheet" href="../../../.././data/qtcreator.css" title="QtCreator"/>
+<link rel="alternate stylesheet" href="../../../.././data/kdevelop.css" title="KDevelop"/>
+<script type="text/javascript" src="../../../.././data/jquery/jquery.min.js"></script>
+<script type="text/javascript" src="../../../.././data/jquery/jquery-ui.min.js"></script>
+<script>var file = 'llvm/llvm/include/llvm/PassSupport.h'; var root_path = '../../../..'; var data_path = '../../../.././data'; var ecma_script_api_version = 2;</script>
+<script src='../../../.././data/codebrowser.js'></script>
+</head>
+<body><div id='header'><h1 id='breadcrumb'><span>Browse the source code of </span><a href='../../..'>llvm</a>/<a href='../..'>llvm</a>/<a href='..'>include</a>/<a href='./'>llvm</a>/<a href='PassSupport.h.html'>PassSupport.h</a></h1></div>
+<hr/><div id='content'><table class="code">
+<tr><th id="1">1</th><td><i>//===- llvm/PassSupport.h - Pass Support code -------------------*- C++ -*-===//</i></td></tr>
+<tr><th id="2">2</th><td><i>//</i></td></tr>
+<tr><th id="3">3</th><td><i>// Part of the LLVM Project, under the Apache License v2.0 with LLVM Exceptions.</i></td></tr>
+<tr><th id="4">4</th><td><i>// See <a href="https://llvm.org/LICENSE.txt">https://llvm.org/LICENSE.txt</a> for license information.</i></td></tr>
+<tr><th id="5">5</th><td><i>// SPDX-License-Identifier: Apache-2.0 WITH LLVM-exception</i></td></tr>
+<tr><th id="6">6</th><td><i>//</i></td></tr>
+<tr><th id="7">7</th><td><i>//===----------------------------------------------------------------------===//</i></td></tr>
+<tr><th id="8">8</th><td><i>//</i></td></tr>
+<tr><th id="9">9</th><td><i>// This file defines stuff that is used to define and "use" Passes.  This file</i></td></tr>
+<tr><th id="10">10</th><td><i>// is automatically #included by Pass.h, so:</i></td></tr>
+<tr><th id="11">11</th><td><i>//</i></td></tr>
+<tr><th id="12">12</th><td><i>//           NO .CPP FILES SHOULD INCLUDE THIS FILE DIRECTLY</i></td></tr>
+<tr><th id="13">13</th><td><i>//</i></td></tr>
+<tr><th id="14">14</th><td><i>// Instead, #include Pass.h.</i></td></tr>
+<tr><th id="15">15</th><td><i>//</i></td></tr>
+<tr><th id="16">16</th><td><i>// This file defines Pass registration code and classes used for it.</i></td></tr>
+<tr><th id="17">17</th><td><i>//</i></td></tr>
+<tr><th id="18">18</th><td><i>//===----------------------------------------------------------------------===//</i></td></tr>
+<tr><th id="19">19</th><td></td></tr>
+<tr><th id="20">20</th><td><u>#<span data-ppcond="20">if</span> !defined(<a class="macro" href="Pass.h.html#29" data-ref="_M/LLVM_PASS_H">LLVM_PASS_H</a>) || defined(<span class="macro" data-ref="_M/LLVM_PASSSUPPORT_H">LLVM_PASSSUPPORT_H</span>)</u></td></tr>
+<tr><th id="21">21</th><td><u>#error "Do not include &lt;PassSupport.h&gt;; include &lt;Pass.h&gt; instead"</u></td></tr>
+<tr><th id="22">22</th><td><u>#<span data-ppcond="20">endif</span></u></td></tr>
+<tr><th id="23">23</th><td></td></tr>
+<tr><th id="24">24</th><td><u>#<span data-ppcond="24">ifndef</span> <span class="macro" data-ref="_M/LLVM_PASSSUPPORT_H">LLVM_PASSSUPPORT_H</span></u></td></tr>
+<tr><th id="25">25</th><td><u>#define <dfn class="macro" id="_M/LLVM_PASSSUPPORT_H" data-ref="_M/LLVM_PASSSUPPORT_H">LLVM_PASSSUPPORT_H</dfn></u></td></tr>
+<tr><th id="26">26</th><td></td></tr>
+<tr><th id="27">27</th><td><u>#include <a href="ADT/StringRef.h.html">"llvm/ADT/StringRef.h"</a></u></td></tr>
+<tr><th id="28">28</th><td><u>#include <a href="PassInfo.h.html">"llvm/PassInfo.h"</a></u></td></tr>
+<tr><th id="29">29</th><td><u>#include <a href="PassRegistry.h.html">"llvm/PassRegistry.h"</a></u></td></tr>
+<tr><th id="30">30</th><td><u>#include <a href="Support/Threading.h.html">"llvm/Support/Threading.h"</a></u></td></tr>
+<tr><th id="31">31</th><td><u>#include &lt;functional&gt;</u></td></tr>
+<tr><th id="32">32</th><td></td></tr>
+<tr><th id="33">33</th><td><b>namespace</b> <span class="namespace">llvm</span> {</td></tr>
+<tr><th id="34">34</th><td></td></tr>
+<tr><th id="35">35</th><td><b>class</b> <a class="type" href="Pass.h.html#llvm::Pass" title='llvm::Pass' data-ref="llvm::Pass" data-ref-filename="llvm..Pass" id="llvm::Pass">Pass</a>;</td></tr>
+<tr><th id="36">36</th><td></td></tr>
+<tr><th id="37">37</th><td><u>#define <dfn class="macro" id="_M/INITIALIZE_PASS" data-ref="_M/INITIALIZE_PASS">INITIALIZE_PASS</dfn>(passName, arg, name, cfg, analysis)                    \</u></td></tr>
+<tr><th id="38">38</th><td><u>  static void *initialize##passName##PassOnce(PassRegistry &amp;Registry) {        \</u></td></tr>
+<tr><th id="39">39</th><td><u>    PassInfo *PI = new PassInfo(                                               \</u></td></tr>
+<tr><th id="40">40</th><td><u>        name, arg, &amp;passName::ID,                                              \</u></td></tr>
+<tr><th id="41">41</th><td><u>        PassInfo::NormalCtor_t(callDefaultCtor&lt;passName&gt;), cfg, analysis);     \</u></td></tr>
+<tr><th id="42">42</th><td><u>    Registry.registerPass(*PI, true);                                          \</u></td></tr>
+<tr><th id="43">43</th><td><u>    return PI;                                                                 \</u></td></tr>
+<tr><th id="44">44</th><td><u>  }                                                                            \</u></td></tr>
+<tr><th id="45">45</th><td><u>  static llvm::once_flag Initialize##passName##PassFlag;                       \</u></td></tr>
+<tr><th id="46">46</th><td><u>  void llvm::initialize##passName##Pass(PassRegistry &amp;Registry) {              \</u></td></tr>
+<tr><th id="47">47</th><td><u>    llvm::call_once(Initialize##passName##PassFlag,                            \</u></td></tr>
+<tr><th id="48">48</th><td><u>                    initialize##passName##PassOnce, std::ref(Registry));       \</u></td></tr>
+<tr><th id="49">49</th><td><u>  }</u></td></tr>
+<tr><th id="50">50</th><td></td></tr>
+<tr><th id="51">51</th><td><u>#define <dfn class="macro" id="_M/INITIALIZE_PASS_BEGIN" data-ref="_M/INITIALIZE_PASS_BEGIN">INITIALIZE_PASS_BEGIN</dfn>(passName, arg, name, cfg, analysis)              \</u></td></tr>
+<tr><th id="52">52</th><td><u>  static void *initialize##passName##PassOnce(PassRegistry &amp;Registry) {</u></td></tr>
+<tr><th id="53">53</th><td></td></tr>
+<tr><th id="54">54</th><td><u>#define <dfn class="macro" id="_M/INITIALIZE_PASS_DEPENDENCY" data-ref="_M/INITIALIZE_PASS_DEPENDENCY">INITIALIZE_PASS_DEPENDENCY</dfn>(depName) initialize##depName##Pass(Registry);</u></td></tr>
+<tr><th id="55">55</th><td><u>#define <dfn class="macro" id="_M/INITIALIZE_AG_DEPENDENCY" data-ref="_M/INITIALIZE_AG_DEPENDENCY">INITIALIZE_AG_DEPENDENCY</dfn>(depName)                                      \</u></td></tr>
+<tr><th id="56">56</th><td><u>  initialize##depName##AnalysisGroup(Registry);</u></td></tr>
+<tr><th id="57">57</th><td></td></tr>
+<tr><th id="58">58</th><td><u>#define <dfn class="macro" id="_M/INITIALIZE_PASS_END" data-ref="_M/INITIALIZE_PASS_END">INITIALIZE_PASS_END</dfn>(passName, arg, name, cfg, analysis)                \</u></td></tr>
+<tr><th id="59">59</th><td><u>  PassInfo *PI = new PassInfo(                                                 \</u></td></tr>
+<tr><th id="60">60</th><td><u>      name, arg, &amp;passName::ID,                                                \</u></td></tr>
+<tr><th id="61">61</th><td><u>      PassInfo::NormalCtor_t(callDefaultCtor&lt;passName&gt;), cfg, analysis);       \</u></td></tr>
+<tr><th id="62">62</th><td><u>  Registry.registerPass(*PI, true);                                            \</u></td></tr>
+<tr><th id="63">63</th><td><u>  return PI;                                                                   \</u></td></tr>
+<tr><th id="64">64</th><td><u>  }                                                                            \</u></td></tr>
+<tr><th id="65">65</th><td><u>  static llvm::once_flag Initialize##passName##PassFlag;                       \</u></td></tr>
+<tr><th id="66">66</th><td><u>  void llvm::initialize##passName##Pass(PassRegistry &amp;Registry) {              \</u></td></tr>
+<tr><th id="67">67</th><td><u>    llvm::call_once(Initialize##passName##PassFlag,                            \</u></td></tr>
+<tr><th id="68">68</th><td><u>                    initialize##passName##PassOnce, std::ref(Registry));       \</u></td></tr>
+<tr><th id="69">69</th><td><u>  }</u></td></tr>
+<tr><th id="70">70</th><td></td></tr>
+<tr><th id="71">71</th><td><u>#define <dfn class="macro" id="_M/INITIALIZE_PASS_WITH_OPTIONS" data-ref="_M/INITIALIZE_PASS_WITH_OPTIONS">INITIALIZE_PASS_WITH_OPTIONS</dfn>(PassName, Arg, Name, Cfg, Analysis)       \</u></td></tr>
+<tr><th id="72">72</th><td><u>  INITIALIZE_PASS_BEGIN(PassName, Arg, Name, Cfg, Analysis)                    \</u></td></tr>
+<tr><th id="73">73</th><td><u>  PassName::registerOptions();                                                 \</u></td></tr>
+<tr><th id="74">74</th><td><u>  INITIALIZE_PASS_END(PassName, Arg, Name, Cfg, Analysis)</u></td></tr>
+<tr><th id="75">75</th><td></td></tr>
+<tr><th id="76">76</th><td><u>#define <dfn class="macro" id="_M/INITIALIZE_PASS_WITH_OPTIONS_BEGIN" data-ref="_M/INITIALIZE_PASS_WITH_OPTIONS_BEGIN">INITIALIZE_PASS_WITH_OPTIONS_BEGIN</dfn>(PassName, Arg, Name, Cfg, Analysis) \</u></td></tr>
+<tr><th id="77">77</th><td><u>  INITIALIZE_PASS_BEGIN(PassName, Arg, Name, Cfg, Analysis)                    \</u></td></tr>
+<tr><th id="78">78</th><td><u>  PassName::registerOptions();</u></td></tr>
+<tr><th id="79">79</th><td></td></tr>
+<tr><th id="80">80</th><td><b>template</b> &lt;<b>typename</b> PassName&gt; <a class="type" href="Pass.h.html#llvm::Pass" title='llvm::Pass' data-ref="llvm::Pass" data-ref-filename="llvm..Pass">Pass</a> *<dfn class="decl def fn" id="_ZN4llvm15callDefaultCtorEv" title='llvm::callDefaultCtor' data-ref="_ZN4llvm15callDefaultCtorEv" data-ref-filename="_ZN4llvm15callDefaultCtorEv">callDefaultCtor</dfn>() { <b>return</b> <b>new</b> PassName(); }</td></tr>
+<tr><th id="81">81</th><td></td></tr>
+<tr><th id="82">82</th><td><i>//===---------------------------------------------------------------------------</i></td></tr>
+<tr><th id="83">83</th><td><i>/// RegisterPass&lt;t&gt; template - This template class is used to notify the system</i></td></tr>
+<tr><th id="84">84</th><td><i>/// that a Pass is available for use, and registers it into the internal</i></td></tr>
+<tr><th id="85">85</th><td><i>/// database maintained by the PassManager.  Unless this template is used, opt,</i></td></tr>
+<tr><th id="86">86</th><td><i>/// for example will not be able to see the pass and attempts to create the pass</i></td></tr>
+<tr><th id="87">87</th><td><i>/// will fail. This template is used in the follow manner (at global scope, in</i></td></tr>
+<tr><th id="88">88</th><td><i>/// your .cpp file):</i></td></tr>
+<tr><th id="89">89</th><td><i>///</i></td></tr>
+<tr><th id="90">90</th><td><i>/// static RegisterPass&lt;YourPassClassName&gt; tmp("passopt", "My Pass Name");</i></td></tr>
+<tr><th id="91">91</th><td><i>///</i></td></tr>
+<tr><th id="92">92</th><td><i>/// This statement will cause your pass to be created by calling the default</i></td></tr>
+<tr><th id="93">93</th><td><i>/// constructor exposed by the pass.</i></td></tr>
+<tr><th id="94">94</th><td><b>template</b> &lt;<b>typename</b> passName&gt; <b>struct</b> <dfn class="type def" id="llvm::RegisterPass" title='llvm::RegisterPass' data-ref="llvm::RegisterPass" data-ref-filename="llvm..RegisterPass">RegisterPass</dfn> : <b>public</b> <a class="type" href="PassInfo.h.html#llvm::PassInfo" title='llvm::PassInfo' data-ref="llvm::PassInfo" data-ref-filename="llvm..PassInfo">PassInfo</a> {</td></tr>
+<tr><th id="95">95</th><td>  <i>// Register Pass using default constructor...</i></td></tr>
+<tr><th id="96">96</th><td>  <dfn class="decl def fn" id="_ZN4llvm12RegisterPassC1ENS_9StringRefES1_bb" title='llvm::RegisterPass::RegisterPass&lt;passName&gt;' data-ref="_ZN4llvm12RegisterPassC1ENS_9StringRefES1_bb" data-ref-filename="_ZN4llvm12RegisterPassC1ENS_9StringRefES1_bb">RegisterPass</dfn>(<a class="type" href="ADT/StringRef.h.html#llvm::StringRef" title='llvm::StringRef' data-ref="llvm::StringRef" data-ref-filename="llvm..StringRef">StringRef</a> <dfn class="local col1 decl" id="2901PassArg" title='PassArg' data-type='llvm::StringRef' data-ref="2901PassArg" data-ref-filename="2901PassArg">PassArg</dfn>, <a class="type" href="ADT/StringRef.h.html#llvm::StringRef" title='llvm::StringRef' data-ref="llvm::StringRef" data-ref-filename="llvm..StringRef">StringRef</a> <dfn class="local col2 decl" id="2902Name" title='Name' data-type='llvm::StringRef' data-ref="2902Name" data-ref-filename="2902Name">Name</dfn>, <em>bool</em> <dfn class="local col3 decl" id="2903CFGOnly" title='CFGOnly' data-type='bool' data-ref="2903CFGOnly" data-ref-filename="2903CFGOnly">CFGOnly</dfn> = <b>false</b>,</td></tr>
+<tr><th id="97">97</th><td>               <em>bool</em> <dfn class="local col4 decl" id="2904is_analysis" title='is_analysis' data-type='bool' data-ref="2904is_analysis" data-ref-filename="2904is_analysis">is_analysis</dfn> = <b>false</b>)</td></tr>
+<tr><th id="98">98</th><td>      : <a class="type" href="PassInfo.h.html#llvm::PassInfo" title='llvm::PassInfo' data-ref="llvm::PassInfo" data-ref-filename="llvm..PassInfo">PassInfo</a>(<a class="local col2 ref" href="#2902Name" title='Name' data-ref="2902Name" data-ref-filename="2902Name">Name</a>, <a class="local col1 ref" href="#2901PassArg" title='PassArg' data-ref="2901PassArg" data-ref-filename="2901PassArg">PassArg</a>, &amp;passName::ID,</td></tr>
+<tr><th id="99">99</th><td>                 <a class="type" href="PassInfo.h.html#llvm::PassInfo" title='llvm::PassInfo' data-ref="llvm::PassInfo" data-ref-filename="llvm..PassInfo">PassInfo</a>::<a class="typedef" href="PassInfo.h.html#llvm::PassInfo::NormalCtor_t" title='llvm::PassInfo::NormalCtor_t' data-type='llvm::Pass *(*)()' data-ref="llvm::PassInfo::NormalCtor_t" data-ref-filename="llvm..PassInfo..NormalCtor_t">NormalCtor_t</a>(callDefaultCtor&lt;passName&gt;), <a class="local col3 ref" href="#2903CFGOnly" title='CFGOnly' data-ref="2903CFGOnly" data-ref-filename="2903CFGOnly">CFGOnly</a>,</td></tr>
+<tr><th id="100">100</th><td>                 <a class="local col4 ref" href="#2904is_analysis" title='is_analysis' data-ref="2904is_analysis" data-ref-filename="2904is_analysis">is_analysis</a>) {</td></tr>
+<tr><th id="101">101</th><td>    <a class="type" href="PassRegistry.h.html#llvm::PassRegistry" title='llvm::PassRegistry' data-ref="llvm::PassRegistry" data-ref-filename="llvm..PassRegistry">PassRegistry</a>::<a class="ref fn" href="PassRegistry.h.html#_ZN4llvm12PassRegistry15getPassRegistryEv" title='llvm::PassRegistry::getPassRegistry' data-ref="_ZN4llvm12PassRegistry15getPassRegistryEv" data-ref-filename="_ZN4llvm12PassRegistry15getPassRegistryEv">getPassRegistry</a>()-&gt;<a class="ref fn" href="PassRegistry.h.html#_ZN4llvm12PassRegistry12registerPassERKNS_8PassInfoEb" title='llvm::PassRegistry::registerPass' data-ref="_ZN4llvm12PassRegistry12registerPassERKNS_8PassInfoEb" data-ref-filename="_ZN4llvm12PassRegistry12registerPassERKNS_8PassInfoEb">registerPass</a>(*<b>this</b>);</td></tr>
+<tr><th id="102">102</th><td>  }</td></tr>
+<tr><th id="103">103</th><td>};</td></tr>
+<tr><th id="104">104</th><td></td></tr>
+<tr><th id="105">105</th><td><i class="doc">/// RegisterAnalysisGroup - Register a Pass as a member of an analysis _group_.</i></td></tr>
+<tr><th id="106">106</th><td><i class="doc">/// Analysis groups are used to define an interface (which need not derive from</i></td></tr>
+<tr><th id="107">107</th><td><i class="doc">/// Pass) that is required by passes to do their job.  Analysis Groups differ</i></td></tr>
+<tr><th id="108">108</th><td><i class="doc">/// from normal analyses because any available implementation of the group will</i></td></tr>
+<tr><th id="109">109</th><td><i class="doc">/// be used if it is available.</i></td></tr>
+<tr><th id="110">110</th><td><i class="doc">///</i></td></tr>
+<tr><th id="111">111</th><td><i class="doc">/// If no analysis implementing the interface is available, a default</i></td></tr>
+<tr><th id="112">112</th><td><i class="doc">/// implementation is created and added.  A pass registers itself as the default</i></td></tr>
+<tr><th id="113">113</th><td><i class="doc">/// implementation by specifying 'true' as the second template argument of this</i></td></tr>
+<tr><th id="114">114</th><td><i class="doc">/// class.</i></td></tr>
+<tr><th id="115">115</th><td><i class="doc">///</i></td></tr>
+<tr><th id="116">116</th><td><i class="doc">/// In addition to registering itself as an analysis group member, a pass must</i></td></tr>
+<tr><th id="117">117</th><td><i class="doc">/// register itself normally as well.  Passes may be members of multiple groups</i></td></tr>
+<tr><th id="118">118</th><td><i class="doc">/// and may still be "required" specifically by name.</i></td></tr>
+<tr><th id="119">119</th><td><i class="doc">///</i></td></tr>
+<tr><th id="120">120</th><td><i class="doc">/// The actual interface may also be registered as well (by not specifying the</i></td></tr>
+<tr><th id="121">121</th><td><i class="doc">/// second template argument).  The interface should be registered to associate</i></td></tr>
+<tr><th id="122">122</th><td><i class="doc">/// a nice name with the interface.</i></td></tr>
+<tr><th id="123">123</th><td><b>class</b> <dfn class="type def" id="llvm::RegisterAGBase" title='llvm::RegisterAGBase' data-ref="llvm::RegisterAGBase" data-ref-filename="llvm..RegisterAGBase">RegisterAGBase</dfn> : <b>public</b> <a class="type" href="PassInfo.h.html#llvm::PassInfo" title='llvm::PassInfo' data-ref="llvm::PassInfo" data-ref-filename="llvm..PassInfo">PassInfo</a> {</td></tr>
+<tr><th id="124">124</th><td><b>public</b>:</td></tr>
+<tr><th id="125">125</th><td>  <dfn class="decl fn" id="_ZN4llvm14RegisterAGBaseC1ENS_9StringRefEPKvS3_b" title='llvm::RegisterAGBase::RegisterAGBase' data-ref="_ZN4llvm14RegisterAGBaseC1ENS_9StringRefEPKvS3_b" data-ref-filename="_ZN4llvm14RegisterAGBaseC1ENS_9StringRefEPKvS3_b">RegisterAGBase</dfn>(<a class="type" href="ADT/StringRef.h.html#llvm::StringRef" title='llvm::StringRef' data-ref="llvm::StringRef" data-ref-filename="llvm..StringRef">StringRef</a> <dfn class="local col5 decl" id="2905Name" title='Name' data-type='llvm::StringRef' data-ref="2905Name" data-ref-filename="2905Name">Name</dfn>, <em>const</em> <em>void</em> *<dfn class="local col6 decl" id="2906InterfaceID" title='InterfaceID' data-type='const void *' data-ref="2906InterfaceID" data-ref-filename="2906InterfaceID">InterfaceID</dfn>,</td></tr>
+<tr><th id="126">126</th><td>                 <em>const</em> <em>void</em> *<dfn class="local col7 decl" id="2907PassID" title='PassID' data-type='const void *' data-ref="2907PassID" data-ref-filename="2907PassID">PassID</dfn> = <b>nullptr</b>, <em>bool</em> <dfn class="local col8 decl" id="2908isDefault" title='isDefault' data-type='bool' data-ref="2908isDefault" data-ref-filename="2908isDefault">isDefault</dfn> = <b>false</b>);</td></tr>
+<tr><th id="127">127</th><td>};</td></tr>
+<tr><th id="128">128</th><td></td></tr>
+<tr><th id="129">129</th><td><b>template</b> &lt;<b>typename</b> Interface, <em>bool</em> Default = <b>false</b>&gt;</td></tr>
+<tr><th id="130">130</th><td><b>struct</b> <dfn class="type def" id="llvm::RegisterAnalysisGroup" title='llvm::RegisterAnalysisGroup' data-ref="llvm::RegisterAnalysisGroup" data-ref-filename="llvm..RegisterAnalysisGroup">RegisterAnalysisGroup</dfn> : <b>public</b> <a class="type" href="#llvm::RegisterAGBase" title='llvm::RegisterAGBase' data-ref="llvm::RegisterAGBase" data-ref-filename="llvm..RegisterAGBase">RegisterAGBase</a> {</td></tr>
+<tr><th id="131">131</th><td>  <b>explicit</b> <dfn class="decl def fn" id="_ZN4llvm21RegisterAnalysisGroupC1ERNS_8PassInfoE" title='llvm::RegisterAnalysisGroup::RegisterAnalysisGroup&lt;Interface, Default&gt;' data-ref="_ZN4llvm21RegisterAnalysisGroupC1ERNS_8PassInfoE" data-ref-filename="_ZN4llvm21RegisterAnalysisGroupC1ERNS_8PassInfoE">RegisterAnalysisGroup</dfn>(<a class="type" href="PassInfo.h.html#llvm::PassInfo" title='llvm::PassInfo' data-ref="llvm::PassInfo" data-ref-filename="llvm..PassInfo">PassInfo</a> &amp;<dfn class="local col9 decl" id="2909RPB" title='RPB' data-type='llvm::PassInfo &amp;' data-ref="2909RPB" data-ref-filename="2909RPB">RPB</dfn>)</td></tr>
+<tr><th id="132">132</th><td>      : <a class="type" href="#llvm::RegisterAGBase" title='llvm::RegisterAGBase' data-ref="llvm::RegisterAGBase" data-ref-filename="llvm..RegisterAGBase">RegisterAGBase</a>(<a class="local col9 ref" href="#2909RPB" title='RPB' data-ref="2909RPB" data-ref-filename="2909RPB">RPB</a>.<a class="member fn" href="PassInfo.h.html#_ZNK4llvm8PassInfo11getPassNameEv" title='llvm::PassInfo::getPassName' data-ref="_ZNK4llvm8PassInfo11getPassNameEv" data-ref-filename="_ZNK4llvm8PassInfo11getPassNameEv">getPassName</a>(), &amp;Interface::ID, <a class="local col9 ref" href="#2909RPB" title='RPB' data-ref="2909RPB" data-ref-filename="2909RPB">RPB</a>.<a class="member fn" href="PassInfo.h.html#_ZNK4llvm8PassInfo11getTypeInfoEv" title='llvm::PassInfo::getTypeInfo' data-ref="_ZNK4llvm8PassInfo11getTypeInfoEv" data-ref-filename="_ZNK4llvm8PassInfo11getTypeInfoEv">getTypeInfo</a>(),</td></tr>
+<tr><th id="133">133</th><td>                       <a class="tu member" href="#llvm::RegisterAnalysisGroup::Default" title='llvm::RegisterAnalysisGroup::Default' data-use='r' data-ref="llvm::RegisterAnalysisGroup::Default" data-ref-filename="llvm..RegisterAnalysisGroup..Default">Default</a>) {}</td></tr>
+<tr><th id="134">134</th><td></td></tr>
+<tr><th id="135">135</th><td>  <b>explicit</b> <dfn class="decl def fn" id="_ZN4llvm21RegisterAnalysisGroupC1EPKc" title='llvm::RegisterAnalysisGroup::RegisterAnalysisGroup&lt;Interface, Default&gt;' data-ref="_ZN4llvm21RegisterAnalysisGroupC1EPKc" data-ref-filename="_ZN4llvm21RegisterAnalysisGroupC1EPKc">RegisterAnalysisGroup</dfn>(<em>const</em> <em>char</em> *<dfn class="local col0 decl" id="2910Name" title='Name' data-type='const char *' data-ref="2910Name" data-ref-filename="2910Name">Name</dfn>)</td></tr>
+<tr><th id="136">136</th><td>      : <a class="type" href="#llvm::RegisterAGBase" title='llvm::RegisterAGBase' data-ref="llvm::RegisterAGBase" data-ref-filename="llvm..RegisterAGBase">RegisterAGBase</a>(<a class="local col0 ref" href="#2910Name" title='Name' data-ref="2910Name" data-ref-filename="2910Name">Name</a>, &amp;Interface::ID) {}</td></tr>
+<tr><th id="137">137</th><td>};</td></tr>
+<tr><th id="138">138</th><td></td></tr>
+<tr><th id="139">139</th><td><u>#define <dfn class="macro" id="_M/INITIALIZE_ANALYSIS_GROUP" data-ref="_M/INITIALIZE_ANALYSIS_GROUP">INITIALIZE_ANALYSIS_GROUP</dfn>(agName, name, defaultPass)                   \</u></td></tr>
+<tr><th id="140">140</th><td><u>  static void *initialize##agName##AnalysisGroupOnce(PassRegistry &amp;Registry) { \</u></td></tr>
+<tr><th id="141">141</th><td><u>    initialize##defaultPass##Pass(Registry);                                   \</u></td></tr>
+<tr><th id="142">142</th><td><u>    PassInfo *AI = new PassInfo(name, &amp;agName::ID);                            \</u></td></tr>
+<tr><th id="143">143</th><td><u>    Registry.registerAnalysisGroup(&amp;agName::ID, 0, *AI, false, true);          \</u></td></tr>
+<tr><th id="144">144</th><td><u>    return AI;                                                                 \</u></td></tr>
+<tr><th id="145">145</th><td><u>  }                                                                            \</u></td></tr>
+<tr><th id="146">146</th><td><u>  static llvm::once_flag Initialize##agName##AnalysisGroupFlag;                \</u></td></tr>
+<tr><th id="147">147</th><td><u>  void llvm::initialize##agName##AnalysisGroup(PassRegistry &amp;Registry) {       \</u></td></tr>
+<tr><th id="148">148</th><td><u>    llvm::call_once(Initialize##agName##AnalysisGroupFlag,                     \</u></td></tr>
+<tr><th id="149">149</th><td><u>                    initialize##agName##AnalysisGroupOnce,                     \</u></td></tr>
+<tr><th id="150">150</th><td><u>                    std::ref(Registry));                                       \</u></td></tr>
+<tr><th id="151">151</th><td><u>  }</u></td></tr>
+<tr><th id="152">152</th><td></td></tr>
+<tr><th id="153">153</th><td><u>#define <dfn class="macro" id="_M/INITIALIZE_AG_PASS" data-ref="_M/INITIALIZE_AG_PASS">INITIALIZE_AG_PASS</dfn>(passName, agName, arg, name, cfg, analysis, def)    \</u></td></tr>
+<tr><th id="154">154</th><td><u>  static void *initialize##passName##PassOnce(PassRegistry &amp;Registry) {        \</u></td></tr>
+<tr><th id="155">155</th><td><u>    if (!def)                                                                  \</u></td></tr>
+<tr><th id="156">156</th><td><u>      initialize##agName##AnalysisGroup(Registry);                             \</u></td></tr>
+<tr><th id="157">157</th><td><u>    PassInfo *PI = new PassInfo(                                               \</u></td></tr>
+<tr><th id="158">158</th><td><u>        name, arg, &amp;passName::ID,                                              \</u></td></tr>
+<tr><th id="159">159</th><td><u>        PassInfo::NormalCtor_t(callDefaultCtor&lt;passName&gt;), cfg, analysis);     \</u></td></tr>
+<tr><th id="160">160</th><td><u>    Registry.registerPass(*PI, true);                                          \</u></td></tr>
+<tr><th id="161">161</th><td><u>                                                                               \</u></td></tr>
+<tr><th id="162">162</th><td><u>    PassInfo *AI = new PassInfo(name, &amp;agName::ID);                            \</u></td></tr>
+<tr><th id="163">163</th><td><u>    Registry.registerAnalysisGroup(&amp;agName::ID, &amp;passName::ID, *AI, def,       \</u></td></tr>
+<tr><th id="164">164</th><td><u>                                   true);                                      \</u></td></tr>
+<tr><th id="165">165</th><td><u>    return AI;                                                                 \</u></td></tr>
+<tr><th id="166">166</th><td><u>  }                                                                            \</u></td></tr>
+<tr><th id="167">167</th><td><u>  static llvm::once_flag Initialize##passName##PassFlag;                       \</u></td></tr>
+<tr><th id="168">168</th><td><u>  void llvm::initialize##passName##Pass(PassRegistry &amp;Registry) {              \</u></td></tr>
+<tr><th id="169">169</th><td><u>    llvm::call_once(Initialize##passName##PassFlag,                            \</u></td></tr>
+<tr><th id="170">170</th><td><u>                    initialize##passName##PassOnce, std::ref(Registry));       \</u></td></tr>
+<tr><th id="171">171</th><td><u>  }</u></td></tr>
+<tr><th id="172">172</th><td></td></tr>
+<tr><th id="173">173</th><td><u>#define <dfn class="macro" id="_M/INITIALIZE_AG_PASS_BEGIN" data-ref="_M/INITIALIZE_AG_PASS_BEGIN">INITIALIZE_AG_PASS_BEGIN</dfn>(passName, agName, arg, n, cfg, analysis, def) \</u></td></tr>
+<tr><th id="174">174</th><td><u>  static void *initialize##passName##PassOnce(PassRegistry &amp;Registry) {        \</u></td></tr>
+<tr><th id="175">175</th><td><u>    if (!def)                                                                  \</u></td></tr>
+<tr><th id="176">176</th><td><u>      initialize##agName##AnalysisGroup(Registry);</u></td></tr>
+<tr><th id="177">177</th><td></td></tr>
+<tr><th id="178">178</th><td><u>#define <dfn class="macro" id="_M/INITIALIZE_AG_PASS_END" data-ref="_M/INITIALIZE_AG_PASS_END">INITIALIZE_AG_PASS_END</dfn>(passName, agName, arg, n, cfg, analysis, def)   \</u></td></tr>
+<tr><th id="179">179</th><td><u>  PassInfo *PI = new PassInfo(                                                 \</u></td></tr>
+<tr><th id="180">180</th><td><u>      n, arg, &amp;passName::ID,                                                   \</u></td></tr>
+<tr><th id="181">181</th><td><u>      PassInfo::NormalCtor_t(callDefaultCtor&lt;passName&gt;), cfg, analysis);       \</u></td></tr>
+<tr><th id="182">182</th><td><u>  Registry.registerPass(*PI, true);                                            \</u></td></tr>
+<tr><th id="183">183</th><td><u>                                                                               \</u></td></tr>
+<tr><th id="184">184</th><td><u>  PassInfo *AI = new PassInfo(n, &amp;agName::ID);                                 \</u></td></tr>
+<tr><th id="185">185</th><td><u>  Registry.registerAnalysisGroup(&amp;agName::ID, &amp;passName::ID, *AI, def, true);  \</u></td></tr>
+<tr><th id="186">186</th><td><u>  return AI;                                                                   \</u></td></tr>
+<tr><th id="187">187</th><td><u>  }                                                                            \</u></td></tr>
+<tr><th id="188">188</th><td><u>  static llvm::once_flag Initialize##passName##PassFlag;                       \</u></td></tr>
+<tr><th id="189">189</th><td><u>  void llvm::initialize##passName##Pass(PassRegistry &amp;Registry) {              \</u></td></tr>
+<tr><th id="190">190</th><td><u>    llvm::call_once(Initialize##passName##PassFlag,                            \</u></td></tr>
+<tr><th id="191">191</th><td><u>                    initialize##passName##PassOnce, std::ref(Registry));       \</u></td></tr>
+<tr><th id="192">192</th><td><u>  }</u></td></tr>
+<tr><th id="193">193</th><td></td></tr>
+<tr><th id="194">194</th><td><i>//===---------------------------------------------------------------------------</i></td></tr>
+<tr><th id="195">195</th><td><i>/// PassRegistrationListener class - This class is meant to be derived from by</i></td></tr>
+<tr><th id="196">196</th><td><i>/// clients that are interested in which passes get registered and unregistered</i></td></tr>
+<tr><th id="197">197</th><td><i>/// at runtime (which can be because of the RegisterPass constructors being run</i></td></tr>
+<tr><th id="198">198</th><td><i>/// as the program starts up, or may be because a shared object just got</i></td></tr>
+<tr><th id="199">199</th><td><i>/// loaded).</i></td></tr>
+<tr><th id="200">200</th><td><b>struct</b> <dfn class="type def" id="llvm::PassRegistrationListener" title='llvm::PassRegistrationListener' data-ref="llvm::PassRegistrationListener" data-ref-filename="llvm..PassRegistrationListener">PassRegistrationListener</dfn> {</td></tr>
+<tr><th id="201">201</th><td>  <dfn class="decl def fn" id="_ZN4llvm24PassRegistrationListenerC1Ev" title='llvm::PassRegistrationListener::PassRegistrationListener' data-ref="_ZN4llvm24PassRegistrationListenerC1Ev" data-ref-filename="_ZN4llvm24PassRegistrationListenerC1Ev">PassRegistrationListener</dfn>() = <b>default</b>;</td></tr>
+<tr><th id="202">202</th><td>  <b>virtual</b> <dfn class="virtual decl def fn" id="_ZN4llvm24PassRegistrationListenerD1Ev" title='llvm::PassRegistrationListener::~PassRegistrationListener' data-ref="_ZN4llvm24PassRegistrationListenerD1Ev" data-ref-filename="_ZN4llvm24PassRegistrationListenerD1Ev">~PassRegistrationListener</dfn>() = <b>default</b>;</td></tr>
+<tr><th id="203">203</th><td></td></tr>
+<tr><th id="204">204</th><td>  <i class="doc">/// Callback functions - These functions are invoked whenever a pass is loaded</i></td></tr>
+<tr><th id="205">205</th><td><i class="doc">  /// or removed from the current executable.</i></td></tr>
+<tr><th id="206">206</th><td>  <b>virtual</b> <em>void</em> <dfn class="virtual decl def fn" id="_ZN4llvm24PassRegistrationListener14passRegisteredEPKNS_8PassInfoE" title='llvm::PassRegistrationListener::passRegistered' data-ref="_ZN4llvm24PassRegistrationListener14passRegisteredEPKNS_8PassInfoE" data-ref-filename="_ZN4llvm24PassRegistrationListener14passRegisteredEPKNS_8PassInfoE">passRegistered</dfn>(<em>const</em> <a class="type" href="PassInfo.h.html#llvm::PassInfo" title='llvm::PassInfo' data-ref="llvm::PassInfo" data-ref-filename="llvm..PassInfo">PassInfo</a> *) {}</td></tr>
+<tr><th id="207">207</th><td></td></tr>
+<tr><th id="208">208</th><td>  <i class="doc">/// enumeratePasses - Iterate over the registered passes, calling the</i></td></tr>
+<tr><th id="209">209</th><td><i class="doc">  /// passEnumerate callback on each PassInfo object.</i></td></tr>
+<tr><th id="210">210</th><td>  <em>void</em> <dfn class="decl fn" id="_ZN4llvm24PassRegistrationListener15enumeratePassesEv" title='llvm::PassRegistrationListener::enumeratePasses' data-ref="_ZN4llvm24PassRegistrationListener15enumeratePassesEv" data-ref-filename="_ZN4llvm24PassRegistrationListener15enumeratePassesEv">enumeratePasses</dfn>();</td></tr>
+<tr><th id="211">211</th><td></td></tr>
+<tr><th id="212">212</th><td>  <i class="doc">/// passEnumerate - Callback function invoked when someone calls</i></td></tr>
+<tr><th id="213">213</th><td><i class="doc">  /// enumeratePasses on this PassRegistrationListener object.</i></td></tr>
+<tr><th id="214">214</th><td>  <b>virtual</b> <em>void</em> <dfn class="virtual decl def fn" id="_ZN4llvm24PassRegistrationListener13passEnumerateEPKNS_8PassInfoE" title='llvm::PassRegistrationListener::passEnumerate' data-ref="_ZN4llvm24PassRegistrationListener13passEnumerateEPKNS_8PassInfoE" data-ref-filename="_ZN4llvm24PassRegistrationListener13passEnumerateEPKNS_8PassInfoE">passEnumerate</dfn>(<em>const</em> <a class="type" href="PassInfo.h.html#llvm::PassInfo" title='llvm::PassInfo' data-ref="llvm::PassInfo" data-ref-filename="llvm..PassInfo">PassInfo</a> *) {}</td></tr>
+<tr><th id="215">215</th><td>};</td></tr>
+<tr><th id="216">216</th><td></td></tr>
+<tr><th id="217">217</th><td>} <i>// end namespace llvm</i></td></tr>
+<tr><th id="218">218</th><td></td></tr>
+<tr><th id="219">219</th><td><u>#<span data-ppcond="24">endif</span> // LLVM_PASSSUPPORT_H</u></td></tr>
+<tr><th id="220">220</th><td></td></tr>
+</table><hr/><p id='footer'>
+Generated while processing <a href='../../../clang/examples/clang-interpreter/main.cpp.html'>llvm/clang/examples/clang-interpreter/main.cpp</a><br/>Generated on <em>2021-Jul-01</em> from project llvm revision <em>12</em>

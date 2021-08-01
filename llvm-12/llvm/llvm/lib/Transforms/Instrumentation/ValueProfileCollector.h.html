@@ -1,0 +1,100 @@
+<!doctype html>
+<html>
+<head>
+<meta name="viewport" content="width=device-width, initial-scale=1.0"><title>ValueProfileCollector.h source code [llvm/llvm/lib/Transforms/Instrumentation/ValueProfileCollector.h] - Woboq Code Browser</title>
+<meta name="woboq:interestingDefinitions" content="llvm::ValueProfileCollector "/>
+<link rel="stylesheet" href="../../../../.././data/qtcreator.css" title="QtCreator"/>
+<link rel="alternate stylesheet" href="../../../../.././data/kdevelop.css" title="KDevelop"/>
+<script type="text/javascript" src="../../../../.././data/jquery/jquery.min.js"></script>
+<script type="text/javascript" src="../../../../.././data/jquery/jquery-ui.min.js"></script>
+<script>var file = 'llvm/llvm/lib/Transforms/Instrumentation/ValueProfileCollector.h'; var root_path = '../../../../..'; var data_path = '../../../../.././data'; var ecma_script_api_version = 2;</script>
+<script src='../../../../.././data/codebrowser.js'></script>
+</head>
+<body><div id='header'><h1 id='breadcrumb'><span>Browse the source code of </span><a href='../../../..'>llvm</a>/<a href='../../..'>llvm</a>/<a href='../..'>lib</a>/<a href='..'>Transforms</a>/<a href='./'>Instrumentation</a>/<a href='ValueProfileCollector.h.html'>ValueProfileCollector.h</a></h1></div>
+<hr/><div id='content'><table class="code">
+<tr><th id="1">1</th><td><i>//===- ValueProfileCollector.h - determine what to value profile ----------===//</i></td></tr>
+<tr><th id="2">2</th><td><i>//</i></td></tr>
+<tr><th id="3">3</th><td><i>// Part of the LLVM Project, under the Apache License v2.0 with LLVM Exceptions.</i></td></tr>
+<tr><th id="4">4</th><td><i>// See <a href="https://llvm.org/LICENSE.txt">https://llvm.org/LICENSE.txt</a> for license information.</i></td></tr>
+<tr><th id="5">5</th><td><i>// SPDX-License-Identifier: Apache-2.0 WITH LLVM-exception</i></td></tr>
+<tr><th id="6">6</th><td><i>//</i></td></tr>
+<tr><th id="7">7</th><td><i>//===----------------------------------------------------------------------===//</i></td></tr>
+<tr><th id="8">8</th><td><i>//</i></td></tr>
+<tr><th id="9">9</th><td><i>// This file contains a utility class, ValueProfileCollector, that is used to</i></td></tr>
+<tr><th id="10">10</th><td><i>// determine what kind of llvm::Value's are worth value-profiling, at which</i></td></tr>
+<tr><th id="11">11</th><td><i>// point in the program, and which instruction holds the Value Profile metadata.</i></td></tr>
+<tr><th id="12">12</th><td><i>// Currently, the only users of this utility is the PGOInstrumentation[Gen|Use]</i></td></tr>
+<tr><th id="13">13</th><td><i>// passes.</i></td></tr>
+<tr><th id="14">14</th><td><i>//===----------------------------------------------------------------------===//</i></td></tr>
+<tr><th id="15">15</th><td></td></tr>
+<tr><th id="16">16</th><td><u>#<span data-ppcond="16">ifndef</span> <span class="macro" data-ref="_M/LLVM_ANALYSIS_PROFILE_GEN_ANALYSIS_H">LLVM_ANALYSIS_PROFILE_GEN_ANALYSIS_H</span></u></td></tr>
+<tr><th id="17">17</th><td><u>#define <dfn class="macro" id="_M/LLVM_ANALYSIS_PROFILE_GEN_ANALYSIS_H" data-ref="_M/LLVM_ANALYSIS_PROFILE_GEN_ANALYSIS_H">LLVM_ANALYSIS_PROFILE_GEN_ANALYSIS_H</dfn></u></td></tr>
+<tr><th id="18">18</th><td></td></tr>
+<tr><th id="19">19</th><td><u>#include <a href="../../../include/llvm/Analysis/TargetLibraryInfo.h.html">"llvm/Analysis/TargetLibraryInfo.h"</a></u></td></tr>
+<tr><th id="20">20</th><td><u>#include <a href="../../../include/llvm/ProfileData/InstrProf.h.html">"llvm/ProfileData/InstrProf.h"</a></u></td></tr>
+<tr><th id="21">21</th><td><u>#include &lt;memory&gt;</u></td></tr>
+<tr><th id="22">22</th><td><u>#include &lt;vector&gt;</u></td></tr>
+<tr><th id="23">23</th><td></td></tr>
+<tr><th id="24">24</th><td><b>namespace</b> <span class="namespace">llvm</span> {</td></tr>
+<tr><th id="25">25</th><td></td></tr>
+<tr><th id="26">26</th><td><b>class</b> <a class="type" href="../../../include/llvm/IR/Function.h.html#llvm::Function" title='llvm::Function' data-ref="llvm::Function" data-ref-filename="llvm..Function" id="llvm::Function">Function</a>;</td></tr>
+<tr><th id="27">27</th><td><b>class</b> <a class="type" href="../../../include/llvm/IR/Instruction.h.html#llvm::Instruction" title='llvm::Instruction' data-ref="llvm::Instruction" data-ref-filename="llvm..Instruction" id="llvm::Instruction">Instruction</a>;</td></tr>
+<tr><th id="28">28</th><td><b>class</b> <a class="type" href="../../../include/llvm/IR/Value.h.html#llvm::Value" title='llvm::Value' data-ref="llvm::Value" data-ref-filename="llvm..Value" id="llvm::Value">Value</a>;</td></tr>
+<tr><th id="29">29</th><td></td></tr>
+<tr><th id="30">30</th><td><i class="doc">/// Utility analysis that determines what values are worth profiling.</i></td></tr>
+<tr><th id="31">31</th><td><i class="doc">/// The actual logic is inside the ValueProfileCollectorImpl, whose job is to</i></td></tr>
+<tr><th id="32">32</th><td><i class="doc">/// populate the Candidates vector.</i></td></tr>
+<tr><th id="33">33</th><td><i class="doc">///</i></td></tr>
+<tr><th id="34">34</th><td><i class="doc">/// Value profiling an expression means to track the values that this expression</i></td></tr>
+<tr><th id="35">35</th><td><i class="doc">/// takes at runtime and the frequency of each value.</i></td></tr>
+<tr><th id="36">36</th><td><i class="doc">/// It is important to distinguish between two sets of value profiles for a</i></td></tr>
+<tr><th id="37">37</th><td><i class="doc">/// particular expression:</i></td></tr>
+<tr><th id="38">38</th><td><i class="doc">///  1) The set of values at the point of evaluation.</i></td></tr>
+<tr><th id="39">39</th><td><i class="doc">///  2) The set of values at the point of use.</i></td></tr>
+<tr><th id="40">40</th><td><i class="doc">/// In some cases, the two sets are identical, but it's not unusual for the two</i></td></tr>
+<tr><th id="41">41</th><td><i class="doc">/// to differ.</i></td></tr>
+<tr><th id="42">42</th><td><i class="doc">///</i></td></tr>
+<tr><th id="43">43</th><td><i class="doc">/// To elaborate more, consider this C code, and focus on the expression `nn`:</i></td></tr>
+<tr><th id="44">44</th><td><i class="doc">///  void foo(int nn, bool b) {</i></td></tr>
+<tr><th id="45">45</th><td><i class="doc">///    if (b)  memcpy(x, y, nn);</i></td></tr>
+<tr><th id="46">46</th><td><i class="doc">///  }</i></td></tr>
+<tr><th id="47">47</th><td><i class="doc">/// The point of evaluation can be as early as the start of the function, and</i></td></tr>
+<tr><th id="48">48</th><td><i class="doc">/// let's say the value profile for `nn` is:</i></td></tr>
+<tr><th id="49">49</th><td><i class="doc">///     total=100; (value,freq) set = {(8,10), (32,50)}</i></td></tr>
+<tr><th id="50">50</th><td><i class="doc">/// The point of use is right before we call memcpy, and since we execute the</i></td></tr>
+<tr><th id="51">51</th><td><i class="doc">/// memcpy conditionally, the value profile of `nn` can be:</i></td></tr>
+<tr><th id="52">52</th><td><i class="doc">///     total=15; (value,freq) set = {(8,10), (4,5)}</i></td></tr>
+<tr><th id="53">53</th><td><i class="doc">///</i></td></tr>
+<tr><th id="54">54</th><td><i class="doc">/// For this reason, a plugin is responsible for computing the insertion point</i></td></tr>
+<tr><th id="55">55</th><td><i class="doc">/// for each value to be profiled. The `CandidateInfo` structure encapsulates</i></td></tr>
+<tr><th id="56">56</th><td><i class="doc">/// all the information needed for each value profile site.</i></td></tr>
+<tr><th id="57">57</th><td><b>class</b> <dfn class="type def" id="llvm::ValueProfileCollector" title='llvm::ValueProfileCollector' data-ref="llvm::ValueProfileCollector" data-ref-filename="llvm..ValueProfileCollector">ValueProfileCollector</dfn> {</td></tr>
+<tr><th id="58">58</th><td><b>public</b>:</td></tr>
+<tr><th id="59">59</th><td>  <b>struct</b> <dfn class="type def" id="llvm::ValueProfileCollector::CandidateInfo" title='llvm::ValueProfileCollector::CandidateInfo' data-ref="llvm::ValueProfileCollector::CandidateInfo" data-ref-filename="llvm..ValueProfileCollector..CandidateInfo">CandidateInfo</dfn> {</td></tr>
+<tr><th id="60">60</th><td>    <a class="type" href="../../../include/llvm/IR/Value.h.html#llvm::Value" title='llvm::Value' data-ref="llvm::Value" data-ref-filename="llvm..Value">Value</a> *<dfn class="decl field" id="llvm::ValueProfileCollector::CandidateInfo::V" title='llvm::ValueProfileCollector::CandidateInfo::V' data-ref="llvm::ValueProfileCollector::CandidateInfo::V" data-ref-filename="llvm..ValueProfileCollector..CandidateInfo..V">V</dfn>;                   <i>// The value to profile.</i></td></tr>
+<tr><th id="61">61</th><td>    <a class="type" href="../../../include/llvm/IR/Instruction.h.html#llvm::Instruction" title='llvm::Instruction' data-ref="llvm::Instruction" data-ref-filename="llvm..Instruction">Instruction</a> *<dfn class="decl field" id="llvm::ValueProfileCollector::CandidateInfo::InsertPt" title='llvm::ValueProfileCollector::CandidateInfo::InsertPt' data-ref="llvm::ValueProfileCollector::CandidateInfo::InsertPt" data-ref-filename="llvm..ValueProfileCollector..CandidateInfo..InsertPt">InsertPt</dfn>;      <i>// Insert the VP lib call before this instr.</i></td></tr>
+<tr><th id="62">62</th><td>    <a class="type" href="../../../include/llvm/IR/Instruction.h.html#llvm::Instruction" title='llvm::Instruction' data-ref="llvm::Instruction" data-ref-filename="llvm..Instruction">Instruction</a> *<dfn class="decl field" id="llvm::ValueProfileCollector::CandidateInfo::AnnotatedInst" title='llvm::ValueProfileCollector::CandidateInfo::AnnotatedInst' data-ref="llvm::ValueProfileCollector::CandidateInfo::AnnotatedInst" data-ref-filename="llvm..ValueProfileCollector..CandidateInfo..AnnotatedInst">AnnotatedInst</dfn>; <i>// Where metadata is attached.</i></td></tr>
+<tr><th id="63">63</th><td>  };</td></tr>
+<tr><th id="64">64</th><td></td></tr>
+<tr><th id="65">65</th><td>  <dfn class="decl fn" id="_ZN4llvm21ValueProfileCollectorC1ERNS_8FunctionERNS_17TargetLibraryInfoE" title='llvm::ValueProfileCollector::ValueProfileCollector' data-ref="_ZN4llvm21ValueProfileCollectorC1ERNS_8FunctionERNS_17TargetLibraryInfoE" data-ref-filename="_ZN4llvm21ValueProfileCollectorC1ERNS_8FunctionERNS_17TargetLibraryInfoE">ValueProfileCollector</dfn>(<a class="type" href="../../../include/llvm/IR/Function.h.html#llvm::Function" title='llvm::Function' data-ref="llvm::Function" data-ref-filename="llvm..Function">Function</a> &amp;<dfn class="local col1 decl" id="1Fn" title='Fn' data-type='llvm::Function &amp;' data-ref="1Fn" data-ref-filename="1Fn">Fn</dfn>, <a class="type" href="../../../include/llvm/Analysis/TargetLibraryInfo.h.html#llvm::TargetLibraryInfo" title='llvm::TargetLibraryInfo' data-ref="llvm::TargetLibraryInfo" data-ref-filename="llvm..TargetLibraryInfo">TargetLibraryInfo</a> &amp;<dfn class="local col2 decl" id="2TLI" title='TLI' data-type='llvm::TargetLibraryInfo &amp;' data-ref="2TLI" data-ref-filename="2TLI">TLI</dfn>);</td></tr>
+<tr><th id="66">66</th><td>  <dfn class="decl def fn" id="_ZN4llvm21ValueProfileCollectorC1EOS0_" title='llvm::ValueProfileCollector::ValueProfileCollector' data-ref="_ZN4llvm21ValueProfileCollectorC1EOS0_" data-ref-filename="_ZN4llvm21ValueProfileCollectorC1EOS0_">ValueProfileCollector</dfn>(<a class="type" href="#llvm::ValueProfileCollector" title='llvm::ValueProfileCollector' data-ref="llvm::ValueProfileCollector" data-ref-filename="llvm..ValueProfileCollector">ValueProfileCollector</a> &amp;&amp;) = <b>delete</b>;</td></tr>
+<tr><th id="67">67</th><td>  <a class="type" href="#llvm::ValueProfileCollector" title='llvm::ValueProfileCollector' data-ref="llvm::ValueProfileCollector" data-ref-filename="llvm..ValueProfileCollector">ValueProfileCollector</a> &amp;<dfn class="decl def fn" id="_ZN4llvm21ValueProfileCollectoraSEOS0_" title='llvm::ValueProfileCollector::operator=' data-ref="_ZN4llvm21ValueProfileCollectoraSEOS0_" data-ref-filename="_ZN4llvm21ValueProfileCollectoraSEOS0_"><b>operator</b>=</dfn>(<a class="type" href="#llvm::ValueProfileCollector" title='llvm::ValueProfileCollector' data-ref="llvm::ValueProfileCollector" data-ref-filename="llvm..ValueProfileCollector">ValueProfileCollector</a> &amp;&amp;) = <b>delete</b>;</td></tr>
+<tr><th id="68">68</th><td></td></tr>
+<tr><th id="69">69</th><td>  <dfn class="decl def fn" id="_ZN4llvm21ValueProfileCollectorC1ERKS0_" title='llvm::ValueProfileCollector::ValueProfileCollector' data-ref="_ZN4llvm21ValueProfileCollectorC1ERKS0_" data-ref-filename="_ZN4llvm21ValueProfileCollectorC1ERKS0_">ValueProfileCollector</dfn>(<em>const</em> <a class="type" href="#llvm::ValueProfileCollector" title='llvm::ValueProfileCollector' data-ref="llvm::ValueProfileCollector" data-ref-filename="llvm..ValueProfileCollector">ValueProfileCollector</a> &amp;) = <b>delete</b>;</td></tr>
+<tr><th id="70">70</th><td>  <a class="type" href="#llvm::ValueProfileCollector" title='llvm::ValueProfileCollector' data-ref="llvm::ValueProfileCollector" data-ref-filename="llvm..ValueProfileCollector">ValueProfileCollector</a> &amp;<dfn class="decl def fn" id="_ZN4llvm21ValueProfileCollectoraSERKS0_" title='llvm::ValueProfileCollector::operator=' data-ref="_ZN4llvm21ValueProfileCollectoraSERKS0_" data-ref-filename="_ZN4llvm21ValueProfileCollectoraSERKS0_"><b>operator</b>=</dfn>(<em>const</em> <a class="type" href="#llvm::ValueProfileCollector" title='llvm::ValueProfileCollector' data-ref="llvm::ValueProfileCollector" data-ref-filename="llvm..ValueProfileCollector">ValueProfileCollector</a> &amp;) = <b>delete</b>;</td></tr>
+<tr><th id="71">71</th><td>  <dfn class="decl fn" id="_ZN4llvm21ValueProfileCollectorD1Ev" title='llvm::ValueProfileCollector::~ValueProfileCollector' data-ref="_ZN4llvm21ValueProfileCollectorD1Ev" data-ref-filename="_ZN4llvm21ValueProfileCollectorD1Ev">~ValueProfileCollector</dfn>();</td></tr>
+<tr><th id="72">72</th><td></td></tr>
+<tr><th id="73">73</th><td>  <i class="doc">/// returns a list of value profiling candidates of the given kind</i></td></tr>
+<tr><th id="74">74</th><td>  <span class="namespace">std::</span><span class='type' title='std::vector' data-ref="std::vector" data-ref-filename="std..vector">vector</span>&lt;<a class="type" href="#llvm::ValueProfileCollector::CandidateInfo" title='llvm::ValueProfileCollector::CandidateInfo' data-ref="llvm::ValueProfileCollector::CandidateInfo" data-ref-filename="llvm..ValueProfileCollector..CandidateInfo">CandidateInfo</a>&gt; <dfn class="decl fn" id="_ZNK4llvm21ValueProfileCollector3getENS_18InstrProfValueKindE" title='llvm::ValueProfileCollector::get' data-ref="_ZNK4llvm21ValueProfileCollector3getENS_18InstrProfValueKindE" data-ref-filename="_ZNK4llvm21ValueProfileCollector3getENS_18InstrProfValueKindE">get</dfn>(<a class="type" href="../../../include/llvm/ProfileData/InstrProf.h.html#llvm::InstrProfValueKind" title='llvm::InstrProfValueKind' data-ref="llvm::InstrProfValueKind" data-ref-filename="llvm..InstrProfValueKind">InstrProfValueKind</a> <dfn class="local col3 decl" id="3Kind" title='Kind' data-type='llvm::InstrProfValueKind' data-ref="3Kind" data-ref-filename="3Kind">Kind</dfn>) <em>const</em>;</td></tr>
+<tr><th id="75">75</th><td></td></tr>
+<tr><th id="76">76</th><td><b>private</b>:</td></tr>
+<tr><th id="77">77</th><td>  <b>class</b> <dfn class="type" id="llvm::ValueProfileCollector::ValueProfileCollectorImpl" title='llvm::ValueProfileCollector::ValueProfileCollectorImpl' data-ref="llvm::ValueProfileCollector::ValueProfileCollectorImpl" data-ref-filename="llvm..ValueProfileCollector..ValueProfileCollectorImpl">ValueProfileCollectorImpl</dfn>;</td></tr>
+<tr><th id="78">78</th><td>  <span class="namespace">std::</span><span class='type' title='std::unique_ptr' data-ref="std::unique_ptr" data-ref-filename="std..unique_ptr">unique_ptr</span>&lt;<a class="type" href="#llvm::ValueProfileCollector::ValueProfileCollectorImpl" title='llvm::ValueProfileCollector::ValueProfileCollectorImpl' data-ref="llvm::ValueProfileCollector::ValueProfileCollectorImpl" data-ref-filename="llvm..ValueProfileCollector..ValueProfileCollectorImpl">ValueProfileCollectorImpl</a>&gt; <dfn class="decl field" id="llvm::ValueProfileCollector::PImpl" title='llvm::ValueProfileCollector::PImpl' data-ref="llvm::ValueProfileCollector::PImpl" data-ref-filename="llvm..ValueProfileCollector..PImpl">PImpl</dfn>;</td></tr>
+<tr><th id="79">79</th><td>};</td></tr>
+<tr><th id="80">80</th><td></td></tr>
+<tr><th id="81">81</th><td>} <i>// namespace llvm</i></td></tr>
+<tr><th id="82">82</th><td></td></tr>
+<tr><th id="83">83</th><td><u>#<span data-ppcond="16">endif</span></u></td></tr>
+<tr><th id="84">84</th><td></td></tr>
+</table><hr/><p id='footer'>
+Generated while processing <a href='PGOInstrumentation.cpp.html'>llvm/llvm/lib/Transforms/Instrumentation/PGOInstrumentation.cpp</a><br/>Generated on <em>2021-Jul-01</em> from project llvm revision <em>12</em>

@@ -1,0 +1,410 @@
+<!doctype html>
+<html>
+<head>
+<meta name="viewport" content="width=device-width, initial-scale=1.0"><title>emutls.c source code [llvm/compiler-rt/lib/builtins/emutls.c] - Woboq Code Browser</title>
+<meta name="woboq:interestingDefinitions" content="__emutls_control,emutls_address_array "/>
+<link rel="stylesheet" href="../../../.././data/qtcreator.css" title="QtCreator"/>
+<link rel="alternate stylesheet" href="../../../.././data/kdevelop.css" title="KDevelop"/>
+<script type="text/javascript" src="../../../.././data/jquery/jquery.min.js"></script>
+<script type="text/javascript" src="../../../.././data/jquery/jquery-ui.min.js"></script>
+<script>var file = 'llvm/compiler-rt/lib/builtins/emutls.c'; var root_path = '../../../..'; var data_path = '../../../.././data'; var ecma_script_api_version = 2;</script>
+<script src='../../../.././data/codebrowser.js'></script>
+</head>
+<body><div id='header'><h1 id='breadcrumb'><span>Browse the source code of </span><a href='../../..'>llvm</a>/<a href='../..'>compiler-rt</a>/<a href='..'>lib</a>/<a href='./'>builtins</a>/<a href='emutls.c.html'>emutls.c</a></h1></div>
+<hr/><div id='content'><table class="code">
+<tr><th id="1">1</th><td><i>//===---------- emutls.c - Implements __emutls_get_address ---------------===//</i></td></tr>
+<tr><th id="2">2</th><td><i>//</i></td></tr>
+<tr><th id="3">3</th><td><i>// Part of the LLVM Project, under the Apache License v2.0 with LLVM Exceptions.</i></td></tr>
+<tr><th id="4">4</th><td><i>// See <a href="https://llvm.org/LICENSE.txt">https://llvm.org/LICENSE.txt</a> for license information.</i></td></tr>
+<tr><th id="5">5</th><td><i>// SPDX-License-Identifier: Apache-2.0 WITH LLVM-exception</i></td></tr>
+<tr><th id="6">6</th><td><i>//</i></td></tr>
+<tr><th id="7">7</th><td><i>//===----------------------------------------------------------------------===//</i></td></tr>
+<tr><th id="8">8</th><td></td></tr>
+<tr><th id="9">9</th><td><u>#include &lt;stdint.h&gt;</u></td></tr>
+<tr><th id="10">10</th><td><u>#include <a href="../../../../include/stdlib.h.html">&lt;stdlib.h&gt;</a></u></td></tr>
+<tr><th id="11">11</th><td><u>#include <a href="../../../../include/string.h.html">&lt;string.h&gt;</a></u></td></tr>
+<tr><th id="12">12</th><td></td></tr>
+<tr><th id="13">13</th><td><u>#include <a href="int_lib.h.html">"int_lib.h"</a></u></td></tr>
+<tr><th id="14">14</th><td></td></tr>
+<tr><th id="15">15</th><td><u>#<span data-ppcond="15">ifdef</span> <span class="macro" data-ref="_M/__BIONIC__">__BIONIC__</span></u></td></tr>
+<tr><th id="16">16</th><td><i>// There are 4 pthread key cleanup rounds on Bionic. Delay emutls deallocation</i></td></tr>
+<tr><th id="17">17</th><td><i>// to round 2. We need to delay deallocation because:</i></td></tr>
+<tr><th id="18">18</th><td><i>//  - Android versions older than M lack __cxa_thread_atexit_impl, so apps</i></td></tr>
+<tr><th id="19">19</th><td><i>//    use a pthread key destructor to call C++ destructors.</i></td></tr>
+<tr><th id="20">20</th><td><i>//  - Apps might use __thread/thread_local variables in pthread destructors.</i></td></tr>
+<tr><th id="21">21</th><td><i>// We can't wait until the final two rounds, because jemalloc needs two rounds</i></td></tr>
+<tr><th id="22">22</th><td><i>// after the final malloc/free call to free its thread-specific data (see</i></td></tr>
+<tr><th id="23">23</th><td><i>// <a href="https://reviews.llvm.org/D46978#1107507">https://reviews.llvm.org/D46978#1107507</a>).</i></td></tr>
+<tr><th id="24">24</th><td><u>#define EMUTLS_SKIP_DESTRUCTOR_ROUNDS 1</u></td></tr>
+<tr><th id="25">25</th><td><u>#<span data-ppcond="15">else</span></u></td></tr>
+<tr><th id="26">26</th><td><u>#define <dfn class="macro" id="_M/EMUTLS_SKIP_DESTRUCTOR_ROUNDS" data-ref="_M/EMUTLS_SKIP_DESTRUCTOR_ROUNDS">EMUTLS_SKIP_DESTRUCTOR_ROUNDS</dfn> 0</u></td></tr>
+<tr><th id="27">27</th><td><u>#<span data-ppcond="15">endif</span></u></td></tr>
+<tr><th id="28">28</th><td></td></tr>
+<tr><th id="29">29</th><td><u>#<span data-ppcond="29">if</span> defined(<span class="macro" data-ref="_M/_MSC_VER">_MSC_VER</span>) &amp;&amp; !defined(<span class="macro" data-ref="_M/__clang__">__clang__</span>)</u></td></tr>
+<tr><th id="30">30</th><td><i>// MSVC raises a warning about a nonstandard extension being used for the 0</i></td></tr>
+<tr><th id="31">31</th><td><i>// sized element in this array. Disable this for warn-as-error builds.</i></td></tr>
+<tr><th id="32">32</th><td><u>#pragma warning(push)</u></td></tr>
+<tr><th id="33">33</th><td><u>#pragma warning(disable : 4206)</u></td></tr>
+<tr><th id="34">34</th><td><u>#<span data-ppcond="29">endif</span></u></td></tr>
+<tr><th id="35">35</th><td></td></tr>
+<tr><th id="36">36</th><td><b>typedef</b> <b>struct</b> <dfn class="type def" id="emutls_address_array" title='emutls_address_array' data-ref="emutls_address_array" data-ref-filename="emutls_address_array"><a class="type" href="#emutls_address_array" title='emutls_address_array' data-ref="emutls_address_array" data-ref-filename="emutls_address_array">emutls_address_array</a></dfn> {</td></tr>
+<tr><th id="37">37</th><td>  <a class="typedef" href="../../../../include/stdint.h.html#uintptr_t" title='uintptr_t' data-type='unsigned int' data-ref="uintptr_t" data-ref-filename="uintptr_t">uintptr_t</a> <dfn class="tu decl field" id="emutls_address_array::skip_destructor_rounds" title='emutls_address_array::skip_destructor_rounds' data-type='uintptr_t' data-ref="emutls_address_array::skip_destructor_rounds" data-ref-filename="emutls_address_array..skip_destructor_rounds">skip_destructor_rounds</dfn>;</td></tr>
+<tr><th id="38">38</th><td>  <a class="typedef" href="../../../../include/stdint.h.html#uintptr_t" title='uintptr_t' data-type='unsigned int' data-ref="uintptr_t" data-ref-filename="uintptr_t">uintptr_t</a> <dfn class="tu decl field" id="emutls_address_array::size" title='emutls_address_array::size' data-type='uintptr_t' data-ref="emutls_address_array::size" data-ref-filename="emutls_address_array..size">size</dfn>; <i  data-doc="emutls_address_array::size">// number of elements in the 'data' array</i></td></tr>
+<tr><th id="39">39</th><td>  <em>void</em> *<dfn class="tu decl field" id="emutls_address_array::data" title='emutls_address_array::data' data-type='void *[]' data-ref="emutls_address_array::data" data-ref-filename="emutls_address_array..data">data</dfn>[];</td></tr>
+<tr><th id="40">40</th><td>} <dfn class="typedef" id="emutls_address_array" title='emutls_address_array' data-type='struct emutls_address_array' data-ref="emutls_address_array" data-ref-filename="emutls_address_array">emutls_address_array</dfn>;</td></tr>
+<tr><th id="41">41</th><td></td></tr>
+<tr><th id="42">42</th><td><u>#<span data-ppcond="42">if</span> defined(<span class="macro" data-ref="_M/_MSC_VER">_MSC_VER</span>) &amp;&amp; !defined(<span class="macro" data-ref="_M/__clang__">__clang__</span>)</u></td></tr>
+<tr><th id="43">43</th><td><u>#pragma warning(pop)</u></td></tr>
+<tr><th id="44">44</th><td><u>#<span data-ppcond="42">endif</span></u></td></tr>
+<tr><th id="45">45</th><td></td></tr>
+<tr><th id="46">46</th><td><em>static</em> <em>void</em> <a class="tu decl fn" href="#emutls_shutdown" title='emutls_shutdown' data-type='void emutls_shutdown(emutls_address_array * array)' data-ref="emutls_shutdown" data-ref-filename="emutls_shutdown">emutls_shutdown</a>(<a class="typedef" href="#emutls_address_array" title='emutls_address_array' data-type='struct emutls_address_array' data-ref="emutls_address_array" data-ref-filename="emutls_address_array">emutls_address_array</a> *<dfn class="local col1 decl" id="1array" title='array' data-type='emutls_address_array *' data-ref="1array" data-ref-filename="1array">array</dfn>);</td></tr>
+<tr><th id="47">47</th><td></td></tr>
+<tr><th id="48">48</th><td><u>#<span data-ppcond="48">ifndef</span> <span class="macro" data-ref="_M/_WIN32">_WIN32</span></u></td></tr>
+<tr><th id="49">49</th><td></td></tr>
+<tr><th id="50">50</th><td><u>#include <a href="../../../../include/pthread.h.html">&lt;pthread.h&gt;</a></u></td></tr>
+<tr><th id="51">51</th><td></td></tr>
+<tr><th id="52">52</th><td><em>static</em> <a class="typedef" href="../../../../include/bits/pthreadtypes.h.html#pthread_mutex_t" title='pthread_mutex_t' data-type='union pthread_mutex_t' data-ref="pthread_mutex_t" data-ref-filename="pthread_mutex_t">pthread_mutex_t</a> <dfn class="tu decl def" id="emutls_mutex" title='emutls_mutex' data-type='pthread_mutex_t' data-ref="emutls_mutex" data-ref-filename="emutls_mutex">emutls_mutex</dfn> = <a class="macro" href="../../../../include/pthread.h.html#86" title="{ { 0, 0, 0, PTHREAD_MUTEX_TIMED_NP, 0, { { 0, 0 } } } }" data-ref="_M/PTHREAD_MUTEX_INITIALIZER">PTHREAD_MUTEX_INITIALIZER</a>;</td></tr>
+<tr><th id="53">53</th><td><em>static</em> <a class="typedef" href="../../../../include/bits/pthreadtypes.h.html#pthread_key_t" title='pthread_key_t' data-type='unsigned int' data-ref="pthread_key_t" data-ref-filename="pthread_key_t">pthread_key_t</a> <dfn class="tu decl def" id="emutls_pthread_key" title='emutls_pthread_key' data-type='pthread_key_t' data-ref="emutls_pthread_key" data-ref-filename="emutls_pthread_key">emutls_pthread_key</dfn>;</td></tr>
+<tr><th id="54">54</th><td><em>static</em> <span class="macro" title="_Bool" data-ref="_M/bool">bool</span> <dfn class="tu decl def" id="emutls_key_created" title='emutls_key_created' data-type='_Bool' data-ref="emutls_key_created" data-ref-filename="emutls_key_created">emutls_key_created</dfn> = <span class="macro" title="0" data-ref="_M/false">false</span>;</td></tr>
+<tr><th id="55">55</th><td></td></tr>
+<tr><th id="56">56</th><td><b>typedef</b> <em>unsigned</em> <em>int</em> <dfn class="typedef" id="gcc_word" title='gcc_word' data-type='unsigned int' data-ref="gcc_word" data-ref-filename="gcc_word">gcc_word</dfn> <b>__attribute__</b>((mode(word)));</td></tr>
+<tr><th id="57">57</th><td><b>typedef</b> <em>unsigned</em> <em>int</em> <dfn class="typedef" id="gcc_pointer" title='gcc_pointer' data-type='unsigned int' data-ref="gcc_pointer" data-ref-filename="gcc_pointer">gcc_pointer</dfn> <b>__attribute__</b>((mode(pointer)));</td></tr>
+<tr><th id="58">58</th><td></td></tr>
+<tr><th id="59">59</th><td><i>// Default is not to use posix_memalign, so systems like Android</i></td></tr>
+<tr><th id="60">60</th><td><i>// can use thread local data without heavier POSIX memory allocators.</i></td></tr>
+<tr><th id="61">61</th><td><u>#<span data-ppcond="61">ifndef</span> <span class="macro" data-ref="_M/EMUTLS_USE_POSIX_MEMALIGN">EMUTLS_USE_POSIX_MEMALIGN</span></u></td></tr>
+<tr><th id="62">62</th><td><u>#define <dfn class="macro" id="_M/EMUTLS_USE_POSIX_MEMALIGN" data-ref="_M/EMUTLS_USE_POSIX_MEMALIGN">EMUTLS_USE_POSIX_MEMALIGN</dfn> 0</u></td></tr>
+<tr><th id="63">63</th><td><u>#<span data-ppcond="61">endif</span></u></td></tr>
+<tr><th id="64">64</th><td></td></tr>
+<tr><th id="65">65</th><td><em>static</em> <b>__inline</b> <em>void</em> *<dfn class="tu decl def fn" id="emutls_memalign_alloc" title='emutls_memalign_alloc' data-type='void * emutls_memalign_alloc(size_t align, size_t size)' data-ref="emutls_memalign_alloc" data-ref-filename="emutls_memalign_alloc">emutls_memalign_alloc</dfn>(<span class='typedef' title='size_t' data-type='unsigned int' data-ref="size_t" data-ref-filename="size_t">size_t</span> <dfn class="local col2 decl" id="2align" title='align' data-type='size_t' data-ref="2align" data-ref-filename="2align">align</dfn>, <span class='typedef' title='size_t' data-type='unsigned int' data-ref="size_t" data-ref-filename="size_t">size_t</span> <dfn class="local col3 decl" id="3size" title='size' data-type='size_t' data-ref="3size" data-ref-filename="3size">size</dfn>) {</td></tr>
+<tr><th id="66">66</th><td>  <em>void</em> *<dfn class="local col4 decl" id="4base" title='base' data-type='void *' data-ref="4base" data-ref-filename="4base">base</dfn>;</td></tr>
+<tr><th id="67">67</th><td><u>#<span data-ppcond="67">if</span> <a class="macro" href="#62" title="0" data-ref="_M/EMUTLS_USE_POSIX_MEMALIGN">EMUTLS_USE_POSIX_MEMALIGN</a></u></td></tr>
+<tr><th id="68">68</th><td>  <b>if</b> (posix_memalign(&amp;base, align, size) != <var>0</var>)</td></tr>
+<tr><th id="69">69</th><td>    abort();</td></tr>
+<tr><th id="70">70</th><td><u>#<span data-ppcond="67">else</span></u></td></tr>
+<tr><th id="71">71</th><td><u>#define <dfn class="macro" id="_M/EXTRA_ALIGN_PTR_BYTES" data-ref="_M/EXTRA_ALIGN_PTR_BYTES">EXTRA_ALIGN_PTR_BYTES</dfn> (<a class="local col2 ref" href="#2align" title='align' data-ref="2align" data-ref-filename="2align">align</a> - 1 + sizeof(void *))</u></td></tr>
+<tr><th id="72">72</th><td>  <em>char</em> *<dfn class="local col5 decl" id="5object" title='object' data-type='char *' data-ref="5object" data-ref-filename="5object">object</dfn>;</td></tr>
+<tr><th id="73">73</th><td>  <b>if</b> ((<a class="local col5 ref" href="#5object" title='object' data-ref="5object" data-ref-filename="5object">object</a> = (<em>char</em> *)<a class="ref fn" href="../../../../include/stdlib.h.html#malloc" title='malloc' data-ref="malloc" data-ref-filename="malloc">malloc</a>(<a class="macro" href="#71" title="(align - 1 + sizeof(void *))" data-ref="_M/EXTRA_ALIGN_PTR_BYTES">EXTRA_ALIGN_PTR_BYTES</a> + <a class="local col3 ref" href="#3size" title='size' data-ref="3size" data-ref-filename="3size">size</a>)) == <span class="macro" title="((void*)0)" data-ref="_M/NULL">NULL</span>)</td></tr>
+<tr><th id="74">74</th><td>    <a class="ref fn" href="../../../../include/stdlib.h.html#abort" title='abort' data-ref="abort" data-ref-filename="abort">abort</a>();</td></tr>
+<tr><th id="75">75</th><td>  <a class="local col4 ref" href="#4base" title='base' data-ref="4base" data-ref-filename="4base">base</a> = (<em>void</em> *)(((<a class="typedef" href="../../../../include/stdint.h.html#uintptr_t" title='uintptr_t' data-type='unsigned int' data-ref="uintptr_t" data-ref-filename="uintptr_t">uintptr_t</a>)(<a class="local col5 ref" href="#5object" title='object' data-ref="5object" data-ref-filename="5object">object</a> + <a class="macro" href="#71" title="(align - 1 + sizeof(void *))" data-ref="_M/EXTRA_ALIGN_PTR_BYTES">EXTRA_ALIGN_PTR_BYTES</a>)) &amp;</td></tr>
+<tr><th id="76">76</th><td>                  ~(<a class="typedef" href="../../../../include/stdint.h.html#uintptr_t" title='uintptr_t' data-type='unsigned int' data-ref="uintptr_t" data-ref-filename="uintptr_t">uintptr_t</a>)(<a class="local col2 ref" href="#2align" title='align' data-ref="2align" data-ref-filename="2align">align</a> - <var>1</var>));</td></tr>
+<tr><th id="77">77</th><td></td></tr>
+<tr><th id="78">78</th><td>  ((<em>void</em> **)<a class="local col4 ref" href="#4base" title='base' data-ref="4base" data-ref-filename="4base">base</a>)[-<var>1</var>] = <a class="local col5 ref" href="#5object" title='object' data-ref="5object" data-ref-filename="5object">object</a>;</td></tr>
+<tr><th id="79">79</th><td><u>#<span data-ppcond="67">endif</span></u></td></tr>
+<tr><th id="80">80</th><td>  <b>return</b> <a class="local col4 ref" href="#4base" title='base' data-ref="4base" data-ref-filename="4base">base</a>;</td></tr>
+<tr><th id="81">81</th><td>}</td></tr>
+<tr><th id="82">82</th><td></td></tr>
+<tr><th id="83">83</th><td><em>static</em> <b>__inline</b> <em>void</em> <dfn class="tu decl def fn" id="emutls_memalign_free" title='emutls_memalign_free' data-type='void emutls_memalign_free(void * base)' data-ref="emutls_memalign_free" data-ref-filename="emutls_memalign_free">emutls_memalign_free</dfn>(<em>void</em> *<dfn class="local col6 decl" id="6base" title='base' data-type='void *' data-ref="6base" data-ref-filename="6base">base</dfn>) {</td></tr>
+<tr><th id="84">84</th><td><u>#<span data-ppcond="84">if</span> <a class="macro" href="#62" title="0" data-ref="_M/EMUTLS_USE_POSIX_MEMALIGN">EMUTLS_USE_POSIX_MEMALIGN</a></u></td></tr>
+<tr><th id="85">85</th><td>  free(base);</td></tr>
+<tr><th id="86">86</th><td><u>#<span data-ppcond="84">else</span></u></td></tr>
+<tr><th id="87">87</th><td>  <i>// The mallocated address is in ((void**)base)[-1]</i></td></tr>
+<tr><th id="88">88</th><td>  <a class="ref fn" href="../../../../include/stdlib.h.html#free" title='free' data-ref="free" data-ref-filename="free">free</a>(((<em>void</em> **)<a class="local col6 ref" href="#6base" title='base' data-ref="6base" data-ref-filename="6base">base</a>)[-<var>1</var>]);</td></tr>
+<tr><th id="89">89</th><td><u>#<span data-ppcond="84">endif</span></u></td></tr>
+<tr><th id="90">90</th><td>}</td></tr>
+<tr><th id="91">91</th><td></td></tr>
+<tr><th id="92">92</th><td><em>static</em> <b>__inline</b> <em>void</em> <dfn class="tu decl def fn" id="emutls_setspecific" title='emutls_setspecific' data-type='void emutls_setspecific(emutls_address_array * value)' data-ref="emutls_setspecific" data-ref-filename="emutls_setspecific">emutls_setspecific</dfn>(<a class="typedef" href="#emutls_address_array" title='emutls_address_array' data-type='struct emutls_address_array' data-ref="emutls_address_array" data-ref-filename="emutls_address_array">emutls_address_array</a> *<dfn class="local col7 decl" id="7value" title='value' data-type='emutls_address_array *' data-ref="7value" data-ref-filename="7value">value</dfn>) {</td></tr>
+<tr><th id="93">93</th><td>  <a class="ref fn" href="../../../../include/pthread.h.html#pthread_setspecific" title='pthread_setspecific' data-ref="pthread_setspecific" data-ref-filename="pthread_setspecific">pthread_setspecific</a>(<a class="tu ref" href="#emutls_pthread_key" title='emutls_pthread_key' data-use='r' data-ref="emutls_pthread_key" data-ref-filename="emutls_pthread_key">emutls_pthread_key</a>, (<em>void</em> *)<a class="local col7 ref" href="#7value" title='value' data-ref="7value" data-ref-filename="7value">value</a>);</td></tr>
+<tr><th id="94">94</th><td>}</td></tr>
+<tr><th id="95">95</th><td></td></tr>
+<tr><th id="96">96</th><td><em>static</em> <b>__inline</b> <a class="typedef" href="#emutls_address_array" title='emutls_address_array' data-type='struct emutls_address_array' data-ref="emutls_address_array" data-ref-filename="emutls_address_array">emutls_address_array</a> *<dfn class="tu decl def fn" id="emutls_getspecific" title='emutls_getspecific' data-type='emutls_address_array * emutls_getspecific()' data-ref="emutls_getspecific" data-ref-filename="emutls_getspecific">emutls_getspecific</dfn>() {</td></tr>
+<tr><th id="97">97</th><td>  <b>return</b> (<a class="typedef" href="#emutls_address_array" title='emutls_address_array' data-type='struct emutls_address_array' data-ref="emutls_address_array" data-ref-filename="emutls_address_array">emutls_address_array</a> *)<a class="ref fn" href="../../../../include/pthread.h.html#pthread_getspecific" title='pthread_getspecific' data-ref="pthread_getspecific" data-ref-filename="pthread_getspecific">pthread_getspecific</a>(<a class="tu ref" href="#emutls_pthread_key" title='emutls_pthread_key' data-use='r' data-ref="emutls_pthread_key" data-ref-filename="emutls_pthread_key">emutls_pthread_key</a>);</td></tr>
+<tr><th id="98">98</th><td>}</td></tr>
+<tr><th id="99">99</th><td></td></tr>
+<tr><th id="100">100</th><td><em>static</em> <em>void</em> <dfn class="tu decl def fn" id="emutls_key_destructor" title='emutls_key_destructor' data-type='void emutls_key_destructor(void * ptr)' data-ref="emutls_key_destructor" data-ref-filename="emutls_key_destructor">emutls_key_destructor</dfn>(<em>void</em> *<dfn class="local col8 decl" id="8ptr" title='ptr' data-type='void *' data-ref="8ptr" data-ref-filename="8ptr">ptr</dfn>) {</td></tr>
+<tr><th id="101">101</th><td>  <a class="typedef" href="#emutls_address_array" title='emutls_address_array' data-type='struct emutls_address_array' data-ref="emutls_address_array" data-ref-filename="emutls_address_array">emutls_address_array</a> *<dfn class="local col9 decl" id="9array" title='array' data-type='emutls_address_array *' data-ref="9array" data-ref-filename="9array">array</dfn> = (<a class="typedef" href="#emutls_address_array" title='emutls_address_array' data-type='struct emutls_address_array' data-ref="emutls_address_array" data-ref-filename="emutls_address_array">emutls_address_array</a> *)<a class="local col8 ref" href="#8ptr" title='ptr' data-ref="8ptr" data-ref-filename="8ptr">ptr</a>;</td></tr>
+<tr><th id="102">102</th><td>  <b>if</b> (<a class="local col9 ref" href="#9array" title='array' data-ref="9array" data-ref-filename="9array">array</a>-&gt;<a class="tu ref field" href="#emutls_address_array::skip_destructor_rounds" title='emutls_address_array::skip_destructor_rounds' data-use='r' data-ref="emutls_address_array::skip_destructor_rounds" data-ref-filename="emutls_address_array..skip_destructor_rounds">skip_destructor_rounds</a> &gt; <var>0</var>) {</td></tr>
+<tr><th id="103">103</th><td>    <i>// emutls is deallocated using a pthread key destructor. These</i></td></tr>
+<tr><th id="104">104</th><td><i>    // destructors are called in several rounds to accommodate destructor</i></td></tr>
+<tr><th id="105">105</th><td><i>    // functions that (re)initialize key values with pthread_setspecific.</i></td></tr>
+<tr><th id="106">106</th><td><i>    // Delay the emutls deallocation to accommodate other end-of-thread</i></td></tr>
+<tr><th id="107">107</th><td><i>    // cleanup tasks like calling thread_local destructors (e.g. the</i></td></tr>
+<tr><th id="108">108</th><td><i>    // __cxa_thread_atexit fallback in libc++abi).</i></td></tr>
+<tr><th id="109">109</th><td>    <a class="local col9 ref" href="#9array" title='array' data-ref="9array" data-ref-filename="9array">array</a>-&gt;<a class="tu ref field" href="#emutls_address_array::skip_destructor_rounds" title='emutls_address_array::skip_destructor_rounds' data-use='w' data-ref="emutls_address_array::skip_destructor_rounds" data-ref-filename="emutls_address_array..skip_destructor_rounds">skip_destructor_rounds</a>--;</td></tr>
+<tr><th id="110">110</th><td>    <a class="tu ref fn" href="#emutls_setspecific" title='emutls_setspecific' data-use='c' data-ref="emutls_setspecific" data-ref-filename="emutls_setspecific">emutls_setspecific</a>(<a class="local col9 ref" href="#9array" title='array' data-ref="9array" data-ref-filename="9array">array</a>);</td></tr>
+<tr><th id="111">111</th><td>  } <b>else</b> {</td></tr>
+<tr><th id="112">112</th><td>    <a class="tu ref fn" href="#emutls_shutdown" title='emutls_shutdown' data-use='c' data-ref="emutls_shutdown" data-ref-filename="emutls_shutdown">emutls_shutdown</a>(<a class="local col9 ref" href="#9array" title='array' data-ref="9array" data-ref-filename="9array">array</a>);</td></tr>
+<tr><th id="113">113</th><td>    <a class="ref fn" href="../../../../include/stdlib.h.html#free" title='free' data-ref="free" data-ref-filename="free">free</a>(<a class="local col8 ref" href="#8ptr" title='ptr' data-ref="8ptr" data-ref-filename="8ptr">ptr</a>);</td></tr>
+<tr><th id="114">114</th><td>  }</td></tr>
+<tr><th id="115">115</th><td>}</td></tr>
+<tr><th id="116">116</th><td></td></tr>
+<tr><th id="117">117</th><td><em>static</em> <b>__inline</b> <em>void</em> <dfn class="tu decl def fn" id="emutls_init" title='emutls_init' data-type='void emutls_init()' data-ref="emutls_init" data-ref-filename="emutls_init">emutls_init</dfn>(<em>void</em>) {</td></tr>
+<tr><th id="118">118</th><td>  <b>if</b> (<a class="ref fn" href="../../../../include/pthread.h.html#pthread_key_create" title='pthread_key_create' data-ref="pthread_key_create" data-ref-filename="pthread_key_create">pthread_key_create</a>(&amp;<a class="tu ref" href="#emutls_pthread_key" title='emutls_pthread_key' data-use='a' data-ref="emutls_pthread_key" data-ref-filename="emutls_pthread_key">emutls_pthread_key</a>, <a class="tu ref fn" href="#emutls_key_destructor" title='emutls_key_destructor' data-use='r' data-ref="emutls_key_destructor" data-ref-filename="emutls_key_destructor">emutls_key_destructor</a>) != <var>0</var>)</td></tr>
+<tr><th id="119">119</th><td>    <a class="ref fn" href="../../../../include/stdlib.h.html#abort" title='abort' data-ref="abort" data-ref-filename="abort">abort</a>();</td></tr>
+<tr><th id="120">120</th><td>  <a class="tu ref" href="#emutls_key_created" title='emutls_key_created' data-use='w' data-ref="emutls_key_created" data-ref-filename="emutls_key_created">emutls_key_created</a> = <span class="macro" title="1" data-ref="_M/true">true</span>;</td></tr>
+<tr><th id="121">121</th><td>}</td></tr>
+<tr><th id="122">122</th><td></td></tr>
+<tr><th id="123">123</th><td><em>static</em> <b>__inline</b> <em>void</em> <dfn class="tu decl def fn" id="emutls_init_once" title='emutls_init_once' data-type='void emutls_init_once()' data-ref="emutls_init_once" data-ref-filename="emutls_init_once">emutls_init_once</dfn>(<em>void</em>) {</td></tr>
+<tr><th id="124">124</th><td>  <em>static</em> <a class="typedef" href="../../../../include/bits/pthreadtypes.h.html#pthread_once_t" title='pthread_once_t' data-type='int' data-ref="pthread_once_t" data-ref-filename="pthread_once_t">pthread_once_t</a> <dfn class="local col0 decl" id="10once" title='once' data-type='pthread_once_t' data-ref="10once" data-ref-filename="10once">once</dfn> = <a class="macro" href="../../../../include/pthread.h.html#182" title="0" data-ref="_M/PTHREAD_ONCE_INIT">PTHREAD_ONCE_INIT</a>;</td></tr>
+<tr><th id="125">125</th><td>  <a class="ref fn" href="../../../../include/pthread.h.html#pthread_once" title='pthread_once' data-ref="pthread_once" data-ref-filename="pthread_once">pthread_once</a>(&amp;<a class="local col0 ref" href="#10once" title='once' data-ref="10once" data-ref-filename="10once">once</a>, <a class="tu ref fn" href="#emutls_init" title='emutls_init' data-use='r' data-ref="emutls_init" data-ref-filename="emutls_init">emutls_init</a>);</td></tr>
+<tr><th id="126">126</th><td>}</td></tr>
+<tr><th id="127">127</th><td></td></tr>
+<tr><th id="128">128</th><td><em>static</em> <b>__inline</b> <em>void</em> <dfn class="tu decl def fn" id="emutls_lock" title='emutls_lock' data-type='void emutls_lock()' data-ref="emutls_lock" data-ref-filename="emutls_lock">emutls_lock</dfn>() { <a class="ref fn" href="../../../../include/pthread.h.html#pthread_mutex_lock" title='pthread_mutex_lock' data-ref="pthread_mutex_lock" data-ref-filename="pthread_mutex_lock">pthread_mutex_lock</a>(&amp;<a class="tu ref" href="#emutls_mutex" title='emutls_mutex' data-use='a' data-ref="emutls_mutex" data-ref-filename="emutls_mutex">emutls_mutex</a>); }</td></tr>
+<tr><th id="129">129</th><td></td></tr>
+<tr><th id="130">130</th><td><em>static</em> <b>__inline</b> <em>void</em> <dfn class="tu decl def fn" id="emutls_unlock" title='emutls_unlock' data-type='void emutls_unlock()' data-ref="emutls_unlock" data-ref-filename="emutls_unlock">emutls_unlock</dfn>() { <a class="ref fn" href="../../../../include/pthread.h.html#pthread_mutex_unlock" title='pthread_mutex_unlock' data-ref="pthread_mutex_unlock" data-ref-filename="pthread_mutex_unlock">pthread_mutex_unlock</a>(&amp;<a class="tu ref" href="#emutls_mutex" title='emutls_mutex' data-use='a' data-ref="emutls_mutex" data-ref-filename="emutls_mutex">emutls_mutex</a>); }</td></tr>
+<tr><th id="131">131</th><td></td></tr>
+<tr><th id="132">132</th><td><u>#<span data-ppcond="48">else</span> // _WIN32</u></td></tr>
+<tr><th id="133">133</th><td></td></tr>
+<tr><th id="134">134</th><td><u>#include &lt;assert.h&gt;</u></td></tr>
+<tr><th id="135">135</th><td><u>#include &lt;malloc.h&gt;</u></td></tr>
+<tr><th id="136">136</th><td><u>#include &lt;stdio.h&gt;</u></td></tr>
+<tr><th id="137">137</th><td><u>#include &lt;windows.h&gt;</u></td></tr>
+<tr><th id="138">138</th><td></td></tr>
+<tr><th id="139">139</th><td><em>static</em> LPCRITICAL_SECTION emutls_mutex;</td></tr>
+<tr><th id="140">140</th><td><em>static</em> DWORD emutls_tls_index = TLS_OUT_OF_INDEXES;</td></tr>
+<tr><th id="141">141</th><td></td></tr>
+<tr><th id="142">142</th><td><b>typedef</b> uintptr_t gcc_word;</td></tr>
+<tr><th id="143">143</th><td><b>typedef</b> <em>void</em> *gcc_pointer;</td></tr>
+<tr><th id="144">144</th><td></td></tr>
+<tr><th id="145">145</th><td><em>static</em> <em>void</em> win_error(DWORD last_err, <em>const</em> <em>char</em> *hint) {</td></tr>
+<tr><th id="146">146</th><td>  <em>char</em> *buffer = NULL;</td></tr>
+<tr><th id="147">147</th><td>  <b>if</b> (FormatMessageA(FORMAT_MESSAGE_ALLOCATE_BUFFER |</td></tr>
+<tr><th id="148">148</th><td>                         FORMAT_MESSAGE_FROM_SYSTEM |</td></tr>
+<tr><th id="149">149</th><td>                         FORMAT_MESSAGE_MAX_WIDTH_MASK,</td></tr>
+<tr><th id="150">150</th><td>                     NULL, last_err, <var>0</var>, (LPSTR)&amp;buffer, <var>1</var>, NULL)) {</td></tr>
+<tr><th id="151">151</th><td>    fprintf(stderr, <q>"Windows error: %s\n"</q>, buffer);</td></tr>
+<tr><th id="152">152</th><td>  } <b>else</b> {</td></tr>
+<tr><th id="153">153</th><td>    fprintf(stderr, <q>"Unkown Windows error: %s\n"</q>, hint);</td></tr>
+<tr><th id="154">154</th><td>  }</td></tr>
+<tr><th id="155">155</th><td>  LocalFree(buffer);</td></tr>
+<tr><th id="156">156</th><td>}</td></tr>
+<tr><th id="157">157</th><td></td></tr>
+<tr><th id="158">158</th><td><em>static</em> <b>__inline</b> <em>void</em> win_abort(DWORD last_err, <em>const</em> <em>char</em> *hint) {</td></tr>
+<tr><th id="159">159</th><td>  win_error(last_err, hint);</td></tr>
+<tr><th id="160">160</th><td>  abort();</td></tr>
+<tr><th id="161">161</th><td>}</td></tr>
+<tr><th id="162">162</th><td></td></tr>
+<tr><th id="163">163</th><td><em>static</em> <b>__inline</b> <em>void</em> *emutls_memalign_alloc(size_t align, size_t size) {</td></tr>
+<tr><th id="164">164</th><td>  <em>void</em> *base = _aligned_malloc(size, align);</td></tr>
+<tr><th id="165">165</th><td>  <b>if</b> (!base)</td></tr>
+<tr><th id="166">166</th><td>    win_abort(GetLastError(), <q>"_aligned_malloc"</q>);</td></tr>
+<tr><th id="167">167</th><td>  <b>return</b> base;</td></tr>
+<tr><th id="168">168</th><td>}</td></tr>
+<tr><th id="169">169</th><td></td></tr>
+<tr><th id="170">170</th><td><em>static</em> <b>__inline</b> <em>void</em> emutls_memalign_free(<em>void</em> *base) { _aligned_free(base); }</td></tr>
+<tr><th id="171">171</th><td></td></tr>
+<tr><th id="172">172</th><td><em>static</em> <em>void</em> emutls_exit(<em>void</em>) {</td></tr>
+<tr><th id="173">173</th><td>  <b>if</b> (emutls_mutex) {</td></tr>
+<tr><th id="174">174</th><td>    DeleteCriticalSection(emutls_mutex);</td></tr>
+<tr><th id="175">175</th><td>    _aligned_free(emutls_mutex);</td></tr>
+<tr><th id="176">176</th><td>    emutls_mutex = NULL;</td></tr>
+<tr><th id="177">177</th><td>  }</td></tr>
+<tr><th id="178">178</th><td>  <b>if</b> (emutls_tls_index != TLS_OUT_OF_INDEXES) {</td></tr>
+<tr><th id="179">179</th><td>    emutls_shutdown((emutls_address_array *)TlsGetValue(emutls_tls_index));</td></tr>
+<tr><th id="180">180</th><td>    TlsFree(emutls_tls_index);</td></tr>
+<tr><th id="181">181</th><td>    emutls_tls_index = TLS_OUT_OF_INDEXES;</td></tr>
+<tr><th id="182">182</th><td>  }</td></tr>
+<tr><th id="183">183</th><td>}</td></tr>
+<tr><th id="184">184</th><td></td></tr>
+<tr><th id="185">185</th><td><em>static</em> BOOL CALLBACK emutls_init(PINIT_ONCE p0, PVOID p1, PVOID *p2) {</td></tr>
+<tr><th id="186">186</th><td>  (<em>void</em>)p0;</td></tr>
+<tr><th id="187">187</th><td>  (<em>void</em>)p1;</td></tr>
+<tr><th id="188">188</th><td>  (<em>void</em>)p2;</td></tr>
+<tr><th id="189">189</th><td>  emutls_mutex =</td></tr>
+<tr><th id="190">190</th><td>      (LPCRITICAL_SECTION)_aligned_malloc(<b>sizeof</b>(CRITICAL_SECTION), <var>16</var>);</td></tr>
+<tr><th id="191">191</th><td>  <b>if</b> (!emutls_mutex) {</td></tr>
+<tr><th id="192">192</th><td>    win_error(GetLastError(), <q>"_aligned_malloc"</q>);</td></tr>
+<tr><th id="193">193</th><td>    <b>return</b> FALSE;</td></tr>
+<tr><th id="194">194</th><td>  }</td></tr>
+<tr><th id="195">195</th><td>  InitializeCriticalSection(emutls_mutex);</td></tr>
+<tr><th id="196">196</th><td></td></tr>
+<tr><th id="197">197</th><td>  emutls_tls_index = TlsAlloc();</td></tr>
+<tr><th id="198">198</th><td>  <b>if</b> (emutls_tls_index == TLS_OUT_OF_INDEXES) {</td></tr>
+<tr><th id="199">199</th><td>    emutls_exit();</td></tr>
+<tr><th id="200">200</th><td>    win_error(GetLastError(), <q>"TlsAlloc"</q>);</td></tr>
+<tr><th id="201">201</th><td>    <b>return</b> FALSE;</td></tr>
+<tr><th id="202">202</th><td>  }</td></tr>
+<tr><th id="203">203</th><td>  atexit(&amp;emutls_exit);</td></tr>
+<tr><th id="204">204</th><td>  <b>return</b> TRUE;</td></tr>
+<tr><th id="205">205</th><td>}</td></tr>
+<tr><th id="206">206</th><td></td></tr>
+<tr><th id="207">207</th><td><em>static</em> <b>__inline</b> <em>void</em> emutls_init_once(<em>void</em>) {</td></tr>
+<tr><th id="208">208</th><td>  <em>static</em> INIT_ONCE once;</td></tr>
+<tr><th id="209">209</th><td>  InitOnceExecuteOnce(&amp;once, emutls_init, NULL, NULL);</td></tr>
+<tr><th id="210">210</th><td>}</td></tr>
+<tr><th id="211">211</th><td></td></tr>
+<tr><th id="212">212</th><td><em>static</em> <b>__inline</b> <em>void</em> emutls_lock() { EnterCriticalSection(emutls_mutex); }</td></tr>
+<tr><th id="213">213</th><td></td></tr>
+<tr><th id="214">214</th><td><em>static</em> <b>__inline</b> <em>void</em> emutls_unlock() { LeaveCriticalSection(emutls_mutex); }</td></tr>
+<tr><th id="215">215</th><td></td></tr>
+<tr><th id="216">216</th><td><em>static</em> <b>__inline</b> <em>void</em> emutls_setspecific(emutls_address_array *value) {</td></tr>
+<tr><th id="217">217</th><td>  <b>if</b> (TlsSetValue(emutls_tls_index, (LPVOID)value) == <var>0</var>)</td></tr>
+<tr><th id="218">218</th><td>    win_abort(GetLastError(), <q>"TlsSetValue"</q>);</td></tr>
+<tr><th id="219">219</th><td>}</td></tr>
+<tr><th id="220">220</th><td></td></tr>
+<tr><th id="221">221</th><td><em>static</em> <b>__inline</b> emutls_address_array *emutls_getspecific() {</td></tr>
+<tr><th id="222">222</th><td>  LPVOID value = TlsGetValue(emutls_tls_index);</td></tr>
+<tr><th id="223">223</th><td>  <b>if</b> (value == NULL) {</td></tr>
+<tr><th id="224">224</th><td>    <em>const</em> DWORD err = GetLastError();</td></tr>
+<tr><th id="225">225</th><td>    <b>if</b> (err != ERROR_SUCCESS)</td></tr>
+<tr><th id="226">226</th><td>      win_abort(err, <q>"TlsGetValue"</q>);</td></tr>
+<tr><th id="227">227</th><td>  }</td></tr>
+<tr><th id="228">228</th><td>  <b>return</b> (emutls_address_array *)value;</td></tr>
+<tr><th id="229">229</th><td>}</td></tr>
+<tr><th id="230">230</th><td></td></tr>
+<tr><th id="231">231</th><td><i>// Provide atomic load/store functions for emutls_get_index if built with MSVC.</i></td></tr>
+<tr><th id="232">232</th><td><u>#if !defined(__ATOMIC_RELEASE)</u></td></tr>
+<tr><th id="233">233</th><td><u>#include &lt;intrin.h&gt;</u></td></tr>
+<tr><th id="234">234</th><td></td></tr>
+<tr><th id="235">235</th><td><b>enum</b> { __ATOMIC_ACQUIRE = <var>2</var>, __ATOMIC_RELEASE = <var>3</var> };</td></tr>
+<tr><th id="236">236</th><td></td></tr>
+<tr><th id="237">237</th><td><em>static</em> <b>__inline</b> uintptr_t __atomic_load_n(<em>void</em> *ptr, <em>unsigned</em> type) {</td></tr>
+<tr><th id="238">238</th><td>  assert(type == __ATOMIC_ACQUIRE);</td></tr>
+<tr><th id="239">239</th><td>  <i>// These return the previous value - but since we do an OR with 0,</i></td></tr>
+<tr><th id="240">240</th><td><i>  // it's equivalent to a plain load.</i></td></tr>
+<tr><th id="241">241</th><td><u>#ifdef _WIN64</u></td></tr>
+<tr><th id="242">242</th><td>  <b>return</b> InterlockedOr64(ptr, <var>0</var>);</td></tr>
+<tr><th id="243">243</th><td><u>#else</u></td></tr>
+<tr><th id="244">244</th><td>  <b>return</b> InterlockedOr(ptr, <var>0</var>);</td></tr>
+<tr><th id="245">245</th><td><u>#endif</u></td></tr>
+<tr><th id="246">246</th><td>}</td></tr>
+<tr><th id="247">247</th><td></td></tr>
+<tr><th id="248">248</th><td><em>static</em> <b>__inline</b> <em>void</em> __atomic_store_n(<em>void</em> *ptr, uintptr_t val, <em>unsigned</em> type) {</td></tr>
+<tr><th id="249">249</th><td>  assert(type == __ATOMIC_RELEASE);</td></tr>
+<tr><th id="250">250</th><td>  InterlockedExchangePointer((<em>void</em> *<em>volatile</em> *)ptr, (<em>void</em> *)val);</td></tr>
+<tr><th id="251">251</th><td>}</td></tr>
+<tr><th id="252">252</th><td></td></tr>
+<tr><th id="253">253</th><td><u>#endif // __ATOMIC_RELEASE</u></td></tr>
+<tr><th id="254">254</th><td></td></tr>
+<tr><th id="255">255</th><td><u>#<span data-ppcond="48">endif</span> // _WIN32</u></td></tr>
+<tr><th id="256">256</th><td></td></tr>
+<tr><th id="257">257</th><td><em>static</em> <span class='typedef' title='size_t' data-type='unsigned int' data-ref="size_t" data-ref-filename="size_t">size_t</span> <dfn class="tu decl def" id="emutls_num_object" title='emutls_num_object' data-type='size_t' data-ref="emutls_num_object" data-ref-filename="emutls_num_object">emutls_num_object</dfn> = <var>0</var>; <i  data-doc="emutls_num_object">// number of allocated TLS objects</i></td></tr>
+<tr><th id="258">258</th><td></td></tr>
+<tr><th id="259">259</th><td><i  data-doc="emutls_shutdown">// Free the allocated TLS data</i></td></tr>
+<tr><th id="260">260</th><td><em>static</em> <em>void</em> <dfn class="tu decl def fn" id="emutls_shutdown" title='emutls_shutdown' data-type='void emutls_shutdown(emutls_address_array * array)' data-ref="emutls_shutdown" data-ref-filename="emutls_shutdown">emutls_shutdown</dfn>(<a class="typedef" href="#emutls_address_array" title='emutls_address_array' data-type='struct emutls_address_array' data-ref="emutls_address_array" data-ref-filename="emutls_address_array">emutls_address_array</a> *<dfn class="local col1 decl" id="11array" title='array' data-type='emutls_address_array *' data-ref="11array" data-ref-filename="11array">array</dfn>) {</td></tr>
+<tr><th id="261">261</th><td>  <b>if</b> (<a class="local col1 ref" href="#11array" title='array' data-ref="11array" data-ref-filename="11array">array</a>) {</td></tr>
+<tr><th id="262">262</th><td>    <a class="typedef" href="../../../../include/stdint.h.html#uintptr_t" title='uintptr_t' data-type='unsigned int' data-ref="uintptr_t" data-ref-filename="uintptr_t">uintptr_t</a> <dfn class="local col2 decl" id="12i" title='i' data-type='uintptr_t' data-ref="12i" data-ref-filename="12i">i</dfn>;</td></tr>
+<tr><th id="263">263</th><td>    <b>for</b> (<a class="local col2 ref" href="#12i" title='i' data-ref="12i" data-ref-filename="12i">i</a> = <var>0</var>; <a class="local col2 ref" href="#12i" title='i' data-ref="12i" data-ref-filename="12i">i</a> &lt; <a class="local col1 ref" href="#11array" title='array' data-ref="11array" data-ref-filename="11array">array</a>-&gt;<a class="tu ref field" href="#emutls_address_array::size" title='emutls_address_array::size' data-use='r' data-ref="emutls_address_array::size" data-ref-filename="emutls_address_array..size">size</a>; ++<a class="local col2 ref" href="#12i" title='i' data-ref="12i" data-ref-filename="12i">i</a>) {</td></tr>
+<tr><th id="264">264</th><td>      <b>if</b> (<a class="local col1 ref" href="#11array" title='array' data-ref="11array" data-ref-filename="11array">array</a>-&gt;<a class="tu ref field" href="#emutls_address_array::data" title='emutls_address_array::data' data-use='r' data-ref="emutls_address_array::data" data-ref-filename="emutls_address_array..data">data</a>[<a class="local col2 ref" href="#12i" title='i' data-ref="12i" data-ref-filename="12i">i</a>])</td></tr>
+<tr><th id="265">265</th><td>        <a class="tu ref fn" href="#emutls_memalign_free" title='emutls_memalign_free' data-use='c' data-ref="emutls_memalign_free" data-ref-filename="emutls_memalign_free">emutls_memalign_free</a>(<a class="local col1 ref" href="#11array" title='array' data-ref="11array" data-ref-filename="11array">array</a>-&gt;<a class="tu ref field" href="#emutls_address_array::data" title='emutls_address_array::data' data-use='r' data-ref="emutls_address_array::data" data-ref-filename="emutls_address_array..data">data</a>[<a class="local col2 ref" href="#12i" title='i' data-ref="12i" data-ref-filename="12i">i</a>]);</td></tr>
+<tr><th id="266">266</th><td>    }</td></tr>
+<tr><th id="267">267</th><td>  }</td></tr>
+<tr><th id="268">268</th><td>}</td></tr>
+<tr><th id="269">269</th><td></td></tr>
+<tr><th id="270">270</th><td><i>// For every TLS variable xyz,</i></td></tr>
+<tr><th id="271">271</th><td><i>// there is one __emutls_control variable named __emutls_v.xyz.</i></td></tr>
+<tr><th id="272">272</th><td><i>// If xyz has non-zero initial value, __emutls_v.xyz's "value"</i></td></tr>
+<tr><th id="273">273</th><td><i>// will point to __emutls_t.xyz, which has the initial value.</i></td></tr>
+<tr><th id="274">274</th><td><b>typedef</b> <b>struct</b> <dfn class="type def" id="__emutls_control" title='__emutls_control' data-ref="__emutls_control" data-ref-filename="__emutls_control"><a class="type" href="#__emutls_control" title='__emutls_control' data-ref="__emutls_control" data-ref-filename="__emutls_control">__emutls_control</a></dfn> {</td></tr>
+<tr><th id="275">275</th><td>  <i  data-doc="__emutls_control::size">// Must use gcc_word here, instead of size_t, to match GCC.  When</i></td></tr>
+<tr><th id="276">276</th><td><i  data-doc="__emutls_control::size">  // gcc_word is larger than size_t, the upper extra bits are all</i></td></tr>
+<tr><th id="277">277</th><td><i  data-doc="__emutls_control::size">  // zeros.  We can use variables of size_t to operate on size and</i></td></tr>
+<tr><th id="278">278</th><td><i  data-doc="__emutls_control::size">  // align.</i></td></tr>
+<tr><th id="279">279</th><td>  <a class="typedef" href="#gcc_word" title='gcc_word' data-type='unsigned int' data-ref="gcc_word" data-ref-filename="gcc_word">gcc_word</a> <dfn class="tu decl field" id="__emutls_control::size" title='__emutls_control::size' data-type='gcc_word' data-ref="__emutls_control::size" data-ref-filename="__emutls_control..size">size</dfn>;  <i  data-doc="__emutls_control::size">// size of the object in bytes</i></td></tr>
+<tr><th id="280">280</th><td>  <a class="typedef" href="#gcc_word" title='gcc_word' data-type='unsigned int' data-ref="gcc_word" data-ref-filename="gcc_word">gcc_word</a> <dfn class="tu decl field" id="__emutls_control::align" title='__emutls_control::align' data-type='gcc_word' data-ref="__emutls_control::align" data-ref-filename="__emutls_control..align">align</dfn>; <i  data-doc="__emutls_control::align">// alignment of the object in bytes</i></td></tr>
+<tr><th id="281">281</th><td>  <b>union</b> {</td></tr>
+<tr><th id="282">282</th><td>    <a class="typedef" href="../../../../include/stdint.h.html#uintptr_t" title='uintptr_t' data-type='unsigned int' data-ref="uintptr_t" data-ref-filename="uintptr_t">uintptr_t</a> <dfn class="tu decl field" id="__emutls_control::(anonymous)::index" title='__emutls_control::(anonymous union)::index' data-type='uintptr_t' data-ref="__emutls_control::(anonymous)::index" data-ref-filename="__emutls_control..(anonymous)..index">index</dfn>; <i  data-doc="__emutls_control::(anonymous)::index">// data[index-1] is the object address</i></td></tr>
+<tr><th id="283">283</th><td>    <em>void</em> *<dfn class="tu decl field" id="__emutls_control::(anonymous)::address" title='__emutls_control::(anonymous union)::address' data-type='void *' data-ref="__emutls_control::(anonymous)::address" data-ref-filename="__emutls_control..(anonymous)..address">address</dfn>;   <i  data-doc="__emutls_control::(anonymous)::address">// object address, when in single thread env</i></td></tr>
+<tr><th id="284">284</th><td>  } <dfn class="tu decl field" id="__emutls_control::object" title='__emutls_control::object' data-type='union (anonymous union at /fast/tmp/llvm-proj-12/compiler-rt/lib/builtins/emutls.c:281:3)' data-ref="__emutls_control::object" data-ref-filename="__emutls_control..object">object</dfn>;</td></tr>
+<tr><th id="285">285</th><td>  <em>void</em> *<dfn class="tu decl field" id="__emutls_control::value" title='__emutls_control::value' data-type='void *' data-ref="__emutls_control::value" data-ref-filename="__emutls_control..value">value</dfn>; <i  data-doc="__emutls_control::value">// null or non-zero initial value for the object</i></td></tr>
+<tr><th id="286">286</th><td>} <dfn class="typedef" id="__emutls_control" title='__emutls_control' data-type='struct __emutls_control' data-ref="__emutls_control" data-ref-filename="__emutls_control">__emutls_control</dfn>;</td></tr>
+<tr><th id="287">287</th><td></td></tr>
+<tr><th id="288">288</th><td><i  data-doc="emutls_allocate_object">// Emulated TLS objects are always allocated at run-time.</i></td></tr>
+<tr><th id="289">289</th><td><em>static</em> <b>__inline</b> <em>void</em> *<dfn class="tu decl def fn" id="emutls_allocate_object" title='emutls_allocate_object' data-type='void * emutls_allocate_object(__emutls_control * control)' data-ref="emutls_allocate_object" data-ref-filename="emutls_allocate_object">emutls_allocate_object</dfn>(<a class="typedef" href="#__emutls_control" title='__emutls_control' data-type='struct __emutls_control' data-ref="__emutls_control" data-ref-filename="__emutls_control">__emutls_control</a> *<dfn class="local col3 decl" id="13control" title='control' data-type='__emutls_control *' data-ref="13control" data-ref-filename="13control">control</dfn>) {</td></tr>
+<tr><th id="290">290</th><td>  <i>// Use standard C types, check with gcc's emutls.o.</i></td></tr>
+<tr><th id="291">291</th><td>  <a class="macro" href="int_util.h.html#26" title="typedef char ct_assert_0[(sizeof(uintptr_t) == sizeof(gcc_pointer)) ? 1 : -1] __attribute__((unused))" data-ref="_M/COMPILE_TIME_ASSERT">COMPILE_TIME_ASSERT</a>(<b>sizeof</b>(<a class="typedef" href="../../../../include/stdint.h.html#uintptr_t" title='uintptr_t' data-type='unsigned int' data-ref="uintptr_t" data-ref-filename="uintptr_t">uintptr_t</a>) == <b>sizeof</b>(<a class="typedef" href="#gcc_pointer" title='gcc_pointer' data-type='unsigned int' data-ref="gcc_pointer" data-ref-filename="gcc_pointer">gcc_pointer</a>));</td></tr>
+<tr><th id="292">292</th><td>  <a class="macro" href="int_util.h.html#26" title="typedef char ct_assert_2[(sizeof(uintptr_t) == sizeof(void *)) ? 1 : -1] __attribute__((unused))" data-ref="_M/COMPILE_TIME_ASSERT">COMPILE_TIME_ASSERT</a>(<b>sizeof</b>(<a class="typedef" href="../../../../include/stdint.h.html#uintptr_t" title='uintptr_t' data-type='unsigned int' data-ref="uintptr_t" data-ref-filename="uintptr_t">uintptr_t</a>) == <b>sizeof</b>(<em>void</em> *));</td></tr>
+<tr><th id="293">293</th><td></td></tr>
+<tr><th id="294">294</th><td>  <span class='typedef' title='size_t' data-type='unsigned int' data-ref="size_t" data-ref-filename="size_t">size_t</span> <dfn class="local col4 decl" id="14size" title='size' data-type='size_t' data-ref="14size" data-ref-filename="14size">size</dfn> = <a class="local col3 ref" href="#13control" title='control' data-ref="13control" data-ref-filename="13control">control</a>-&gt;<a class="tu ref field" href="#__emutls_control::size" title='__emutls_control::size' data-use='r' data-ref="__emutls_control::size" data-ref-filename="__emutls_control..size">size</a>;</td></tr>
+<tr><th id="295">295</th><td>  <span class='typedef' title='size_t' data-type='unsigned int' data-ref="size_t" data-ref-filename="size_t">size_t</span> <dfn class="local col5 decl" id="15align" title='align' data-type='size_t' data-ref="15align" data-ref-filename="15align">align</dfn> = <a class="local col3 ref" href="#13control" title='control' data-ref="13control" data-ref-filename="13control">control</a>-&gt;<a class="tu ref field" href="#__emutls_control::align" title='__emutls_control::align' data-use='r' data-ref="__emutls_control::align" data-ref-filename="__emutls_control..align">align</a>;</td></tr>
+<tr><th id="296">296</th><td>  <em>void</em> *<dfn class="local col6 decl" id="16base" title='base' data-type='void *' data-ref="16base" data-ref-filename="16base">base</dfn>;</td></tr>
+<tr><th id="297">297</th><td>  <b>if</b> (<a class="local col5 ref" href="#15align" title='align' data-ref="15align" data-ref-filename="15align">align</a> &lt; <b>sizeof</b>(<em>void</em> *))</td></tr>
+<tr><th id="298">298</th><td>    <a class="local col5 ref" href="#15align" title='align' data-ref="15align" data-ref-filename="15align">align</a> = <b>sizeof</b>(<em>void</em> *);</td></tr>
+<tr><th id="299">299</th><td>  <i>// Make sure that align is power of 2.</i></td></tr>
+<tr><th id="300">300</th><td>  <b>if</b> ((<a class="local col5 ref" href="#15align" title='align' data-ref="15align" data-ref-filename="15align">align</a> &amp; (<a class="local col5 ref" href="#15align" title='align' data-ref="15align" data-ref-filename="15align">align</a> - <var>1</var>)) != <var>0</var>)</td></tr>
+<tr><th id="301">301</th><td>    <a class="ref fn" href="../../../../include/stdlib.h.html#abort" title='abort' data-ref="abort" data-ref-filename="abort">abort</a>();</td></tr>
+<tr><th id="302">302</th><td></td></tr>
+<tr><th id="303">303</th><td>  <a class="local col6 ref" href="#16base" title='base' data-ref="16base" data-ref-filename="16base">base</a> = <a class="tu ref fn" href="#emutls_memalign_alloc" title='emutls_memalign_alloc' data-use='c' data-ref="emutls_memalign_alloc" data-ref-filename="emutls_memalign_alloc">emutls_memalign_alloc</a>(<a class="local col5 ref" href="#15align" title='align' data-ref="15align" data-ref-filename="15align">align</a>, <a class="local col4 ref" href="#14size" title='size' data-ref="14size" data-ref-filename="14size">size</a>);</td></tr>
+<tr><th id="304">304</th><td>  <b>if</b> (<a class="local col3 ref" href="#13control" title='control' data-ref="13control" data-ref-filename="13control">control</a>-&gt;<a class="tu ref field" href="#__emutls_control::value" title='__emutls_control::value' data-use='r' data-ref="__emutls_control::value" data-ref-filename="__emutls_control..value">value</a>)</td></tr>
+<tr><th id="305">305</th><td>    <a class="ref fn" href="../../../../include/string.h.html#memcpy" title='memcpy' data-ref="memcpy" data-ref-filename="memcpy">memcpy</a>(<a class="local col6 ref" href="#16base" title='base' data-ref="16base" data-ref-filename="16base">base</a>, <a class="local col3 ref" href="#13control" title='control' data-ref="13control" data-ref-filename="13control">control</a>-&gt;<a class="tu ref field" href="#__emutls_control::value" title='__emutls_control::value' data-use='r' data-ref="__emutls_control::value" data-ref-filename="__emutls_control..value">value</a>, <a class="local col4 ref" href="#14size" title='size' data-ref="14size" data-ref-filename="14size">size</a>);</td></tr>
+<tr><th id="306">306</th><td>  <b>else</b></td></tr>
+<tr><th id="307">307</th><td>    <a class="ref fn" href="../../../../include/string.h.html#memset" title='memset' data-ref="memset" data-ref-filename="memset">memset</a>(<a class="local col6 ref" href="#16base" title='base' data-ref="16base" data-ref-filename="16base">base</a>, <var>0</var>, <a class="local col4 ref" href="#14size" title='size' data-ref="14size" data-ref-filename="14size">size</a>);</td></tr>
+<tr><th id="308">308</th><td>  <b>return</b> <a class="local col6 ref" href="#16base" title='base' data-ref="16base" data-ref-filename="16base">base</a>;</td></tr>
+<tr><th id="309">309</th><td>}</td></tr>
+<tr><th id="310">310</th><td></td></tr>
+<tr><th id="311">311</th><td><i  data-doc="emutls_get_index">// Returns control-&gt;object.index; set index if not allocated yet.</i></td></tr>
+<tr><th id="312">312</th><td><em>static</em> <b>__inline</b> <a class="typedef" href="../../../../include/stdint.h.html#uintptr_t" title='uintptr_t' data-type='unsigned int' data-ref="uintptr_t" data-ref-filename="uintptr_t">uintptr_t</a> <dfn class="tu decl def fn" id="emutls_get_index" title='emutls_get_index' data-type='uintptr_t emutls_get_index(__emutls_control * control)' data-ref="emutls_get_index" data-ref-filename="emutls_get_index">emutls_get_index</dfn>(<a class="typedef" href="#__emutls_control" title='__emutls_control' data-type='struct __emutls_control' data-ref="__emutls_control" data-ref-filename="__emutls_control">__emutls_control</a> *<dfn class="local col7 decl" id="17control" title='control' data-type='__emutls_control *' data-ref="17control" data-ref-filename="17control">control</dfn>) {</td></tr>
+<tr><th id="313">313</th><td>  <a class="typedef" href="../../../../include/stdint.h.html#uintptr_t" title='uintptr_t' data-type='unsigned int' data-ref="uintptr_t" data-ref-filename="uintptr_t">uintptr_t</a> <dfn class="local col8 decl" id="18index" title='index' data-type='uintptr_t' data-ref="18index" data-ref-filename="18index">index</dfn> = __atomic_load_n(&amp;<a class="local col7 ref" href="#17control" title='control' data-ref="17control" data-ref-filename="17control">control</a>-&gt;<a class="tu ref field" href="#__emutls_control::object" title='__emutls_control::object' data-use='m' data-ref="__emutls_control::object" data-ref-filename="__emutls_control..object">object</a>.<a class="tu ref field" href="#__emutls_control::(anonymous)::index" title='__emutls_control::(anonymous union)::index' data-use='a' data-ref="__emutls_control::(anonymous)::index" data-ref-filename="__emutls_control..(anonymous)..index">index</a>, <span class="macro" title="2" data-ref="_M/__ATOMIC_ACQUIRE">__ATOMIC_ACQUIRE</span>);</td></tr>
+<tr><th id="314">314</th><td>  <b>if</b> (!<a class="local col8 ref" href="#18index" title='index' data-ref="18index" data-ref-filename="18index">index</a>) {</td></tr>
+<tr><th id="315">315</th><td>    <a class="tu ref fn" href="#emutls_init_once" title='emutls_init_once' data-use='c' data-ref="emutls_init_once" data-ref-filename="emutls_init_once">emutls_init_once</a>();</td></tr>
+<tr><th id="316">316</th><td>    <a class="tu ref fn" href="#emutls_lock" title='emutls_lock' data-use='c' data-ref="emutls_lock" data-ref-filename="emutls_lock">emutls_lock</a>();</td></tr>
+<tr><th id="317">317</th><td>    <a class="local col8 ref" href="#18index" title='index' data-ref="18index" data-ref-filename="18index">index</a> = <a class="local col7 ref" href="#17control" title='control' data-ref="17control" data-ref-filename="17control">control</a>-&gt;<a class="tu ref field" href="#__emutls_control::object" title='__emutls_control::object' data-use='m' data-ref="__emutls_control::object" data-ref-filename="__emutls_control..object">object</a>.<a class="tu ref field" href="#__emutls_control::(anonymous)::index" title='__emutls_control::(anonymous union)::index' data-use='r' data-ref="__emutls_control::(anonymous)::index" data-ref-filename="__emutls_control..(anonymous)..index">index</a>;</td></tr>
+<tr><th id="318">318</th><td>    <b>if</b> (!<a class="local col8 ref" href="#18index" title='index' data-ref="18index" data-ref-filename="18index">index</a>) {</td></tr>
+<tr><th id="319">319</th><td>      <a class="local col8 ref" href="#18index" title='index' data-ref="18index" data-ref-filename="18index">index</a> = ++<a class="tu ref" href="#emutls_num_object" title='emutls_num_object' data-use='w' data-ref="emutls_num_object" data-ref-filename="emutls_num_object">emutls_num_object</a>;</td></tr>
+<tr><th id="320">320</th><td>      __atomic_store_n(&amp;<a class="local col7 ref" href="#17control" title='control' data-ref="17control" data-ref-filename="17control">control</a>-&gt;<a class="tu ref field" href="#__emutls_control::object" title='__emutls_control::object' data-use='m' data-ref="__emutls_control::object" data-ref-filename="__emutls_control..object">object</a>.<a class="tu ref field" href="#__emutls_control::(anonymous)::index" title='__emutls_control::(anonymous union)::index' data-use='a' data-ref="__emutls_control::(anonymous)::index" data-ref-filename="__emutls_control..(anonymous)..index">index</a>, <a class="local col8 ref" href="#18index" title='index' data-ref="18index" data-ref-filename="18index">index</a>, <span class="macro" title="3" data-ref="_M/__ATOMIC_RELEASE">__ATOMIC_RELEASE</span>);</td></tr>
+<tr><th id="321">321</th><td>    }</td></tr>
+<tr><th id="322">322</th><td>    <a class="tu ref fn" href="#emutls_unlock" title='emutls_unlock' data-use='c' data-ref="emutls_unlock" data-ref-filename="emutls_unlock">emutls_unlock</a>();</td></tr>
+<tr><th id="323">323</th><td>  }</td></tr>
+<tr><th id="324">324</th><td>  <b>return</b> <a class="local col8 ref" href="#18index" title='index' data-ref="18index" data-ref-filename="18index">index</a>;</td></tr>
+<tr><th id="325">325</th><td>}</td></tr>
+<tr><th id="326">326</th><td></td></tr>
+<tr><th id="327">327</th><td><i  data-doc="emutls_check_array_set_size">// Updates newly allocated thread local emutls_address_array.</i></td></tr>
+<tr><th id="328">328</th><td><em>static</em> <b>__inline</b> <em>void</em> <dfn class="tu decl def fn" id="emutls_check_array_set_size" title='emutls_check_array_set_size' data-type='void emutls_check_array_set_size(emutls_address_array * array, uintptr_t size)' data-ref="emutls_check_array_set_size" data-ref-filename="emutls_check_array_set_size">emutls_check_array_set_size</dfn>(<a class="typedef" href="#emutls_address_array" title='emutls_address_array' data-type='struct emutls_address_array' data-ref="emutls_address_array" data-ref-filename="emutls_address_array">emutls_address_array</a> *<dfn class="local col9 decl" id="19array" title='array' data-type='emutls_address_array *' data-ref="19array" data-ref-filename="19array">array</dfn>,</td></tr>
+<tr><th id="329">329</th><td>                                                 <a class="typedef" href="../../../../include/stdint.h.html#uintptr_t" title='uintptr_t' data-type='unsigned int' data-ref="uintptr_t" data-ref-filename="uintptr_t">uintptr_t</a> <dfn class="local col0 decl" id="20size" title='size' data-type='uintptr_t' data-ref="20size" data-ref-filename="20size">size</dfn>) {</td></tr>
+<tr><th id="330">330</th><td>  <b>if</b> (<a class="local col9 ref" href="#19array" title='array' data-ref="19array" data-ref-filename="19array">array</a> == <span class="macro" title="((void*)0)" data-ref="_M/NULL">NULL</span>)</td></tr>
+<tr><th id="331">331</th><td>    <a class="ref fn" href="../../../../include/stdlib.h.html#abort" title='abort' data-ref="abort" data-ref-filename="abort">abort</a>();</td></tr>
+<tr><th id="332">332</th><td>  <a class="local col9 ref" href="#19array" title='array' data-ref="19array" data-ref-filename="19array">array</a>-&gt;<a class="tu ref field" href="#emutls_address_array::size" title='emutls_address_array::size' data-use='w' data-ref="emutls_address_array::size" data-ref-filename="emutls_address_array..size">size</a> = <a class="local col0 ref" href="#20size" title='size' data-ref="20size" data-ref-filename="20size">size</a>;</td></tr>
+<tr><th id="333">333</th><td>  <a class="tu ref fn" href="#emutls_setspecific" title='emutls_setspecific' data-use='c' data-ref="emutls_setspecific" data-ref-filename="emutls_setspecific">emutls_setspecific</a>(<a class="local col9 ref" href="#19array" title='array' data-ref="19array" data-ref-filename="19array">array</a>);</td></tr>
+<tr><th id="334">334</th><td>}</td></tr>
+<tr><th id="335">335</th><td></td></tr>
+<tr><th id="336">336</th><td><i  data-doc="emutls_new_data_array_size">// Returns the new 'data' array size, number of elements,</i></td></tr>
+<tr><th id="337">337</th><td><i  data-doc="emutls_new_data_array_size">// which must be no smaller than the given index.</i></td></tr>
+<tr><th id="338">338</th><td><em>static</em> <b>__inline</b> <a class="typedef" href="../../../../include/stdint.h.html#uintptr_t" title='uintptr_t' data-type='unsigned int' data-ref="uintptr_t" data-ref-filename="uintptr_t">uintptr_t</a> <dfn class="tu decl def fn" id="emutls_new_data_array_size" title='emutls_new_data_array_size' data-type='uintptr_t emutls_new_data_array_size(uintptr_t index)' data-ref="emutls_new_data_array_size" data-ref-filename="emutls_new_data_array_size">emutls_new_data_array_size</dfn>(<a class="typedef" href="../../../../include/stdint.h.html#uintptr_t" title='uintptr_t' data-type='unsigned int' data-ref="uintptr_t" data-ref-filename="uintptr_t">uintptr_t</a> <dfn class="local col1 decl" id="21index" title='index' data-type='uintptr_t' data-ref="21index" data-ref-filename="21index">index</dfn>) {</td></tr>
+<tr><th id="339">339</th><td>  <i>// Need to allocate emutls_address_array with extra slots</i></td></tr>
+<tr><th id="340">340</th><td><i>  // to store the header.</i></td></tr>
+<tr><th id="341">341</th><td><i>  // Round up the emutls_address_array size to multiple of 16.</i></td></tr>
+<tr><th id="342">342</th><td>  <a class="typedef" href="../../../../include/stdint.h.html#uintptr_t" title='uintptr_t' data-type='unsigned int' data-ref="uintptr_t" data-ref-filename="uintptr_t">uintptr_t</a> <dfn class="local col2 decl" id="22header_words" title='header_words' data-type='uintptr_t' data-ref="22header_words" data-ref-filename="22header_words">header_words</dfn> = <b>sizeof</b>(<a class="typedef" href="#emutls_address_array" title='emutls_address_array' data-type='struct emutls_address_array' data-ref="emutls_address_array" data-ref-filename="emutls_address_array">emutls_address_array</a>) / <b>sizeof</b>(<em>void</em> *);</td></tr>
+<tr><th id="343">343</th><td>  <b>return</b> ((<a class="local col1 ref" href="#21index" title='index' data-ref="21index" data-ref-filename="21index">index</a> + <a class="local col2 ref" href="#22header_words" title='header_words' data-ref="22header_words" data-ref-filename="22header_words">header_words</a> + <var>15</var>) &amp; ~((<a class="typedef" href="../../../../include/stdint.h.html#uintptr_t" title='uintptr_t' data-type='unsigned int' data-ref="uintptr_t" data-ref-filename="uintptr_t">uintptr_t</a>)<var>15</var>)) - <a class="local col2 ref" href="#22header_words" title='header_words' data-ref="22header_words" data-ref-filename="22header_words">header_words</a>;</td></tr>
+<tr><th id="344">344</th><td>}</td></tr>
+<tr><th id="345">345</th><td></td></tr>
+<tr><th id="346">346</th><td><i  data-doc="emutls_asize">// Returns the size in bytes required for an emutls_address_array with</i></td></tr>
+<tr><th id="347">347</th><td><i  data-doc="emutls_asize">// N number of elements for data field.</i></td></tr>
+<tr><th id="348">348</th><td><em>static</em> <b>__inline</b> <a class="typedef" href="../../../../include/stdint.h.html#uintptr_t" title='uintptr_t' data-type='unsigned int' data-ref="uintptr_t" data-ref-filename="uintptr_t">uintptr_t</a> <dfn class="tu decl def fn" id="emutls_asize" title='emutls_asize' data-type='uintptr_t emutls_asize(uintptr_t N)' data-ref="emutls_asize" data-ref-filename="emutls_asize">emutls_asize</dfn>(<a class="typedef" href="../../../../include/stdint.h.html#uintptr_t" title='uintptr_t' data-type='unsigned int' data-ref="uintptr_t" data-ref-filename="uintptr_t">uintptr_t</a> <dfn class="local col3 decl" id="23N" title='N' data-type='uintptr_t' data-ref="23N" data-ref-filename="23N">N</dfn>) {</td></tr>
+<tr><th id="349">349</th><td>  <b>return</b> <a class="local col3 ref" href="#23N" title='N' data-ref="23N" data-ref-filename="23N">N</a> * <b>sizeof</b>(<em>void</em> *) + <b>sizeof</b>(<a class="typedef" href="#emutls_address_array" title='emutls_address_array' data-type='struct emutls_address_array' data-ref="emutls_address_array" data-ref-filename="emutls_address_array">emutls_address_array</a>);</td></tr>
+<tr><th id="350">350</th><td>}</td></tr>
+<tr><th id="351">351</th><td></td></tr>
+<tr><th id="352">352</th><td><i  data-doc="emutls_get_address_array">// Returns the thread local emutls_address_array.</i></td></tr>
+<tr><th id="353">353</th><td><i  data-doc="emutls_get_address_array">// Extends its size if necessary to hold address at index.</i></td></tr>
+<tr><th id="354">354</th><td><em>static</em> <b>__inline</b> <a class="typedef" href="#emutls_address_array" title='emutls_address_array' data-type='struct emutls_address_array' data-ref="emutls_address_array" data-ref-filename="emutls_address_array">emutls_address_array</a> *</td></tr>
+<tr><th id="355">355</th><td><dfn class="tu decl def fn" id="emutls_get_address_array" title='emutls_get_address_array' data-type='emutls_address_array * emutls_get_address_array(uintptr_t index)' data-ref="emutls_get_address_array" data-ref-filename="emutls_get_address_array">emutls_get_address_array</dfn>(<a class="typedef" href="../../../../include/stdint.h.html#uintptr_t" title='uintptr_t' data-type='unsigned int' data-ref="uintptr_t" data-ref-filename="uintptr_t">uintptr_t</a> <dfn class="local col4 decl" id="24index" title='index' data-type='uintptr_t' data-ref="24index" data-ref-filename="24index">index</dfn>) {</td></tr>
+<tr><th id="356">356</th><td>  <a class="typedef" href="#emutls_address_array" title='emutls_address_array' data-type='struct emutls_address_array' data-ref="emutls_address_array" data-ref-filename="emutls_address_array">emutls_address_array</a> *<dfn class="local col5 decl" id="25array" title='array' data-type='emutls_address_array *' data-ref="25array" data-ref-filename="25array">array</dfn> = <a class="tu ref fn" href="#emutls_getspecific" title='emutls_getspecific' data-use='c' data-ref="emutls_getspecific" data-ref-filename="emutls_getspecific">emutls_getspecific</a>();</td></tr>
+<tr><th id="357">357</th><td>  <b>if</b> (<a class="local col5 ref" href="#25array" title='array' data-ref="25array" data-ref-filename="25array">array</a> == <span class="macro" title="((void*)0)" data-ref="_M/NULL">NULL</span>) {</td></tr>
+<tr><th id="358">358</th><td>    <a class="typedef" href="../../../../include/stdint.h.html#uintptr_t" title='uintptr_t' data-type='unsigned int' data-ref="uintptr_t" data-ref-filename="uintptr_t">uintptr_t</a> <dfn class="local col6 decl" id="26new_size" title='new_size' data-type='uintptr_t' data-ref="26new_size" data-ref-filename="26new_size">new_size</dfn> = <a class="tu ref fn" href="#emutls_new_data_array_size" title='emutls_new_data_array_size' data-use='c' data-ref="emutls_new_data_array_size" data-ref-filename="emutls_new_data_array_size">emutls_new_data_array_size</a>(<a class="local col4 ref" href="#24index" title='index' data-ref="24index" data-ref-filename="24index">index</a>);</td></tr>
+<tr><th id="359">359</th><td>    <a class="local col5 ref" href="#25array" title='array' data-ref="25array" data-ref-filename="25array">array</a> = (<a class="typedef" href="#emutls_address_array" title='emutls_address_array' data-type='struct emutls_address_array' data-ref="emutls_address_array" data-ref-filename="emutls_address_array">emutls_address_array</a> *)<a class="ref fn" href="../../../../include/stdlib.h.html#malloc" title='malloc' data-ref="malloc" data-ref-filename="malloc">malloc</a>(<a class="tu ref fn" href="#emutls_asize" title='emutls_asize' data-use='c' data-ref="emutls_asize" data-ref-filename="emutls_asize">emutls_asize</a>(<a class="local col6 ref" href="#26new_size" title='new_size' data-ref="26new_size" data-ref-filename="26new_size">new_size</a>));</td></tr>
+<tr><th id="360">360</th><td>    <b>if</b> (<a class="local col5 ref" href="#25array" title='array' data-ref="25array" data-ref-filename="25array">array</a>) {</td></tr>
+<tr><th id="361">361</th><td>      <a class="ref fn" href="../../../../include/string.h.html#memset" title='memset' data-ref="memset" data-ref-filename="memset">memset</a>(<a class="local col5 ref" href="#25array" title='array' data-ref="25array" data-ref-filename="25array">array</a>-&gt;<a class="tu ref field" href="#emutls_address_array::data" title='emutls_address_array::data' data-use='r' data-ref="emutls_address_array::data" data-ref-filename="emutls_address_array..data">data</a>, <var>0</var>, <a class="local col6 ref" href="#26new_size" title='new_size' data-ref="26new_size" data-ref-filename="26new_size">new_size</a> * <b>sizeof</b>(<em>void</em> *));</td></tr>
+<tr><th id="362">362</th><td>      <a class="local col5 ref" href="#25array" title='array' data-ref="25array" data-ref-filename="25array">array</a>-&gt;<a class="tu ref field" href="#emutls_address_array::skip_destructor_rounds" title='emutls_address_array::skip_destructor_rounds' data-use='w' data-ref="emutls_address_array::skip_destructor_rounds" data-ref-filename="emutls_address_array..skip_destructor_rounds">skip_destructor_rounds</a> = <a class="macro" href="#26" title="0" data-ref="_M/EMUTLS_SKIP_DESTRUCTOR_ROUNDS">EMUTLS_SKIP_DESTRUCTOR_ROUNDS</a>;</td></tr>
+<tr><th id="363">363</th><td>    }</td></tr>
+<tr><th id="364">364</th><td>    <a class="tu ref fn" href="#emutls_check_array_set_size" title='emutls_check_array_set_size' data-use='c' data-ref="emutls_check_array_set_size" data-ref-filename="emutls_check_array_set_size">emutls_check_array_set_size</a>(<a class="local col5 ref" href="#25array" title='array' data-ref="25array" data-ref-filename="25array">array</a>, <a class="local col6 ref" href="#26new_size" title='new_size' data-ref="26new_size" data-ref-filename="26new_size">new_size</a>);</td></tr>
+<tr><th id="365">365</th><td>  } <b>else</b> <b>if</b> (<a class="local col4 ref" href="#24index" title='index' data-ref="24index" data-ref-filename="24index">index</a> &gt; <a class="local col5 ref" href="#25array" title='array' data-ref="25array" data-ref-filename="25array">array</a>-&gt;<a class="tu ref field" href="#emutls_address_array::size" title='emutls_address_array::size' data-use='r' data-ref="emutls_address_array::size" data-ref-filename="emutls_address_array..size">size</a>) {</td></tr>
+<tr><th id="366">366</th><td>    <a class="typedef" href="../../../../include/stdint.h.html#uintptr_t" title='uintptr_t' data-type='unsigned int' data-ref="uintptr_t" data-ref-filename="uintptr_t">uintptr_t</a> <dfn class="local col7 decl" id="27orig_size" title='orig_size' data-type='uintptr_t' data-ref="27orig_size" data-ref-filename="27orig_size">orig_size</dfn> = <a class="local col5 ref" href="#25array" title='array' data-ref="25array" data-ref-filename="25array">array</a>-&gt;<a class="tu ref field" href="#emutls_address_array::size" title='emutls_address_array::size' data-use='r' data-ref="emutls_address_array::size" data-ref-filename="emutls_address_array..size">size</a>;</td></tr>
+<tr><th id="367">367</th><td>    <a class="typedef" href="../../../../include/stdint.h.html#uintptr_t" title='uintptr_t' data-type='unsigned int' data-ref="uintptr_t" data-ref-filename="uintptr_t">uintptr_t</a> <dfn class="local col8 decl" id="28new_size" title='new_size' data-type='uintptr_t' data-ref="28new_size" data-ref-filename="28new_size">new_size</dfn> = <a class="tu ref fn" href="#emutls_new_data_array_size" title='emutls_new_data_array_size' data-use='c' data-ref="emutls_new_data_array_size" data-ref-filename="emutls_new_data_array_size">emutls_new_data_array_size</a>(<a class="local col4 ref" href="#24index" title='index' data-ref="24index" data-ref-filename="24index">index</a>);</td></tr>
+<tr><th id="368">368</th><td>    <a class="local col5 ref" href="#25array" title='array' data-ref="25array" data-ref-filename="25array">array</a> = (<a class="typedef" href="#emutls_address_array" title='emutls_address_array' data-type='struct emutls_address_array' data-ref="emutls_address_array" data-ref-filename="emutls_address_array">emutls_address_array</a> *)<a class="ref fn" href="../../../../include/stdlib.h.html#realloc" title='realloc' data-ref="realloc" data-ref-filename="realloc">realloc</a>(<a class="local col5 ref" href="#25array" title='array' data-ref="25array" data-ref-filename="25array">array</a>, <a class="tu ref fn" href="#emutls_asize" title='emutls_asize' data-use='c' data-ref="emutls_asize" data-ref-filename="emutls_asize">emutls_asize</a>(<a class="local col8 ref" href="#28new_size" title='new_size' data-ref="28new_size" data-ref-filename="28new_size">new_size</a>));</td></tr>
+<tr><th id="369">369</th><td>    <b>if</b> (<a class="local col5 ref" href="#25array" title='array' data-ref="25array" data-ref-filename="25array">array</a>)</td></tr>
+<tr><th id="370">370</th><td>      <a class="ref fn" href="../../../../include/string.h.html#memset" title='memset' data-ref="memset" data-ref-filename="memset">memset</a>(<a class="local col5 ref" href="#25array" title='array' data-ref="25array" data-ref-filename="25array">array</a>-&gt;<a class="tu ref field" href="#emutls_address_array::data" title='emutls_address_array::data' data-use='r' data-ref="emutls_address_array::data" data-ref-filename="emutls_address_array..data">data</a> + <a class="local col7 ref" href="#27orig_size" title='orig_size' data-ref="27orig_size" data-ref-filename="27orig_size">orig_size</a>, <var>0</var>,</td></tr>
+<tr><th id="371">371</th><td>             (<a class="local col8 ref" href="#28new_size" title='new_size' data-ref="28new_size" data-ref-filename="28new_size">new_size</a> - <a class="local col7 ref" href="#27orig_size" title='orig_size' data-ref="27orig_size" data-ref-filename="27orig_size">orig_size</a>) * <b>sizeof</b>(<em>void</em> *));</td></tr>
+<tr><th id="372">372</th><td>    <a class="tu ref fn" href="#emutls_check_array_set_size" title='emutls_check_array_set_size' data-use='c' data-ref="emutls_check_array_set_size" data-ref-filename="emutls_check_array_set_size">emutls_check_array_set_size</a>(<a class="local col5 ref" href="#25array" title='array' data-ref="25array" data-ref-filename="25array">array</a>, <a class="local col8 ref" href="#28new_size" title='new_size' data-ref="28new_size" data-ref-filename="28new_size">new_size</a>);</td></tr>
+<tr><th id="373">373</th><td>  }</td></tr>
+<tr><th id="374">374</th><td>  <b>return</b> <a class="local col5 ref" href="#25array" title='array' data-ref="25array" data-ref-filename="25array">array</a>;</td></tr>
+<tr><th id="375">375</th><td>}</td></tr>
+<tr><th id="376">376</th><td></td></tr>
+<tr><th id="377">377</th><td><em>void</em> *<dfn class="decl def fn" id="__emutls_get_address" title='__emutls_get_address' data-ref="__emutls_get_address" data-ref-filename="__emutls_get_address">__emutls_get_address</dfn>(<a class="typedef" href="#__emutls_control" title='__emutls_control' data-type='struct __emutls_control' data-ref="__emutls_control" data-ref-filename="__emutls_control">__emutls_control</a> *<dfn class="local col9 decl" id="29control" title='control' data-type='__emutls_control *' data-ref="29control" data-ref-filename="29control">control</dfn>) {</td></tr>
+<tr><th id="378">378</th><td>  <a class="typedef" href="../../../../include/stdint.h.html#uintptr_t" title='uintptr_t' data-type='unsigned int' data-ref="uintptr_t" data-ref-filename="uintptr_t">uintptr_t</a> <dfn class="local col0 decl" id="30index" title='index' data-type='uintptr_t' data-ref="30index" data-ref-filename="30index">index</dfn> = <a class="tu ref fn" href="#emutls_get_index" title='emutls_get_index' data-use='c' data-ref="emutls_get_index" data-ref-filename="emutls_get_index">emutls_get_index</a>(<a class="local col9 ref" href="#29control" title='control' data-ref="29control" data-ref-filename="29control">control</a>);</td></tr>
+<tr><th id="379">379</th><td>  <a class="typedef" href="#emutls_address_array" title='emutls_address_array' data-type='struct emutls_address_array' data-ref="emutls_address_array" data-ref-filename="emutls_address_array">emutls_address_array</a> *<dfn class="local col1 decl" id="31array" title='array' data-type='emutls_address_array *' data-ref="31array" data-ref-filename="31array">array</dfn> = <a class="tu ref fn" href="#emutls_get_address_array" title='emutls_get_address_array' data-use='c' data-ref="emutls_get_address_array" data-ref-filename="emutls_get_address_array">emutls_get_address_array</a>(<a class="local col0 ref" href="#30index" title='index' data-ref="30index" data-ref-filename="30index">index</a>--);</td></tr>
+<tr><th id="380">380</th><td>  <b>if</b> (<a class="local col1 ref" href="#31array" title='array' data-ref="31array" data-ref-filename="31array">array</a>-&gt;<a class="tu ref field" href="#emutls_address_array::data" title='emutls_address_array::data' data-use='r' data-ref="emutls_address_array::data" data-ref-filename="emutls_address_array..data">data</a>[<a class="local col0 ref" href="#30index" title='index' data-ref="30index" data-ref-filename="30index">index</a>] == <span class="macro" title="((void*)0)" data-ref="_M/NULL">NULL</span>)</td></tr>
+<tr><th id="381">381</th><td>    <a class="local col1 ref" href="#31array" title='array' data-ref="31array" data-ref-filename="31array">array</a>-&gt;<a class="tu ref field" href="#emutls_address_array::data" title='emutls_address_array::data' data-use='w' data-ref="emutls_address_array::data" data-ref-filename="emutls_address_array..data">data</a>[<a class="local col0 ref" href="#30index" title='index' data-ref="30index" data-ref-filename="30index">index</a>] = <a class="tu ref fn" href="#emutls_allocate_object" title='emutls_allocate_object' data-use='c' data-ref="emutls_allocate_object" data-ref-filename="emutls_allocate_object">emutls_allocate_object</a>(<a class="local col9 ref" href="#29control" title='control' data-ref="29control" data-ref-filename="29control">control</a>);</td></tr>
+<tr><th id="382">382</th><td>  <b>return</b> <a class="local col1 ref" href="#31array" title='array' data-ref="31array" data-ref-filename="31array">array</a>-&gt;<a class="tu ref field" href="#emutls_address_array::data" title='emutls_address_array::data' data-use='r' data-ref="emutls_address_array::data" data-ref-filename="emutls_address_array..data">data</a>[<a class="local col0 ref" href="#30index" title='index' data-ref="30index" data-ref-filename="30index">index</a>];</td></tr>
+<tr><th id="383">383</th><td>}</td></tr>
+<tr><th id="384">384</th><td></td></tr>
+<tr><th id="385">385</th><td><u>#<span data-ppcond="385">ifdef</span> <span class="macro" data-ref="_M/__BIONIC__">__BIONIC__</span></u></td></tr>
+<tr><th id="386">386</th><td><i>// Called by Bionic on dlclose to delete the emutls pthread key.</i></td></tr>
+<tr><th id="387">387</th><td><b>__attribute__</b>((visibility(<q>"hidden"</q>))) <em>void</em> __emutls_unregister_key(<em>void</em>) {</td></tr>
+<tr><th id="388">388</th><td>  <b>if</b> (emutls_key_created) {</td></tr>
+<tr><th id="389">389</th><td>    pthread_key_delete(emutls_pthread_key);</td></tr>
+<tr><th id="390">390</th><td>    emutls_key_created = false;</td></tr>
+<tr><th id="391">391</th><td>  }</td></tr>
+<tr><th id="392">392</th><td>}</td></tr>
+<tr><th id="393">393</th><td><u>#<span data-ppcond="385">endif</span></u></td></tr>
+<tr><th id="394">394</th><td></td></tr>
+</table><hr/><p id='footer'>
+Generated on <em>2021-Jul-01</em> from project llvm revision <em>12</em>

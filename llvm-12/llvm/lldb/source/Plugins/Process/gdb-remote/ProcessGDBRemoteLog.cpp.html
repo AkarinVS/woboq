@@ -1,0 +1,59 @@
+<!doctype html>
+<html>
+<head>
+<meta name="viewport" content="width=device-width, initial-scale=1.0"><title>ProcessGDBRemoteLog.cpp source code [llvm/lldb/source/Plugins/Process/gdb-remote/ProcessGDBRemoteLog.cpp] - Woboq Code Browser</title>
+<link rel="stylesheet" href="../../../../../.././data/qtcreator.css" title="QtCreator"/>
+<link rel="alternate stylesheet" href="../../../../../.././data/kdevelop.css" title="KDevelop"/>
+<script type="text/javascript" src="../../../../../.././data/jquery/jquery.min.js"></script>
+<script type="text/javascript" src="../../../../../.././data/jquery/jquery-ui.min.js"></script>
+<script>var file = 'llvm/lldb/source/Plugins/Process/gdb-remote/ProcessGDBRemoteLog.cpp'; var root_path = '../../../../../..'; var data_path = '../../../../../.././data'; var ecma_script_api_version = 2;</script>
+<script src='../../../../../.././data/codebrowser.js'></script>
+</head>
+<body><div id='header'><h1 id='breadcrumb'><span>Browse the source code of </span><a href='../../../../..'>llvm</a>/<a href='../../../..'>lldb</a>/<a href='../../..'>source</a>/<a href='../..'>Plugins</a>/<a href='..'>Process</a>/<a href='./'>gdb-remote</a>/<a href='ProcessGDBRemoteLog.cpp.html'>ProcessGDBRemoteLog.cpp</a></h1></div>
+<hr/><div id='content'><table class="code">
+<tr><th id="1">1</th><td><i>//===-- ProcessGDBRemoteLog.cpp -------------------------------------------===//</i></td></tr>
+<tr><th id="2">2</th><td><i>//</i></td></tr>
+<tr><th id="3">3</th><td><i>// Part of the LLVM Project, under the Apache License v2.0 with LLVM Exceptions.</i></td></tr>
+<tr><th id="4">4</th><td><i>// See <a href="https://llvm.org/LICENSE.txt">https://llvm.org/LICENSE.txt</a> for license information.</i></td></tr>
+<tr><th id="5">5</th><td><i>// SPDX-License-Identifier: Apache-2.0 WITH LLVM-exception</i></td></tr>
+<tr><th id="6">6</th><td><i>//</i></td></tr>
+<tr><th id="7">7</th><td><i>//===----------------------------------------------------------------------===//</i></td></tr>
+<tr><th id="8">8</th><td></td></tr>
+<tr><th id="9">9</th><td><u>#include <a href="ProcessGDBRemoteLog.h.html">"ProcessGDBRemoteLog.h"</a></u></td></tr>
+<tr><th id="10">10</th><td><u>#include <a href="ProcessGDBRemote.h.html">"ProcessGDBRemote.h"</a></u></td></tr>
+<tr><th id="11">11</th><td><u>#include <a href="../../../../../llvm/include/llvm/Support/Threading.h.html">"llvm/Support/Threading.h"</a></u></td></tr>
+<tr><th id="12">12</th><td></td></tr>
+<tr><th id="13">13</th><td><b>using</b> <b>namespace</b> <span class="namespace">lldb</span>;</td></tr>
+<tr><th id="14">14</th><td><b>using</b> <b>namespace</b> <span class="namespace">lldb_private</span>;</td></tr>
+<tr><th id="15">15</th><td><b>using</b> <b>namespace</b> <span class="namespace">lldb_private::process_gdb_remote</span>;</td></tr>
+<tr><th id="16">16</th><td></td></tr>
+<tr><th id="17">17</th><td><em>static</em> <b>constexpr</b> <a class="type" href="../../../../include/lldb/Utility/Log.h.html#lldb_private::Log" title='lldb_private::Log' data-ref="lldb_private::Log" data-ref-filename="lldb_private..Log">Log</a>::<a class="type" href="../../../../include/lldb/Utility/Log.h.html#lldb_private::Log::Category" title='lldb_private::Log::Category' data-ref="lldb_private::Log::Category" data-ref-filename="lldb_private..Log..Category">Category</a> <dfn class="tu decl def" id="g_categories" title='g_categories' data-type='const Log::Category [11]' data-ref="g_categories" data-ref-filename="g_categories">g_categories</dfn>[] = {</td></tr>
+<tr><th id="18">18</th><td>    {{<q>"async"</q>}, {<q>"log asynchronous activity"</q>}, <a class="macro" href="ProcessGDBRemoteLog.h.html#25" title="(1u &lt;&lt; 11)" data-ref="_M/GDBR_LOG_ASYNC">GDBR_LOG_ASYNC</a>},</td></tr>
+<tr><th id="19">19</th><td>    {{<q>"break"</q>}, {<q>"log breakpoints"</q>}, <a class="macro" href="ProcessGDBRemoteLog.h.html#21" title="(1u &lt;&lt; 7)" data-ref="_M/GDBR_LOG_BREAKPOINTS">GDBR_LOG_BREAKPOINTS</a>},</td></tr>
+<tr><th id="20">20</th><td>    {{<q>"comm"</q>}, {<q>"log communication activity"</q>}, <a class="macro" href="ProcessGDBRemoteLog.h.html#24" title="(1u &lt;&lt; 10)" data-ref="_M/GDBR_LOG_COMM">GDBR_LOG_COMM</a>},</td></tr>
+<tr><th id="21">21</th><td>    {{<q>"packets"</q>}, {<q>"log gdb remote packets"</q>}, <a class="macro" href="ProcessGDBRemoteLog.h.html#16" title="(1u &lt;&lt; 3)" data-ref="_M/GDBR_LOG_PACKETS">GDBR_LOG_PACKETS</a>},</td></tr>
+<tr><th id="22">22</th><td>    {{<q>"memory"</q>}, {<q>"log memory reads and writes"</q>}, <a class="macro" href="ProcessGDBRemoteLog.h.html#17" title="(1u &lt;&lt; 4)" data-ref="_M/GDBR_LOG_MEMORY">GDBR_LOG_MEMORY</a>},</td></tr>
+<tr><th id="23">23</th><td>    {{<q>"data-short"</q>},</td></tr>
+<tr><th id="24">24</th><td>     {<q>"log memory bytes for memory reads and writes for short transactions "</q></td></tr>
+<tr><th id="25">25</th><td>      <q>"only"</q>},</td></tr>
+<tr><th id="26">26</th><td>     <a class="macro" href="ProcessGDBRemoteLog.h.html#18" title="(1u &lt;&lt; 5)" data-ref="_M/GDBR_LOG_MEMORY_DATA_SHORT">GDBR_LOG_MEMORY_DATA_SHORT</a>},</td></tr>
+<tr><th id="27">27</th><td>    {{<q>"data-long"</q>},</td></tr>
+<tr><th id="28">28</th><td>     {<q>"log memory bytes for memory reads and writes for all transactions"</q>},</td></tr>
+<tr><th id="29">29</th><td>     <a class="macro" href="ProcessGDBRemoteLog.h.html#20" title="(1u &lt;&lt; 6)" data-ref="_M/GDBR_LOG_MEMORY_DATA_LONG">GDBR_LOG_MEMORY_DATA_LONG</a>},</td></tr>
+<tr><th id="30">30</th><td>    {{<q>"process"</q>}, {<q>"log process events and activities"</q>}, <a class="macro" href="ProcessGDBRemoteLog.h.html#14" title="(1u &lt;&lt; 1)" data-ref="_M/GDBR_LOG_PROCESS">GDBR_LOG_PROCESS</a>},</td></tr>
+<tr><th id="31">31</th><td>    {{<q>"step"</q>}, {<q>"log step related activities"</q>}, <a class="macro" href="ProcessGDBRemoteLog.h.html#23" title="(1u &lt;&lt; 9)" data-ref="_M/GDBR_LOG_STEP">GDBR_LOG_STEP</a>},</td></tr>
+<tr><th id="32">32</th><td>    {{<q>"thread"</q>}, {<q>"log thread events and activities"</q>}, <a class="macro" href="ProcessGDBRemoteLog.h.html#15" title="(1u &lt;&lt; 2)" data-ref="_M/GDBR_LOG_THREAD">GDBR_LOG_THREAD</a>},</td></tr>
+<tr><th id="33">33</th><td>    {{<q>"watch"</q>}, {<q>"log watchpoint related activities"</q>}, <a class="macro" href="ProcessGDBRemoteLog.h.html#22" title="(1u &lt;&lt; 8)" data-ref="_M/GDBR_LOG_WATCHPOINTS">GDBR_LOG_WATCHPOINTS</a>},</td></tr>
+<tr><th id="34">34</th><td>};</td></tr>
+<tr><th id="35">35</th><td></td></tr>
+<tr><th id="36">36</th><td><a class="type" href="../../../../include/lldb/Utility/Log.h.html#lldb_private::Log" title='lldb_private::Log' data-ref="lldb_private::Log" data-ref-filename="lldb_private..Log">Log</a>::<a class="type" href="../../../../include/lldb/Utility/Log.h.html#lldb_private::Log::Channel" title='lldb_private::Log::Channel' data-ref="lldb_private::Log::Channel" data-ref-filename="lldb_private..Log..Channel">Channel</a> <a class="type" href="ProcessGDBRemoteLog.h.html#lldb_private::process_gdb_remote::ProcessGDBRemoteLog" title='lldb_private::process_gdb_remote::ProcessGDBRemoteLog' data-ref="lldb_private::process_gdb_remote::ProcessGDBRemoteLog" data-ref-filename="lldb_private..process_gdb_remote..ProcessGDBRemoteLog">ProcessGDBRemoteLog</a>::<dfn class="decl def" id="lldb_private::process_gdb_remote::ProcessGDBRemoteLog::g_channel" title='lldb_private::process_gdb_remote::ProcessGDBRemoteLog::g_channel' data-ref="lldb_private::process_gdb_remote::ProcessGDBRemoteLog::g_channel" data-ref-filename="lldb_private..process_gdb_remote..ProcessGDBRemoteLog..g_channel">g_channel</dfn><a class="ref fn" href="../../../../include/lldb/Utility/Log.h.html#_ZN12lldb_private3Log7ChannelC1EN4llvm8ArrayRefINS0_8CategoryEEEj" title='lldb_private::Log::Channel::Channel' data-ref="_ZN12lldb_private3Log7ChannelC1EN4llvm8ArrayRefINS0_8CategoryEEEj" data-ref-filename="_ZN12lldb_private3Log7ChannelC1EN4llvm8ArrayRefINS0_8CategoryEEEj">(</a><a class="ref fn fake" href="../../../../../llvm/include/llvm/ADT/ArrayRef.h.html#_ZN4llvm8ArrayRefC1ERATL0___KT_" title='llvm::ArrayRef::ArrayRef&lt;T&gt;' data-ref="_ZN4llvm8ArrayRefC1ERATL0___KT_" data-ref-filename="_ZN4llvm8ArrayRefC1ERATL0___KT_"></a><a class="tu ref" href="#g_categories" title='g_categories' data-use='r' data-ref="g_categories" data-ref-filename="g_categories">g_categories</a>, <a class="macro" href="ProcessGDBRemoteLog.h.html#27" title="(1u &lt;&lt; 3)" data-ref="_M/GDBR_LOG_DEFAULT">GDBR_LOG_DEFAULT</a>);</td></tr>
+<tr><th id="37">37</th><td></td></tr>
+<tr><th id="38">38</th><td><em>void</em> <a class="type" href="ProcessGDBRemoteLog.h.html#lldb_private::process_gdb_remote::ProcessGDBRemoteLog" title='lldb_private::process_gdb_remote::ProcessGDBRemoteLog' data-ref="lldb_private::process_gdb_remote::ProcessGDBRemoteLog" data-ref-filename="lldb_private..process_gdb_remote..ProcessGDBRemoteLog">ProcessGDBRemoteLog</a>::<dfn class="decl def fn" id="_ZN12lldb_private18process_gdb_remote19ProcessGDBRemoteLog10InitializeEv" title='lldb_private::process_gdb_remote::ProcessGDBRemoteLog::Initialize' data-ref="_ZN12lldb_private18process_gdb_remote19ProcessGDBRemoteLog10InitializeEv" data-ref-filename="_ZN12lldb_private18process_gdb_remote19ProcessGDBRemoteLog10InitializeEv">Initialize</dfn>() {</td></tr>
+<tr><th id="39">39</th><td>  <em>static</em> <span class="namespace">llvm::</span><a class="typedef" href="../../../../../llvm/include/llvm/Support/Threading.h.html#llvm::once_flag" title='llvm::once_flag' data-type='std::once_flag' data-ref="llvm::once_flag" data-ref-filename="llvm..once_flag">once_flag</a> <span class='ref fn fake' title='std::once_flag::once_flag' data-ref="_ZNSt9once_flagC1Ev" data-ref-filename="_ZNSt9once_flagC1Ev"></span><dfn class="local col1 decl" id="1g_once_flag" title='g_once_flag' data-type='llvm::once_flag' data-ref="1g_once_flag" data-ref-filename="1g_once_flag">g_once_flag</dfn>;</td></tr>
+<tr><th id="40">40</th><td>  <span class="namespace">llvm::</span><a class="tu ref fn" href="../../../../../llvm/include/llvm/Support/Threading.h.html#_ZN4llvm9call_onceERSt9once_flagOT_DpOT0_" title='llvm::call_once' data-use='c' data-ref="_ZN4llvm9call_onceERSt9once_flagOT_DpOT0_" data-ref-filename="_ZN4llvm9call_onceERSt9once_flagOT_DpOT0_">call_once</a>(<span class='refarg'><a class="local col1 ref" href="#1g_once_flag" title='g_once_flag' data-ref="1g_once_flag" data-ref-filename="1g_once_flag">g_once_flag</a></span>, []() {</td></tr>
+<tr><th id="41">41</th><td>    <a class="type" href="../../../../include/lldb/Utility/Log.h.html#lldb_private::Log" title='lldb_private::Log' data-ref="lldb_private::Log" data-ref-filename="lldb_private..Log">Log</a>::<a class="ref fn" href="../../../../include/lldb/Utility/Log.h.html#_ZN12lldb_private3Log8RegisterEN4llvm9StringRefERNS0_7ChannelE" title='lldb_private::Log::Register' data-ref="_ZN12lldb_private3Log8RegisterEN4llvm9StringRefERNS0_7ChannelE" data-ref-filename="_ZN12lldb_private3Log8RegisterEN4llvm9StringRefERNS0_7ChannelE">Register</a>(<a class="ref fn fake" href="../../../../../llvm/include/llvm/ADT/StringRef.h.html#_ZN4llvm9StringRefC1EPKc" title='llvm::StringRef::StringRef' data-ref="_ZN4llvm9StringRefC1EPKc" data-ref-filename="_ZN4llvm9StringRefC1EPKc"></a><q>"gdb-remote"</q>, <span class='refarg'><a class="member" href="ProcessGDBRemoteLog.h.html#lldb_private::process_gdb_remote::ProcessGDBRemoteLog::g_channel" title='lldb_private::process_gdb_remote::ProcessGDBRemoteLog::g_channel' data-ref="lldb_private::process_gdb_remote::ProcessGDBRemoteLog::g_channel" data-ref-filename="lldb_private..process_gdb_remote..ProcessGDBRemoteLog..g_channel">g_channel</a></span>);</td></tr>
+<tr><th id="42">42</th><td>  });</td></tr>
+<tr><th id="43">43</th><td>}</td></tr>
+<tr><th id="44">44</th><td></td></tr>
+</table><hr/><p id='footer'>
+Generated on <em>2021-Jul-01</em> from project llvm revision <em>12</em>

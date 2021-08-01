@@ -1,0 +1,35 @@
+<dec f='llvm/llvm/lib/Target/PowerPC/PPCTargetTransformInfo.h' l='31' type='const llvm::PPCSubtarget *'/>
+<use f='llvm/llvm/lib/Target/PowerPC/PPCTargetTransformInfo.h' l='34' u='r' c='_ZNK4llvm10PPCTTIImpl5getSTEv'/>
+<use f='llvm/llvm/lib/Target/PowerPC/PPCTargetTransformInfo.h' l='41' u='w' c='_ZN4llvm10PPCTTIImplC1EPKNS_16PPCTargetMachineERKNS_8FunctionE'/>
+<use f='llvm/llvm/lib/Target/PowerPC/PPCTargetTransformInfo.h' l='42' u='r' c='_ZN4llvm10PPCTTIImplC1EPKNS_16PPCTargetMachineERKNS_8FunctionE'/>
+<offset>128</offset>
+<use f='llvm/llvm/lib/Target/PowerPC/PPCTargetTransformInfo.cpp' l='61' u='r' c='_ZN4llvm10PPCTTIImpl16getPopcntSupportEj'/>
+<use f='llvm/llvm/lib/Target/PowerPC/PPCTargetTransformInfo.cpp' l='62' u='r' c='_ZN4llvm10PPCTTIImpl16getPopcntSupportEj'/>
+<use f='llvm/llvm/lib/Target/PowerPC/PPCTargetTransformInfo.cpp' l='305' u='r' c='_ZN4llvm10PPCTTIImpl17getIntImmCostInstEjjRKNS_5APIntEPNS_4TypeENS_19TargetTransformInfo14TargetCostKindEPNS_11InstructionE'/>
+<use f='llvm/llvm/lib/Target/PowerPC/PPCTargetTransformInfo.cpp' l='363' u='r' c='_ZN4llvm10PPCTTIImpl11mightUseCTREPNS_10BasicBlockEPNS_17TargetLibraryInfoERNS_15SmallPtrSetImplIPKNS_5ValueEEE'/>
+<use f='llvm/llvm/lib/Target/PowerPC/PPCTargetTransformInfo.cpp' l='411' u='r' c='_ZN4llvm10PPCTTIImpl11mightUseCTREPNS_10BasicBlockEPNS_17TargetLibraryInfoERNS_15SmallPtrSetImplIPKNS_5ValueEEE'/>
+<use f='llvm/llvm/lib/Target/PowerPC/PPCTargetTransformInfo.cpp' l='685' u='r' c='_ZN4llvm10PPCTTIImpl11mightUseCTREPNS_10BasicBlockEPNS_17TargetLibraryInfoERNS_15SmallPtrSetImplIPKNS_5ValueEEE'/>
+<use f='llvm/llvm/lib/Target/PowerPC/PPCTargetTransformInfo.cpp' l='714' u='r' c='_ZN4llvm10PPCTTIImpl24isHardwareLoopProfitableEPNS_4LoopERNS_15ScalarEvolutionERNS_15AssumptionCacheEPNS_17TargetLibraryInfoERNS_16HardwareLoopInfoE'/>
+<use f='llvm/llvm/lib/Target/PowerPC/PPCTargetTransformInfo.cpp' l='716' u='r' c='_ZN4llvm10PPCTTIImpl24isHardwareLoopProfitableEPNS_4LoopERNS_15ScalarEvolutionERNS_15AssumptionCacheEPNS_17TargetLibraryInfoERNS_16HardwareLoopInfoE'/>
+<use f='llvm/llvm/lib/Target/PowerPC/PPCTargetTransformInfo.cpp' l='790' u='r' c='_ZN4llvm10PPCTTIImpl23getUnrollingPreferencesEPNS_4LoopERNS_15ScalarEvolutionERNS_19TargetTransformInfo20UnrollingPreferencesE'/>
+<use f='llvm/llvm/lib/Target/PowerPC/PPCTargetTransformInfo.cpp' l='817' u='r' c='_ZN4llvm10PPCTTIImpl28enableAggressiveInterleavingEb'/>
+<use f='llvm/llvm/lib/Target/PowerPC/PPCTargetTransformInfo.cpp' l='838' u='r' c='_ZNK4llvm10PPCTTIImpl20getNumberOfRegistersEj'/>
+<use f='llvm/llvm/lib/Target/PowerPC/PPCTargetTransformInfo.cpp' l='848' u='r' c='_ZNK4llvm10PPCTTIImpl23getRegisterClassForTypeEbPNS_4TypeE'/>
+<use f='llvm/llvm/lib/Target/PowerPC/PPCTargetTransformInfo.cpp' l='851' u='r' c='_ZNK4llvm10PPCTTIImpl23getRegisterClassForTypeEbPNS_4TypeE'/>
+<use f='llvm/llvm/lib/Target/PowerPC/PPCTargetTransformInfo.cpp' l='876' u='r' c='_ZNK4llvm10PPCTTIImpl19getRegisterBitWidthEb'/>
+<use f='llvm/llvm/lib/Target/PowerPC/PPCTargetTransformInfo.cpp' l='880' u='r' c='_ZNK4llvm10PPCTTIImpl19getRegisterBitWidthEb'/>
+<use f='llvm/llvm/lib/Target/PowerPC/PPCTargetTransformInfo.cpp' l='892' u='r' c='_ZNK4llvm10PPCTTIImpl16getCacheLineSizeEv'/>
+<use f='llvm/llvm/lib/Target/PowerPC/PPCTargetTransformInfo.cpp' l='908' u='r' c='_ZN4llvm10PPCTTIImpl22getMaxInterleaveFactorEj'/>
+<use f='llvm/llvm/lib/Target/PowerPC/PPCTargetTransformInfo.cpp' l='943' u='r' c='_ZN4llvm10PPCTTIImpl20vectorCostAdjustmentEijPNS_4TypeES2_'/>
+<use f='llvm/llvm/lib/Target/PowerPC/PPCTargetTransformInfo.cpp' l='1043' u='r' c='_ZN4llvm10PPCTTIImpl18getVectorInstrCostEjPNS_4TypeEj'/>
+<use f='llvm/llvm/lib/Target/PowerPC/PPCTargetTransformInfo.cpp' l='1046' u='r' c='_ZN4llvm10PPCTTIImpl18getVectorInstrCostEjPNS_4TypeEj'/>
+<use f='llvm/llvm/lib/Target/PowerPC/PPCTargetTransformInfo.cpp' l='1052' u='r' c='_ZN4llvm10PPCTTIImpl18getVectorInstrCostEjPNS_4TypeEj'/>
+<use f='llvm/llvm/lib/Target/PowerPC/PPCTargetTransformInfo.cpp' l='1061' u='r' c='_ZN4llvm10PPCTTIImpl18getVectorInstrCostEjPNS_4TypeEj'/>
+<use f='llvm/llvm/lib/Target/PowerPC/PPCTargetTransformInfo.cpp' l='1065' u='r' c='_ZN4llvm10PPCTTIImpl18getVectorInstrCostEjPNS_4TypeEj'/>
+<use f='llvm/llvm/lib/Target/PowerPC/PPCTargetTransformInfo.cpp' l='1075' u='r' c='_ZN4llvm10PPCTTIImpl18getVectorInstrCostEjPNS_4TypeEj'/>
+<use f='llvm/llvm/lib/Target/PowerPC/PPCTargetTransformInfo.cpp' l='1120' u='r' c='_ZN4llvm10PPCTTIImpl15getMemoryOpCostEjPNS_4TypeENS_10MaybeAlignEjNS_19TargetTransformInfo14TargetCostKindEPKNS_11InstructionE'/>
+<use f='llvm/llvm/lib/Target/PowerPC/PPCTargetTransformInfo.cpp' l='1123' u='r' c='_ZN4llvm10PPCTTIImpl15getMemoryOpCostEjPNS_4TypeENS_10MaybeAlignEjNS_19TargetTransformInfo14TargetCostKindEPKNS_11InstructionE'/>
+<use f='llvm/llvm/lib/Target/PowerPC/PPCTargetTransformInfo.cpp' l='1131' u='r' c='_ZN4llvm10PPCTTIImpl15getMemoryOpCostEjPNS_4TypeENS_10MaybeAlignEjNS_19TargetTransformInfo14TargetCostKindEPKNS_11InstructionE'/>
+<use f='llvm/llvm/lib/Target/PowerPC/PPCTargetTransformInfo.cpp' l='1132' u='r' c='_ZN4llvm10PPCTTIImpl15getMemoryOpCostEjPNS_4TypeENS_10MaybeAlignEjNS_19TargetTransformInfo14TargetCostKindEPKNS_11InstructionE'/>
+<use f='llvm/llvm/lib/Target/PowerPC/PPCTargetTransformInfo.cpp' l='1147' u='r' c='_ZN4llvm10PPCTTIImpl15getMemoryOpCostEjPNS_4TypeENS_10MaybeAlignEjNS_19TargetTransformInfo14TargetCostKindEPKNS_11InstructionE'/>
+<use f='llvm/llvm/lib/Target/PowerPC/PPCTargetTransformInfo.cpp' l='1155' u='r' c='_ZN4llvm10PPCTTIImpl15getMemoryOpCostEjPNS_4TypeENS_10MaybeAlignEjNS_19TargetTransformInfo14TargetCostKindEPKNS_11InstructionE'/>

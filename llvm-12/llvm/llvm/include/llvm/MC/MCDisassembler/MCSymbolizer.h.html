@@ -1,0 +1,99 @@
+<!doctype html>
+<html>
+<head>
+<meta name="viewport" content="width=device-width, initial-scale=1.0"><title>MCSymbolizer.h source code [llvm/llvm/include/llvm/MC/MCDisassembler/MCSymbolizer.h] - Woboq Code Browser</title>
+<meta name="woboq:interestingDefinitions" content="llvm::MCSymbolizer "/>
+<link rel="stylesheet" href="../../../../../.././data/qtcreator.css" title="QtCreator"/>
+<link rel="alternate stylesheet" href="../../../../../.././data/kdevelop.css" title="KDevelop"/>
+<script type="text/javascript" src="../../../../../.././data/jquery/jquery.min.js"></script>
+<script type="text/javascript" src="../../../../../.././data/jquery/jquery-ui.min.js"></script>
+<script>var file = 'llvm/llvm/include/llvm/MC/MCDisassembler/MCSymbolizer.h'; var root_path = '../../../../../..'; var data_path = '../../../../../.././data'; var ecma_script_api_version = 2;</script>
+<script src='../../../../../.././data/codebrowser.js'></script>
+</head>
+<body><div id='header'><h1 id='breadcrumb'><span>Browse the source code of </span><a href='../../../../..'>llvm</a>/<a href='../../../..'>llvm</a>/<a href='../../..'>include</a>/<a href='../..'>llvm</a>/<a href='..'>MC</a>/<a href='./'>MCDisassembler</a>/<a href='MCSymbolizer.h.html'>MCSymbolizer.h</a></h1></div>
+<hr/><div id='content'><table class="code">
+<tr><th id="1">1</th><td><i>//===- llvm/MC/MCSymbolizer.h - MCSymbolizer class --------------*- C++ -*-===//</i></td></tr>
+<tr><th id="2">2</th><td><i>//</i></td></tr>
+<tr><th id="3">3</th><td><i>// Part of the LLVM Project, under the Apache License v2.0 with LLVM Exceptions.</i></td></tr>
+<tr><th id="4">4</th><td><i>// See <a href="https://llvm.org/LICENSE.txt">https://llvm.org/LICENSE.txt</a> for license information.</i></td></tr>
+<tr><th id="5">5</th><td><i>// SPDX-License-Identifier: Apache-2.0 WITH LLVM-exception</i></td></tr>
+<tr><th id="6">6</th><td><i>//</i></td></tr>
+<tr><th id="7">7</th><td><i>//===----------------------------------------------------------------------===//</i></td></tr>
+<tr><th id="8">8</th><td><i>//</i></td></tr>
+<tr><th id="9">9</th><td><i>// This file contains the declaration of the MCSymbolizer class, which is used</i></td></tr>
+<tr><th id="10">10</th><td><i>// to symbolize instructions decoded from an object, that is, transform their</i></td></tr>
+<tr><th id="11">11</th><td><i>// immediate operands to MCExprs.</i></td></tr>
+<tr><th id="12">12</th><td><i>//</i></td></tr>
+<tr><th id="13">13</th><td><i>//===----------------------------------------------------------------------===//</i></td></tr>
+<tr><th id="14">14</th><td></td></tr>
+<tr><th id="15">15</th><td><u>#<span data-ppcond="15">ifndef</span> <span class="macro" data-ref="_M/LLVM_MC_MCDISASSEMBLER_MCSYMBOLIZER_H">LLVM_MC_MCDISASSEMBLER_MCSYMBOLIZER_H</span></u></td></tr>
+<tr><th id="16">16</th><td><u>#define <dfn class="macro" id="_M/LLVM_MC_MCDISASSEMBLER_MCSYMBOLIZER_H" data-ref="_M/LLVM_MC_MCDISASSEMBLER_MCSYMBOLIZER_H">LLVM_MC_MCDISASSEMBLER_MCSYMBOLIZER_H</dfn></u></td></tr>
+<tr><th id="17">17</th><td></td></tr>
+<tr><th id="18">18</th><td><u>#include <a href="MCRelocationInfo.h.html">"llvm/MC/MCDisassembler/MCRelocationInfo.h"</a></u></td></tr>
+<tr><th id="19">19</th><td><u>#include &lt;algorithm&gt;</u></td></tr>
+<tr><th id="20">20</th><td><u>#include &lt;cstdint&gt;</u></td></tr>
+<tr><th id="21">21</th><td><u>#include &lt;memory&gt;</u></td></tr>
+<tr><th id="22">22</th><td></td></tr>
+<tr><th id="23">23</th><td><b>namespace</b> <span class="namespace">llvm</span> {</td></tr>
+<tr><th id="24">24</th><td></td></tr>
+<tr><th id="25">25</th><td><b>class</b> <a class="type" href="../MCContext.h.html#llvm::MCContext" title='llvm::MCContext' data-ref="llvm::MCContext" data-ref-filename="llvm..MCContext" id="llvm::MCContext">MCContext</a>;</td></tr>
+<tr><th id="26">26</th><td><b>class</b> <a class="type" href="../MCInst.h.html#llvm::MCInst" title='llvm::MCInst' data-ref="llvm::MCInst" data-ref-filename="llvm..MCInst" id="llvm::MCInst">MCInst</a>;</td></tr>
+<tr><th id="27">27</th><td><b>class</b> <a class="type" href="../../Support/raw_ostream.h.html#llvm::raw_ostream" title='llvm::raw_ostream' data-ref="llvm::raw_ostream" data-ref-filename="llvm..raw_ostream" id="llvm::raw_ostream">raw_ostream</a>;</td></tr>
+<tr><th id="28">28</th><td></td></tr>
+<tr><th id="29">29</th><td><i class="doc">/// Symbolize and annotate disassembled instructions.</i></td></tr>
+<tr><th id="30">30</th><td><i class="doc">///</i></td></tr>
+<tr><th id="31">31</th><td><i class="doc">/// For now this mimics the old symbolization logic (from both ARM and x86), that</i></td></tr>
+<tr><th id="32">32</th><td><i class="doc">/// relied on user-provided (C API) callbacks to do the actual symbol lookup in</i></td></tr>
+<tr><th id="33">33</th><td><i class="doc">/// the object file. This was moved to MCExternalSymbolizer.</i></td></tr>
+<tr><th id="34">34</th><td><i class="doc">/// A better API would not rely on actually calling the two methods here from</i></td></tr>
+<tr><th id="35">35</th><td><i class="doc">/// inside each disassembler, but would use the instr info to determine what</i></td></tr>
+<tr><th id="36">36</th><td><i class="doc">/// operands are actually symbolizable, and in what way. I don't think this</i></td></tr>
+<tr><th id="37">37</th><td><i class="doc">/// information exists right now.</i></td></tr>
+<tr><th id="38">38</th><td><b>class</b> <dfn class="type def" id="llvm::MCSymbolizer" title='llvm::MCSymbolizer' data-ref="llvm::MCSymbolizer" data-ref-filename="llvm..MCSymbolizer">MCSymbolizer</dfn> {</td></tr>
+<tr><th id="39">39</th><td><b>protected</b>:</td></tr>
+<tr><th id="40">40</th><td>  <a class="type" href="../MCContext.h.html#llvm::MCContext" title='llvm::MCContext' data-ref="llvm::MCContext" data-ref-filename="llvm..MCContext">MCContext</a> &amp;<dfn class="decl field" id="llvm::MCSymbolizer::Ctx" title='llvm::MCSymbolizer::Ctx' data-ref="llvm::MCSymbolizer::Ctx" data-ref-filename="llvm..MCSymbolizer..Ctx">Ctx</dfn>;</td></tr>
+<tr><th id="41">41</th><td>  <span class="namespace">std::</span><span class='type' title='std::unique_ptr' data-ref="std::unique_ptr" data-ref-filename="std..unique_ptr">unique_ptr</span>&lt;<a class="type" href="MCRelocationInfo.h.html#llvm::MCRelocationInfo" title='llvm::MCRelocationInfo' data-ref="llvm::MCRelocationInfo" data-ref-filename="llvm..MCRelocationInfo">MCRelocationInfo</a>&gt; <dfn class="decl field" id="llvm::MCSymbolizer::RelInfo" title='llvm::MCSymbolizer::RelInfo' data-ref="llvm::MCSymbolizer::RelInfo" data-ref-filename="llvm..MCSymbolizer..RelInfo">RelInfo</dfn>;</td></tr>
+<tr><th id="42">42</th><td></td></tr>
+<tr><th id="43">43</th><td><b>public</b>:</td></tr>
+<tr><th id="44">44</th><td>  <i class="doc">/// Construct an MCSymbolizer, taking ownership of<span class="command"> \p</span> <span class="arg">RelInfo.</span></i></td></tr>
+<tr><th id="45">45</th><td>  <dfn class="decl def fn" id="_ZN4llvm12MCSymbolizerC1ERNS_9MCContextESt10unique_ptrINS_16MCRelocationInfoESt14default_deleteIS4_EE" title='llvm::MCSymbolizer::MCSymbolizer' data-ref="_ZN4llvm12MCSymbolizerC1ERNS_9MCContextESt10unique_ptrINS_16MCRelocationInfoESt14default_deleteIS4_EE" data-ref-filename="_ZN4llvm12MCSymbolizerC1ERNS_9MCContextESt10unique_ptrINS_16MCRelocationInfoESt14default_deleteIS4_EE">MCSymbolizer</dfn>(<a class="type" href="../MCContext.h.html#llvm::MCContext" title='llvm::MCContext' data-ref="llvm::MCContext" data-ref-filename="llvm..MCContext">MCContext</a> &amp;<dfn class="local col3 decl" id="63Ctx" title='Ctx' data-type='llvm::MCContext &amp;' data-ref="63Ctx" data-ref-filename="63Ctx">Ctx</dfn>, <span class="namespace">std::</span><span class='type' title='std::unique_ptr' data-ref="std::unique_ptr" data-ref-filename="std..unique_ptr">unique_ptr</span>&lt;<a class="type" href="MCRelocationInfo.h.html#llvm::MCRelocationInfo" title='llvm::MCRelocationInfo' data-ref="llvm::MCRelocationInfo" data-ref-filename="llvm..MCRelocationInfo">MCRelocationInfo</a>&gt; <dfn class="local col4 decl" id="64RelInfo" title='RelInfo' data-type='std::unique_ptr&lt;MCRelocationInfo&gt;' data-ref="64RelInfo" data-ref-filename="64RelInfo">RelInfo</dfn>)</td></tr>
+<tr><th id="46">46</th><td>    : <a class="member field" href="#llvm::MCSymbolizer::Ctx" title='llvm::MCSymbolizer::Ctx' data-ref="llvm::MCSymbolizer::Ctx" data-ref-filename="llvm..MCSymbolizer..Ctx">Ctx</a>(<a class="local col3 ref" href="#63Ctx" title='Ctx' data-ref="63Ctx" data-ref-filename="63Ctx">Ctx</a>), <a class="member field" href="#llvm::MCSymbolizer::RelInfo" title='llvm::MCSymbolizer::RelInfo' data-ref="llvm::MCSymbolizer::RelInfo" data-ref-filename="llvm..MCSymbolizer..RelInfo">RelInfo</a><span class='ref fn' title='std::unique_ptr::unique_ptr&lt;_Tp, _Dp&gt;' data-ref="_ZNSt10unique_ptrC1EOSt10unique_ptrIT_T0_E" data-ref-filename="_ZNSt10unique_ptrC1EOSt10unique_ptrIT_T0_E">(</span><span class="namespace">std::</span><span class='ref fn' title='std::move' data-ref="_ZSt4moveOT_" data-ref-filename="_ZSt4moveOT_">move</span>(<span class='refarg'><a class="local col4 ref" href="#64RelInfo" title='RelInfo' data-ref="64RelInfo" data-ref-filename="64RelInfo">RelInfo</a></span>)) {</td></tr>
+<tr><th id="47">47</th><td>  }</td></tr>
+<tr><th id="48">48</th><td></td></tr>
+<tr><th id="49">49</th><td>  <dfn class="decl def fn" id="_ZN4llvm12MCSymbolizerC1ERKS0_" title='llvm::MCSymbolizer::MCSymbolizer' data-ref="_ZN4llvm12MCSymbolizerC1ERKS0_" data-ref-filename="_ZN4llvm12MCSymbolizerC1ERKS0_">MCSymbolizer</dfn>(<em>const</em> <a class="type" href="#llvm::MCSymbolizer" title='llvm::MCSymbolizer' data-ref="llvm::MCSymbolizer" data-ref-filename="llvm..MCSymbolizer">MCSymbolizer</a> &amp;) = <b>delete</b>;</td></tr>
+<tr><th id="50">50</th><td>  <a class="type" href="#llvm::MCSymbolizer" title='llvm::MCSymbolizer' data-ref="llvm::MCSymbolizer" data-ref-filename="llvm..MCSymbolizer">MCSymbolizer</a> &amp;<dfn class="decl def fn" id="_ZN4llvm12MCSymbolizeraSERKS0_" title='llvm::MCSymbolizer::operator=' data-ref="_ZN4llvm12MCSymbolizeraSERKS0_" data-ref-filename="_ZN4llvm12MCSymbolizeraSERKS0_"><b>operator</b>=</dfn>(<em>const</em> <a class="type" href="#llvm::MCSymbolizer" title='llvm::MCSymbolizer' data-ref="llvm::MCSymbolizer" data-ref-filename="llvm..MCSymbolizer">MCSymbolizer</a> &amp;) = <b>delete</b>;</td></tr>
+<tr><th id="51">51</th><td>  <b>virtual</b> <dfn class="virtual decl fn" id="_ZN4llvm12MCSymbolizerD1Ev" title='llvm::MCSymbolizer::~MCSymbolizer' data-ref="_ZN4llvm12MCSymbolizerD1Ev" data-ref-filename="_ZN4llvm12MCSymbolizerD1Ev">~MCSymbolizer</dfn>();</td></tr>
+<tr><th id="52">52</th><td></td></tr>
+<tr><th id="53">53</th><td>  <i class="doc">/// Try to add a symbolic operand instead of<span class="command"> \p</span> <span class="arg">Value</span> to the MCInst.</i></td></tr>
+<tr><th id="54">54</th><td><i class="doc">  ///</i></td></tr>
+<tr><th id="55">55</th><td><i class="doc">  /// Instead of having a difficult to read immediate, a symbolic operand would</i></td></tr>
+<tr><th id="56">56</th><td><i class="doc">  /// represent this immediate in a more understandable way, for instance as a</i></td></tr>
+<tr><th id="57">57</th><td><i class="doc">  /// symbol or an offset from a symbol. Relocations can also be used to enrich</i></td></tr>
+<tr><th id="58">58</th><td><i class="doc">  /// the symbolic expression.</i></td></tr>
+<tr><th id="59">59</th><td><i class="doc">  /// <span class="command">\param</span> <span class="arg">Inst</span>      - The MCInst where to insert the symbolic operand.</i></td></tr>
+<tr><th id="60">60</th><td><i class="doc">  /// <span class="command">\param</span> <span class="arg">cStream</span>   - Stream to print comments and annotations on.</i></td></tr>
+<tr><th id="61">61</th><td><i class="doc">  /// <span class="command">\param</span> <span class="arg">Value</span>     - Operand value, pc-adjusted by the caller if necessary.</i></td></tr>
+<tr><th id="62">62</th><td><i class="doc">  /// <span class="command">\param</span> <span class="arg">Address</span>   - Load address of the instruction.</i></td></tr>
+<tr><th id="63">63</th><td><i class="doc">  /// <span class="command">\param</span> <span class="arg">IsBranch</span>  - Is the instruction a branch?</i></td></tr>
+<tr><th id="64">64</th><td><i class="doc">  /// <span class="command">\param</span> <span class="arg">Offset</span>    - Byte offset of the operand inside the inst.</i></td></tr>
+<tr><th id="65">65</th><td><i class="doc">  /// <span class="command">\param</span> <span class="arg">InstSize</span>  - Size of the instruction in bytes.</i></td></tr>
+<tr><th id="66">66</th><td><i class="doc">  /// <span class="command">\return</span> Whether a symbolic operand was added.</i></td></tr>
+<tr><th id="67">67</th><td>  <b>virtual</b> <em>bool</em> <dfn class="virtual decl fn" id="_ZN4llvm12MCSymbolizer24tryAddingSymbolicOperandERNS_6MCInstERNS_11raw_ostreamElmbmm" title='llvm::MCSymbolizer::tryAddingSymbolicOperand' data-ref="_ZN4llvm12MCSymbolizer24tryAddingSymbolicOperandERNS_6MCInstERNS_11raw_ostreamElmbmm" data-ref-filename="_ZN4llvm12MCSymbolizer24tryAddingSymbolicOperandERNS_6MCInstERNS_11raw_ostreamElmbmm">tryAddingSymbolicOperand</dfn>(<a class="type" href="../MCInst.h.html#llvm::MCInst" title='llvm::MCInst' data-ref="llvm::MCInst" data-ref-filename="llvm..MCInst">MCInst</a> &amp;<dfn class="local col5 decl" id="65Inst" title='Inst' data-type='llvm::MCInst &amp;' data-ref="65Inst" data-ref-filename="65Inst">Inst</dfn>, <a class="type" href="../../Support/raw_ostream.h.html#llvm::raw_ostream" title='llvm::raw_ostream' data-ref="llvm::raw_ostream" data-ref-filename="llvm..raw_ostream">raw_ostream</a> &amp;<dfn class="local col6 decl" id="66cStream" title='cStream' data-type='llvm::raw_ostream &amp;' data-ref="66cStream" data-ref-filename="66cStream">cStream</dfn>,</td></tr>
+<tr><th id="68">68</th><td>                                        <a class="typedef" href="../../../../../../include/bits/stdint-intn.h.html#int64_t" title='int64_t' data-type='__int64_t' data-ref="int64_t" data-ref-filename="int64_t">int64_t</a> <dfn class="local col7 decl" id="67Value" title='Value' data-type='int64_t' data-ref="67Value" data-ref-filename="67Value">Value</dfn>, <a class="typedef" href="../../../../../../include/bits/stdint-uintn.h.html#uint64_t" title='uint64_t' data-type='__uint64_t' data-ref="uint64_t" data-ref-filename="uint64_t">uint64_t</a> <dfn class="local col8 decl" id="68Address" title='Address' data-type='uint64_t' data-ref="68Address" data-ref-filename="68Address">Address</dfn>,</td></tr>
+<tr><th id="69">69</th><td>                                        <em>bool</em> <dfn class="local col9 decl" id="69IsBranch" title='IsBranch' data-type='bool' data-ref="69IsBranch" data-ref-filename="69IsBranch">IsBranch</dfn>, <a class="typedef" href="../../../../../../include/bits/stdint-uintn.h.html#uint64_t" title='uint64_t' data-type='__uint64_t' data-ref="uint64_t" data-ref-filename="uint64_t">uint64_t</a> <dfn class="local col0 decl" id="70Offset" title='Offset' data-type='uint64_t' data-ref="70Offset" data-ref-filename="70Offset">Offset</dfn>,</td></tr>
+<tr><th id="70">70</th><td>                                        <a class="typedef" href="../../../../../../include/bits/stdint-uintn.h.html#uint64_t" title='uint64_t' data-type='__uint64_t' data-ref="uint64_t" data-ref-filename="uint64_t">uint64_t</a> <dfn class="local col1 decl" id="71InstSize" title='InstSize' data-type='uint64_t' data-ref="71InstSize" data-ref-filename="71InstSize">InstSize</dfn>) = <var>0</var>;</td></tr>
+<tr><th id="71">71</th><td></td></tr>
+<tr><th id="72">72</th><td>  <i class="doc">/// Try to add a comment on the PC-relative load.</i></td></tr>
+<tr><th id="73">73</th><td><i class="doc">  /// For instance, in Mach-O, this is used to add annotations to instructions</i></td></tr>
+<tr><th id="74">74</th><td><i class="doc">  /// that use C string literals, as found in __cstring.</i></td></tr>
+<tr><th id="75">75</th><td>  <b>virtual</b> <em>void</em> <dfn class="virtual decl fn" id="_ZN4llvm12MCSymbolizer31tryAddingPcLoadReferenceCommentERNS_11raw_ostreamElm" title='llvm::MCSymbolizer::tryAddingPcLoadReferenceComment' data-ref="_ZN4llvm12MCSymbolizer31tryAddingPcLoadReferenceCommentERNS_11raw_ostreamElm" data-ref-filename="_ZN4llvm12MCSymbolizer31tryAddingPcLoadReferenceCommentERNS_11raw_ostreamElm">tryAddingPcLoadReferenceComment</dfn>(<a class="type" href="../../Support/raw_ostream.h.html#llvm::raw_ostream" title='llvm::raw_ostream' data-ref="llvm::raw_ostream" data-ref-filename="llvm..raw_ostream">raw_ostream</a> &amp;<dfn class="local col2 decl" id="72cStream" title='cStream' data-type='llvm::raw_ostream &amp;' data-ref="72cStream" data-ref-filename="72cStream">cStream</dfn>,</td></tr>
+<tr><th id="76">76</th><td>                                               <a class="typedef" href="../../../../../../include/bits/stdint-intn.h.html#int64_t" title='int64_t' data-type='__int64_t' data-ref="int64_t" data-ref-filename="int64_t">int64_t</a> <dfn class="local col3 decl" id="73Value" title='Value' data-type='int64_t' data-ref="73Value" data-ref-filename="73Value">Value</dfn>,</td></tr>
+<tr><th id="77">77</th><td>                                               <a class="typedef" href="../../../../../../include/bits/stdint-uintn.h.html#uint64_t" title='uint64_t' data-type='__uint64_t' data-ref="uint64_t" data-ref-filename="uint64_t">uint64_t</a> <dfn class="local col4 decl" id="74Address" title='Address' data-type='uint64_t' data-ref="74Address" data-ref-filename="74Address">Address</dfn>) = <var>0</var>;</td></tr>
+<tr><th id="78">78</th><td>};</td></tr>
+<tr><th id="79">79</th><td></td></tr>
+<tr><th id="80">80</th><td>} <i>// end namespace llvm</i></td></tr>
+<tr><th id="81">81</th><td></td></tr>
+<tr><th id="82">82</th><td><u>#<span data-ppcond="15">endif</span> // LLVM_MC_MCDISASSEMBLER_MCSYMBOLIZER_H</u></td></tr>
+<tr><th id="83">83</th><td></td></tr>
+</table><hr/><p id='footer'>
+Generated while processing <a href='../../../../../lldb/source/Plugins/Disassembler/LLVMC/DisassemblerLLVMC.cpp.html'>llvm/lldb/source/Plugins/Disassembler/LLVMC/DisassemblerLLVMC.cpp</a><br/>Generated on <em>2021-Jul-01</em> from project llvm revision <em>12</em>

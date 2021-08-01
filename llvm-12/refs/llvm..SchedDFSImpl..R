@@ -1,0 +1,27 @@
+<dec f='llvm/llvm/lib/CodeGen/ScheduleDAGInstrs.cpp' l='1225' type='llvm::SchedDFSResult &amp;'/>
+<use f='llvm/llvm/lib/CodeGen/ScheduleDAGInstrs.cpp' l='1247' u='w' c='_ZN4llvm12SchedDFSImplC1ERNS_14SchedDFSResultE'/>
+<use f='llvm/llvm/lib/CodeGen/ScheduleDAGInstrs.cpp' l='1247' u='m' c='_ZN4llvm12SchedDFSImplC1ERNS_14SchedDFSResultE'/>
+<use f='llvm/llvm/lib/CodeGen/ScheduleDAGInstrs.cpp' l='1248' u='m' c='_ZN4llvm12SchedDFSImplC1ERNS_14SchedDFSResultE'/>
+<use f='llvm/llvm/lib/CodeGen/ScheduleDAGInstrs.cpp' l='1256' u='m' c='_ZNK4llvm12SchedDFSImpl9isVisitedEPKNS_5SUnitE'/>
+<use f='llvm/llvm/lib/CodeGen/ScheduleDAGInstrs.cpp' l='1263' u='m' c='_ZN4llvm12SchedDFSImpl13visitPreorderEPKNS_5SUnitE'/>
+<use f='llvm/llvm/lib/CodeGen/ScheduleDAGInstrs.cpp' l='1273' u='m' c='_ZN4llvm12SchedDFSImpl18visitPostorderNodeEPKNS_5SUnitE'/>
+<use f='llvm/llvm/lib/CodeGen/ScheduleDAGInstrs.cpp' l='1282' u='m' c='_ZN4llvm12SchedDFSImpl18visitPostorderNodeEPKNS_5SUnitE'/>
+<use f='llvm/llvm/lib/CodeGen/ScheduleDAGInstrs.cpp' l='1287' u='m' c='_ZN4llvm12SchedDFSImpl18visitPostorderNodeEPKNS_5SUnitE'/>
+<use f='llvm/llvm/lib/CodeGen/ScheduleDAGInstrs.cpp' l='1287' u='m' c='_ZN4llvm12SchedDFSImpl18visitPostorderNodeEPKNS_5SUnitE'/>
+<use f='llvm/llvm/lib/CodeGen/ScheduleDAGInstrs.cpp' l='1291' u='m' c='_ZN4llvm12SchedDFSImpl18visitPostorderNodeEPKNS_5SUnitE'/>
+<use f='llvm/llvm/lib/CodeGen/ScheduleDAGInstrs.cpp' l='1313' u='m' c='_ZN4llvm12SchedDFSImpl18visitPostorderEdgeERKNS_4SDepEPKNS_5SUnitE'/>
+<use f='llvm/llvm/lib/CodeGen/ScheduleDAGInstrs.cpp' l='1314' u='m' c='_ZN4llvm12SchedDFSImpl18visitPostorderEdgeERKNS_4SDepEPKNS_5SUnitE'/>
+<use f='llvm/llvm/lib/CodeGen/ScheduleDAGInstrs.cpp' l='1327' u='m' c='_ZN4llvm12SchedDFSImpl8finalizeEv'/>
+<use f='llvm/llvm/lib/CodeGen/ScheduleDAGInstrs.cpp' l='1333' u='m' c='_ZN4llvm12SchedDFSImpl8finalizeEv'/>
+<use f='llvm/llvm/lib/CodeGen/ScheduleDAGInstrs.cpp' l='1334' u='m' c='_ZN4llvm12SchedDFSImpl8finalizeEv'/>
+<use f='llvm/llvm/lib/CodeGen/ScheduleDAGInstrs.cpp' l='1340' u='m' c='_ZN4llvm12SchedDFSImpl8finalizeEv'/>
+<use f='llvm/llvm/lib/CodeGen/ScheduleDAGInstrs.cpp' l='1341' u='m' c='_ZN4llvm12SchedDFSImpl8finalizeEv'/>
+<use f='llvm/llvm/lib/CodeGen/ScheduleDAGInstrs.cpp' l='1343' u='m' c='_ZN4llvm12SchedDFSImpl8finalizeEv'/>
+<use f='llvm/llvm/lib/CodeGen/ScheduleDAGInstrs.cpp' l='1344' u='m' c='_ZN4llvm12SchedDFSImpl8finalizeEv'/>
+<use f='llvm/llvm/lib/CodeGen/ScheduleDAGInstrs.cpp' l='1369' u='m' c='_ZN4llvm12SchedDFSImpl15joinPredSubtreeERKNS_4SDepEPKNS_5SUnitEb'/>
+<use f='llvm/llvm/lib/CodeGen/ScheduleDAGInstrs.cpp' l='1381' u='m' c='_ZN4llvm12SchedDFSImpl15joinPredSubtreeERKNS_4SDepEPKNS_5SUnitEb'/>
+<use f='llvm/llvm/lib/CodeGen/ScheduleDAGInstrs.cpp' l='1381' u='m' c='_ZN4llvm12SchedDFSImpl15joinPredSubtreeERKNS_4SDepEPKNS_5SUnitEb'/>
+<use f='llvm/llvm/lib/CodeGen/ScheduleDAGInstrs.cpp' l='1383' u='m' c='_ZN4llvm12SchedDFSImpl15joinPredSubtreeERKNS_4SDepEPKNS_5SUnitEb'/>
+<use f='llvm/llvm/lib/CodeGen/ScheduleDAGInstrs.cpp' l='1395' u='m' c='_ZN4llvm12SchedDFSImpl13addConnectionEjjj'/>
+<use f='llvm/llvm/lib/CodeGen/ScheduleDAGInstrs.cpp' l='1403' u='m' c='_ZN4llvm12SchedDFSImpl13addConnectionEjjj'/>
+<offset>0</offset>

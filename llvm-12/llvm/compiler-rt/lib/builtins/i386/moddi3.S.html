@@ -1,0 +1,186 @@
+<!doctype html>
+<html>
+<head>
+<meta name="viewport" content="width=device-width, initial-scale=1.0"><title>moddi3.S source code [llvm/compiler-rt/lib/builtins/i386/moddi3.S] - Woboq Code Browser</title>
+<link rel="stylesheet" href="../../../../.././data/qtcreator.css" title="QtCreator"/>
+<link rel="alternate stylesheet" href="../../../../.././data/kdevelop.css" title="KDevelop"/>
+<script type="text/javascript" src="../../../../.././data/jquery/jquery.min.js"></script>
+<script type="text/javascript" src="../../../../.././data/jquery/jquery-ui.min.js"></script>
+<script>var file = 'llvm/compiler-rt/lib/builtins/i386/moddi3.S'; var root_path = '../../../../..'; var data_path = '../../../../.././data'; var ecma_script_api_version = 2;</script>
+<script src='../../../../.././data/codebrowser.js'></script>
+</head>
+<body><div id='header'><h1 id='breadcrumb'><span>Browse the source code of </span><a href='../../../..'>llvm</a>/<a href='../../..'>compiler-rt</a>/<a href='../..'>lib</a>/<a href='..'>builtins</a>/<a href='./'>i386</a>/<a href='moddi3.S.html'>moddi3.S</a></h1></div>
+<hr/><div id='content'><table class="code">
+<tr><th id="1">1</th><td><i>// Part of the LLVM Project, under the Apache License v2.0 with LLVM Exceptions.</i></td></tr>
+<tr><th id="2">2</th><td><i>// See <a href="https://llvm.org/LICENSE.txt">https://llvm.org/LICENSE.txt</a> for license information.</i></td></tr>
+<tr><th id="3">3</th><td><i>// SPDX-License-Identifier: Apache-2.0 WITH LLVM-exception</i></td></tr>
+<tr><th id="4">4</th><td></td></tr>
+<tr><th id="5">5</th><td><u>#include <a href="../assembly.h.html">"../assembly.h"</a></u></td></tr>
+<tr><th id="6">6</th><td></td></tr>
+<tr><th id="7">7</th><td><i>// di_int __moddi3(di_int a, di_int b);</i></td></tr>
+<tr><th id="8">8</th><td><i></i></td></tr>
+<tr><th id="9">9</th><td><i>// result = remainder of a / b.</i></td></tr>
+<tr><th id="10">10</th><td><i>// both inputs and the output are 64-bit signed integers.</i></td></tr>
+<tr><th id="11">11</th><td><i>// This will do whatever the underlying hardware is set to do on division by zero.</i></td></tr>
+<tr><th id="12">12</th><td><i>// No other exceptions are generated, as the divide cannot overflow.</i></td></tr>
+<tr><th id="13">13</th><td><i>//</i></td></tr>
+<tr><th id="14">14</th><td><i>// This is targeted at 32-bit x86 *only*, as this can be done directly in hardware</i></td></tr>
+<tr><th id="15">15</th><td><i>// on x86_64.  The performance goal is ~40 cycles per divide, which is faster than</i></td></tr>
+<tr><th id="16">16</th><td><i>// currently possible via simulation of integer divides on the x87 unit.</i></td></tr>
+<tr><th id="17">17</th><td><i>//</i></td></tr>
+<tr><th id="18">18</th><td><i></i></td></tr>
+<tr><th id="19">19</th><td><i>// Stephen Canon, December 2008</i></td></tr>
+<tr><th id="20">20</th><td></td></tr>
+<tr><th id="21">21</th><td><u>#<span data-ppcond="21">ifdef</span> <span class="macro" data-ref="_M/__i386__">__i386__</span></u></td></tr>
+<tr><th id="22">22</th><td></td></tr>
+<tr><th id="23">23</th><td><span class='error' title="expected identifier or &apos;(&apos;">.</span>text</td></tr>
+<tr><th id="24">24</th><td>.balign <var>4</var></td></tr>
+<tr><th id="25">25</th><td><a class="macro" href="../assembly.h.html#211" title=" ; .globl __moddi3 ; .type __moddi3,@function ; .hidden __moddi3 ; __moddi3:" data-ref="_M/DEFINE_COMPILERRT_FUNCTION">DEFINE_COMPILERRT_FUNCTION</a>(<span class='warning' title="type specifier missing, defaults to &apos;int&apos;"><dfn class="decl def" id="__moddi3" title='__moddi3' data-ref="__moddi3" data-ref-filename="__moddi3">__moddi3</dfn></span>)</td></tr>
+<tr><th id="26">26</th><td></td></tr>
+<tr><th id="27">27</th><td><i>// This is currently implemented by wrapping the unsigned modulus up in an absolute</i></td></tr>
+<tr><th id="28">28</th><td><i>// value.  This could certainly be improved upon.</i></td></tr>
+<tr><th id="29">29</th><td></td></tr>
+<tr><th id="30">30</th><td>	<span class='error' title="unknown type name &apos;pushl&apos;">pushl</span>		<span class='error' title="expected identifier or &apos;(&apos;">%</span>esi</td></tr>
+<tr><th id="31">31</th><td>	movl	 <var>20</var>(%esp),			%edx	<i>// high word of b</i></td></tr>
+<tr><th id="32">32</th><td>	movl	 <var>16</var>(%esp),			%eax	<i>// low word of b</i></td></tr>
+<tr><th id="33">33</th><td>	movl		%edx,			%ecx</td></tr>
+<tr><th id="34">34</th><td>	sarl		$<var>31</var>,			%ecx	<i>// (b &lt; 0) ? -1 : 0</i></td></tr>
+<tr><th id="35">35</th><td>	xorl		%ecx,			%eax</td></tr>
+<tr><th id="36">36</th><td>	xorl		%ecx,			%edx	<i>// EDX:EAX = (b &lt; 0) ? not(b) : b</i></td></tr>
+<tr><th id="37">37</th><td>	subl		%ecx,			%eax</td></tr>
+<tr><th id="38">38</th><td>	sbbl		%ecx,			%edx	<i>// EDX:EAX = abs(b)</i></td></tr>
+<tr><th id="39">39</th><td>	movl		%edx,		 <var>20</var>(%esp)</td></tr>
+<tr><th id="40">40</th><td>	movl		%eax,		 <var>16</var>(%esp)	<i>// store abs(b) back to stack</i></td></tr>
+<tr><th id="41">41</th><td></td></tr>
+<tr><th id="42">42</th><td>	movl	 <var>12</var>(%esp),			%edx	<i>// high word of b</i></td></tr>
+<tr><th id="43">43</th><td>	movl	  <var>8</var>(%esp),			%eax	<i>// low word of b</i></td></tr>
+<tr><th id="44">44</th><td>	movl		%edx,			%ecx</td></tr>
+<tr><th id="45">45</th><td>	sarl		$<var>31</var>,			%ecx	<i>// (a &lt; 0) ? -1 : 0</i></td></tr>
+<tr><th id="46">46</th><td>	xorl		%ecx,			%eax</td></tr>
+<tr><th id="47">47</th><td>	xorl		%ecx,			%edx	<i>// EDX:EAX = (a &lt; 0) ? not(a) : a</i></td></tr>
+<tr><th id="48">48</th><td>	subl		%ecx,			%eax</td></tr>
+<tr><th id="49">49</th><td>	sbbl		%ecx,			%edx	<i>// EDX:EAX = abs(a)</i></td></tr>
+<tr><th id="50">50</th><td>	movl		%edx,		 <var>12</var>(%esp)</td></tr>
+<tr><th id="51">51</th><td>	movl		%eax,		  <var>8</var>(%esp)	<i>// store abs(a) back to stack</i></td></tr>
+<tr><th id="52">52</th><td>	movl		%ecx,			%esi	<i>// set aside sign of a</i></td></tr>
+<tr><th id="53">53</th><td></td></tr>
+<tr><th id="54">54</th><td>	pushl		%ebx</td></tr>
+<tr><th id="55">55</th><td>	movl	 <var>24</var>(%esp),			%ebx	<i>// Find the index i of the leading bit in b.</i></td></tr>
+<tr><th id="56">56</th><td>	bsrl		%ebx,			%ecx	<i>// If the high word of b is zero, jump to</i></td></tr>
+<tr><th id="57">57</th><td>	jz			<var>9f</var>						<i>// the code to handle that special case [9].</i></td></tr>
+<tr><th id="58">58</th><td></td></tr>
+<tr><th id="59">59</th><td>	<i>// High word of b is known to be non-zero on this branch</i></td></tr>
+<tr><th id="60">60</th><td></td></tr>
+<tr><th id="61">61</th><td>	movl	 <var>20</var>(%esp),			%eax	<i>// Construct bhi, containing bits [1+i:32+i] of b</i></td></tr>
+<tr><th id="62">62</th><td></td></tr>
+<tr><th id="63">63</th><td>	shrl		%cl,			%eax	<i>// Practically, this means that bhi is given by:</i></td></tr>
+<tr><th id="64">64</th><td>	shrl		%eax					<i>//</i></td></tr>
+<tr><th id="65">65</th><td>	notl		%ecx					<i>//		bhi = (high word of b) &lt;&lt; (31 - i) |</i></td></tr>
+<tr><th id="66">66</th><td>	shll		%cl,			%ebx	<i>//			  (low word of b) &gt;&gt; (1 + i)</i></td></tr>
+<tr><th id="67">67</th><td>	orl			%eax,			%ebx	<i>//</i></td></tr>
+<tr><th id="68">68</th><td>	movl	 <var>16</var>(%esp),			%edx	<i>// Load the high and low words of a, and jump</i></td></tr>
+<tr><th id="69">69</th><td>	movl	 <var>12</var>(%esp),			%eax	<i>// to [2] if the high word is larger than bhi</i></td></tr>
+<tr><th id="70">70</th><td>	cmpl		%ebx,			%edx	<i>// to avoid overflowing the upcoming divide.</i></td></tr>
+<tr><th id="71">71</th><td>	jae			<var>2f</var></td></tr>
+<tr><th id="72">72</th><td></td></tr>
+<tr><th id="73">73</th><td>	<i>// High word of a is greater than or equal to (b &gt;&gt; (1 + i)) on this branch</i></td></tr>
+<tr><th id="74">74</th><td></td></tr>
+<tr><th id="75">75</th><td>	divl		%ebx					<i>// eax &lt;-- qs, edx &lt;-- r such that ahi:alo = bs*qs + r</i></td></tr>
+<tr><th id="76">76</th><td></td></tr>
+<tr><th id="77">77</th><td>	pushl		%edi</td></tr>
+<tr><th id="78">78</th><td>	notl		%ecx</td></tr>
+<tr><th id="79">79</th><td>	shrl		%eax</td></tr>
+<tr><th id="80">80</th><td>	shrl		%cl,			%eax	<i>// q = qs &gt;&gt; (1 + i)</i></td></tr>
+<tr><th id="81">81</th><td>	movl		%eax,			%edi</td></tr>
+<tr><th id="82">82</th><td>	mull	 <var>24</var>(%esp)					<i>// q*blo</i></td></tr>
+<tr><th id="83">83</th><td>	movl	 <var>16</var>(%esp),			%ebx</td></tr>
+<tr><th id="84">84</th><td>	movl	 <var>20</var>(%esp),			%ecx	<i>// ECX:EBX = a</i></td></tr>
+<tr><th id="85">85</th><td>	subl		%eax,			%ebx</td></tr>
+<tr><th id="86">86</th><td>	sbbl		%edx,			%ecx	<i>// ECX:EBX = a - q*blo</i></td></tr>
+<tr><th id="87">87</th><td>	movl	 <var>28</var>(%esp),			%eax</td></tr>
+<tr><th id="88">88</th><td>	imull		%edi,			%eax	<i>// q*bhi</i></td></tr>
+<tr><th id="89">89</th><td>	subl		%eax,			%ecx	<i>// ECX:EBX = a - q*b</i></td></tr>
+<tr><th id="90">90</th><td></td></tr>
+<tr><th id="91">91</th><td>	jnc			<var>1f</var>						<i>// if positive, this is the result.</i></td></tr>
+<tr><th id="92">92</th><td>	addl	 <var>24</var>(%esp),			%ebx	<i>// otherwise</i></td></tr>
+<tr><th id="93">93</th><td>	adcl	 <var>28</var>(%esp),			%ecx	<i>// ECX:EBX = a - (q-1)*b = result</i></td></tr>
+<tr><th id="94">94</th><td><var>1</var>:	movl		%ebx,			%eax</td></tr>
+<tr><th id="95">95</th><td>	movl		%ecx,			%edx</td></tr>
+<tr><th id="96">96</th><td></td></tr>
+<tr><th id="97">97</th><td>	addl		%esi,			%eax	<i>// Restore correct sign to result</i></td></tr>
+<tr><th id="98">98</th><td>	adcl		%esi,			%edx</td></tr>
+<tr><th id="99">99</th><td>	xorl		%esi,			%eax</td></tr>
+<tr><th id="100">100</th><td>	xorl		%esi,			%edx</td></tr>
+<tr><th id="101">101</th><td>	popl		%edi					<i>// Restore callee-save registers</i></td></tr>
+<tr><th id="102">102</th><td>	popl		%ebx</td></tr>
+<tr><th id="103">103</th><td>	popl		%esi</td></tr>
+<tr><th id="104">104</th><td>	retl								<i>// Return</i></td></tr>
+<tr><th id="105">105</th><td></td></tr>
+<tr><th id="106">106</th><td><var>2</var>:	<i>// High word of a is greater than or equal to (b &gt;&gt; (1 + i)) on this branch</i></td></tr>
+<tr><th id="107">107</th><td></td></tr>
+<tr><th id="108">108</th><td>	subl		%ebx,			%edx	<i>// subtract bhi from ahi so that divide will not</i></td></tr>
+<tr><th id="109">109</th><td>	divl		%ebx					<i>// overflow, and find q and r such that</i></td></tr>
+<tr><th id="110">110</th><td>										<i>//</i></td></tr>
+<tr><th id="111">111</th><td><i>										//		ahi:alo = (1:q)*bhi + r</i></td></tr>
+<tr><th id="112">112</th><td><i>										//</i></td></tr>
+<tr><th id="113">113</th><td><i>										// Note that q is a number in (31-i).(1+i)</i></td></tr>
+<tr><th id="114">114</th><td><i>										// fix point.</i></td></tr>
+<tr><th id="115">115</th><td></td></tr>
+<tr><th id="116">116</th><td>	pushl		%edi</td></tr>
+<tr><th id="117">117</th><td>	notl		%ecx</td></tr>
+<tr><th id="118">118</th><td>	shrl		%eax</td></tr>
+<tr><th id="119">119</th><td>	orl			$<var>0x80000000</var>,	%eax</td></tr>
+<tr><th id="120">120</th><td>	shrl		%cl,			%eax	<i>// q = (1:qs) &gt;&gt; (1 + i)</i></td></tr>
+<tr><th id="121">121</th><td>	movl		%eax,			%edi</td></tr>
+<tr><th id="122">122</th><td>	mull	 <var>24</var>(%esp)					<i>// q*blo</i></td></tr>
+<tr><th id="123">123</th><td>	movl	 <var>16</var>(%esp),			%ebx</td></tr>
+<tr><th id="124">124</th><td>	movl	 <var>20</var>(%esp),			%ecx	<i>// ECX:EBX = a</i></td></tr>
+<tr><th id="125">125</th><td>	subl		%eax,			%ebx</td></tr>
+<tr><th id="126">126</th><td>	sbbl		%edx,			%ecx	<i>// ECX:EBX = a - q*blo</i></td></tr>
+<tr><th id="127">127</th><td>	movl	 <var>28</var>(%esp),			%eax</td></tr>
+<tr><th id="128">128</th><td>	imull		%edi,			%eax	<i>// q*bhi</i></td></tr>
+<tr><th id="129">129</th><td>	subl		%eax,			%ecx	<i>// ECX:EBX = a - q*b</i></td></tr>
+<tr><th id="130">130</th><td></td></tr>
+<tr><th id="131">131</th><td>	jnc			<var>3f</var>						<i>// if positive, this is the result.</i></td></tr>
+<tr><th id="132">132</th><td>	addl	 <var>24</var>(%esp),			%ebx	<i>// otherwise</i></td></tr>
+<tr><th id="133">133</th><td>	adcl	 <var>28</var>(%esp),			%ecx	<i>// ECX:EBX = a - (q-1)*b = result</i></td></tr>
+<tr><th id="134">134</th><td><var>3</var>:	movl		%ebx,			%eax</td></tr>
+<tr><th id="135">135</th><td>	movl		%ecx,			%edx</td></tr>
+<tr><th id="136">136</th><td></td></tr>
+<tr><th id="137">137</th><td>	addl		%esi,			%eax	<i>// Restore correct sign to result</i></td></tr>
+<tr><th id="138">138</th><td>	adcl		%esi,			%edx</td></tr>
+<tr><th id="139">139</th><td>	xorl		%esi,			%eax</td></tr>
+<tr><th id="140">140</th><td>	xorl		%esi,			%edx</td></tr>
+<tr><th id="141">141</th><td>	popl		%edi					<i>// Restore callee-save registers</i></td></tr>
+<tr><th id="142">142</th><td>	popl		%ebx</td></tr>
+<tr><th id="143">143</th><td>	popl		%esi</td></tr>
+<tr><th id="144">144</th><td>	retl								<i>// Return</i></td></tr>
+<tr><th id="145">145</th><td></td></tr>
+<tr><th id="146">146</th><td><var>9</var>:	<i>// High word of b is zero on this branch</i></td></tr>
+<tr><th id="147">147</th><td></td></tr>
+<tr><th id="148">148</th><td>	movl	 <var>16</var>(%esp),			%eax	<i>// Find qhi and rhi such that</i></td></tr>
+<tr><th id="149">149</th><td>	movl	 <var>20</var>(%esp),			%ecx	<i>//</i></td></tr>
+<tr><th id="150">150</th><td>	xorl		%edx,			%edx	<i>//		ahi = qhi*b + rhi	with	0 ≤ rhi &lt; b</i></td></tr>
+<tr><th id="151">151</th><td>	divl		%ecx					<i>//</i></td></tr>
+<tr><th id="152">152</th><td>	movl		%eax,			%ebx	<i>//</i></td></tr>
+<tr><th id="153">153</th><td>	movl	 <var>12</var>(%esp),			%eax	<i>// Find rlo such that</i></td></tr>
+<tr><th id="154">154</th><td>	divl		%ecx					<i>//</i></td></tr>
+<tr><th id="155">155</th><td>	movl		%edx,			%eax	<i>//		rhi:alo = qlo*b + rlo  with 0 ≤ rlo &lt; b</i></td></tr>
+<tr><th id="156">156</th><td>	popl		%ebx					<i>//</i></td></tr>
+<tr><th id="157">157</th><td>	xorl		%edx,			%edx	<i>// and return 0:rlo</i></td></tr>
+<tr><th id="158">158</th><td></td></tr>
+<tr><th id="159">159</th><td>	addl		%esi,			%eax	<i>// Restore correct sign to result</i></td></tr>
+<tr><th id="160">160</th><td>	adcl		%esi,			%edx</td></tr>
+<tr><th id="161">161</th><td>	xorl		%esi,			%eax</td></tr>
+<tr><th id="162">162</th><td>	xorl		%esi,			%edx</td></tr>
+<tr><th id="163">163</th><td>	popl		%esi</td></tr>
+<tr><th id="164">164</th><td>	retl								<i>// Return</i></td></tr>
+<tr><th id="165">165</th><td><a class="macro" href="../assembly.h.html#270" title=".size __moddi3, . - __moddi3" data-ref="_M/END_COMPILERRT_FUNCTION">END_COMPILERRT_FUNCTION</a>(__moddi3)</td></tr>
+<tr><th id="166">166</th><td></td></tr>
+<tr><th id="167">167</th><td><u>#<span data-ppcond="21">endif</span> // __i386__</u></td></tr>
+<tr><th id="168">168</th><td></td></tr>
+<tr><th id="169">169</th><td><a class="macro" href="../assembly.h.html#47" title=".section .note.GNU-stack,&quot;&quot;,%progbits" data-ref="_M/NO_EXEC_STACK_DIRECTIVE">NO_EXEC_STACK_DIRECTIVE</a></td></tr>
+<tr><th id="170">170</th><td></td></tr>
+<tr><th id="171">171</th><td></td></tr>
+</table><hr/><p id='footer'>
+Generated on <em>2021-Jul-01</em> from project llvm revision <em>12</em>

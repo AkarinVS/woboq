@@ -1,0 +1,324 @@
+<!doctype html>
+<html>
+<head>
+<meta name="viewport" content="width=device-width, initial-scale=1.0"><title>SystemRuntime.h source code [llvm/lldb/include/lldb/Target/SystemRuntime.h] - Woboq Code Browser</title>
+<meta name="woboq:interestingDefinitions" content="lldb_private::SystemRuntime "/>
+<link rel="stylesheet" href="../../../../.././data/qtcreator.css" title="QtCreator"/>
+<link rel="alternate stylesheet" href="../../../../.././data/kdevelop.css" title="KDevelop"/>
+<script type="text/javascript" src="../../../../.././data/jquery/jquery.min.js"></script>
+<script type="text/javascript" src="../../../../.././data/jquery/jquery-ui.min.js"></script>
+<script>var file = 'llvm/lldb/include/lldb/Target/SystemRuntime.h'; var root_path = '../../../../..'; var data_path = '../../../../.././data'; var ecma_script_api_version = 2;</script>
+<script src='../../../../.././data/codebrowser.js'></script>
+</head>
+<body><div id='header'><h1 id='breadcrumb'><span>Browse the source code of </span><a href='../../../..'>llvm</a>/<a href='../../..'>lldb</a>/<a href='../..'>include</a>/<a href='..'>lldb</a>/<a href='./'>Target</a>/<a href='SystemRuntime.h.html'>SystemRuntime.h</a></h1></div>
+<hr/><div id='content'><table class="code">
+<tr><th id="1">1</th><td><i>//===-- SystemRuntime.h -----------------------------------------*- C++ -*-===//</i></td></tr>
+<tr><th id="2">2</th><td><i>//</i></td></tr>
+<tr><th id="3">3</th><td><i>// Part of the LLVM Project, under the Apache License v2.0 with LLVM Exceptions.</i></td></tr>
+<tr><th id="4">4</th><td><i>// See <a href="https://llvm.org/LICENSE.txt">https://llvm.org/LICENSE.txt</a> for license information.</i></td></tr>
+<tr><th id="5">5</th><td><i>// SPDX-License-Identifier: Apache-2.0 WITH LLVM-exception</i></td></tr>
+<tr><th id="6">6</th><td><i>//</i></td></tr>
+<tr><th id="7">7</th><td><i>//===----------------------------------------------------------------------===//</i></td></tr>
+<tr><th id="8">8</th><td></td></tr>
+<tr><th id="9">9</th><td><u>#<span data-ppcond="9">ifndef</span> <span class="macro" data-ref="_M/LLDB_TARGET_SYSTEMRUNTIME_H">LLDB_TARGET_SYSTEMRUNTIME_H</span></u></td></tr>
+<tr><th id="10">10</th><td><u>#define <dfn class="macro" id="_M/LLDB_TARGET_SYSTEMRUNTIME_H" data-ref="_M/LLDB_TARGET_SYSTEMRUNTIME_H">LLDB_TARGET_SYSTEMRUNTIME_H</dfn></u></td></tr>
+<tr><th id="11">11</th><td></td></tr>
+<tr><th id="12">12</th><td><u>#include &lt;vector&gt;</u></td></tr>
+<tr><th id="13">13</th><td></td></tr>
+<tr><th id="14">14</th><td><u>#include <a href="../Core/ModuleList.h.html">"lldb/Core/ModuleList.h"</a></u></td></tr>
+<tr><th id="15">15</th><td><u>#include <a href="../Core/PluginInterface.h.html">"lldb/Core/PluginInterface.h"</a></u></td></tr>
+<tr><th id="16">16</th><td><u>#include <a href="QueueItem.h.html">"lldb/Target/QueueItem.h"</a></u></td></tr>
+<tr><th id="17">17</th><td><u>#include <a href="QueueList.h.html">"lldb/Target/QueueList.h"</a></u></td></tr>
+<tr><th id="18">18</th><td><u>#include <a href="Runtime.h.html">"lldb/Target/Runtime.h"</a></u></td></tr>
+<tr><th id="19">19</th><td><u>#include <a href="../Utility/ConstString.h.html">"lldb/Utility/ConstString.h"</a></u></td></tr>
+<tr><th id="20">20</th><td><u>#include <a href="../Utility/StructuredData.h.html">"lldb/Utility/StructuredData.h"</a></u></td></tr>
+<tr><th id="21">21</th><td><u>#include <a href="../lldb-private.h.html">"lldb/lldb-private.h"</a></u></td></tr>
+<tr><th id="22">22</th><td><u>#include <a href="../lldb-public.h.html">"lldb/lldb-public.h"</a></u></td></tr>
+<tr><th id="23">23</th><td></td></tr>
+<tr><th id="24">24</th><td><b>namespace</b> <span class="namespace">lldb_private</span> {</td></tr>
+<tr><th id="25">25</th><td></td></tr>
+<tr><th id="26">26</th><td><i class="doc">/// <span class="command">\class</span> <span class="verb">SystemRuntime SystemRuntime.h "lldb/Target/SystemRuntime.h"</span></i></td></tr>
+<tr><th id="27">27</th><td><i class="doc">/// A plug-in interface definition class for system runtimes.</i></td></tr>
+<tr><th id="28">28</th><td><i class="doc">///</i></td></tr>
+<tr><th id="29">29</th><td><i class="doc">/// The system runtime plugins can collect information from the system</i></td></tr>
+<tr><th id="30">30</th><td><i class="doc">/// libraries during a Process' lifetime and provide information about how</i></td></tr>
+<tr><th id="31">31</th><td><i class="doc">/// objects/threads were originated.</i></td></tr>
+<tr><th id="32">32</th><td><i class="doc">///</i></td></tr>
+<tr><th id="33">33</th><td><i class="doc">/// For instance, a system runtime plugin use a breakpoint when threads are</i></td></tr>
+<tr><th id="34">34</th><td><i class="doc">/// created to record the backtrace of where that thread was created. Later,</i></td></tr>
+<tr><th id="35">35</th><td><i class="doc">/// when backtracing the created thread, it could extend the backtrace to show</i></td></tr>
+<tr><th id="36">36</th><td><i class="doc">/// where it was originally created from.</i></td></tr>
+<tr><th id="37">37</th><td><i class="doc">///</i></td></tr>
+<tr><th id="38">38</th><td><i class="doc">/// The plugin will insert its own breakpoint when Created and start</i></td></tr>
+<tr><th id="39">39</th><td><i class="doc">/// collecting information.  Later when it comes time to augment a Thread, it</i></td></tr>
+<tr><th id="40">40</th><td><i class="doc">/// can be asked to provide that information.</i></td></tr>
+<tr><th id="41">41</th><td><i class="doc">///</i></td></tr>
+<tr><th id="42">42</th><td></td></tr>
+<tr><th id="43">43</th><td><b>class</b> <dfn class="type def" id="lldb_private::SystemRuntime" title='lldb_private::SystemRuntime' data-ref="lldb_private::SystemRuntime" data-ref-filename="lldb_private..SystemRuntime">SystemRuntime</dfn> : <b>public</b> <a class="type" href="Runtime.h.html#lldb_private::Runtime" title='lldb_private::Runtime' data-ref="lldb_private::Runtime" data-ref-filename="lldb_private..Runtime">Runtime</a>, <b>public</b> <a class="type" href="../Core/PluginInterface.h.html#lldb_private::PluginInterface" title='lldb_private::PluginInterface' data-ref="lldb_private::PluginInterface" data-ref-filename="lldb_private..PluginInterface">PluginInterface</a> {</td></tr>
+<tr><th id="44">44</th><td><b>public</b>:</td></tr>
+<tr><th id="45">45</th><td>  <i class="doc">/// Find a system runtime plugin for a given process.</i></td></tr>
+<tr><th id="46">46</th><td><i class="doc">  ///</i></td></tr>
+<tr><th id="47">47</th><td><i class="doc">  /// Scans the installed SystemRuntime plugins and tries to find an instance</i></td></tr>
+<tr><th id="48">48</th><td><i class="doc">  /// that can be used to track image changes in<span class="command"> \a</span> <span class="arg">process.</span></i></td></tr>
+<tr><th id="49">49</th><td><i class="doc">  ///</i></td></tr>
+<tr><th id="50">50</th><td><i class="doc">  /// <span class="command">\param</span>[in] <span class="arg">process</span></i></td></tr>
+<tr><th id="51">51</th><td><i class="doc">  ///     The process for which to try and locate a system runtime</i></td></tr>
+<tr><th id="52">52</th><td><i class="doc">  ///     plugin instance.</i></td></tr>
+<tr><th id="53">53</th><td>  <em>static</em> <a class="type" href="#lldb_private::SystemRuntime" title='lldb_private::SystemRuntime' data-ref="lldb_private::SystemRuntime" data-ref-filename="lldb_private..SystemRuntime">SystemRuntime</a> *<dfn class="decl fn" id="_ZN12lldb_private13SystemRuntime10FindPluginEPNS_7ProcessE" title='lldb_private::SystemRuntime::FindPlugin' data-ref="_ZN12lldb_private13SystemRuntime10FindPluginEPNS_7ProcessE" data-ref-filename="_ZN12lldb_private13SystemRuntime10FindPluginEPNS_7ProcessE">FindPlugin</dfn>(<a class="type" href="Process.h.html#lldb_private::Process" title='lldb_private::Process' data-ref="lldb_private::Process" data-ref-filename="lldb_private..Process">Process</a> *<dfn class="local col9 decl" id="19process" title='process' data-type='lldb_private::Process *' data-ref="19process" data-ref-filename="19process">process</dfn>);</td></tr>
+<tr><th id="54">54</th><td></td></tr>
+<tr><th id="55">55</th><td>  <i class="doc">/// Construct with a process.</i></td></tr>
+<tr><th id="56">56</th><td>  <dfn class="decl fn" id="_ZN12lldb_private13SystemRuntimeC1EPNS_7ProcessE" title='lldb_private::SystemRuntime::SystemRuntime' data-ref="_ZN12lldb_private13SystemRuntimeC1EPNS_7ProcessE" data-ref-filename="_ZN12lldb_private13SystemRuntimeC1EPNS_7ProcessE">SystemRuntime</dfn>(<a class="type" href="Process.h.html#lldb_private::Process" title='lldb_private::Process' data-ref="lldb_private::Process" data-ref-filename="lldb_private..Process">Process</a> *<dfn class="local col0 decl" id="20process" title='process' data-type='lldb_private::Process *' data-ref="20process" data-ref-filename="20process">process</dfn>);</td></tr>
+<tr><th id="57">57</th><td></td></tr>
+<tr><th id="58">58</th><td>  <i class="doc">/// Destructor.</i></td></tr>
+<tr><th id="59">59</th><td><i class="doc">  ///</i></td></tr>
+<tr><th id="60">60</th><td><i class="doc">  /// The destructor is virtual since this class is designed to be inherited</i></td></tr>
+<tr><th id="61">61</th><td><i class="doc">  /// by the plug-in instance.</i></td></tr>
+<tr><th id="62">62</th><td>  <dfn class="virtual decl fn" id="_ZN12lldb_private13SystemRuntimeD1Ev" title='lldb_private::SystemRuntime::~SystemRuntime' data-ref="_ZN12lldb_private13SystemRuntimeD1Ev" data-ref-filename="_ZN12lldb_private13SystemRuntimeD1Ev">~SystemRuntime</dfn>() override;</td></tr>
+<tr><th id="63">63</th><td></td></tr>
+<tr><th id="64">64</th><td>  <i class="doc">/// Called after attaching to a process.</i></td></tr>
+<tr><th id="65">65</th><td><i class="doc">  ///</i></td></tr>
+<tr><th id="66">66</th><td><i class="doc">  /// Allow the SystemRuntime plugin to execute some code after attaching to a</i></td></tr>
+<tr><th id="67">67</th><td><i class="doc">  /// process.</i></td></tr>
+<tr><th id="68">68</th><td>  <b>virtual</b> <em>void</em> <dfn class="virtual decl fn" id="_ZN12lldb_private13SystemRuntime9DidAttachEv" title='lldb_private::SystemRuntime::DidAttach' data-ref="_ZN12lldb_private13SystemRuntime9DidAttachEv" data-ref-filename="_ZN12lldb_private13SystemRuntime9DidAttachEv">DidAttach</dfn>();</td></tr>
+<tr><th id="69">69</th><td></td></tr>
+<tr><th id="70">70</th><td>  <i class="doc">/// Called after launching a process.</i></td></tr>
+<tr><th id="71">71</th><td><i class="doc">  ///</i></td></tr>
+<tr><th id="72">72</th><td><i class="doc">  /// Allow the SystemRuntime plugin to execute some code after launching a</i></td></tr>
+<tr><th id="73">73</th><td><i class="doc">  /// process.</i></td></tr>
+<tr><th id="74">74</th><td>  <b>virtual</b> <em>void</em> <dfn class="virtual decl fn" id="_ZN12lldb_private13SystemRuntime9DidLaunchEv" title='lldb_private::SystemRuntime::DidLaunch' data-ref="_ZN12lldb_private13SystemRuntime9DidLaunchEv" data-ref-filename="_ZN12lldb_private13SystemRuntime9DidLaunchEv">DidLaunch</dfn>();</td></tr>
+<tr><th id="75">75</th><td></td></tr>
+<tr><th id="76">76</th><td>  <i class="doc">/// Called when modules have been loaded in the process.</i></td></tr>
+<tr><th id="77">77</th><td><i class="doc">  ///</i></td></tr>
+<tr><th id="78">78</th><td><i class="doc">  /// Allow the SystemRuntime plugin to enable logging features in the system</i></td></tr>
+<tr><th id="79">79</th><td><i class="doc">  /// runtime libraries.</i></td></tr>
+<tr><th id="80">80</th><td>  <b>virtual</b> <em>void</em> <dfn class="virtual decl fn" id="_ZN12lldb_private13SystemRuntime14ModulesDidLoadERKNS_10ModuleListE" title='lldb_private::SystemRuntime::ModulesDidLoad' data-ref="_ZN12lldb_private13SystemRuntime14ModulesDidLoadERKNS_10ModuleListE" data-ref-filename="_ZN12lldb_private13SystemRuntime14ModulesDidLoadERKNS_10ModuleListE">ModulesDidLoad</dfn>(<em>const</em> <a class="type" href="../Core/ModuleList.h.html#lldb_private::ModuleList" title='lldb_private::ModuleList' data-ref="lldb_private::ModuleList" data-ref-filename="lldb_private..ModuleList">ModuleList</a> &amp;<dfn class="local col1 decl" id="21module_list" title='module_list' data-type='const lldb_private::ModuleList &amp;' data-ref="21module_list" data-ref-filename="21module_list">module_list</dfn>) override;</td></tr>
+<tr><th id="81">81</th><td></td></tr>
+<tr><th id="82">82</th><td>  <i class="doc">/// Called before detaching from a process.</i></td></tr>
+<tr><th id="83">83</th><td><i class="doc">  ///</i></td></tr>
+<tr><th id="84">84</th><td><i class="doc">  /// This will give a SystemRuntime plugin a chance to free any resources in</i></td></tr>
+<tr><th id="85">85</th><td><i class="doc">  /// the inferior process before we detach.</i></td></tr>
+<tr><th id="86">86</th><td>  <b>virtual</b> <em>void</em> <dfn class="virtual decl fn" id="_ZN12lldb_private13SystemRuntime6DetachEv" title='lldb_private::SystemRuntime::Detach' data-ref="_ZN12lldb_private13SystemRuntime6DetachEv" data-ref-filename="_ZN12lldb_private13SystemRuntime6DetachEv">Detach</dfn>();</td></tr>
+<tr><th id="87">87</th><td></td></tr>
+<tr><th id="88">88</th><td>  <i class="doc">/// Return a list of thread origin extended backtraces that may be</i></td></tr>
+<tr><th id="89">89</th><td><i class="doc">  /// available.</i></td></tr>
+<tr><th id="90">90</th><td><i class="doc">  ///</i></td></tr>
+<tr><th id="91">91</th><td><i class="doc">  /// A System Runtime may be able to provide a backtrace of when this</i></td></tr>
+<tr><th id="92">92</th><td><i class="doc">  /// thread was originally created.  Furthermore, it may be able to provide</i></td></tr>
+<tr><th id="93">93</th><td><i class="doc">  /// that extended backtrace for different styles of creation. On a system</i></td></tr>
+<tr><th id="94">94</th><td><i class="doc">  /// with both pthreads and libdispatch, aka Grand Central Dispatch, queues,</i></td></tr>
+<tr><th id="95">95</th><td><i class="doc">  /// the system runtime may be able to provide the pthread creation of the</i></td></tr>
+<tr><th id="96">96</th><td><i class="doc">  /// thread and it may also be able to provide the backtrace of when this GCD</i></td></tr>
+<tr><th id="97">97</th><td><i class="doc">  /// queue work block was enqueued. The caller may request these different</i></td></tr>
+<tr><th id="98">98</th><td><i class="doc">  /// origins by name.</i></td></tr>
+<tr><th id="99">99</th><td><i class="doc">  ///</i></td></tr>
+<tr><th id="100">100</th><td><i class="doc">  /// The names will be provided in the order that they are most likely to be</i></td></tr>
+<tr><th id="101">101</th><td><i class="doc">  /// requested.  For instance, a most natural order may be to request the GCD</i></td></tr>
+<tr><th id="102">102</th><td><i class="doc">  /// libdispatch queue origin.  If there is none, then request the pthread</i></td></tr>
+<tr><th id="103">103</th><td><i class="doc">  /// origin.</i></td></tr>
+<tr><th id="104">104</th><td><i class="doc">  ///</i></td></tr>
+<tr><th id="105">105</th><td><i class="doc">  /// <span class="command">\return</span></i></td></tr>
+<tr><th id="106">106</th><td><i class="doc">  ///   A vector of ConstStrings with names like "pthread" or "libdispatch".</i></td></tr>
+<tr><th id="107">107</th><td><i class="doc">  ///   An empty vector may be returned if no thread origin extended</i></td></tr>
+<tr><th id="108">108</th><td><i class="doc">  ///   backtrace capabilities are available.</i></td></tr>
+<tr><th id="109">109</th><td>  <b>virtual</b> <em>const</em> <span class="namespace">std::</span><span class='type' title='std::vector' data-ref="std::vector" data-ref-filename="std..vector">vector</span>&lt;<a class="type" href="../Utility/ConstString.h.html#lldb_private::ConstString" title='lldb_private::ConstString' data-ref="lldb_private::ConstString" data-ref-filename="lldb_private..ConstString">ConstString</a>&gt; &amp;<dfn class="virtual decl fn" id="_ZN12lldb_private13SystemRuntime25GetExtendedBacktraceTypesEv" title='lldb_private::SystemRuntime::GetExtendedBacktraceTypes' data-ref="_ZN12lldb_private13SystemRuntime25GetExtendedBacktraceTypesEv" data-ref-filename="_ZN12lldb_private13SystemRuntime25GetExtendedBacktraceTypesEv">GetExtendedBacktraceTypes</dfn>();</td></tr>
+<tr><th id="110">110</th><td></td></tr>
+<tr><th id="111">111</th><td>  <i class="doc">/// Return a Thread which shows the origin of this thread's creation.</i></td></tr>
+<tr><th id="112">112</th><td><i class="doc">  ///</i></td></tr>
+<tr><th id="113">113</th><td><i class="doc">  /// This likely returns a HistoryThread which shows how thread was</i></td></tr>
+<tr><th id="114">114</th><td><i class="doc">  /// originally created (e.g. "pthread" type), or how the work that is</i></td></tr>
+<tr><th id="115">115</th><td><i class="doc">  /// currently executing on it was originally enqueued (e.g. "libdispatch"</i></td></tr>
+<tr><th id="116">116</th><td><i class="doc">  /// type).</i></td></tr>
+<tr><th id="117">117</th><td><i class="doc">  ///</i></td></tr>
+<tr><th id="118">118</th><td><i class="doc">  /// There may be a chain of thread-origins; it may be informative to the end</i></td></tr>
+<tr><th id="119">119</th><td><i class="doc">  /// user to query the returned ThreadSP for its origins as well.</i></td></tr>
+<tr><th id="120">120</th><td><i class="doc">  ///</i></td></tr>
+<tr><th id="121">121</th><td><i class="doc">  /// <span class="command">\param</span> [in] <span class="arg">thread</span></i></td></tr>
+<tr><th id="122">122</th><td><i class="doc">  ///   The thread to examine.</i></td></tr>
+<tr><th id="123">123</th><td><i class="doc">  ///</i></td></tr>
+<tr><th id="124">124</th><td><i class="doc">  /// <span class="command">\param</span> [in] <span class="arg">type</span></i></td></tr>
+<tr><th id="125">125</th><td><i class="doc">  ///   The type of thread origin being requested.  The types supported</i></td></tr>
+<tr><th id="126">126</th><td><i class="doc">  ///   are returned from SystemRuntime::GetExtendedBacktraceTypes.</i></td></tr>
+<tr><th id="127">127</th><td><i class="doc">  ///</i></td></tr>
+<tr><th id="128">128</th><td><i class="doc">  /// <span class="command">\return</span></i></td></tr>
+<tr><th id="129">129</th><td><i class="doc">  ///   A ThreadSP which will have a StackList of frames.  This Thread will</i></td></tr>
+<tr><th id="130">130</th><td><i class="doc">  ///   not appear in the Process' list of current threads.  Normal thread</i></td></tr>
+<tr><th id="131">131</th><td><i class="doc">  ///   operations like stepping will not be available.  This is a historical</i></td></tr>
+<tr><th id="132">132</th><td><i class="doc">  ///   view thread and may be only useful for showing a backtrace.</i></td></tr>
+<tr><th id="133">133</th><td><i class="doc">  ///</i></td></tr>
+<tr><th id="134">134</th><td><i class="doc">  ///   An empty ThreadSP will be returned if no thread origin is available.</i></td></tr>
+<tr><th id="135">135</th><td>  <b>virtual</b> <span class="namespace">lldb::</span><a class="typedef" href="../lldb-forward.h.html#lldb::ThreadSP" title='lldb::ThreadSP' data-type='std::shared_ptr&lt;lldb_private::Thread&gt;' data-ref="lldb::ThreadSP" data-ref-filename="lldb..ThreadSP">ThreadSP</a> <dfn class="virtual decl fn" id="_ZN12lldb_private13SystemRuntime26GetExtendedBacktraceThreadESt10shared_ptrINS_6ThreadEENS_11ConstStringE" title='lldb_private::SystemRuntime::GetExtendedBacktraceThread' data-ref="_ZN12lldb_private13SystemRuntime26GetExtendedBacktraceThreadESt10shared_ptrINS_6ThreadEENS_11ConstStringE" data-ref-filename="_ZN12lldb_private13SystemRuntime26GetExtendedBacktraceThreadESt10shared_ptrINS_6ThreadEENS_11ConstStringE">GetExtendedBacktraceThread</dfn>(<span class="namespace">lldb::</span><a class="typedef" href="../lldb-forward.h.html#lldb::ThreadSP" title='lldb::ThreadSP' data-type='std::shared_ptr&lt;lldb_private::Thread&gt;' data-ref="lldb::ThreadSP" data-ref-filename="lldb..ThreadSP">ThreadSP</a> <dfn class="local col2 decl" id="22thread" title='thread' data-type='lldb::ThreadSP' data-ref="22thread" data-ref-filename="22thread">thread</dfn>,</td></tr>
+<tr><th id="136">136</th><td>                                                    <a class="type" href="../Utility/ConstString.h.html#lldb_private::ConstString" title='lldb_private::ConstString' data-ref="lldb_private::ConstString" data-ref-filename="lldb_private..ConstString">ConstString</a> <dfn class="local col3 decl" id="23type" title='type' data-type='lldb_private::ConstString' data-ref="23type" data-ref-filename="23type">type</dfn>);</td></tr>
+<tr><th id="137">137</th><td></td></tr>
+<tr><th id="138">138</th><td>  <i class="doc">/// Get the extended backtrace thread for a QueueItem</i></td></tr>
+<tr><th id="139">139</th><td><i class="doc">  ///</i></td></tr>
+<tr><th id="140">140</th><td><i class="doc">  /// A QueueItem represents a function/block that will be executed on</i></td></tr>
+<tr><th id="141">141</th><td><i class="doc">  /// a libdispatch queue in the future, or it represents a function/block</i></td></tr>
+<tr><th id="142">142</th><td><i class="doc">  /// that is currently executing on a thread.</i></td></tr>
+<tr><th id="143">143</th><td><i class="doc">  ///</i></td></tr>
+<tr><th id="144">144</th><td><i class="doc">  /// This method will report a thread backtrace of the function that enqueued</i></td></tr>
+<tr><th id="145">145</th><td><i class="doc">  /// it originally, if possible.</i></td></tr>
+<tr><th id="146">146</th><td><i class="doc">  ///</i></td></tr>
+<tr><th id="147">147</th><td><i class="doc">  /// <span class="command">\param</span> [in] <span class="arg">queue_item_sp</span></i></td></tr>
+<tr><th id="148">148</th><td><i class="doc">  ///     The QueueItem that we are getting an extended backtrace for.</i></td></tr>
+<tr><th id="149">149</th><td><i class="doc">  ///</i></td></tr>
+<tr><th id="150">150</th><td><i class="doc">  /// <span class="command">\param</span> [in] <span class="arg">type</span></i></td></tr>
+<tr><th id="151">151</th><td><i class="doc">  ///     The type of extended backtrace to fetch.  The types supported</i></td></tr>
+<tr><th id="152">152</th><td><i class="doc">  ///     are returned from SystemRuntime::GetExtendedBacktraceTypes.</i></td></tr>
+<tr><th id="153">153</th><td><i class="doc">  ///</i></td></tr>
+<tr><th id="154">154</th><td><i class="doc">  /// <span class="command">\return</span></i></td></tr>
+<tr><th id="155">155</th><td><i class="doc">  ///     If an extended backtrace is available, it is returned.  Else</i></td></tr>
+<tr><th id="156">156</th><td><i class="doc">  ///     an empty ThreadSP is returned.</i></td></tr>
+<tr><th id="157">157</th><td>  <b>virtual</b> <span class="namespace">lldb::</span><a class="typedef" href="../lldb-forward.h.html#lldb::ThreadSP" title='lldb::ThreadSP' data-type='std::shared_ptr&lt;lldb_private::Thread&gt;' data-ref="lldb::ThreadSP" data-ref-filename="lldb..ThreadSP">ThreadSP</a></td></tr>
+<tr><th id="158">158</th><td>  <dfn class="virtual decl def fn" id="_ZN12lldb_private13SystemRuntime32GetExtendedBacktraceForQueueItemESt10shared_ptrINS_9QueueItemEENS_11ConstStringE" title='lldb_private::SystemRuntime::GetExtendedBacktraceForQueueItem' data-ref="_ZN12lldb_private13SystemRuntime32GetExtendedBacktraceForQueueItemESt10shared_ptrINS_9QueueItemEENS_11ConstStringE" data-ref-filename="_ZN12lldb_private13SystemRuntime32GetExtendedBacktraceForQueueItemESt10shared_ptrINS_9QueueItemEENS_11ConstStringE">GetExtendedBacktraceForQueueItem</dfn>(<span class="namespace">lldb::</span><a class="typedef" href="../lldb-forward.h.html#lldb::QueueItemSP" title='lldb::QueueItemSP' data-type='std::shared_ptr&lt;lldb_private::QueueItem&gt;' data-ref="lldb::QueueItemSP" data-ref-filename="lldb..QueueItemSP">QueueItemSP</a> <dfn class="local col4 decl" id="24queue_item_sp" title='queue_item_sp' data-type='lldb::QueueItemSP' data-ref="24queue_item_sp" data-ref-filename="24queue_item_sp">queue_item_sp</dfn>,</td></tr>
+<tr><th id="159">159</th><td>                                   <a class="type" href="../Utility/ConstString.h.html#lldb_private::ConstString" title='lldb_private::ConstString' data-ref="lldb_private::ConstString" data-ref-filename="lldb_private..ConstString">ConstString</a> <dfn class="local col5 decl" id="25type" title='type' data-type='lldb_private::ConstString' data-ref="25type" data-ref-filename="25type">type</dfn>) {</td></tr>
+<tr><th id="160">160</th><td>    <b>return</b> <span class="namespace">lldb::</span><a class="typedef" href="../lldb-forward.h.html#lldb::ThreadSP" title='lldb::ThreadSP' data-type='std::shared_ptr&lt;lldb_private::Thread&gt;' data-ref="lldb::ThreadSP" data-ref-filename="lldb..ThreadSP">ThreadSP</a><span class='ref fn' title='std::shared_ptr::shared_ptr&lt;_Tp&gt;' data-ref="_ZNSt10shared_ptrC1Ev" data-ref-filename="_ZNSt10shared_ptrC1Ev">(</span>);</td></tr>
+<tr><th id="161">161</th><td>  }</td></tr>
+<tr><th id="162">162</th><td></td></tr>
+<tr><th id="163">163</th><td>  <i class="doc">/// Populate the Process' QueueList with libdispatch / GCD queues that</i></td></tr>
+<tr><th id="164">164</th><td><i class="doc">  /// exist.</i></td></tr>
+<tr><th id="165">165</th><td><i class="doc">  ///</i></td></tr>
+<tr><th id="166">166</th><td><i class="doc">  /// When process execution is paused, the SystemRuntime may be called to</i></td></tr>
+<tr><th id="167">167</th><td><i class="doc">  /// fill in the list of Queues that currently exist.</i></td></tr>
+<tr><th id="168">168</th><td><i class="doc">  ///</i></td></tr>
+<tr><th id="169">169</th><td><i class="doc">  /// <span class="command">\param</span> [out] <span class="arg">queue_list</span></i></td></tr>
+<tr><th id="170">170</th><td><i class="doc">  ///     This QueueList will be cleared, and any queues that currently exist</i></td></tr>
+<tr><th id="171">171</th><td><i class="doc">  ///     will be added.  An empty QueueList will be returned if no queues</i></td></tr>
+<tr><th id="172">172</th><td><i class="doc">  ///     exist or if this Systemruntime does not support libdispatch queues.</i></td></tr>
+<tr><th id="173">173</th><td>  <b>virtual</b> <em>void</em> <dfn class="virtual decl def fn" id="_ZN12lldb_private13SystemRuntime17PopulateQueueListERNS_9QueueListE" title='lldb_private::SystemRuntime::PopulateQueueList' data-ref="_ZN12lldb_private13SystemRuntime17PopulateQueueListERNS_9QueueListE" data-ref-filename="_ZN12lldb_private13SystemRuntime17PopulateQueueListERNS_9QueueListE">PopulateQueueList</dfn>(<span class="namespace">lldb_private::</span><a class="type" href="QueueList.h.html#lldb_private::QueueList" title='lldb_private::QueueList' data-ref="lldb_private::QueueList" data-ref-filename="lldb_private..QueueList">QueueList</a> &amp;<dfn class="local col6 decl" id="26queue_list" title='queue_list' data-type='lldb_private::QueueList &amp;' data-ref="26queue_list" data-ref-filename="26queue_list">queue_list</dfn>) {}</td></tr>
+<tr><th id="174">174</th><td></td></tr>
+<tr><th id="175">175</th><td>  <i class="doc">/// Get the queue name for a thread given a thread's dispatch_qaddr.</i></td></tr>
+<tr><th id="176">176</th><td><i class="doc">  ///</i></td></tr>
+<tr><th id="177">177</th><td><i class="doc">  /// On systems using libdispatch queues, a thread may be associated with a</i></td></tr>
+<tr><th id="178">178</th><td><i class="doc">  /// queue. There will be a call to get the thread's dispatch_qaddr.  At the</i></td></tr>
+<tr><th id="179">179</th><td><i class="doc">  /// dispatch_qaddr we will find the address of this thread's</i></td></tr>
+<tr><th id="180">180</th><td><i class="doc">  /// dispatch_queue_t structure. Given the address of the dispatch_queue_t</i></td></tr>
+<tr><th id="181">181</th><td><i class="doc">  /// structure for a thread, get the queue name and return it.</i></td></tr>
+<tr><th id="182">182</th><td><i class="doc">  ///</i></td></tr>
+<tr><th id="183">183</th><td><i class="doc">  /// <span class="command">\param</span> [in] <span class="arg">dispatch_qaddr</span></i></td></tr>
+<tr><th id="184">184</th><td><i class="doc">  ///     The address of the dispatch_qaddr pointer for this thread.</i></td></tr>
+<tr><th id="185">185</th><td><i class="doc">  ///</i></td></tr>
+<tr><th id="186">186</th><td><i class="doc">  /// <span class="command">\return</span></i></td></tr>
+<tr><th id="187">187</th><td><i class="doc">  ///     The string of this queue's name.  An empty string is returned if the</i></td></tr>
+<tr><th id="188">188</th><td><i class="doc">  ///     name could not be found.</i></td></tr>
+<tr><th id="189">189</th><td>  <b>virtual</b> <span class="namespace">std::</span><span class='typedef' title='std::string' data-type='basic_string&lt;char&gt;' data-ref="std::string" data-ref-filename="std..string">string</span></td></tr>
+<tr><th id="190">190</th><td>  <dfn class="virtual decl def fn" id="_ZN12lldb_private13SystemRuntime30GetQueueNameFromThreadQAddressB5cxx11Em" title='lldb_private::SystemRuntime::GetQueueNameFromThreadQAddress' data-ref="_ZN12lldb_private13SystemRuntime30GetQueueNameFromThreadQAddressB5cxx11Em" data-ref-filename="_ZN12lldb_private13SystemRuntime30GetQueueNameFromThreadQAddressB5cxx11Em">GetQueueNameFromThreadQAddress</dfn>(<span class="namespace">lldb::</span><a class="typedef" href="../lldb-types.h.html#lldb::addr_t" title='lldb::addr_t' data-type='uint64_t' data-ref="lldb::addr_t" data-ref-filename="lldb..addr_t">addr_t</a> <dfn class="local col7 decl" id="27dispatch_qaddr" title='dispatch_qaddr' data-type='lldb::addr_t' data-ref="27dispatch_qaddr" data-ref-filename="27dispatch_qaddr">dispatch_qaddr</dfn>) {</td></tr>
+<tr><th id="191">191</th><td>    <b>return</b> <span class='ref fn fake' title='std::__cxx11::basic_string::basic_string&lt;_CharT, _Traits, _Alloc&gt;' data-ref="_ZNSt7__cxx1112basic_stringC1EPKT_RKT1_" data-ref-filename="_ZNSt7__cxx1112basic_stringC1EPKT_RKT1_"></span><q>""</q>;</td></tr>
+<tr><th id="192">192</th><td>  }</td></tr>
+<tr><th id="193">193</th><td></td></tr>
+<tr><th id="194">194</th><td>  <i class="doc">/// Get the QueueID for the libdispatch queue given the thread's</i></td></tr>
+<tr><th id="195">195</th><td><i class="doc">  /// dispatch_qaddr.</i></td></tr>
+<tr><th id="196">196</th><td><i class="doc">  ///</i></td></tr>
+<tr><th id="197">197</th><td><i class="doc">  /// On systems using libdispatch queues, a thread may be associated with a</i></td></tr>
+<tr><th id="198">198</th><td><i class="doc">  /// queue. There will be a call to get the thread's dispatch_qaddr.  At the</i></td></tr>
+<tr><th id="199">199</th><td><i class="doc">  /// dispatch_qaddr we will find the address of this thread's</i></td></tr>
+<tr><th id="200">200</th><td><i class="doc">  /// dispatch_queue_t structure. Given the address of the dispatch_queue_t</i></td></tr>
+<tr><th id="201">201</th><td><i class="doc">  /// structure for a thread, get the queue ID and return it.</i></td></tr>
+<tr><th id="202">202</th><td><i class="doc">  ///</i></td></tr>
+<tr><th id="203">203</th><td><i class="doc">  /// <span class="command">\param</span> [in] <span class="arg">dispatch_qaddr</span></i></td></tr>
+<tr><th id="204">204</th><td><i class="doc">  ///     The address of the dispatch_qaddr pointer for this thread.</i></td></tr>
+<tr><th id="205">205</th><td><i class="doc">  ///</i></td></tr>
+<tr><th id="206">206</th><td><i class="doc">  /// <span class="command">\return</span></i></td></tr>
+<tr><th id="207">207</th><td><i class="doc">  ///     The queue ID, or if it could not be retrieved, LLDB_INVALID_QUEUE_ID.</i></td></tr>
+<tr><th id="208">208</th><td>  <b>virtual</b> <span class="namespace">lldb::</span><a class="typedef" href="../lldb-types.h.html#lldb::queue_id_t" title='lldb::queue_id_t' data-type='uint64_t' data-ref="lldb::queue_id_t" data-ref-filename="lldb..queue_id_t">queue_id_t</a></td></tr>
+<tr><th id="209">209</th><td>  <dfn class="virtual decl def fn" id="_ZN12lldb_private13SystemRuntime28GetQueueIDFromThreadQAddressEm" title='lldb_private::SystemRuntime::GetQueueIDFromThreadQAddress' data-ref="_ZN12lldb_private13SystemRuntime28GetQueueIDFromThreadQAddressEm" data-ref-filename="_ZN12lldb_private13SystemRuntime28GetQueueIDFromThreadQAddressEm">GetQueueIDFromThreadQAddress</dfn>(<span class="namespace">lldb::</span><a class="typedef" href="../lldb-types.h.html#lldb::addr_t" title='lldb::addr_t' data-type='uint64_t' data-ref="lldb::addr_t" data-ref-filename="lldb..addr_t">addr_t</a> <dfn class="local col8 decl" id="28dispatch_qaddr" title='dispatch_qaddr' data-type='lldb::addr_t' data-ref="28dispatch_qaddr" data-ref-filename="28dispatch_qaddr">dispatch_qaddr</dfn>) {</td></tr>
+<tr><th id="210">210</th><td>    <b>return</b> <a class="macro" href="../lldb-defines.h.html#99" title="0" data-ref="_M/LLDB_INVALID_QUEUE_ID">LLDB_INVALID_QUEUE_ID</a>;</td></tr>
+<tr><th id="211">211</th><td>  }</td></tr>
+<tr><th id="212">212</th><td></td></tr>
+<tr><th id="213">213</th><td>  <i class="doc">/// Get the libdispatch_queue_t address for the queue given the thread's</i></td></tr>
+<tr><th id="214">214</th><td><i class="doc">  /// dispatch_qaddr.</i></td></tr>
+<tr><th id="215">215</th><td><i class="doc">  ///</i></td></tr>
+<tr><th id="216">216</th><td><i class="doc">  /// On systems using libdispatch queues, a thread may be associated with a</i></td></tr>
+<tr><th id="217">217</th><td><i class="doc">  /// queue. There will be a call to get the thread's dispatch_qaddr. Given</i></td></tr>
+<tr><th id="218">218</th><td><i class="doc">  /// the thread's dispatch_qaddr, find the libdispatch_queue_t address and</i></td></tr>
+<tr><th id="219">219</th><td><i class="doc">  /// return it.</i></td></tr>
+<tr><th id="220">220</th><td><i class="doc">  ///</i></td></tr>
+<tr><th id="221">221</th><td><i class="doc">  /// <span class="command">\param</span> [in] <span class="arg">dispatch_qaddr</span></i></td></tr>
+<tr><th id="222">222</th><td><i class="doc">  ///     The address of the dispatch_qaddr pointer for this thread.</i></td></tr>
+<tr><th id="223">223</th><td><i class="doc">  ///</i></td></tr>
+<tr><th id="224">224</th><td><i class="doc">  /// <span class="command">\return</span></i></td></tr>
+<tr><th id="225">225</th><td><i class="doc">  ///     The libdispatch_queue_t address, or LLDB_INVALID_ADDRESS if</i></td></tr>
+<tr><th id="226">226</th><td><i class="doc">  ///     unavailable/not found.</i></td></tr>
+<tr><th id="227">227</th><td>  <b>virtual</b> <span class="namespace">lldb::</span><a class="typedef" href="../lldb-types.h.html#lldb::addr_t" title='lldb::addr_t' data-type='uint64_t' data-ref="lldb::addr_t" data-ref-filename="lldb..addr_t">addr_t</a></td></tr>
+<tr><th id="228">228</th><td>  <dfn class="virtual decl def fn" id="_ZN12lldb_private13SystemRuntime44GetLibdispatchQueueAddressFromThreadQAddressEm" title='lldb_private::SystemRuntime::GetLibdispatchQueueAddressFromThreadQAddress' data-ref="_ZN12lldb_private13SystemRuntime44GetLibdispatchQueueAddressFromThreadQAddressEm" data-ref-filename="_ZN12lldb_private13SystemRuntime44GetLibdispatchQueueAddressFromThreadQAddressEm">GetLibdispatchQueueAddressFromThreadQAddress</dfn>(<span class="namespace">lldb::</span><a class="typedef" href="../lldb-types.h.html#lldb::addr_t" title='lldb::addr_t' data-type='uint64_t' data-ref="lldb::addr_t" data-ref-filename="lldb..addr_t">addr_t</a> <dfn class="local col9 decl" id="29dispatch_qaddr" title='dispatch_qaddr' data-type='lldb::addr_t' data-ref="29dispatch_qaddr" data-ref-filename="29dispatch_qaddr">dispatch_qaddr</dfn>) {</td></tr>
+<tr><th id="229">229</th><td>    <b>return</b> <a class="macro" href="../lldb-defines.h.html#85" title="(18446744073709551615UL)" data-ref="_M/LLDB_INVALID_ADDRESS">LLDB_INVALID_ADDRESS</a>;</td></tr>
+<tr><th id="230">230</th><td>  }</td></tr>
+<tr><th id="231">231</th><td></td></tr>
+<tr><th id="232">232</th><td>  <i class="doc">/// Retrieve the Queue kind for the queue at a thread's dispatch_qaddr.</i></td></tr>
+<tr><th id="233">233</th><td><i class="doc">  ///</i></td></tr>
+<tr><th id="234">234</th><td><i class="doc">  /// Retrieve the Queue kind - either eQueueKindSerial or</i></td></tr>
+<tr><th id="235">235</th><td><i class="doc">  /// eQueueKindConcurrent, indicating that this queue processes work items</i></td></tr>
+<tr><th id="236">236</th><td><i class="doc">  /// serially or concurrently.</i></td></tr>
+<tr><th id="237">237</th><td><i class="doc">  ///</i></td></tr>
+<tr><th id="238">238</th><td><i class="doc">  /// <span class="command">\return</span></i></td></tr>
+<tr><th id="239">239</th><td><i class="doc">  ///     The Queue kind, if it could be read, else eQueueKindUnknown.</i></td></tr>
+<tr><th id="240">240</th><td>  <b>virtual</b> <span class="namespace">lldb::</span><a class="type" href="../lldb-enumerations.h.html#lldb::QueueKind" title='lldb::QueueKind' data-ref="lldb::QueueKind" data-ref-filename="lldb..QueueKind">QueueKind</a> <dfn class="virtual decl def fn" id="_ZN12lldb_private13SystemRuntime12GetQueueKindEm" title='lldb_private::SystemRuntime::GetQueueKind' data-ref="_ZN12lldb_private13SystemRuntime12GetQueueKindEm" data-ref-filename="_ZN12lldb_private13SystemRuntime12GetQueueKindEm">GetQueueKind</dfn>(<span class="namespace">lldb::</span><a class="typedef" href="../lldb-types.h.html#lldb::addr_t" title='lldb::addr_t' data-type='uint64_t' data-ref="lldb::addr_t" data-ref-filename="lldb..addr_t">addr_t</a> <dfn class="local col0 decl" id="30dispatch_qaddr" title='dispatch_qaddr' data-type='lldb::addr_t' data-ref="30dispatch_qaddr" data-ref-filename="30dispatch_qaddr">dispatch_qaddr</dfn>) {</td></tr>
+<tr><th id="241">241</th><td>    <b>return</b> <span class="namespace">lldb::</span><a class="enum" href="../lldb-enumerations.h.html#lldb::eQueueKindUnknown" title='lldb::eQueueKindUnknown' data-ref="lldb::eQueueKindUnknown" data-ref-filename="lldb..eQueueKindUnknown">eQueueKindUnknown</a>;</td></tr>
+<tr><th id="242">242</th><td>  }</td></tr>
+<tr><th id="243">243</th><td></td></tr>
+<tr><th id="244">244</th><td>  <i class="doc">/// Get the pending work items for a libdispatch Queue</i></td></tr>
+<tr><th id="245">245</th><td><i class="doc">  ///</i></td></tr>
+<tr><th id="246">246</th><td><i class="doc">  /// If this system/process is using libdispatch and the runtime can do so,</i></td></tr>
+<tr><th id="247">247</th><td><i class="doc">  /// retrieve the list of pending work items for the specified Queue and add</i></td></tr>
+<tr><th id="248">248</th><td><i class="doc">  /// it to the Queue.</i></td></tr>
+<tr><th id="249">249</th><td><i class="doc">  ///</i></td></tr>
+<tr><th id="250">250</th><td><i class="doc">  /// <span class="command">\param</span> [in] <span class="arg">queue</span></i></td></tr>
+<tr><th id="251">251</th><td><i class="doc">  ///     The queue of interest.</i></td></tr>
+<tr><th id="252">252</th><td>  <b>virtual</b> <em>void</em> <dfn class="virtual decl def fn" id="_ZN12lldb_private13SystemRuntime28PopulatePendingItemsForQueueEPNS_5QueueE" title='lldb_private::SystemRuntime::PopulatePendingItemsForQueue' data-ref="_ZN12lldb_private13SystemRuntime28PopulatePendingItemsForQueueEPNS_5QueueE" data-ref-filename="_ZN12lldb_private13SystemRuntime28PopulatePendingItemsForQueueEPNS_5QueueE">PopulatePendingItemsForQueue</dfn>(<span class="namespace">lldb_private::</span><a class="type" href="../lldb-forward.h.html#lldb_private::Queue" title='lldb_private::Queue' data-ref="lldb_private::Queue" data-ref-filename="lldb_private..Queue">Queue</a> *<dfn class="local col1 decl" id="31queue" title='queue' data-type='lldb_private::Queue *' data-ref="31queue" data-ref-filename="31queue">queue</dfn>) {}</td></tr>
+<tr><th id="253">253</th><td></td></tr>
+<tr><th id="254">254</th><td>  <i class="doc">/// Complete the fields in a QueueItem</i></td></tr>
+<tr><th id="255">255</th><td><i class="doc">  ///</i></td></tr>
+<tr><th id="256">256</th><td><i class="doc">  /// PopulatePendingItemsForQueue() may not fill in all of the QueueItem</i></td></tr>
+<tr><th id="257">257</th><td><i class="doc">  /// details; when the remaining fields are needed, they will be fetched by</i></td></tr>
+<tr><th id="258">258</th><td><i class="doc">  /// call this method.</i></td></tr>
+<tr><th id="259">259</th><td><i class="doc">  ///</i></td></tr>
+<tr><th id="260">260</th><td><i class="doc">  /// <span class="command">\param</span> [in] <span class="arg">queue_item</span></i></td></tr>
+<tr><th id="261">261</th><td><i class="doc">  ///   The QueueItem that we will be completing.</i></td></tr>
+<tr><th id="262">262</th><td><i class="doc">  ///</i></td></tr>
+<tr><th id="263">263</th><td><i class="doc">  /// <span class="command">\param</span> [in] <span class="arg">item_ref</span></i></td></tr>
+<tr><th id="264">264</th><td><i class="doc">  ///     The item_ref token that is needed to retrieve the rest of the</i></td></tr>
+<tr><th id="265">265</th><td><i class="doc">  ///     information about the QueueItem.</i></td></tr>
+<tr><th id="266">266</th><td>  <b>virtual</b> <em>void</em> <dfn class="virtual decl def fn" id="_ZN12lldb_private13SystemRuntime17CompleteQueueItemEPNS_9QueueItemEm" title='lldb_private::SystemRuntime::CompleteQueueItem' data-ref="_ZN12lldb_private13SystemRuntime17CompleteQueueItemEPNS_9QueueItemEm" data-ref-filename="_ZN12lldb_private13SystemRuntime17CompleteQueueItemEPNS_9QueueItemEm">CompleteQueueItem</dfn>(<span class="namespace">lldb_private::</span><a class="type" href="QueueItem.h.html#lldb_private::QueueItem" title='lldb_private::QueueItem' data-ref="lldb_private::QueueItem" data-ref-filename="lldb_private..QueueItem">QueueItem</a> *<dfn class="local col2 decl" id="32queue_item" title='queue_item' data-type='lldb_private::QueueItem *' data-ref="32queue_item" data-ref-filename="32queue_item">queue_item</dfn>,</td></tr>
+<tr><th id="267">267</th><td>                                 <span class="namespace">lldb::</span><a class="typedef" href="../lldb-types.h.html#lldb::addr_t" title='lldb::addr_t' data-type='uint64_t' data-ref="lldb::addr_t" data-ref-filename="lldb..addr_t">addr_t</a> <dfn class="local col3 decl" id="33item_ref" title='item_ref' data-type='lldb::addr_t' data-ref="33item_ref" data-ref-filename="33item_ref">item_ref</dfn>) {}</td></tr>
+<tr><th id="268">268</th><td></td></tr>
+<tr><th id="269">269</th><td>  <i class="doc">/// Add key-value pairs to the StructuredData dictionary object with</i></td></tr>
+<tr><th id="270">270</th><td><i class="doc">  /// information debugserver  may need when constructing the</i></td></tr>
+<tr><th id="271">271</th><td><i class="doc">  /// jThreadExtendedInfo packet.</i></td></tr>
+<tr><th id="272">272</th><td><i class="doc">  ///</i></td></tr>
+<tr><th id="273">273</th><td><i class="doc">  /// <span class="command">\param</span> [out] <span class="arg">dict</span></i></td></tr>
+<tr><th id="274">274</th><td><i class="doc">  ///     Dictionary to which key-value pairs should be added; they will</i></td></tr>
+<tr><th id="275">275</th><td><i class="doc">  ///     be sent to the remote gdb server stub as arguments in the</i></td></tr>
+<tr><th id="276">276</th><td><i class="doc">  ///     jThreadExtendedInfo request.</i></td></tr>
+<tr><th id="277">277</th><td>  <b>virtual</b> <em>void</em> <dfn class="virtual decl def fn" id="_ZN12lldb_private13SystemRuntime32AddThreadExtendedInfoPacketHintsESt10shared_ptrINS_14StructuredData6ObjectEE" title='lldb_private::SystemRuntime::AddThreadExtendedInfoPacketHints' data-ref="_ZN12lldb_private13SystemRuntime32AddThreadExtendedInfoPacketHintsESt10shared_ptrINS_14StructuredData6ObjectEE" data-ref-filename="_ZN12lldb_private13SystemRuntime32AddThreadExtendedInfoPacketHintsESt10shared_ptrINS_14StructuredData6ObjectEE">AddThreadExtendedInfoPacketHints</dfn>(</td></tr>
+<tr><th id="278">278</th><td>      <span class="namespace">lldb_private::</span><a class="type" href="../Utility/StructuredData.h.html#lldb_private::StructuredData" title='lldb_private::StructuredData' data-ref="lldb_private::StructuredData" data-ref-filename="lldb_private..StructuredData">StructuredData</a>::<a class="typedef" href="../Utility/StructuredData.h.html#lldb_private::StructuredData::ObjectSP" title='lldb_private::StructuredData::ObjectSP' data-type='std::shared_ptr&lt;Object&gt;' data-ref="lldb_private::StructuredData::ObjectSP" data-ref-filename="lldb_private..StructuredData..ObjectSP">ObjectSP</a> <dfn class="local col4 decl" id="34dict" title='dict' data-type='lldb_private::StructuredData::ObjectSP' data-ref="34dict" data-ref-filename="34dict">dict</dfn>) {}</td></tr>
+<tr><th id="279">279</th><td></td></tr>
+<tr><th id="280">280</th><td>  <i class="doc">/// Determine whether it is safe to run an expression on a given thread</i></td></tr>
+<tr><th id="281">281</th><td><i class="doc">  ///</i></td></tr>
+<tr><th id="282">282</th><td><i class="doc">  /// If a system must not run functions on a thread in some particular state,</i></td></tr>
+<tr><th id="283">283</th><td><i class="doc">  /// this method gives a way for it to flag that the expression should not be</i></td></tr>
+<tr><th id="284">284</th><td><i class="doc">  /// run.</i></td></tr>
+<tr><th id="285">285</th><td><i class="doc">  ///</i></td></tr>
+<tr><th id="286">286</th><td><i class="doc">  /// <span class="command">\param</span> [in] <span class="arg">thread_sp</span></i></td></tr>
+<tr><th id="287">287</th><td><i class="doc">  ///     The thread we want to run the expression on.</i></td></tr>
+<tr><th id="288">288</th><td><i class="doc">  ///</i></td></tr>
+<tr><th id="289">289</th><td><i class="doc">  /// <span class="command">\return</span></i></td></tr>
+<tr><th id="290">290</th><td><i class="doc">  ///     True will be returned if there are no known problems with running an</i></td></tr>
+<tr><th id="291">291</th><td><i class="doc">  ///     expression on this thread.  False means that the inferior function</i></td></tr>
+<tr><th id="292">292</th><td><i class="doc">  ///     call should not be made on this thread.</i></td></tr>
+<tr><th id="293">293</th><td>  <b>virtual</b> <em>bool</em> <dfn class="virtual decl def fn" id="_ZN12lldb_private13SystemRuntime31SafeToCallFunctionsOnThisThreadESt10shared_ptrINS_6ThreadEE" title='lldb_private::SystemRuntime::SafeToCallFunctionsOnThisThread' data-ref="_ZN12lldb_private13SystemRuntime31SafeToCallFunctionsOnThisThreadESt10shared_ptrINS_6ThreadEE" data-ref-filename="_ZN12lldb_private13SystemRuntime31SafeToCallFunctionsOnThisThreadESt10shared_ptrINS_6ThreadEE">SafeToCallFunctionsOnThisThread</dfn>(<span class="namespace">lldb::</span><a class="typedef" href="../lldb-forward.h.html#lldb::ThreadSP" title='lldb::ThreadSP' data-type='std::shared_ptr&lt;lldb_private::Thread&gt;' data-ref="lldb::ThreadSP" data-ref-filename="lldb..ThreadSP">ThreadSP</a> <dfn class="local col5 decl" id="35thread_sp" title='thread_sp' data-type='lldb::ThreadSP' data-ref="35thread_sp" data-ref-filename="35thread_sp">thread_sp</dfn>) {</td></tr>
+<tr><th id="294">294</th><td>    <b>return</b> <b>true</b>;</td></tr>
+<tr><th id="295">295</th><td>  }</td></tr>
+<tr><th id="296">296</th><td></td></tr>
+<tr><th id="297">297</th><td><b>protected</b>:</td></tr>
+<tr><th id="298">298</th><td>  <span class="namespace">std::</span><span class='type' title='std::vector' data-ref="std::vector" data-ref-filename="std..vector">vector</span>&lt;<a class="type" href="../Utility/ConstString.h.html#lldb_private::ConstString" title='lldb_private::ConstString' data-ref="lldb_private::ConstString" data-ref-filename="lldb_private..ConstString">ConstString</a>&gt; <dfn class="decl field" id="lldb_private::SystemRuntime::m_types" title='lldb_private::SystemRuntime::m_types' data-ref="lldb_private::SystemRuntime::m_types" data-ref-filename="lldb_private..SystemRuntime..m_types">m_types</dfn>;</td></tr>
+<tr><th id="299">299</th><td></td></tr>
+<tr><th id="300">300</th><td><b>private</b>:</td></tr>
+<tr><th id="301">301</th><td>  <dfn class="decl def fn" id="_ZN12lldb_private13SystemRuntimeC1ERKS0_" title='lldb_private::SystemRuntime::SystemRuntime' data-ref="_ZN12lldb_private13SystemRuntimeC1ERKS0_" data-ref-filename="_ZN12lldb_private13SystemRuntimeC1ERKS0_">SystemRuntime</dfn>(<em>const</em> <a class="type" href="#lldb_private::SystemRuntime" title='lldb_private::SystemRuntime' data-ref="lldb_private::SystemRuntime" data-ref-filename="lldb_private..SystemRuntime">SystemRuntime</a> &amp;) = <b>delete</b>;</td></tr>
+<tr><th id="302">302</th><td>  <em>const</em> <a class="type" href="#lldb_private::SystemRuntime" title='lldb_private::SystemRuntime' data-ref="lldb_private::SystemRuntime" data-ref-filename="lldb_private..SystemRuntime">SystemRuntime</a> &amp;<dfn class="decl def fn" id="_ZN12lldb_private13SystemRuntimeaSERKS0_" title='lldb_private::SystemRuntime::operator=' data-ref="_ZN12lldb_private13SystemRuntimeaSERKS0_" data-ref-filename="_ZN12lldb_private13SystemRuntimeaSERKS0_"><b>operator</b>=</dfn>(<em>const</em> <a class="type" href="#lldb_private::SystemRuntime" title='lldb_private::SystemRuntime' data-ref="lldb_private::SystemRuntime" data-ref-filename="lldb_private..SystemRuntime">SystemRuntime</a> &amp;) = <b>delete</b>;</td></tr>
+<tr><th id="303">303</th><td>};</td></tr>
+<tr><th id="304">304</th><td></td></tr>
+<tr><th id="305">305</th><td>} <i>// namespace lldb_private</i></td></tr>
+<tr><th id="306">306</th><td></td></tr>
+<tr><th id="307">307</th><td><u>#<span data-ppcond="9">endif</span> // LLDB_TARGET_SYSTEMRUNTIME_H</u></td></tr>
+<tr><th id="308">308</th><td></td></tr>
+</table><hr/><p id='footer'>
+Generated while processing <a href='../../../source/API/SBProcess.cpp.html'>llvm/lldb/source/API/SBProcess.cpp</a><br/>Generated on <em>2021-Jul-01</em> from project llvm revision <em>12</em>

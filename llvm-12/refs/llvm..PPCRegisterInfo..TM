@@ -1,0 +1,30 @@
+<dec f='llvm/llvm/lib/Target/PowerPC/PPCRegisterInfo.h' l='59' type='const llvm::PPCTargetMachine &amp;'/>
+<offset>2432</offset>
+<use f='llvm/llvm/lib/Target/PowerPC/PPCRegisterInfo.cpp' l='99' u='w' c='_ZN4llvm15PPCRegisterInfoC1ERKNS_16PPCTargetMachineE'/>
+<use f='llvm/llvm/lib/Target/PowerPC/PPCRegisterInfo.cpp' l='146' u='m' c='_ZNK4llvm15PPCRegisterInfo18getPointerRegClassERKNS_15MachineFunctionEj'/>
+<use f='llvm/llvm/lib/Target/PowerPC/PPCRegisterInfo.cpp' l='151' u='m' c='_ZNK4llvm15PPCRegisterInfo18getPointerRegClassERKNS_15MachineFunctionEj'/>
+<use f='llvm/llvm/lib/Target/PowerPC/PPCRegisterInfo.cpp' l='160' u='m' c='_ZNK4llvm15PPCRegisterInfo18getCalleeSavedRegsEPKNS_15MachineFunctionE'/>
+<use f='llvm/llvm/lib/Target/PowerPC/PPCRegisterInfo.cpp' l='164' u='m' c='_ZNK4llvm15PPCRegisterInfo18getCalleeSavedRegsEPKNS_15MachineFunctionE'/>
+<use f='llvm/llvm/lib/Target/PowerPC/PPCRegisterInfo.cpp' l='187' u='m' c='_ZNK4llvm15PPCRegisterInfo18getCalleeSavedRegsEPKNS_15MachineFunctionE'/>
+<use f='llvm/llvm/lib/Target/PowerPC/PPCRegisterInfo.cpp' l='202' u='m' c='_ZNK4llvm15PPCRegisterInfo18getCalleeSavedRegsEPKNS_15MachineFunctionE'/>
+<use f='llvm/llvm/lib/Target/PowerPC/PPCRegisterInfo.cpp' l='234' u='m' c='_ZNK4llvm15PPCRegisterInfo20getCallPreservedMaskERKNS_15MachineFunctionEj'/>
+<use f='llvm/llvm/lib/Target/PowerPC/PPCRegisterInfo.cpp' l='241' u='m' c='_ZNK4llvm15PPCRegisterInfo20getCallPreservedMaskERKNS_15MachineFunctionEj'/>
+<use f='llvm/llvm/lib/Target/PowerPC/PPCRegisterInfo.cpp' l='249' u='m' c='_ZNK4llvm15PPCRegisterInfo20getCallPreservedMaskERKNS_15MachineFunctionEj'/>
+<use f='llvm/llvm/lib/Target/PowerPC/PPCRegisterInfo.cpp' l='304' u='m' c='_ZNK4llvm15PPCRegisterInfo15getReservedRegsERKNS_15MachineFunctionE'/>
+<use f='llvm/llvm/lib/Target/PowerPC/PPCRegisterInfo.cpp' l='315' u='m' c='_ZNK4llvm15PPCRegisterInfo15getReservedRegsERKNS_15MachineFunctionE'/>
+<use f='llvm/llvm/lib/Target/PowerPC/PPCRegisterInfo.cpp' l='321' u='m' c='_ZNK4llvm15PPCRegisterInfo15getReservedRegsERKNS_15MachineFunctionE'/>
+<use f='llvm/llvm/lib/Target/PowerPC/PPCRegisterInfo.cpp' l='393' u='m' c='_ZNK4llvm15PPCRegisterInfo24isCallerPreservedPhysRegENS_10MCRegisterERKNS_15MachineFunctionE'/>
+<use f='llvm/llvm/lib/Target/PowerPC/PPCRegisterInfo.cpp' l='455' u='m' c='_ZNK4llvm15PPCRegisterInfo25getLargestLegalSuperClassEPKNS_19TargetRegisterClassERKNS_15MachineFunctionE'/>
+<use f='llvm/llvm/lib/Target/PowerPC/PPCRegisterInfo.cpp' l='499' u='m' c='_ZNK4llvm15PPCRegisterInfo17lowerDynamicAllocENS_26MachineInstrBundleIteratorINS_12MachineInstrELb0EEE'/>
+<use f='llvm/llvm/lib/Target/PowerPC/PPCRegisterInfo.cpp' l='559' u='m' c='_ZNK4llvm15PPCRegisterInfo20prepareDynamicAllocaENS_26MachineInstrBundleIteratorINS_12MachineInstrELb0EEERNS_8RegisterERbS5_'/>
+<use f='llvm/llvm/lib/Target/PowerPC/PPCRegisterInfo.cpp' l='645' u='m' c='_ZNK4llvm15PPCRegisterInfo24lowerPrepareProbedAllocaENS_26MachineInstrBundleIteratorINS_12MachineInstrELb0EEE'/>
+<use f='llvm/llvm/lib/Target/PowerPC/PPCRegisterInfo.cpp' l='690' u='m' c='_ZNK4llvm15PPCRegisterInfo22lowerDynamicAreaOffsetENS_26MachineInstrBundleIteratorINS_12MachineInstrELb0EEE'/>
+<use f='llvm/llvm/lib/Target/PowerPC/PPCRegisterInfo.cpp' l='717' u='m' c='_ZNK4llvm15PPCRegisterInfo15lowerCRSpillingENS_26MachineInstrBundleIteratorINS_12MachineInstrELb0EEEj'/>
+<use f='llvm/llvm/lib/Target/PowerPC/PPCRegisterInfo.cpp' l='762' u='m' c='_ZNK4llvm15PPCRegisterInfo14lowerCRRestoreENS_26MachineInstrBundleIteratorINS_12MachineInstrELb0EEEj'/>
+<use f='llvm/llvm/lib/Target/PowerPC/PPCRegisterInfo.cpp' l='806' u='m' c='_ZNK4llvm15PPCRegisterInfo18lowerCRBitSpillingENS_26MachineInstrBundleIteratorINS_12MachineInstrELb0EEEj'/>
+<use f='llvm/llvm/lib/Target/PowerPC/PPCRegisterInfo.cpp' l='924' u='m' c='_ZNK4llvm15PPCRegisterInfo17lowerCRBitRestoreENS_26MachineInstrBundleIteratorINS_12MachineInstrELb0EEEj'/>
+<use f='llvm/llvm/lib/Target/PowerPC/PPCRegisterInfo.cpp' l='1251' u='m' c='_ZNK4llvm15PPCRegisterInfo19eliminateFrameIndexENS_26MachineInstrBundleIteratorINS_12MachineInstrELb0EEEijPNS_12RegScavengerE'/>
+<use f='llvm/llvm/lib/Target/PowerPC/PPCRegisterInfo.cpp' l='1297' u='m' c='_ZNK4llvm15PPCRegisterInfo16getFrameRegisterERKNS_15MachineFunctionE'/>
+<use f='llvm/llvm/lib/Target/PowerPC/PPCRegisterInfo.cpp' l='1308' u='m' c='_ZNK4llvm15PPCRegisterInfo15getBaseRegisterERKNS_15MachineFunctionE'/>
+<use f='llvm/llvm/lib/Target/PowerPC/PPCRegisterInfo.cpp' l='1311' u='m' c='_ZNK4llvm15PPCRegisterInfo15getBaseRegisterERKNS_15MachineFunctionE'/>
+<use f='llvm/llvm/lib/Target/PowerPC/PPCRegisterInfo.cpp' l='1381' u='m' c='_ZNK4llvm15PPCRegisterInfo28materializeFrameBaseRegisterEPNS_17MachineBasicBlockEil'/>

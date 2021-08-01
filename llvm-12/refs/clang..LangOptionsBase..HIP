@@ -1,0 +1,24 @@
+<dec f='llvm/clang/include/clang/Basic/LangOptions.def' l='222' type='unsigned int'/>
+<offset>420</offset>
+<use f='llvm/clang/lib/CodeGen/CGBuiltin.cpp' l='4849' u='r' c='_ZN5clang7CodeGen15CodeGenFunction15EmitBuiltinExprENS_10GlobalDeclEjPKNS_8CallExprENS0_15ReturnValueSlotE'/>
+<use f='llvm/clang/lib/CodeGen/CGCUDANV.cpp' l='160' u='r' c='_ZNK12_GLOBAL__N_115CGNVCUDARuntime15addPrefixToNameB5cxx11EN4llvm9StringRefE'/>
+<use f='llvm/clang/lib/CodeGen/CGCUDANV.cpp' l='166' u='r' c='_ZNK12_GLOBAL__N_115CGNVCUDARuntime26addUnderscoredPrefixToNameB5cxx11EN4llvm9StringRefE'/>
+<use f='llvm/clang/lib/CodeGen/CGCUDANV.cpp' l='206' u='r' c='_ZNK12_GLOBAL__N_115CGNVCUDARuntime11getLaunchFnEv'/>
+<use f='llvm/clang/lib/CodeGen/CGCUDANV.cpp' l='256' u='r' c='_ZN12_GLOBAL__N_115CGNVCUDARuntime14emitDeviceStubERN5clang7CodeGen15CodeGenFunctionERNS2_15FunctionArgListE'/>
+<use f='llvm/clang/lib/CodeGen/CGCUDANV.cpp' l='495' u='r' c='_ZN12_GLOBAL__N_115CGNVCUDARuntime21makeRegisterGlobalsFnEv'/>
+<use f='llvm/clang/lib/CodeGen/CGCUDANV.cpp' l='608' u='r' c='_ZN12_GLOBAL__N_115CGNVCUDARuntime22makeModuleCtorFunctionEv'/>
+<use f='llvm/clang/lib/CodeGen/CGCUDANV.cpp' l='901' u='r' c='_ZN12_GLOBAL__N_115CGNVCUDARuntime22makeModuleDtorFunctionEv'/>
+<use f='llvm/clang/lib/CodeGen/CGDeclCXX.cpp' l='643' u='r' c='_ZN5clang7CodeGen13CodeGenModule21EmitCXXGlobalInitFuncEv'/>
+<use f='llvm/clang/lib/CodeGen/TargetInfo.cpp' l='8813' u='r' c='_ZNK12_GLOBAL__N_113AMDGPUABIInfo26classifyKernelArgumentTypeEN5clang8QualTypeE'/>
+<use f='llvm/clang/lib/CodeGen/TargetInfo.cpp' l='8967' u='r' c='_ZNK12_GLOBAL__N_123AMDGPUTargetCodeGenInfo19setTargetAttributesEPKN5clang4DeclEPN4llvm11GlobalValueERNS1_7CodeGen13CodeGenModuleE'/>
+<use f='llvm/clang/lib/Frontend/CompilerInvocation.cpp' l='447' u='r' c='_ZL15FixupInvocationRN5clang18CompilerInvocationERNS_17DiagnosticsEngineERKN4llvm3opt12InputArgListENS_9InputKindE'/>
+<use f='llvm/clang/lib/Frontend/CompilerInvocation.cpp' l='451' u='r' c='_ZL15FixupInvocationRN5clang18CompilerInvocationERNS_17DiagnosticsEngineERKN4llvm3opt12InputArgListENS_9InputKindE'/>
+<use f='llvm/clang/lib/Frontend/CompilerInvocation.cpp' l='2056' u='w' c='_ZN5clang18CompilerInvocation15setLangDefaultsERNS_11LangOptionsENS_9InputKindERKN4llvm6TripleERSt6vectorINSt7__cxx1112basic_stringIcSt11char_traitsIc12293528'/>
+<use f='llvm/clang/lib/Frontend/CompilerInvocation.cpp' l='2057' u='r' c='_ZN5clang18CompilerInvocation15setLangDefaultsERNS_11LangOptionsENS_9InputKindERKN4llvm6TripleERSt6vectorINSt7__cxx1112basic_stringIcSt11char_traitsIc12293528'/>
+<use f='llvm/clang/lib/Frontend/CompilerInvocation.cpp' l='2058' u='r' c='_ZN5clang18CompilerInvocation15setLangDefaultsERNS_11LangOptionsENS_9InputKindERKN4llvm6TripleERSt6vectorINSt7__cxx1112basic_stringIcSt11char_traitsIc12293528'/>
+<use f='llvm/clang/lib/Frontend/InitPreprocessor.cpp' l='486' u='r' c='_ZL34InitializeStandardPredefinedMacrosRKN5clang10TargetInfoERKNS_11LangOptionsERKNS_15FrontendOptionsERNS_12MacroBuilderE'/>
+<use f='llvm/clang/lib/Frontend/InitPreprocessor.cpp' l='488' u='r' c='_ZL34InitializeStandardPredefinedMacrosRKN5clang10TargetInfoERKNS_11LangOptionsERKNS_15FrontendOptionsERNS_12MacroBuilderE'/>
+<use f='llvm/clang/lib/Frontend/InitPreprocessor.cpp' l='1103' u='r' c='_ZL26InitializePredefinedMacrosRKN5clang10TargetInfoERKNS_11LangOptionsERKNS_15FrontendOptionsERKNS_19PreprocessorOptionsERNS_12MacroBuilderE'/>
+<use f='llvm/build/tools/clang/include/clang/Sema/AttrParsedAttrImpl.inc' l='3725' u='r' c='_ZNK12_GLOBAL__N_124ParsedAttrInfoHIPManaged12diagLangOptsERN5clang4SemaERKNS1_10ParsedAttrE'/>
+<use f='llvm/clang/lib/Sema/SemaCUDA.cpp' l='859' u='r' c='_ZNK5clang4Sema24getCudaConfigureFuncNameB5cxx11Ev'/>
+<use f='llvm/clang/lib/Sema/SemaDeclAttr.cpp' l='4559' u='r' c='_ZL16handleGlobalAttrRN5clang4SemaEPNS_4DeclERKNS_10ParsedAttrE'/>

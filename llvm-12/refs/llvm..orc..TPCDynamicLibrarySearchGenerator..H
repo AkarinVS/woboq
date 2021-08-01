@@ -1,0 +1,4 @@
+<use f='llvm/llvm/include/llvm/ExecutionEngine/Orc/TPCDynamicLibrarySearchGenerator.h' l='36' u='w' c='_ZN4llvm3orc32TPCDynamicLibrarySearchGeneratorC1ERNS0_20TargetProcessControlEmNS_15unique_functionIFbRKNS0_15SymbolStringPtrEEEE'/>
+<dec f='llvm/llvm/include/llvm/ExecutionEngine/Orc/TPCDynamicLibrarySearchGenerator.h' l='59' type='tpctypes::DylibHandle'/>
+<offset>128</offset>
+<use f='llvm/llvm/lib/ExecutionEngine/Orc/TPCDynamicLibrarySearchGenerator.cpp' l='44' u='r' c='_ZN4llvm3orc32TPCDynamicLibrarySearchGenerator13tryToGenerateERNS0_11LookupStateENS0_10LookupKindERNS0_8JITDylibENS0_19JITDylibLookupFlagsERKNS0_15SymbolLookupSetE'/>

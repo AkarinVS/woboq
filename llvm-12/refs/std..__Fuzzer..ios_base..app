@@ -1,0 +1,11 @@
+<dec f='llvm/build/projects/compiler-rt/lib/fuzzer/libcxx_fuzzer_x86_64/include/c++/v1/ios' l='262' type='const std::__Fuzzer::ios_base::openmode'/>
+<use f='llvm/build/projects/compiler-rt/lib/fuzzer/libcxx_fuzzer_x86_64/include/c++/v1/sstream' l='478' u='r' c='_ZNSt8__Fuzzer15basic_stringbuf3strERKNS_12basic_stringIT_T0_T1_EE'/>
+<use f='llvm/build/projects/compiler-rt/lib/fuzzer/libcxx_fuzzer_x86_64/include/c++/v1/fstream' l='516' u='r' c='_ZNSt8__Fuzzer13basic_filebuf15__make_mdstringEj'/>
+<use f='llvm/build/projects/compiler-rt/lib/fuzzer/libcxx_fuzzer_x86_64/include/c++/v1/fstream' l='517' u='r' c='_ZNSt8__Fuzzer13basic_filebuf15__make_mdstringEj'/>
+<use f='llvm/build/projects/compiler-rt/lib/fuzzer/libcxx_fuzzer_x86_64/include/c++/v1/fstream' l='525' u='r' c='_ZNSt8__Fuzzer13basic_filebuf15__make_mdstringEj'/>
+<use f='llvm/build/projects/compiler-rt/lib/fuzzer/libcxx_fuzzer_x86_64/include/c++/v1/fstream' l='526' u='r' c='_ZNSt8__Fuzzer13basic_filebuf15__make_mdstringEj'/>
+<use f='llvm/build/projects/compiler-rt/lib/fuzzer/libcxx_fuzzer_x86_64/include/c++/v1/fstream' l='531' u='r' c='_ZNSt8__Fuzzer13basic_filebuf15__make_mdstringEj'/>
+<use f='llvm/build/projects/compiler-rt/lib/fuzzer/libcxx_fuzzer_x86_64/include/c++/v1/fstream' l='532' u='r' c='_ZNSt8__Fuzzer13basic_filebuf15__make_mdstringEj'/>
+<use f='llvm/build/projects/compiler-rt/lib/fuzzer/libcxx_fuzzer_x86_64/include/c++/v1/fstream' l='540' u='r' c='_ZNSt8__Fuzzer13basic_filebuf15__make_mdstringEj'/>
+<use f='llvm/build/projects/compiler-rt/lib/fuzzer/libcxx_fuzzer_x86_64/include/c++/v1/fstream' l='541' u='r' c='_ZNSt8__Fuzzer13basic_filebuf15__make_mdstringEj'/>
+<use f='llvm/compiler-rt/lib/fuzzer/FuzzerMerge.cpp' l='212' u='r' c='_ZN6fuzzer6Fuzzer31CrashResistantMergeInternalStepERKNSt8__Fuzzer12basic_stringIcNS1_11char_traitsIcEENS1_9allocatorIcEEEE'/>

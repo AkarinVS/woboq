@@ -1,0 +1,20 @@
+<dec f='llvm/clang/include/clang/Serialization/ASTReader.h' l='1353' type='clang::ASTReader::ModuleFile *'/>
+<use f='llvm/clang/include/clang/Serialization/ASTReader.h' l='1356' u='w' c='_ZN5clang9ASTReader14RecordLocationC1EPNS_13serialization10ModuleFileEm'/>
+<offset>0</offset>
+<use f='llvm/clang/lib/Serialization/ASTReader.cpp' l='6403' u='r' c='_ZN5clang9ASTReader14readTypeRecordEj'/>
+<use f='llvm/clang/lib/Serialization/ASTReader.cpp' l='6424' u='r' c='_ZN5clang9ASTReader14readTypeRecordEj'/>
+<use f='llvm/clang/lib/Serialization/ASTReader.cpp' l='7222' u='r' c='_ZN5clang9ASTReader30GetExternalCXXCtorInitializersEm'/>
+<use f='llvm/clang/lib/Serialization/ASTReader.cpp' l='7237' u='r' c='_ZN5clang9ASTReader30GetExternalCXXCtorInitializersEm'/>
+<use f='llvm/clang/lib/Serialization/ASTReader.cpp' l='7256' u='r' c='_ZN5clang9ASTReader28GetExternalCXXBaseSpecifiersEm'/>
+<use f='llvm/clang/lib/Serialization/ASTReader.cpp' l='7271' u='r' c='_ZN5clang9ASTReader28GetExternalCXXBaseSpecifiersEm'/>
+<use f='llvm/clang/lib/Serialization/ASTReader.cpp' l='7488' u='r' c='_ZN5clang9ASTReader19GetExternalDeclStmtEm'/>
+<use f='llvm/clang/lib/Serialization/ASTReader.cpp' l='7495' u='r' c='_ZN5clang9ASTReader19GetExternalDeclStmtEm'/>
+<use f='llvm/clang/lib/Serialization/ASTReaderDecl.cpp' l='506' u='r' c='_ZN5clang13ASTDeclReader22GetCurrentCursorOffsetEv'/>
+<use f='llvm/clang/lib/Serialization/ASTReaderDecl.cpp' l='506' u='r' c='_ZN5clang13ASTDeclReader22GetCurrentCursorOffsetEv'/>
+<use f='llvm/clang/lib/Serialization/ASTReaderDecl.cpp' l='512' u='r' c='_ZN5clang13ASTDeclReader22ReadFunctionDefinitionEPNS_12FunctionDeclE'/>
+<use f='llvm/clang/lib/Serialization/ASTReaderDecl.cpp' l='1459' u='r' c='_ZN5clang13ASTDeclReader16VisitVarDeclImplEPNS_7VarDeclE'/>
+<use f='llvm/clang/lib/Serialization/ASTReaderDecl.cpp' l='1722' u='r' c='_ZN5clang13ASTDeclReader21ReadCXXDefinitionDataERNS_13CXXRecordDecl14DefinitionDataEPKS1_'/>
+<use f='llvm/clang/lib/Serialization/ASTReaderDecl.cpp' l='3763' u='r' c='_ZN5clang9ASTReader14ReadDeclRecordEj'/>
+<use f='llvm/clang/lib/Serialization/ASTReaderDecl.cpp' l='3780' u='r' c='_ZN5clang9ASTReader14ReadDeclRecordEj'/>
+<use f='llvm/clang/lib/Serialization/ASTReaderDecl.cpp' l='4087' u='r' c='_ZN5clang9ASTReader14ReadDeclRecordEj'/>
+<use f='llvm/clang/lib/Serialization/ASTReaderDecl.cpp' l='4090' u='r' c='_ZN5clang9ASTReader14ReadDeclRecordEj'/>

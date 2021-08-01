@@ -1,0 +1,29 @@
+<dec f='llvm/polly/include/polly/Simplify.h' l='33' type='polly::Scop *'/>
+<offset>64</offset>
+<doc f='llvm/polly/include/polly/Simplify.h' l='32'>/// The last/current SCoP that is/has been processed.</doc>
+<use f='llvm/polly/lib/Transform/Simplify.cpp' l='138' u='r' c='_ZN5polly15SimplifyVisitor22removeEmptyDomainStmtsEv'/>
+<use f='llvm/polly/lib/Transform/Simplify.cpp' l='140' u='r' c='_ZN5polly15SimplifyVisitor22removeEmptyDomainStmtsEv'/>
+<use f='llvm/polly/lib/Transform/Simplify.cpp' l='147' u='r' c='_ZN5polly15SimplifyVisitor22removeEmptyDomainStmtsEv'/>
+<use f='llvm/polly/lib/Transform/Simplify.cpp' l='159' u='r' c='_ZN5polly15SimplifyVisitor16removeOverwritesEv'/>
+<use f='llvm/polly/lib/Transform/Simplify.cpp' l='162' u='r' c='_ZN5polly15SimplifyVisitor16removeOverwritesEv'/>
+<use f='llvm/polly/lib/Transform/Simplify.cpp' l='178' u='r' c='_ZN5polly15SimplifyVisitor16removeOverwritesEv'/>
+<use f='llvm/polly/lib/Transform/Simplify.cpp' l='218' u='r' c='_ZN5polly15SimplifyVisitor14coalesceWritesEv'/>
+<use f='llvm/polly/lib/Transform/Simplify.cpp' l='219' u='r' c='_ZN5polly15SimplifyVisitor14coalesceWritesEv'/>
+<use f='llvm/polly/lib/Transform/Simplify.cpp' l='231' u='r' c='_ZN5polly15SimplifyVisitor14coalesceWritesEv'/>
+<use f='llvm/polly/lib/Transform/Simplify.cpp' l='243' u='r' c='_ZN5polly15SimplifyVisitor14coalesceWritesEv'/>
+<use f='llvm/polly/lib/Transform/Simplify.cpp' l='372' u='r' c='_ZN5polly15SimplifyVisitor14coalesceWritesEv'/>
+<use f='llvm/polly/lib/Transform/Simplify.cpp' l='390' u='r' c='_ZN5polly15SimplifyVisitor21removeRedundantWritesEv'/>
+<use f='llvm/polly/lib/Transform/Simplify.cpp' l='396' u='r' c='_ZN5polly15SimplifyVisitor21removeRedundantWritesEv'/>
+<use f='llvm/polly/lib/Transform/Simplify.cpp' l='407' u='r' c='_ZN5polly15SimplifyVisitor21removeRedundantWritesEv'/>
+<use f='llvm/polly/lib/Transform/Simplify.cpp' l='412' u='r' c='_ZN5polly15SimplifyVisitor21removeRedundantWritesEv'/>
+<use f='llvm/polly/lib/Transform/Simplify.cpp' l='422' u='r' c='_ZN5polly15SimplifyVisitor21removeRedundantWritesEv'/>
+<use f='llvm/polly/lib/Transform/Simplify.cpp' l='484' u='r' c='_ZN5polly15SimplifyVisitor22removeUnnecessaryStmtsEv'/>
+<use f='llvm/polly/lib/Transform/Simplify.cpp' l='485' u='r' c='_ZN5polly15SimplifyVisitor22removeUnnecessaryStmtsEv'/>
+<use f='llvm/polly/lib/Transform/Simplify.cpp' l='487' u='r' c='_ZN5polly15SimplifyVisitor22removeUnnecessaryStmtsEv'/>
+<use f='llvm/polly/lib/Transform/Simplify.cpp' l='495' u='r' c='_ZN5polly15SimplifyVisitor26removeEmptyPartialAccessesEv'/>
+<use f='llvm/polly/lib/Transform/Simplify.cpp' l='528' u='r' c='_ZN5polly15SimplifyVisitor12markAndSweepEPN4llvm8LoopInfoE'/>
+<use f='llvm/polly/lib/Transform/Simplify.cpp' l='534' u='r' c='_ZN5polly15SimplifyVisitor12markAndSweepEPN4llvm8LoopInfoE'/>
+<use f='llvm/polly/lib/Transform/Simplify.cpp' l='550' u='r' c='_ZN5polly15SimplifyVisitor12markAndSweepEPN4llvm8LoopInfoE'/>
+<use f='llvm/polly/lib/Transform/Simplify.cpp' l='603' u='r' c='_ZNK5polly15SimplifyVisitor13printAccessesERN4llvm11raw_ostreamEi'/>
+<use f='llvm/polly/lib/Transform/Simplify.cpp' l='617' u='w' c='_ZN5polly15SimplifyVisitor5visitERNS_4ScopEPN4llvm8LoopInfoE'/>
+<use f='llvm/polly/lib/Transform/Simplify.cpp' l='670' u='w' c='_ZN5polly15SimplifyVisitor13releaseMemoryEv'/>

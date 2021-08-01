@@ -1,0 +1,141 @@
+<!doctype html>
+<html>
+<head>
+<meta name="viewport" content="width=device-width, initial-scale=1.0"><title>AggressiveInstCombineInternal.h source code [llvm/llvm/lib/Transforms/AggressiveInstCombine/AggressiveInstCombineInternal.h] - Woboq Code Browser</title>
+<meta name="woboq:interestingDefinitions" content="llvm::TruncInstCombine "/>
+<link rel="stylesheet" href="../../../../.././data/qtcreator.css" title="QtCreator"/>
+<link rel="alternate stylesheet" href="../../../../.././data/kdevelop.css" title="KDevelop"/>
+<script type="text/javascript" src="../../../../.././data/jquery/jquery.min.js"></script>
+<script type="text/javascript" src="../../../../.././data/jquery/jquery-ui.min.js"></script>
+<script>var file = 'llvm/llvm/lib/Transforms/AggressiveInstCombine/AggressiveInstCombineInternal.h'; var root_path = '../../../../..'; var data_path = '../../../../.././data'; var ecma_script_api_version = 2;</script>
+<script src='../../../../.././data/codebrowser.js'></script>
+</head>
+<body><div id='header'><h1 id='breadcrumb'><span>Browse the source code of </span><a href='../../../..'>llvm</a>/<a href='../../..'>llvm</a>/<a href='../..'>lib</a>/<a href='..'>Transforms</a>/<a href='./'>AggressiveInstCombine</a>/<a href='AggressiveInstCombineInternal.h.html'>AggressiveInstCombineInternal.h</a></h1></div>
+<hr/><div id='content'><table class="code">
+<tr><th id="1">1</th><td><i>//===- AggressiveInstCombineInternal.h --------------------------*- C++ -*-===//</i></td></tr>
+<tr><th id="2">2</th><td><i>//</i></td></tr>
+<tr><th id="3">3</th><td><i>// Part of the LLVM Project, under the Apache License v2.0 with LLVM Exceptions.</i></td></tr>
+<tr><th id="4">4</th><td><i>// See <a href="https://llvm.org/LICENSE.txt">https://llvm.org/LICENSE.txt</a> for license information.</i></td></tr>
+<tr><th id="5">5</th><td><i>// SPDX-License-Identifier: Apache-2.0 WITH LLVM-exception</i></td></tr>
+<tr><th id="6">6</th><td><i>//</i></td></tr>
+<tr><th id="7">7</th><td><i>//===----------------------------------------------------------------------===//</i></td></tr>
+<tr><th id="8">8</th><td><i>//</i></td></tr>
+<tr><th id="9">9</th><td><i>// This file implements the instruction pattern combiner classes.</i></td></tr>
+<tr><th id="10">10</th><td><i>// Currently, it handles pattern expressions for:</i></td></tr>
+<tr><th id="11">11</th><td><i>//  * Truncate instruction</i></td></tr>
+<tr><th id="12">12</th><td><i>//</i></td></tr>
+<tr><th id="13">13</th><td><i>//===----------------------------------------------------------------------===//</i></td></tr>
+<tr><th id="14">14</th><td></td></tr>
+<tr><th id="15">15</th><td><u>#<span data-ppcond="15">ifndef</span> <span class="macro" data-ref="_M/LLVM_LIB_TRANSFORMS_AGGRESSIVEINSTCOMBINE_COMBINEINTERNAL_H">LLVM_LIB_TRANSFORMS_AGGRESSIVEINSTCOMBINE_COMBINEINTERNAL_H</span></u></td></tr>
+<tr><th id="16">16</th><td><u>#define <dfn class="macro" id="_M/LLVM_LIB_TRANSFORMS_AGGRESSIVEINSTCOMBINE_COMBINEINTERNAL_H" data-ref="_M/LLVM_LIB_TRANSFORMS_AGGRESSIVEINSTCOMBINE_COMBINEINTERNAL_H">LLVM_LIB_TRANSFORMS_AGGRESSIVEINSTCOMBINE_COMBINEINTERNAL_H</dfn></u></td></tr>
+<tr><th id="17">17</th><td></td></tr>
+<tr><th id="18">18</th><td><u>#include <a href="../../../include/llvm/ADT/MapVector.h.html">"llvm/ADT/MapVector.h"</a></u></td></tr>
+<tr><th id="19">19</th><td><u>#include <a href="../../../include/llvm/ADT/SmallVector.h.html">"llvm/ADT/SmallVector.h"</a></u></td></tr>
+<tr><th id="20">20</th><td></td></tr>
+<tr><th id="21">21</th><td><b>using</b> <b>namespace</b> <span class="namespace">llvm</span>;</td></tr>
+<tr><th id="22">22</th><td></td></tr>
+<tr><th id="23">23</th><td><i>//===----------------------------------------------------------------------===//</i></td></tr>
+<tr><th id="24">24</th><td><i>// TruncInstCombine - looks for expression dags dominated by trunc instructions</i></td></tr>
+<tr><th id="25">25</th><td><i>// and for each eligible dag, it will create a reduced bit-width expression and</i></td></tr>
+<tr><th id="26">26</th><td><i>// replace the old expression with this new one and remove the old one.</i></td></tr>
+<tr><th id="27">27</th><td><i>// Eligible expression dag is such that:</i></td></tr>
+<tr><th id="28">28</th><td><i>//   1. Contains only supported instructions.</i></td></tr>
+<tr><th id="29">29</th><td><i>//   2. Supported leaves: ZExtInst, SExtInst, TruncInst and Constant value.</i></td></tr>
+<tr><th id="30">30</th><td><i>//   3. Can be evaluated into type with reduced legal bit-width (or Trunc type).</i></td></tr>
+<tr><th id="31">31</th><td><i>//   4. All instructions in the dag must not have users outside the dag.</i></td></tr>
+<tr><th id="32">32</th><td><i>//      Only exception is for {ZExt, SExt}Inst with operand type equal to the</i></td></tr>
+<tr><th id="33">33</th><td><i>//      new reduced type chosen in (3).</i></td></tr>
+<tr><th id="34">34</th><td><i>//</i></td></tr>
+<tr><th id="35">35</th><td><i>// The motivation for this optimization is that evaluating and expression using</i></td></tr>
+<tr><th id="36">36</th><td><i>// smaller bit-width is preferable, especially for vectorization where we can</i></td></tr>
+<tr><th id="37">37</th><td><i>// fit more values in one vectorized instruction. In addition, this optimization</i></td></tr>
+<tr><th id="38">38</th><td><i>// may decrease the number of cast instructions, but will not increase it.</i></td></tr>
+<tr><th id="39">39</th><td><i>//===----------------------------------------------------------------------===//</i></td></tr>
+<tr><th id="40">40</th><td></td></tr>
+<tr><th id="41">41</th><td><b>namespace</b> <span class="namespace">llvm</span> {</td></tr>
+<tr><th id="42">42</th><td>  <b>class</b> <a class="type" href="../../../include/llvm/IR/DataLayout.h.html#llvm::DataLayout" title='llvm::DataLayout' data-ref="llvm::DataLayout" data-ref-filename="llvm..DataLayout" id="llvm::DataLayout">DataLayout</a>;</td></tr>
+<tr><th id="43">43</th><td>  <b>class</b> <a class="type" href="../../../include/llvm/IR/Dominators.h.html#llvm::DominatorTree" title='llvm::DominatorTree' data-ref="llvm::DominatorTree" data-ref-filename="llvm..DominatorTree" id="llvm::DominatorTree">DominatorTree</a>;</td></tr>
+<tr><th id="44">44</th><td>  <b>class</b> <a class="type" href="../../../include/llvm/IR/Function.h.html#llvm::Function" title='llvm::Function' data-ref="llvm::Function" data-ref-filename="llvm..Function" id="llvm::Function">Function</a>;</td></tr>
+<tr><th id="45">45</th><td>  <b>class</b> <a class="type" href="../../../include/llvm/IR/Instruction.h.html#llvm::Instruction" title='llvm::Instruction' data-ref="llvm::Instruction" data-ref-filename="llvm..Instruction" id="llvm::Instruction">Instruction</a>;</td></tr>
+<tr><th id="46">46</th><td>  <b>class</b> <a class="type" href="../../../include/llvm/Analysis/TargetLibraryInfo.h.html#llvm::TargetLibraryInfo" title='llvm::TargetLibraryInfo' data-ref="llvm::TargetLibraryInfo" data-ref-filename="llvm..TargetLibraryInfo" id="llvm::TargetLibraryInfo">TargetLibraryInfo</a>;</td></tr>
+<tr><th id="47">47</th><td>  <b>class</b> <a class="type" href="../../../include/llvm/IR/Instructions.h.html#llvm::TruncInst" title='llvm::TruncInst' data-ref="llvm::TruncInst" data-ref-filename="llvm..TruncInst" id="llvm::TruncInst">TruncInst</a>;</td></tr>
+<tr><th id="48">48</th><td>  <b>class</b> <a class="type" href="../../../include/llvm/IR/Type.h.html#llvm::Type" title='llvm::Type' data-ref="llvm::Type" data-ref-filename="llvm..Type" id="llvm::Type">Type</a>;</td></tr>
+<tr><th id="49">49</th><td>  <b>class</b> <a class="type" href="../../../include/llvm/IR/Value.h.html#llvm::Value" title='llvm::Value' data-ref="llvm::Value" data-ref-filename="llvm..Value" id="llvm::Value">Value</a>;</td></tr>
+<tr><th id="50">50</th><td></td></tr>
+<tr><th id="51">51</th><td><b>class</b> <dfn class="type def" id="llvm::TruncInstCombine" title='llvm::TruncInstCombine' data-ref="llvm::TruncInstCombine" data-ref-filename="llvm..TruncInstCombine">TruncInstCombine</dfn> {</td></tr>
+<tr><th id="52">52</th><td>  <a class="type" href="../../../include/llvm/Analysis/TargetLibraryInfo.h.html#llvm::TargetLibraryInfo" title='llvm::TargetLibraryInfo' data-ref="llvm::TargetLibraryInfo" data-ref-filename="llvm..TargetLibraryInfo">TargetLibraryInfo</a> &amp;<dfn class="decl field" id="llvm::TruncInstCombine::TLI" title='llvm::TruncInstCombine::TLI' data-ref="llvm::TruncInstCombine::TLI" data-ref-filename="llvm..TruncInstCombine..TLI">TLI</dfn>;</td></tr>
+<tr><th id="53">53</th><td>  <em>const</em> <a class="type" href="../../../include/llvm/IR/DataLayout.h.html#llvm::DataLayout" title='llvm::DataLayout' data-ref="llvm::DataLayout" data-ref-filename="llvm..DataLayout">DataLayout</a> &amp;<dfn class="decl field" id="llvm::TruncInstCombine::DL" title='llvm::TruncInstCombine::DL' data-ref="llvm::TruncInstCombine::DL" data-ref-filename="llvm..TruncInstCombine..DL">DL</dfn>;</td></tr>
+<tr><th id="54">54</th><td>  <em>const</em> <a class="type" href="../../../include/llvm/IR/Dominators.h.html#llvm::DominatorTree" title='llvm::DominatorTree' data-ref="llvm::DominatorTree" data-ref-filename="llvm..DominatorTree">DominatorTree</a> &amp;<dfn class="decl field" id="llvm::TruncInstCombine::DT" title='llvm::TruncInstCombine::DT' data-ref="llvm::TruncInstCombine::DT" data-ref-filename="llvm..TruncInstCombine..DT">DT</dfn>;</td></tr>
+<tr><th id="55">55</th><td></td></tr>
+<tr><th id="56">56</th><td>  <i class="doc">/// List of all TruncInst instructions to be processed.</i></td></tr>
+<tr><th id="57">57</th><td>  <a class="type" href="../../../include/llvm/ADT/SmallVector.h.html#llvm::SmallVector" title='llvm::SmallVector' data-ref="llvm::SmallVector" data-ref-filename="llvm..SmallVector">SmallVector</a>&lt;<a class="type" href="../../../include/llvm/IR/Instructions.h.html#llvm::TruncInst" title='llvm::TruncInst' data-ref="llvm::TruncInst" data-ref-filename="llvm..TruncInst">TruncInst</a> *, <var>4</var>&gt; <dfn class="decl field" id="llvm::TruncInstCombine::Worklist" title='llvm::TruncInstCombine::Worklist' data-ref="llvm::TruncInstCombine::Worklist" data-ref-filename="llvm..TruncInstCombine..Worklist">Worklist</dfn>;</td></tr>
+<tr><th id="58">58</th><td></td></tr>
+<tr><th id="59">59</th><td>  <i class="doc">/// Current processed TruncInst instruction.</i></td></tr>
+<tr><th id="60">60</th><td>  <a class="type" href="../../../include/llvm/IR/Instructions.h.html#llvm::TruncInst" title='llvm::TruncInst' data-ref="llvm::TruncInst" data-ref-filename="llvm..TruncInst">TruncInst</a> *<dfn class="decl field" id="llvm::TruncInstCombine::CurrentTruncInst" title='llvm::TruncInstCombine::CurrentTruncInst' data-ref="llvm::TruncInstCombine::CurrentTruncInst" data-ref-filename="llvm..TruncInstCombine..CurrentTruncInst">CurrentTruncInst</dfn>;</td></tr>
+<tr><th id="61">61</th><td></td></tr>
+<tr><th id="62">62</th><td>  <i class="doc">/// Information per each instruction in the expression dag.</i></td></tr>
+<tr><th id="63">63</th><td>  <b>struct</b> <dfn class="type def" id="llvm::TruncInstCombine::Info" title='llvm::TruncInstCombine::Info' data-ref="llvm::TruncInstCombine::Info" data-ref-filename="llvm..TruncInstCombine..Info">Info</dfn> {</td></tr>
+<tr><th id="64">64</th><td>    <i class="doc">/// Number of LSBs that are needed to generate a valid expression.</i></td></tr>
+<tr><th id="65">65</th><td>    <em>unsigned</em> <dfn class="decl field" id="llvm::TruncInstCombine::Info::ValidBitWidth" title='llvm::TruncInstCombine::Info::ValidBitWidth' data-ref="llvm::TruncInstCombine::Info::ValidBitWidth" data-ref-filename="llvm..TruncInstCombine..Info..ValidBitWidth">ValidBitWidth</dfn> = <var>0</var>;</td></tr>
+<tr><th id="66">66</th><td>    <i class="doc">/// Minimum number of LSBs needed to generate the ValidBitWidth.</i></td></tr>
+<tr><th id="67">67</th><td>    <em>unsigned</em> <dfn class="decl field" id="llvm::TruncInstCombine::Info::MinBitWidth" title='llvm::TruncInstCombine::Info::MinBitWidth' data-ref="llvm::TruncInstCombine::Info::MinBitWidth" data-ref-filename="llvm..TruncInstCombine..Info..MinBitWidth">MinBitWidth</dfn> = <var>0</var>;</td></tr>
+<tr><th id="68">68</th><td>    <i class="doc">/// The reduced value generated to replace the old instruction.</i></td></tr>
+<tr><th id="69">69</th><td>    <a class="type" href="../../../include/llvm/IR/Value.h.html#llvm::Value" title='llvm::Value' data-ref="llvm::Value" data-ref-filename="llvm..Value">Value</a> *<dfn class="decl field" id="llvm::TruncInstCombine::Info::NewValue" title='llvm::TruncInstCombine::Info::NewValue' data-ref="llvm::TruncInstCombine::Info::NewValue" data-ref-filename="llvm..TruncInstCombine..Info..NewValue">NewValue</dfn> = <b>nullptr</b>;</td></tr>
+<tr><th id="70">70</th><td>  };</td></tr>
+<tr><th id="71">71</th><td>  <i class="doc">/// An ordered map representing expression dag post-dominated by current</i></td></tr>
+<tr><th id="72">72</th><td><i class="doc">  /// processed TruncInst. It maps each instruction in the dag to its Info</i></td></tr>
+<tr><th id="73">73</th><td><i class="doc">  /// structure. The map is ordered such that each instruction appears before</i></td></tr>
+<tr><th id="74">74</th><td><i class="doc">  /// all other instructions in the dag that uses it.</i></td></tr>
+<tr><th id="75">75</th><td>  <a class="type" href="../../../include/llvm/ADT/MapVector.h.html#llvm::MapVector" title='llvm::MapVector' data-ref="llvm::MapVector" data-ref-filename="llvm..MapVector">MapVector</a>&lt;<a class="type" href="../../../include/llvm/IR/Instruction.h.html#llvm::Instruction" title='llvm::Instruction' data-ref="llvm::Instruction" data-ref-filename="llvm..Instruction">Instruction</a> *, <a class="type" href="#llvm::TruncInstCombine::Info" title='llvm::TruncInstCombine::Info' data-ref="llvm::TruncInstCombine::Info" data-ref-filename="llvm..TruncInstCombine..Info">Info</a>&gt; <dfn class="decl field" id="llvm::TruncInstCombine::InstInfoMap" title='llvm::TruncInstCombine::InstInfoMap' data-ref="llvm::TruncInstCombine::InstInfoMap" data-ref-filename="llvm..TruncInstCombine..InstInfoMap">InstInfoMap</dfn>;</td></tr>
+<tr><th id="76">76</th><td></td></tr>
+<tr><th id="77">77</th><td><b>public</b>:</td></tr>
+<tr><th id="78">78</th><td>  <dfn class="decl def fn" id="_ZN4llvm16TruncInstCombineC1ERNS_17TargetLibraryInfoERKNS_10DataLayoutERKNS_13DominatorTreeE" title='llvm::TruncInstCombine::TruncInstCombine' data-ref="_ZN4llvm16TruncInstCombineC1ERNS_17TargetLibraryInfoERKNS_10DataLayoutERKNS_13DominatorTreeE" data-ref-filename="_ZN4llvm16TruncInstCombineC1ERNS_17TargetLibraryInfoERKNS_10DataLayoutERKNS_13DominatorTreeE">TruncInstCombine</dfn>(<a class="type" href="../../../include/llvm/Analysis/TargetLibraryInfo.h.html#llvm::TargetLibraryInfo" title='llvm::TargetLibraryInfo' data-ref="llvm::TargetLibraryInfo" data-ref-filename="llvm..TargetLibraryInfo">TargetLibraryInfo</a> &amp;<dfn class="local col1 decl" id="1TLI" title='TLI' data-type='llvm::TargetLibraryInfo &amp;' data-ref="1TLI" data-ref-filename="1TLI">TLI</dfn>, <em>const</em> <a class="type" href="../../../include/llvm/IR/DataLayout.h.html#llvm::DataLayout" title='llvm::DataLayout' data-ref="llvm::DataLayout" data-ref-filename="llvm..DataLayout">DataLayout</a> &amp;<dfn class="local col2 decl" id="2DL" title='DL' data-type='const llvm::DataLayout &amp;' data-ref="2DL" data-ref-filename="2DL">DL</dfn>,</td></tr>
+<tr><th id="79">79</th><td>                   <em>const</em> <a class="type" href="../../../include/llvm/IR/Dominators.h.html#llvm::DominatorTree" title='llvm::DominatorTree' data-ref="llvm::DominatorTree" data-ref-filename="llvm..DominatorTree">DominatorTree</a> &amp;<dfn class="local col3 decl" id="3DT" title='DT' data-type='const llvm::DominatorTree &amp;' data-ref="3DT" data-ref-filename="3DT">DT</dfn>)</td></tr>
+<tr><th id="80">80</th><td>      : <a class="member field" href="#llvm::TruncInstCombine::TLI" title='llvm::TruncInstCombine::TLI' data-ref="llvm::TruncInstCombine::TLI" data-ref-filename="llvm..TruncInstCombine..TLI">TLI</a>(<a class="local col1 ref" href="#1TLI" title='TLI' data-ref="1TLI" data-ref-filename="1TLI">TLI</a>), <a class="member field" href="#llvm::TruncInstCombine::DL" title='llvm::TruncInstCombine::DL' data-ref="llvm::TruncInstCombine::DL" data-ref-filename="llvm..TruncInstCombine..DL">DL</a>(<a class="local col2 ref" href="#2DL" title='DL' data-ref="2DL" data-ref-filename="2DL">DL</a>), <a class="member field" href="#llvm::TruncInstCombine::DT" title='llvm::TruncInstCombine::DT' data-ref="llvm::TruncInstCombine::DT" data-ref-filename="llvm..TruncInstCombine..DT">DT</a>(<a class="local col3 ref" href="#3DT" title='DT' data-ref="3DT" data-ref-filename="3DT">DT</a>), <a class="member field" href="#llvm::TruncInstCombine::CurrentTruncInst" title='llvm::TruncInstCombine::CurrentTruncInst' data-ref="llvm::TruncInstCombine::CurrentTruncInst" data-ref-filename="llvm..TruncInstCombine..CurrentTruncInst">CurrentTruncInst</a>(<b>nullptr</b>) {}</td></tr>
+<tr><th id="81">81</th><td></td></tr>
+<tr><th id="82">82</th><td>  <i class="doc">/// Perform TruncInst pattern optimization on given function.</i></td></tr>
+<tr><th id="83">83</th><td>  <em>bool</em> <dfn class="decl fn" id="_ZN4llvm16TruncInstCombine3runERNS_8FunctionE" title='llvm::TruncInstCombine::run' data-ref="_ZN4llvm16TruncInstCombine3runERNS_8FunctionE" data-ref-filename="_ZN4llvm16TruncInstCombine3runERNS_8FunctionE">run</dfn>(<a class="type" href="../../../include/llvm/IR/Function.h.html#llvm::Function" title='llvm::Function' data-ref="llvm::Function" data-ref-filename="llvm..Function">Function</a> &amp;<dfn class="local col4 decl" id="4F" title='F' data-type='llvm::Function &amp;' data-ref="4F" data-ref-filename="4F">F</dfn>);</td></tr>
+<tr><th id="84">84</th><td></td></tr>
+<tr><th id="85">85</th><td><b>private</b>:</td></tr>
+<tr><th id="86">86</th><td>  <i class="doc">/// Build expression dag dominated by the /p CurrentTruncInst and append it to</i></td></tr>
+<tr><th id="87">87</th><td><i class="doc">  /// the InstInfoMap container.</i></td></tr>
+<tr><th id="88">88</th><td><i class="doc">  ///</i></td></tr>
+<tr><th id="89">89</th><td><i class="doc">  /// <span class="command">\return</span> true only if succeed to generate an eligible sub expression dag.</i></td></tr>
+<tr><th id="90">90</th><td>  <em>bool</em> <dfn class="decl fn" id="_ZN4llvm16TruncInstCombine23buildTruncExpressionDagEv" title='llvm::TruncInstCombine::buildTruncExpressionDag' data-ref="_ZN4llvm16TruncInstCombine23buildTruncExpressionDagEv" data-ref-filename="_ZN4llvm16TruncInstCombine23buildTruncExpressionDagEv">buildTruncExpressionDag</dfn>();</td></tr>
+<tr><th id="91">91</th><td></td></tr>
+<tr><th id="92">92</th><td>  <i class="doc">/// Calculate the minimal allowed bit-width of the chain ending with the</i></td></tr>
+<tr><th id="93">93</th><td><i class="doc">  /// currently visited truncate's operand.</i></td></tr>
+<tr><th id="94">94</th><td><i class="doc">  ///</i></td></tr>
+<tr><th id="95">95</th><td><i class="doc">  /// <span class="command">\return</span> minimum number of bits to which the chain ending with the</i></td></tr>
+<tr><th id="96">96</th><td><i class="doc">  /// truncate's operand can be shrunk to.</i></td></tr>
+<tr><th id="97">97</th><td>  <em>unsigned</em> <dfn class="decl fn" id="_ZN4llvm16TruncInstCombine14getMinBitWidthEv" title='llvm::TruncInstCombine::getMinBitWidth' data-ref="_ZN4llvm16TruncInstCombine14getMinBitWidthEv" data-ref-filename="_ZN4llvm16TruncInstCombine14getMinBitWidthEv">getMinBitWidth</dfn>();</td></tr>
+<tr><th id="98">98</th><td></td></tr>
+<tr><th id="99">99</th><td>  <i class="doc">/// Build an expression dag dominated by the current processed TruncInst and</i></td></tr>
+<tr><th id="100">100</th><td><i class="doc">  /// Check if it is eligible to be reduced to a smaller type.</i></td></tr>
+<tr><th id="101">101</th><td><i class="doc">  ///</i></td></tr>
+<tr><th id="102">102</th><td><i class="doc">  /// <span class="command">\return</span> the scalar version of the new type to be used for the reduced</i></td></tr>
+<tr><th id="103">103</th><td><i class="doc">  ///         expression dag, or nullptr if the expression dag is not eligible</i></td></tr>
+<tr><th id="104">104</th><td><i class="doc">  ///         to be reduced.</i></td></tr>
+<tr><th id="105">105</th><td>  <a class="type" href="../../../include/llvm/IR/Type.h.html#llvm::Type" title='llvm::Type' data-ref="llvm::Type" data-ref-filename="llvm..Type">Type</a> *<dfn class="decl fn" id="_ZN4llvm16TruncInstCombine20getBestTruncatedTypeEv" title='llvm::TruncInstCombine::getBestTruncatedType' data-ref="_ZN4llvm16TruncInstCombine20getBestTruncatedTypeEv" data-ref-filename="_ZN4llvm16TruncInstCombine20getBestTruncatedTypeEv">getBestTruncatedType</dfn>();</td></tr>
+<tr><th id="106">106</th><td></td></tr>
+<tr><th id="107">107</th><td>  <i class="doc">/// Given a<span class="command"> \p</span> <span class="arg">V</span> value and a<span class="command"> \p</span> <span class="arg">SclTy</span> scalar type return the generated reduced</i></td></tr>
+<tr><th id="108">108</th><td><i class="doc">  /// value of<span class="command"> \p</span> <span class="arg">V</span> based on the type<span class="command"> \p</span> <span class="arg">SclTy.</span></i></td></tr>
+<tr><th id="109">109</th><td><i class="doc">  ///</i></td></tr>
+<tr><th id="110">110</th><td><i class="doc">  /// <span class="command">\param</span> <span class="arg">V</span> value to be reduced.</i></td></tr>
+<tr><th id="111">111</th><td><i class="doc">  /// <span class="command">\param</span> <span class="arg">SclTy</span> scalar version of new type to reduce to.</i></td></tr>
+<tr><th id="112">112</th><td><i class="doc">  /// <span class="command">\return</span> the new reduced value.</i></td></tr>
+<tr><th id="113">113</th><td>  <a class="type" href="../../../include/llvm/IR/Value.h.html#llvm::Value" title='llvm::Value' data-ref="llvm::Value" data-ref-filename="llvm..Value">Value</a> *<dfn class="decl fn" id="_ZN4llvm16TruncInstCombine17getReducedOperandEPNS_5ValueEPNS_4TypeE" title='llvm::TruncInstCombine::getReducedOperand' data-ref="_ZN4llvm16TruncInstCombine17getReducedOperandEPNS_5ValueEPNS_4TypeE" data-ref-filename="_ZN4llvm16TruncInstCombine17getReducedOperandEPNS_5ValueEPNS_4TypeE">getReducedOperand</dfn>(<a class="type" href="../../../include/llvm/IR/Value.h.html#llvm::Value" title='llvm::Value' data-ref="llvm::Value" data-ref-filename="llvm..Value">Value</a> *<dfn class="local col5 decl" id="5V" title='V' data-type='llvm::Value *' data-ref="5V" data-ref-filename="5V">V</dfn>, <a class="type" href="../../../include/llvm/IR/Type.h.html#llvm::Type" title='llvm::Type' data-ref="llvm::Type" data-ref-filename="llvm..Type">Type</a> *<dfn class="local col6 decl" id="6SclTy" title='SclTy' data-type='llvm::Type *' data-ref="6SclTy" data-ref-filename="6SclTy">SclTy</dfn>);</td></tr>
+<tr><th id="114">114</th><td></td></tr>
+<tr><th id="115">115</th><td>  <i class="doc">/// Create a new expression dag using the reduced /p SclTy type and replace</i></td></tr>
+<tr><th id="116">116</th><td><i class="doc">  /// the old expression dag with it. Also erase all instructions in the old</i></td></tr>
+<tr><th id="117">117</th><td><i class="doc">  /// dag, except those that are still needed outside the dag.</i></td></tr>
+<tr><th id="118">118</th><td><i class="doc">  ///</i></td></tr>
+<tr><th id="119">119</th><td><i class="doc">  /// <span class="command">\param</span> <span class="arg">SclTy</span> scalar version of new type to reduce expression dag into.</i></td></tr>
+<tr><th id="120">120</th><td>  <em>void</em> <dfn class="decl fn" id="_ZN4llvm16TruncInstCombine19ReduceExpressionDagEPNS_4TypeE" title='llvm::TruncInstCombine::ReduceExpressionDag' data-ref="_ZN4llvm16TruncInstCombine19ReduceExpressionDagEPNS_4TypeE" data-ref-filename="_ZN4llvm16TruncInstCombine19ReduceExpressionDagEPNS_4TypeE">ReduceExpressionDag</dfn>(<a class="type" href="../../../include/llvm/IR/Type.h.html#llvm::Type" title='llvm::Type' data-ref="llvm::Type" data-ref-filename="llvm..Type">Type</a> *<dfn class="local col7 decl" id="7SclTy" title='SclTy' data-type='llvm::Type *' data-ref="7SclTy" data-ref-filename="7SclTy">SclTy</dfn>);</td></tr>
+<tr><th id="121">121</th><td>};</td></tr>
+<tr><th id="122">122</th><td>} <i>// end namespace llvm.</i></td></tr>
+<tr><th id="123">123</th><td></td></tr>
+<tr><th id="124">124</th><td><u>#<span data-ppcond="15">endif</span></u></td></tr>
+<tr><th id="125">125</th><td></td></tr>
+</table><hr/><p id='footer'>
+Generated while processing <a href='AggressiveInstCombine.cpp.html'>llvm/llvm/lib/Transforms/AggressiveInstCombine/AggressiveInstCombine.cpp</a><br/>Generated on <em>2021-Jul-01</em> from project llvm revision <em>12</em>

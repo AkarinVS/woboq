@@ -1,0 +1,19 @@
+<dec f='llvm/llvm/include/llvm/XRay/RecordPrinter.h' l='23' type='llvm::raw_ostream &amp;'/>
+<use f='llvm/llvm/include/llvm/XRay/RecordPrinter.h' l='28' u='w' c='_ZN4llvm4xray13RecordPrinterC1ERNS_11raw_ostreamENSt7__cxx1112basic_stringIcSt11char_traitsIcESaIcEEE'/>
+<offset>64</offset>
+<use f='llvm/llvm/lib/XRay/RecordPrinter.cpp' l='16' u='m' c='_ZN4llvm4xray13RecordPrinter5visitERNS0_13BufferExtentsE'/>
+<use f='llvm/llvm/lib/XRay/RecordPrinter.cpp' l='21' u='m' c='_ZN4llvm4xray13RecordPrinter5visitERNS0_15WallclockRecordE'/>
+<use f='llvm/llvm/lib/XRay/RecordPrinter.cpp' l='27' u='m' c='_ZN4llvm4xray13RecordPrinter5visitERNS0_14NewCPUIDRecordE'/>
+<use f='llvm/llvm/lib/XRay/RecordPrinter.cpp' l='32' u='m' c='_ZN4llvm4xray13RecordPrinter5visitERNS0_13TSCWrapRecordE'/>
+<use f='llvm/llvm/lib/XRay/RecordPrinter.cpp' l='37' u='m' c='_ZN4llvm4xray13RecordPrinter5visitERNS0_17CustomEventRecordE'/>
+<use f='llvm/llvm/lib/XRay/RecordPrinter.cpp' l='45' u='m' c='_ZN4llvm4xray13RecordPrinter5visitERNS0_19CustomEventRecordV5E'/>
+<use f='llvm/llvm/lib/XRay/RecordPrinter.cpp' l='52' u='m' c='_ZN4llvm4xray13RecordPrinter5visitERNS0_16TypedEventRecordE'/>
+<use f='llvm/llvm/lib/XRay/RecordPrinter.cpp' l='60' u='m' c='_ZN4llvm4xray13RecordPrinter5visitERNS0_13CallArgRecordE'/>
+<use f='llvm/llvm/lib/XRay/RecordPrinter.cpp' l='65' u='m' c='_ZN4llvm4xray13RecordPrinter5visitERNS0_9PIDRecordE'/>
+<use f='llvm/llvm/lib/XRay/RecordPrinter.cpp' l='70' u='m' c='_ZN4llvm4xray13RecordPrinter5visitERNS0_15NewBufferRecordE'/>
+<use f='llvm/llvm/lib/XRay/RecordPrinter.cpp' l='75' u='m' c='_ZN4llvm4xray13RecordPrinter5visitERNS0_15EndBufferRecordE'/>
+<use f='llvm/llvm/lib/XRay/RecordPrinter.cpp' l='83' u='m' c='_ZN4llvm4xray13RecordPrinter5visitERNS0_14FunctionRecordE'/>
+<use f='llvm/llvm/lib/XRay/RecordPrinter.cpp' l='87' u='m' c='_ZN4llvm4xray13RecordPrinter5visitERNS0_14FunctionRecordE'/>
+<use f='llvm/llvm/lib/XRay/RecordPrinter.cpp' l='91' u='m' c='_ZN4llvm4xray13RecordPrinter5visitERNS0_14FunctionRecordE'/>
+<use f='llvm/llvm/lib/XRay/RecordPrinter.cpp' l='95' u='m' c='_ZN4llvm4xray13RecordPrinter5visitERNS0_14FunctionRecordE'/>
+<use f='llvm/llvm/lib/XRay/RecordPrinter.cpp' l='103' u='m' c='_ZN4llvm4xray13RecordPrinter5visitERNS0_14FunctionRecordE'/>

@@ -1,0 +1,8 @@
+<dec f='llvm/clang/lib/AST/Mangle.cpp' l='375' type='std::unique_ptr&lt;MangleContext&gt;'/>
+<use f='llvm/clang/lib/AST/Mangle.cpp' l='380' u='w' c='_ZN5clang16ASTNameGenerator14ImplementationC1ERNS_10ASTContextE'/>
+<use f='llvm/clang/lib/AST/Mangle.cpp' l='396' u='m' c='_ZN5clang16ASTNameGenerator14Implementation9writeNameEPKNS_4DeclERN4llvm11raw_ostreamE'/>
+<use f='llvm/clang/lib/AST/Mangle.cpp' l='506' u='m' c='_ZN5clang16ASTNameGenerator14Implementation18writeFuncOrVarNameEPKNS_9NamedDeclERN4llvm11raw_ostreamE'/>
+<use f='llvm/clang/lib/AST/Mangle.cpp' l='516' u='m' c='_ZN5clang16ASTNameGenerator14Implementation18writeFuncOrVarNameEPKNS_9NamedDeclERN4llvm11raw_ostreamE'/>
+<use f='llvm/clang/lib/AST/Mangle.cpp' l='541' u='m' c='_ZN5clang16ASTNameGenerator14Implementation18getMangledStructorB5cxx11EPKNS_9NamedDeclEj'/>
+<use f='llvm/clang/lib/AST/Mangle.cpp' l='555' u='m' c='_ZN5clang16ASTNameGenerator14Implementation15getMangledThunkB5cxx11EPKNS_13CXXMethodDeclERKNS_9ThunkInfoE'/>
+<offset>0</offset>

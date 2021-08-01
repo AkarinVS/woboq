@@ -1,0 +1,57 @@
+<dec f='llvm/build/lib/Target/Mips/MipsGenRegisterInfo.inc' l='40' type='20'/>
+<use f='llvm/llvm/lib/Target/Mips/AsmParser/MipsAsmParser.cpp' l='1373' u='r' c='_ZNK12_GLOBAL__N_111MipsOperand21isMemWithUimmOffsetSPEv'/>
+<use f='llvm/llvm/lib/Target/Mips/AsmParser/MipsAsmParser.cpp' l='1379' u='r' c='_ZNK12_GLOBAL__N_111MipsOperand32isMemWithUimmWordAlignedOffsetSPEv'/>
+<use f='llvm/llvm/lib/Target/Mips/AsmParser/MipsAsmParser.cpp' l='3255' u='r' c='_ZL7nextRegj'/>
+<use f='llvm/llvm/lib/Target/Mips/AsmParser/MipsAsmParser.cpp' l='3256' c='_ZL7nextRegj'/>
+<use f='llvm/llvm/lib/Target/Mips/AsmParser/MipsAsmParser.cpp' l='3875' u='r' c='_ZN12_GLOBAL__N_113MipsAsmParser23expandLoadStoreMultipleERN4llvm6MCInstENS1_5SMLocERNS1_10MCStreamerEPKNS1_15MCSubtargetInfoE'/>
+<use f='llvm/llvm/lib/Target/Mips/AsmParser/MipsAsmParser.cpp' l='5608' u='r' c='_ZL20getRegisterForMxtrFPRN4llvm6MCInstEb'/>
+<use f='llvm/llvm/lib/Target/Mips/AsmParser/MipsAsmParser.cpp' l='5647' u='r' c='_ZL20getRegisterForMxtrC0RN4llvm6MCInstEb'/>
+<use f='llvm/build/lib/Target/Mips/MipsGenAsmMatcher.inc' l='4230' c='_ZL20validateOperandClassRN4llvm18MCParsedAsmOperandEN12_GLOBAL__N_114MatchClassKindE'/>
+<use f='llvm/llvm/lib/Target/Mips/Disassembler/MipsDisassembler.cpp' l='1818' u='r' c='_ZL21DecodeMemMMSPImm5Lsl2RN4llvm6MCInstEjmPKv'/>
+<use f='llvm/llvm/lib/Target/Mips/Disassembler/MipsDisassembler.cpp' l='1859' u='r' c='_ZL26DecodeMemMMReglistImm4Lsl2RN4llvm6MCInstEjmPKv'/>
+<use f='llvm/llvm/lib/Target/Mips/MCTargetDesc/MipsABIInfo.cpp' l='74' u='r' c='_ZNK4llvm11MipsABIInfo11GetStackPtrEv'/>
+<use f='llvm/llvm/lib/Target/Mips/MCTargetDesc/MipsMCTargetDesc.cpp' l='88' u='r' c='_ZL19createMipsMCAsmInfoRKN4llvm14MCRegisterInfoERKNS_6TripleERKNS_15MCTargetOptionsE'/>
+<use f='llvm/llvm/lib/Target/Mips/MCTargetDesc/MipsNaClELFStreamer.cpp' l='70' u='r' c='_ZN12_GLOBAL__N_119MipsNaClELFStreamer26isStackPointerFirstOperandERKN4llvm6MCInstE'/>
+<use f='llvm/llvm/lib/Target/Mips/MCTargetDesc/MipsNaClELFStreamer.cpp' l='259' u='r' c='_ZN4llvm25baseRegNeedsLoadStoreMaskEj'/>
+<use f='llvm/llvm/lib/Target/Mips/MCTargetDesc/MipsTargetStreamer.cpp' l='296' u='r' c='_ZN4llvm18MipsTargetStreamer13emitGPRestoreEiNS_5SMLocEPKNS_15MCSubtargetInfoE'/>
+<use f='llvm/llvm/lib/Target/Mips/MCTargetDesc/MipsTargetStreamer.cpp' l='1219' u='r' c='_ZN4llvm21MipsTargetELFStreamer22emitDirectiveCpRestoreEiNS_12function_refIFjvEEENS_5SMLocEPKNS_15MCSubtargetInfoE'/>
+<use f='llvm/llvm/lib/Target/Mips/MCTargetDesc/MipsTargetStreamer.cpp' l='1243' u='r' c='_ZN4llvm21MipsTargetELFStreamer20emitDirectiveCpsetupEjiRKNS_8MCSymbolEb'/>
+<use f='llvm/llvm/lib/Target/Mips/MCTargetDesc/MipsTargetStreamer.cpp' l='1299' u='r' c='_ZN4llvm21MipsTargetELFStreamer21emitDirectiveCpreturnEjb'/>
+<use f='llvm/llvm/lib/Target/Mips/MicroMipsSizeReduction.cpp' l='287' u='r' c='_ZL4IsSPRKN4llvm14MachineOperandE'/>
+<use f='llvm/llvm/lib/Target/Mips/MicroMipsSizeReduction.cpp' l='384' u='r' c='_ZL20ConsecutiveRegistersjj'/>
+<use f='llvm/llvm/lib/Target/Mips/Mips16FrameLowering.cpp' l='62' u='r' c='_ZNK4llvm19Mips16FrameLowering12emitPrologueERNS_15MachineFunctionERNS_17MachineBasicBlockE'/>
+<use f='llvm/llvm/lib/Target/Mips/Mips16FrameLowering.cpp' l='88' u='r' c='_ZNK4llvm19Mips16FrameLowering12emitPrologueERNS_15MachineFunctionERNS_17MachineBasicBlockE'/>
+<use f='llvm/llvm/lib/Target/Mips/Mips16FrameLowering.cpp' l='104' u='r' c='_ZNK4llvm19Mips16FrameLowering12emitEpilogueERNS_15MachineFunctionERNS_17MachineBasicBlockE'/>
+<use f='llvm/llvm/lib/Target/Mips/Mips16FrameLowering.cpp' l='109' u='r' c='_ZNK4llvm19Mips16FrameLowering12emitEpilogueERNS_15MachineFunctionERNS_17MachineBasicBlockE'/>
+<use f='llvm/llvm/lib/Target/Mips/Mips16InstrInfo.cpp' l='290' u='r' c='_ZNK4llvm15Mips16InstrInfo17adjustStackPtrBigEjlRNS_17MachineBasicBlockENS_26MachineInstrBundleIteratorINS_12MachineInstrELb0EEEjj'/>
+<use f='llvm/llvm/lib/Target/Mips/Mips16InstrInfo.cpp' l='295' u='r' c='_ZNK4llvm15Mips16InstrInfo17adjustStackPtrBigEjlRNS_17MachineBasicBlockENS_26MachineInstrBundleIteratorINS_12MachineInstrELb0EEEjj'/>
+<use f='llvm/llvm/lib/Target/Mips/Mips16InstrInfo.cpp' l='402' u='r' c='_ZNK4llvm15Mips16InstrInfo13loadImmediateEjlRNS_17MachineBasicBlockENS_26MachineInstrBundleIteratorINS_12MachineInstrELb0EEERKNS_8DebugLocERj'/>
+<use f='llvm/llvm/lib/Target/Mips/Mips16InstrInfo.cpp' l='416' u='r' c='_ZNK4llvm15Mips16InstrInfo13loadImmediateEjlRNS_17MachineBasicBlockENS_26MachineInstrBundleIteratorINS_12MachineInstrELb0EEERKNS_8DebugLocERj'/>
+<use f='llvm/llvm/lib/Target/Mips/Mips16InstrInfo.cpp' l='487' u='r' c='_ZN4llvm15Mips16InstrInfo14validImmediateEjjl'/>
+<use f='llvm/llvm/lib/Target/Mips/Mips16RegisterInfo.cpp' l='100' u='r' c='_ZNK4llvm18Mips16RegisterInfo11eliminateFIENS_26MachineInstrBundleIteratorINS_12MachineInstrELb0EEEjiml'/>
+<use f='llvm/llvm/lib/Target/Mips/Mips16RegisterInfo.cpp' l='110' u='r' c='_ZNK4llvm18Mips16RegisterInfo11eliminateFIENS_26MachineInstrBundleIteratorINS_12MachineInstrELb0EEEjiml'/>
+<use f='llvm/llvm/lib/Target/Mips/MipsBranchExpansion.cpp' l='465' u='r' c='_ZN12_GLOBAL__N_119MipsBranchExpansion18expandToLongBranchERNS_7MBBInfoE'/>
+<use f='llvm/llvm/lib/Target/Mips/MipsBranchExpansion.cpp' l='466' u='r' c='_ZN12_GLOBAL__N_119MipsBranchExpansion18expandToLongBranchERNS_7MBBInfoE'/>
+<use f='llvm/llvm/lib/Target/Mips/MipsBranchExpansion.cpp' l='470' u='r' c='_ZN12_GLOBAL__N_119MipsBranchExpansion18expandToLongBranchERNS_7MBBInfoE'/>
+<use f='llvm/llvm/lib/Target/Mips/MipsBranchExpansion.cpp' l='515' u='r' c='_ZN12_GLOBAL__N_119MipsBranchExpansion18expandToLongBranchERNS_7MBBInfoE'/>
+<use f='llvm/llvm/lib/Target/Mips/MipsBranchExpansion.cpp' l='526' u='r' c='_ZN12_GLOBAL__N_119MipsBranchExpansion18expandToLongBranchERNS_7MBBInfoE'/>
+<use f='llvm/llvm/lib/Target/Mips/MipsBranchExpansion.cpp' l='527' u='r' c='_ZN12_GLOBAL__N_119MipsBranchExpansion18expandToLongBranchERNS_7MBBInfoE'/>
+<use f='llvm/llvm/lib/Target/Mips/MipsBranchExpansion.cpp' l='534' u='r' c='_ZN12_GLOBAL__N_119MipsBranchExpansion18expandToLongBranchERNS_7MBBInfoE'/>
+<use f='llvm/llvm/lib/Target/Mips/MipsBranchExpansion.cpp' l='535' u='r' c='_ZN12_GLOBAL__N_119MipsBranchExpansion18expandToLongBranchERNS_7MBBInfoE'/>
+<use f='llvm/llvm/lib/Target/Mips/MipsCallLowering.cpp' l='265' u='r' c='_ZN12_GLOBAL__N_124MipsOutgoingValueHandler15getStackAddressERKN4llvm11CCValAssignERPNS1_17MachineMemOperandE'/>
+<use f='llvm/llvm/lib/Target/Mips/MipsCallLowering.cpp' l='534' u='r' c='_ZNK4llvm16MipsCallLowering9lowerCallERNS_16MachineIRBuilderERNS_12CallLowering16CallLoweringInfoE'/>
+<use f='llvm/llvm/lib/Target/Mips/MipsDelaySlotFiller.cpp' l='741' c='_ZNK12_GLOBAL__N_119MipsDelaySlotFiller11searchRangeERN4llvm17MachineBasicBlockET_S4_RNS_11RegDefsUsesERNS_15InspectMemInstrENS1_26MachineInstrBundleI6658284'/>
+<use f='llvm/llvm/lib/Target/Mips/MipsFastISel.cpp' l='1261' u='r' c='_ZN12_GLOBAL__N_112MipsFastISel15processCallArgsERN4llvm8FastISel16CallLoweringInfoERNS1_15SmallVectorImplINS1_3MVTEEERj'/>
+<use f='llvm/llvm/lib/Target/Mips/MipsFrameLowering.cpp' l='140' u='r' c='_ZNK4llvm17MipsFrameLowering29eliminateCallFramePseudoInstrERNS_15MachineFunctionERNS_17MachineBasicBlockENS_26MachineInstrBundleIteratorINS_12MachineInstrELb0EEE'/>
+<use f='llvm/llvm/lib/Target/Mips/MipsISelLowering.cpp' l='523' u='r' c='_ZN4llvm18MipsTargetLoweringC1ERKNS_17MipsTargetMachineERKNS_13MipsSubtargetE'/>
+<use f='llvm/llvm/lib/Target/Mips/MipsISelLowering.cpp' l='3245' u='r' c='_ZNK4llvm18MipsTargetLowering9LowerCallERNS_14TargetLowering16CallLoweringInfoERNS_15SmallVectorImplINS_7SDValueEEE'/>
+<use f='llvm/llvm/lib/Target/Mips/MipsRegisterInfo.cpp' l='152' u='r' c='_ZNK4llvm16MipsRegisterInfo15getReservedRegsERKNS_15MachineFunctionE'/>
+<use f='llvm/llvm/lib/Target/Mips/MipsRegisterInfo.cpp' l='283' u='r' c='_ZNK4llvm16MipsRegisterInfo16getFrameRegisterERKNS_15MachineFunctionE'/>
+<use f='llvm/llvm/lib/Target/Mips/MipsRegisterInfo.cpp' l='286' u='r' c='_ZNK4llvm16MipsRegisterInfo16getFrameRegisterERKNS_15MachineFunctionE'/>
+<use f='llvm/llvm/lib/Target/Mips/MipsSEFrameLowering.cpp' l='306' u='r' c='_ZNK12_GLOBAL__N_112ExpandPseudo18expandBuildPairF64ERN4llvm17MachineBasicBlockENS1_26MachineInstrBundleIteratorINS1_12MachineInstrELb0EEEb'/>
+<use f='llvm/llvm/lib/Target/Mips/MipsSEFrameLowering.cpp' l='371' u='r' c='_ZNK12_GLOBAL__N_112ExpandPseudo23expandExtractElementF64ERN4llvm17MachineBasicBlockENS1_26MachineInstrBundleIteratorINS1_12MachineInstrELb0EEEb'/>
+<use f='llvm/llvm/lib/Target/Mips/MipsSEISelDAGToDAG.cpp' l='147' u='r' c='_ZN4llvm18MipsSEDAGToDAGISel13emitMCountABIERNS_12MachineInstrERNS_17MachineBasicBlockERNS_15MachineFunctionE'/>
+<use f='llvm/llvm/lib/Target/Mips/MipsSEISelDAGToDAG.cpp' l='148' u='r' c='_ZN4llvm18MipsSEDAGToDAGISel13emitMCountABIERNS_12MachineInstrERNS_17MachineBasicBlockERNS_15MachineFunctionE'/>
+<use f='llvm/llvm/lib/Target/Mips/MipsSEISelDAGToDAG.cpp' l='172' u='r' c='_ZN4llvm18MipsSEDAGToDAGISel24processFunctionAfterISelERNS_15MachineFunctionE'/>
+<use f='llvm/llvm/lib/Target/Mips/MipsSEISelDAGToDAG.cpp' l='179' u='r' c='_ZN4llvm18MipsSEDAGToDAGISel24processFunctionAfterISelERNS_15MachineFunctionE'/>
+<use f='llvm/llvm/lib/Target/Mips/MipsSEInstrInfo.cpp' l='891' u='r' c='_ZNK4llvm15MipsSEInstrInfo14expandEhReturnERNS_17MachineBasicBlockENS_26MachineInstrBundleIteratorINS_12MachineInstrELb0EEE'/>

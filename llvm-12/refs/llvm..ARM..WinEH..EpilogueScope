@@ -1,0 +1,117 @@
+<def f='llvm/llvm/include/llvm/Support/ARMWinEH.h' l='395' ll='426'/>
+<size>4</size>
+<doc f='llvm/llvm/include/llvm/Support/ARMWinEH.h' l='289'>/// ExceptionDataRecord - An entry in the table of exception data (.xdata)
+///
+/// The format on ARM is:
+///
+///  3 3 2 2 2 2 2 2 2 2 2 2 1 1 1 1 1 1 1 1 1 1 0 0 0 0 0 0 0 0 0 0
+///  1 0 9 8 7 6 5 4 3 2 1 0 9 8 7 6 5 4 3 2 1 0 9 8 7 6 5 4 3 2 1 0
+/// +-------+---------+-+-+-+---+-----------------------------------+
+/// | C Wrd | Epi Cnt |F|E|X|Ver|         Function Length           |
+/// +-------+--------+&apos;-&apos;-&apos;-&apos;---&apos;---+-------------------------------+
+/// |    Reserved    |Ex. Code Words|   (Extended Epilogue Count)   |
+/// +-------+--------+--------------+-------------------------------+
+///
+/// The format on ARM64 is:
+///
+///  3 3 2 2 2 2 2 2 2 2 2 2 1 1 1 1 1 1 1 1 1 1 0 0 0 0 0 0 0 0 0 0
+///  1 0 9 8 7 6 5 4 3 2 1 0 9 8 7 6 5 4 3 2 1 0 9 8 7 6 5 4 3 2 1 0
+/// +---------+---------+-+-+---+-----------------------------------+
+/// |  C Wrd  | Epi Cnt |E|X|Ver|         Function Length           |
+/// +---------+------+--&apos;-&apos;-&apos;---&apos;---+-------------------------------+
+/// |    Reserved    |Ex. Code Words|   (Extended Epilogue Count)   |
+/// +-------+--------+--------------+-------------------------------+
+///
+/// Function Length : 18-bit field indicating the total length of the function
+///                   in bytes divided by 2.  If a function is larger than
+///                   512KB, then multiple pdata and xdata records must be used.
+/// Vers : 2-bit field describing the version of the remaining structure.  Only
+///        version 0 is currently defined (values 1-3 are not permitted).
+/// X : 1-bit field indicating the presence of exception data
+/// E : 1-bit field indicating that the single epilogue is packed into the
+///     header
+/// F : 1-bit field indicating that the record describes a function fragment
+///     (implies that no prologue is present, and prologue processing should be
+///     skipped) (ARM only)
+/// Epilogue Count : 5-bit field that differs in meaning based on the E field.
+///
+///                  If E is set, then this field specifies the index of the
+///                  first unwind code describing the (only) epilogue.
+///
+///                  Otherwise, this field indicates the number of exception
+///                  scopes.  If more than 31 scopes exist, then this field and
+///                  the Code Words field must both be set to 0 to indicate that
+///                  an extension word is required.
+/// Code Words : 4-bit (5-bit on ARM64) field that specifies the number of
+///              32-bit words needed to contain all the unwind codes.  If more
+///              than 15 words (31 words on ARM64) are required, then this field
+///              and the Epilogue Count field must both be set to 0 to indicate
+///              that an extension word is required.
+/// Extended Epilogue Count, Extended Code Words :
+///                          Valid only if Epilog Count and Code Words are both
+///                          set to 0.  Provides an 8-bit extended code word
+///                          count and 16-bits for epilogue count
+///
+/// The epilogue scope format on ARM is:
+///
+///  3 3 2 2 2 2 2 2 2 2 2 2 1 1 1 1 1 1 1 1 1 1 0 0 0 0 0 0 0 0 0 0
+///  1 0 9 8 7 6 5 4 3 2 1 0 9 8 7 6 5 4 3 2 1 0 9 8 7 6 5 4 3 2 1 0
+/// +----------------+------+---+---+-------------------------------+
+/// |  Ep Start Idx  | Cond |Res|       Epilogue Start Offset       |
+/// +----------------+------+---+-----------------------------------+
+///
+/// The epilogue scope format on ARM64 is:
+///
+///  3 3 2 2 2 2 2 2 2 2 2 2 1 1 1 1 1 1 1 1 1 1 0 0 0 0 0 0 0 0 0 0
+///  1 0 9 8 7 6 5 4 3 2 1 0 9 8 7 6 5 4 3 2 1 0 9 8 7 6 5 4 3 2 1 0
+/// +-------------------+-------+---+-------------------------------+
+/// |  Ep Start Idx     |  Res  |   Epilogue Start Offset           |
+/// +-------------------+-------+-----------------------------------+
+///
+/// If the E bit is unset in the header, the header is followed by a series of
+/// epilogue scopes, which are sorted by their offset.
+///
+/// Epilogue Start Offset: 18-bit field encoding the offset of epilogue relative
+///                        to the start of the function in bytes divided by two
+/// Res : 2-bit field reserved for future expansion (must be set to 0)
+/// Condition : (ARM only) 4-bit field providing the condition under which the
+///             epilogue is executed.  Unconditional epilogues should set this
+///             field to 0xe. Epilogues must be entirely conditional or
+///             unconditional, and in Thumb-2 mode.  The epilogue begins with
+///             the first instruction after the IT opcode.
+/// Epilogue Start Index : 8-bit field indicating the byte index of the first
+///                        unwind code describing the epilogue
+///
+///  3 3 2 2 2 2 2 2 2 2 2 2 1 1 1 1 1 1 1 1 1 1 0 0 0 0 0 0 0 0 0 0
+///  1 0 9 8 7 6 5 4 3 2 1 0 9 8 7 6 5 4 3 2 1 0 9 8 7 6 5 4 3 2 1 0
+/// +---------------+---------------+---------------+---------------+
+/// | Unwind Code 3 | Unwind Code 2 | Unwind Code 1 | Unwind Code 0 |
+/// +---------------+---------------+---------------+---------------+
+///
+/// Following the epilogue scopes, the byte code describing the unwinding
+/// follows.  This is padded to align up to word alignment.  Bytes are stored in
+/// little endian.
+///
+///  3 3 2 2 2 2 2 2 2 2 2 2 1 1 1 1 1 1 1 1 1 1 0 0 0 0 0 0 0 0 0 0
+///  1 0 9 8 7 6 5 4 3 2 1 0 9 8 7 6 5 4 3 2 1 0 9 8 7 6 5 4 3 2 1 0
+/// +---------------------------------------------------------------+
+/// |           Exception Handler RVA (requires X = 1)              |
+/// +---------------------------------------------------------------+
+/// |  (possibly followed by data required for exception handler)   |
+/// +---------------------------------------------------------------+
+///
+/// If the X bit is set in the header, the unwind byte code is followed by the
+/// exception handler information.  This constants of one Exception Handler RVA
+/// which is the address to the exception handler, followed immediately by the
+/// variable length data associated with the exception handler.
+///</doc>
+<mbr r='llvm::ARM::WinEH::EpilogueScope::ES' o='0' t='const support::ulittle32_t'/>
+<fun r='_ZN4llvm3ARM5WinEH13EpilogueScopeC1ENS_7support6detail31packed_endian_specific_integralIjLNS3_10endiannessE1ELm1ELm1EEE'/>
+<fun r='_ZNK4llvm3ARM5WinEH13EpilogueScope19EpilogueStartOffsetEv'/>
+<fun r='_ZNK4llvm3ARM5WinEH13EpilogueScope6ResARMEv'/>
+<fun r='_ZNK4llvm3ARM5WinEH13EpilogueScope10ResAArch64Ev'/>
+<fun r='_ZNK4llvm3ARM5WinEH13EpilogueScope9ConditionEv'/>
+<fun r='_ZNK4llvm3ARM5WinEH13EpilogueScope21EpilogueStartIndexARMEv'/>
+<fun r='_ZNK4llvm3ARM5WinEH13EpilogueScope25EpilogueStartIndexAArch64Ev'/>
+<use f='llvm/llvm/tools/llvm-readobj/ARMWinEHPrinter.cpp' l='917' c='_ZN4llvm3ARM5WinEH7Decoder15dumpXDataRecordERKNS_6object14COFFObjectFileERKNS3_10SectionRefEmm'/>
+<size>4</size>

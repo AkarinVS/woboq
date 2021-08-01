@@ -1,0 +1,169 @@
+<use f='llvm/polly/lib/External/isl/include/isl/ast_build.h' l='14'/>
+<def f='llvm/polly/lib/External/isl/isl_ast_build_private.h' l='145' ll='200'/>
+<size>248</size>
+<doc f='llvm/polly/lib/External/isl/isl_ast_build_private.h' l='11'>/* An isl_ast_build represents the context in which AST is being
+ * generated.  That is, it (mostly) contains information about outer
+ * loops that can be used to simplify inner loops.
+ *
+ * &quot;domain&quot; represents constraints on the internal schedule domain,
+ * corresponding to the context of the AST generation and the constraints
+ * implied by the loops that have already been generated.
+ * When an isl_ast_build is first created, outside any AST generation,
+ * the domain is typically a parameter set.  It is only when a AST
+ * generation phase is initiated that the domain of the isl_ast_build
+ * is changed to refer to the internal schedule domain.
+ * The domain then lives in a space of the form
+ *
+ *	S
+ *
+ *  or
+ *
+ *	[O -&gt; S]
+ *
+ * O represents the loops generated in outer AST generations.
+ * S represents the loops (both generated and to be generated)
+ * of the current AST generation.
+ * Both include eliminated loops.
+ * &quot;domain&quot; is expected not to have any unknown divs because
+ * it is used as the context argument in a call to isl_basic_set_gist
+ * in isl_ast_build_compute_gist_basic_set.
+ *
+ * &quot;depth&quot; is equal to the number of loops that have already
+ * been generated (including those in outer AST generations).
+ * &quot;outer_pos&quot; is equal to the number of loops in outer AST generations.
+ *
+ * &quot;generated&quot; is a superset of &quot;domain&quot; corresponding to those
+ * constraints that were either given by the user or that have
+ * effectively been generated (as bounds on a for loop).
+ *
+ * &quot;pending&quot; is a superset of &quot;domain&quot; corresponding to the constraints
+ * that still need to be generated (as guards), but that may end up
+ * not getting generated if they are implied by any constraints
+ * enforced by inner loops.
+ *
+ * &quot;strides&quot; contains the stride of each loop.  The number of elements
+ * is equal to the number of dimensions in &quot;domain&quot;.
+ * &quot;offsets&quot; contains the offsets of strided loops.  If s is the stride
+ * for a given dimension and f is the corresponding offset, then the
+ * dimension takes on values
+ *
+ *	f + s a
+ *
+ * with a an integer.  For non-strided loops, the offset is zero.
+ *
+ * &quot;iterators&quot; contains the loop iterators of both generated and
+ * to be generated loops.  The number of elements is at least as
+ * large as the dimension of the internal schedule domain.  The
+ * number may be larger, in which case the additional ids can be
+ * used in a nested AST generation should the schedule be non-injective.
+ *
+ * &quot;values&quot; lives in the space
+ *
+ *	[O -&gt; S] -&gt; [O -&gt; S]		(or S -&gt; S)
+ *
+ * and expresses (if possible) loop iterators in terms of parameters
+ * and outer loop iterators.  If the value of a given loop iterator
+ * cannot be expressed as an affine expression (either because the iterator
+ * attains multiple values or because the single value is a piecewise
+ * affine expression), then it is expressed in &quot;values&quot; as being equal
+ * to itself.
+ *
+ * &quot;value&quot; is the value of the loop iterator at the current depth.
+ * It is NULL if it has not been computed yet or if the value of the
+ * given loop iterator cannot be expressed as a piecewise affine expression
+ * (because the iterator attains multiple values).
+ *
+ * &quot;schedule_map&quot; maps the internal schedule domain to the external schedule
+ * domain.  It may be NULL if it hasn&apos;t been computed yet.
+ * See isl_ast_build_get_schedule_map_multi_aff.
+ *
+ * &quot;internal2input&quot; maps the internal schedule domain to the original
+ * input schedule domain.  In case of a schedule tree input, the original
+ * input schedule domain consist of the flat product of all outer
+ * band node spaces, including the current band node.
+ * It may be NULL if there no longer is such a uniform mapping
+ * (because different iterations have been rescheduled differently).
+ *
+ * &quot;options&quot; contains the AST build options in case we are generating
+ * an AST from a flat schedule map.  When creating an AST from a schedule
+ * tree, this field is ignored.
+ *
+ * The &quot;create_leaf&quot; callback is called for every leaf in the generated AST.
+ * The callback is responsible for creating the node to be placed at those
+ * leaves.  If this callback is not set, then isl will generated user
+ * nodes with call expressions corresponding to an element of the domain.
+ *
+ * The &quot;at_each_domain&quot; callback is called on every node created to represent
+ * an element of the domain.  Each of these nodes is a user node
+ * with as expression a call expression.
+ *
+ * The &quot;before_each_for&quot; callback is called on each for node before
+ * its children have been created.
+ *
+ * The &quot;after_each_for&quot; callback is called on each for node after
+ * its children have been created.
+ *
+ * The &quot;before_each_mark&quot; callback is called before we handle the subtree
+ * of an isl_schedule_node_mark node.
+ *
+ * The &quot;after_each_mark&quot; callback is called after we have handled the subtree
+ * of an isl_schedule_node_mark node.
+ *
+ * &quot;executed&quot; contains the inverse schedule at this point
+ * of the AST generation.
+ * It is currently only used in isl_ast_build_get_schedule, which is
+ * in turn only used by user code from within a callback.
+ * The value is set right before we may be calling such a callback.
+ *
+ * &quot;single_valued&quot; is set if the current inverse schedule (which may or may
+ * not be stored in &quot;executed&quot;) is known to be single valued, specifically
+ * an inverse schedule that was not (appeared not to be) single valued
+ * is extended to a single valued inverse schedule.  This is mainly used
+ * to avoid an infinite recursion when we fail to detect later on that
+ * the extended inverse schedule is single valued.
+ *
+ * &quot;node&quot; points to the current band node in case we are generating
+ * an AST from a schedule tree.  It may be NULL if we are not generating
+ * an AST from a schedule tree or if we are not inside a band node.
+ *
+ * &quot;loop_type&quot; originally contains loop AST generation types for
+ * the &quot;n&quot; members of &quot;node&quot; and it is updated (along with &quot;n&quot;) when
+ * a schedule dimension is inserted.
+ * It is NULL if &quot;node&quot; is NULL.
+ *
+ * &quot;isolated&quot; is the piece of the schedule domain isolated by the isolate
+ * option on the current band.  This set may be NULL if we have not checked
+ * for the isolate option yet.
+ */</doc>
+<mbr r='isl_ast_build::ref' o='0' t='int'/>
+<mbr r='isl_ast_build::outer_pos' o='32' t='int'/>
+<mbr r='isl_ast_build::depth' o='64' t='int'/>
+<mbr r='isl_ast_build::iterators' o='128' t='isl_id_list *'/>
+<mbr r='isl_ast_build::domain' o='192' t='isl_set *'/>
+<mbr r='isl_ast_build::generated' o='256' t='isl_set *'/>
+<mbr r='isl_ast_build::pending' o='320' t='isl_set *'/>
+<mbr r='isl_ast_build::values' o='384' t='isl_multi_aff *'/>
+<mbr r='isl_ast_build::value' o='448' t='isl_pw_aff *'/>
+<mbr r='isl_ast_build::strides' o='512' t='isl_vec *'/>
+<mbr r='isl_ast_build::offsets' o='576' t='isl_multi_aff *'/>
+<mbr r='isl_ast_build::schedule_map' o='640' t='isl_multi_aff *'/>
+<mbr r='isl_ast_build::internal2input' o='704' t='isl_multi_aff *'/>
+<mbr r='isl_ast_build::options' o='768' t='isl_union_map *'/>
+<mbr r='isl_ast_build::at_each_domain' o='832' t='isl_ast_node *(*)(isl_ast_node *, isl_ast_build *, void *)'/>
+<mbr r='isl_ast_build::at_each_domain_user' o='896' t='void *'/>
+<mbr r='isl_ast_build::before_each_for' o='960' t='isl_id *(*)(isl_ast_build *, void *)'/>
+<mbr r='isl_ast_build::before_each_for_user' o='1024' t='void *'/>
+<mbr r='isl_ast_build::after_each_for' o='1088' t='isl_ast_node *(*)(isl_ast_node *, isl_ast_build *, void *)'/>
+<mbr r='isl_ast_build::after_each_for_user' o='1152' t='void *'/>
+<mbr r='isl_ast_build::before_each_mark' o='1216' t='isl_stat (*)(isl_id *, isl_ast_build *, void *)'/>
+<mbr r='isl_ast_build::before_each_mark_user' o='1280' t='void *'/>
+<mbr r='isl_ast_build::after_each_mark' o='1344' t='isl_ast_node *(*)(isl_ast_node *, isl_ast_build *, void *)'/>
+<mbr r='isl_ast_build::after_each_mark_user' o='1408' t='void *'/>
+<mbr r='isl_ast_build::create_leaf' o='1472' t='isl_ast_node *(*)(isl_ast_build *, void *)'/>
+<mbr r='isl_ast_build::create_leaf_user' o='1536' t='void *'/>
+<mbr r='isl_ast_build::executed' o='1600' t='isl_union_map *'/>
+<mbr r='isl_ast_build::single_valued' o='1664' t='int'/>
+<mbr r='isl_ast_build::node' o='1728' t='isl_schedule_node *'/>
+<mbr r='isl_ast_build::n' o='1792' t='int'/>
+<mbr r='isl_ast_build::loop_type' o='1856' t='enum isl_ast_loop_type *'/>
+<mbr r='isl_ast_build::isolated' o='1920' t='isl_set *'/>

@@ -1,0 +1,88 @@
+<dec f='llvm/llvm/lib/Target/Hexagon/HexagonInstrInfo.h' l='445' type='int llvm::HexagonInstrInfo::getDotNewOp(const llvm::MachineInstr &amp; MI) const'/>
+<use f='llvm/llvm/lib/Target/Hexagon/HexagonHazardRecognizer.cpp' l='57' u='c' c='_ZN4llvm23HexagonHazardRecognizer13getHazardTypeEPNS_5SUnitEi'/>
+<use f='llvm/llvm/lib/Target/Hexagon/HexagonHazardRecognizer.cpp' l='128' u='c' c='_ZN4llvm23HexagonHazardRecognizer15EmitInstructionEPNS_5SUnitE'/>
+<def f='llvm/llvm/lib/Target/Hexagon/HexagonInstrInfo.cpp' l='3623' ll='3657' type='int llvm::HexagonInstrInfo::getDotNewOp(const llvm::MachineInstr &amp; MI) const'/>
+<doc f='llvm/llvm/lib/Target/Hexagon/HexagonInstrInfo.cpp' l='3541'>// The diagram below shows the steps involved in the conversion of a predicated
+// store instruction to its .new predicated new-value form.
+//
+// Note: It doesn&apos;t include conditional new-value stores as they can&apos;t be
+// converted to .new predicate.
+//
+//               p.new NV store [ if(p0.new)memw(R0+#0)=R2.new ]
+//                ^           ^
+//               /             \ (not OK. it will cause new-value store to be
+//              /               X conditional on p0.new while R2 producer is
+//             /                 \ on p0)
+//            /                   \.
+//     p.new store                 p.old NV store
+// [if(p0.new)memw(R0+#0)=R2]    [if(p0)memw(R0+#0)=R2.new]
+//            ^                  ^
+//             \                /
+//              \              /
+//               \            /
+//                 p.old store
+//             [if (p0)memw(R0+#0)=R2]
+//
+// The following set of instructions further explains the scenario where
+// conditional new-value store becomes invalid when promoted to .new predicate
+// form.
+//
+// { 1) if (p0) r0 = add(r1, r2)
+//   2) p0 = cmp.eq(r3, #0) }
+//
+//   3) if (p0) memb(r1+#0) = r0  --&gt; this instruction can&apos;t be grouped with
+// the first two instructions because in instr 1, r0 is conditional on old value
+// of p0 but its use in instr 3 is conditional on p0 modified by instr 2 which
+// is not valid for new-value stores.
+// Predicated new value stores (i.e. if (p0) memw(..)=r0.new) are excluded
+// from the &quot;Conditional Store&quot; list. Because a predicated new value store
+// would NOT be promoted to a double dot new store. See diagram below:
+// This function returns yes for those stores that are predicated but not
+// yet promoted to predicate dot new instructions.
+//
+//                          +---------------------+
+//                    /-----| if (p0) memw(..)=r0 |---------\~
+//                   ||     +---------------------+         ||
+//          promote  ||       /\       /\                   ||  promote
+//                   ||      /||\     /||\                  ||
+//                  \||/    demote     ||                  \||/
+//                   \/       ||       ||                   \/
+//       +-------------------------+   ||   +-------------------------+
+//       | if (p0.new) memw(..)=r0 |   ||   | if (p0) memw(..)=r0.new |
+//       +-------------------------+   ||   +-------------------------+
+//                        ||           ||         ||
+//                        ||         demote      \||/
+//                      promote        ||         \/ NOT possible
+//                        ||           ||         /\~
+//                       \||/          ||        /||\~
+//                        \/           ||         ||
+//                      +-----------------------------+
+//                      | if (p0.new) memw(..)=r0.new |
+//                      +-----------------------------+
+//                           Double Dot New Store
+//
+// Returns the most basic instruction for the .new predicated instructions and
+// new-value stores.
+// For example, all of the following instructions will be converted back to the
+// same instruction:
+// 1) if (p0.new) memw(R0+#0) = R1.new  ---&gt;
+// 2) if (p0) memw(R0+#0)= R1.new      -------&gt; if (p0) memw(R0+#0) = R1
+// 3) if (p0.new) memw(R0+#0) = R1      ---&gt;
+//
+// To understand the translation of instruction 1 to its original form, consider
+// a packet with 3 instructions.
+// { p0 = cmp.eq(R0,R1)
+//   if (p0.new) R2 = add(R3, R4)
+//   R5 = add (R3, R1)
+// }
+// if (p0) memw(R5+#0) = R2 &lt;--- trying to include it in the previous packet
+//
+// This instruction can be part of the previous packet only if both p0 and R2
+// are promoted to .new values. This promotion happens in steps, first
+// predicate register is promoted to .new and in the next iteration R2 is
+// promoted. Therefore, in case of dependence check failure (due to R5) during
+// next iteration, it should be converted back to its most basic form.
+
+// Return the new value instruction for a given store.</doc>
+<use f='llvm/llvm/lib/Target/Hexagon/HexagonVLIWPacketizer.cpp' l='467' u='c' c='_ZN4llvm21HexagonPacketizerList15promoteToDotNewERNS_12MachineInstrENS_4SDep4KindERNS_26MachineInstrBundleIteratorIS1_Lb0EEEPKNS_19TargetRegisterClassE'/>
+<use f='llvm/llvm/lib/Target/Hexagon/HexagonVLIWPacketizer.cpp' l='892' u='c' c='_ZN4llvm21HexagonPacketizerList18canPromoteToDotNewERKNS_12MachineInstrEPKNS_5SUnitEjRNS_26MachineInstrBundleIteratorIS1_Lb0EEEPKNS_19TargetRegisterClassE'/>

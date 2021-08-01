@@ -1,0 +1,36 @@
+<use f='llvm/llvm/include/llvm/ExecutionEngine/Orc/SymbolStringPool.h' l='59' u='w' c='_ZN4llvm3orc15SymbolStringPtrC1ERKS1_'/>
+<use f='llvm/llvm/include/llvm/ExecutionEngine/Orc/SymbolStringPool.h' l='59' u='r' c='_ZN4llvm3orc15SymbolStringPtrC1ERKS1_'/>
+<use f='llvm/llvm/include/llvm/ExecutionEngine/Orc/SymbolStringPool.h' l='60' u='r' c='_ZN4llvm3orc15SymbolStringPtrC1ERKS1_'/>
+<use f='llvm/llvm/include/llvm/ExecutionEngine/Orc/SymbolStringPool.h' l='61' u='r' c='_ZN4llvm3orc15SymbolStringPtrC1ERKS1_'/>
+<use f='llvm/llvm/include/llvm/ExecutionEngine/Orc/SymbolStringPool.h' l='65' u='r' c='_ZN4llvm3orc15SymbolStringPtraSERKS1_'/>
+<use f='llvm/llvm/include/llvm/ExecutionEngine/Orc/SymbolStringPool.h' l='66' u='r' c='_ZN4llvm3orc15SymbolStringPtraSERKS1_'/>
+<use f='llvm/llvm/include/llvm/ExecutionEngine/Orc/SymbolStringPool.h' l='67' u='w' c='_ZN4llvm3orc15SymbolStringPtraSERKS1_'/>
+<use f='llvm/llvm/include/llvm/ExecutionEngine/Orc/SymbolStringPool.h' l='67' u='r' c='_ZN4llvm3orc15SymbolStringPtraSERKS1_'/>
+<use f='llvm/llvm/include/llvm/ExecutionEngine/Orc/SymbolStringPool.h' l='68' u='r' c='_ZN4llvm3orc15SymbolStringPtraSERKS1_'/>
+<use f='llvm/llvm/include/llvm/ExecutionEngine/Orc/SymbolStringPool.h' l='69' u='r' c='_ZN4llvm3orc15SymbolStringPtraSERKS1_'/>
+<use f='llvm/llvm/include/llvm/ExecutionEngine/Orc/SymbolStringPool.h' l='73' u='w' c='_ZN4llvm3orc15SymbolStringPtrC1EOS1_'/>
+<use f='llvm/llvm/include/llvm/ExecutionEngine/Orc/SymbolStringPool.h' l='74' u='a' c='_ZN4llvm3orc15SymbolStringPtrC1EOS1_'/>
+<use f='llvm/llvm/include/llvm/ExecutionEngine/Orc/SymbolStringPool.h' l='74' u='a' c='_ZN4llvm3orc15SymbolStringPtrC1EOS1_'/>
+<use f='llvm/llvm/include/llvm/ExecutionEngine/Orc/SymbolStringPool.h' l='78' u='r' c='_ZN4llvm3orc15SymbolStringPtraSEOS1_'/>
+<use f='llvm/llvm/include/llvm/ExecutionEngine/Orc/SymbolStringPool.h' l='79' u='r' c='_ZN4llvm3orc15SymbolStringPtraSEOS1_'/>
+<use f='llvm/llvm/include/llvm/ExecutionEngine/Orc/SymbolStringPool.h' l='80' u='w' c='_ZN4llvm3orc15SymbolStringPtraSEOS1_'/>
+<use f='llvm/llvm/include/llvm/ExecutionEngine/Orc/SymbolStringPool.h' l='81' u='a' c='_ZN4llvm3orc15SymbolStringPtraSEOS1_'/>
+<use f='llvm/llvm/include/llvm/ExecutionEngine/Orc/SymbolStringPool.h' l='81' u='a' c='_ZN4llvm3orc15SymbolStringPtraSEOS1_'/>
+<use f='llvm/llvm/include/llvm/ExecutionEngine/Orc/SymbolStringPool.h' l='86' u='r' c='_ZN4llvm3orc15SymbolStringPtrD1Ev'/>
+<use f='llvm/llvm/include/llvm/ExecutionEngine/Orc/SymbolStringPool.h' l='87' u='r' c='_ZN4llvm3orc15SymbolStringPtrD1Ev'/>
+<use f='llvm/llvm/include/llvm/ExecutionEngine/Orc/SymbolStringPool.h' l='90' u='r' c='_ZNK4llvm3orc15SymbolStringPtrcvbEv'/>
+<use f='llvm/llvm/include/llvm/ExecutionEngine/Orc/SymbolStringPool.h' l='92' u='r' c='_ZNK4llvm3orc15SymbolStringPtrdeEv'/>
+<use f='llvm/llvm/include/llvm/ExecutionEngine/Orc/SymbolStringPool.h' l='96' u='r' c='_ZN4llvm3orceqERKNS0_15SymbolStringPtrES3_'/>
+<use f='llvm/llvm/include/llvm/ExecutionEngine/Orc/SymbolStringPool.h' l='96' u='r' c='_ZN4llvm3orceqERKNS0_15SymbolStringPtrES3_'/>
+<use f='llvm/llvm/include/llvm/ExecutionEngine/Orc/SymbolStringPool.h' l='106' u='r' c='_ZN4llvm3orcltERKNS0_15SymbolStringPtrES3_'/>
+<use f='llvm/llvm/include/llvm/ExecutionEngine/Orc/SymbolStringPool.h' l='106' u='r' c='_ZN4llvm3orcltERKNS0_15SymbolStringPtrES3_'/>
+<use f='llvm/llvm/include/llvm/ExecutionEngine/Orc/SymbolStringPool.h' l='114' u='w' c='_ZN4llvm3orc15SymbolStringPtrC1EPNS_14StringMapEntryISt6atomicImEEE'/>
+<dec f='llvm/llvm/include/llvm/ExecutionEngine/Orc/SymbolStringPool.h' l='145' type='llvm::orc::SymbolStringPtr::PoolEntryPtr'/>
+<use f='llvm/llvm/include/llvm/ExecutionEngine/Orc/SymbolStringPool.h' l='191' u='r' c='_ZN4llvm12DenseMapInfoINS_3orc15SymbolStringPtrEE12getHashValueERKS2_'/>
+<use f='llvm/llvm/include/llvm/ExecutionEngine/Orc/SymbolStringPool.h' l='196' u='r' c='_ZN4llvm12DenseMapInfoINS_3orc15SymbolStringPtrEE7isEqualERKS2_S5_'/>
+<use f='llvm/llvm/include/llvm/ExecutionEngine/Orc/SymbolStringPool.h' l='196' u='r' c='_ZN4llvm12DenseMapInfoINS_3orc15SymbolStringPtrEE7isEqualERKS2_S5_'/>
+<offset>0</offset>
+<use f='llvm/llvm/lib/ExecutionEngine/Orc/OrcV2CBindings.cpp' l='34' u='a' c='_ZN4llvm3orc15OrcV2CAPIHelper22releaseSymbolStringPtrENS0_15SymbolStringPtrE'/>
+<use f='llvm/llvm/lib/ExecutionEngine/Orc/OrcV2CBindings.cpp' l='43' u='r' c='_ZN4llvm3orc15OrcV2CAPIHelper18getRawPoolEntryPtrERKNS0_15SymbolStringPtrE'/>
+<use f='llvm/llvm/lib/ExecutionEngine/Orc/OrcV2CBindings.cpp' l='48' u='w' c='_ZN4llvm3orc15OrcV2CAPIHelper15retainPoolEntryEPNS_14StringMapEntryISt6atomicImEEE'/>
+<use f='llvm/llvm/lib/ExecutionEngine/Orc/OrcV2CBindings.cpp' l='53' u='w' c='_ZN4llvm3orc15OrcV2CAPIHelper16releasePoolEntryEPNS_14StringMapEntryISt6atomicImEEE'/>

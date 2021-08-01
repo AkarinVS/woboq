@@ -1,0 +1,125 @@
+<!doctype html>
+<html>
+<head>
+<meta name="viewport" content="width=device-width, initial-scale=1.0"><title>IntervalPartition.h source code [llvm/llvm/include/llvm/Analysis/IntervalPartition.h] - Woboq Code Browser</title>
+<meta name="woboq:interestingDefinitions" content="llvm::IntervalPartition "/>
+<link rel="stylesheet" href="../../../../.././data/qtcreator.css" title="QtCreator"/>
+<link rel="alternate stylesheet" href="../../../../.././data/kdevelop.css" title="KDevelop"/>
+<script type="text/javascript" src="../../../../.././data/jquery/jquery.min.js"></script>
+<script type="text/javascript" src="../../../../.././data/jquery/jquery-ui.min.js"></script>
+<script>var file = 'llvm/llvm/include/llvm/Analysis/IntervalPartition.h'; var root_path = '../../../../..'; var data_path = '../../../../.././data'; var ecma_script_api_version = 2;</script>
+<script src='../../../../.././data/codebrowser.js'></script>
+</head>
+<body><div id='header'><h1 id='breadcrumb'><span>Browse the source code of </span><a href='../../../..'>llvm</a>/<a href='../../..'>llvm</a>/<a href='../..'>include</a>/<a href='..'>llvm</a>/<a href='./'>Analysis</a>/<a href='IntervalPartition.h.html'>IntervalPartition.h</a></h1></div>
+<hr/><div id='content'><table class="code">
+<tr><th id="1">1</th><td><i>//===- IntervalPartition.h - Interval partition Calculation -----*- C++ -*-===//</i></td></tr>
+<tr><th id="2">2</th><td><i>//</i></td></tr>
+<tr><th id="3">3</th><td><i>// Part of the LLVM Project, under the Apache License v2.0 with LLVM Exceptions.</i></td></tr>
+<tr><th id="4">4</th><td><i>// See <a href="https://llvm.org/LICENSE.txt">https://llvm.org/LICENSE.txt</a> for license information.</i></td></tr>
+<tr><th id="5">5</th><td><i>// SPDX-License-Identifier: Apache-2.0 WITH LLVM-exception</i></td></tr>
+<tr><th id="6">6</th><td><i>//</i></td></tr>
+<tr><th id="7">7</th><td><i>//===----------------------------------------------------------------------===//</i></td></tr>
+<tr><th id="8">8</th><td><i>//</i></td></tr>
+<tr><th id="9">9</th><td><i>// This file contains the declaration of the IntervalPartition class, which</i></td></tr>
+<tr><th id="10">10</th><td><i>// calculates and represents the interval partition of a function, or a</i></td></tr>
+<tr><th id="11">11</th><td><i>// preexisting interval partition.</i></td></tr>
+<tr><th id="12">12</th><td><i>//</i></td></tr>
+<tr><th id="13">13</th><td><i>// In this way, the interval partition may be used to reduce a flow graph down</i></td></tr>
+<tr><th id="14">14</th><td><i>// to its degenerate single node interval partition (unless it is irreducible).</i></td></tr>
+<tr><th id="15">15</th><td><i>//</i></td></tr>
+<tr><th id="16">16</th><td><i>// TODO: The IntervalPartition class should take a bool parameter that tells</i></td></tr>
+<tr><th id="17">17</th><td><i>// whether it should add the "tails" of an interval to an interval itself or if</i></td></tr>
+<tr><th id="18">18</th><td><i>// they should be represented as distinct intervals.</i></td></tr>
+<tr><th id="19">19</th><td><i>//</i></td></tr>
+<tr><th id="20">20</th><td><i>//===----------------------------------------------------------------------===//</i></td></tr>
+<tr><th id="21">21</th><td></td></tr>
+<tr><th id="22">22</th><td><u>#<span data-ppcond="22">ifndef</span> <span class="macro" data-ref="_M/LLVM_ANALYSIS_INTERVALPARTITION_H">LLVM_ANALYSIS_INTERVALPARTITION_H</span></u></td></tr>
+<tr><th id="23">23</th><td><u>#define <dfn class="macro" id="_M/LLVM_ANALYSIS_INTERVALPARTITION_H" data-ref="_M/LLVM_ANALYSIS_INTERVALPARTITION_H">LLVM_ANALYSIS_INTERVALPARTITION_H</dfn></u></td></tr>
+<tr><th id="24">24</th><td></td></tr>
+<tr><th id="25">25</th><td><u>#include <a href="../Pass.h.html">"llvm/Pass.h"</a></u></td></tr>
+<tr><th id="26">26</th><td><u>#include &lt;map&gt;</u></td></tr>
+<tr><th id="27">27</th><td><u>#include &lt;vector&gt;</u></td></tr>
+<tr><th id="28">28</th><td></td></tr>
+<tr><th id="29">29</th><td><b>namespace</b> <span class="namespace">llvm</span> {</td></tr>
+<tr><th id="30">30</th><td></td></tr>
+<tr><th id="31">31</th><td><b>class</b> <a class="type" href="../IR/BasicBlock.h.html#llvm::BasicBlock" title='llvm::BasicBlock' data-ref="llvm::BasicBlock" data-ref-filename="llvm..BasicBlock" id="llvm::BasicBlock">BasicBlock</a>;</td></tr>
+<tr><th id="32">32</th><td><b>class</b> <dfn class="type" id="llvm::Interval" title='llvm::Interval' data-ref="llvm::Interval" data-ref-filename="llvm..Interval">Interval</dfn>;</td></tr>
+<tr><th id="33">33</th><td></td></tr>
+<tr><th id="34">34</th><td><i>//===----------------------------------------------------------------------===//</i></td></tr>
+<tr><th id="35">35</th><td><i>//</i></td></tr>
+<tr><th id="36">36</th><td><i>// IntervalPartition - This class builds and holds an "interval partition" for</i></td></tr>
+<tr><th id="37">37</th><td><i>// a function.  This partition divides the control flow graph into a set of</i></td></tr>
+<tr><th id="38">38</th><td><i>// maximal intervals, as defined with the properties above.  Intuitively, an</i></td></tr>
+<tr><th id="39">39</th><td><i>// interval is a (possibly nonexistent) loop with a "tail" of non-looping</i></td></tr>
+<tr><th id="40">40</th><td><i>// nodes following it.</i></td></tr>
+<tr><th id="41">41</th><td><i>//</i></td></tr>
+<tr><th id="42">42</th><td><b>class</b> <dfn class="type def" id="llvm::IntervalPartition" title='llvm::IntervalPartition' data-ref="llvm::IntervalPartition" data-ref-filename="llvm..IntervalPartition">IntervalPartition</dfn> : <b>public</b> <a class="type" href="../Pass.h.html#llvm::FunctionPass" title='llvm::FunctionPass' data-ref="llvm::FunctionPass" data-ref-filename="llvm..FunctionPass">FunctionPass</a> {</td></tr>
+<tr><th id="43">43</th><td>  <b>using</b> <dfn class="typedef" id="llvm::IntervalPartition::IntervalMapTy" title='llvm::IntervalPartition::IntervalMapTy' data-type='std::map&lt;BasicBlock *, Interval *&gt;' data-ref="llvm::IntervalPartition::IntervalMapTy" data-ref-filename="llvm..IntervalPartition..IntervalMapTy">IntervalMapTy</dfn> = <span class="namespace">std::</span><span class='type' title='std::map' data-ref="std::map" data-ref-filename="std..map">map</span>&lt;<a class="type" href="../IR/BasicBlock.h.html#llvm::BasicBlock" title='llvm::BasicBlock' data-ref="llvm::BasicBlock" data-ref-filename="llvm..BasicBlock">BasicBlock</a> *, <a class="type" href="#llvm::Interval" title='llvm::Interval' data-ref="llvm::Interval" data-ref-filename="llvm..Interval">Interval</a> *&gt;;</td></tr>
+<tr><th id="44">44</th><td>  <a class="typedef" href="#llvm::IntervalPartition::IntervalMapTy" title='llvm::IntervalPartition::IntervalMapTy' data-type='std::map&lt;BasicBlock *, Interval *&gt;' data-ref="llvm::IntervalPartition::IntervalMapTy" data-ref-filename="llvm..IntervalPartition..IntervalMapTy">IntervalMapTy</a> <dfn class="decl field" id="llvm::IntervalPartition::IntervalMap" title='llvm::IntervalPartition::IntervalMap' data-ref="llvm::IntervalPartition::IntervalMap" data-ref-filename="llvm..IntervalPartition..IntervalMap">IntervalMap</dfn>;</td></tr>
+<tr><th id="45">45</th><td></td></tr>
+<tr><th id="46">46</th><td>  <b>using</b> <dfn class="typedef" id="llvm::IntervalPartition::IntervalListTy" title='llvm::IntervalPartition::IntervalListTy' data-type='std::vector&lt;Interval *&gt;' data-ref="llvm::IntervalPartition::IntervalListTy" data-ref-filename="llvm..IntervalPartition..IntervalListTy">IntervalListTy</dfn> = <span class="namespace">std::</span><span class='type' title='std::vector' data-ref="std::vector" data-ref-filename="std..vector">vector</span>&lt;<a class="type" href="#llvm::Interval" title='llvm::Interval' data-ref="llvm::Interval" data-ref-filename="llvm..Interval">Interval</a> *&gt;;</td></tr>
+<tr><th id="47">47</th><td>  <a class="type" href="#llvm::Interval" title='llvm::Interval' data-ref="llvm::Interval" data-ref-filename="llvm..Interval">Interval</a> *<dfn class="decl field" id="llvm::IntervalPartition::RootInterval" title='llvm::IntervalPartition::RootInterval' data-ref="llvm::IntervalPartition::RootInterval" data-ref-filename="llvm..IntervalPartition..RootInterval">RootInterval</dfn> = <b>nullptr</b>;</td></tr>
+<tr><th id="48">48</th><td>  <span class="namespace">std::</span><span class='type' title='std::vector' data-ref="std::vector" data-ref-filename="std..vector">vector</span>&lt;<a class="type" href="#llvm::Interval" title='llvm::Interval' data-ref="llvm::Interval" data-ref-filename="llvm..Interval">Interval</a> *&gt; <dfn class="decl field" id="llvm::IntervalPartition::Intervals" title='llvm::IntervalPartition::Intervals' data-ref="llvm::IntervalPartition::Intervals" data-ref-filename="llvm..IntervalPartition..Intervals">Intervals</dfn>;</td></tr>
+<tr><th id="49">49</th><td></td></tr>
+<tr><th id="50">50</th><td><b>public</b>:</td></tr>
+<tr><th id="51">51</th><td>  <em>static</em> <em>char</em> <dfn class="decl" id="llvm::IntervalPartition::ID" title='llvm::IntervalPartition::ID' data-ref="llvm::IntervalPartition::ID" data-ref-filename="llvm..IntervalPartition..ID">ID</dfn>; <i>// Pass identification, replacement for typeid</i></td></tr>
+<tr><th id="52">52</th><td></td></tr>
+<tr><th id="53">53</th><td>  <dfn class="decl fn" id="_ZN4llvm17IntervalPartitionC1Ev" title='llvm::IntervalPartition::IntervalPartition' data-ref="_ZN4llvm17IntervalPartitionC1Ev" data-ref-filename="_ZN4llvm17IntervalPartitionC1Ev">IntervalPartition</dfn>();</td></tr>
+<tr><th id="54">54</th><td></td></tr>
+<tr><th id="55">55</th><td>  <i>// run - Calculate the interval partition for this function</i></td></tr>
+<tr><th id="56">56</th><td>  <em>bool</em> <dfn class="virtual decl fn" id="_ZN4llvm17IntervalPartition13runOnFunctionERNS_8FunctionE" title='llvm::IntervalPartition::runOnFunction' data-ref="_ZN4llvm17IntervalPartition13runOnFunctionERNS_8FunctionE" data-ref-filename="_ZN4llvm17IntervalPartition13runOnFunctionERNS_8FunctionE">runOnFunction</dfn>(<a class="type" href="../IR/Function.h.html#llvm::Function" title='llvm::Function' data-ref="llvm::Function" data-ref-filename="llvm..Function">Function</a> &amp;<dfn class="local col9 decl" id="269F" title='F' data-type='llvm::Function &amp;' data-ref="269F" data-ref-filename="269F">F</dfn>) override;</td></tr>
+<tr><th id="57">57</th><td></td></tr>
+<tr><th id="58">58</th><td>  <i>// IntervalPartition ctor - Build a reduced interval partition from an</i></td></tr>
+<tr><th id="59">59</th><td><i>  // existing interval graph.  This takes an additional boolean parameter to</i></td></tr>
+<tr><th id="60">60</th><td><i>  // distinguish it from a copy constructor.  Always pass in false for now.</i></td></tr>
+<tr><th id="61">61</th><td>  <dfn class="decl fn" id="_ZN4llvm17IntervalPartitionC1ERS0_b" title='llvm::IntervalPartition::IntervalPartition' data-ref="_ZN4llvm17IntervalPartitionC1ERS0_b" data-ref-filename="_ZN4llvm17IntervalPartitionC1ERS0_b">IntervalPartition</dfn>(<a class="type" href="#llvm::IntervalPartition" title='llvm::IntervalPartition' data-ref="llvm::IntervalPartition" data-ref-filename="llvm..IntervalPartition">IntervalPartition</a> &amp;<dfn class="local col0 decl" id="270I" title='I' data-type='llvm::IntervalPartition &amp;' data-ref="270I" data-ref-filename="270I">I</dfn>, <em>bool</em>);</td></tr>
+<tr><th id="62">62</th><td></td></tr>
+<tr><th id="63">63</th><td>  <i>// print - Show contents in human readable format...</i></td></tr>
+<tr><th id="64">64</th><td>  <em>void</em> <dfn class="virtual decl fn" id="_ZNK4llvm17IntervalPartition5printERNS_11raw_ostreamEPKNS_6ModuleE" title='llvm::IntervalPartition::print' data-ref="_ZNK4llvm17IntervalPartition5printERNS_11raw_ostreamEPKNS_6ModuleE" data-ref-filename="_ZNK4llvm17IntervalPartition5printERNS_11raw_ostreamEPKNS_6ModuleE">print</dfn>(<a class="type" href="../Support/raw_ostream.h.html#llvm::raw_ostream" title='llvm::raw_ostream' data-ref="llvm::raw_ostream" data-ref-filename="llvm..raw_ostream">raw_ostream</a> &amp;<dfn class="local col1 decl" id="271O" title='O' data-type='llvm::raw_ostream &amp;' data-ref="271O" data-ref-filename="271O">O</dfn>, <em>const</em> <a class="type" href="../IR/Module.h.html#llvm::Module" title='llvm::Module' data-ref="llvm::Module" data-ref-filename="llvm..Module">Module</a>* = <b>nullptr</b>) <em>const</em> override;</td></tr>
+<tr><th id="65">65</th><td></td></tr>
+<tr><th id="66">66</th><td>  <i>// getRootInterval() - Return the root interval that contains the starting</i></td></tr>
+<tr><th id="67">67</th><td><i>  // block of the function.</i></td></tr>
+<tr><th id="68">68</th><td>  <b>inline</b> <a class="type" href="#llvm::Interval" title='llvm::Interval' data-ref="llvm::Interval" data-ref-filename="llvm..Interval">Interval</a> *<dfn class="decl def fn" id="_ZN4llvm17IntervalPartition15getRootIntervalEv" title='llvm::IntervalPartition::getRootInterval' data-ref="_ZN4llvm17IntervalPartition15getRootIntervalEv" data-ref-filename="_ZN4llvm17IntervalPartition15getRootIntervalEv">getRootInterval</dfn>() { <b>return</b> <a class="member field" href="#llvm::IntervalPartition::RootInterval" title='llvm::IntervalPartition::RootInterval' data-ref="llvm::IntervalPartition::RootInterval" data-ref-filename="llvm..IntervalPartition..RootInterval">RootInterval</a>; }</td></tr>
+<tr><th id="69">69</th><td></td></tr>
+<tr><th id="70">70</th><td>  <i>// isDegeneratePartition() - Returns true if the interval partition contains</i></td></tr>
+<tr><th id="71">71</th><td><i>  // a single interval, and thus cannot be simplified anymore.</i></td></tr>
+<tr><th id="72">72</th><td>  <em>bool</em> <dfn class="decl def fn" id="_ZN4llvm17IntervalPartition21isDegeneratePartitionEv" title='llvm::IntervalPartition::isDegeneratePartition' data-ref="_ZN4llvm17IntervalPartition21isDegeneratePartitionEv" data-ref-filename="_ZN4llvm17IntervalPartition21isDegeneratePartitionEv">isDegeneratePartition</dfn>() { <b>return</b> <a class="member field" href="#llvm::IntervalPartition::Intervals" title='llvm::IntervalPartition::Intervals' data-ref="llvm::IntervalPartition::Intervals" data-ref-filename="llvm..IntervalPartition..Intervals">Intervals</a>.<span class='ref fn' title='std::vector::size' data-ref="_ZNKSt6vector4sizeEv" data-ref-filename="_ZNKSt6vector4sizeEv">size</span>() == <var>1</var>; }</td></tr>
+<tr><th id="73">73</th><td></td></tr>
+<tr><th id="74">74</th><td>  <i>// TODO: isIrreducible - look for triangle graph.</i></td></tr>
+<tr><th id="75">75</th><td><i></i></td></tr>
+<tr><th id="76">76</th><td><i>  // getBlockInterval - Return the interval that a basic block exists in.</i></td></tr>
+<tr><th id="77">77</th><td>  <b>inline</b> <a class="type" href="#llvm::Interval" title='llvm::Interval' data-ref="llvm::Interval" data-ref-filename="llvm..Interval">Interval</a> *<dfn class="decl def fn" id="_ZN4llvm17IntervalPartition16getBlockIntervalEPNS_10BasicBlockE" title='llvm::IntervalPartition::getBlockInterval' data-ref="_ZN4llvm17IntervalPartition16getBlockIntervalEPNS_10BasicBlockE" data-ref-filename="_ZN4llvm17IntervalPartition16getBlockIntervalEPNS_10BasicBlockE">getBlockInterval</dfn>(<a class="type" href="../IR/BasicBlock.h.html#llvm::BasicBlock" title='llvm::BasicBlock' data-ref="llvm::BasicBlock" data-ref-filename="llvm..BasicBlock">BasicBlock</a> *<dfn class="local col2 decl" id="272BB" title='BB' data-type='llvm::BasicBlock *' data-ref="272BB" data-ref-filename="272BB">BB</dfn>) {</td></tr>
+<tr><th id="78">78</th><td>    <a class="typedef" href="#llvm::IntervalPartition::IntervalMapTy" title='llvm::IntervalPartition::IntervalMapTy' data-type='std::map&lt;BasicBlock *, Interval *&gt;' data-ref="llvm::IntervalPartition::IntervalMapTy" data-ref-filename="llvm..IntervalPartition..IntervalMapTy">IntervalMapTy</a>::<span class='typedef' title='std::map&lt;llvm::BasicBlock *, llvm::Interval *, std::less&lt;llvm::BasicBlock *&gt;, std::allocator&lt;std::pair&lt;llvm::BasicBlock *const, llvm::Interval *&gt; &gt; &gt;::iterator' data-type='typename _Rep_type::iterator' data-ref="std::map{llvm::BasicBlock*,llvm::Interval*,std::less{llvm::BasicBlock*},std::allocator{std::pair{llvm::BasicBlock*const,llvm::Interval*}}}::iterator" data-ref-filename="std..map{llvm..BasicBlock*,llvm..Interval*,std..less{llvm..BasicBlock*},std..allocator{std..pair{llvm..BasicBlock*const,llvm..Interval*}}}..iterator">iterator</span> <dfn class="local col3 decl" id="273I" title='I' data-type='IntervalMapTy::iterator' data-ref="273I" data-ref-filename="273I">I</dfn> = <a class="member field" href="#llvm::IntervalPartition::IntervalMap" title='llvm::IntervalPartition::IntervalMap' data-ref="llvm::IntervalPartition::IntervalMap" data-ref-filename="llvm..IntervalPartition..IntervalMap">IntervalMap</a>.<span class='ref fn' title='std::map::find' data-ref="_ZNSt3map4findERKT_" data-ref-filename="_ZNSt3map4findERKT_">find</span>(<a class="local col2 ref" href="#272BB" title='BB' data-ref="272BB" data-ref-filename="272BB">BB</a>);</td></tr>
+<tr><th id="79">79</th><td>    <b>return</b> <a class="local col3 ref" href="#273I" title='I' data-ref="273I" data-ref-filename="273I">I</a> <span class='ref fn' title='std::operator!=' data-ref="_ZStneRKSt17_Rb_tree_iteratorIT_ES4_" data-ref-filename="_ZStneRKSt17_Rb_tree_iteratorIT_ES4_">!=</span> <a class="member field" href="#llvm::IntervalPartition::IntervalMap" title='llvm::IntervalPartition::IntervalMap' data-ref="llvm::IntervalPartition::IntervalMap" data-ref-filename="llvm..IntervalPartition..IntervalMap">IntervalMap</a>.<span class='ref fn' title='std::map::end' data-ref="_ZNSt3map3endEv" data-ref-filename="_ZNSt3map3endEv">end</span>() ? <a class="local col3 ref" href="#273I" title='I' data-ref="273I" data-ref-filename="273I">I</a><span class='ref fn' title='std::_Rb_tree_iterator::operator-&gt;' data-ref="_ZNKSt17_Rb_tree_iteratorptEv" data-ref-filename="_ZNKSt17_Rb_tree_iteratorptEv">-&gt;</span><span class='ref field' title='std::pair&lt;llvm::BasicBlock *const, llvm::Interval *&gt;::second' data-ref="std::pair::second" data-ref-filename="std..pair..second">second</span> : <b>nullptr</b>;</td></tr>
+<tr><th id="80">80</th><td>  }</td></tr>
+<tr><th id="81">81</th><td></td></tr>
+<tr><th id="82">82</th><td>  <i>// getAnalysisUsage - Implement the Pass API</i></td></tr>
+<tr><th id="83">83</th><td>  <em>void</em> <dfn class="virtual decl def fn" id="_ZNK4llvm17IntervalPartition16getAnalysisUsageERNS_13AnalysisUsageE" title='llvm::IntervalPartition::getAnalysisUsage' data-ref="_ZNK4llvm17IntervalPartition16getAnalysisUsageERNS_13AnalysisUsageE" data-ref-filename="_ZNK4llvm17IntervalPartition16getAnalysisUsageERNS_13AnalysisUsageE">getAnalysisUsage</dfn>(<a class="type" href="../PassAnalysisSupport.h.html#llvm::AnalysisUsage" title='llvm::AnalysisUsage' data-ref="llvm::AnalysisUsage" data-ref-filename="llvm..AnalysisUsage">AnalysisUsage</a> &amp;<dfn class="local col4 decl" id="274AU" title='AU' data-type='llvm::AnalysisUsage &amp;' data-ref="274AU" data-ref-filename="274AU">AU</dfn>) <em>const</em> override {</td></tr>
+<tr><th id="84">84</th><td>    <a class="local col4 ref" href="#274AU" title='AU' data-ref="274AU" data-ref-filename="274AU">AU</a>.<a class="ref fn" href="../PassAnalysisSupport.h.html#_ZN4llvm13AnalysisUsage15setPreservesAllEv" title='llvm::AnalysisUsage::setPreservesAll' data-ref="_ZN4llvm13AnalysisUsage15setPreservesAllEv" data-ref-filename="_ZN4llvm13AnalysisUsage15setPreservesAllEv">setPreservesAll</a>();</td></tr>
+<tr><th id="85">85</th><td>  }</td></tr>
+<tr><th id="86">86</th><td></td></tr>
+<tr><th id="87">87</th><td>  <i>// Interface to Intervals vector...</i></td></tr>
+<tr><th id="88">88</th><td>  <em>const</em> <span class="namespace">std::</span><span class='type' title='std::vector' data-ref="std::vector" data-ref-filename="std..vector">vector</span>&lt;<a class="type" href="#llvm::Interval" title='llvm::Interval' data-ref="llvm::Interval" data-ref-filename="llvm..Interval">Interval</a>*&gt; &amp;<dfn class="decl def fn" id="_ZNK4llvm17IntervalPartition12getIntervalsEv" title='llvm::IntervalPartition::getIntervals' data-ref="_ZNK4llvm17IntervalPartition12getIntervalsEv" data-ref-filename="_ZNK4llvm17IntervalPartition12getIntervalsEv">getIntervals</dfn>() <em>const</em> { <b>return</b> <a class="member field" href="#llvm::IntervalPartition::Intervals" title='llvm::IntervalPartition::Intervals' data-ref="llvm::IntervalPartition::Intervals" data-ref-filename="llvm..IntervalPartition..Intervals">Intervals</a>; }</td></tr>
+<tr><th id="89">89</th><td></td></tr>
+<tr><th id="90">90</th><td>  <i>// releaseMemory - Reset state back to before function was analyzed</i></td></tr>
+<tr><th id="91">91</th><td>  <em>void</em> <dfn class="virtual decl fn" id="_ZN4llvm17IntervalPartition13releaseMemoryEv" title='llvm::IntervalPartition::releaseMemory' data-ref="_ZN4llvm17IntervalPartition13releaseMemoryEv" data-ref-filename="_ZN4llvm17IntervalPartition13releaseMemoryEv">releaseMemory</dfn>() override;</td></tr>
+<tr><th id="92">92</th><td></td></tr>
+<tr><th id="93">93</th><td><b>private</b>:</td></tr>
+<tr><th id="94">94</th><td>  <i>// addIntervalToPartition - Add an interval to the internal list of intervals,</i></td></tr>
+<tr><th id="95">95</th><td><i>  // and then add mappings from all of the basic blocks in the interval to the</i></td></tr>
+<tr><th id="96">96</th><td><i>  // interval itself (in the IntervalMap).</i></td></tr>
+<tr><th id="97">97</th><td>  <em>void</em> <dfn class="decl fn" id="_ZN4llvm17IntervalPartition22addIntervalToPartitionEPNS_8IntervalE" title='llvm::IntervalPartition::addIntervalToPartition' data-ref="_ZN4llvm17IntervalPartition22addIntervalToPartitionEPNS_8IntervalE" data-ref-filename="_ZN4llvm17IntervalPartition22addIntervalToPartitionEPNS_8IntervalE">addIntervalToPartition</dfn>(<a class="type" href="#llvm::Interval" title='llvm::Interval' data-ref="llvm::Interval" data-ref-filename="llvm..Interval">Interval</a> *<dfn class="local col5 decl" id="275I" title='I' data-type='llvm::Interval *' data-ref="275I" data-ref-filename="275I">I</dfn>);</td></tr>
+<tr><th id="98">98</th><td></td></tr>
+<tr><th id="99">99</th><td>  <i>// updatePredecessors - Interval generation only sets the successor fields of</i></td></tr>
+<tr><th id="100">100</th><td><i>  // the interval data structures.  After interval generation is complete,</i></td></tr>
+<tr><th id="101">101</th><td><i>  // run through all of the intervals and propagate successor info as</i></td></tr>
+<tr><th id="102">102</th><td><i>  // predecessor info.</i></td></tr>
+<tr><th id="103">103</th><td>  <em>void</em> <dfn class="decl fn" id="_ZN4llvm17IntervalPartition18updatePredecessorsEPNS_8IntervalE" title='llvm::IntervalPartition::updatePredecessors' data-ref="_ZN4llvm17IntervalPartition18updatePredecessorsEPNS_8IntervalE" data-ref-filename="_ZN4llvm17IntervalPartition18updatePredecessorsEPNS_8IntervalE">updatePredecessors</dfn>(<a class="type" href="#llvm::Interval" title='llvm::Interval' data-ref="llvm::Interval" data-ref-filename="llvm..Interval">Interval</a> *<dfn class="local col6 decl" id="276Int" title='Int' data-type='llvm::Interval *' data-ref="276Int" data-ref-filename="276Int">Int</dfn>);</td></tr>
+<tr><th id="104">104</th><td>};</td></tr>
+<tr><th id="105">105</th><td></td></tr>
+<tr><th id="106">106</th><td>} <i>// end namespace llvm</i></td></tr>
+<tr><th id="107">107</th><td></td></tr>
+<tr><th id="108">108</th><td><u>#<span data-ppcond="22">endif</span> // LLVM_ANALYSIS_INTERVALPARTITION_H</u></td></tr>
+<tr><th id="109">109</th><td></td></tr>
+</table><hr/><p id='footer'>
+Generated while processing <a href='../../../../clang/tools/driver/cc1_main.cpp.html'>llvm/clang/tools/driver/cc1_main.cpp</a><br/>Generated on <em>2021-Jul-01</em> from project llvm revision <em>12</em>

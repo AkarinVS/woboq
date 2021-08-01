@@ -1,0 +1,19 @@
+<dec f='llvm/llvm/tools/llvm-readobj/ARMWinEHPrinter.h' l='26' type='llvm::raw_ostream &amp;'/>
+<use f='llvm/llvm/tools/llvm-readobj/ARMWinEHPrinter.h' l='169' u='w' c='_ZN4llvm3ARM5WinEH7DecoderC1ERNS_13ScopedPrinterEb'/>
+<use f='llvm/llvm/tools/llvm-readobj/ARMWinEHPrinter.cpp' l='186' u='m' c='_ZN4llvm3ARM5WinEH7Decoder14printRegistersERKSt4pairItjE'/>
+<use f='llvm/llvm/tools/llvm-readobj/ARMWinEHPrinter.cpp' l='191' u='m' c='_ZN4llvm3ARM5WinEH7Decoder14printRegistersERKSt4pairItjE'/>
+<use f='llvm/llvm/tools/llvm-readobj/ARMWinEHPrinter.cpp' l='192' u='m' c='_ZN4llvm3ARM5WinEH7Decoder14printRegistersERKSt4pairItjE'/>
+<use f='llvm/llvm/tools/llvm-readobj/ARMWinEHPrinter.cpp' l='199' u='m' c='_ZN4llvm3ARM5WinEH7Decoder14printRegistersERKSt4pairItjE'/>
+<use f='llvm/llvm/tools/llvm-readobj/ARMWinEHPrinter.cpp' l='200' u='m' c='_ZN4llvm3ARM5WinEH7Decoder14printRegistersERKSt4pairItjE'/>
+<use f='llvm/llvm/tools/llvm-readobj/ARMWinEHPrinter.cpp' l='207' u='m' c='_ZN4llvm3ARM5WinEH7Decoder14printRegistersERKSt4pairItjE'/>
+<use f='llvm/llvm/tools/llvm-readobj/ARMWinEHPrinter.cpp' l='208' u='m' c='_ZN4llvm3ARM5WinEH7Decoder14printRegistersERKSt4pairItjE'/>
+<use f='llvm/llvm/tools/llvm-readobj/ARMWinEHPrinter.cpp' l='212' u='m' c='_ZN4llvm3ARM5WinEH7Decoder14printRegistersERKSt4pairItjE'/>
+<use f='llvm/llvm/tools/llvm-readobj/ARMWinEHPrinter.cpp' l='280' u='m' c='_ZN4llvm3ARM5WinEH7Decoder15opcode_10LxxxxxEPKhRjjb'/>
+<use f='llvm/llvm/tools/llvm-readobj/ARMWinEHPrinter.cpp' l='309' u='m' c='_ZN4llvm3ARM5WinEH7Decoder15opcode_11010LxxEPKhRjjb'/>
+<use f='llvm/llvm/tools/llvm-readobj/ARMWinEHPrinter.cpp' l='326' u='m' c='_ZN4llvm3ARM5WinEH7Decoder15opcode_11011LxxEPKhRjjb'/>
+<use f='llvm/llvm/tools/llvm-readobj/ARMWinEHPrinter.cpp' l='340' u='m' c='_ZN4llvm3ARM5WinEH7Decoder15opcode_11100xxxEPKhRjjb'/>
+<use f='llvm/llvm/tools/llvm-readobj/ARMWinEHPrinter.cpp' l='367' u='m' c='_ZN4llvm3ARM5WinEH7Decoder15opcode_1110110LEPKhRjjb'/>
+<use f='llvm/llvm/tools/llvm-readobj/ARMWinEHPrinter.cpp' l='414' u='m' c='_ZN4llvm3ARM5WinEH7Decoder15opcode_11110101EPKhRjjb'/>
+<use f='llvm/llvm/tools/llvm-readobj/ARMWinEHPrinter.cpp' l='429' u='m' c='_ZN4llvm3ARM5WinEH7Decoder15opcode_11110110EPKhRjjb'/>
+<use f='llvm/llvm/tools/llvm-readobj/ARMWinEHPrinter.cpp' l='1108' u='m' c='_ZN4llvm3ARM5WinEH7Decoder15dumpPackedEntryERKNS_6object14COFFObjectFileENS3_10SectionRefEmjRKNS1_15RuntimeFunctionE'/>
+<offset>64</offset>

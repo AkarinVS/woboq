@@ -1,0 +1,215 @@
+<!doctype html>
+<html>
+<head>
+<meta name="viewport" content="width=device-width, initial-scale=1.0"><title>xray_utils.cpp source code [llvm/compiler-rt/lib/xray/xray_utils.cpp] - Woboq Code Browser</title>
+<link rel="stylesheet" href="../../../.././data/qtcreator.css" title="QtCreator"/>
+<link rel="alternate stylesheet" href="../../../.././data/kdevelop.css" title="KDevelop"/>
+<script type="text/javascript" src="../../../.././data/jquery/jquery.min.js"></script>
+<script type="text/javascript" src="../../../.././data/jquery/jquery-ui.min.js"></script>
+<script>var file = 'llvm/compiler-rt/lib/xray/xray_utils.cpp'; var root_path = '../../../..'; var data_path = '../../../.././data'; var ecma_script_api_version = 2;</script>
+<script src='../../../.././data/codebrowser.js'></script>
+</head>
+<body><div id='header'><h1 id='breadcrumb'><span>Browse the source code of </span><a href='../../..'>llvm</a>/<a href='../..'>compiler-rt</a>/<a href='..'>lib</a>/<a href='./'>xray</a>/<a href='xray_utils.cpp.html'>xray_utils.cpp</a></h1></div>
+<hr/><div id='content'><table class="code">
+<tr><th id="1">1</th><td><i>//===-- xray_utils.cpp ------------------------------------------*- C++ -*-===//</i></td></tr>
+<tr><th id="2">2</th><td><i>//</i></td></tr>
+<tr><th id="3">3</th><td><i>// Part of the LLVM Project, under the Apache License v2.0 with LLVM Exceptions.</i></td></tr>
+<tr><th id="4">4</th><td><i>// See <a href="https://llvm.org/LICENSE.txt">https://llvm.org/LICENSE.txt</a> for license information.</i></td></tr>
+<tr><th id="5">5</th><td><i>// SPDX-License-Identifier: Apache-2.0 WITH LLVM-exception</i></td></tr>
+<tr><th id="6">6</th><td><i>//</i></td></tr>
+<tr><th id="7">7</th><td><i>//===----------------------------------------------------------------------===//</i></td></tr>
+<tr><th id="8">8</th><td><i>//</i></td></tr>
+<tr><th id="9">9</th><td><i>// This file is a part of XRay, a dynamic runtime instrumentation system.</i></td></tr>
+<tr><th id="10">10</th><td><i>//</i></td></tr>
+<tr><th id="11">11</th><td><i>//===----------------------------------------------------------------------===//</i></td></tr>
+<tr><th id="12">12</th><td><u>#include <a href="xray_utils.h.html">"xray_utils.h"</a></u></td></tr>
+<tr><th id="13">13</th><td></td></tr>
+<tr><th id="14">14</th><td><u>#include <a href="../sanitizer_common/sanitizer_allocator_internal.h.html">"sanitizer_common/sanitizer_allocator_internal.h"</a></u></td></tr>
+<tr><th id="15">15</th><td><u>#include <a href="../sanitizer_common/sanitizer_common.h.html">"sanitizer_common/sanitizer_common.h"</a></u></td></tr>
+<tr><th id="16">16</th><td><u>#include <a href="xray_allocator.h.html">"xray_allocator.h"</a></u></td></tr>
+<tr><th id="17">17</th><td><u>#include <a href="xray_defs.h.html">"xray_defs.h"</a></u></td></tr>
+<tr><th id="18">18</th><td><u>#include <a href="xray_flags.h.html">"xray_flags.h"</a></u></td></tr>
+<tr><th id="19">19</th><td><u>#include &lt;cstdio&gt;</u></td></tr>
+<tr><th id="20">20</th><td><u>#include <a href="../../../../include/errno.h.html">&lt;errno.h&gt;</a></u></td></tr>
+<tr><th id="21">21</th><td><u>#include <a href="../../../../include/fcntl.h.html">&lt;fcntl.h&gt;</a></u></td></tr>
+<tr><th id="22">22</th><td><u>#include &lt;iterator&gt;</u></td></tr>
+<tr><th id="23">23</th><td><u>#include &lt;stdlib.h&gt;</u></td></tr>
+<tr><th id="24">24</th><td><u>#include <a href="../../../../include/sys/types.h.html">&lt;sys/types.h&gt;</a></u></td></tr>
+<tr><th id="25">25</th><td><u>#include &lt;tuple&gt;</u></td></tr>
+<tr><th id="26">26</th><td><u>#include <a href="../../../../include/unistd.h.html">&lt;unistd.h&gt;</a></u></td></tr>
+<tr><th id="27">27</th><td><u>#include &lt;utility&gt;</u></td></tr>
+<tr><th id="28">28</th><td></td></tr>
+<tr><th id="29">29</th><td><u>#<span data-ppcond="29">if</span> <a class="macro" href="../sanitizer_common/sanitizer_platform.h.html#111" title="0" data-ref="_M/SANITIZER_FUCHSIA">SANITIZER_FUCHSIA</a></u></td></tr>
+<tr><th id="30">30</th><td><u>#include "sanitizer_common/sanitizer_symbolizer_fuchsia.h"</u></td></tr>
+<tr><th id="31">31</th><td></td></tr>
+<tr><th id="32">32</th><td><u>#include &lt;inttypes.h&gt;</u></td></tr>
+<tr><th id="33">33</th><td><u>#include &lt;zircon/process.h&gt;</u></td></tr>
+<tr><th id="34">34</th><td><u>#include &lt;zircon/sanitizer.h&gt;</u></td></tr>
+<tr><th id="35">35</th><td><u>#include &lt;zircon/status.h&gt;</u></td></tr>
+<tr><th id="36">36</th><td><u>#include &lt;zircon/syscalls.h&gt;</u></td></tr>
+<tr><th id="37">37</th><td><u>#<span data-ppcond="29">endif</span></u></td></tr>
+<tr><th id="38">38</th><td></td></tr>
+<tr><th id="39">39</th><td><b>namespace</b> <span class="namespace">__xray</span> {</td></tr>
+<tr><th id="40">40</th><td></td></tr>
+<tr><th id="41">41</th><td><u>#<span data-ppcond="41">if</span> <a class="macro" href="../sanitizer_common/sanitizer_platform.h.html#111" title="0" data-ref="_M/SANITIZER_FUCHSIA">SANITIZER_FUCHSIA</a></u></td></tr>
+<tr><th id="42">42</th><td><b>constexpr</b> <em>const</em> <em>char</em>* ProfileSinkName = <q>"llvm-xray"</q>;</td></tr>
+<tr><th id="43">43</th><td></td></tr>
+<tr><th id="44">44</th><td>LogWriter::~LogWriter() {</td></tr>
+<tr><th id="45">45</th><td>  _zx_handle_close(Vmo);</td></tr>
+<tr><th id="46">46</th><td>}</td></tr>
+<tr><th id="47">47</th><td></td></tr>
+<tr><th id="48">48</th><td><em>void</em> LogWriter::WriteAll(<em>const</em> <em>char</em> *Begin, <em>const</em> <em>char</em> *End) XRAY_NEVER_INSTRUMENT {</td></tr>
+<tr><th id="49">49</th><td>  <b>if</b> (Begin == End)</td></tr>
+<tr><th id="50">50</th><td>    <b>return</b>;</td></tr>
+<tr><th id="51">51</th><td>  <em>auto</em> TotalBytes = std::distance(Begin, End);</td></tr>
+<tr><th id="52">52</th><td></td></tr>
+<tr><th id="53">53</th><td>  <em>const</em> size_t PageSize = flags()-&gt;xray_page_size_override &gt; <var>0</var></td></tr>
+<tr><th id="54">54</th><td>                              ? flags()-&gt;xray_page_size_override</td></tr>
+<tr><th id="55">55</th><td>                              : GetPageSizeCached();</td></tr>
+<tr><th id="56">56</th><td>  <b>if</b> (RoundUpTo(Offset, PageSize) != RoundUpTo(Offset + TotalBytes, PageSize)) {</td></tr>
+<tr><th id="57">57</th><td>    <i>// Resize the VMO to ensure there's sufficient space for the data.</i></td></tr>
+<tr><th id="58">58</th><td>    zx_status_t Status = _zx_vmo_set_size(Vmo, Offset + TotalBytes);</td></tr>
+<tr><th id="59">59</th><td>    <b>if</b> (Status != ZX_OK) {</td></tr>
+<tr><th id="60">60</th><td>      Report(<q>"Failed to resize VMO: %s\n"</q>, _zx_status_get_string(Status));</td></tr>
+<tr><th id="61">61</th><td>      <b>return</b>;</td></tr>
+<tr><th id="62">62</th><td>    }</td></tr>
+<tr><th id="63">63</th><td>  }</td></tr>
+<tr><th id="64">64</th><td></td></tr>
+<tr><th id="65">65</th><td>  <i>// Write the data into VMO.</i></td></tr>
+<tr><th id="66">66</th><td>  zx_status_t Status = _zx_vmo_write(Vmo, Begin, Offset, TotalBytes);</td></tr>
+<tr><th id="67">67</th><td>  <b>if</b> (Status != ZX_OK) {</td></tr>
+<tr><th id="68">68</th><td>    Report(<q>"Failed to write: %s\n"</q>, _zx_status_get_string(Status));</td></tr>
+<tr><th id="69">69</th><td>    <b>return</b>;</td></tr>
+<tr><th id="70">70</th><td>  }</td></tr>
+<tr><th id="71">71</th><td>  Offset += TotalBytes;</td></tr>
+<tr><th id="72">72</th><td></td></tr>
+<tr><th id="73">73</th><td>  <i>// Record the data size as a property of the VMO.</i></td></tr>
+<tr><th id="74">74</th><td>  _zx_object_set_property(Vmo, ZX_PROP_VMO_CONTENT_SIZE,</td></tr>
+<tr><th id="75">75</th><td>                          &amp;Offset, <b>sizeof</b>(Offset));</td></tr>
+<tr><th id="76">76</th><td>}</td></tr>
+<tr><th id="77">77</th><td></td></tr>
+<tr><th id="78">78</th><td><em>void</em> LogWriter::Flush() XRAY_NEVER_INSTRUMENT {</td></tr>
+<tr><th id="79">79</th><td>  <i>// Nothing to do here since WriteAll writes directly into the VMO.</i></td></tr>
+<tr><th id="80">80</th><td>}</td></tr>
+<tr><th id="81">81</th><td></td></tr>
+<tr><th id="82">82</th><td>LogWriter *LogWriter::Open() XRAY_NEVER_INSTRUMENT {</td></tr>
+<tr><th id="83">83</th><td>  <i>// Create VMO to hold the profile data.</i></td></tr>
+<tr><th id="84">84</th><td>  zx_handle_t Vmo;</td></tr>
+<tr><th id="85">85</th><td>  zx_status_t Status = _zx_vmo_create(<var>0</var>, ZX_VMO_RESIZABLE, &amp;Vmo);</td></tr>
+<tr><th id="86">86</th><td>  <b>if</b> (Status != ZX_OK) {</td></tr>
+<tr><th id="87">87</th><td>    Report(<q>"XRay: cannot create VMO: %s\n"</q>, _zx_status_get_string(Status));</td></tr>
+<tr><th id="88">88</th><td>    <b>return</b> <b>nullptr</b>;</td></tr>
+<tr><th id="89">89</th><td>  }</td></tr>
+<tr><th id="90">90</th><td></td></tr>
+<tr><th id="91">91</th><td>  <i>// Get the KOID of the current process to use in the VMO name.</i></td></tr>
+<tr><th id="92">92</th><td>  zx_info_handle_basic_t Info;</td></tr>
+<tr><th id="93">93</th><td>  Status = _zx_object_get_info(_zx_process_self(), ZX_INFO_HANDLE_BASIC, &amp;Info,</td></tr>
+<tr><th id="94">94</th><td>                               <b>sizeof</b>(Info), NULL, NULL);</td></tr>
+<tr><th id="95">95</th><td>  <b>if</b> (Status != ZX_OK) {</td></tr>
+<tr><th id="96">96</th><td>    Report(<q>"XRay: cannot get basic info about current process handle: %s\n"</q>,</td></tr>
+<tr><th id="97">97</th><td>           _zx_status_get_string(Status));</td></tr>
+<tr><th id="98">98</th><td>    <b>return</b> <b>nullptr</b>;</td></tr>
+<tr><th id="99">99</th><td>  }</td></tr>
+<tr><th id="100">100</th><td></td></tr>
+<tr><th id="101">101</th><td>  <i>// Give the VMO a name including our process KOID so it's easy to spot.</i></td></tr>
+<tr><th id="102">102</th><td>  <em>char</em> VmoName[ZX_MAX_NAME_LEN];</td></tr>
+<tr><th id="103">103</th><td>  internal_snprintf(VmoName, <b>sizeof</b>(VmoName), <q>"%s.%zu"</q>, ProfileSinkName,</td></tr>
+<tr><th id="104">104</th><td>                    Info.koid);</td></tr>
+<tr><th id="105">105</th><td>  _zx_object_set_property(Vmo, ZX_PROP_NAME, VmoName, strlen(VmoName));</td></tr>
+<tr><th id="106">106</th><td></td></tr>
+<tr><th id="107">107</th><td>  <i>// Duplicate the handle since __sanitizer_publish_data consumes it and</i></td></tr>
+<tr><th id="108">108</th><td><i>  // LogWriter needs to hold onto it.</i></td></tr>
+<tr><th id="109">109</th><td>  zx_handle_t Handle;</td></tr>
+<tr><th id="110">110</th><td>  Status =_zx_handle_duplicate(Vmo, ZX_RIGHT_SAME_RIGHTS, &amp;Handle);</td></tr>
+<tr><th id="111">111</th><td>  <b>if</b> (Status != ZX_OK) {</td></tr>
+<tr><th id="112">112</th><td>    Report(<q>"XRay: cannot duplicate VMO handle: %s\n"</q>,</td></tr>
+<tr><th id="113">113</th><td>           _zx_status_get_string(Status));</td></tr>
+<tr><th id="114">114</th><td>    <b>return</b> <b>nullptr</b>;</td></tr>
+<tr><th id="115">115</th><td>  }</td></tr>
+<tr><th id="116">116</th><td></td></tr>
+<tr><th id="117">117</th><td>  <i>// Publish the VMO that receives the logging. Note the VMO's contents can</i></td></tr>
+<tr><th id="118">118</th><td><i>  // grow and change after publication. The contents won't be read out until</i></td></tr>
+<tr><th id="119">119</th><td><i>  // after the process exits.</i></td></tr>
+<tr><th id="120">120</th><td>  __sanitizer_publish_data(ProfileSinkName, Handle);</td></tr>
+<tr><th id="121">121</th><td></td></tr>
+<tr><th id="122">122</th><td>  <i>// Use the dumpfile symbolizer markup element to write the name of the VMO.</i></td></tr>
+<tr><th id="123">123</th><td>  Report(<q>"XRay: "</q> FORMAT_DUMPFILE <q>"\n"</q>, ProfileSinkName, VmoName);</td></tr>
+<tr><th id="124">124</th><td></td></tr>
+<tr><th id="125">125</th><td>  LogWriter *LW = <b>reinterpret_cast</b>&lt;LogWriter *&gt;(InternalAlloc(<b>sizeof</b>(LogWriter)));</td></tr>
+<tr><th id="126">126</th><td>  <b>new</b> (LW) LogWriter(Vmo);</td></tr>
+<tr><th id="127">127</th><td>  <b>return</b> LW;</td></tr>
+<tr><th id="128">128</th><td>}</td></tr>
+<tr><th id="129">129</th><td></td></tr>
+<tr><th id="130">130</th><td><em>void</em> LogWriter::Close(LogWriter *LW) {</td></tr>
+<tr><th id="131">131</th><td>  LW-&gt;~LogWriter();</td></tr>
+<tr><th id="132">132</th><td>  InternalFree(LW);</td></tr>
+<tr><th id="133">133</th><td>}</td></tr>
+<tr><th id="134">134</th><td><u>#<span data-ppcond="41">else</span> // SANITIZER_FUCHSIA</u></td></tr>
+<tr><th id="135">135</th><td><a class="type" href="xray_utils.h.html#__xray::LogWriter" title='__xray::LogWriter' data-ref="__xray::LogWriter" data-ref-filename="__xray..LogWriter">LogWriter</a>::<dfn class="decl def fn" id="__xray::LogWriter::~LogWriter" title='__xray::LogWriter::~LogWriter' data-ref="__xray::LogWriter::~LogWriter" data-ref-filename="__xray..LogWriter..~LogWriter">~LogWriter</dfn>() {</td></tr>
+<tr><th id="136">136</th><td>  <a class="ref fn" href="../sanitizer_common/sanitizer_posix.h.html#__sanitizer::internal_close" title='__sanitizer::internal_close' data-ref="__sanitizer::internal_close" data-ref-filename="__sanitizer..internal_close">internal_close</a>(<a class="member field" href="xray_utils.h.html#__xray::LogWriter::Fd" title='__xray::LogWriter::Fd' data-ref="__xray::LogWriter::Fd" data-ref-filename="__xray..LogWriter..Fd">Fd</a>);</td></tr>
+<tr><th id="137">137</th><td>}</td></tr>
+<tr><th id="138">138</th><td></td></tr>
+<tr><th id="139">139</th><td><em>void</em> <a class="type" href="xray_utils.h.html#__xray::LogWriter" title='__xray::LogWriter' data-ref="__xray::LogWriter" data-ref-filename="__xray..LogWriter">LogWriter</a>::<dfn class="decl def fn" id="__xray::LogWriter::WriteAll" title='__xray::LogWriter::WriteAll' data-ref="__xray::LogWriter::WriteAll" data-ref-filename="__xray..LogWriter..WriteAll">WriteAll</dfn>(<em>const</em> <em>char</em> *<dfn class="local col1 decl" id="1Begin" title='Begin' data-type='const char *' data-ref="1Begin" data-ref-filename="1Begin">Begin</dfn>, <em>const</em> <em>char</em> *<dfn class="local col2 decl" id="2End" title='End' data-type='const char *' data-ref="2End" data-ref-filename="2End">End</dfn>) <a class="macro" href="xray_defs.h.html#18" title="" data-ref="_M/XRAY_NEVER_INSTRUMENT">XRAY_NEVER_INSTRUMENT</a> {</td></tr>
+<tr><th id="140">140</th><td>  <b>if</b> (<a class="local col1 ref" href="#1Begin" title='Begin' data-ref="1Begin" data-ref-filename="1Begin">Begin</a> == <a class="local col2 ref" href="#2End" title='End' data-ref="2End" data-ref-filename="2End">End</a>)</td></tr>
+<tr><th id="141">141</th><td>    <b>return</b>;</td></tr>
+<tr><th id="142">142</th><td>  <em>auto</em> <dfn class="local col3 decl" id="3TotalBytes" title='TotalBytes' data-type='long' data-ref="3TotalBytes" data-ref-filename="3TotalBytes">TotalBytes</dfn> = <span class="namespace">std::</span><span class='ref fn' title='std::distance' data-ref="_ZSt8distanceT_S_" data-ref-filename="_ZSt8distanceT_S_">distance</span>(<a class="local col1 ref" href="#1Begin" title='Begin' data-ref="1Begin" data-ref-filename="1Begin">Begin</a>, <a class="local col2 ref" href="#2End" title='End' data-ref="2End" data-ref-filename="2End">End</a>);</td></tr>
+<tr><th id="143">143</th><td>  <b>while</b> (<em>auto</em> <dfn class="local col4 decl" id="4Written" title='Written' data-type='long' data-ref="4Written" data-ref-filename="4Written"><a class="local col4 ref" href="#4Written" title='Written' data-ref="4Written" data-ref-filename="4Written">Written</a></dfn> = <a class="ref fn" href="../../../../include/unistd.h.html#write" title='write' data-ref="write" data-ref-filename="write">write</a>(<a class="member field" href="xray_utils.h.html#__xray::LogWriter::Fd" title='__xray::LogWriter::Fd' data-ref="__xray::LogWriter::Fd" data-ref-filename="__xray..LogWriter..Fd">Fd</a>, <a class="local col1 ref" href="#1Begin" title='Begin' data-ref="1Begin" data-ref-filename="1Begin">Begin</a>, <a class="local col3 ref" href="#3TotalBytes" title='TotalBytes' data-ref="3TotalBytes" data-ref-filename="3TotalBytes">TotalBytes</a>)) {</td></tr>
+<tr><th id="144">144</th><td>    <b>if</b> (<a class="local col4 ref" href="#4Written" title='Written' data-ref="4Written" data-ref-filename="4Written">Written</a> &lt; <var>0</var>) {</td></tr>
+<tr><th id="145">145</th><td>      <b>if</b> (<a class="macro" href="../../../../include/errno.h.html#38" title="(*__errno_location ())" data-ref="_M/errno">errno</a> == <a class="macro" href="../../../../include/asm-generic/errno-base.h.html#8" title="4" data-ref="_M/EINTR">EINTR</a>)</td></tr>
+<tr><th id="146">146</th><td>        <b>continue</b>; <i>// Try again.</i></td></tr>
+<tr><th id="147">147</th><td>      <a class="ref fn" href="../sanitizer_common/sanitizer_common.h.html#__sanitizer::Report" title='__sanitizer::Report' data-ref="__sanitizer::Report" data-ref-filename="__sanitizer..Report">Report</a>(<q>"Failed to write; errno = %d\n"</q>, <a class="macro" href="../../../../include/errno.h.html#38" title="(*__errno_location ())" data-ref="_M/errno">errno</a>);</td></tr>
+<tr><th id="148">148</th><td>      <b>return</b>;</td></tr>
+<tr><th id="149">149</th><td>    }</td></tr>
+<tr><th id="150">150</th><td>    <a class="local col3 ref" href="#3TotalBytes" title='TotalBytes' data-ref="3TotalBytes" data-ref-filename="3TotalBytes">TotalBytes</a> -= <a class="local col4 ref" href="#4Written" title='Written' data-ref="4Written" data-ref-filename="4Written">Written</a>;</td></tr>
+<tr><th id="151">151</th><td>    <b>if</b> (<a class="local col3 ref" href="#3TotalBytes" title='TotalBytes' data-ref="3TotalBytes" data-ref-filename="3TotalBytes">TotalBytes</a> == <var>0</var>)</td></tr>
+<tr><th id="152">152</th><td>      <b>break</b>;</td></tr>
+<tr><th id="153">153</th><td>    <a class="local col1 ref" href="#1Begin" title='Begin' data-ref="1Begin" data-ref-filename="1Begin">Begin</a> += <a class="local col4 ref" href="#4Written" title='Written' data-ref="4Written" data-ref-filename="4Written">Written</a>;</td></tr>
+<tr><th id="154">154</th><td>  }</td></tr>
+<tr><th id="155">155</th><td>}</td></tr>
+<tr><th id="156">156</th><td></td></tr>
+<tr><th id="157">157</th><td><em>void</em> <a class="type" href="xray_utils.h.html#__xray::LogWriter" title='__xray::LogWriter' data-ref="__xray::LogWriter" data-ref-filename="__xray..LogWriter">LogWriter</a>::<dfn class="decl def fn" id="__xray::LogWriter::Flush" title='__xray::LogWriter::Flush' data-ref="__xray::LogWriter::Flush" data-ref-filename="__xray..LogWriter..Flush">Flush</dfn>() <a class="macro" href="xray_defs.h.html#18" title="" data-ref="_M/XRAY_NEVER_INSTRUMENT">XRAY_NEVER_INSTRUMENT</a> {</td></tr>
+<tr><th id="158">158</th><td>  <a class="ref fn" href="../../../../include/unistd.h.html#fsync" title='fsync' data-ref="fsync" data-ref-filename="fsync">fsync</a>(<a class="member field" href="xray_utils.h.html#__xray::LogWriter::Fd" title='__xray::LogWriter::Fd' data-ref="__xray::LogWriter::Fd" data-ref-filename="__xray..LogWriter..Fd">Fd</a>);</td></tr>
+<tr><th id="159">159</th><td>}</td></tr>
+<tr><th id="160">160</th><td></td></tr>
+<tr><th id="161">161</th><td><a class="type" href="xray_utils.h.html#__xray::LogWriter" title='__xray::LogWriter' data-ref="__xray::LogWriter" data-ref-filename="__xray..LogWriter">LogWriter</a> *<a class="type" href="xray_utils.h.html#__xray::LogWriter" title='__xray::LogWriter' data-ref="__xray::LogWriter" data-ref-filename="__xray..LogWriter">LogWriter</a>::<dfn class="decl def fn" id="__xray::LogWriter::Open" title='__xray::LogWriter::Open' data-ref="__xray::LogWriter::Open" data-ref-filename="__xray..LogWriter..Open">Open</dfn>() <a class="macro" href="xray_defs.h.html#18" title="" data-ref="_M/XRAY_NEVER_INSTRUMENT">XRAY_NEVER_INSTRUMENT</a> {</td></tr>
+<tr><th id="162">162</th><td>  <i>// Open a temporary file once for the log.</i></td></tr>
+<tr><th id="163">163</th><td>  <em>char</em> <dfn class="local col5 decl" id="5TmpFilename" title='TmpFilename' data-type='char [256]' data-ref="5TmpFilename" data-ref-filename="5TmpFilename">TmpFilename</dfn>[<var>256</var>] = {};</td></tr>
+<tr><th id="164">164</th><td>  <em>char</em> <dfn class="local col6 decl" id="6TmpWildcardPattern" title='TmpWildcardPattern' data-type='char [7]' data-ref="6TmpWildcardPattern" data-ref-filename="6TmpWildcardPattern">TmpWildcardPattern</dfn>[] = <q>"XXXXXX"</q>;</td></tr>
+<tr><th id="165">165</th><td>  <em>auto</em> **<dfn class="local col7 decl" id="7Argv" title='Argv' data-type='char **' data-ref="7Argv" data-ref-filename="7Argv">Argv</dfn> = <a class="ref fn" href="../sanitizer_common/sanitizer_common.h.html#__sanitizer::GetArgv" title='__sanitizer::GetArgv' data-ref="__sanitizer::GetArgv" data-ref-filename="__sanitizer..GetArgv">GetArgv</a>();</td></tr>
+<tr><th id="166">166</th><td>  <em>const</em> <em>char</em> *<dfn class="local col8 decl" id="8Progname" title='Progname' data-type='const char *' data-ref="8Progname" data-ref-filename="8Progname">Progname</dfn> = !<a class="local col7 ref" href="#7Argv" title='Argv' data-ref="7Argv" data-ref-filename="7Argv">Argv</a> ? <q>"(unknown)"</q> : <a class="local col7 ref" href="#7Argv" title='Argv' data-ref="7Argv" data-ref-filename="7Argv">Argv</a>[<var>0</var>];</td></tr>
+<tr><th id="167">167</th><td>  <em>const</em> <em>char</em> *<dfn class="local col9 decl" id="9LastSlash" title='LastSlash' data-type='const char *' data-ref="9LastSlash" data-ref-filename="9LastSlash">LastSlash</dfn> = <a class="ref fn" href="../sanitizer_common/sanitizer_libc.h.html#__sanitizer::internal_strrchr" title='__sanitizer::internal_strrchr' data-ref="__sanitizer::internal_strrchr" data-ref-filename="__sanitizer..internal_strrchr">internal_strrchr</a>(<a class="local col8 ref" href="#8Progname" title='Progname' data-ref="8Progname" data-ref-filename="8Progname">Progname</a>, <kbd>'/'</kbd>);</td></tr>
+<tr><th id="168">168</th><td></td></tr>
+<tr><th id="169">169</th><td>  <b>if</b> (<a class="local col9 ref" href="#9LastSlash" title='LastSlash' data-ref="9LastSlash" data-ref-filename="9LastSlash">LastSlash</a> != <b>nullptr</b>)</td></tr>
+<tr><th id="170">170</th><td>    <a class="local col8 ref" href="#8Progname" title='Progname' data-ref="8Progname" data-ref-filename="8Progname">Progname</a> = <a class="local col9 ref" href="#9LastSlash" title='LastSlash' data-ref="9LastSlash" data-ref-filename="9LastSlash">LastSlash</a> + <var>1</var>;</td></tr>
+<tr><th id="171">171</th><td></td></tr>
+<tr><th id="172">172</th><td>  <em>int</em> <dfn class="local col0 decl" id="10NeededLength" title='NeededLength' data-type='int' data-ref="10NeededLength" data-ref-filename="10NeededLength">NeededLength</dfn> = <a class="ref fn" href="../sanitizer_common/sanitizer_libc.h.html#__sanitizer::internal_snprintf" title='__sanitizer::internal_snprintf' data-ref="__sanitizer::internal_snprintf" data-ref-filename="__sanitizer..internal_snprintf">internal_snprintf</a>(</td></tr>
+<tr><th id="173">173</th><td>      <a class="local col5 ref" href="#5TmpFilename" title='TmpFilename' data-ref="5TmpFilename" data-ref-filename="5TmpFilename">TmpFilename</a>, <b>sizeof</b>(<a class="local col5 ref" href="#5TmpFilename" title='TmpFilename' data-ref="5TmpFilename" data-ref-filename="5TmpFilename">TmpFilename</a>), <q>"%s%s.%s"</q>,</td></tr>
+<tr><th id="174">174</th><td>      <a class="ref fn" href="xray_flags.h.html#__xray::flags" title='__xray::flags' data-ref="__xray::flags" data-ref-filename="__xray..flags">flags</a>()-&gt;<a class="ref field" href="xray_flags.inc.html#18" title='__xray::Flags::xray_logfile_base' data-ref="__xray::Flags::xray_logfile_base" data-ref-filename="__xray..Flags..xray_logfile_base">xray_logfile_base</a>, <a class="local col8 ref" href="#8Progname" title='Progname' data-ref="8Progname" data-ref-filename="8Progname">Progname</a>, <a class="local col6 ref" href="#6TmpWildcardPattern" title='TmpWildcardPattern' data-ref="6TmpWildcardPattern" data-ref-filename="6TmpWildcardPattern">TmpWildcardPattern</a>);</td></tr>
+<tr><th id="175">175</th><td>  <b>if</b> (<a class="local col0 ref" href="#10NeededLength" title='NeededLength' data-ref="10NeededLength" data-ref-filename="10NeededLength">NeededLength</a> &gt; <em>int</em>(<b>sizeof</b>(<a class="local col5 ref" href="#5TmpFilename" title='TmpFilename' data-ref="5TmpFilename" data-ref-filename="5TmpFilename">TmpFilename</a>))) {</td></tr>
+<tr><th id="176">176</th><td>    <a class="ref fn" href="../sanitizer_common/sanitizer_common.h.html#__sanitizer::Report" title='__sanitizer::Report' data-ref="__sanitizer::Report" data-ref-filename="__sanitizer..Report">Report</a>(<q>"XRay log file name too long (%d): %s\n"</q>, <a class="local col0 ref" href="#10NeededLength" title='NeededLength' data-ref="10NeededLength" data-ref-filename="10NeededLength">NeededLength</a>, <a class="local col5 ref" href="#5TmpFilename" title='TmpFilename' data-ref="5TmpFilename" data-ref-filename="5TmpFilename">TmpFilename</a>);</td></tr>
+<tr><th id="177">177</th><td>    <b>return</b> <b>nullptr</b>;</td></tr>
+<tr><th id="178">178</th><td>  }</td></tr>
+<tr><th id="179">179</th><td>  <em>int</em> <dfn class="local col1 decl" id="11Fd" title='Fd' data-type='int' data-ref="11Fd" data-ref-filename="11Fd">Fd</dfn> = <a class="ref fn" href="../../../../include/stdlib.h.html#mkstemp" title='mkstemp' data-ref="mkstemp" data-ref-filename="mkstemp">mkstemp</a>(<a class="local col5 ref" href="#5TmpFilename" title='TmpFilename' data-ref="5TmpFilename" data-ref-filename="5TmpFilename">TmpFilename</a>);</td></tr>
+<tr><th id="180">180</th><td>  <b>if</b> (<a class="local col1 ref" href="#11Fd" title='Fd' data-ref="11Fd" data-ref-filename="11Fd">Fd</a> == -<var>1</var>) {</td></tr>
+<tr><th id="181">181</th><td>    <a class="ref fn" href="../sanitizer_common/sanitizer_common.h.html#__sanitizer::Report" title='__sanitizer::Report' data-ref="__sanitizer::Report" data-ref-filename="__sanitizer..Report">Report</a>(<q>"XRay: Failed opening temporary file '%s'; not logging events.\n"</q>,</td></tr>
+<tr><th id="182">182</th><td>           <a class="local col5 ref" href="#5TmpFilename" title='TmpFilename' data-ref="5TmpFilename" data-ref-filename="5TmpFilename">TmpFilename</a>);</td></tr>
+<tr><th id="183">183</th><td>    <b>return</b> <b>nullptr</b>;</td></tr>
+<tr><th id="184">184</th><td>  }</td></tr>
+<tr><th id="185">185</th><td>  <b>if</b> (<a class="ref fn" href="../sanitizer_common/sanitizer_common.h.html#__sanitizer::Verbosity" title='__sanitizer::Verbosity' data-ref="__sanitizer::Verbosity" data-ref-filename="__sanitizer..Verbosity">Verbosity</a>())</td></tr>
+<tr><th id="186">186</th><td>    <a class="ref fn" href="../sanitizer_common/sanitizer_common.h.html#__sanitizer::Report" title='__sanitizer::Report' data-ref="__sanitizer::Report" data-ref-filename="__sanitizer..Report">Report</a>(<q>"XRay: Log file in '%s'\n"</q>, <a class="local col5 ref" href="#5TmpFilename" title='TmpFilename' data-ref="5TmpFilename" data-ref-filename="5TmpFilename">TmpFilename</a>);</td></tr>
+<tr><th id="187">187</th><td></td></tr>
+<tr><th id="188">188</th><td>  <a class="type" href="xray_utils.h.html#__xray::LogWriter" title='__xray::LogWriter' data-ref="__xray::LogWriter" data-ref-filename="__xray..LogWriter">LogWriter</a> *<dfn class="local col2 decl" id="12LW" title='LW' data-type='__xray::LogWriter *' data-ref="12LW" data-ref-filename="12LW">LW</dfn> = <a class="ref fn" href="xray_allocator.h.html#__xray::allocate" title='__xray::allocate' data-ref="__xray::allocate" data-ref-filename="__xray..allocate">allocate</a>&lt;<a class="type" href="xray_utils.h.html#__xray::LogWriter" title='__xray::LogWriter' data-ref="__xray::LogWriter" data-ref-filename="__xray..LogWriter">LogWriter</a>&gt;();</td></tr>
+<tr><th id="189">189</th><td>  <b>new</b> (<a class="local col2 ref" href="#12LW" title='LW' data-ref="12LW" data-ref-filename="12LW">LW</a>) <a class="type" href="xray_utils.h.html#__xray::LogWriter" title='__xray::LogWriter' data-ref="__xray::LogWriter" data-ref-filename="__xray..LogWriter">LogWriter</a><a class="ref fn" href="xray_utils.h.html#__xray::LogWriter::LogWriter" title='__xray::LogWriter::LogWriter' data-ref="__xray::LogWriter::LogWriter" data-ref-filename="__xray..LogWriter..LogWriter">(</a><a class="local col1 ref" href="#11Fd" title='Fd' data-ref="11Fd" data-ref-filename="11Fd">Fd</a>);</td></tr>
+<tr><th id="190">190</th><td>  <b>return</b> <a class="local col2 ref" href="#12LW" title='LW' data-ref="12LW" data-ref-filename="12LW">LW</a>;</td></tr>
+<tr><th id="191">191</th><td>}</td></tr>
+<tr><th id="192">192</th><td></td></tr>
+<tr><th id="193">193</th><td><em>void</em> <a class="type" href="xray_utils.h.html#__xray::LogWriter" title='__xray::LogWriter' data-ref="__xray::LogWriter" data-ref-filename="__xray..LogWriter">LogWriter</a>::<dfn class="decl def fn" id="__xray::LogWriter::Close" title='__xray::LogWriter::Close' data-ref="__xray::LogWriter::Close" data-ref-filename="__xray..LogWriter..Close">Close</dfn>(<a class="type" href="xray_utils.h.html#__xray::LogWriter" title='__xray::LogWriter' data-ref="__xray::LogWriter" data-ref-filename="__xray..LogWriter">LogWriter</a> *<dfn class="local col3 decl" id="13LW" title='LW' data-type='__xray::LogWriter *' data-ref="13LW" data-ref-filename="13LW">LW</dfn>) {</td></tr>
+<tr><th id="194">194</th><td>  <a class="local col3 ref" href="#13LW" title='LW' data-ref="13LW" data-ref-filename="13LW">LW</a>-&gt;<a class="member fn" href="#__xray::LogWriter::~LogWriter" title='__xray::LogWriter::~LogWriter' data-ref="__xray::LogWriter::~LogWriter" data-ref-filename="__xray..LogWriter..~LogWriter">~LogWriter</a>();</td></tr>
+<tr><th id="195">195</th><td>  <a class="ref fn" href="xray_allocator.h.html#__xray::deallocate" title='__xray::deallocate' data-ref="__xray::deallocate" data-ref-filename="__xray..deallocate">deallocate</a>(<a class="local col3 ref" href="#13LW" title='LW' data-ref="13LW" data-ref-filename="13LW">LW</a>);</td></tr>
+<tr><th id="196">196</th><td>}</td></tr>
+<tr><th id="197">197</th><td><u>#<span data-ppcond="41">endif</span> // SANITIZER_FUCHSIA</u></td></tr>
+<tr><th id="198">198</th><td></td></tr>
+<tr><th id="199">199</th><td>} <i>// namespace __xray</i></td></tr>
+<tr><th id="200">200</th><td></td></tr>
+</table><hr/><p id='footer'>
+Generated on <em>2021-Jul-01</em> from project llvm revision <em>12</em>

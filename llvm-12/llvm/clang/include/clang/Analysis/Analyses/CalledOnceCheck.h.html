@@ -1,0 +1,129 @@
+<!doctype html>
+<html>
+<head>
+<meta name="viewport" content="width=device-width, initial-scale=1.0"><title>CalledOnceCheck.h source code [llvm/clang/include/clang/Analysis/Analyses/CalledOnceCheck.h] - Woboq Code Browser</title>
+<meta name="woboq:interestingDefinitions" content="clang::CalledOnceCheckHandler,clang::NeverCalledReason "/>
+<link rel="stylesheet" href="../../../../../.././data/qtcreator.css" title="QtCreator"/>
+<link rel="alternate stylesheet" href="../../../../../.././data/kdevelop.css" title="KDevelop"/>
+<script type="text/javascript" src="../../../../../.././data/jquery/jquery.min.js"></script>
+<script type="text/javascript" src="../../../../../.././data/jquery/jquery-ui.min.js"></script>
+<script>var file = 'llvm/clang/include/clang/Analysis/Analyses/CalledOnceCheck.h'; var root_path = '../../../../../..'; var data_path = '../../../../../.././data'; var ecma_script_api_version = 2;</script>
+<script src='../../../../../.././data/codebrowser.js'></script>
+</head>
+<body><div id='header'><h1 id='breadcrumb'><span>Browse the source code of </span><a href='../../../../..'>llvm</a>/<a href='../../../..'>clang</a>/<a href='../../..'>include</a>/<a href='../..'>clang</a>/<a href='..'>Analysis</a>/<a href='./'>Analyses</a>/<a href='CalledOnceCheck.h.html'>CalledOnceCheck.h</a></h1></div>
+<hr/><div id='content'><table class="code">
+<tr><th id="1">1</th><td><i>//===- CalledOnceCheck.h - Check 'called once' parameters -------*- C++ -*-===//</i></td></tr>
+<tr><th id="2">2</th><td><i>//</i></td></tr>
+<tr><th id="3">3</th><td><i>// Part of the LLVM Project, under the Apache License v2.0 with LLVM Exceptions.</i></td></tr>
+<tr><th id="4">4</th><td><i>// See <a href="https://llvm.org/LICENSE.txt">https://llvm.org/LICENSE.txt</a> for license information.</i></td></tr>
+<tr><th id="5">5</th><td><i>// SPDX-License-Identifier: Apache-2.0 WITH LLVM-exception</i></td></tr>
+<tr><th id="6">6</th><td><i>//</i></td></tr>
+<tr><th id="7">7</th><td><i>//===----------------------------------------------------------------------===//</i></td></tr>
+<tr><th id="8">8</th><td><i>//</i></td></tr>
+<tr><th id="9">9</th><td><i>//  This file defines a check for function-like parameters that should be</i></td></tr>
+<tr><th id="10">10</th><td><i>//  called exactly one time.</i></td></tr>
+<tr><th id="11">11</th><td><i>//</i></td></tr>
+<tr><th id="12">12</th><td><i>//===----------------------------------------------------------------------===//</i></td></tr>
+<tr><th id="13">13</th><td></td></tr>
+<tr><th id="14">14</th><td><u>#<span data-ppcond="14">ifndef</span> <span class="macro" data-ref="_M/LLVM_CLANG_ANALYSIS_ANALYSES_CALLEDONCECHECK_H">LLVM_CLANG_ANALYSIS_ANALYSES_CALLEDONCECHECK_H</span></u></td></tr>
+<tr><th id="15">15</th><td><u>#define <dfn class="macro" id="_M/LLVM_CLANG_ANALYSIS_ANALYSES_CALLEDONCECHECK_H" data-ref="_M/LLVM_CLANG_ANALYSIS_ANALYSES_CALLEDONCECHECK_H">LLVM_CLANG_ANALYSIS_ANALYSES_CALLEDONCECHECK_H</dfn></u></td></tr>
+<tr><th id="16">16</th><td></td></tr>
+<tr><th id="17">17</th><td><b>namespace</b> <span class="namespace">clang</span> {</td></tr>
+<tr><th id="18">18</th><td></td></tr>
+<tr><th id="19">19</th><td><b>class</b> <a class="type" href="../AnalysisDeclContext.h.html#clang::AnalysisDeclContext" title='clang::AnalysisDeclContext' data-ref="clang::AnalysisDeclContext" data-ref-filename="clang..AnalysisDeclContext" id="clang::AnalysisDeclContext">AnalysisDeclContext</a>;</td></tr>
+<tr><th id="20">20</th><td><b>class</b> <a class="type" href="../CFG.h.html#clang::CFG" title='clang::CFG' data-ref="clang::CFG" data-ref-filename="clang..CFG" id="clang::CFG">CFG</a>;</td></tr>
+<tr><th id="21">21</th><td><b>class</b> <a class="type" href="../../AST/DeclBase.h.html#clang::Decl" title='clang::Decl' data-ref="clang::Decl" data-ref-filename="clang..Decl" id="clang::Decl">Decl</a>;</td></tr>
+<tr><th id="22">22</th><td><b>class</b> <a class="type" href="../../AST/DeclBase.h.html#clang::DeclContext" title='clang::DeclContext' data-ref="clang::DeclContext" data-ref-filename="clang..DeclContext" id="clang::DeclContext">DeclContext</a>;</td></tr>
+<tr><th id="23">23</th><td><b>class</b> <a class="type" href="../../AST/Expr.h.html#clang::Expr" title='clang::Expr' data-ref="clang::Expr" data-ref-filename="clang..Expr" id="clang::Expr">Expr</a>;</td></tr>
+<tr><th id="24">24</th><td><b>class</b> <a class="type" href="../../AST/Decl.h.html#clang::ParmVarDecl" title='clang::ParmVarDecl' data-ref="clang::ParmVarDecl" data-ref-filename="clang..ParmVarDecl" id="clang::ParmVarDecl">ParmVarDecl</a>;</td></tr>
+<tr><th id="25">25</th><td><b>class</b> <a class="type" href="../../AST/Stmt.h.html#clang::Stmt" title='clang::Stmt' data-ref="clang::Stmt" data-ref-filename="clang..Stmt" id="clang::Stmt">Stmt</a>;</td></tr>
+<tr><th id="26">26</th><td></td></tr>
+<tr><th id="27">27</th><td><i class="doc">/// Classification of situations when parameter is not called on every path.</i></td></tr>
+<tr><th id="28">28</th><td><i class="doc">/// <span class="command">\enum</span> <span class="verb">IfThen -- then branch of the if statement has no call.</span></i></td></tr>
+<tr><th id="29">29</th><td><i class="doc">/// <span class="command">\enum</span> <span class="verb">IfElse -- else branch of the if statement has no call.</span></i></td></tr>
+<tr><th id="30">30</th><td><i class="doc">/// <span class="command">\enum</span> <span class="verb">Switch -- one of the switch cases doesn't have a call.</span></i></td></tr>
+<tr><th id="31">31</th><td><i class="doc">/// <span class="command">\enum</span> <span class="verb">SwitchSkipped -- there is no call if none of the cases appies.</span></i></td></tr>
+<tr><th id="32">32</th><td><i class="doc">/// <span class="command">\enum</span> <span class="verb">LoopEntered -- no call when the loop is entered.</span></i></td></tr>
+<tr><th id="33">33</th><td><i class="doc">/// <span class="command">\enum</span> <span class="verb">LoopSkipped -- no call when the loop is not entered.</span></i></td></tr>
+<tr><th id="34">34</th><td><i class="doc">/// <span class="command">\enum</span> <span class="verb">FallbackReason -- fallback case when we were not able to figure out</span></i></td></tr>
+<tr><th id="35">35</th><td><i class="doc">/// the reason.</i></td></tr>
+<tr><th id="36">36</th><td><b>enum</b> <b>class</b> <dfn class="type def" id="clang::NeverCalledReason" title='clang::NeverCalledReason' data-ref="clang::NeverCalledReason" data-ref-filename="clang..NeverCalledReason">NeverCalledReason</dfn> {</td></tr>
+<tr><th id="37">37</th><td>  <dfn class="enum" id="clang::NeverCalledReason::IfThen" title='clang::NeverCalledReason::IfThen' data-ref="clang::NeverCalledReason::IfThen" data-ref-filename="clang..NeverCalledReason..IfThen">IfThen</dfn>,</td></tr>
+<tr><th id="38">38</th><td>  <dfn class="enum" id="clang::NeverCalledReason::IfElse" title='clang::NeverCalledReason::IfElse' data-ref="clang::NeverCalledReason::IfElse" data-ref-filename="clang..NeverCalledReason..IfElse">IfElse</dfn>,</td></tr>
+<tr><th id="39">39</th><td>  <dfn class="enum" id="clang::NeverCalledReason::Switch" title='clang::NeverCalledReason::Switch' data-ref="clang::NeverCalledReason::Switch" data-ref-filename="clang..NeverCalledReason..Switch">Switch</dfn>,</td></tr>
+<tr><th id="40">40</th><td>  <dfn class="enum" id="clang::NeverCalledReason::SwitchSkipped" title='clang::NeverCalledReason::SwitchSkipped' data-ref="clang::NeverCalledReason::SwitchSkipped" data-ref-filename="clang..NeverCalledReason..SwitchSkipped">SwitchSkipped</dfn>,</td></tr>
+<tr><th id="41">41</th><td>  <dfn class="enum" id="clang::NeverCalledReason::LoopEntered" title='clang::NeverCalledReason::LoopEntered' data-ref="clang::NeverCalledReason::LoopEntered" data-ref-filename="clang..NeverCalledReason..LoopEntered">LoopEntered</dfn>,</td></tr>
+<tr><th id="42">42</th><td>  <dfn class="enum" id="clang::NeverCalledReason::LoopSkipped" title='clang::NeverCalledReason::LoopSkipped' data-ref="clang::NeverCalledReason::LoopSkipped" data-ref-filename="clang..NeverCalledReason..LoopSkipped">LoopSkipped</dfn>,</td></tr>
+<tr><th id="43">43</th><td>  <dfn class="enum" id="clang::NeverCalledReason::FallbackReason" title='clang::NeverCalledReason::FallbackReason' data-ref="clang::NeverCalledReason::FallbackReason" data-ref-filename="clang..NeverCalledReason..FallbackReason">FallbackReason</dfn>,</td></tr>
+<tr><th id="44">44</th><td>  <dfn class="enum" id="clang::NeverCalledReason::LARGEST_VALUE" title='clang::NeverCalledReason::LARGEST_VALUE' data-ref="clang::NeverCalledReason::LARGEST_VALUE" data-ref-filename="clang..NeverCalledReason..LARGEST_VALUE">LARGEST_VALUE</dfn> = <a class="enum" href="#clang::NeverCalledReason::FallbackReason" title='clang::NeverCalledReason::FallbackReason' data-ref="clang::NeverCalledReason::FallbackReason" data-ref-filename="clang..NeverCalledReason..FallbackReason">FallbackReason</a></td></tr>
+<tr><th id="45">45</th><td>};</td></tr>
+<tr><th id="46">46</th><td></td></tr>
+<tr><th id="47">47</th><td><b>class</b> <dfn class="type def" id="clang::CalledOnceCheckHandler" title='clang::CalledOnceCheckHandler' data-ref="clang::CalledOnceCheckHandler" data-ref-filename="clang..CalledOnceCheckHandler">CalledOnceCheckHandler</dfn> {</td></tr>
+<tr><th id="48">48</th><td><b>public</b>:</td></tr>
+<tr><th id="49">49</th><td>  <dfn class="decl def fn" id="_ZN5clang22CalledOnceCheckHandlerC1Ev" title='clang::CalledOnceCheckHandler::CalledOnceCheckHandler' data-ref="_ZN5clang22CalledOnceCheckHandlerC1Ev" data-ref-filename="_ZN5clang22CalledOnceCheckHandlerC1Ev">CalledOnceCheckHandler</dfn>() = <b>default</b>;</td></tr>
+<tr><th id="50">50</th><td>  <b>virtual</b> <dfn class="virtual decl def fn" id="_ZN5clang22CalledOnceCheckHandlerD1Ev" title='clang::CalledOnceCheckHandler::~CalledOnceCheckHandler' data-ref="_ZN5clang22CalledOnceCheckHandlerD1Ev" data-ref-filename="_ZN5clang22CalledOnceCheckHandlerD1Ev">~CalledOnceCheckHandler</dfn>() = <b>default</b>;</td></tr>
+<tr><th id="51">51</th><td></td></tr>
+<tr><th id="52">52</th><td>  <i class="doc">/// Called when parameter is called twice.</i></td></tr>
+<tr><th id="53">53</th><td><i class="doc">  /// <span class="command">\param</span> <span class="arg">Parameter</span> -- parameter that should be called once.</i></td></tr>
+<tr><th id="54">54</th><td><i class="doc">  /// <span class="command">\param</span> <span class="arg">Call</span> -- call to report the warning.</i></td></tr>
+<tr><th id="55">55</th><td><i class="doc">  /// <span class="command">\param</span> <span class="arg">PrevCall</span> -- previous call.</i></td></tr>
+<tr><th id="56">56</th><td><i class="doc">  /// <span class="command">\param</span> <span class="arg">IsCompletionHandler</span> -- true, if parameter is a completion handler.</i></td></tr>
+<tr><th id="57">57</th><td><i class="doc">  /// <span class="command">\param</span> <span class="arg">Poised</span> -- true, if the second call is guaranteed to happen after</i></td></tr>
+<tr><th id="58">58</th><td><i class="doc">  /// the first call.</i></td></tr>
+<tr><th id="59">59</th><td>  <b>virtual</b> <em>void</em> <dfn class="virtual decl def fn" id="_ZN5clang22CalledOnceCheckHandler16handleDoubleCallEPKNS_11ParmVarDeclEPKNS_4ExprES6_bb" title='clang::CalledOnceCheckHandler::handleDoubleCall' data-ref="_ZN5clang22CalledOnceCheckHandler16handleDoubleCallEPKNS_11ParmVarDeclEPKNS_4ExprES6_bb" data-ref-filename="_ZN5clang22CalledOnceCheckHandler16handleDoubleCallEPKNS_11ParmVarDeclEPKNS_4ExprES6_bb">handleDoubleCall</dfn>(<em>const</em> <a class="type" href="../../AST/Decl.h.html#clang::ParmVarDecl" title='clang::ParmVarDecl' data-ref="clang::ParmVarDecl" data-ref-filename="clang..ParmVarDecl">ParmVarDecl</a> *<dfn class="local col1 decl" id="1Parameter" title='Parameter' data-type='const clang::ParmVarDecl *' data-ref="1Parameter" data-ref-filename="1Parameter">Parameter</dfn>, <em>const</em> <a class="type" href="../../AST/Expr.h.html#clang::Expr" title='clang::Expr' data-ref="clang::Expr" data-ref-filename="clang..Expr">Expr</a> *<dfn class="local col2 decl" id="2Call" title='Call' data-type='const clang::Expr *' data-ref="2Call" data-ref-filename="2Call">Call</dfn>,</td></tr>
+<tr><th id="60">60</th><td>                                <em>const</em> <a class="type" href="../../AST/Expr.h.html#clang::Expr" title='clang::Expr' data-ref="clang::Expr" data-ref-filename="clang..Expr">Expr</a> *<dfn class="local col3 decl" id="3PrevCall" title='PrevCall' data-type='const clang::Expr *' data-ref="3PrevCall" data-ref-filename="3PrevCall">PrevCall</dfn>, <em>bool</em> <dfn class="local col4 decl" id="4IsCompletionHandler" title='IsCompletionHandler' data-type='bool' data-ref="4IsCompletionHandler" data-ref-filename="4IsCompletionHandler">IsCompletionHandler</dfn>,</td></tr>
+<tr><th id="61">61</th><td>                                <em>bool</em> <dfn class="local col5 decl" id="5Poised" title='Poised' data-type='bool' data-ref="5Poised" data-ref-filename="5Poised">Poised</dfn>) {}</td></tr>
+<tr><th id="62">62</th><td></td></tr>
+<tr><th id="63">63</th><td>  <i class="doc">/// Called when parameter is not called at all.</i></td></tr>
+<tr><th id="64">64</th><td><i class="doc">  /// <span class="command">\param</span> <span class="arg">Parameter</span> -- parameter that should be called once.</i></td></tr>
+<tr><th id="65">65</th><td><i class="doc">  /// <span class="command">\param</span> <span class="arg">IsCompletionHandler</span> -- true, if parameter is a completion handler.</i></td></tr>
+<tr><th id="66">66</th><td>  <b>virtual</b> <em>void</em> <dfn class="virtual decl def fn" id="_ZN5clang22CalledOnceCheckHandler17handleNeverCalledEPKNS_11ParmVarDeclEb" title='clang::CalledOnceCheckHandler::handleNeverCalled' data-ref="_ZN5clang22CalledOnceCheckHandler17handleNeverCalledEPKNS_11ParmVarDeclEb" data-ref-filename="_ZN5clang22CalledOnceCheckHandler17handleNeverCalledEPKNS_11ParmVarDeclEb">handleNeverCalled</dfn>(<em>const</em> <a class="type" href="../../AST/Decl.h.html#clang::ParmVarDecl" title='clang::ParmVarDecl' data-ref="clang::ParmVarDecl" data-ref-filename="clang..ParmVarDecl">ParmVarDecl</a> *<dfn class="local col6 decl" id="6Parameter" title='Parameter' data-type='const clang::ParmVarDecl *' data-ref="6Parameter" data-ref-filename="6Parameter">Parameter</dfn>,</td></tr>
+<tr><th id="67">67</th><td>                                 <em>bool</em> <dfn class="local col7 decl" id="7IsCompletionHandler" title='IsCompletionHandler' data-type='bool' data-ref="7IsCompletionHandler" data-ref-filename="7IsCompletionHandler">IsCompletionHandler</dfn>) {}</td></tr>
+<tr><th id="68">68</th><td></td></tr>
+<tr><th id="69">69</th><td>  <i class="doc">/// Called when captured parameter is not called at all.</i></td></tr>
+<tr><th id="70">70</th><td><i class="doc">  /// <span class="command">\param</span> <span class="arg">Parameter</span> -- parameter that should be called once.</i></td></tr>
+<tr><th id="71">71</th><td><i class="doc">  /// <span class="command">\param</span> <span class="arg">Where</span> -- declaration that captures<span class="command"> \p</span> <span class="arg">Parameter</span></i></td></tr>
+<tr><th id="72">72</th><td><i class="doc">  /// <span class="command">\param</span> <span class="arg">IsCompletionHandler</span> -- true, if parameter is a completion handler.</i></td></tr>
+<tr><th id="73">73</th><td>  <b>virtual</b> <em>void</em> <dfn class="virtual decl def fn" id="_ZN5clang22CalledOnceCheckHandler25handleCapturedNeverCalledEPKNS_11ParmVarDeclEPKNS_4DeclEb" title='clang::CalledOnceCheckHandler::handleCapturedNeverCalled' data-ref="_ZN5clang22CalledOnceCheckHandler25handleCapturedNeverCalledEPKNS_11ParmVarDeclEPKNS_4DeclEb" data-ref-filename="_ZN5clang22CalledOnceCheckHandler25handleCapturedNeverCalledEPKNS_11ParmVarDeclEPKNS_4DeclEb">handleCapturedNeverCalled</dfn>(<em>const</em> <a class="type" href="../../AST/Decl.h.html#clang::ParmVarDecl" title='clang::ParmVarDecl' data-ref="clang::ParmVarDecl" data-ref-filename="clang..ParmVarDecl">ParmVarDecl</a> *<dfn class="local col8 decl" id="8Parameter" title='Parameter' data-type='const clang::ParmVarDecl *' data-ref="8Parameter" data-ref-filename="8Parameter">Parameter</dfn>,</td></tr>
+<tr><th id="74">74</th><td>                                         <em>const</em> <a class="type" href="../../AST/DeclBase.h.html#clang::Decl" title='clang::Decl' data-ref="clang::Decl" data-ref-filename="clang..Decl">Decl</a> *<dfn class="local col9 decl" id="9Where" title='Where' data-type='const clang::Decl *' data-ref="9Where" data-ref-filename="9Where">Where</dfn>,</td></tr>
+<tr><th id="75">75</th><td>                                         <em>bool</em> <dfn class="local col0 decl" id="10IsCompletionHandler" title='IsCompletionHandler' data-type='bool' data-ref="10IsCompletionHandler" data-ref-filename="10IsCompletionHandler">IsCompletionHandler</dfn>) {}</td></tr>
+<tr><th id="76">76</th><td></td></tr>
+<tr><th id="77">77</th><td>  <i class="doc">/// Called when parameter is not called on one of the paths.</i></td></tr>
+<tr><th id="78">78</th><td><i class="doc">  /// Usually we try to find a statement that is the least common ancestor of</i></td></tr>
+<tr><th id="79">79</th><td><i class="doc">  /// the path containing the call and not containing the call.  This helps us</i></td></tr>
+<tr><th id="80">80</th><td><i class="doc">  /// to pinpoint a bad path for the user.</i></td></tr>
+<tr><th id="81">81</th><td><i class="doc">  /// <span class="command">\param</span> <span class="arg">Parameter</span> -- parameter that should be called once.</i></td></tr>
+<tr><th id="82">82</th><td><i class="doc">  /// <span class="command">\param</span> <span class="arg">Where</span> -- the least common ancestor statement.</i></td></tr>
+<tr><th id="83">83</th><td><i class="doc">  /// <span class="command">\param</span> <span class="arg">Reason</span> -- a reason describing the path without a call.</i></td></tr>
+<tr><th id="84">84</th><td><i class="doc">  /// <span class="command">\param</span> <span class="arg">IsCalledDirectly</span> -- true, if parameter actually gets called on</i></td></tr>
+<tr><th id="85">85</th><td><i class="doc">  /// the other path.  It is opposed to be used in some other way (added to some</i></td></tr>
+<tr><th id="86">86</th><td><i class="doc">  /// collection, passed as a parameter, etc.).</i></td></tr>
+<tr><th id="87">87</th><td><i class="doc">  /// <span class="command">\param</span> <span class="arg">IsCompletionHandler</span> -- true, if parameter is a completion handler.</i></td></tr>
+<tr><th id="88">88</th><td>  <b>virtual</b> <em>void</em> <dfn class="virtual decl def fn" id="_ZN5clang22CalledOnceCheckHandler17handleNeverCalledEPKNS_11ParmVarDeclEPKNS_4StmtENS_17NeverCalledReasonEbb" title='clang::CalledOnceCheckHandler::handleNeverCalled' data-ref="_ZN5clang22CalledOnceCheckHandler17handleNeverCalledEPKNS_11ParmVarDeclEPKNS_4StmtENS_17NeverCalledReasonEbb" data-ref-filename="_ZN5clang22CalledOnceCheckHandler17handleNeverCalledEPKNS_11ParmVarDeclEPKNS_4StmtENS_17NeverCalledReasonEbb">handleNeverCalled</dfn>(<em>const</em> <a class="type" href="../../AST/Decl.h.html#clang::ParmVarDecl" title='clang::ParmVarDecl' data-ref="clang::ParmVarDecl" data-ref-filename="clang..ParmVarDecl">ParmVarDecl</a> *<dfn class="local col1 decl" id="11Parameter" title='Parameter' data-type='const clang::ParmVarDecl *' data-ref="11Parameter" data-ref-filename="11Parameter">Parameter</dfn>,</td></tr>
+<tr><th id="89">89</th><td>                                 <em>const</em> <a class="type" href="../../AST/Stmt.h.html#clang::Stmt" title='clang::Stmt' data-ref="clang::Stmt" data-ref-filename="clang..Stmt">Stmt</a> *<dfn class="local col2 decl" id="12Where" title='Where' data-type='const clang::Stmt *' data-ref="12Where" data-ref-filename="12Where">Where</dfn>, <a class="type" href="#clang::NeverCalledReason" title='clang::NeverCalledReason' data-ref="clang::NeverCalledReason" data-ref-filename="clang..NeverCalledReason">NeverCalledReason</a> <dfn class="local col3 decl" id="13Reason" title='Reason' data-type='clang::NeverCalledReason' data-ref="13Reason" data-ref-filename="13Reason">Reason</dfn>,</td></tr>
+<tr><th id="90">90</th><td>                                 <em>bool</em> <dfn class="local col4 decl" id="14IsCalledDirectly" title='IsCalledDirectly' data-type='bool' data-ref="14IsCalledDirectly" data-ref-filename="14IsCalledDirectly">IsCalledDirectly</dfn>,</td></tr>
+<tr><th id="91">91</th><td>                                 <em>bool</em> <dfn class="local col5 decl" id="15IsCompletionHandler" title='IsCompletionHandler' data-type='bool' data-ref="15IsCompletionHandler" data-ref-filename="15IsCompletionHandler">IsCompletionHandler</dfn>) {}</td></tr>
+<tr><th id="92">92</th><td>};</td></tr>
+<tr><th id="93">93</th><td></td></tr>
+<tr><th id="94">94</th><td><i class="doc">/// Check given CFG for 'called once' parameter violations.</i></td></tr>
+<tr><th id="95">95</th><td><i class="doc">///</i></td></tr>
+<tr><th id="96">96</th><td><i class="doc">/// It traverses the function and tracks how such parameters are used.</i></td></tr>
+<tr><th id="97">97</th><td><i class="doc">/// It detects two main violations:</i></td></tr>
+<tr><th id="98">98</th><td><i class="doc">///   * parameter is called twice</i></td></tr>
+<tr><th id="99">99</th><td><i class="doc">///   * parameter is not called</i></td></tr>
+<tr><th id="100">100</th><td><i class="doc">///</i></td></tr>
+<tr><th id="101">101</th><td><i class="doc">/// <span class="command">\param</span> <span class="arg">AC</span> -- context.</i></td></tr>
+<tr><th id="102">102</th><td><i class="doc">/// <span class="command">\param</span> <span class="arg">Handler</span> -- a handler for found violations.</i></td></tr>
+<tr><th id="103">103</th><td><i class="doc">/// <span class="command">\param</span> <span class="arg">CheckConventionalParameters</span> -- true, if we want to check parameters</i></td></tr>
+<tr><th id="104">104</th><td><i class="doc">/// not explicitly marked as 'called once', but having the same requirements</i></td></tr>
+<tr><th id="105">105</th><td><i class="doc">/// according to conventions.</i></td></tr>
+<tr><th id="106">106</th><td><em>void</em> <a class="decl fn" href="../../../../lib/Analysis/CalledOnceCheck.cpp.html#_ZN5clang25checkCalledOnceParametersERNS_19AnalysisDeclContextERNS_22CalledOnceCheckHandlerEb" title='clang::checkCalledOnceParameters' data-ref="_ZN5clang25checkCalledOnceParametersERNS_19AnalysisDeclContextERNS_22CalledOnceCheckHandlerEb" data-ref-filename="_ZN5clang25checkCalledOnceParametersERNS_19AnalysisDeclContextERNS_22CalledOnceCheckHandlerEb" id="_ZN5clang25checkCalledOnceParametersERNS_19AnalysisDeclContextERNS_22CalledOnceCheckHandlerEb">checkCalledOnceParameters</a>(<a class="type" href="../AnalysisDeclContext.h.html#clang::AnalysisDeclContext" title='clang::AnalysisDeclContext' data-ref="clang::AnalysisDeclContext" data-ref-filename="clang..AnalysisDeclContext">AnalysisDeclContext</a> &amp;<dfn class="local col6 decl" id="16AC" title='AC' data-type='clang::AnalysisDeclContext &amp;' data-ref="16AC" data-ref-filename="16AC">AC</dfn>,</td></tr>
+<tr><th id="107">107</th><td>                               <a class="type" href="#clang::CalledOnceCheckHandler" title='clang::CalledOnceCheckHandler' data-ref="clang::CalledOnceCheckHandler" data-ref-filename="clang..CalledOnceCheckHandler">CalledOnceCheckHandler</a> &amp;<dfn class="local col7 decl" id="17Handler" title='Handler' data-type='clang::CalledOnceCheckHandler &amp;' data-ref="17Handler" data-ref-filename="17Handler">Handler</dfn>,</td></tr>
+<tr><th id="108">108</th><td>                               <em>bool</em> <dfn class="local col8 decl" id="18CheckConventionalParameters" title='CheckConventionalParameters' data-type='bool' data-ref="18CheckConventionalParameters" data-ref-filename="18CheckConventionalParameters">CheckConventionalParameters</dfn>);</td></tr>
+<tr><th id="109">109</th><td></td></tr>
+<tr><th id="110">110</th><td>} <i>// end namespace clang</i></td></tr>
+<tr><th id="111">111</th><td></td></tr>
+<tr><th id="112">112</th><td><u>#<span data-ppcond="14">endif</span> /* LLVM_CLANG_ANALYSIS_ANALYSES_CALLEDONCECHECK_H */</u></td></tr>
+<tr><th id="113">113</th><td></td></tr>
+</table><hr/><p id='footer'>
+Generated while processing <a href='../../../../lib/Analysis/CalledOnceCheck.cpp.html'>llvm/clang/lib/Analysis/CalledOnceCheck.cpp</a><br/>Generated on <em>2021-Jul-01</em> from project llvm revision <em>12</em>

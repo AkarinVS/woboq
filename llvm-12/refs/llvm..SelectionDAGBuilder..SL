@@ -1,0 +1,51 @@
+<dec f='llvm/llvm/lib/CodeGen/SelectionDAG/SelectionDAGBuilder.h' l='411' type='std::unique_ptr&lt;SDAGSwitchLowering&gt;'/>
+<use f='llvm/llvm/lib/CodeGen/SelectionDAG/SelectionDAGBuilder.h' l='442' u='w' c='_ZN4llvm19SelectionDAGBuilderC1ERNS_12SelectionDAGERNS_20FunctionLoweringInfoERNS_23SwiftErrorValueTrackingENS_10CodeGenOpt5LevelE'/>
+<use f='llvm/llvm/lib/CodeGen/SelectionDAG/SelectionDAGBuilder.cpp' l='1005' u='m' c='_ZN4llvm19SelectionDAGBuilder4initEPNS_14GCFunctionInfoEPNS_9AAResultsEPKNS_17TargetLibraryInfoE'/>
+<use f='llvm/llvm/lib/CodeGen/SelectionDAG/SelectionDAGBuilder.cpp' l='2078' u='m' c='_ZN4llvm19SelectionDAGBuilder28EmitBranchForMergedConditionEPKNS_5ValueEPNS_17MachineBasicBlockES5_S5_S5_NS_17BranchProbabilityES6_b'/>
+<use f='llvm/llvm/lib/CodeGen/SelectionDAG/SelectionDAGBuilder.cpp' l='2087' u='m' c='_ZN4llvm19SelectionDAGBuilder28EmitBranchForMergedConditionEPKNS_5ValueEPNS_17MachineBasicBlockES5_S5_S5_NS_17BranchProbabilityES6_b'/>
+<use f='llvm/llvm/lib/CodeGen/SelectionDAG/SelectionDAGBuilder.cpp' l='2313' u='m' c='_ZN4llvm19SelectionDAGBuilder7visitBrERKNS_10BranchInstE'/>
+<use f='llvm/llvm/lib/CodeGen/SelectionDAG/SelectionDAGBuilder.cpp' l='2314' u='m' c='_ZN4llvm19SelectionDAGBuilder7visitBrERKNS_10BranchInstE'/>
+<use f='llvm/llvm/lib/CodeGen/SelectionDAG/SelectionDAGBuilder.cpp' l='2315' u='m' c='_ZN4llvm19SelectionDAGBuilder7visitBrERKNS_10BranchInstE'/>
+<use f='llvm/llvm/lib/CodeGen/SelectionDAG/SelectionDAGBuilder.cpp' l='2316' u='m' c='_ZN4llvm19SelectionDAGBuilder7visitBrERKNS_10BranchInstE'/>
+<use f='llvm/llvm/lib/CodeGen/SelectionDAG/SelectionDAGBuilder.cpp' l='2320' u='m' c='_ZN4llvm19SelectionDAGBuilder7visitBrERKNS_10BranchInstE'/>
+<use f='llvm/llvm/lib/CodeGen/SelectionDAG/SelectionDAGBuilder.cpp' l='2321' u='m' c='_ZN4llvm19SelectionDAGBuilder7visitBrERKNS_10BranchInstE'/>
+<use f='llvm/llvm/lib/CodeGen/SelectionDAG/SelectionDAGBuilder.cpp' l='2321' u='m' c='_ZN4llvm19SelectionDAGBuilder7visitBrERKNS_10BranchInstE'/>
+<use f='llvm/llvm/lib/CodeGen/SelectionDAG/SelectionDAGBuilder.cpp' l='2327' u='m' c='_ZN4llvm19SelectionDAGBuilder7visitBrERKNS_10BranchInstE'/>
+<use f='llvm/llvm/lib/CodeGen/SelectionDAG/SelectionDAGBuilder.cpp' l='2328' u='m' c='_ZN4llvm19SelectionDAGBuilder7visitBrERKNS_10BranchInstE'/>
+<use f='llvm/llvm/lib/CodeGen/SelectionDAG/SelectionDAGBuilder.cpp' l='2330' u='m' c='_ZN4llvm19SelectionDAGBuilder7visitBrERKNS_10BranchInstE'/>
+<use f='llvm/llvm/lib/CodeGen/SelectionDAG/SelectionDAGBuilder.cpp' l='2949' u='m' c='_ZN4llvm19SelectionDAGBuilder16UpdateSplitBlockEPNS_17MachineBasicBlockES2_'/>
+<use f='llvm/llvm/lib/CodeGen/SelectionDAG/SelectionDAGBuilder.cpp' l='2950' u='m' c='_ZN4llvm19SelectionDAGBuilder16UpdateSplitBlockEPNS_17MachineBasicBlockES2_'/>
+<use f='llvm/llvm/lib/CodeGen/SelectionDAG/SelectionDAGBuilder.cpp' l='2951' u='m' c='_ZN4llvm19SelectionDAGBuilder16UpdateSplitBlockEPNS_17MachineBasicBlockES2_'/>
+<use f='llvm/llvm/lib/CodeGen/SelectionDAG/SelectionDAGBuilder.cpp' l='2954' u='m' c='_ZN4llvm19SelectionDAGBuilder16UpdateSplitBlockEPNS_17MachineBasicBlockES2_'/>
+<use f='llvm/llvm/lib/CodeGen/SelectionDAG/SelectionDAGBuilder.cpp' l='2955' u='m' c='_ZN4llvm19SelectionDAGBuilder16UpdateSplitBlockEPNS_17MachineBasicBlockES2_'/>
+<use f='llvm/llvm/lib/CodeGen/SelectionDAG/SelectionDAGBuilder.cpp' l='2956' u='m' c='_ZN4llvm19SelectionDAGBuilder16UpdateSplitBlockEPNS_17MachineBasicBlockES2_'/>
+<use f='llvm/llvm/lib/CodeGen/SelectionDAG/SelectionDAGBuilder.cpp' l='10391' u='m' c='_ZN4llvm19SelectionDAGBuilder13lowerWorkItemENS_8SwitchCG18SwitchWorkListItemEPNS_5ValueEPNS_17MachineBasicBlockES6_'/>
+<use f='llvm/llvm/lib/CodeGen/SelectionDAG/SelectionDAGBuilder.cpp' l='10392' u='m' c='_ZN4llvm19SelectionDAGBuilder13lowerWorkItemENS_8SwitchCG18SwitchWorkListItemEPNS_5ValueEPNS_17MachineBasicBlockES6_'/>
+<use f='llvm/llvm/lib/CodeGen/SelectionDAG/SelectionDAGBuilder.cpp' l='10440' u='m' c='_ZN4llvm19SelectionDAGBuilder13lowerWorkItemENS_8SwitchCG18SwitchWorkListItemEPNS_5ValueEPNS_17MachineBasicBlockES6_'/>
+<use f='llvm/llvm/lib/CodeGen/SelectionDAG/SelectionDAGBuilder.cpp' l='10499' u='m' c='_ZN4llvm19SelectionDAGBuilder13lowerWorkItemENS_8SwitchCG18SwitchWorkListItemEPNS_5ValueEPNS_17MachineBasicBlockES6_'/>
+<use f='llvm/llvm/lib/CodeGen/SelectionDAG/SelectionDAGBuilder.cpp' l='10650' u='m' c='_ZN4llvm19SelectionDAGBuilder13splitWorkItemERNS_11SmallVectorINS_8SwitchCG18SwitchWorkListItemELj4EEERKS3_PNS_5ValueEPNS_17MachineBasicBlockE'/>
+<use f='llvm/llvm/lib/CodeGen/SelectionDAG/SelectionDAGBuilder.cpp' l='10762' u='m' c='_ZN4llvm19SelectionDAGBuilder11visitSwitchERKNS_10SwitchInstE'/>
+<use f='llvm/llvm/lib/CodeGen/SelectionDAG/SelectionDAGBuilder.cpp' l='10763' u='m' c='_ZN4llvm19SelectionDAGBuilder11visitSwitchERKNS_10SwitchInstE'/>
+<offset>6912</offset>
+<doc f='llvm/llvm/lib/CodeGen/SelectionDAG/SelectionDAGBuilder.h' l='409'>// Data related to deferred switch lowerings. Used to construct additional
+  // Basic Blocks in SelectionDAGISel::FinishBasicBlock.</doc>
+<use f='llvm/llvm/lib/CodeGen/SelectionDAG/SelectionDAGISel.cpp' l='1793' u='m' c='_ZN4llvm16SelectionDAGISel16FinishBasicBlockEv'/>
+<use f='llvm/llvm/lib/CodeGen/SelectionDAG/SelectionDAGISel.cpp' l='1874' u='m' c='_ZN4llvm16SelectionDAGISel16FinishBasicBlockEv'/>
+<use f='llvm/llvm/lib/CodeGen/SelectionDAG/SelectionDAGISel.cpp' l='1879' u='m' c='_ZN4llvm16SelectionDAGISel16FinishBasicBlockEv'/>
+<use f='llvm/llvm/lib/CodeGen/SelectionDAG/SelectionDAGISel.cpp' l='1881' u='m' c='_ZN4llvm16SelectionDAGISel16FinishBasicBlockEv'/>
+<use f='llvm/llvm/lib/CodeGen/SelectionDAG/SelectionDAGISel.cpp' l='1883' u='m' c='_ZN4llvm16SelectionDAGISel16FinishBasicBlockEv'/>
+<use f='llvm/llvm/lib/CodeGen/SelectionDAG/SelectionDAGISel.cpp' l='1886' u='m' c='_ZN4llvm16SelectionDAGISel16FinishBasicBlockEv'/>
+<use f='llvm/llvm/lib/CodeGen/SelectionDAG/SelectionDAGISel.cpp' l='1887' u='m' c='_ZN4llvm16SelectionDAGISel16FinishBasicBlockEv'/>
+<use f='llvm/llvm/lib/CodeGen/SelectionDAG/SelectionDAGISel.cpp' l='1894' u='m' c='_ZN4llvm16SelectionDAGISel16FinishBasicBlockEv'/>
+<use f='llvm/llvm/lib/CodeGen/SelectionDAG/SelectionDAGISel.cpp' l='1897' u='m' c='_ZN4llvm16SelectionDAGISel16FinishBasicBlockEv'/>
+<use f='llvm/llvm/lib/CodeGen/SelectionDAG/SelectionDAGISel.cpp' l='1910' u='m' c='_ZN4llvm16SelectionDAGISel16FinishBasicBlockEv'/>
+<use f='llvm/llvm/lib/CodeGen/SelectionDAG/SelectionDAGISel.cpp' l='1912' u='m' c='_ZN4llvm16SelectionDAGISel16FinishBasicBlockEv'/>
+<use f='llvm/llvm/lib/CodeGen/SelectionDAG/SelectionDAGISel.cpp' l='1918' u='m' c='_ZN4llvm16SelectionDAGISel16FinishBasicBlockEv'/>
+<use f='llvm/llvm/lib/CodeGen/SelectionDAG/SelectionDAGISel.cpp' l='1922' u='m' c='_ZN4llvm16SelectionDAGISel16FinishBasicBlockEv'/>
+<use f='llvm/llvm/lib/CodeGen/SelectionDAG/SelectionDAGISel.cpp' l='1924' u='m' c='_ZN4llvm16SelectionDAGISel16FinishBasicBlockEv'/>
+<use f='llvm/llvm/lib/CodeGen/SelectionDAG/SelectionDAGISel.cpp' l='1929' u='m' c='_ZN4llvm16SelectionDAGISel16FinishBasicBlockEv'/>
+<use f='llvm/llvm/lib/CodeGen/SelectionDAG/SelectionDAGISel.cpp' l='1930' u='m' c='_ZN4llvm16SelectionDAGISel16FinishBasicBlockEv'/>
+<use f='llvm/llvm/lib/CodeGen/SelectionDAG/SelectionDAGISel.cpp' l='1930' u='m' c='_ZN4llvm16SelectionDAGISel16FinishBasicBlockEv'/>
+<use f='llvm/llvm/lib/CodeGen/SelectionDAG/SelectionDAGISel.cpp' l='1931' u='m' c='_ZN4llvm16SelectionDAGISel16FinishBasicBlockEv'/>
+<use f='llvm/llvm/lib/CodeGen/SelectionDAG/SelectionDAGISel.cpp' l='1934' u='m' c='_ZN4llvm16SelectionDAGISel16FinishBasicBlockEv'/>
+<use f='llvm/llvm/lib/CodeGen/SelectionDAG/SelectionDAGISel.cpp' l='1970' u='m' c='_ZN4llvm16SelectionDAGISel16FinishBasicBlockEv'/>

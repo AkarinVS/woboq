@@ -1,0 +1,132 @@
+<!doctype html>
+<html>
+<head>
+<meta name="viewport" content="width=device-width, initial-scale=1.0"><title>LoopTraversal.h source code [llvm/llvm/include/llvm/CodeGen/LoopTraversal.h] - Woboq Code Browser</title>
+<meta name="woboq:interestingDefinitions" content="llvm::LoopTraversal "/>
+<link rel="stylesheet" href="../../../../.././data/qtcreator.css" title="QtCreator"/>
+<link rel="alternate stylesheet" href="../../../../.././data/kdevelop.css" title="KDevelop"/>
+<script type="text/javascript" src="../../../../.././data/jquery/jquery.min.js"></script>
+<script type="text/javascript" src="../../../../.././data/jquery/jquery-ui.min.js"></script>
+<script>var file = 'llvm/llvm/include/llvm/CodeGen/LoopTraversal.h'; var root_path = '../../../../..'; var data_path = '../../../../.././data'; var ecma_script_api_version = 2;</script>
+<script src='../../../../.././data/codebrowser.js'></script>
+</head>
+<body><div id='header'><h1 id='breadcrumb'><span>Browse the source code of </span><a href='../../../..'>llvm</a>/<a href='../../..'>llvm</a>/<a href='../..'>include</a>/<a href='..'>llvm</a>/<a href='./'>CodeGen</a>/<a href='LoopTraversal.h.html'>LoopTraversal.h</a></h1></div>
+<hr/><div id='content'><table class="code">
+<tr><th id="1">1</th><td><i>//==------ llvm/CodeGen/LoopTraversal.h - Loop Traversal -*- C++ -*---------==//</i></td></tr>
+<tr><th id="2">2</th><td><i>//</i></td></tr>
+<tr><th id="3">3</th><td><i>// Part of the LLVM Project, under the Apache License v2.0 with LLVM Exceptions.</i></td></tr>
+<tr><th id="4">4</th><td><i>// See <a href="https://llvm.org/LICENSE.txt">https://llvm.org/LICENSE.txt</a> for license information.</i></td></tr>
+<tr><th id="5">5</th><td><i>// SPDX-License-Identifier: Apache-2.0 WITH LLVM-exception</i></td></tr>
+<tr><th id="6">6</th><td><i>//</i></td></tr>
+<tr><th id="7">7</th><td><i>//===----------------------------------------------------------------------===//</i></td></tr>
+<tr><th id="8">8</th><td><i>//</i></td></tr>
+<tr><th id="9">9</th><td><i>/// \file Loop Traversal logic.</i></td></tr>
+<tr><th id="10">10</th><td><i>///</i></td></tr>
+<tr><th id="11">11</th><td><i>/// This class provides the basic blocks traversal order used by passes like</i></td></tr>
+<tr><th id="12">12</th><td><i>/// ReachingDefAnalysis and ExecutionDomainFix.</i></td></tr>
+<tr><th id="13">13</th><td><i>/// It identifies basic blocks that are part of loops and should to be visited</i></td></tr>
+<tr><th id="14">14</th><td><i>/// twice and returns efficient traversal order for all the blocks.</i></td></tr>
+<tr><th id="15">15</th><td><i>//</i></td></tr>
+<tr><th id="16">16</th><td><i>//===----------------------------------------------------------------------===//</i></td></tr>
+<tr><th id="17">17</th><td></td></tr>
+<tr><th id="18">18</th><td><u>#<span data-ppcond="18">ifndef</span> <span class="macro" data-ref="_M/LLVM_CODEGEN_LOOPTRAVERSAL_H">LLVM_CODEGEN_LOOPTRAVERSAL_H</span></u></td></tr>
+<tr><th id="19">19</th><td><u>#define <dfn class="macro" id="_M/LLVM_CODEGEN_LOOPTRAVERSAL_H" data-ref="_M/LLVM_CODEGEN_LOOPTRAVERSAL_H">LLVM_CODEGEN_LOOPTRAVERSAL_H</dfn></u></td></tr>
+<tr><th id="20">20</th><td></td></tr>
+<tr><th id="21">21</th><td><u>#include <a href="../ADT/SmallVector.h.html">"llvm/ADT/SmallVector.h"</a></u></td></tr>
+<tr><th id="22">22</th><td></td></tr>
+<tr><th id="23">23</th><td><b>namespace</b> <span class="namespace">llvm</span> {</td></tr>
+<tr><th id="24">24</th><td></td></tr>
+<tr><th id="25">25</th><td><b>class</b> <a class="type" href="MachineBasicBlock.h.html#llvm::MachineBasicBlock" title='llvm::MachineBasicBlock' data-ref="llvm::MachineBasicBlock" data-ref-filename="llvm..MachineBasicBlock" id="llvm::MachineBasicBlock">MachineBasicBlock</a>;</td></tr>
+<tr><th id="26">26</th><td><b>class</b> <a class="type" href="MachineFunction.h.html#llvm::MachineFunction" title='llvm::MachineFunction' data-ref="llvm::MachineFunction" data-ref-filename="llvm..MachineFunction" id="llvm::MachineFunction">MachineFunction</a>;</td></tr>
+<tr><th id="27">27</th><td></td></tr>
+<tr><th id="28">28</th><td><i class="doc">/// This class provides the basic blocks traversal order used by passes like</i></td></tr>
+<tr><th id="29">29</th><td><i class="doc">/// ReachingDefAnalysis and ExecutionDomainFix.</i></td></tr>
+<tr><th id="30">30</th><td><i class="doc">/// It identifies basic blocks that are part of loops and should to be visited</i></td></tr>
+<tr><th id="31">31</th><td><i class="doc">/// twice and returns efficient traversal order for all the blocks.</i></td></tr>
+<tr><th id="32">32</th><td><i class="doc">///</i></td></tr>
+<tr><th id="33">33</th><td><i class="doc">/// We want to visit every instruction in every basic block in order to update</i></td></tr>
+<tr><th id="34">34</th><td><i class="doc">/// it's execution domain or collect clearance information. However, for the</i></td></tr>
+<tr><th id="35">35</th><td><i class="doc">/// clearance calculation, we need to know clearances from all predecessors</i></td></tr>
+<tr><th id="36">36</th><td><i class="doc">/// (including any backedges), therfore we need to visit some blocks twice.</i></td></tr>
+<tr><th id="37">37</th><td><i class="doc">/// As an example, consider the following loop.</i></td></tr>
+<tr><th id="38">38</th><td><i class="doc">///</i></td></tr>
+<tr><th id="39">39</th><td><i class="doc">///</i></td></tr>
+<tr><th id="40">40</th><td><i class="doc">///    PH -&gt; A -&gt; B (xmm&lt;Undef&gt; -&gt; xmm&lt;Def&gt;) -&gt; C -&gt; D -&gt; EXIT</i></td></tr>
+<tr><th id="41">41</th><td><i class="doc">///          ^                                  |</i></td></tr>
+<tr><th id="42">42</th><td><i class="doc">///          +----------------------------------+</i></td></tr>
+<tr><th id="43">43</th><td><i class="doc">///</i></td></tr>
+<tr><th id="44">44</th><td><i class="doc">/// The iteration order this pass will return is as follows:</i></td></tr>
+<tr><th id="45">45</th><td><i class="doc">/// Optimized: PH A B C A' B' C' D</i></td></tr>
+<tr><th id="46">46</th><td><i class="doc">///</i></td></tr>
+<tr><th id="47">47</th><td><i class="doc">/// The basic block order is constructed as follows:</i></td></tr>
+<tr><th id="48">48</th><td><i class="doc">/// Once we finish processing some block, we update the counters in MBBInfos</i></td></tr>
+<tr><th id="49">49</th><td><i class="doc">/// and re-process any successors that are now 'done'.</i></td></tr>
+<tr><th id="50">50</th><td><i class="doc">/// We call a block that is ready for its final round of processing `done`</i></td></tr>
+<tr><th id="51">51</th><td><i class="doc">/// (isBlockDone), e.g. when all predecessor information is known.</i></td></tr>
+<tr><th id="52">52</th><td><i class="doc">///</i></td></tr>
+<tr><th id="53">53</th><td><i class="doc">/// Note that a naive traversal order would be to do two complete passes over</i></td></tr>
+<tr><th id="54">54</th><td><i class="doc">/// all basic blocks/instructions, the first for recording clearances, the</i></td></tr>
+<tr><th id="55">55</th><td><i class="doc">/// second for updating clearance based on backedges.</i></td></tr>
+<tr><th id="56">56</th><td><i class="doc">/// However, for functions without backedges, or functions with a lot of</i></td></tr>
+<tr><th id="57">57</th><td><i class="doc">/// straight-line code, and a small loop, that would be a lot of unnecessary</i></td></tr>
+<tr><th id="58">58</th><td><i class="doc">/// work (since only the BBs that are part of the loop require two passes).</i></td></tr>
+<tr><th id="59">59</th><td><i class="doc">///</i></td></tr>
+<tr><th id="60">60</th><td><i class="doc">/// E.g., the naive iteration order for the above exmple is as follows:</i></td></tr>
+<tr><th id="61">61</th><td><i class="doc">/// Naive: PH A B C D A' B' C' D'</i></td></tr>
+<tr><th id="62">62</th><td><i class="doc">///</i></td></tr>
+<tr><th id="63">63</th><td><i class="doc">/// In the optimized approach we avoid processing D twice, because we</i></td></tr>
+<tr><th id="64">64</th><td><i class="doc">/// can entirely process the predecessors before getting to D.</i></td></tr>
+<tr><th id="65">65</th><td><b>class</b> <dfn class="type def" id="llvm::LoopTraversal" title='llvm::LoopTraversal' data-ref="llvm::LoopTraversal" data-ref-filename="llvm..LoopTraversal">LoopTraversal</dfn> {</td></tr>
+<tr><th id="66">66</th><td><b>private</b>:</td></tr>
+<tr><th id="67">67</th><td>  <b>struct</b> <dfn class="type def" id="llvm::LoopTraversal::MBBInfo" title='llvm::LoopTraversal::MBBInfo' data-ref="llvm::LoopTraversal::MBBInfo" data-ref-filename="llvm..LoopTraversal..MBBInfo">MBBInfo</dfn> {</td></tr>
+<tr><th id="68">68</th><td>    <i class="doc">/// Whether we have gotten to this block in primary processing yet.</i></td></tr>
+<tr><th id="69">69</th><td>    <em>bool</em> <dfn class="decl field" id="llvm::LoopTraversal::MBBInfo::PrimaryCompleted" title='llvm::LoopTraversal::MBBInfo::PrimaryCompleted' data-ref="llvm::LoopTraversal::MBBInfo::PrimaryCompleted" data-ref-filename="llvm..LoopTraversal..MBBInfo..PrimaryCompleted">PrimaryCompleted</dfn> = <b>false</b>;</td></tr>
+<tr><th id="70">70</th><td></td></tr>
+<tr><th id="71">71</th><td>    <i class="doc">/// The number of predecessors for which primary processing has completed</i></td></tr>
+<tr><th id="72">72</th><td>    <em>unsigned</em> <dfn class="decl field" id="llvm::LoopTraversal::MBBInfo::IncomingProcessed" title='llvm::LoopTraversal::MBBInfo::IncomingProcessed' data-ref="llvm::LoopTraversal::MBBInfo::IncomingProcessed" data-ref-filename="llvm..LoopTraversal..MBBInfo..IncomingProcessed">IncomingProcessed</dfn> = <var>0</var>;</td></tr>
+<tr><th id="73">73</th><td></td></tr>
+<tr><th id="74">74</th><td>    <i class="doc">/// The value of `IncomingProcessed` at the start of primary processing</i></td></tr>
+<tr><th id="75">75</th><td>    <em>unsigned</em> <dfn class="decl field" id="llvm::LoopTraversal::MBBInfo::PrimaryIncoming" title='llvm::LoopTraversal::MBBInfo::PrimaryIncoming' data-ref="llvm::LoopTraversal::MBBInfo::PrimaryIncoming" data-ref-filename="llvm..LoopTraversal..MBBInfo..PrimaryIncoming">PrimaryIncoming</dfn> = <var>0</var>;</td></tr>
+<tr><th id="76">76</th><td></td></tr>
+<tr><th id="77">77</th><td>    <i class="doc">/// The number of predecessors for which all processing steps are done.</i></td></tr>
+<tr><th id="78">78</th><td>    <em>unsigned</em> <dfn class="decl field" id="llvm::LoopTraversal::MBBInfo::IncomingCompleted" title='llvm::LoopTraversal::MBBInfo::IncomingCompleted' data-ref="llvm::LoopTraversal::MBBInfo::IncomingCompleted" data-ref-filename="llvm..LoopTraversal..MBBInfo..IncomingCompleted">IncomingCompleted</dfn> = <var>0</var>;</td></tr>
+<tr><th id="79">79</th><td></td></tr>
+<tr><th id="80">80</th><td>    <dfn class="decl def fn" id="_ZN4llvm13LoopTraversal7MBBInfoC1Ev" title='llvm::LoopTraversal::MBBInfo::MBBInfo' data-ref="_ZN4llvm13LoopTraversal7MBBInfoC1Ev" data-ref-filename="_ZN4llvm13LoopTraversal7MBBInfoC1Ev">MBBInfo</dfn>() = <b>default</b>;</td></tr>
+<tr><th id="81">81</th><td>  };</td></tr>
+<tr><th id="82">82</th><td>  <b>using</b> <dfn class="typedef" id="llvm::LoopTraversal::MBBInfoMap" title='llvm::LoopTraversal::MBBInfoMap' data-type='SmallVector&lt;llvm::LoopTraversal::MBBInfo, 4&gt;' data-ref="llvm::LoopTraversal::MBBInfoMap" data-ref-filename="llvm..LoopTraversal..MBBInfoMap">MBBInfoMap</dfn> = <a class="type" href="../ADT/SmallVector.h.html#llvm::SmallVector" title='llvm::SmallVector' data-ref="llvm::SmallVector" data-ref-filename="llvm..SmallVector">SmallVector</a>&lt;<a class="type" href="#llvm::LoopTraversal::MBBInfo" title='llvm::LoopTraversal::MBBInfo' data-ref="llvm::LoopTraversal::MBBInfo" data-ref-filename="llvm..LoopTraversal..MBBInfo">MBBInfo</a>, <var>4</var>&gt;;</td></tr>
+<tr><th id="83">83</th><td>  <i class="doc">/// Helps keep track if we proccessed this block and all its predecessors.</i></td></tr>
+<tr><th id="84">84</th><td>  <a class="typedef" href="#llvm::LoopTraversal::MBBInfoMap" title='llvm::LoopTraversal::MBBInfoMap' data-type='SmallVector&lt;llvm::LoopTraversal::MBBInfo, 4&gt;' data-ref="llvm::LoopTraversal::MBBInfoMap" data-ref-filename="llvm..LoopTraversal..MBBInfoMap">MBBInfoMap</a> <dfn class="decl field" id="llvm::LoopTraversal::MBBInfos" title='llvm::LoopTraversal::MBBInfos' data-ref="llvm::LoopTraversal::MBBInfos" data-ref-filename="llvm..LoopTraversal..MBBInfos">MBBInfos</dfn>;</td></tr>
+<tr><th id="85">85</th><td></td></tr>
+<tr><th id="86">86</th><td><b>public</b>:</td></tr>
+<tr><th id="87">87</th><td>  <b>struct</b> <dfn class="type def" id="llvm::LoopTraversal::TraversedMBBInfo" title='llvm::LoopTraversal::TraversedMBBInfo' data-ref="llvm::LoopTraversal::TraversedMBBInfo" data-ref-filename="llvm..LoopTraversal..TraversedMBBInfo">TraversedMBBInfo</dfn> {</td></tr>
+<tr><th id="88">88</th><td>    <i class="doc">/// The basic block.</i></td></tr>
+<tr><th id="89">89</th><td>    <a class="type" href="MachineBasicBlock.h.html#llvm::MachineBasicBlock" title='llvm::MachineBasicBlock' data-ref="llvm::MachineBasicBlock" data-ref-filename="llvm..MachineBasicBlock">MachineBasicBlock</a> *<dfn class="decl field" id="llvm::LoopTraversal::TraversedMBBInfo::MBB" title='llvm::LoopTraversal::TraversedMBBInfo::MBB' data-ref="llvm::LoopTraversal::TraversedMBBInfo::MBB" data-ref-filename="llvm..LoopTraversal..TraversedMBBInfo..MBB">MBB</dfn> = <b>nullptr</b>;</td></tr>
+<tr><th id="90">90</th><td></td></tr>
+<tr><th id="91">91</th><td>    <i class="doc">/// True if this is the first time we process the basic block.</i></td></tr>
+<tr><th id="92">92</th><td>    <em>bool</em> <dfn class="decl field" id="llvm::LoopTraversal::TraversedMBBInfo::PrimaryPass" title='llvm::LoopTraversal::TraversedMBBInfo::PrimaryPass' data-ref="llvm::LoopTraversal::TraversedMBBInfo::PrimaryPass" data-ref-filename="llvm..LoopTraversal..TraversedMBBInfo..PrimaryPass">PrimaryPass</dfn> = <b>true</b>;</td></tr>
+<tr><th id="93">93</th><td></td></tr>
+<tr><th id="94">94</th><td>    <i class="doc">/// True if the block that is ready for its final round of processing.</i></td></tr>
+<tr><th id="95">95</th><td>    <em>bool</em> <dfn class="decl field" id="llvm::LoopTraversal::TraversedMBBInfo::IsDone" title='llvm::LoopTraversal::TraversedMBBInfo::IsDone' data-ref="llvm::LoopTraversal::TraversedMBBInfo::IsDone" data-ref-filename="llvm..LoopTraversal..TraversedMBBInfo..IsDone">IsDone</dfn> = <b>true</b>;</td></tr>
+<tr><th id="96">96</th><td></td></tr>
+<tr><th id="97">97</th><td>    <dfn class="decl def fn" id="_ZN4llvm13LoopTraversal16TraversedMBBInfoC1EPNS_17MachineBasicBlockEbb" title='llvm::LoopTraversal::TraversedMBBInfo::TraversedMBBInfo' data-ref="_ZN4llvm13LoopTraversal16TraversedMBBInfoC1EPNS_17MachineBasicBlockEbb" data-ref-filename="_ZN4llvm13LoopTraversal16TraversedMBBInfoC1EPNS_17MachineBasicBlockEbb">TraversedMBBInfo</dfn>(<a class="type" href="MachineBasicBlock.h.html#llvm::MachineBasicBlock" title='llvm::MachineBasicBlock' data-ref="llvm::MachineBasicBlock" data-ref-filename="llvm..MachineBasicBlock">MachineBasicBlock</a> *<dfn class="local col1 decl" id="1BB" title='BB' data-type='llvm::MachineBasicBlock *' data-ref="1BB" data-ref-filename="1BB">BB</dfn> = <b>nullptr</b>, <em>bool</em> <dfn class="local col2 decl" id="2Primary" title='Primary' data-type='bool' data-ref="2Primary" data-ref-filename="2Primary">Primary</dfn> = <b>true</b>,</td></tr>
+<tr><th id="98">98</th><td>                     <em>bool</em> <dfn class="local col3 decl" id="3Done" title='Done' data-type='bool' data-ref="3Done" data-ref-filename="3Done">Done</dfn> = <b>true</b>)</td></tr>
+<tr><th id="99">99</th><td>        : <a class="member field" href="#llvm::LoopTraversal::TraversedMBBInfo::MBB" title='llvm::LoopTraversal::TraversedMBBInfo::MBB' data-ref="llvm::LoopTraversal::TraversedMBBInfo::MBB" data-ref-filename="llvm..LoopTraversal..TraversedMBBInfo..MBB">MBB</a>(<a class="local col1 ref" href="#1BB" title='BB' data-ref="1BB" data-ref-filename="1BB">BB</a>), <a class="member field" href="#llvm::LoopTraversal::TraversedMBBInfo::PrimaryPass" title='llvm::LoopTraversal::TraversedMBBInfo::PrimaryPass' data-ref="llvm::LoopTraversal::TraversedMBBInfo::PrimaryPass" data-ref-filename="llvm..LoopTraversal..TraversedMBBInfo..PrimaryPass">PrimaryPass</a>(<a class="local col2 ref" href="#2Primary" title='Primary' data-ref="2Primary" data-ref-filename="2Primary">Primary</a>), <a class="member field" href="#llvm::LoopTraversal::TraversedMBBInfo::IsDone" title='llvm::LoopTraversal::TraversedMBBInfo::IsDone' data-ref="llvm::LoopTraversal::TraversedMBBInfo::IsDone" data-ref-filename="llvm..LoopTraversal..TraversedMBBInfo..IsDone">IsDone</a>(<a class="local col3 ref" href="#3Done" title='Done' data-ref="3Done" data-ref-filename="3Done">Done</a>) {}</td></tr>
+<tr><th id="100">100</th><td>  };</td></tr>
+<tr><th id="101">101</th><td>  <dfn class="decl def fn" id="_ZN4llvm13LoopTraversalC1Ev" title='llvm::LoopTraversal::LoopTraversal' data-ref="_ZN4llvm13LoopTraversalC1Ev" data-ref-filename="_ZN4llvm13LoopTraversalC1Ev">LoopTraversal</dfn>() {}</td></tr>
+<tr><th id="102">102</th><td></td></tr>
+<tr><th id="103">103</th><td>  <i class="doc">/// Identifies basic blocks that are part of loops and should to be</i></td></tr>
+<tr><th id="104">104</th><td><i class="doc">  ///  visited twice and returns efficient traversal order for all the blocks.</i></td></tr>
+<tr><th id="105">105</th><td>  <b>typedef</b> <a class="type" href="../ADT/SmallVector.h.html#llvm::SmallVector" title='llvm::SmallVector' data-ref="llvm::SmallVector" data-ref-filename="llvm..SmallVector">SmallVector</a>&lt;<a class="type" href="#llvm::LoopTraversal::TraversedMBBInfo" title='llvm::LoopTraversal::TraversedMBBInfo' data-ref="llvm::LoopTraversal::TraversedMBBInfo" data-ref-filename="llvm..LoopTraversal..TraversedMBBInfo">TraversedMBBInfo</a>, <var>4</var>&gt; <dfn class="typedef" id="llvm::LoopTraversal::TraversalOrder" title='llvm::LoopTraversal::TraversalOrder' data-type='SmallVector&lt;llvm::LoopTraversal::TraversedMBBInfo, 4&gt;' data-ref="llvm::LoopTraversal::TraversalOrder" data-ref-filename="llvm..LoopTraversal..TraversalOrder">TraversalOrder</dfn>;</td></tr>
+<tr><th id="106">106</th><td>  <a class="typedef" href="#llvm::LoopTraversal::TraversalOrder" title='llvm::LoopTraversal::TraversalOrder' data-type='SmallVector&lt;llvm::LoopTraversal::TraversedMBBInfo, 4&gt;' data-ref="llvm::LoopTraversal::TraversalOrder" data-ref-filename="llvm..LoopTraversal..TraversalOrder">TraversalOrder</a> <dfn class="decl fn" id="_ZN4llvm13LoopTraversal8traverseERNS_15MachineFunctionE" title='llvm::LoopTraversal::traverse' data-ref="_ZN4llvm13LoopTraversal8traverseERNS_15MachineFunctionE" data-ref-filename="_ZN4llvm13LoopTraversal8traverseERNS_15MachineFunctionE">traverse</dfn>(<a class="type" href="MachineFunction.h.html#llvm::MachineFunction" title='llvm::MachineFunction' data-ref="llvm::MachineFunction" data-ref-filename="llvm..MachineFunction">MachineFunction</a> &amp;<dfn class="local col4 decl" id="4MF" title='MF' data-type='llvm::MachineFunction &amp;' data-ref="4MF" data-ref-filename="4MF">MF</dfn>);</td></tr>
+<tr><th id="107">107</th><td></td></tr>
+<tr><th id="108">108</th><td><b>private</b>:</td></tr>
+<tr><th id="109">109</th><td>  <i class="doc">/// Returens true if the block is ready for its final round of processing.</i></td></tr>
+<tr><th id="110">110</th><td>  <em>bool</em> <dfn class="decl fn" id="_ZN4llvm13LoopTraversal11isBlockDoneEPNS_17MachineBasicBlockE" title='llvm::LoopTraversal::isBlockDone' data-ref="_ZN4llvm13LoopTraversal11isBlockDoneEPNS_17MachineBasicBlockE" data-ref-filename="_ZN4llvm13LoopTraversal11isBlockDoneEPNS_17MachineBasicBlockE">isBlockDone</dfn>(<a class="type" href="MachineBasicBlock.h.html#llvm::MachineBasicBlock" title='llvm::MachineBasicBlock' data-ref="llvm::MachineBasicBlock" data-ref-filename="llvm..MachineBasicBlock">MachineBasicBlock</a> *<dfn class="local col5 decl" id="5MBB" title='MBB' data-type='llvm::MachineBasicBlock *' data-ref="5MBB" data-ref-filename="5MBB">MBB</dfn>);</td></tr>
+<tr><th id="111">111</th><td>};</td></tr>
+<tr><th id="112">112</th><td></td></tr>
+<tr><th id="113">113</th><td>} <i>// namespace llvm</i></td></tr>
+<tr><th id="114">114</th><td></td></tr>
+<tr><th id="115">115</th><td><u>#<span data-ppcond="18">endif</span> // LLVM_CODEGEN_LOOPTRAVERSAL_H</u></td></tr>
+<tr><th id="116">116</th><td></td></tr>
+</table><hr/><p id='footer'>
+Generated while processing <a href='../../../lib/CodeGen/BreakFalseDeps.cpp.html'>llvm/llvm/lib/CodeGen/BreakFalseDeps.cpp</a><br/>Generated on <em>2021-Jul-01</em> from project llvm revision <em>12</em>

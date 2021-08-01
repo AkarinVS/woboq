@@ -1,0 +1,3 @@
+<dec f='llvm/llvm/include/llvm/BinaryFormat/MachO.h' l='1884' type='uint32_t'/>
+<use f='llvm/llvm/include/llvm/BinaryFormat/MachO.h' l='1927' u='a' c='_ZN4llvm5MachO10swapStructERNS0_20ppc_thread_state32_tE'/>
+<offset>160</offset>

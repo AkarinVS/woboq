@@ -1,0 +1,19 @@
+<dec f='llvm/llvm/include/llvm/CodeGen/MachineFunction.h' l='228' type='llvm::Function &amp;'/>
+<use f='llvm/llvm/include/llvm/CodeGen/MachineFunction.h' l='516' u='a' c='_ZN4llvm15MachineFunction11getFunctionEv'/>
+<use f='llvm/llvm/include/llvm/CodeGen/MachineFunction.h' l='519' u='a' c='_ZNK4llvm15MachineFunction11getFunctionEv'/>
+<offset>0</offset>
+<use f='llvm/llvm/lib/CodeGen/MachineFunction.cpp' l='140' u='w' c='_ZN4llvm15MachineFunctionC1ERNS_8FunctionERKNS_17LLVMTargetMachineERKNS_19TargetSubtargetInfoEjRNS_17MachineModuleInfoE'/>
+<use f='llvm/llvm/lib/CodeGen/MachineFunction.cpp' l='168' u='m' c='_ZN4llvm15MachineFunction4initEv'/>
+<use f='llvm/llvm/lib/CodeGen/MachineFunction.cpp' l='170' u='r' c='_ZN4llvm15MachineFunction4initEv'/>
+<use f='llvm/llvm/lib/CodeGen/MachineFunction.cpp' l='172' u='m' c='_ZN4llvm15MachineFunction4initEv'/>
+<use f='llvm/llvm/lib/CodeGen/MachineFunction.cpp' l='174' u='m' c='_ZN4llvm15MachineFunction4initEv'/>
+<use f='llvm/llvm/lib/CodeGen/MachineFunction.cpp' l='175' u='m' c='_ZN4llvm15MachineFunction4initEv'/>
+<use f='llvm/llvm/lib/CodeGen/MachineFunction.cpp' l='182' u='m' c='_ZN4llvm15MachineFunction4initEv'/>
+<use f='llvm/llvm/lib/CodeGen/MachineFunction.cpp' l='192' u='m' c='_ZN4llvm15MachineFunction4initEv'/>
+<use f='llvm/llvm/lib/CodeGen/MachineFunction.cpp' l='192' u='m' c='_ZN4llvm15MachineFunction4initEv'/>
+<use f='llvm/llvm/lib/CodeGen/MachineFunction.cpp' l='197' u='m' c='_ZN4llvm15MachineFunction4initEv'/>
+<use f='llvm/llvm/lib/CodeGen/MachineFunction.cpp' l='197' u='m' c='_ZN4llvm15MachineFunction4initEv'/>
+<use f='llvm/llvm/lib/CodeGen/MachineFunction.cpp' l='261' u='m' c='_ZNK4llvm15MachineFunction13getDataLayoutEv'/>
+<use f='llvm/llvm/lib/CodeGen/MachineFunction.cpp' l='276' u='m' c='_ZNK4llvm15MachineFunction15getDenormalModeERKNS_12fltSemanticsE'/>
+<use f='llvm/llvm/lib/CodeGen/MachineFunction.cpp' l='571' u='m' c='_ZNK4llvm15MachineFunction15needsFrameMovesEv'/>
+<use f='llvm/llvm/lib/CodeGen/MachineFunction.cpp' l='711' u='m' c='_ZN4llvm15MachineFunction13addLandingPadEPNS_17MachineBasicBlockE'/>

@@ -1,0 +1,176 @@
+<!doctype html>
+<html>
+<head>
+<meta name="viewport" content="width=device-width, initial-scale=1.0"><title>ubsan_value.cpp source code [llvm/compiler-rt/lib/ubsan/ubsan_value.cpp] - Woboq Code Browser</title>
+<link rel="stylesheet" href="../../../.././data/qtcreator.css" title="QtCreator"/>
+<link rel="alternate stylesheet" href="../../../.././data/kdevelop.css" title="KDevelop"/>
+<script type="text/javascript" src="../../../.././data/jquery/jquery.min.js"></script>
+<script type="text/javascript" src="../../../.././data/jquery/jquery-ui.min.js"></script>
+<script>var file = 'llvm/compiler-rt/lib/ubsan/ubsan_value.cpp'; var root_path = '../../../..'; var data_path = '../../../.././data'; var ecma_script_api_version = 2;</script>
+<script src='../../../.././data/codebrowser.js'></script>
+</head>
+<body><div id='header'><h1 id='breadcrumb'><span>Browse the source code of </span><a href='../../..'>llvm</a>/<a href='../..'>compiler-rt</a>/<a href='..'>lib</a>/<a href='./'>ubsan</a>/<a href='ubsan_value.cpp.html'>ubsan_value.cpp</a></h1></div>
+<hr/><div id='content'><table class="code">
+<tr><th id="1">1</th><td><i>//===-- ubsan_value.cpp ---------------------------------------------------===//</i></td></tr>
+<tr><th id="2">2</th><td><i>//</i></td></tr>
+<tr><th id="3">3</th><td><i>// Part of the LLVM Project, under the Apache License v2.0 with LLVM Exceptions.</i></td></tr>
+<tr><th id="4">4</th><td><i>// See <a href="https://llvm.org/LICENSE.txt">https://llvm.org/LICENSE.txt</a> for license information.</i></td></tr>
+<tr><th id="5">5</th><td><i>// SPDX-License-Identifier: Apache-2.0 WITH LLVM-exception</i></td></tr>
+<tr><th id="6">6</th><td><i>//</i></td></tr>
+<tr><th id="7">7</th><td><i>//===----------------------------------------------------------------------===//</i></td></tr>
+<tr><th id="8">8</th><td><i>//</i></td></tr>
+<tr><th id="9">9</th><td><i>// Representation of a runtime value, as marshaled from the generated code to</i></td></tr>
+<tr><th id="10">10</th><td><i>// the ubsan runtime.</i></td></tr>
+<tr><th id="11">11</th><td><i>//</i></td></tr>
+<tr><th id="12">12</th><td><i>//===----------------------------------------------------------------------===//</i></td></tr>
+<tr><th id="13">13</th><td></td></tr>
+<tr><th id="14">14</th><td><u>#include <a href="ubsan_platform.h.html">"ubsan_platform.h"</a></u></td></tr>
+<tr><th id="15">15</th><td><u>#<span data-ppcond="15">if</span> <a class="macro" href="ubsan_platform.h.html#20" title="1" data-ref="_M/CAN_SANITIZE_UB">CAN_SANITIZE_UB</a></u></td></tr>
+<tr><th id="16">16</th><td><u>#include <a href="ubsan_value.h.html">"ubsan_value.h"</a></u></td></tr>
+<tr><th id="17">17</th><td><u>#include <a href="../sanitizer_common/sanitizer_common.h.html">"sanitizer_common/sanitizer_common.h"</a></u></td></tr>
+<tr><th id="18">18</th><td><u>#include <a href="../sanitizer_common/sanitizer_libc.h.html">"sanitizer_common/sanitizer_libc.h"</a></u></td></tr>
+<tr><th id="19">19</th><td><u>#include <a href="../sanitizer_common/sanitizer_mutex.h.html">"sanitizer_common/sanitizer_mutex.h"</a></u></td></tr>
+<tr><th id="20">20</th><td></td></tr>
+<tr><th id="21">21</th><td><i>// TODO(dliew): Prefer '__APPLE__' here over 'SANITIZER_MAC', as the latter is</i></td></tr>
+<tr><th id="22">22</th><td><i>// unclear. rdar://58124919 tracks using a more obviously portable guard.</i></td></tr>
+<tr><th id="23">23</th><td><u>#<span data-ppcond="23">if</span> defined(<span class="macro" data-ref="_M/__APPLE__">__APPLE__</span>)</u></td></tr>
+<tr><th id="24">24</th><td><u>#include &lt;dlfcn.h&gt;</u></td></tr>
+<tr><th id="25">25</th><td><u>#<span data-ppcond="23">endif</span></u></td></tr>
+<tr><th id="26">26</th><td></td></tr>
+<tr><th id="27">27</th><td><b>using</b> <b>namespace</b> <span class="namespace">__ubsan</span>;</td></tr>
+<tr><th id="28">28</th><td></td></tr>
+<tr><th id="29">29</th><td><b>typedef</b> <em>const</em> <em>char</em> *(*<dfn class="typedef" id="ObjCGetClassNameTy" title='ObjCGetClassNameTy' data-type='const char *(*)(void *)' data-ref="ObjCGetClassNameTy" data-ref-filename="ObjCGetClassNameTy">ObjCGetClassNameTy</dfn>)(<em>void</em> *);</td></tr>
+<tr><th id="30">30</th><td></td></tr>
+<tr><th id="31">31</th><td><em>const</em> <em>char</em> *<span class="namespace">__ubsan::</span><dfn class="decl def fn" id="__ubsan::getObjCClassName" title='__ubsan::getObjCClassName' data-ref="__ubsan::getObjCClassName" data-ref-filename="__ubsan..getObjCClassName">getObjCClassName</dfn>(<a class="typedef" href="ubsan_value.h.html#__ubsan::ValueHandle" title='__ubsan::ValueHandle' data-type='__sanitizer::uptr' data-ref="__ubsan::ValueHandle" data-ref-filename="__ubsan..ValueHandle">ValueHandle</a> <dfn class="local col1 decl" id="1Pointer" title='Pointer' data-type='__ubsan::ValueHandle' data-ref="1Pointer" data-ref-filename="1Pointer">Pointer</dfn>) {</td></tr>
+<tr><th id="32">32</th><td><u>#<span data-ppcond="32">if</span> defined(<span class="macro" data-ref="_M/__APPLE__">__APPLE__</span>)</u></td></tr>
+<tr><th id="33">33</th><td>  <i>// We need to query the ObjC runtime for some information, but do not want</i></td></tr>
+<tr><th id="34">34</th><td><i>  // to introduce a static dependency from the ubsan runtime onto ObjC. Try to</i></td></tr>
+<tr><th id="35">35</th><td><i>  // grab a handle to the ObjC runtime used by the process.</i></td></tr>
+<tr><th id="36">36</th><td>  <em>static</em> <em>bool</em> AttemptedDlopen = <b>false</b>;</td></tr>
+<tr><th id="37">37</th><td>  <em>static</em> <em>void</em> *ObjCHandle = <b>nullptr</b>;</td></tr>
+<tr><th id="38">38</th><td>  <em>static</em> <em>void</em> *ObjCObjectGetClassName = <b>nullptr</b>;</td></tr>
+<tr><th id="39">39</th><td></td></tr>
+<tr><th id="40">40</th><td>  <i>// Prevent threads from racing to dlopen().</i></td></tr>
+<tr><th id="41">41</th><td>  <em>static</em> __sanitizer::StaticSpinMutex Lock;</td></tr>
+<tr><th id="42">42</th><td>  {</td></tr>
+<tr><th id="43">43</th><td>    __sanitizer::SpinMutexLock Guard(&amp;Lock);</td></tr>
+<tr><th id="44">44</th><td></td></tr>
+<tr><th id="45">45</th><td>    <b>if</b> (!AttemptedDlopen) {</td></tr>
+<tr><th id="46">46</th><td>      ObjCHandle = dlopen(</td></tr>
+<tr><th id="47">47</th><td>          <q>"/usr/lib/libobjc.A.dylib"</q>,</td></tr>
+<tr><th id="48">48</th><td>          RTLD_LAZY         <i>// Only bind symbols when used.</i></td></tr>
+<tr><th id="49">49</th><td>              | RTLD_LOCAL  <i>// Only make symbols available via the handle.</i></td></tr>
+<tr><th id="50">50</th><td>              | RTLD_NOLOAD <i>// Do not load the dylib, just grab a handle if the</i></td></tr>
+<tr><th id="51">51</th><td>                            <i>// image is already loaded.</i></td></tr>
+<tr><th id="52">52</th><td>              | RTLD_FIRST  <i>// Only search the image pointed-to by the handle.</i></td></tr>
+<tr><th id="53">53</th><td>      );</td></tr>
+<tr><th id="54">54</th><td>      AttemptedDlopen = <b>true</b>;</td></tr>
+<tr><th id="55">55</th><td>      <b>if</b> (!ObjCHandle)</td></tr>
+<tr><th id="56">56</th><td>        <b>return</b> <b>nullptr</b>;</td></tr>
+<tr><th id="57">57</th><td>      ObjCObjectGetClassName = dlsym(ObjCHandle, <q>"object_getClassName"</q>);</td></tr>
+<tr><th id="58">58</th><td>    }</td></tr>
+<tr><th id="59">59</th><td>  }</td></tr>
+<tr><th id="60">60</th><td></td></tr>
+<tr><th id="61">61</th><td>  <b>if</b> (!ObjCObjectGetClassName)</td></tr>
+<tr><th id="62">62</th><td>    <b>return</b> <b>nullptr</b>;</td></tr>
+<tr><th id="63">63</th><td></td></tr>
+<tr><th id="64">64</th><td>  <b>return</b> ObjCGetClassNameTy(ObjCObjectGetClassName)((<em>void</em> *)Pointer);</td></tr>
+<tr><th id="65">65</th><td><u>#<span data-ppcond="32">else</span></u></td></tr>
+<tr><th id="66">66</th><td>  <b>return</b> <b>nullptr</b>;</td></tr>
+<tr><th id="67">67</th><td><u>#<span data-ppcond="32">endif</span></u></td></tr>
+<tr><th id="68">68</th><td>}</td></tr>
+<tr><th id="69">69</th><td></td></tr>
+<tr><th id="70">70</th><td><a class="typedef" href="ubsan_value.h.html#__ubsan::SIntMax" title='__ubsan::SIntMax' data-type='s128' data-ref="__ubsan::SIntMax" data-ref-filename="__ubsan..SIntMax">SIntMax</a> <a class="type" href="ubsan_value.h.html#__ubsan::Value" title='__ubsan::Value' data-ref="__ubsan::Value" data-ref-filename="__ubsan..Value">Value</a>::<dfn class="decl def fn" id="__ubsan::Value::getSIntValue" title='__ubsan::Value::getSIntValue' data-ref="__ubsan::Value::getSIntValue" data-ref-filename="__ubsan..Value..getSIntValue">getSIntValue</dfn>() <em>const</em> {</td></tr>
+<tr><th id="71">71</th><td>  <a class="macro" href="../sanitizer_common/sanitizer_internal_defs.h.html#299" title="do { __sanitizer::u64 v1 = (__sanitizer::u64)((getType().isSignedIntegerTy())); __sanitizer::u64 v2 = (__sanitizer::u64)(0); if (__builtin_expect(!!(!(v1 != v2)), 0)) __sanitizer::CheckFailed(&quot;/fast/tmp/llvm-proj-12/compiler-rt/lib/ubsan/ubsan_value.cpp&quot;, 71, &quot;(&quot; &quot;(getType().isSignedIntegerTy())&quot; &quot;) &quot; &quot;!=&quot; &quot; (&quot; &quot;0&quot; &quot;)&quot;, v1, v2); } while (false)" data-ref="_M/CHECK">CHECK</a>(<a class="member fn" href="ubsan_value.h.html#__ubsan::Value::getType" title='__ubsan::Value::getType' data-ref="__ubsan::Value::getType" data-ref-filename="__ubsan..Value..getType">getType</a>().<a class="ref fn" href="ubsan_value.h.html#__ubsan::TypeDescriptor::isSignedIntegerTy" title='__ubsan::TypeDescriptor::isSignedIntegerTy' data-ref="__ubsan::TypeDescriptor::isSignedIntegerTy" data-ref-filename="__ubsan..TypeDescriptor..isSignedIntegerTy">isSignedIntegerTy</a>());</td></tr>
+<tr><th id="72">72</th><td>  <b>if</b> (<a class="member fn" href="ubsan_value.h.html#__ubsan::Value::isInlineInt" title='__ubsan::Value::isInlineInt' data-ref="__ubsan::Value::isInlineInt" data-ref-filename="__ubsan..Value..isInlineInt">isInlineInt</a>()) {</td></tr>
+<tr><th id="73">73</th><td>    <i>// Val was zero-extended to ValueHandle. Sign-extend from original width</i></td></tr>
+<tr><th id="74">74</th><td><i>    // to SIntMax.</i></td></tr>
+<tr><th id="75">75</th><td>    <em>const</em> <em>unsigned</em> <dfn class="local col2 decl" id="2ExtraBits" title='ExtraBits' data-type='const unsigned int' data-ref="2ExtraBits" data-ref-filename="2ExtraBits">ExtraBits</dfn> =</td></tr>
+<tr><th id="76">76</th><td>      <b>sizeof</b>(<a class="typedef" href="ubsan_value.h.html#__ubsan::SIntMax" title='__ubsan::SIntMax' data-type='s128' data-ref="__ubsan::SIntMax" data-ref-filename="__ubsan..SIntMax">SIntMax</a>) * <var>8</var> - <a class="member fn" href="ubsan_value.h.html#__ubsan::Value::getType" title='__ubsan::Value::getType' data-ref="__ubsan::Value::getType" data-ref-filename="__ubsan..Value..getType">getType</a>().<a class="ref fn" href="ubsan_value.h.html#__ubsan::TypeDescriptor::getIntegerBitWidth" title='__ubsan::TypeDescriptor::getIntegerBitWidth' data-ref="__ubsan::TypeDescriptor::getIntegerBitWidth" data-ref-filename="__ubsan..TypeDescriptor..getIntegerBitWidth">getIntegerBitWidth</a>();</td></tr>
+<tr><th id="77">77</th><td>    <b>return</b> <a class="typedef" href="ubsan_value.h.html#__ubsan::SIntMax" title='__ubsan::SIntMax' data-type='s128' data-ref="__ubsan::SIntMax" data-ref-filename="__ubsan..SIntMax">SIntMax</a>(<a class="member field" href="ubsan_value.h.html#__ubsan::Value::Val" title='__ubsan::Value::Val' data-ref="__ubsan::Value::Val" data-ref-filename="__ubsan..Value..Val">Val</a>) &lt;&lt; <a class="local col2 ref" href="#2ExtraBits" title='ExtraBits' data-ref="2ExtraBits" data-ref-filename="2ExtraBits">ExtraBits</a> &gt;&gt; <a class="local col2 ref" href="#2ExtraBits" title='ExtraBits' data-ref="2ExtraBits" data-ref-filename="2ExtraBits">ExtraBits</a>;</td></tr>
+<tr><th id="78">78</th><td>  }</td></tr>
+<tr><th id="79">79</th><td>  <b>if</b> (<a class="member fn" href="ubsan_value.h.html#__ubsan::Value::getType" title='__ubsan::Value::getType' data-ref="__ubsan::Value::getType" data-ref-filename="__ubsan..Value..getType">getType</a>().<a class="ref fn" href="ubsan_value.h.html#__ubsan::TypeDescriptor::getIntegerBitWidth" title='__ubsan::TypeDescriptor::getIntegerBitWidth' data-ref="__ubsan::TypeDescriptor::getIntegerBitWidth" data-ref-filename="__ubsan..TypeDescriptor..getIntegerBitWidth">getIntegerBitWidth</a>() == <var>64</var>)</td></tr>
+<tr><th id="80">80</th><td>    <b>return</b> *<b>reinterpret_cast</b>&lt;<a class="typedef" href="../sanitizer_common/sanitizer_internal_defs.h.html#__sanitizer::s64" title='__sanitizer::s64' data-type='long long' data-ref="__sanitizer::s64" data-ref-filename="__sanitizer..s64">s64</a>*&gt;(<a class="member field" href="ubsan_value.h.html#__ubsan::Value::Val" title='__ubsan::Value::Val' data-ref="__ubsan::Value::Val" data-ref-filename="__ubsan..Value..Val">Val</a>);</td></tr>
+<tr><th id="81">81</th><td><u>#<span data-ppcond="81">if</span> <a class="macro" href="ubsan_value.h.html#23" title="1" data-ref="_M/HAVE_INT128_T">HAVE_INT128_T</a></u></td></tr>
+<tr><th id="82">82</th><td>  <b>if</b> (<a class="member fn" href="ubsan_value.h.html#__ubsan::Value::getType" title='__ubsan::Value::getType' data-ref="__ubsan::Value::getType" data-ref-filename="__ubsan..Value..getType">getType</a>().<a class="ref fn" href="ubsan_value.h.html#__ubsan::TypeDescriptor::getIntegerBitWidth" title='__ubsan::TypeDescriptor::getIntegerBitWidth' data-ref="__ubsan::TypeDescriptor::getIntegerBitWidth" data-ref-filename="__ubsan..TypeDescriptor..getIntegerBitWidth">getIntegerBitWidth</a>() == <var>128</var>)</td></tr>
+<tr><th id="83">83</th><td>    <b>return</b> *<b>reinterpret_cast</b>&lt;<a class="typedef" href="ubsan_value.h.html#s128" title='s128' data-type='__int128' data-ref="s128" data-ref-filename="s128">s128</a>*&gt;(<a class="member field" href="ubsan_value.h.html#__ubsan::Value::Val" title='__ubsan::Value::Val' data-ref="__ubsan::Value::Val" data-ref-filename="__ubsan..Value..Val">Val</a>);</td></tr>
+<tr><th id="84">84</th><td><u>#<span data-ppcond="81">else</span></u></td></tr>
+<tr><th id="85">85</th><td>  <b>if</b> (getType().getIntegerBitWidth() == <var>128</var>)</td></tr>
+<tr><th id="86">86</th><td>    UNREACHABLE(<q>"libclang_rt.ubsan was built without __int128 support"</q>);</td></tr>
+<tr><th id="87">87</th><td><u>#<span data-ppcond="81">endif</span></u></td></tr>
+<tr><th id="88">88</th><td>  <a class="macro" href="../sanitizer_common/sanitizer_internal_defs.h.html#325" title="do { do { __sanitizer::u64 v1 = (__sanitizer::u64)((0 &amp;&amp; &quot;unexpected bit width&quot;)); __sanitizer::u64 v2 = (__sanitizer::u64)(0); if (__builtin_expect(!!(!(v1 != v2)), 0)) __sanitizer::CheckFailed(&quot;/fast/tmp/llvm-proj-12/compiler-rt/lib/ubsan/ubsan_value.cpp&quot;, 88, &quot;(&quot; &quot;(0 &amp;&amp; \&quot;unexpected bit width\&quot;)&quot; &quot;) &quot; &quot;!=&quot; &quot; (&quot; &quot;0&quot; &quot;)&quot;, v1, v2); } while (false); Die(); } while (0)" data-ref="_M/UNREACHABLE">UNREACHABLE</a>(<q>"unexpected bit width"</q>);</td></tr>
+<tr><th id="89">89</th><td>}</td></tr>
+<tr><th id="90">90</th><td></td></tr>
+<tr><th id="91">91</th><td><a class="typedef" href="ubsan_value.h.html#__ubsan::UIntMax" title='__ubsan::UIntMax' data-type='u128' data-ref="__ubsan::UIntMax" data-ref-filename="__ubsan..UIntMax">UIntMax</a> <a class="type" href="ubsan_value.h.html#__ubsan::Value" title='__ubsan::Value' data-ref="__ubsan::Value" data-ref-filename="__ubsan..Value">Value</a>::<dfn class="decl def fn" id="__ubsan::Value::getUIntValue" title='__ubsan::Value::getUIntValue' data-ref="__ubsan::Value::getUIntValue" data-ref-filename="__ubsan..Value..getUIntValue">getUIntValue</dfn>() <em>const</em> {</td></tr>
+<tr><th id="92">92</th><td>  <a class="macro" href="../sanitizer_common/sanitizer_internal_defs.h.html#299" title="do { __sanitizer::u64 v1 = (__sanitizer::u64)((getType().isUnsignedIntegerTy())); __sanitizer::u64 v2 = (__sanitizer::u64)(0); if (__builtin_expect(!!(!(v1 != v2)), 0)) __sanitizer::CheckFailed(&quot;/fast/tmp/llvm-proj-12/compiler-rt/lib/ubsan/ubsan_value.cpp&quot;, 92, &quot;(&quot; &quot;(getType().isUnsignedIntegerTy())&quot; &quot;) &quot; &quot;!=&quot; &quot; (&quot; &quot;0&quot; &quot;)&quot;, v1, v2); } while (false)" data-ref="_M/CHECK">CHECK</a>(<a class="member fn" href="ubsan_value.h.html#__ubsan::Value::getType" title='__ubsan::Value::getType' data-ref="__ubsan::Value::getType" data-ref-filename="__ubsan..Value..getType">getType</a>().<a class="ref fn" href="ubsan_value.h.html#__ubsan::TypeDescriptor::isUnsignedIntegerTy" title='__ubsan::TypeDescriptor::isUnsignedIntegerTy' data-ref="__ubsan::TypeDescriptor::isUnsignedIntegerTy" data-ref-filename="__ubsan..TypeDescriptor..isUnsignedIntegerTy">isUnsignedIntegerTy</a>());</td></tr>
+<tr><th id="93">93</th><td>  <b>if</b> (<a class="member fn" href="ubsan_value.h.html#__ubsan::Value::isInlineInt" title='__ubsan::Value::isInlineInt' data-ref="__ubsan::Value::isInlineInt" data-ref-filename="__ubsan..Value..isInlineInt">isInlineInt</a>())</td></tr>
+<tr><th id="94">94</th><td>    <b>return</b> <a class="member field" href="ubsan_value.h.html#__ubsan::Value::Val" title='__ubsan::Value::Val' data-ref="__ubsan::Value::Val" data-ref-filename="__ubsan..Value..Val">Val</a>;</td></tr>
+<tr><th id="95">95</th><td>  <b>if</b> (<a class="member fn" href="ubsan_value.h.html#__ubsan::Value::getType" title='__ubsan::Value::getType' data-ref="__ubsan::Value::getType" data-ref-filename="__ubsan..Value..getType">getType</a>().<a class="ref fn" href="ubsan_value.h.html#__ubsan::TypeDescriptor::getIntegerBitWidth" title='__ubsan::TypeDescriptor::getIntegerBitWidth' data-ref="__ubsan::TypeDescriptor::getIntegerBitWidth" data-ref-filename="__ubsan..TypeDescriptor..getIntegerBitWidth">getIntegerBitWidth</a>() == <var>64</var>)</td></tr>
+<tr><th id="96">96</th><td>    <b>return</b> *<b>reinterpret_cast</b>&lt;<a class="typedef" href="../sanitizer_common/sanitizer_internal_defs.h.html#__sanitizer::u64" title='__sanitizer::u64' data-type='unsigned long long' data-ref="__sanitizer::u64" data-ref-filename="__sanitizer..u64">u64</a>*&gt;(<a class="member field" href="ubsan_value.h.html#__ubsan::Value::Val" title='__ubsan::Value::Val' data-ref="__ubsan::Value::Val" data-ref-filename="__ubsan..Value..Val">Val</a>);</td></tr>
+<tr><th id="97">97</th><td><u>#<span data-ppcond="97">if</span> <a class="macro" href="ubsan_value.h.html#23" title="1" data-ref="_M/HAVE_INT128_T">HAVE_INT128_T</a></u></td></tr>
+<tr><th id="98">98</th><td>  <b>if</b> (<a class="member fn" href="ubsan_value.h.html#__ubsan::Value::getType" title='__ubsan::Value::getType' data-ref="__ubsan::Value::getType" data-ref-filename="__ubsan..Value..getType">getType</a>().<a class="ref fn" href="ubsan_value.h.html#__ubsan::TypeDescriptor::getIntegerBitWidth" title='__ubsan::TypeDescriptor::getIntegerBitWidth' data-ref="__ubsan::TypeDescriptor::getIntegerBitWidth" data-ref-filename="__ubsan..TypeDescriptor..getIntegerBitWidth">getIntegerBitWidth</a>() == <var>128</var>)</td></tr>
+<tr><th id="99">99</th><td>    <b>return</b> *<b>reinterpret_cast</b>&lt;<a class="typedef" href="ubsan_value.h.html#u128" title='u128' data-type='unsigned __int128' data-ref="u128" data-ref-filename="u128">u128</a>*&gt;(<a class="member field" href="ubsan_value.h.html#__ubsan::Value::Val" title='__ubsan::Value::Val' data-ref="__ubsan::Value::Val" data-ref-filename="__ubsan..Value..Val">Val</a>);</td></tr>
+<tr><th id="100">100</th><td><u>#<span data-ppcond="97">else</span></u></td></tr>
+<tr><th id="101">101</th><td>  <b>if</b> (getType().getIntegerBitWidth() == <var>128</var>)</td></tr>
+<tr><th id="102">102</th><td>    UNREACHABLE(<q>"libclang_rt.ubsan was built without __int128 support"</q>);</td></tr>
+<tr><th id="103">103</th><td><u>#<span data-ppcond="97">endif</span></u></td></tr>
+<tr><th id="104">104</th><td>  <a class="macro" href="../sanitizer_common/sanitizer_internal_defs.h.html#325" title="do { do { __sanitizer::u64 v1 = (__sanitizer::u64)((0 &amp;&amp; &quot;unexpected bit width&quot;)); __sanitizer::u64 v2 = (__sanitizer::u64)(0); if (__builtin_expect(!!(!(v1 != v2)), 0)) __sanitizer::CheckFailed(&quot;/fast/tmp/llvm-proj-12/compiler-rt/lib/ubsan/ubsan_value.cpp&quot;, 104, &quot;(&quot; &quot;(0 &amp;&amp; \&quot;unexpected bit width\&quot;)&quot; &quot;) &quot; &quot;!=&quot; &quot; (&quot; &quot;0&quot; &quot;)&quot;, v1, v2); } while (false); Die(); } while (0)" data-ref="_M/UNREACHABLE">UNREACHABLE</a>(<q>"unexpected bit width"</q>);</td></tr>
+<tr><th id="105">105</th><td>}</td></tr>
+<tr><th id="106">106</th><td></td></tr>
+<tr><th id="107">107</th><td><a class="typedef" href="ubsan_value.h.html#__ubsan::UIntMax" title='__ubsan::UIntMax' data-type='u128' data-ref="__ubsan::UIntMax" data-ref-filename="__ubsan..UIntMax">UIntMax</a> <a class="type" href="ubsan_value.h.html#__ubsan::Value" title='__ubsan::Value' data-ref="__ubsan::Value" data-ref-filename="__ubsan..Value">Value</a>::<dfn class="decl def fn" id="__ubsan::Value::getPositiveIntValue" title='__ubsan::Value::getPositiveIntValue' data-ref="__ubsan::Value::getPositiveIntValue" data-ref-filename="__ubsan..Value..getPositiveIntValue">getPositiveIntValue</dfn>() <em>const</em> {</td></tr>
+<tr><th id="108">108</th><td>  <b>if</b> (<a class="member fn" href="ubsan_value.h.html#__ubsan::Value::getType" title='__ubsan::Value::getType' data-ref="__ubsan::Value::getType" data-ref-filename="__ubsan..Value..getType">getType</a>().<a class="ref fn" href="ubsan_value.h.html#__ubsan::TypeDescriptor::isUnsignedIntegerTy" title='__ubsan::TypeDescriptor::isUnsignedIntegerTy' data-ref="__ubsan::TypeDescriptor::isUnsignedIntegerTy" data-ref-filename="__ubsan..TypeDescriptor..isUnsignedIntegerTy">isUnsignedIntegerTy</a>())</td></tr>
+<tr><th id="109">109</th><td>    <b>return</b> <a class="member fn" href="#__ubsan::Value::getUIntValue" title='__ubsan::Value::getUIntValue' data-ref="__ubsan::Value::getUIntValue" data-ref-filename="__ubsan..Value..getUIntValue">getUIntValue</a>();</td></tr>
+<tr><th id="110">110</th><td>  <a class="typedef" href="ubsan_value.h.html#__ubsan::SIntMax" title='__ubsan::SIntMax' data-type='s128' data-ref="__ubsan::SIntMax" data-ref-filename="__ubsan..SIntMax">SIntMax</a> <dfn class="local col3 decl" id="3Val" title='Val' data-type='__ubsan::SIntMax' data-ref="3Val" data-ref-filename="3Val">Val</dfn> = <a class="member fn" href="#__ubsan::Value::getSIntValue" title='__ubsan::Value::getSIntValue' data-ref="__ubsan::Value::getSIntValue" data-ref-filename="__ubsan..Value..getSIntValue">getSIntValue</a>();</td></tr>
+<tr><th id="111">111</th><td>  <a class="macro" href="../sanitizer_common/sanitizer_internal_defs.h.html#299" title="do { __sanitizer::u64 v1 = (__sanitizer::u64)((Val &gt;= 0)); __sanitizer::u64 v2 = (__sanitizer::u64)(0); if (__builtin_expect(!!(!(v1 != v2)), 0)) __sanitizer::CheckFailed(&quot;/fast/tmp/llvm-proj-12/compiler-rt/lib/ubsan/ubsan_value.cpp&quot;, 111, &quot;(&quot; &quot;(Val &gt;= 0)&quot; &quot;) &quot; &quot;!=&quot; &quot; (&quot; &quot;0&quot; &quot;)&quot;, v1, v2); } while (false)" data-ref="_M/CHECK">CHECK</a>(<a class="local col3 ref" href="#3Val" title='Val' data-ref="3Val" data-ref-filename="3Val">Val</a> &gt;= <var>0</var>);</td></tr>
+<tr><th id="112">112</th><td>  <b>return</b> <a class="local col3 ref" href="#3Val" title='Val' data-ref="3Val" data-ref-filename="3Val">Val</a>;</td></tr>
+<tr><th id="113">113</th><td>}</td></tr>
+<tr><th id="114">114</th><td></td></tr>
+<tr><th id="115">115</th><td><i class="doc">/// Get the floating-point value of this object, extended to a long double.</i></td></tr>
+<tr><th id="116">116</th><td><i class="doc">/// These are always passed by address (our calling convention doesn't allow</i></td></tr>
+<tr><th id="117">117</th><td><i class="doc">/// them to be passed in floating-point registers, so this has little cost).</i></td></tr>
+<tr><th id="118">118</th><td><a class="typedef" href="ubsan_value.h.html#__ubsan::FloatMax" title='__ubsan::FloatMax' data-type='long double' data-ref="__ubsan::FloatMax" data-ref-filename="__ubsan..FloatMax">FloatMax</a> <a class="type" href="ubsan_value.h.html#__ubsan::Value" title='__ubsan::Value' data-ref="__ubsan::Value" data-ref-filename="__ubsan..Value">Value</a>::<dfn class="decl def fn" id="__ubsan::Value::getFloatValue" title='__ubsan::Value::getFloatValue' data-ref="__ubsan::Value::getFloatValue" data-ref-filename="__ubsan..Value..getFloatValue">getFloatValue</dfn>() <em>const</em> {</td></tr>
+<tr><th id="119">119</th><td>  <a class="macro" href="../sanitizer_common/sanitizer_internal_defs.h.html#299" title="do { __sanitizer::u64 v1 = (__sanitizer::u64)((getType().isFloatTy())); __sanitizer::u64 v2 = (__sanitizer::u64)(0); if (__builtin_expect(!!(!(v1 != v2)), 0)) __sanitizer::CheckFailed(&quot;/fast/tmp/llvm-proj-12/compiler-rt/lib/ubsan/ubsan_value.cpp&quot;, 119, &quot;(&quot; &quot;(getType().isFloatTy())&quot; &quot;) &quot; &quot;!=&quot; &quot; (&quot; &quot;0&quot; &quot;)&quot;, v1, v2); } while (false)" data-ref="_M/CHECK">CHECK</a>(<a class="member fn" href="ubsan_value.h.html#__ubsan::Value::getType" title='__ubsan::Value::getType' data-ref="__ubsan::Value::getType" data-ref-filename="__ubsan..Value..getType">getType</a>().<a class="ref fn" href="ubsan_value.h.html#__ubsan::TypeDescriptor::isFloatTy" title='__ubsan::TypeDescriptor::isFloatTy' data-ref="__ubsan::TypeDescriptor::isFloatTy" data-ref-filename="__ubsan..TypeDescriptor..isFloatTy">isFloatTy</a>());</td></tr>
+<tr><th id="120">120</th><td>  <b>if</b> (<a class="member fn" href="ubsan_value.h.html#__ubsan::Value::isInlineFloat" title='__ubsan::Value::isInlineFloat' data-ref="__ubsan::Value::isInlineFloat" data-ref-filename="__ubsan..Value..isInlineFloat">isInlineFloat</a>()) {</td></tr>
+<tr><th id="121">121</th><td>    <b>switch</b> (<a class="member fn" href="ubsan_value.h.html#__ubsan::Value::getType" title='__ubsan::Value::getType' data-ref="__ubsan::Value::getType" data-ref-filename="__ubsan..Value..getType">getType</a>().<a class="ref fn" href="ubsan_value.h.html#__ubsan::TypeDescriptor::getFloatBitWidth" title='__ubsan::TypeDescriptor::getFloatBitWidth' data-ref="__ubsan::TypeDescriptor::getFloatBitWidth" data-ref-filename="__ubsan..TypeDescriptor..getFloatBitWidth">getFloatBitWidth</a>()) {</td></tr>
+<tr><th id="122">122</th><td><u>#<span data-ppcond="122">if</span> 0</u></td></tr>
+<tr><th id="123">123</th><td>      <i>// FIXME: OpenCL / NEON 'half' type. LLVM can't lower the conversion</i></td></tr>
+<tr><th id="124">124</th><td><i>      //        from '__fp16' to 'long double'.</i></td></tr>
+<tr><th id="125">125</th><td>      <b>case</b> <var>16</var>: {</td></tr>
+<tr><th id="126">126</th><td>        <b>__fp16</b> Value;</td></tr>
+<tr><th id="127">127</th><td>        internal_memcpy(&amp;Value, &amp;Val, <var>4</var>);</td></tr>
+<tr><th id="128">128</th><td>        <b>return</b> Value;</td></tr>
+<tr><th id="129">129</th><td>      }</td></tr>
+<tr><th id="130">130</th><td><u>#<span data-ppcond="122">endif</span></u></td></tr>
+<tr><th id="131">131</th><td>      <b>case</b> <var>32</var>: {</td></tr>
+<tr><th id="132">132</th><td>        <em>float</em> <dfn class="local col4 decl" id="4Value" title='Value' data-type='float' data-ref="4Value" data-ref-filename="4Value">Value</dfn>;</td></tr>
+<tr><th id="133">133</th><td><u>#<span data-ppcond="133">if</span> defined(<span class="macro" data-ref="_M/__BYTE_ORDER__">__BYTE_ORDER__</span>) &amp;&amp; <span class="macro" title="1234" data-ref="_M/__BYTE_ORDER__">__BYTE_ORDER__</span> == <span class="macro" title="4321" data-ref="_M/__ORDER_BIG_ENDIAN__">__ORDER_BIG_ENDIAN__</span></u></td></tr>
+<tr><th id="134">134</th><td>       <i>// For big endian the float value is in the last 4 bytes.</i></td></tr>
+<tr><th id="135">135</th><td><i>       // On some targets we may only have 4 bytes so we count backwards from</i></td></tr>
+<tr><th id="136">136</th><td><i>       // the end of Val to account for both the 32-bit and 64-bit cases.</i></td></tr>
+<tr><th id="137">137</th><td>       internal_memcpy(&amp;Value, ((<em>const</em> <em>char</em>*)(&amp;Val + <var>1</var>)) - <var>4</var>, <var>4</var>);</td></tr>
+<tr><th id="138">138</th><td><u>#<span data-ppcond="133">else</span></u></td></tr>
+<tr><th id="139">139</th><td>       <a class="ref fn" href="../sanitizer_common/sanitizer_libc.h.html#__sanitizer::internal_memcpy" title='__sanitizer::internal_memcpy' data-ref="__sanitizer::internal_memcpy" data-ref-filename="__sanitizer..internal_memcpy">internal_memcpy</a>(&amp;<a class="local col4 ref" href="#4Value" title='Value' data-ref="4Value" data-ref-filename="4Value">Value</a>, &amp;<a class="member field" href="ubsan_value.h.html#__ubsan::Value::Val" title='__ubsan::Value::Val' data-ref="__ubsan::Value::Val" data-ref-filename="__ubsan..Value..Val">Val</a>, <var>4</var>);</td></tr>
+<tr><th id="140">140</th><td><u>#<span data-ppcond="133">endif</span></u></td></tr>
+<tr><th id="141">141</th><td>        <b>return</b> <a class="local col4 ref" href="#4Value" title='Value' data-ref="4Value" data-ref-filename="4Value">Value</a>;</td></tr>
+<tr><th id="142">142</th><td>      }</td></tr>
+<tr><th id="143">143</th><td>      <b>case</b> <var>64</var>: {</td></tr>
+<tr><th id="144">144</th><td>        <em>double</em> <dfn class="local col5 decl" id="5Value" title='Value' data-type='double' data-ref="5Value" data-ref-filename="5Value">Value</dfn>;</td></tr>
+<tr><th id="145">145</th><td>        <a class="ref fn" href="../sanitizer_common/sanitizer_libc.h.html#__sanitizer::internal_memcpy" title='__sanitizer::internal_memcpy' data-ref="__sanitizer::internal_memcpy" data-ref-filename="__sanitizer..internal_memcpy">internal_memcpy</a>(&amp;<a class="local col5 ref" href="#5Value" title='Value' data-ref="5Value" data-ref-filename="5Value">Value</a>, &amp;<a class="member field" href="ubsan_value.h.html#__ubsan::Value::Val" title='__ubsan::Value::Val' data-ref="__ubsan::Value::Val" data-ref-filename="__ubsan..Value..Val">Val</a>, <var>8</var>);</td></tr>
+<tr><th id="146">146</th><td>        <b>return</b> <a class="local col5 ref" href="#5Value" title='Value' data-ref="5Value" data-ref-filename="5Value">Value</a>;</td></tr>
+<tr><th id="147">147</th><td>      }</td></tr>
+<tr><th id="148">148</th><td>    }</td></tr>
+<tr><th id="149">149</th><td>  } <b>else</b> {</td></tr>
+<tr><th id="150">150</th><td>    <b>switch</b> (<a class="member fn" href="ubsan_value.h.html#__ubsan::Value::getType" title='__ubsan::Value::getType' data-ref="__ubsan::Value::getType" data-ref-filename="__ubsan..Value..getType">getType</a>().<a class="ref fn" href="ubsan_value.h.html#__ubsan::TypeDescriptor::getFloatBitWidth" title='__ubsan::TypeDescriptor::getFloatBitWidth' data-ref="__ubsan::TypeDescriptor::getFloatBitWidth" data-ref-filename="__ubsan..TypeDescriptor..getFloatBitWidth">getFloatBitWidth</a>()) {</td></tr>
+<tr><th id="151">151</th><td>    <b>case</b> <var>64</var>: <b>return</b> *<b>reinterpret_cast</b>&lt;<em>double</em>*&gt;(<a class="member field" href="ubsan_value.h.html#__ubsan::Value::Val" title='__ubsan::Value::Val' data-ref="__ubsan::Value::Val" data-ref-filename="__ubsan..Value..Val">Val</a>);</td></tr>
+<tr><th id="152">152</th><td>    <b>case</b> <var>80</var>: <b>return</b> *<b>reinterpret_cast</b>&lt;<em>long</em> <em>double</em>*&gt;(<a class="member field" href="ubsan_value.h.html#__ubsan::Value::Val" title='__ubsan::Value::Val' data-ref="__ubsan::Value::Val" data-ref-filename="__ubsan..Value..Val">Val</a>);</td></tr>
+<tr><th id="153">153</th><td>    <b>case</b> <var>96</var>: <b>return</b> *<b>reinterpret_cast</b>&lt;<em>long</em> <em>double</em>*&gt;(<a class="member field" href="ubsan_value.h.html#__ubsan::Value::Val" title='__ubsan::Value::Val' data-ref="__ubsan::Value::Val" data-ref-filename="__ubsan..Value..Val">Val</a>);</td></tr>
+<tr><th id="154">154</th><td>    <b>case</b> <var>128</var>: <b>return</b> *<b>reinterpret_cast</b>&lt;<em>long</em> <em>double</em>*&gt;(<a class="member field" href="ubsan_value.h.html#__ubsan::Value::Val" title='__ubsan::Value::Val' data-ref="__ubsan::Value::Val" data-ref-filename="__ubsan..Value..Val">Val</a>);</td></tr>
+<tr><th id="155">155</th><td>    }</td></tr>
+<tr><th id="156">156</th><td>  }</td></tr>
+<tr><th id="157">157</th><td>  <a class="macro" href="../sanitizer_common/sanitizer_internal_defs.h.html#325" title="do { do { __sanitizer::u64 v1 = (__sanitizer::u64)((0 &amp;&amp; &quot;unexpected floating point bit width&quot;)); __sanitizer::u64 v2 = (__sanitizer::u64)(0); if (__builtin_expect(!!(!(v1 != v2)), 0)) __sanitizer::CheckFailed(&quot;/fast/tmp/llvm-proj-12/compiler-rt/lib/ubsan/ubsan_value.cpp&quot;, 157, &quot;(&quot; &quot;(0 &amp;&amp; \&quot;unexpected floating point bit width\&quot;)&quot; &quot;) &quot; &quot;!=&quot; &quot; (&quot; &quot;0&quot; &quot;)&quot;, v1, v2); } while (false); Die(); } while (0)" data-ref="_M/UNREACHABLE">UNREACHABLE</a>(<q>"unexpected floating point bit width"</q>);</td></tr>
+<tr><th id="158">158</th><td>}</td></tr>
+<tr><th id="159">159</th><td></td></tr>
+<tr><th id="160">160</th><td><u>#<span data-ppcond="15">endif</span>  // CAN_SANITIZE_UB</u></td></tr>
+<tr><th id="161">161</th><td></td></tr>
+</table><hr/><p id='footer'>
+Generated on <em>2021-Jul-01</em> from project llvm revision <em>12</em>

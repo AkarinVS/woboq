@@ -1,0 +1,83 @@
+<!doctype html>
+<html>
+<head>
+<meta name="viewport" content="width=device-width, initial-scale=1.0"><title>sanitizer_coverage_win_sections.cpp source code [llvm/compiler-rt/lib/sanitizer_common/sanitizer_coverage_win_sections.cpp] - Woboq Code Browser</title>
+<link rel="stylesheet" href="../../../.././data/qtcreator.css" title="QtCreator"/>
+<link rel="alternate stylesheet" href="../../../.././data/kdevelop.css" title="KDevelop"/>
+<script type="text/javascript" src="../../../.././data/jquery/jquery.min.js"></script>
+<script type="text/javascript" src="../../../.././data/jquery/jquery-ui.min.js"></script>
+<script>var file = 'llvm/compiler-rt/lib/sanitizer_common/sanitizer_coverage_win_sections.cpp'; var root_path = '../../../..'; var data_path = '../../../.././data'; var ecma_script_api_version = 2;</script>
+<script src='../../../.././data/codebrowser.js'></script>
+</head>
+<body><div id='header'><h1 id='breadcrumb'><span>Browse the source code of </span><a href='../../..'>llvm</a>/<a href='../..'>compiler-rt</a>/<a href='..'>lib</a>/<a href='./'>sanitizer_common</a>/<a href='sanitizer_coverage_win_sections.cpp.html'>sanitizer_coverage_win_sections.cpp</a></h1></div>
+<hr/><div id='content'><table class="code">
+<tr><th id="1">1</th><td><i>//===-- sanitizer_coverage_win_sections.cpp -------------------------------===//</i></td></tr>
+<tr><th id="2">2</th><td><i>//</i></td></tr>
+<tr><th id="3">3</th><td><i>// Part of the LLVM Project, under the Apache License v2.0 with LLVM Exceptions.</i></td></tr>
+<tr><th id="4">4</th><td><i>// See <a href="https://llvm.org/LICENSE.txt">https://llvm.org/LICENSE.txt</a> for license information.</i></td></tr>
+<tr><th id="5">5</th><td><i>// SPDX-License-Identifier: Apache-2.0 WITH LLVM-exception</i></td></tr>
+<tr><th id="6">6</th><td><i>//</i></td></tr>
+<tr><th id="7">7</th><td><i>//===----------------------------------------------------------------------===//</i></td></tr>
+<tr><th id="8">8</th><td><i>//</i></td></tr>
+<tr><th id="9">9</th><td><i>// This file defines delimiters for Sanitizer Coverage's section. It contains</i></td></tr>
+<tr><th id="10">10</th><td><i>// Windows specific tricks to coax the linker into giving us the start and stop</i></td></tr>
+<tr><th id="11">11</th><td><i>// addresses of a section, as ELF linkers can do, to get the size of certain</i></td></tr>
+<tr><th id="12">12</th><td><i>// arrays. According to <a href="https://msdn.microsoft.com/en-us/library/7977wcck.aspx">https://msdn.microsoft.com/en-us/library/7977wcck.aspx</a></i></td></tr>
+<tr><th id="13">13</th><td><i>// sections with the same name before "$" are sorted alphabetically by the</i></td></tr>
+<tr><th id="14">14</th><td><i>// string that comes after "$" and merged into one section. We take advantage</i></td></tr>
+<tr><th id="15">15</th><td><i>// of this by putting data we want the size of into the middle (M) of a section,</i></td></tr>
+<tr><th id="16">16</th><td><i>// by using the letter "M" after "$". We get the start of this data (ie:</i></td></tr>
+<tr><th id="17">17</th><td><i>// __start_section_name) by making the start variable come at the start of the</i></td></tr>
+<tr><th id="18">18</th><td><i>// section (using the letter A after "$"). We do the same to get the end of the</i></td></tr>
+<tr><th id="19">19</th><td><i>// data by using the letter "Z" after "$" to make the end variable come after</i></td></tr>
+<tr><th id="20">20</th><td><i>// the data. Note that because of our technique the address of the start</i></td></tr>
+<tr><th id="21">21</th><td><i>// variable is actually the address of data that comes before our middle</i></td></tr>
+<tr><th id="22">22</th><td><i>// section. We also need to prevent the linker from adding any padding. Each</i></td></tr>
+<tr><th id="23">23</th><td><i>// technique we use for this is explained in the comments below.</i></td></tr>
+<tr><th id="24">24</th><td><i>//===----------------------------------------------------------------------===//</i></td></tr>
+<tr><th id="25">25</th><td></td></tr>
+<tr><th id="26">26</th><td><u>#include <a href="sanitizer_platform.h.html">"sanitizer_platform.h"</a></u></td></tr>
+<tr><th id="27">27</th><td><u>#<span data-ppcond="27">if</span> <a class="macro" href="sanitizer_platform.h.html#93" title="0" data-ref="_M/SANITIZER_WINDOWS">SANITIZER_WINDOWS</a></u></td></tr>
+<tr><th id="28">28</th><td><u>#include &lt;stdint.h&gt;</u></td></tr>
+<tr><th id="29">29</th><td></td></tr>
+<tr><th id="30">30</th><td><b>extern</b> <q>"C"</q> {</td></tr>
+<tr><th id="31">31</th><td><i>// Use uint64_t so the linker won't need to add any padding if it tries to word</i></td></tr>
+<tr><th id="32">32</th><td><i>// align the start of the 8-bit counters array. The array will always start 8</i></td></tr>
+<tr><th id="33">33</th><td><i>// bytes after __start_sancov_cntrs.</i></td></tr>
+<tr><th id="34">34</th><td><u>#pragma section(".SCOV$CA", read, write)</u></td></tr>
+<tr><th id="35">35</th><td>__declspec(allocate(<q>".SCOV$CA"</q>)) uint64_t __start___sancov_cntrs = <var>0</var>;</td></tr>
+<tr><th id="36">36</th><td></td></tr>
+<tr><th id="37">37</th><td><i>// Even though we said not to align __stop__sancov_cntrs (using the "align"</i></td></tr>
+<tr><th id="38">38</th><td><i>// declspec), MSVC's linker may try to align the section, .SCOV$CZ, containing</i></td></tr>
+<tr><th id="39">39</th><td><i>// it. This can cause a mismatch between the number of PCs and counters since</i></td></tr>
+<tr><th id="40">40</th><td><i>// each PCTable element is 8 bytes (unlike counters which are 1 byte) so no</i></td></tr>
+<tr><th id="41">41</th><td><i>// padding would be added to align .SCOVP$Z, However, if .SCOV$CZ section is 1</i></td></tr>
+<tr><th id="42">42</th><td><i>// byte, the linker won't try to align it on an 8-byte boundary, so use a</i></td></tr>
+<tr><th id="43">43</th><td><i>// uint8_t for __stop_sancov_cntrs.</i></td></tr>
+<tr><th id="44">44</th><td><u>#pragma section(".SCOV$CZ", read, write)</u></td></tr>
+<tr><th id="45">45</th><td>__declspec(allocate(<q>".SCOV$CZ"</q>)) __declspec(align(<var>1</var>)) uint8_t</td></tr>
+<tr><th id="46">46</th><td>    __stop___sancov_cntrs = <var>0</var>;</td></tr>
+<tr><th id="47">47</th><td></td></tr>
+<tr><th id="48">48</th><td><u>#pragma section(".SCOV$GA", read, write)</u></td></tr>
+<tr><th id="49">49</th><td>__declspec(allocate(<q>".SCOV$GA"</q>)) uint64_t __start___sancov_guards = <var>0</var>;</td></tr>
+<tr><th id="50">50</th><td><u>#pragma section(".SCOV$GZ", read, write)</u></td></tr>
+<tr><th id="51">51</th><td>__declspec(allocate(<q>".SCOV$GZ"</q>)) __declspec(align(<var>1</var>)) uint8_t</td></tr>
+<tr><th id="52">52</th><td>    __stop___sancov_guards = <var>0</var>;</td></tr>
+<tr><th id="53">53</th><td></td></tr>
+<tr><th id="54">54</th><td><i>// The guard array and counter array should both be merged into the .data</i></td></tr>
+<tr><th id="55">55</th><td><i>// section to reduce the number of PE sections. However, because PCTable is</i></td></tr>
+<tr><th id="56">56</th><td><i>// constant it should be merged with the .rdata section.</i></td></tr>
+<tr><th id="57">57</th><td><u>#pragma comment(linker, "/MERGE:.SCOV=.data")</u></td></tr>
+<tr><th id="58">58</th><td></td></tr>
+<tr><th id="59">59</th><td><u>#pragma section(".SCOVP$A", read)</u></td></tr>
+<tr><th id="60">60</th><td>__declspec(allocate(<q>".SCOVP$A"</q>)) uint64_t __start___sancov_pcs = <var>0</var>;</td></tr>
+<tr><th id="61">61</th><td><u>#pragma section(".SCOVP$Z", read)</u></td></tr>
+<tr><th id="62">62</th><td>__declspec(allocate(<q>".SCOVP$Z"</q>)) __declspec(align(<var>1</var>)) uint8_t</td></tr>
+<tr><th id="63">63</th><td>    __stop___sancov_pcs = <var>0</var>;</td></tr>
+<tr><th id="64">64</th><td></td></tr>
+<tr><th id="65">65</th><td><u>#pragma comment(linker, "/MERGE:.SCOVP=.rdata")</u></td></tr>
+<tr><th id="66">66</th><td>}</td></tr>
+<tr><th id="67">67</th><td><u>#<span data-ppcond="27">endif</span>  // SANITIZER_WINDOWS</u></td></tr>
+<tr><th id="68">68</th><td></td></tr>
+</table><hr/><p id='footer'>
+Generated on <em>2021-Jul-01</em> from project llvm revision <em>12</em>

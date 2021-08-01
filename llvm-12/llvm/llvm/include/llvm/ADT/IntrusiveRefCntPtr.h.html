@@ -1,0 +1,325 @@
+<!doctype html>
+<html>
+<head>
+<meta name="viewport" content="width=device-width, initial-scale=1.0"><title>IntrusiveRefCntPtr.h source code [llvm/llvm/include/llvm/ADT/IntrusiveRefCntPtr.h] - Woboq Code Browser</title>
+<meta name="woboq:interestingDefinitions" content="llvm::IntrusiveRefCntPtr,llvm::IntrusiveRefCntPtrInfo,llvm::RefCountedBase,llvm::ThreadSafeRefCountedBase,llvm::simplify_type "/>
+<link rel="stylesheet" href="../../../../.././data/qtcreator.css" title="QtCreator"/>
+<link rel="alternate stylesheet" href="../../../../.././data/kdevelop.css" title="KDevelop"/>
+<script type="text/javascript" src="../../../../.././data/jquery/jquery.min.js"></script>
+<script type="text/javascript" src="../../../../.././data/jquery/jquery-ui.min.js"></script>
+<script>var file = 'llvm/llvm/include/llvm/ADT/IntrusiveRefCntPtr.h'; var root_path = '../../../../..'; var data_path = '../../../../.././data'; var ecma_script_api_version = 2;</script>
+<script src='../../../../.././data/codebrowser.js'></script>
+</head>
+<body><div id='header'><h1 id='breadcrumb'><span>Browse the source code of </span><a href='../../../..'>llvm</a>/<a href='../../..'>llvm</a>/<a href='../..'>include</a>/<a href='..'>llvm</a>/<a href='./'>ADT</a>/<a href='IntrusiveRefCntPtr.h.html'>IntrusiveRefCntPtr.h</a></h1></div>
+<hr/><div id='content'><table class="code">
+<tr><th id="1">1</th><td><i>//==- llvm/ADT/IntrusiveRefCntPtr.h - Smart Refcounting Pointer --*- C++ -*-==//</i></td></tr>
+<tr><th id="2">2</th><td><i>//</i></td></tr>
+<tr><th id="3">3</th><td><i>// Part of the LLVM Project, under the Apache License v2.0 with LLVM Exceptions.</i></td></tr>
+<tr><th id="4">4</th><td><i>// See <a href="https://llvm.org/LICENSE.txt">https://llvm.org/LICENSE.txt</a> for license information.</i></td></tr>
+<tr><th id="5">5</th><td><i>// SPDX-License-Identifier: Apache-2.0 WITH LLVM-exception</i></td></tr>
+<tr><th id="6">6</th><td><i>//</i></td></tr>
+<tr><th id="7">7</th><td><i>//===----------------------------------------------------------------------===//</i></td></tr>
+<tr><th id="8">8</th><td><i>//</i></td></tr>
+<tr><th id="9">9</th><td><i>// This file defines the RefCountedBase, ThreadSafeRefCountedBase, and</i></td></tr>
+<tr><th id="10">10</th><td><i>// IntrusiveRefCntPtr classes.</i></td></tr>
+<tr><th id="11">11</th><td><i>//</i></td></tr>
+<tr><th id="12">12</th><td><i>// IntrusiveRefCntPtr is a smart pointer to an object which maintains a</i></td></tr>
+<tr><th id="13">13</th><td><i>// reference count.  (ThreadSafe)RefCountedBase is a mixin class that adds a</i></td></tr>
+<tr><th id="14">14</th><td><i>// refcount member variable and methods for updating the refcount.  An object</i></td></tr>
+<tr><th id="15">15</th><td><i>// that inherits from (ThreadSafe)RefCountedBase deletes itself when its</i></td></tr>
+<tr><th id="16">16</th><td><i>// refcount hits zero.</i></td></tr>
+<tr><th id="17">17</th><td><i>//</i></td></tr>
+<tr><th id="18">18</th><td><i>// For example:</i></td></tr>
+<tr><th id="19">19</th><td><i>//</i></td></tr>
+<tr><th id="20">20</th><td><i>//   class MyClass : public RefCountedBase&lt;MyClass&gt; {};</i></td></tr>
+<tr><th id="21">21</th><td><i>//</i></td></tr>
+<tr><th id="22">22</th><td><i>//   void foo() {</i></td></tr>
+<tr><th id="23">23</th><td><i>//     // Constructing an IntrusiveRefCntPtr increases the pointee's refcount by</i></td></tr>
+<tr><th id="24">24</th><td><i>//     // 1 (from 0 in this case).</i></td></tr>
+<tr><th id="25">25</th><td><i>//     IntrusiveRefCntPtr&lt;MyClass&gt; Ptr1(new MyClass());</i></td></tr>
+<tr><th id="26">26</th><td><i>//</i></td></tr>
+<tr><th id="27">27</th><td><i>//     // Copying an IntrusiveRefCntPtr increases the pointee's refcount by 1.</i></td></tr>
+<tr><th id="28">28</th><td><i>//     IntrusiveRefCntPtr&lt;MyClass&gt; Ptr2(Ptr1);</i></td></tr>
+<tr><th id="29">29</th><td><i>//</i></td></tr>
+<tr><th id="30">30</th><td><i>//     // Constructing an IntrusiveRefCntPtr has no effect on the object's</i></td></tr>
+<tr><th id="31">31</th><td><i>//     // refcount.  After a move, the moved-from pointer is null.</i></td></tr>
+<tr><th id="32">32</th><td><i>//     IntrusiveRefCntPtr&lt;MyClass&gt; Ptr3(std::move(Ptr1));</i></td></tr>
+<tr><th id="33">33</th><td><i>//     assert(Ptr1 == nullptr);</i></td></tr>
+<tr><th id="34">34</th><td><i>//</i></td></tr>
+<tr><th id="35">35</th><td><i>//     // Clearing an IntrusiveRefCntPtr decreases the pointee's refcount by 1.</i></td></tr>
+<tr><th id="36">36</th><td><i>//     Ptr2.reset();</i></td></tr>
+<tr><th id="37">37</th><td><i>//</i></td></tr>
+<tr><th id="38">38</th><td><i>//     // The object deletes itself when we return from the function, because</i></td></tr>
+<tr><th id="39">39</th><td><i>//     // Ptr3's destructor decrements its refcount to 0.</i></td></tr>
+<tr><th id="40">40</th><td><i>//   }</i></td></tr>
+<tr><th id="41">41</th><td><i>//</i></td></tr>
+<tr><th id="42">42</th><td><i>// You can use IntrusiveRefCntPtr with isa&lt;T&gt;(), dyn_cast&lt;T&gt;(), etc.:</i></td></tr>
+<tr><th id="43">43</th><td><i>//</i></td></tr>
+<tr><th id="44">44</th><td><i>//   IntrusiveRefCntPtr&lt;MyClass&gt; Ptr(new MyClass());</i></td></tr>
+<tr><th id="45">45</th><td><i>//   OtherClass *Other = dyn_cast&lt;OtherClass&gt;(Ptr);  // Ptr.get() not required</i></td></tr>
+<tr><th id="46">46</th><td><i>//</i></td></tr>
+<tr><th id="47">47</th><td><i>// IntrusiveRefCntPtr works with any class that</i></td></tr>
+<tr><th id="48">48</th><td><i>//</i></td></tr>
+<tr><th id="49">49</th><td><i>//  - inherits from (ThreadSafe)RefCountedBase,</i></td></tr>
+<tr><th id="50">50</th><td><i>//  - has Retain() and Release() methods, or</i></td></tr>
+<tr><th id="51">51</th><td><i>//  - specializes IntrusiveRefCntPtrInfo.</i></td></tr>
+<tr><th id="52">52</th><td><i>//</i></td></tr>
+<tr><th id="53">53</th><td><i>//===----------------------------------------------------------------------===//</i></td></tr>
+<tr><th id="54">54</th><td></td></tr>
+<tr><th id="55">55</th><td><u>#<span data-ppcond="55">ifndef</span> <span class="macro" data-ref="_M/LLVM_ADT_INTRUSIVEREFCNTPTR_H">LLVM_ADT_INTRUSIVEREFCNTPTR_H</span></u></td></tr>
+<tr><th id="56">56</th><td><u>#define <dfn class="macro" id="_M/LLVM_ADT_INTRUSIVEREFCNTPTR_H" data-ref="_M/LLVM_ADT_INTRUSIVEREFCNTPTR_H">LLVM_ADT_INTRUSIVEREFCNTPTR_H</dfn></u></td></tr>
+<tr><th id="57">57</th><td></td></tr>
+<tr><th id="58">58</th><td><u>#include &lt;atomic&gt;</u></td></tr>
+<tr><th id="59">59</th><td><u>#include &lt;cassert&gt;</u></td></tr>
+<tr><th id="60">60</th><td><u>#include &lt;cstddef&gt;</u></td></tr>
+<tr><th id="61">61</th><td><u>#include &lt;memory&gt;</u></td></tr>
+<tr><th id="62">62</th><td></td></tr>
+<tr><th id="63">63</th><td><b>namespace</b> <span class="namespace">llvm</span> {</td></tr>
+<tr><th id="64">64</th><td></td></tr>
+<tr><th id="65">65</th><td><i class="doc">/// A CRTP mixin class that adds reference counting to a type.</i></td></tr>
+<tr><th id="66">66</th><td><i class="doc">///</i></td></tr>
+<tr><th id="67">67</th><td><i class="doc">/// The lifetime of an object which inherits from RefCountedBase is managed by</i></td></tr>
+<tr><th id="68">68</th><td><i class="doc">/// calls to Release() and Retain(), which increment and decrement the object's</i></td></tr>
+<tr><th id="69">69</th><td><i class="doc">/// refcount, respectively.  When a Release() call decrements the refcount to 0,</i></td></tr>
+<tr><th id="70">70</th><td><i class="doc">/// the object deletes itself.</i></td></tr>
+<tr><th id="71">71</th><td><b>template</b> &lt;<b>class</b> Derived&gt; <b>class</b> <dfn class="type def" id="llvm::RefCountedBase" title='llvm::RefCountedBase' data-ref="llvm::RefCountedBase" data-ref-filename="llvm..RefCountedBase">RefCountedBase</dfn> {</td></tr>
+<tr><th id="72">72</th><td>  <em>mutable</em> <em>unsigned</em> <dfn class="decl field" id="llvm::RefCountedBase::RefCount" title='llvm::RefCountedBase::RefCount' data-ref="llvm::RefCountedBase::RefCount" data-ref-filename="llvm..RefCountedBase..RefCount">RefCount</dfn> = <var>0</var>;</td></tr>
+<tr><th id="73">73</th><td></td></tr>
+<tr><th id="74">74</th><td><b>protected</b>:</td></tr>
+<tr><th id="75">75</th><td>  <dfn class="decl def fn" id="_ZN4llvm14RefCountedBaseC1Ev" title='llvm::RefCountedBase::RefCountedBase&lt;Derived&gt;' data-ref="_ZN4llvm14RefCountedBaseC1Ev" data-ref-filename="_ZN4llvm14RefCountedBaseC1Ev">RefCountedBase</dfn>() = <b>default</b>;</td></tr>
+<tr><th id="76">76</th><td>  <dfn class="decl def fn" id="_ZN4llvm14RefCountedBaseC1ERKNS_14RefCountedBaseIT_EE" title='llvm::RefCountedBase::RefCountedBase&lt;Derived&gt;' data-ref="_ZN4llvm14RefCountedBaseC1ERKNS_14RefCountedBaseIT_EE" data-ref-filename="_ZN4llvm14RefCountedBaseC1ERKNS_14RefCountedBaseIT_EE">RefCountedBase</dfn>(<em>const</em> RefCountedBase &amp;) {}</td></tr>
+<tr><th id="77">77</th><td>  RefCountedBase &amp;<dfn class="decl def fn" id="_ZN4llvm14RefCountedBaseaSERKNS_14RefCountedBaseIT_EE" title='llvm::RefCountedBase::operator=' data-ref="_ZN4llvm14RefCountedBaseaSERKNS_14RefCountedBaseIT_EE" data-ref-filename="_ZN4llvm14RefCountedBaseaSERKNS_14RefCountedBaseIT_EE"><b>operator</b>=</dfn>(<em>const</em> RefCountedBase &amp;) = <b>delete</b>;</td></tr>
+<tr><th id="78">78</th><td></td></tr>
+<tr><th id="79">79</th><td><u>#<span data-ppcond="79">ifndef</span> <span class="macro" data-ref="_M/NDEBUG">NDEBUG</span></u></td></tr>
+<tr><th id="80">80</th><td>  ~RefCountedBase() {</td></tr>
+<tr><th id="81">81</th><td>    assert(RefCount == <var>0</var> &amp;&amp;</td></tr>
+<tr><th id="82">82</th><td>           <q>"Destruction occured when there are still references to this."</q>);</td></tr>
+<tr><th id="83">83</th><td>  }</td></tr>
+<tr><th id="84">84</th><td><u>#<span data-ppcond="79">else</span></u></td></tr>
+<tr><th id="85">85</th><td>  <i>// Default the destructor in release builds, A trivial destructor may enable</i></td></tr>
+<tr><th id="86">86</th><td><i>  // better codegen.</i></td></tr>
+<tr><th id="87">87</th><td>  <dfn class="decl def fn" id="_ZN4llvm14RefCountedBaseD1Ev" title='llvm::RefCountedBase::~RefCountedBase&lt;Derived&gt;' data-ref="_ZN4llvm14RefCountedBaseD1Ev" data-ref-filename="_ZN4llvm14RefCountedBaseD1Ev">~RefCountedBase</dfn>() = <b>default</b>;</td></tr>
+<tr><th id="88">88</th><td><u>#<span data-ppcond="79">endif</span></u></td></tr>
+<tr><th id="89">89</th><td></td></tr>
+<tr><th id="90">90</th><td><b>public</b>:</td></tr>
+<tr><th id="91">91</th><td>  <em>void</em> <dfn class="decl def fn" id="_ZNK4llvm14RefCountedBase6RetainEv" title='llvm::RefCountedBase::Retain' data-ref="_ZNK4llvm14RefCountedBase6RetainEv" data-ref-filename="_ZNK4llvm14RefCountedBase6RetainEv">Retain</dfn>() <em>const</em> { ++<a class="member field" href="#llvm::RefCountedBase::RefCount" title='llvm::RefCountedBase::RefCount' data-ref="llvm::RefCountedBase::RefCount" data-ref-filename="llvm..RefCountedBase..RefCount">RefCount</a>; }</td></tr>
+<tr><th id="92">92</th><td></td></tr>
+<tr><th id="93">93</th><td>  <em>void</em> <dfn class="decl def fn" id="_ZNK4llvm14RefCountedBase7ReleaseEv" title='llvm::RefCountedBase::Release' data-ref="_ZNK4llvm14RefCountedBase7ReleaseEv" data-ref-filename="_ZNK4llvm14RefCountedBase7ReleaseEv">Release</dfn>() <em>const</em> {</td></tr>
+<tr><th id="94">94</th><td>    <a class="macro" href="../../../../../include/assert.h.html#50" title="(static_cast&lt;void&gt; (0))" data-ref="_M/assert">assert</a>(RefCount &gt; <var>0</var> &amp;&amp; <q>"Reference count is already zero."</q>);</td></tr>
+<tr><th id="95">95</th><td>    <b>if</b> (--<a class="member field" href="#llvm::RefCountedBase::RefCount" title='llvm::RefCountedBase::RefCount' data-ref="llvm::RefCountedBase::RefCount" data-ref-filename="llvm..RefCountedBase..RefCount">RefCount</a> == <var>0</var>)</td></tr>
+<tr><th id="96">96</th><td>      <b>delete</b> <b>static_cast</b>&lt;<em>const</em> Derived *&gt;(<b>this</b>);</td></tr>
+<tr><th id="97">97</th><td>  }</td></tr>
+<tr><th id="98">98</th><td>};</td></tr>
+<tr><th id="99">99</th><td></td></tr>
+<tr><th id="100">100</th><td><i class="doc">/// A thread-safe version of<span class="command"> \c</span> <span class="arg">RefCountedBase.</span></i></td></tr>
+<tr><th id="101">101</th><td><b>template</b> &lt;<b>class</b> Derived&gt; <b>class</b> <dfn class="type def" id="llvm::ThreadSafeRefCountedBase" title='llvm::ThreadSafeRefCountedBase' data-ref="llvm::ThreadSafeRefCountedBase" data-ref-filename="llvm..ThreadSafeRefCountedBase">ThreadSafeRefCountedBase</dfn> {</td></tr>
+<tr><th id="102">102</th><td>  <em>mutable</em> <span class="namespace">std::</span><span class='type' title='std::atomic' data-ref="std::atomic" data-ref-filename="std..atomic">atomic</span>&lt;<em>int</em>&gt; <dfn class="decl field" id="llvm::ThreadSafeRefCountedBase::RefCount" title='llvm::ThreadSafeRefCountedBase::RefCount' data-ref="llvm::ThreadSafeRefCountedBase::RefCount" data-ref-filename="llvm..ThreadSafeRefCountedBase..RefCount">RefCount</dfn><span class='ref fn' title='std::atomic&lt;int&gt;::atomic' data-ref="_ZNSt6atomicIiEC1Ei" data-ref-filename="_ZNSt6atomicIiEC1Ei">{</span><var>0</var>};</td></tr>
+<tr><th id="103">103</th><td></td></tr>
+<tr><th id="104">104</th><td><b>protected</b>:</td></tr>
+<tr><th id="105">105</th><td>  <dfn class="decl def fn" id="_ZN4llvm24ThreadSafeRefCountedBaseC1Ev" title='llvm::ThreadSafeRefCountedBase::ThreadSafeRefCountedBase&lt;Derived&gt;' data-ref="_ZN4llvm24ThreadSafeRefCountedBaseC1Ev" data-ref-filename="_ZN4llvm24ThreadSafeRefCountedBaseC1Ev">ThreadSafeRefCountedBase</dfn>() = <b>default</b>;</td></tr>
+<tr><th id="106">106</th><td>  <dfn class="decl def fn" id="_ZN4llvm24ThreadSafeRefCountedBaseC1ERKNS_24ThreadSafeRefCountedBaseIT_EE" title='llvm::ThreadSafeRefCountedBase::ThreadSafeRefCountedBase&lt;Derived&gt;' data-ref="_ZN4llvm24ThreadSafeRefCountedBaseC1ERKNS_24ThreadSafeRefCountedBaseIT_EE" data-ref-filename="_ZN4llvm24ThreadSafeRefCountedBaseC1ERKNS_24ThreadSafeRefCountedBaseIT_EE">ThreadSafeRefCountedBase</dfn>(<em>const</em> ThreadSafeRefCountedBase &amp;) {}</td></tr>
+<tr><th id="107">107</th><td>  ThreadSafeRefCountedBase &amp;</td></tr>
+<tr><th id="108">108</th><td>  <dfn class="decl def fn" id="_ZN4llvm24ThreadSafeRefCountedBaseaSERKNS_24ThreadSafeRefCountedBaseIT_EE" title='llvm::ThreadSafeRefCountedBase::operator=' data-ref="_ZN4llvm24ThreadSafeRefCountedBaseaSERKNS_24ThreadSafeRefCountedBaseIT_EE" data-ref-filename="_ZN4llvm24ThreadSafeRefCountedBaseaSERKNS_24ThreadSafeRefCountedBaseIT_EE"><b>operator</b>=</dfn>(<em>const</em> ThreadSafeRefCountedBase &amp;) = <b>delete</b>;</td></tr>
+<tr><th id="109">109</th><td></td></tr>
+<tr><th id="110">110</th><td><u>#<span data-ppcond="110">ifndef</span> <span class="macro" data-ref="_M/NDEBUG">NDEBUG</span></u></td></tr>
+<tr><th id="111">111</th><td>  ~ThreadSafeRefCountedBase() {</td></tr>
+<tr><th id="112">112</th><td>    assert(RefCount == <var>0</var> &amp;&amp;</td></tr>
+<tr><th id="113">113</th><td>           <q>"Destruction occured when there are still references to this."</q>);</td></tr>
+<tr><th id="114">114</th><td>  }</td></tr>
+<tr><th id="115">115</th><td><u>#<span data-ppcond="110">else</span></u></td></tr>
+<tr><th id="116">116</th><td>  <i>// Default the destructor in release builds, A trivial destructor may enable</i></td></tr>
+<tr><th id="117">117</th><td><i>  // better codegen.</i></td></tr>
+<tr><th id="118">118</th><td>  <dfn class="decl def fn" id="_ZN4llvm24ThreadSafeRefCountedBaseD1Ev" title='llvm::ThreadSafeRefCountedBase::~ThreadSafeRefCountedBase&lt;Derived&gt;' data-ref="_ZN4llvm24ThreadSafeRefCountedBaseD1Ev" data-ref-filename="_ZN4llvm24ThreadSafeRefCountedBaseD1Ev">~ThreadSafeRefCountedBase</dfn>() = <b>default</b>;</td></tr>
+<tr><th id="119">119</th><td><u>#<span data-ppcond="110">endif</span></u></td></tr>
+<tr><th id="120">120</th><td></td></tr>
+<tr><th id="121">121</th><td><b>public</b>:</td></tr>
+<tr><th id="122">122</th><td>  <em>void</em> <dfn class="decl def fn" id="_ZNK4llvm24ThreadSafeRefCountedBase6RetainEv" title='llvm::ThreadSafeRefCountedBase::Retain' data-ref="_ZNK4llvm24ThreadSafeRefCountedBase6RetainEv" data-ref-filename="_ZNK4llvm24ThreadSafeRefCountedBase6RetainEv">Retain</dfn>() <em>const</em> { <a class="member field" href="#llvm::ThreadSafeRefCountedBase::RefCount" title='llvm::ThreadSafeRefCountedBase::RefCount' data-ref="llvm::ThreadSafeRefCountedBase::RefCount" data-ref-filename="llvm..ThreadSafeRefCountedBase..RefCount">RefCount</a>.<span class='ref fn' title='std::__atomic_base::fetch_add' data-ref="_ZNSt13__atomic_base9fetch_addET_St12memory_order" data-ref-filename="_ZNSt13__atomic_base9fetch_addET_St12memory_order">fetch_add</span>(<var>1</var>, <span class="namespace">std::</span><span class='enum' title='std::memory_order_relaxed' data-ref="std::memory_order_relaxed" data-ref-filename="std..memory_order_relaxed">memory_order_relaxed</span>); }</td></tr>
+<tr><th id="123">123</th><td></td></tr>
+<tr><th id="124">124</th><td>  <em>void</em> <dfn class="decl def fn" id="_ZNK4llvm24ThreadSafeRefCountedBase7ReleaseEv" title='llvm::ThreadSafeRefCountedBase::Release' data-ref="_ZNK4llvm24ThreadSafeRefCountedBase7ReleaseEv" data-ref-filename="_ZNK4llvm24ThreadSafeRefCountedBase7ReleaseEv">Release</dfn>() <em>const</em> {</td></tr>
+<tr><th id="125">125</th><td>    <em>int</em> <dfn class="local col1 decl" id="701NewRefCount" title='NewRefCount' data-type='int' data-ref="701NewRefCount" data-ref-filename="701NewRefCount">NewRefCount</dfn> = <a class="member field" href="#llvm::ThreadSafeRefCountedBase::RefCount" title='llvm::ThreadSafeRefCountedBase::RefCount' data-ref="llvm::ThreadSafeRefCountedBase::RefCount" data-ref-filename="llvm..ThreadSafeRefCountedBase..RefCount">RefCount</a>.<span class='ref fn' title='std::__atomic_base::fetch_sub' data-ref="_ZNSt13__atomic_base9fetch_subET_St12memory_order" data-ref-filename="_ZNSt13__atomic_base9fetch_subET_St12memory_order">fetch_sub</span>(<var>1</var>, <span class="namespace">std::</span><span class='enum' title='std::memory_order_acq_rel' data-ref="std::memory_order_acq_rel" data-ref-filename="std..memory_order_acq_rel">memory_order_acq_rel</span>) - <var>1</var>;</td></tr>
+<tr><th id="126">126</th><td>    <a class="macro" href="../../../../../include/assert.h.html#50" title="(static_cast&lt;void&gt; (0))" data-ref="_M/assert">assert</a>(NewRefCount &gt;= <var>0</var> &amp;&amp; <q>"Reference count was already zero."</q>);</td></tr>
+<tr><th id="127">127</th><td>    <b>if</b> (<a class="local col1 ref" href="#701NewRefCount" title='NewRefCount' data-ref="701NewRefCount" data-ref-filename="701NewRefCount">NewRefCount</a> == <var>0</var>)</td></tr>
+<tr><th id="128">128</th><td>      <b>delete</b> <b>static_cast</b>&lt;<em>const</em> Derived *&gt;(<b>this</b>);</td></tr>
+<tr><th id="129">129</th><td>  }</td></tr>
+<tr><th id="130">130</th><td>};</td></tr>
+<tr><th id="131">131</th><td></td></tr>
+<tr><th id="132">132</th><td><i class="doc">/// Class you can specialize to provide custom retain/release functionality for</i></td></tr>
+<tr><th id="133">133</th><td><i class="doc">/// a type.</i></td></tr>
+<tr><th id="134">134</th><td><i class="doc">///</i></td></tr>
+<tr><th id="135">135</th><td><i class="doc">/// Usually specializing this class is not necessary, as IntrusiveRefCntPtr</i></td></tr>
+<tr><th id="136">136</th><td><i class="doc">/// works with any type which defines Retain() and Release() functions -- you</i></td></tr>
+<tr><th id="137">137</th><td><i class="doc">/// can define those functions yourself if RefCountedBase doesn't work for you.</i></td></tr>
+<tr><th id="138">138</th><td><i class="doc">///</i></td></tr>
+<tr><th id="139">139</th><td><i class="doc">/// One case when you might want to specialize this type is if you have</i></td></tr>
+<tr><th id="140">140</th><td><i class="doc">///  - Foo.h defines type Foo and includes Bar.h, and</i></td></tr>
+<tr><th id="141">141</th><td><i class="doc">///  - Bar.h uses IntrusiveRefCntPtr&lt;Foo&gt; in inline functions.</i></td></tr>
+<tr><th id="142">142</th><td><i class="doc">///</i></td></tr>
+<tr><th id="143">143</th><td><i class="doc">/// Because Foo.h includes Bar.h, Bar.h can't include Foo.h in order to pull in</i></td></tr>
+<tr><th id="144">144</th><td><i class="doc">/// the declaration of Foo.  Without the declaration of Foo, normally Bar.h</i></td></tr>
+<tr><th id="145">145</th><td><i class="doc">/// wouldn't be able to use IntrusiveRefCntPtr&lt;Foo&gt;, which wants to call</i></td></tr>
+<tr><th id="146">146</th><td><i class="doc">/// T::Retain and T::Release.</i></td></tr>
+<tr><th id="147">147</th><td><i class="doc">///</i></td></tr>
+<tr><th id="148">148</th><td><i class="doc">/// To resolve this, Bar.h could include a third header, FooFwd.h, which</i></td></tr>
+<tr><th id="149">149</th><td><i class="doc">/// forward-declares Foo and specializes IntrusiveRefCntPtrInfo&lt;Foo&gt;.  Then</i></td></tr>
+<tr><th id="150">150</th><td><i class="doc">/// Bar.h could use IntrusiveRefCntPtr&lt;Foo&gt;, although it still couldn't call any</i></td></tr>
+<tr><th id="151">151</th><td><i class="doc">/// functions on Foo itself, because Foo would be an incomplete type.</i></td></tr>
+<tr><th id="152">152</th><td><b>template</b> &lt;<b>typename</b> T&gt; <b>struct</b> <dfn class="type def" id="llvm::IntrusiveRefCntPtrInfo" title='llvm::IntrusiveRefCntPtrInfo' data-ref="llvm::IntrusiveRefCntPtrInfo" data-ref-filename="llvm..IntrusiveRefCntPtrInfo">IntrusiveRefCntPtrInfo</dfn> {</td></tr>
+<tr><th id="153">153</th><td>  <em>static</em> <em>void</em> <dfn class="decl def fn" id="_ZN4llvm22IntrusiveRefCntPtrInfo6retainEPT_" title='llvm::IntrusiveRefCntPtrInfo::retain' data-ref="_ZN4llvm22IntrusiveRefCntPtrInfo6retainEPT_" data-ref-filename="_ZN4llvm22IntrusiveRefCntPtrInfo6retainEPT_">retain</dfn>(T *<dfn class="local col2 decl" id="702obj" title='obj' data-type='T *' data-ref="702obj" data-ref-filename="702obj">obj</dfn>) { <a class="local col2 ref" href="#702obj" title='obj' data-ref="702obj" data-ref-filename="702obj">obj</a>-&gt;Retain(); }</td></tr>
+<tr><th id="154">154</th><td>  <em>static</em> <em>void</em> <dfn class="decl def fn" id="_ZN4llvm22IntrusiveRefCntPtrInfo7releaseEPT_" title='llvm::IntrusiveRefCntPtrInfo::release' data-ref="_ZN4llvm22IntrusiveRefCntPtrInfo7releaseEPT_" data-ref-filename="_ZN4llvm22IntrusiveRefCntPtrInfo7releaseEPT_">release</dfn>(T *<dfn class="local col3 decl" id="703obj" title='obj' data-type='T *' data-ref="703obj" data-ref-filename="703obj">obj</dfn>) { <a class="local col3 ref" href="#703obj" title='obj' data-ref="703obj" data-ref-filename="703obj">obj</a>-&gt;Release(); }</td></tr>
+<tr><th id="155">155</th><td>};</td></tr>
+<tr><th id="156">156</th><td></td></tr>
+<tr><th id="157">157</th><td><i class="doc">/// A smart pointer to a reference-counted object that inherits from</i></td></tr>
+<tr><th id="158">158</th><td><i class="doc">/// RefCountedBase or ThreadSafeRefCountedBase.</i></td></tr>
+<tr><th id="159">159</th><td><i class="doc">///</i></td></tr>
+<tr><th id="160">160</th><td><i class="doc">/// This class increments its pointee's reference count when it is created, and</i></td></tr>
+<tr><th id="161">161</th><td><i class="doc">/// decrements its refcount when it's destroyed (or is changed to point to a</i></td></tr>
+<tr><th id="162">162</th><td><i class="doc">/// different object).</i></td></tr>
+<tr><th id="163">163</th><td><b>template</b> &lt;<b>typename</b> T&gt; <b>class</b> <dfn class="type def" id="llvm::IntrusiveRefCntPtr" title='llvm::IntrusiveRefCntPtr' data-ref="llvm::IntrusiveRefCntPtr" data-ref-filename="llvm..IntrusiveRefCntPtr">IntrusiveRefCntPtr</dfn> {</td></tr>
+<tr><th id="164">164</th><td>  T *<dfn class="decl field" id="llvm::IntrusiveRefCntPtr::Obj" title='llvm::IntrusiveRefCntPtr::Obj' data-ref="llvm::IntrusiveRefCntPtr::Obj" data-ref-filename="llvm..IntrusiveRefCntPtr..Obj">Obj</dfn> = <b>nullptr</b>;</td></tr>
+<tr><th id="165">165</th><td></td></tr>
+<tr><th id="166">166</th><td><b>public</b>:</td></tr>
+<tr><th id="167">167</th><td>  <b>using</b> <dfn class="typedef" id="llvm::IntrusiveRefCntPtr::element_type" title='llvm::IntrusiveRefCntPtr::element_type' data-type='T' data-ref="llvm::IntrusiveRefCntPtr::element_type" data-ref-filename="llvm..IntrusiveRefCntPtr..element_type">element_type</dfn> = T;</td></tr>
+<tr><th id="168">168</th><td></td></tr>
+<tr><th id="169">169</th><td>  <b>explicit</b> <dfn class="decl def fn" id="_ZN4llvm18IntrusiveRefCntPtrC1Ev" title='llvm::IntrusiveRefCntPtr::IntrusiveRefCntPtr&lt;T&gt;' data-ref="_ZN4llvm18IntrusiveRefCntPtrC1Ev" data-ref-filename="_ZN4llvm18IntrusiveRefCntPtrC1Ev">IntrusiveRefCntPtr</dfn>() = <b>default</b>;</td></tr>
+<tr><th id="170">170</th><td>  <dfn class="decl def fn" id="_ZN4llvm18IntrusiveRefCntPtrC1EPT_" title='llvm::IntrusiveRefCntPtr::IntrusiveRefCntPtr&lt;T&gt;' data-ref="_ZN4llvm18IntrusiveRefCntPtrC1EPT_" data-ref-filename="_ZN4llvm18IntrusiveRefCntPtrC1EPT_">IntrusiveRefCntPtr</dfn>(T *<dfn class="local col4 decl" id="704obj" title='obj' data-type='T *' data-ref="704obj" data-ref-filename="704obj">obj</dfn>) : <a class="member field" href="#llvm::IntrusiveRefCntPtr::Obj" title='llvm::IntrusiveRefCntPtr::Obj' data-ref="llvm::IntrusiveRefCntPtr::Obj" data-ref-filename="llvm..IntrusiveRefCntPtr..Obj">Obj</a>(<a class="local col4 ref" href="#704obj" title='obj' data-ref="704obj" data-ref-filename="704obj">obj</a>) { <a class="member fn" href="#_ZN4llvm18IntrusiveRefCntPtr6retainEv" title='llvm::IntrusiveRefCntPtr::retain' data-ref="_ZN4llvm18IntrusiveRefCntPtr6retainEv" data-ref-filename="_ZN4llvm18IntrusiveRefCntPtr6retainEv">retain</a>(); }</td></tr>
+<tr><th id="171">171</th><td>  <dfn class="decl def fn" id="_ZN4llvm18IntrusiveRefCntPtrC1ERKNS_18IntrusiveRefCntPtrIT_EE" title='llvm::IntrusiveRefCntPtr::IntrusiveRefCntPtr&lt;T&gt;' data-ref="_ZN4llvm18IntrusiveRefCntPtrC1ERKNS_18IntrusiveRefCntPtrIT_EE" data-ref-filename="_ZN4llvm18IntrusiveRefCntPtrC1ERKNS_18IntrusiveRefCntPtrIT_EE">IntrusiveRefCntPtr</dfn>(<em>const</em> IntrusiveRefCntPtr &amp;<dfn class="local col5 decl" id="705S" title='S' data-type='const IntrusiveRefCntPtr&lt;T&gt; &amp;' data-ref="705S" data-ref-filename="705S">S</dfn>) : <a class="member field" href="#llvm::IntrusiveRefCntPtr::Obj" title='llvm::IntrusiveRefCntPtr::Obj' data-ref="llvm::IntrusiveRefCntPtr::Obj" data-ref-filename="llvm..IntrusiveRefCntPtr..Obj">Obj</a>(<a class="local col5 ref" href="#705S" title='S' data-ref="705S" data-ref-filename="705S">S</a>.Obj) { <a class="member fn" href="#_ZN4llvm18IntrusiveRefCntPtr6retainEv" title='llvm::IntrusiveRefCntPtr::retain' data-ref="_ZN4llvm18IntrusiveRefCntPtr6retainEv" data-ref-filename="_ZN4llvm18IntrusiveRefCntPtr6retainEv">retain</a>(); }</td></tr>
+<tr><th id="172">172</th><td>  <dfn class="decl def fn" id="_ZN4llvm18IntrusiveRefCntPtrC1EONS_18IntrusiveRefCntPtrIT_EE" title='llvm::IntrusiveRefCntPtr::IntrusiveRefCntPtr&lt;T&gt;' data-ref="_ZN4llvm18IntrusiveRefCntPtrC1EONS_18IntrusiveRefCntPtrIT_EE" data-ref-filename="_ZN4llvm18IntrusiveRefCntPtrC1EONS_18IntrusiveRefCntPtrIT_EE">IntrusiveRefCntPtr</dfn>(IntrusiveRefCntPtr &amp;&amp;<dfn class="local col6 decl" id="706S" title='S' data-type='IntrusiveRefCntPtr&lt;T&gt; &amp;&amp;' data-ref="706S" data-ref-filename="706S">S</dfn>) : <a class="member field" href="#llvm::IntrusiveRefCntPtr::Obj" title='llvm::IntrusiveRefCntPtr::Obj' data-ref="llvm::IntrusiveRefCntPtr::Obj" data-ref-filename="llvm..IntrusiveRefCntPtr..Obj">Obj</a>(<a class="local col6 ref" href="#706S" title='S' data-ref="706S" data-ref-filename="706S">S</a>.Obj) { <a class="local col6 ref" href="#706S" title='S' data-ref="706S" data-ref-filename="706S">S</a>.Obj = <b>nullptr</b>; }</td></tr>
+<tr><th id="173">173</th><td></td></tr>
+<tr><th id="174">174</th><td>  <b>template</b> &lt;<b>class</b> X&gt;</td></tr>
+<tr><th id="175">175</th><td>  <dfn class="decl def fn" id="_ZN4llvm18IntrusiveRefCntPtrC1EONS_18IntrusiveRefCntPtrITL0__EE" title='llvm::IntrusiveRefCntPtr::IntrusiveRefCntPtr&lt;T&gt;' data-ref="_ZN4llvm18IntrusiveRefCntPtrC1EONS_18IntrusiveRefCntPtrITL0__EE" data-ref-filename="_ZN4llvm18IntrusiveRefCntPtrC1EONS_18IntrusiveRefCntPtrITL0__EE">IntrusiveRefCntPtr</dfn>(<a class="type" href="../../../../clang/include/clang/Basic/LLVM.h.html#llvm::IntrusiveRefCntPtr" title='llvm::IntrusiveRefCntPtr' data-ref="llvm::IntrusiveRefCntPtr" data-ref-filename="llvm..IntrusiveRefCntPtr">IntrusiveRefCntPtr</a>&lt;X&gt; &amp;&amp;<dfn class="local col7 decl" id="707S" title='S' data-type='IntrusiveRefCntPtr&lt;X&gt; &amp;&amp;' data-ref="707S" data-ref-filename="707S">S</dfn>) : <a class="member field" href="#llvm::IntrusiveRefCntPtr::Obj" title='llvm::IntrusiveRefCntPtr::Obj' data-ref="llvm::IntrusiveRefCntPtr::Obj" data-ref-filename="llvm..IntrusiveRefCntPtr..Obj">Obj</a>(<a class="local col7 ref" href="#707S" title='S' data-ref="707S" data-ref-filename="707S">S</a>.get()) {</td></tr>
+<tr><th id="176">176</th><td>    <a class="local col7 ref" href="#707S" title='S' data-ref="707S" data-ref-filename="707S">S</a>.Obj = <b>nullptr</b>;</td></tr>
+<tr><th id="177">177</th><td>  }</td></tr>
+<tr><th id="178">178</th><td></td></tr>
+<tr><th id="179">179</th><td>  <b>template</b> &lt;<b>class</b> X&gt;</td></tr>
+<tr><th id="180">180</th><td>  <dfn class="decl def fn" id="_ZN4llvm18IntrusiveRefCntPtrC1ESt10unique_ptrITL0__St14default_deleteIS2_EE" title='llvm::IntrusiveRefCntPtr::IntrusiveRefCntPtr&lt;T&gt;' data-ref="_ZN4llvm18IntrusiveRefCntPtrC1ESt10unique_ptrITL0__St14default_deleteIS2_EE" data-ref-filename="_ZN4llvm18IntrusiveRefCntPtrC1ESt10unique_ptrITL0__St14default_deleteIS2_EE">IntrusiveRefCntPtr</dfn>(<span class="namespace">std::</span><span class='type' title='std::unique_ptr' data-ref="std::unique_ptr" data-ref-filename="std..unique_ptr">unique_ptr</span>&lt;X&gt; <dfn class="local col8 decl" id="708S" title='S' data-type='std::unique_ptr&lt;X&gt;' data-ref="708S" data-ref-filename="708S">S</dfn>) : <a class="member field" href="#llvm::IntrusiveRefCntPtr::Obj" title='llvm::IntrusiveRefCntPtr::Obj' data-ref="llvm::IntrusiveRefCntPtr::Obj" data-ref-filename="llvm..IntrusiveRefCntPtr..Obj">Obj</a>(<a class="local col8 ref" href="#708S" title='S' data-ref="708S" data-ref-filename="708S">S</a>.release()) {</td></tr>
+<tr><th id="181">181</th><td>    <a class="member fn" href="#_ZN4llvm18IntrusiveRefCntPtr6retainEv" title='llvm::IntrusiveRefCntPtr::retain' data-ref="_ZN4llvm18IntrusiveRefCntPtr6retainEv" data-ref-filename="_ZN4llvm18IntrusiveRefCntPtr6retainEv">retain</a>();</td></tr>
+<tr><th id="182">182</th><td>  }</td></tr>
+<tr><th id="183">183</th><td></td></tr>
+<tr><th id="184">184</th><td>  <b>template</b> &lt;<b>class</b> X&gt;</td></tr>
+<tr><th id="185">185</th><td>  <dfn class="decl def fn" id="_ZN4llvm18IntrusiveRefCntPtrC1ERKNS_18IntrusiveRefCntPtrITL0__EE" title='llvm::IntrusiveRefCntPtr::IntrusiveRefCntPtr&lt;T&gt;' data-ref="_ZN4llvm18IntrusiveRefCntPtrC1ERKNS_18IntrusiveRefCntPtrITL0__EE" data-ref-filename="_ZN4llvm18IntrusiveRefCntPtrC1ERKNS_18IntrusiveRefCntPtrITL0__EE">IntrusiveRefCntPtr</dfn>(<em>const</em> <a class="type" href="../../../../clang/include/clang/Basic/LLVM.h.html#llvm::IntrusiveRefCntPtr" title='llvm::IntrusiveRefCntPtr' data-ref="llvm::IntrusiveRefCntPtr" data-ref-filename="llvm..IntrusiveRefCntPtr">IntrusiveRefCntPtr</a>&lt;X&gt; &amp;<dfn class="local col9 decl" id="709S" title='S' data-type='const IntrusiveRefCntPtr&lt;X&gt; &amp;' data-ref="709S" data-ref-filename="709S">S</dfn>) : <a class="member field" href="#llvm::IntrusiveRefCntPtr::Obj" title='llvm::IntrusiveRefCntPtr::Obj' data-ref="llvm::IntrusiveRefCntPtr::Obj" data-ref-filename="llvm..IntrusiveRefCntPtr..Obj">Obj</a>(<a class="local col9 ref" href="#709S" title='S' data-ref="709S" data-ref-filename="709S">S</a>.get()) {</td></tr>
+<tr><th id="186">186</th><td>    <a class="member fn" href="#_ZN4llvm18IntrusiveRefCntPtr6retainEv" title='llvm::IntrusiveRefCntPtr::retain' data-ref="_ZN4llvm18IntrusiveRefCntPtr6retainEv" data-ref-filename="_ZN4llvm18IntrusiveRefCntPtr6retainEv">retain</a>();</td></tr>
+<tr><th id="187">187</th><td>  }</td></tr>
+<tr><th id="188">188</th><td></td></tr>
+<tr><th id="189">189</th><td>  <dfn class="decl def fn" id="_ZN4llvm18IntrusiveRefCntPtrD1Ev" title='llvm::IntrusiveRefCntPtr::~IntrusiveRefCntPtr&lt;T&gt;' data-ref="_ZN4llvm18IntrusiveRefCntPtrD1Ev" data-ref-filename="_ZN4llvm18IntrusiveRefCntPtrD1Ev">~IntrusiveRefCntPtr</dfn>() { <a class="member fn" href="#_ZN4llvm18IntrusiveRefCntPtr7releaseEv" title='llvm::IntrusiveRefCntPtr::release' data-ref="_ZN4llvm18IntrusiveRefCntPtr7releaseEv" data-ref-filename="_ZN4llvm18IntrusiveRefCntPtr7releaseEv">release</a>(); }</td></tr>
+<tr><th id="190">190</th><td></td></tr>
+<tr><th id="191">191</th><td>  IntrusiveRefCntPtr &amp;<dfn class="decl def fn" id="_ZN4llvm18IntrusiveRefCntPtraSENS_18IntrusiveRefCntPtrIT_EE" title='llvm::IntrusiveRefCntPtr::operator=' data-ref="_ZN4llvm18IntrusiveRefCntPtraSENS_18IntrusiveRefCntPtrIT_EE" data-ref-filename="_ZN4llvm18IntrusiveRefCntPtraSENS_18IntrusiveRefCntPtrIT_EE"><b>operator</b>=</dfn>(IntrusiveRefCntPtr <dfn class="local col0 decl" id="710S" title='S' data-type='IntrusiveRefCntPtr&lt;T&gt;' data-ref="710S" data-ref-filename="710S">S</dfn>) {</td></tr>
+<tr><th id="192">192</th><td>    <a class="member fn" href="#_ZN4llvm18IntrusiveRefCntPtr4swapERNS_18IntrusiveRefCntPtrIT_EE" title='llvm::IntrusiveRefCntPtr::swap' data-ref="_ZN4llvm18IntrusiveRefCntPtr4swapERNS_18IntrusiveRefCntPtrIT_EE" data-ref-filename="_ZN4llvm18IntrusiveRefCntPtr4swapERNS_18IntrusiveRefCntPtrIT_EE">swap</a>(<span class='refarg'><a class="local col0 ref" href="#710S" title='S' data-ref="710S" data-ref-filename="710S">S</a></span>);</td></tr>
+<tr><th id="193">193</th><td>    <b>return</b> *<b>this</b>;</td></tr>
+<tr><th id="194">194</th><td>  }</td></tr>
+<tr><th id="195">195</th><td></td></tr>
+<tr><th id="196">196</th><td>  T &amp;<dfn class="decl def fn" id="_ZNK4llvm18IntrusiveRefCntPtrdeEv" title='llvm::IntrusiveRefCntPtr::operator*' data-ref="_ZNK4llvm18IntrusiveRefCntPtrdeEv" data-ref-filename="_ZNK4llvm18IntrusiveRefCntPtrdeEv"><b>operator</b>*</dfn>() <em>const</em> { <b>return</b> *<a class="member field" href="#llvm::IntrusiveRefCntPtr::Obj" title='llvm::IntrusiveRefCntPtr::Obj' data-ref="llvm::IntrusiveRefCntPtr::Obj" data-ref-filename="llvm..IntrusiveRefCntPtr..Obj">Obj</a>; }</td></tr>
+<tr><th id="197">197</th><td>  T *<dfn class="decl def fn" id="_ZNK4llvm18IntrusiveRefCntPtrptEv" title='llvm::IntrusiveRefCntPtr::operator-&gt;' data-ref="_ZNK4llvm18IntrusiveRefCntPtrptEv" data-ref-filename="_ZNK4llvm18IntrusiveRefCntPtrptEv"><b>operator</b>-&gt;</dfn>() <em>const</em> { <b>return</b> <a class="member field" href="#llvm::IntrusiveRefCntPtr::Obj" title='llvm::IntrusiveRefCntPtr::Obj' data-ref="llvm::IntrusiveRefCntPtr::Obj" data-ref-filename="llvm..IntrusiveRefCntPtr..Obj">Obj</a>; }</td></tr>
+<tr><th id="198">198</th><td>  T *<dfn class="decl def fn" id="_ZNK4llvm18IntrusiveRefCntPtr3getEv" title='llvm::IntrusiveRefCntPtr::get' data-ref="_ZNK4llvm18IntrusiveRefCntPtr3getEv" data-ref-filename="_ZNK4llvm18IntrusiveRefCntPtr3getEv">get</dfn>() <em>const</em> { <b>return</b> <a class="member field" href="#llvm::IntrusiveRefCntPtr::Obj" title='llvm::IntrusiveRefCntPtr::Obj' data-ref="llvm::IntrusiveRefCntPtr::Obj" data-ref-filename="llvm..IntrusiveRefCntPtr..Obj">Obj</a>; }</td></tr>
+<tr><th id="199">199</th><td>  <b>explicit</b> <dfn class="decl def fn" id="_ZNK4llvm18IntrusiveRefCntPtrcvbEv" title='llvm::IntrusiveRefCntPtr::operator bool' data-ref="_ZNK4llvm18IntrusiveRefCntPtrcvbEv" data-ref-filename="_ZNK4llvm18IntrusiveRefCntPtrcvbEv"><b>operator</b> <em>bool</em></dfn>() <em>const</em> { <b>return</b> <a class="member field" href="#llvm::IntrusiveRefCntPtr::Obj" title='llvm::IntrusiveRefCntPtr::Obj' data-ref="llvm::IntrusiveRefCntPtr::Obj" data-ref-filename="llvm..IntrusiveRefCntPtr..Obj">Obj</a>; }</td></tr>
+<tr><th id="200">200</th><td></td></tr>
+<tr><th id="201">201</th><td>  <em>void</em> <dfn class="decl def fn" id="_ZN4llvm18IntrusiveRefCntPtr4swapERNS_18IntrusiveRefCntPtrIT_EE" title='llvm::IntrusiveRefCntPtr::swap' data-ref="_ZN4llvm18IntrusiveRefCntPtr4swapERNS_18IntrusiveRefCntPtrIT_EE" data-ref-filename="_ZN4llvm18IntrusiveRefCntPtr4swapERNS_18IntrusiveRefCntPtrIT_EE">swap</dfn>(IntrusiveRefCntPtr &amp;<dfn class="local col1 decl" id="711other" title='other' data-type='IntrusiveRefCntPtr&lt;T&gt; &amp;' data-ref="711other" data-ref-filename="711other">other</dfn>) {</td></tr>
+<tr><th id="202">202</th><td>    T *<dfn class="local col2 decl" id="712tmp" title='tmp' data-type='T *' data-ref="712tmp" data-ref-filename="712tmp">tmp</dfn> = <a class="local col1 ref" href="#711other" title='other' data-ref="711other" data-ref-filename="711other">other</a>.Obj;</td></tr>
+<tr><th id="203">203</th><td>    <a class="local col1 ref" href="#711other" title='other' data-ref="711other" data-ref-filename="711other">other</a>.Obj = <a class="member field" href="#llvm::IntrusiveRefCntPtr::Obj" title='llvm::IntrusiveRefCntPtr::Obj' data-ref="llvm::IntrusiveRefCntPtr::Obj" data-ref-filename="llvm..IntrusiveRefCntPtr..Obj">Obj</a>;</td></tr>
+<tr><th id="204">204</th><td>    <a class="member field" href="#llvm::IntrusiveRefCntPtr::Obj" title='llvm::IntrusiveRefCntPtr::Obj' data-ref="llvm::IntrusiveRefCntPtr::Obj" data-ref-filename="llvm..IntrusiveRefCntPtr..Obj">Obj</a> = <a class="local col2 ref" href="#712tmp" title='tmp' data-ref="712tmp" data-ref-filename="712tmp">tmp</a>;</td></tr>
+<tr><th id="205">205</th><td>  }</td></tr>
+<tr><th id="206">206</th><td></td></tr>
+<tr><th id="207">207</th><td>  <em>void</em> <dfn class="decl def fn" id="_ZN4llvm18IntrusiveRefCntPtr5resetEv" title='llvm::IntrusiveRefCntPtr::reset' data-ref="_ZN4llvm18IntrusiveRefCntPtr5resetEv" data-ref-filename="_ZN4llvm18IntrusiveRefCntPtr5resetEv">reset</dfn>() {</td></tr>
+<tr><th id="208">208</th><td>    <a class="member fn" href="#_ZN4llvm18IntrusiveRefCntPtr7releaseEv" title='llvm::IntrusiveRefCntPtr::release' data-ref="_ZN4llvm18IntrusiveRefCntPtr7releaseEv" data-ref-filename="_ZN4llvm18IntrusiveRefCntPtr7releaseEv">release</a>();</td></tr>
+<tr><th id="209">209</th><td>    <a class="member field" href="#llvm::IntrusiveRefCntPtr::Obj" title='llvm::IntrusiveRefCntPtr::Obj' data-ref="llvm::IntrusiveRefCntPtr::Obj" data-ref-filename="llvm..IntrusiveRefCntPtr..Obj">Obj</a> = <b>nullptr</b>;</td></tr>
+<tr><th id="210">210</th><td>  }</td></tr>
+<tr><th id="211">211</th><td></td></tr>
+<tr><th id="212">212</th><td>  <em>void</em> <dfn class="decl def fn" id="_ZN4llvm18IntrusiveRefCntPtr19resetWithoutReleaseEv" title='llvm::IntrusiveRefCntPtr::resetWithoutRelease' data-ref="_ZN4llvm18IntrusiveRefCntPtr19resetWithoutReleaseEv" data-ref-filename="_ZN4llvm18IntrusiveRefCntPtr19resetWithoutReleaseEv">resetWithoutRelease</dfn>() { <a class="member field" href="#llvm::IntrusiveRefCntPtr::Obj" title='llvm::IntrusiveRefCntPtr::Obj' data-ref="llvm::IntrusiveRefCntPtr::Obj" data-ref-filename="llvm..IntrusiveRefCntPtr..Obj">Obj</a> = <b>nullptr</b>; }</td></tr>
+<tr><th id="213">213</th><td></td></tr>
+<tr><th id="214">214</th><td><b>private</b>:</td></tr>
+<tr><th id="215">215</th><td>  <em>void</em> <dfn class="decl def fn" id="_ZN4llvm18IntrusiveRefCntPtr6retainEv" title='llvm::IntrusiveRefCntPtr::retain' data-ref="_ZN4llvm18IntrusiveRefCntPtr6retainEv" data-ref-filename="_ZN4llvm18IntrusiveRefCntPtr6retainEv">retain</dfn>() {</td></tr>
+<tr><th id="216">216</th><td>    <b>if</b> (<a class="member field" href="#llvm::IntrusiveRefCntPtr::Obj" title='llvm::IntrusiveRefCntPtr::Obj' data-ref="llvm::IntrusiveRefCntPtr::Obj" data-ref-filename="llvm..IntrusiveRefCntPtr..Obj">Obj</a>)</td></tr>
+<tr><th id="217">217</th><td>      <a class="type" href="../../../../clang/include/clang/Basic/LLVM.h.html#llvm::IntrusiveRefCntPtrInfo" title='llvm::IntrusiveRefCntPtrInfo' data-ref="llvm::IntrusiveRefCntPtrInfo" data-ref-filename="llvm..IntrusiveRefCntPtrInfo">IntrusiveRefCntPtrInfo</a>&lt;T&gt;::retain(<a class="member field" href="#llvm::IntrusiveRefCntPtr::Obj" title='llvm::IntrusiveRefCntPtr::Obj' data-ref="llvm::IntrusiveRefCntPtr::Obj" data-ref-filename="llvm..IntrusiveRefCntPtr..Obj">Obj</a>);</td></tr>
+<tr><th id="218">218</th><td>  }</td></tr>
+<tr><th id="219">219</th><td></td></tr>
+<tr><th id="220">220</th><td>  <em>void</em> <dfn class="decl def fn" id="_ZN4llvm18IntrusiveRefCntPtr7releaseEv" title='llvm::IntrusiveRefCntPtr::release' data-ref="_ZN4llvm18IntrusiveRefCntPtr7releaseEv" data-ref-filename="_ZN4llvm18IntrusiveRefCntPtr7releaseEv">release</dfn>() {</td></tr>
+<tr><th id="221">221</th><td>    <b>if</b> (<a class="member field" href="#llvm::IntrusiveRefCntPtr::Obj" title='llvm::IntrusiveRefCntPtr::Obj' data-ref="llvm::IntrusiveRefCntPtr::Obj" data-ref-filename="llvm..IntrusiveRefCntPtr..Obj">Obj</a>)</td></tr>
+<tr><th id="222">222</th><td>      <a class="type" href="../../../../clang/include/clang/Basic/LLVM.h.html#llvm::IntrusiveRefCntPtrInfo" title='llvm::IntrusiveRefCntPtrInfo' data-ref="llvm::IntrusiveRefCntPtrInfo" data-ref-filename="llvm..IntrusiveRefCntPtrInfo">IntrusiveRefCntPtrInfo</a>&lt;T&gt;::release(<a class="member field" href="#llvm::IntrusiveRefCntPtr::Obj" title='llvm::IntrusiveRefCntPtr::Obj' data-ref="llvm::IntrusiveRefCntPtr::Obj" data-ref-filename="llvm..IntrusiveRefCntPtr..Obj">Obj</a>);</td></tr>
+<tr><th id="223">223</th><td>  }</td></tr>
+<tr><th id="224">224</th><td></td></tr>
+<tr><th id="225">225</th><td>  <b>template</b> &lt;<b>typename</b> X&gt; <b>friend</b> <b>class</b> <dfn class="type" id="llvm::IntrusiveRefCntPtr" title='llvm::IntrusiveRefCntPtr' data-ref="llvm::IntrusiveRefCntPtr" data-ref-filename="llvm..IntrusiveRefCntPtr">IntrusiveRefCntPtr</dfn>;</td></tr>
+<tr><th id="226">226</th><td>};</td></tr>
+<tr><th id="227">227</th><td></td></tr>
+<tr><th id="228">228</th><td><b>template</b> &lt;<b>class</b> T, <b>class</b> U&gt;</td></tr>
+<tr><th id="229">229</th><td><b>inline</b> <em>bool</em> <dfn class="decl def fn" id="_ZN4llvmeqERKNS_18IntrusiveRefCntPtrIT_EERKNS0_IT0_EE" title='llvm::operator==' data-ref="_ZN4llvmeqERKNS_18IntrusiveRefCntPtrIT_EERKNS0_IT0_EE" data-ref-filename="_ZN4llvmeqERKNS_18IntrusiveRefCntPtrIT_EERKNS0_IT0_EE"><b>operator</b>==</dfn>(<em>const</em> <a class="type" href="../../../../clang/include/clang/Basic/LLVM.h.html#llvm::IntrusiveRefCntPtr" title='llvm::IntrusiveRefCntPtr' data-ref="llvm::IntrusiveRefCntPtr" data-ref-filename="llvm..IntrusiveRefCntPtr">IntrusiveRefCntPtr</a>&lt;T&gt; &amp;<dfn class="local col3 decl" id="713A" title='A' data-type='const IntrusiveRefCntPtr&lt;T&gt; &amp;' data-ref="713A" data-ref-filename="713A">A</dfn>,</td></tr>
+<tr><th id="230">230</th><td>                       <em>const</em> <a class="type" href="../../../../clang/include/clang/Basic/LLVM.h.html#llvm::IntrusiveRefCntPtr" title='llvm::IntrusiveRefCntPtr' data-ref="llvm::IntrusiveRefCntPtr" data-ref-filename="llvm..IntrusiveRefCntPtr">IntrusiveRefCntPtr</a>&lt;U&gt; &amp;<dfn class="local col4 decl" id="714B" title='B' data-type='const IntrusiveRefCntPtr&lt;U&gt; &amp;' data-ref="714B" data-ref-filename="714B">B</dfn>) {</td></tr>
+<tr><th id="231">231</th><td>  <b>return</b> <a class="local col3 ref" href="#713A" title='A' data-ref="713A" data-ref-filename="713A">A</a>.get() == <a class="local col4 ref" href="#714B" title='B' data-ref="714B" data-ref-filename="714B">B</a>.get();</td></tr>
+<tr><th id="232">232</th><td>}</td></tr>
+<tr><th id="233">233</th><td></td></tr>
+<tr><th id="234">234</th><td><b>template</b> &lt;<b>class</b> T, <b>class</b> U&gt;</td></tr>
+<tr><th id="235">235</th><td><b>inline</b> <em>bool</em> <dfn class="decl def fn" id="_ZN4llvmneERKNS_18IntrusiveRefCntPtrIT_EERKNS0_IT0_EE" title='llvm::operator!=' data-ref="_ZN4llvmneERKNS_18IntrusiveRefCntPtrIT_EERKNS0_IT0_EE" data-ref-filename="_ZN4llvmneERKNS_18IntrusiveRefCntPtrIT_EERKNS0_IT0_EE"><b>operator</b>!=</dfn>(<em>const</em> <a class="type" href="../../../../clang/include/clang/Basic/LLVM.h.html#llvm::IntrusiveRefCntPtr" title='llvm::IntrusiveRefCntPtr' data-ref="llvm::IntrusiveRefCntPtr" data-ref-filename="llvm..IntrusiveRefCntPtr">IntrusiveRefCntPtr</a>&lt;T&gt; &amp;<dfn class="local col5 decl" id="715A" title='A' data-type='const IntrusiveRefCntPtr&lt;T&gt; &amp;' data-ref="715A" data-ref-filename="715A">A</dfn>,</td></tr>
+<tr><th id="236">236</th><td>                       <em>const</em> <a class="type" href="../../../../clang/include/clang/Basic/LLVM.h.html#llvm::IntrusiveRefCntPtr" title='llvm::IntrusiveRefCntPtr' data-ref="llvm::IntrusiveRefCntPtr" data-ref-filename="llvm..IntrusiveRefCntPtr">IntrusiveRefCntPtr</a>&lt;U&gt; &amp;<dfn class="local col6 decl" id="716B" title='B' data-type='const IntrusiveRefCntPtr&lt;U&gt; &amp;' data-ref="716B" data-ref-filename="716B">B</dfn>) {</td></tr>
+<tr><th id="237">237</th><td>  <b>return</b> <a class="local col5 ref" href="#715A" title='A' data-ref="715A" data-ref-filename="715A">A</a>.get() != <a class="local col6 ref" href="#716B" title='B' data-ref="716B" data-ref-filename="716B">B</a>.get();</td></tr>
+<tr><th id="238">238</th><td>}</td></tr>
+<tr><th id="239">239</th><td></td></tr>
+<tr><th id="240">240</th><td><b>template</b> &lt;<b>class</b> T, <b>class</b> U&gt;</td></tr>
+<tr><th id="241">241</th><td><b>inline</b> <em>bool</em> <dfn class="decl def fn" id="_ZN4llvmeqERKNS_18IntrusiveRefCntPtrIT_EEPT0_" title='llvm::operator==' data-ref="_ZN4llvmeqERKNS_18IntrusiveRefCntPtrIT_EEPT0_" data-ref-filename="_ZN4llvmeqERKNS_18IntrusiveRefCntPtrIT_EEPT0_"><b>operator</b>==</dfn>(<em>const</em> <a class="type" href="../../../../clang/include/clang/Basic/LLVM.h.html#llvm::IntrusiveRefCntPtr" title='llvm::IntrusiveRefCntPtr' data-ref="llvm::IntrusiveRefCntPtr" data-ref-filename="llvm..IntrusiveRefCntPtr">IntrusiveRefCntPtr</a>&lt;T&gt; &amp;<dfn class="local col7 decl" id="717A" title='A' data-type='const IntrusiveRefCntPtr&lt;T&gt; &amp;' data-ref="717A" data-ref-filename="717A">A</dfn>, U *<dfn class="local col8 decl" id="718B" title='B' data-type='U *' data-ref="718B" data-ref-filename="718B">B</dfn>) {</td></tr>
+<tr><th id="242">242</th><td>  <b>return</b> <a class="local col7 ref" href="#717A" title='A' data-ref="717A" data-ref-filename="717A">A</a>.get() == <a class="local col8 ref" href="#718B" title='B' data-ref="718B" data-ref-filename="718B">B</a>;</td></tr>
+<tr><th id="243">243</th><td>}</td></tr>
+<tr><th id="244">244</th><td></td></tr>
+<tr><th id="245">245</th><td><b>template</b> &lt;<b>class</b> T, <b>class</b> U&gt;</td></tr>
+<tr><th id="246">246</th><td><b>inline</b> <em>bool</em> <dfn class="decl def fn" id="_ZN4llvmneERKNS_18IntrusiveRefCntPtrIT_EEPT0_" title='llvm::operator!=' data-ref="_ZN4llvmneERKNS_18IntrusiveRefCntPtrIT_EEPT0_" data-ref-filename="_ZN4llvmneERKNS_18IntrusiveRefCntPtrIT_EEPT0_"><b>operator</b>!=</dfn>(<em>const</em> <a class="type" href="../../../../clang/include/clang/Basic/LLVM.h.html#llvm::IntrusiveRefCntPtr" title='llvm::IntrusiveRefCntPtr' data-ref="llvm::IntrusiveRefCntPtr" data-ref-filename="llvm..IntrusiveRefCntPtr">IntrusiveRefCntPtr</a>&lt;T&gt; &amp;<dfn class="local col9 decl" id="719A" title='A' data-type='const IntrusiveRefCntPtr&lt;T&gt; &amp;' data-ref="719A" data-ref-filename="719A">A</dfn>, U *<dfn class="local col0 decl" id="720B" title='B' data-type='U *' data-ref="720B" data-ref-filename="720B">B</dfn>) {</td></tr>
+<tr><th id="247">247</th><td>  <b>return</b> <a class="local col9 ref" href="#719A" title='A' data-ref="719A" data-ref-filename="719A">A</a>.get() != <a class="local col0 ref" href="#720B" title='B' data-ref="720B" data-ref-filename="720B">B</a>;</td></tr>
+<tr><th id="248">248</th><td>}</td></tr>
+<tr><th id="249">249</th><td></td></tr>
+<tr><th id="250">250</th><td><b>template</b> &lt;<b>class</b> T, <b>class</b> U&gt;</td></tr>
+<tr><th id="251">251</th><td><b>inline</b> <em>bool</em> <dfn class="decl def fn" id="_ZN4llvmeqEPT_RKNS_18IntrusiveRefCntPtrIT0_EE" title='llvm::operator==' data-ref="_ZN4llvmeqEPT_RKNS_18IntrusiveRefCntPtrIT0_EE" data-ref-filename="_ZN4llvmeqEPT_RKNS_18IntrusiveRefCntPtrIT0_EE"><b>operator</b>==</dfn>(T *<dfn class="local col1 decl" id="721A" title='A' data-type='T *' data-ref="721A" data-ref-filename="721A">A</dfn>, <em>const</em> <a class="type" href="../../../../clang/include/clang/Basic/LLVM.h.html#llvm::IntrusiveRefCntPtr" title='llvm::IntrusiveRefCntPtr' data-ref="llvm::IntrusiveRefCntPtr" data-ref-filename="llvm..IntrusiveRefCntPtr">IntrusiveRefCntPtr</a>&lt;U&gt; &amp;<dfn class="local col2 decl" id="722B" title='B' data-type='const IntrusiveRefCntPtr&lt;U&gt; &amp;' data-ref="722B" data-ref-filename="722B">B</dfn>) {</td></tr>
+<tr><th id="252">252</th><td>  <b>return</b> <a class="local col1 ref" href="#721A" title='A' data-ref="721A" data-ref-filename="721A">A</a> == <a class="local col2 ref" href="#722B" title='B' data-ref="722B" data-ref-filename="722B">B</a>.get();</td></tr>
+<tr><th id="253">253</th><td>}</td></tr>
+<tr><th id="254">254</th><td></td></tr>
+<tr><th id="255">255</th><td><b>template</b> &lt;<b>class</b> T, <b>class</b> U&gt;</td></tr>
+<tr><th id="256">256</th><td><b>inline</b> <em>bool</em> <dfn class="decl def fn" id="_ZN4llvmneEPT_RKNS_18IntrusiveRefCntPtrIT0_EE" title='llvm::operator!=' data-ref="_ZN4llvmneEPT_RKNS_18IntrusiveRefCntPtrIT0_EE" data-ref-filename="_ZN4llvmneEPT_RKNS_18IntrusiveRefCntPtrIT0_EE"><b>operator</b>!=</dfn>(T *<dfn class="local col3 decl" id="723A" title='A' data-type='T *' data-ref="723A" data-ref-filename="723A">A</dfn>, <em>const</em> <a class="type" href="../../../../clang/include/clang/Basic/LLVM.h.html#llvm::IntrusiveRefCntPtr" title='llvm::IntrusiveRefCntPtr' data-ref="llvm::IntrusiveRefCntPtr" data-ref-filename="llvm..IntrusiveRefCntPtr">IntrusiveRefCntPtr</a>&lt;U&gt; &amp;<dfn class="local col4 decl" id="724B" title='B' data-type='const IntrusiveRefCntPtr&lt;U&gt; &amp;' data-ref="724B" data-ref-filename="724B">B</dfn>) {</td></tr>
+<tr><th id="257">257</th><td>  <b>return</b> <a class="local col3 ref" href="#723A" title='A' data-ref="723A" data-ref-filename="723A">A</a> != <a class="local col4 ref" href="#724B" title='B' data-ref="724B" data-ref-filename="724B">B</a>.get();</td></tr>
+<tr><th id="258">258</th><td>}</td></tr>
+<tr><th id="259">259</th><td></td></tr>
+<tr><th id="260">260</th><td><b>template</b> &lt;<b>class</b> T&gt;</td></tr>
+<tr><th id="261">261</th><td><em>bool</em> <dfn class="decl def fn" id="_ZN4llvmeqEDnRKNS_18IntrusiveRefCntPtrIT_EE" title='llvm::operator==' data-ref="_ZN4llvmeqEDnRKNS_18IntrusiveRefCntPtrIT_EE" data-ref-filename="_ZN4llvmeqEDnRKNS_18IntrusiveRefCntPtrIT_EE"><b>operator</b>==</dfn>(<span class="namespace">std::</span><span class='typedef' title='std::nullptr_t' data-type='decltype(nullptr)' data-ref="std::nullptr_t" data-ref-filename="std..nullptr_t">nullptr_t</span> <dfn class="local col5 decl" id="725A" title='A' data-type='std::nullptr_t' data-ref="725A" data-ref-filename="725A">A</dfn>, <em>const</em> <a class="type" href="../../../../clang/include/clang/Basic/LLVM.h.html#llvm::IntrusiveRefCntPtr" title='llvm::IntrusiveRefCntPtr' data-ref="llvm::IntrusiveRefCntPtr" data-ref-filename="llvm..IntrusiveRefCntPtr">IntrusiveRefCntPtr</a>&lt;T&gt; &amp;<dfn class="local col6 decl" id="726B" title='B' data-type='const IntrusiveRefCntPtr&lt;T&gt; &amp;' data-ref="726B" data-ref-filename="726B">B</dfn>) {</td></tr>
+<tr><th id="262">262</th><td>  <b>return</b> !<a class="local col6 ref" href="#726B" title='B' data-ref="726B" data-ref-filename="726B">B</a>;</td></tr>
+<tr><th id="263">263</th><td>}</td></tr>
+<tr><th id="264">264</th><td></td></tr>
+<tr><th id="265">265</th><td><b>template</b> &lt;<b>class</b> T&gt;</td></tr>
+<tr><th id="266">266</th><td><em>bool</em> <dfn class="decl def fn" id="_ZN4llvmeqERKNS_18IntrusiveRefCntPtrIT_EEDn" title='llvm::operator==' data-ref="_ZN4llvmeqERKNS_18IntrusiveRefCntPtrIT_EEDn" data-ref-filename="_ZN4llvmeqERKNS_18IntrusiveRefCntPtrIT_EEDn"><b>operator</b>==</dfn>(<em>const</em> <a class="type" href="../../../../clang/include/clang/Basic/LLVM.h.html#llvm::IntrusiveRefCntPtr" title='llvm::IntrusiveRefCntPtr' data-ref="llvm::IntrusiveRefCntPtr" data-ref-filename="llvm..IntrusiveRefCntPtr">IntrusiveRefCntPtr</a>&lt;T&gt; &amp;<dfn class="local col7 decl" id="727A" title='A' data-type='const IntrusiveRefCntPtr&lt;T&gt; &amp;' data-ref="727A" data-ref-filename="727A">A</dfn>, <span class="namespace">std::</span><span class='typedef' title='std::nullptr_t' data-type='decltype(nullptr)' data-ref="std::nullptr_t" data-ref-filename="std..nullptr_t">nullptr_t</span> <dfn class="local col8 decl" id="728B" title='B' data-type='std::nullptr_t' data-ref="728B" data-ref-filename="728B">B</dfn>) {</td></tr>
+<tr><th id="267">267</th><td>  <b>return</b> <a class="local col8 ref" href="#728B" title='B' data-ref="728B" data-ref-filename="728B">B</a> == <a class="local col7 ref" href="#727A" title='A' data-ref="727A" data-ref-filename="727A">A</a>;</td></tr>
+<tr><th id="268">268</th><td>}</td></tr>
+<tr><th id="269">269</th><td></td></tr>
+<tr><th id="270">270</th><td><b>template</b> &lt;<b>class</b> T&gt;</td></tr>
+<tr><th id="271">271</th><td><em>bool</em> <dfn class="decl def fn" id="_ZN4llvmneEDnRKNS_18IntrusiveRefCntPtrIT_EE" title='llvm::operator!=' data-ref="_ZN4llvmneEDnRKNS_18IntrusiveRefCntPtrIT_EE" data-ref-filename="_ZN4llvmneEDnRKNS_18IntrusiveRefCntPtrIT_EE"><b>operator</b>!=</dfn>(<span class="namespace">std::</span><span class='typedef' title='std::nullptr_t' data-type='decltype(nullptr)' data-ref="std::nullptr_t" data-ref-filename="std..nullptr_t">nullptr_t</span> <dfn class="local col9 decl" id="729A" title='A' data-type='std::nullptr_t' data-ref="729A" data-ref-filename="729A">A</dfn>, <em>const</em> <a class="type" href="../../../../clang/include/clang/Basic/LLVM.h.html#llvm::IntrusiveRefCntPtr" title='llvm::IntrusiveRefCntPtr' data-ref="llvm::IntrusiveRefCntPtr" data-ref-filename="llvm..IntrusiveRefCntPtr">IntrusiveRefCntPtr</a>&lt;T&gt; &amp;<dfn class="local col0 decl" id="730B" title='B' data-type='const IntrusiveRefCntPtr&lt;T&gt; &amp;' data-ref="730B" data-ref-filename="730B">B</dfn>) {</td></tr>
+<tr><th id="272">272</th><td>  <b>return</b> !(<a class="local col9 ref" href="#729A" title='A' data-ref="729A" data-ref-filename="729A">A</a> == <a class="local col0 ref" href="#730B" title='B' data-ref="730B" data-ref-filename="730B">B</a>);</td></tr>
+<tr><th id="273">273</th><td>}</td></tr>
+<tr><th id="274">274</th><td></td></tr>
+<tr><th id="275">275</th><td><b>template</b> &lt;<b>class</b> T&gt;</td></tr>
+<tr><th id="276">276</th><td><em>bool</em> <dfn class="decl def fn" id="_ZN4llvmneERKNS_18IntrusiveRefCntPtrIT_EEDn" title='llvm::operator!=' data-ref="_ZN4llvmneERKNS_18IntrusiveRefCntPtrIT_EEDn" data-ref-filename="_ZN4llvmneERKNS_18IntrusiveRefCntPtrIT_EEDn"><b>operator</b>!=</dfn>(<em>const</em> <a class="type" href="../../../../clang/include/clang/Basic/LLVM.h.html#llvm::IntrusiveRefCntPtr" title='llvm::IntrusiveRefCntPtr' data-ref="llvm::IntrusiveRefCntPtr" data-ref-filename="llvm..IntrusiveRefCntPtr">IntrusiveRefCntPtr</a>&lt;T&gt; &amp;<dfn class="local col1 decl" id="731A" title='A' data-type='const IntrusiveRefCntPtr&lt;T&gt; &amp;' data-ref="731A" data-ref-filename="731A">A</dfn>, <span class="namespace">std::</span><span class='typedef' title='std::nullptr_t' data-type='decltype(nullptr)' data-ref="std::nullptr_t" data-ref-filename="std..nullptr_t">nullptr_t</span> <dfn class="local col2 decl" id="732B" title='B' data-type='std::nullptr_t' data-ref="732B" data-ref-filename="732B">B</dfn>) {</td></tr>
+<tr><th id="277">277</th><td>  <b>return</b> !(<a class="local col1 ref" href="#731A" title='A' data-ref="731A" data-ref-filename="731A">A</a> == <a class="local col2 ref" href="#732B" title='B' data-ref="732B" data-ref-filename="732B">B</a>);</td></tr>
+<tr><th id="278">278</th><td>}</td></tr>
+<tr><th id="279">279</th><td></td></tr>
+<tr><th id="280">280</th><td><i>// Make IntrusiveRefCntPtr work with dyn_cast, isa, and the other idioms from</i></td></tr>
+<tr><th id="281">281</th><td><i>// Casting.h.</i></td></tr>
+<tr><th id="282">282</th><td><b>template</b> &lt;<b>typename</b> From&gt; <b>struct</b> <a class="type" href="../Support/Casting.h.html#llvm::simplify_type" title='llvm::simplify_type' data-ref="llvm::simplify_type" data-ref-filename="llvm..simplify_type" id="llvm::simplify_type">simplify_type</a>;</td></tr>
+<tr><th id="283">283</th><td></td></tr>
+<tr><th id="284">284</th><td><b>template</b> &lt;<b>class</b> T&gt; <b>struct</b> <dfn class="type def" id="llvm::simplify_type" title='llvm::simplify_type' data-ref="llvm::simplify_type" data-ref-filename="llvm..simplify_type">simplify_type</dfn>&lt;<a class="type" href="../../../../clang/include/clang/Basic/LLVM.h.html#llvm::IntrusiveRefCntPtr" title='llvm::IntrusiveRefCntPtr' data-ref="llvm::IntrusiveRefCntPtr" data-ref-filename="llvm..IntrusiveRefCntPtr">IntrusiveRefCntPtr</a>&lt;T&gt;&gt; {</td></tr>
+<tr><th id="285">285</th><td>  <b>using</b> <dfn class="typedef" id="llvm::simplify_type{IntrusiveRefCntPtr{type-parameter-0-0}}::SimpleType" title='llvm::simplify_type&lt;IntrusiveRefCntPtr&lt;type-parameter-0-0&gt; &gt;::SimpleType' data-type='T *' data-ref="llvm::simplify_type{IntrusiveRefCntPtr{type-parameter-0-0}}::SimpleType" data-ref-filename="llvm..simplify_type{IntrusiveRefCntPtr{type-parameter-0-0}}..SimpleType">SimpleType</dfn> = T *;</td></tr>
+<tr><th id="286">286</th><td></td></tr>
+<tr><th id="287">287</th><td>  <em>static</em> <a class="typedef" href="#llvm::simplify_type{IntrusiveRefCntPtr{type-parameter-0-0}}::SimpleType" title='llvm::simplify_type&lt;IntrusiveRefCntPtr&lt;type-parameter-0-0&gt; &gt;::SimpleType' data-type='T *' data-ref="llvm::simplify_type{IntrusiveRefCntPtr{type-parameter-0-0}}::SimpleType" data-ref-filename="llvm..simplify_type{IntrusiveRefCntPtr{type-parameter-0-0}}..SimpleType">SimpleType</a> <dfn class="decl def fn" id="_ZN4llvm13simplify_typeINS_18IntrusiveRefCntPtrIT_EEE18getSimplifiedValueERS3_" title='llvm::simplify_type&lt;IntrusiveRefCntPtr&lt;type-parameter-0-0&gt; &gt;::getSimplifiedValue' data-ref="_ZN4llvm13simplify_typeINS_18IntrusiveRefCntPtrIT_EEE18getSimplifiedValueERS3_" data-ref-filename="_ZN4llvm13simplify_typeINS_18IntrusiveRefCntPtrIT_EEE18getSimplifiedValueERS3_">getSimplifiedValue</dfn>(<a class="type" href="../../../../clang/include/clang/Basic/LLVM.h.html#llvm::IntrusiveRefCntPtr" title='llvm::IntrusiveRefCntPtr' data-ref="llvm::IntrusiveRefCntPtr" data-ref-filename="llvm..IntrusiveRefCntPtr">IntrusiveRefCntPtr</a>&lt;T&gt; &amp;<dfn class="local col3 decl" id="733Val" title='Val' data-type='IntrusiveRefCntPtr&lt;T&gt; &amp;' data-ref="733Val" data-ref-filename="733Val">Val</dfn>) {</td></tr>
+<tr><th id="288">288</th><td>    <b>return</b> <a class="local col3 ref" href="#733Val" title='Val' data-ref="733Val" data-ref-filename="733Val">Val</a>.get();</td></tr>
+<tr><th id="289">289</th><td>  }</td></tr>
+<tr><th id="290">290</th><td>};</td></tr>
+<tr><th id="291">291</th><td></td></tr>
+<tr><th id="292">292</th><td><b>template</b> &lt;<b>class</b> T&gt; <b>struct</b> <dfn class="type def" id="llvm::simplify_type" title='llvm::simplify_type' data-ref="llvm::simplify_type" data-ref-filename="llvm..simplify_type">simplify_type</dfn>&lt;<em>const</em> <a class="type" href="../../../../clang/include/clang/Basic/LLVM.h.html#llvm::IntrusiveRefCntPtr" title='llvm::IntrusiveRefCntPtr' data-ref="llvm::IntrusiveRefCntPtr" data-ref-filename="llvm..IntrusiveRefCntPtr">IntrusiveRefCntPtr</a>&lt;T&gt;&gt; {</td></tr>
+<tr><th id="293">293</th><td>  <b>using</b> <dfn class="typedef" id="llvm::simplify_type{constIntrusiveRefCntPtr{type-parameter-0-0}}::SimpleType" title='llvm::simplify_type&lt;const IntrusiveRefCntPtr&lt;type-parameter-0-0&gt; &gt;::SimpleType' data-type='T *' data-ref="llvm::simplify_type{constIntrusiveRefCntPtr{type-parameter-0-0}}::SimpleType" data-ref-filename="llvm..simplify_type{constIntrusiveRefCntPtr{type-parameter-0-0}}..SimpleType">SimpleType</dfn> = <i>/*const*/</i> T *;</td></tr>
+<tr><th id="294">294</th><td></td></tr>
+<tr><th id="295">295</th><td>  <em>static</em> <a class="typedef" href="#llvm::simplify_type{constIntrusiveRefCntPtr{type-parameter-0-0}}::SimpleType" title='llvm::simplify_type&lt;const IntrusiveRefCntPtr&lt;type-parameter-0-0&gt; &gt;::SimpleType' data-type='T *' data-ref="llvm::simplify_type{constIntrusiveRefCntPtr{type-parameter-0-0}}::SimpleType" data-ref-filename="llvm..simplify_type{constIntrusiveRefCntPtr{type-parameter-0-0}}..SimpleType">SimpleType</a> <dfn class="decl def fn" id="_ZN4llvm13simplify_typeIKNS_18IntrusiveRefCntPtrIT_EEE18getSimplifiedValueERS4_" title='llvm::simplify_type&lt;const IntrusiveRefCntPtr&lt;type-parameter-0-0&gt; &gt;::getSimplifiedValue' data-ref="_ZN4llvm13simplify_typeIKNS_18IntrusiveRefCntPtrIT_EEE18getSimplifiedValueERS4_" data-ref-filename="_ZN4llvm13simplify_typeIKNS_18IntrusiveRefCntPtrIT_EEE18getSimplifiedValueERS4_">getSimplifiedValue</dfn>(<em>const</em> <a class="type" href="../../../../clang/include/clang/Basic/LLVM.h.html#llvm::IntrusiveRefCntPtr" title='llvm::IntrusiveRefCntPtr' data-ref="llvm::IntrusiveRefCntPtr" data-ref-filename="llvm..IntrusiveRefCntPtr">IntrusiveRefCntPtr</a>&lt;T&gt; &amp;<dfn class="local col4 decl" id="734Val" title='Val' data-type='const IntrusiveRefCntPtr&lt;T&gt; &amp;' data-ref="734Val" data-ref-filename="734Val">Val</dfn>) {</td></tr>
+<tr><th id="296">296</th><td>    <b>return</b> <a class="local col4 ref" href="#734Val" title='Val' data-ref="734Val" data-ref-filename="734Val">Val</a>.get();</td></tr>
+<tr><th id="297">297</th><td>  }</td></tr>
+<tr><th id="298">298</th><td>};</td></tr>
+<tr><th id="299">299</th><td></td></tr>
+<tr><th id="300">300</th><td><i class="doc">/// Factory function for creating intrusive ref counted pointers.</i></td></tr>
+<tr><th id="301">301</th><td><b>template</b> &lt;<b>typename</b> T, <b>typename</b>... Args&gt;</td></tr>
+<tr><th id="302">302</th><td><a class="type" href="../../../../clang/include/clang/Basic/LLVM.h.html#llvm::IntrusiveRefCntPtr" title='llvm::IntrusiveRefCntPtr' data-ref="llvm::IntrusiveRefCntPtr" data-ref-filename="llvm..IntrusiveRefCntPtr">IntrusiveRefCntPtr</a>&lt;T&gt; <dfn class="decl def fn" id="_ZN4llvm19makeIntrusiveRefCntEDpOT0_" title='llvm::makeIntrusiveRefCnt' data-ref="_ZN4llvm19makeIntrusiveRefCntEDpOT0_" data-ref-filename="_ZN4llvm19makeIntrusiveRefCntEDpOT0_">makeIntrusiveRefCnt</dfn>(Args &amp;&amp;...<dfn class="local col5 decl" id="735A" title='A' data-type='Args &amp;&amp;...' data-ref="735A" data-ref-filename="735A">A</dfn>) {</td></tr>
+<tr><th id="303">303</th><td>  <b>return</b> <a class="type" href="../../../../clang/include/clang/Basic/LLVM.h.html#llvm::IntrusiveRefCntPtr" title='llvm::IntrusiveRefCntPtr' data-ref="llvm::IntrusiveRefCntPtr" data-ref-filename="llvm..IntrusiveRefCntPtr">IntrusiveRefCntPtr</a>&lt;T&gt;(<b>new</b> T(<span class="namespace">std::</span>forward&lt;Args&gt;(<a class="local col5 ref" href="#735A" title='A' data-ref="735A" data-ref-filename="735A">A</a>)...));</td></tr>
+<tr><th id="304">304</th><td>}</td></tr>
+<tr><th id="305">305</th><td></td></tr>
+<tr><th id="306">306</th><td>} <i>// end namespace llvm</i></td></tr>
+<tr><th id="307">307</th><td></td></tr>
+<tr><th id="308">308</th><td><u>#<span data-ppcond="55">endif</span> // LLVM_ADT_INTRUSIVEREFCNTPTR_H</u></td></tr>
+<tr><th id="309">309</th><td></td></tr>
+</table><hr/><p id='footer'>
+Generated while processing <a href='../../../../clang/examples/AnnotateFunctions/AnnotateFunctions.cpp.html'>llvm/clang/examples/AnnotateFunctions/AnnotateFunctions.cpp</a><br/>Generated on <em>2021-Jul-01</em> from project llvm revision <em>12</em>

@@ -1,0 +1,6 @@
+<dec f='llvm/llvm/include/llvm/CodeGen/FaultMaps.h' l='119' type='const uint8_t *'/>
+<use f='llvm/llvm/include/llvm/CodeGen/FaultMaps.h' l='126' u='w' c='_ZN4llvm14FaultMapParser25FunctionFaultInfoAccessorC1EPKhS3_'/>
+<use f='llvm/llvm/include/llvm/CodeGen/FaultMaps.h' l='129' u='r' c='_ZNK4llvm14FaultMapParser25FunctionFaultInfoAccessor12getFaultKindEv'/>
+<use f='llvm/llvm/include/llvm/CodeGen/FaultMaps.h' l='133' u='r' c='_ZNK4llvm14FaultMapParser25FunctionFaultInfoAccessor19getFaultingPCOffsetEv'/>
+<use f='llvm/llvm/include/llvm/CodeGen/FaultMaps.h' l='137' u='r' c='_ZNK4llvm14FaultMapParser25FunctionFaultInfoAccessor18getHandlerPCOffsetEv'/>
+<offset>64</offset>

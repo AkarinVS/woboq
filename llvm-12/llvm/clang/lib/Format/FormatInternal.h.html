@@ -1,0 +1,97 @@
+<!doctype html>
+<html>
+<head>
+<meta name="viewport" content="width=device-width, initial-scale=1.0"><title>FormatInternal.h source code [llvm/clang/lib/Format/FormatInternal.h] - Woboq Code Browser</title>
+<link rel="stylesheet" href="../../../.././data/qtcreator.css" title="QtCreator"/>
+<link rel="alternate stylesheet" href="../../../.././data/kdevelop.css" title="KDevelop"/>
+<script type="text/javascript" src="../../../.././data/jquery/jquery.min.js"></script>
+<script type="text/javascript" src="../../../.././data/jquery/jquery-ui.min.js"></script>
+<script>var file = 'llvm/clang/lib/Format/FormatInternal.h'; var root_path = '../../../..'; var data_path = '../../../.././data'; var ecma_script_api_version = 2;</script>
+<script src='../../../.././data/codebrowser.js'></script>
+</head>
+<body><div id='header'><h1 id='breadcrumb'><span>Browse the source code of </span><a href='../../..'>llvm</a>/<a href='../..'>clang</a>/<a href='..'>lib</a>/<a href='./'>Format</a>/<a href='FormatInternal.h.html'>FormatInternal.h</a></h1></div>
+<hr/><div id='content'><table class="code">
+<tr><th id="1">1</th><td><i>//===--- FormatInternal.h - Format C++ code ---------------------*- C++ -*-===//</i></td></tr>
+<tr><th id="2">2</th><td><i>//</i></td></tr>
+<tr><th id="3">3</th><td><i>// Part of the LLVM Project, under the Apache License v2.0 with LLVM Exceptions.</i></td></tr>
+<tr><th id="4">4</th><td><i>// See <a href="https://llvm.org/LICENSE.txt">https://llvm.org/LICENSE.txt</a> for license information.</i></td></tr>
+<tr><th id="5">5</th><td><i>// SPDX-License-Identifier: Apache-2.0 WITH LLVM-exception</i></td></tr>
+<tr><th id="6">6</th><td><i>//</i></td></tr>
+<tr><th id="7">7</th><td><i>//===----------------------------------------------------------------------===//</i></td></tr>
+<tr><th id="8">8</th><td><i>///</i></td></tr>
+<tr><th id="9">9</th><td><i>/// \file</i></td></tr>
+<tr><th id="10">10</th><td><i>/// This file declares Format APIs to be used internally by the</i></td></tr>
+<tr><th id="11">11</th><td><i>/// formatting library implementation.</i></td></tr>
+<tr><th id="12">12</th><td><i>///</i></td></tr>
+<tr><th id="13">13</th><td><i>//===----------------------------------------------------------------------===//</i></td></tr>
+<tr><th id="14">14</th><td></td></tr>
+<tr><th id="15">15</th><td><u>#<span data-ppcond="15">ifndef</span> <span class="macro" data-ref="_M/LLVM_CLANG_LIB_FORMAT_FORMATINTERNAL_H">LLVM_CLANG_LIB_FORMAT_FORMATINTERNAL_H</span></u></td></tr>
+<tr><th id="16">16</th><td><u>#define <dfn class="macro" id="_M/LLVM_CLANG_LIB_FORMAT_FORMATINTERNAL_H" data-ref="_M/LLVM_CLANG_LIB_FORMAT_FORMATINTERNAL_H">LLVM_CLANG_LIB_FORMAT_FORMATINTERNAL_H</dfn></u></td></tr>
+<tr><th id="17">17</th><td></td></tr>
+<tr><th id="18">18</th><td><u>#include <a href="BreakableToken.h.html">"BreakableToken.h"</a></u></td></tr>
+<tr><th id="19">19</th><td><u>#include &lt;utility&gt;</u></td></tr>
+<tr><th id="20">20</th><td></td></tr>
+<tr><th id="21">21</th><td><b>namespace</b> <span class="namespace">clang</span> {</td></tr>
+<tr><th id="22">22</th><td><b>namespace</b> <span class="namespace">format</span> {</td></tr>
+<tr><th id="23">23</th><td><b>namespace</b> <span class="namespace">internal</span> {</td></tr>
+<tr><th id="24">24</th><td></td></tr>
+<tr><th id="25">25</th><td><i class="doc">/// Reformats the given<span class="command"> \p</span> <span class="arg">Ranges</span> in the code fragment<span class="command"> \p</span> <span class="arg">Code.</span></i></td></tr>
+<tr><th id="26">26</th><td><i class="doc">///</i></td></tr>
+<tr><th id="27">27</th><td><i class="doc">/// A fragment of code could conceptually be surrounded by other code that might</i></td></tr>
+<tr><th id="28">28</th><td><i class="doc">/// constrain how that fragment is laid out.</i></td></tr>
+<tr><th id="29">29</th><td><i class="doc">/// For example, consider the fragment of code between 'R"(' and ')"',</i></td></tr>
+<tr><th id="30">30</th><td><i class="doc">/// exclusive, in the following code:</i></td></tr>
+<tr><th id="31">31</th><td><i class="doc">///</i></td></tr>
+<tr><th id="32">32</th><td><i class="doc">/// void outer(int x) {</i></td></tr>
+<tr><th id="33">33</th><td><i class="doc">///   string inner = R"(name: data</i></td></tr>
+<tr><th id="34">34</th><td><i class="doc">///                     ^ FirstStartColumn</i></td></tr>
+<tr><th id="35">35</th><td><i class="doc">///     value: {</i></td></tr>
+<tr><th id="36">36</th><td><i class="doc">///       x: 1</i></td></tr>
+<tr><th id="37">37</th><td><i class="doc">///     ^ NextStartColumn</i></td></tr>
+<tr><th id="38">38</th><td><i class="doc">///     }</i></td></tr>
+<tr><th id="39">39</th><td><i class="doc">///   )";</i></td></tr>
+<tr><th id="40">40</th><td><i class="doc">///   ^ LastStartColumn</i></td></tr>
+<tr><th id="41">41</th><td><i class="doc">/// }</i></td></tr>
+<tr><th id="42">42</th><td><i class="doc">///</i></td></tr>
+<tr><th id="43">43</th><td><i class="doc">/// The outer code can influence the inner fragment as follows:</i></td></tr>
+<tr><th id="44">44</th><td><i class="doc">///   *<span class="command"> \p</span> <span class="arg">FirstStartColumn</span> specifies the column at which<span class="command"> \p</span> <span class="arg">Code</span> starts.</i></td></tr>
+<tr><th id="45">45</th><td><i class="doc">///   *<span class="command"> \p</span> <span class="arg">NextStartColumn</span> specifies the additional indent dictated by the</i></td></tr>
+<tr><th id="46">46</th><td><i class="doc">///     surrounding code. It is applied to the rest of the lines of<span class="command"> \p</span> <span class="arg">Code.</span></i></td></tr>
+<tr><th id="47">47</th><td><i class="doc">///   *<span class="command"> \p</span> <span class="arg">LastStartColumn</span> specifies the column at which the last line of</i></td></tr>
+<tr><th id="48">48</th><td><i class="doc">///    <span class="command"> \p</span> <span class="arg">Code</span> should end, in case the last line is an empty line.</i></td></tr>
+<tr><th id="49">49</th><td><i class="doc">///</i></td></tr>
+<tr><th id="50">50</th><td><i class="doc">///     In the case where the last line of the fragment contains content,</i></td></tr>
+<tr><th id="51">51</th><td><i class="doc">///     the fragment ends at the end of that content and<span class="command"> \p</span> <span class="arg">LastStartColumn</span> is</i></td></tr>
+<tr><th id="52">52</th><td><i class="doc">///     not taken into account, for example in:</i></td></tr>
+<tr><th id="53">53</th><td><i class="doc">///</i></td></tr>
+<tr><th id="54">54</th><td><i class="doc">///     void block() {</i></td></tr>
+<tr><th id="55">55</th><td><i class="doc">///       string inner = R"(name: value)";</i></td></tr>
+<tr><th id="56">56</th><td><i class="doc">///     }</i></td></tr>
+<tr><th id="57">57</th><td><i class="doc">///</i></td></tr>
+<tr><th id="58">58</th><td><i class="doc">/// Each range is extended on either end to its next bigger logic unit, i.e.</i></td></tr>
+<tr><th id="59">59</th><td><i class="doc">/// everything that might influence its formatting or might be influenced by its</i></td></tr>
+<tr><th id="60">60</th><td><i class="doc">/// formatting.</i></td></tr>
+<tr><th id="61">61</th><td><i class="doc">///</i></td></tr>
+<tr><th id="62">62</th><td><i class="doc">/// Returns a pair P, where:</i></td></tr>
+<tr><th id="63">63</th><td><i class="doc">///   * P.first are the ``Replacements`` necessary to make all<span class="command"> \p</span> <span class="arg">Ranges</span> comply</i></td></tr>
+<tr><th id="64">64</th><td><i class="doc">///     with<span class="command"> \p</span> <span class="arg">Style.</span></i></td></tr>
+<tr><th id="65">65</th><td><i class="doc">///   * P.second is the penalty induced by formatting the fragment<span class="command"> \p</span> <span class="arg">Code.</span></i></td></tr>
+<tr><th id="66">66</th><td><i class="doc">///     If the formatting of the fragment doesn't have a notion of penalty,</i></td></tr>
+<tr><th id="67">67</th><td><i class="doc">///     returns 0.</i></td></tr>
+<tr><th id="68">68</th><td><i class="doc">///</i></td></tr>
+<tr><th id="69">69</th><td><i class="doc">/// If ``Status`` is non-null, its value will be populated with the status of</i></td></tr>
+<tr><th id="70">70</th><td><i class="doc">/// this formatting attempt. See<span class="command"> \c</span> <span class="arg">FormattingAttemptStatus.</span></i></td></tr>
+<tr><th id="71">71</th><td><span class="namespace">std::</span><span class='type' title='std::pair' data-ref="std::pair" data-ref-filename="std..pair">pair</span>&lt;<span class="namespace">tooling::</span><a class="type" href="../../include/clang/Tooling/Core/Replacement.h.html#clang::tooling::Replacements" title='clang::tooling::Replacements' data-ref="clang::tooling::Replacements" data-ref-filename="clang..tooling..Replacements">Replacements</a>, <em>unsigned</em>&gt;</td></tr>
+<tr><th id="72">72</th><td><dfn class="decl fn" id="_ZN5clang6format8internal8reformatERKNS0_11FormatStyleEN4llvm9StringRefENS5_8ArrayRefINS_7tooling5RangeEEEjjjS6_PNS0_23FormattingAttemptStatusE" title='clang::format::internal::reformat' data-ref="_ZN5clang6format8internal8reformatERKNS0_11FormatStyleEN4llvm9StringRefENS5_8ArrayRefINS_7tooling5RangeEEEjjjS6_PNS0_23FormattingAttemptStatusE" data-ref-filename="_ZN5clang6format8internal8reformatERKNS0_11FormatStyleEN4llvm9StringRefENS5_8ArrayRefINS_7tooling5RangeEEEjjjS6_PNS0_23FormattingAttemptStatusE">reformat</dfn>(<em>const</em> <a class="type" href="../../include/clang/Format/Format.h.html#clang::format::FormatStyle" title='clang::format::FormatStyle' data-ref="clang::format::FormatStyle" data-ref-filename="clang..format..FormatStyle">FormatStyle</a> &amp;<dfn class="local col1 decl" id="1Style" title='Style' data-type='const clang::format::FormatStyle &amp;' data-ref="1Style" data-ref-filename="1Style">Style</dfn>, <a class="type" href="../../../llvm/include/llvm/ADT/StringRef.h.html#llvm::StringRef" title='llvm::StringRef' data-ref="llvm::StringRef" data-ref-filename="llvm..StringRef">StringRef</a> <dfn class="local col2 decl" id="2Code" title='Code' data-type='llvm::StringRef' data-ref="2Code" data-ref-filename="2Code">Code</dfn>,</td></tr>
+<tr><th id="73">73</th><td>         <a class="type" href="../../include/clang/Basic/LLVM.h.html#llvm::ArrayRef" title='llvm::ArrayRef' data-ref="llvm::ArrayRef" data-ref-filename="llvm..ArrayRef">ArrayRef</a>&lt;<span class="namespace">tooling::</span><a class="type" href="../../include/clang/Tooling/Core/Replacement.h.html#clang::tooling::Range" title='clang::tooling::Range' data-ref="clang::tooling::Range" data-ref-filename="clang..tooling..Range">Range</a>&gt; <dfn class="local col3 decl" id="3Ranges" title='Ranges' data-type='ArrayRef&lt;tooling::Range&gt;' data-ref="3Ranges" data-ref-filename="3Ranges">Ranges</dfn>, <em>unsigned</em> <dfn class="local col4 decl" id="4FirstStartColumn" title='FirstStartColumn' data-type='unsigned int' data-ref="4FirstStartColumn" data-ref-filename="4FirstStartColumn">FirstStartColumn</dfn>,</td></tr>
+<tr><th id="74">74</th><td>         <em>unsigned</em> <dfn class="local col5 decl" id="5NextStartColumn" title='NextStartColumn' data-type='unsigned int' data-ref="5NextStartColumn" data-ref-filename="5NextStartColumn">NextStartColumn</dfn>, <em>unsigned</em> <dfn class="local col6 decl" id="6LastStartColumn" title='LastStartColumn' data-type='unsigned int' data-ref="6LastStartColumn" data-ref-filename="6LastStartColumn">LastStartColumn</dfn>, <a class="type" href="../../../llvm/include/llvm/ADT/StringRef.h.html#llvm::StringRef" title='llvm::StringRef' data-ref="llvm::StringRef" data-ref-filename="llvm..StringRef">StringRef</a> <dfn class="local col7 decl" id="7FileName" title='FileName' data-type='llvm::StringRef' data-ref="7FileName" data-ref-filename="7FileName">FileName</dfn>,</td></tr>
+<tr><th id="75">75</th><td>         <a class="type" href="../../include/clang/Format/Format.h.html#clang::format::FormattingAttemptStatus" title='clang::format::FormattingAttemptStatus' data-ref="clang::format::FormattingAttemptStatus" data-ref-filename="clang..format..FormattingAttemptStatus">FormattingAttemptStatus</a> *<dfn class="local col8 decl" id="8Status" title='Status' data-type='clang::format::FormattingAttemptStatus *' data-ref="8Status" data-ref-filename="8Status">Status</dfn>);</td></tr>
+<tr><th id="76">76</th><td></td></tr>
+<tr><th id="77">77</th><td>} <i>// namespace internal</i></td></tr>
+<tr><th id="78">78</th><td>} <i>// namespace format</i></td></tr>
+<tr><th id="79">79</th><td>} <i>// namespace clang</i></td></tr>
+<tr><th id="80">80</th><td></td></tr>
+<tr><th id="81">81</th><td><u>#<span data-ppcond="15">endif</span></u></td></tr>
+<tr><th id="82">82</th><td></td></tr>
+</table><hr/><p id='footer'>
+Generated while processing <a href='ContinuationIndenter.cpp.html'>llvm/clang/lib/Format/ContinuationIndenter.cpp</a><br/>Generated on <em>2021-Jul-01</em> from project llvm revision <em>12</em>

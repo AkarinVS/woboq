@@ -1,0 +1,300 @@
+<!doctype html>
+<html>
+<head>
+<meta name="viewport" content="width=device-width, initial-scale=1.0"><title>InlineSizeEstimatorAnalysis.cpp source code [llvm/llvm/lib/Analysis/InlineSizeEstimatorAnalysis.cpp] - Woboq Code Browser</title>
+<meta name="woboq:interestingDefinitions" content="llvm::TFModelEvaluator "/>
+<link rel="stylesheet" href="../../../.././data/qtcreator.css" title="QtCreator"/>
+<link rel="alternate stylesheet" href="../../../.././data/kdevelop.css" title="KDevelop"/>
+<script type="text/javascript" src="../../../.././data/jquery/jquery.min.js"></script>
+<script type="text/javascript" src="../../../.././data/jquery/jquery-ui.min.js"></script>
+<script>var file = 'llvm/llvm/lib/Analysis/InlineSizeEstimatorAnalysis.cpp'; var root_path = '../../../..'; var data_path = '../../../.././data'; var ecma_script_api_version = 2;</script>
+<script src='../../../.././data/codebrowser.js'></script>
+</head>
+<body><div id='header'><h1 id='breadcrumb'><span>Browse the source code of </span><a href='../../..'>llvm</a>/<a href='../..'>llvm</a>/<a href='..'>lib</a>/<a href='./'>Analysis</a>/<a href='InlineSizeEstimatorAnalysis.cpp.html'>InlineSizeEstimatorAnalysis.cpp</a></h1></div>
+<hr/><div id='content'><table class="code">
+<tr><th id="1">1</th><td><i>//===- InlineSizeEstimatorAnalysis.cpp - IR to native size from ML model --===//</i></td></tr>
+<tr><th id="2">2</th><td><i>//</i></td></tr>
+<tr><th id="3">3</th><td><i>//                     The LLVM Compiler Infrastructure</i></td></tr>
+<tr><th id="4">4</th><td><i>//</i></td></tr>
+<tr><th id="5">5</th><td><i>// This file is distributed under the University of Illinois Open Source</i></td></tr>
+<tr><th id="6">6</th><td><i>// License. See LICENSE.TXT for details.</i></td></tr>
+<tr><th id="7">7</th><td><i>//</i></td></tr>
+<tr><th id="8">8</th><td><i>//===----------------------------------------------------------------------===//</i></td></tr>
+<tr><th id="9">9</th><td><i>//</i></td></tr>
+<tr><th id="10">10</th><td><i>// This implements feature and label extraction for offline supervised learning</i></td></tr>
+<tr><th id="11">11</th><td><i>// of a IR to native size model.</i></td></tr>
+<tr><th id="12">12</th><td><i>//</i></td></tr>
+<tr><th id="13">13</th><td><i>//===----------------------------------------------------------------------===//</i></td></tr>
+<tr><th id="14">14</th><td><u>#include <a href="../../include/llvm/Analysis/InlineSizeEstimatorAnalysis.h.html">"llvm/Analysis/InlineSizeEstimatorAnalysis.h"</a></u></td></tr>
+<tr><th id="15">15</th><td></td></tr>
+<tr><th id="16">16</th><td><u>#<span data-ppcond="16">ifdef</span> <span class="macro" data-ref="_M/LLVM_HAVE_TF_API">LLVM_HAVE_TF_API</span></u></td></tr>
+<tr><th id="17">17</th><td><u>#include "llvm/Analysis/Utils/TFUtils.h"</u></td></tr>
+<tr><th id="18">18</th><td><u>#<span data-ppcond="16">endif</span></u></td></tr>
+<tr><th id="19">19</th><td><u>#include <a href="../../include/llvm/Analysis/LoopInfo.h.html">"llvm/Analysis/LoopInfo.h"</a></u></td></tr>
+<tr><th id="20">20</th><td><u>#include <a href="../../include/llvm/Analysis/TargetLibraryInfo.h.html">"llvm/Analysis/TargetLibraryInfo.h"</a></u></td></tr>
+<tr><th id="21">21</th><td><u>#include <a href="../../include/llvm/Analysis/TargetTransformInfo.h.html">"llvm/Analysis/TargetTransformInfo.h"</a></u></td></tr>
+<tr><th id="22">22</th><td><u>#include <a href="../../include/llvm/IR/BasicBlock.h.html">"llvm/IR/BasicBlock.h"</a></u></td></tr>
+<tr><th id="23">23</th><td><u>#include <a href="../../include/llvm/IR/Dominators.h.html">"llvm/IR/Dominators.h"</a></u></td></tr>
+<tr><th id="24">24</th><td><u>#include <a href="../../include/llvm/IR/Function.h.html">"llvm/IR/Function.h"</a></u></td></tr>
+<tr><th id="25">25</th><td><u>#include <a href="../../include/llvm/IR/Instructions.h.html">"llvm/IR/Instructions.h"</a></u></td></tr>
+<tr><th id="26">26</th><td><u>#include <a href="../../include/llvm/IR/PassManager.h.html">"llvm/IR/PassManager.h"</a></u></td></tr>
+<tr><th id="27">27</th><td><u>#include <a href="../../include/llvm/MC/MCAsmLayout.h.html">"llvm/MC/MCAsmLayout.h"</a></u></td></tr>
+<tr><th id="28">28</th><td><u>#include <a href="../../include/llvm/Support/Casting.h.html">"llvm/Support/Casting.h"</a></u></td></tr>
+<tr><th id="29">29</th><td><u>#include <a href="../../include/llvm/Support/CommandLine.h.html">"llvm/Support/CommandLine.h"</a></u></td></tr>
+<tr><th id="30">30</th><td><u>#include <a href="../../include/llvm/Support/raw_ostream.h.html">"llvm/Support/raw_ostream.h"</a></u></td></tr>
+<tr><th id="31">31</th><td></td></tr>
+<tr><th id="32">32</th><td><u>#include &lt;algorithm&gt;</u></td></tr>
+<tr><th id="33">33</th><td><u>#include &lt;deque&gt;</u></td></tr>
+<tr><th id="34">34</th><td></td></tr>
+<tr><th id="35">35</th><td><b>using</b> <b>namespace</b> <span class="namespace">llvm</span>;</td></tr>
+<tr><th id="36">36</th><td></td></tr>
+<tr><th id="37">37</th><td><a class="type" href="../../include/llvm/IR/PassManager.h.html#llvm::AnalysisKey" title='llvm::AnalysisKey' data-ref="llvm::AnalysisKey" data-ref-filename="llvm..AnalysisKey">AnalysisKey</a> <a class="type" href="../../include/llvm/Analysis/InlineSizeEstimatorAnalysis.h.html#llvm::InlineSizeEstimatorAnalysis" title='llvm::InlineSizeEstimatorAnalysis' data-ref="llvm::InlineSizeEstimatorAnalysis" data-ref-filename="llvm..InlineSizeEstimatorAnalysis">InlineSizeEstimatorAnalysis</a>::<a class="ref fn fake" href="../../include/llvm/IR/PassManager.h.html#72" title='llvm::AnalysisKey::AnalysisKey' data-ref="_ZN4llvm11AnalysisKeyC1Ev" data-ref-filename="_ZN4llvm11AnalysisKeyC1Ev"></a><dfn class="decl def" id="llvm::InlineSizeEstimatorAnalysis::Key" title='llvm::InlineSizeEstimatorAnalysis::Key' data-ref="llvm::InlineSizeEstimatorAnalysis::Key" data-ref-filename="llvm..InlineSizeEstimatorAnalysis..Key">Key</dfn>;</td></tr>
+<tr><th id="38">38</th><td></td></tr>
+<tr><th id="39">39</th><td><u>#define <dfn class="macro" id="_M/DEBUG_TYPE" data-ref="_M/DEBUG_TYPE">DEBUG_TYPE</dfn> "inline-size-estimator"</u></td></tr>
+<tr><th id="40">40</th><td></td></tr>
+<tr><th id="41">41</th><td><u>#<span data-ppcond="41">ifdef</span> <span class="macro" data-ref="_M/LLVM_HAVE_TF_API">LLVM_HAVE_TF_API</span></u></td></tr>
+<tr><th id="42">42</th><td>cl::opt&lt;std::string&gt; TFIR2NativeModelPath(</td></tr>
+<tr><th id="43">43</th><td>    <q>"ml-inliner-ir2native-model"</q>, cl::Hidden,</td></tr>
+<tr><th id="44">44</th><td>    cl::desc(<q>"Path to saved model evaluating native size from IR."</q>));</td></tr>
+<tr><th id="45">45</th><td></td></tr>
+<tr><th id="46">46</th><td><b>namespace</b> {</td></tr>
+<tr><th id="47">47</th><td><em>unsigned</em> getMaxInstructionID() {</td></tr>
+<tr><th id="48">48</th><td><u>#define LAST_OTHER_INST(NR) return NR;</u></td></tr>
+<tr><th id="49">49</th><td><u>#include "llvm/IR/Instruction.def"</u></td></tr>
+<tr><th id="50">50</th><td>}</td></tr>
+<tr><th id="51">51</th><td></td></tr>
+<tr><th id="52">52</th><td><b>class</b> IRToNativeSizeLearning {</td></tr>
+<tr><th id="53">53</th><td><b>public</b>:</td></tr>
+<tr><th id="54">54</th><td>  <b>enum</b> <b>class</b> NamedFeatureIndex : size_t {</td></tr>
+<tr><th id="55">55</th><td>    InitialSize,</td></tr>
+<tr><th id="56">56</th><td>    Blocks,</td></tr>
+<tr><th id="57">57</th><td>    Calls,</td></tr>
+<tr><th id="58">58</th><td>    IsLocal,</td></tr>
+<tr><th id="59">59</th><td>    IsLinkOnceODR,</td></tr>
+<tr><th id="60">60</th><td>    IsLinkOnce,</td></tr>
+<tr><th id="61">61</th><td>    Loops,</td></tr>
+<tr><th id="62">62</th><td>    MaxLoopDepth,</td></tr>
+<tr><th id="63">63</th><td>    MaxDomTreeLevel,</td></tr>
+<tr><th id="64">64</th><td></td></tr>
+<tr><th id="65">65</th><td>    NumNamedFeatures</td></tr>
+<tr><th id="66">66</th><td>  };</td></tr>
+<tr><th id="67">67</th><td>  <em>static</em> <em>const</em> size_t NumNamedFeatures =</td></tr>
+<tr><th id="68">68</th><td>      <b>static_cast</b>&lt;size_t&gt;(NamedFeatureIndex::NumNamedFeatures);</td></tr>
+<tr><th id="69">69</th><td>  <b>struct</b> FunctionFeatures {</td></tr>
+<tr><th id="70">70</th><td>    <em>static</em> <em>const</em> size_t FeatureCount;</td></tr>
+<tr><th id="71">71</th><td></td></tr>
+<tr><th id="72">72</th><td>    std::array&lt;int32_t, NumNamedFeatures&gt; NamedFeatures = {<var>0</var>};</td></tr>
+<tr><th id="73">73</th><td>    std::vector&lt;int32_t&gt; InstructionHistogram;</td></tr>
+<tr><th id="74">74</th><td>    std::vector&lt;int32_t&gt; InstructionPairHistogram;</td></tr>
+<tr><th id="75">75</th><td></td></tr>
+<tr><th id="76">76</th><td>    <em>void</em> fillTensor(int32_t *Ptr) <em>const</em>;</td></tr>
+<tr><th id="77">77</th><td>    int32_t &amp;<b>operator</b>[](NamedFeatureIndex Pos) {</td></tr>
+<tr><th id="78">78</th><td>      <b>return</b> NamedFeatures[<b>static_cast</b>&lt;size_t&gt;(Pos)];</td></tr>
+<tr><th id="79">79</th><td>    }</td></tr>
+<tr><th id="80">80</th><td>  };</td></tr>
+<tr><th id="81">81</th><td>  IRToNativeSizeLearning() = <b>default</b>;</td></tr>
+<tr><th id="82">82</th><td></td></tr>
+<tr><th id="83">83</th><td>  <em>static</em> FunctionFeatures getFunctionFeatures(Function &amp;F,</td></tr>
+<tr><th id="84">84</th><td>                                              FunctionAnalysisManager &amp;FAM);</td></tr>
+<tr><th id="85">85</th><td>};</td></tr>
+<tr><th id="86">86</th><td></td></tr>
+<tr><th id="87">87</th><td><i>// This is a point in time - we determined including these pairs of</i></td></tr>
+<tr><th id="88">88</th><td><i>// consecutive instructions (in the IR layout available at inline time) as</i></td></tr>
+<tr><th id="89">89</th><td><i>// features improves the model performance. We want to move away from manual</i></td></tr>
+<tr><th id="90">90</th><td><i>// feature selection.</i></td></tr>
+<tr><th id="91">91</th><td><i>// The array is given in opcode pairs rather than labels because 1) labels</i></td></tr>
+<tr><th id="92">92</th><td><i>// weren't readily available, and 2) the successions were hand - extracted.</i></td></tr>
+<tr><th id="93">93</th><td><i>//</i></td></tr>
+<tr><th id="94">94</th><td><i>// This array must be sorted.</i></td></tr>
+<tr><th id="95">95</th><td><em>static</em> <em>const</em> std::array&lt;std::pair&lt;size_t, size_t&gt;, <var>137</var>&gt;</td></tr>
+<tr><th id="96">96</th><td>    ImportantInstructionSuccessions{</td></tr>
+<tr><th id="97">97</th><td>        {{<var>1</var>, <var>1</var>},   {<var>1</var>, <var>4</var>},   {<var>1</var>, <var>5</var>},   {<var>1</var>, <var>7</var>},   {<var>1</var>, <var>8</var>},   {<var>1</var>, <var>9</var>},   {<var>1</var>, <var>11</var>},</td></tr>
+<tr><th id="98">98</th><td>         {<var>1</var>, <var>12</var>},  {<var>1</var>, <var>13</var>},  {<var>1</var>, <var>14</var>},  {<var>1</var>, <var>18</var>},  {<var>1</var>, <var>20</var>},  {<var>1</var>, <var>22</var>},  {<var>1</var>, <var>24</var>},</td></tr>
+<tr><th id="99">99</th><td>         {<var>1</var>, <var>25</var>},  {<var>1</var>, <var>26</var>},  {<var>1</var>, <var>27</var>},  {<var>1</var>, <var>28</var>},  {<var>1</var>, <var>29</var>},  {<var>1</var>, <var>30</var>},  {<var>1</var>, <var>31</var>},</td></tr>
+<tr><th id="100">100</th><td>         {<var>1</var>, <var>32</var>},  {<var>1</var>, <var>33</var>},  {<var>1</var>, <var>34</var>},  {<var>1</var>, <var>39</var>},  {<var>1</var>, <var>40</var>},  {<var>1</var>, <var>42</var>},  {<var>1</var>, <var>45</var>},</td></tr>
+<tr><th id="101">101</th><td>         {<var>2</var>, <var>1</var>},   {<var>2</var>, <var>2</var>},   {<var>2</var>, <var>13</var>},  {<var>2</var>, <var>28</var>},  {<var>2</var>, <var>29</var>},  {<var>2</var>, <var>32</var>},  {<var>2</var>, <var>33</var>},</td></tr>
+<tr><th id="102">102</th><td>         {<var>2</var>, <var>34</var>},  {<var>2</var>, <var>38</var>},  {<var>2</var>, <var>48</var>},  {<var>2</var>, <var>49</var>},  {<var>2</var>, <var>53</var>},  {<var>2</var>, <var>55</var>},  {<var>2</var>, <var>56</var>},</td></tr>
+<tr><th id="103">103</th><td>         {<var>13</var>, <var>2</var>},  {<var>13</var>, <var>13</var>}, {<var>13</var>, <var>26</var>}, {<var>13</var>, <var>33</var>}, {<var>13</var>, <var>34</var>}, {<var>13</var>, <var>56</var>}, {<var>15</var>, <var>27</var>},</td></tr>
+<tr><th id="104">104</th><td>         {<var>28</var>, <var>2</var>},  {<var>28</var>, <var>48</var>}, {<var>28</var>, <var>53</var>}, {<var>29</var>, <var>2</var>},  {<var>29</var>, <var>33</var>}, {<var>29</var>, <var>56</var>}, {<var>31</var>, <var>31</var>},</td></tr>
+<tr><th id="105">105</th><td>         {<var>31</var>, <var>33</var>}, {<var>31</var>, <var>34</var>}, {<var>31</var>, <var>49</var>}, {<var>32</var>, <var>1</var>},  {<var>32</var>, <var>2</var>},  {<var>32</var>, <var>13</var>}, {<var>32</var>, <var>15</var>},</td></tr>
+<tr><th id="106">106</th><td>         {<var>32</var>, <var>28</var>}, {<var>32</var>, <var>29</var>}, {<var>32</var>, <var>32</var>}, {<var>32</var>, <var>33</var>}, {<var>32</var>, <var>34</var>}, {<var>32</var>, <var>39</var>}, {<var>32</var>, <var>40</var>},</td></tr>
+<tr><th id="107">107</th><td>         {<var>32</var>, <var>48</var>}, {<var>32</var>, <var>49</var>}, {<var>32</var>, <var>53</var>}, {<var>32</var>, <var>56</var>}, {<var>33</var>, <var>1</var>},  {<var>33</var>, <var>2</var>},  {<var>33</var>, <var>32</var>},</td></tr>
+<tr><th id="108">108</th><td>         {<var>33</var>, <var>33</var>}, {<var>33</var>, <var>34</var>}, {<var>33</var>, <var>49</var>}, {<var>33</var>, <var>53</var>}, {<var>33</var>, <var>56</var>}, {<var>34</var>, <var>1</var>},  {<var>34</var>, <var>2</var>},</td></tr>
+<tr><th id="109">109</th><td>         {<var>34</var>, <var>32</var>}, {<var>34</var>, <var>33</var>}, {<var>34</var>, <var>34</var>}, {<var>34</var>, <var>49</var>}, {<var>34</var>, <var>53</var>}, {<var>34</var>, <var>56</var>}, {<var>38</var>, <var>34</var>},</td></tr>
+<tr><th id="110">110</th><td>         {<var>39</var>, <var>57</var>}, {<var>40</var>, <var>34</var>}, {<var>47</var>, <var>15</var>}, {<var>47</var>, <var>49</var>}, {<var>48</var>, <var>2</var>},  {<var>48</var>, <var>34</var>}, {<var>48</var>, <var>56</var>},</td></tr>
+<tr><th id="111">111</th><td>         {<var>49</var>, <var>1</var>},  {<var>49</var>, <var>2</var>},  {<var>49</var>, <var>28</var>}, {<var>49</var>, <var>32</var>}, {<var>49</var>, <var>33</var>}, {<var>49</var>, <var>34</var>}, {<var>49</var>, <var>39</var>},</td></tr>
+<tr><th id="112">112</th><td>         {<var>49</var>, <var>49</var>}, {<var>49</var>, <var>56</var>}, {<var>53</var>, <var>1</var>},  {<var>53</var>, <var>2</var>},  {<var>53</var>, <var>28</var>}, {<var>53</var>, <var>34</var>}, {<var>53</var>, <var>53</var>},</td></tr>
+<tr><th id="113">113</th><td>         {<var>53</var>, <var>57</var>}, {<var>55</var>, <var>1</var>},  {<var>55</var>, <var>28</var>}, {<var>55</var>, <var>34</var>}, {<var>55</var>, <var>53</var>}, {<var>55</var>, <var>55</var>}, {<var>55</var>, <var>56</var>},</td></tr>
+<tr><th id="114">114</th><td>         {<var>56</var>, <var>1</var>},  {<var>56</var>, <var>2</var>},  {<var>56</var>, <var>7</var>},  {<var>56</var>, <var>13</var>}, {<var>56</var>, <var>32</var>}, {<var>56</var>, <var>33</var>}, {<var>56</var>, <var>34</var>},</td></tr>
+<tr><th id="115">115</th><td>         {<var>56</var>, <var>49</var>}, {<var>56</var>, <var>53</var>}, {<var>56</var>, <var>56</var>}, {<var>56</var>, <var>64</var>}, {<var>57</var>, <var>34</var>}, {<var>57</var>, <var>56</var>}, {<var>57</var>, <var>57</var>},</td></tr>
+<tr><th id="116">116</th><td>         {<var>64</var>, <var>1</var>},  {<var>64</var>, <var>64</var>}, {<var>65</var>, <var>1</var>},  {<var>65</var>, <var>65</var>}}};</td></tr>
+<tr><th id="117">117</th><td></td></tr>
+<tr><th id="118">118</th><td><i>// We have: 9 calculated features (the features here); 1 feature for each</i></td></tr>
+<tr><th id="119">119</th><td><i>// instruction opcode; and 1 feature for each manually-identified sequence.</i></td></tr>
+<tr><th id="120">120</th><td><i>// For the latter 2, we build a histogram: we count the number of</i></td></tr>
+<tr><th id="121">121</th><td><i>// occurrences of each instruction opcode or succession of instructions,</i></td></tr>
+<tr><th id="122">122</th><td><i>// respectively.</i></td></tr>
+<tr><th id="123">123</th><td><i>// Note that instruction opcodes start from 1. For convenience, we also have an</i></td></tr>
+<tr><th id="124">124</th><td><i>// always 0 feature for the '0' opcode, hence the extra 1.</i></td></tr>
+<tr><th id="125">125</th><td><em>const</em> size_t IRToNativeSizeLearning::FunctionFeatures::FeatureCount =</td></tr>
+<tr><th id="126">126</th><td>    ImportantInstructionSuccessions.size() + getMaxInstructionID() + <var>1</var> +</td></tr>
+<tr><th id="127">127</th><td>    IRToNativeSizeLearning::NumNamedFeatures;</td></tr>
+<tr><th id="128">128</th><td></td></tr>
+<tr><th id="129">129</th><td>size_t getSize(Function &amp;F, TargetTransformInfo &amp;TTI) {</td></tr>
+<tr><th id="130">130</th><td>  size_t Ret = <var>0</var>;</td></tr>
+<tr><th id="131">131</th><td>  <b>for</b> (<em>const</em> <em>auto</em> &amp;BB : F)</td></tr>
+<tr><th id="132">132</th><td>    <b>for</b> (<em>const</em> <em>auto</em> &amp;I : BB)</td></tr>
+<tr><th id="133">133</th><td>      Ret += *(TTI.getInstructionCost(</td></tr>
+<tr><th id="134">134</th><td>          &amp;I, TargetTransformInfo::TargetCostKind::TCK_CodeSize).getValue());</td></tr>
+<tr><th id="135">135</th><td>  <b>return</b> Ret;</td></tr>
+<tr><th id="136">136</th><td>}</td></tr>
+<tr><th id="137">137</th><td></td></tr>
+<tr><th id="138">138</th><td>size_t getSize(Function &amp;F, FunctionAnalysisManager &amp;FAM) {</td></tr>
+<tr><th id="139">139</th><td>  <em>auto</em> &amp;TTI = FAM.getResult&lt;TargetIRAnalysis&gt;(F);</td></tr>
+<tr><th id="140">140</th><td>  <b>return</b> getSize(F, TTI);</td></tr>
+<tr><th id="141">141</th><td>}</td></tr>
+<tr><th id="142">142</th><td></td></tr>
+<tr><th id="143">143</th><td><em>unsigned</em> getMaxDominatorTreeDepth(<em>const</em> Function &amp;F,</td></tr>
+<tr><th id="144">144</th><td>                                  <em>const</em> DominatorTree &amp;Tree) {</td></tr>
+<tr><th id="145">145</th><td>  <em>unsigned</em> Ret = <var>0</var>;</td></tr>
+<tr><th id="146">146</th><td>  <b>for</b> (<em>const</em> <em>auto</em> &amp;BB : F)</td></tr>
+<tr><th id="147">147</th><td>    <b>if</b> (<em>const</em> <em>auto</em> *TN = Tree.getNode(&amp;BB))</td></tr>
+<tr><th id="148">148</th><td>      Ret = std::max(Ret, TN-&gt;getLevel());</td></tr>
+<tr><th id="149">149</th><td>  <b>return</b> Ret;</td></tr>
+<tr><th id="150">150</th><td>}</td></tr>
+<tr><th id="151">151</th><td>} <i>// namespace</i></td></tr>
+<tr><th id="152">152</th><td></td></tr>
+<tr><th id="153">153</th><td>IRToNativeSizeLearning::FunctionFeatures</td></tr>
+<tr><th id="154">154</th><td>IRToNativeSizeLearning::getFunctionFeatures(Function &amp;F,</td></tr>
+<tr><th id="155">155</th><td>                                            FunctionAnalysisManager &amp;FAM) {</td></tr>
+<tr><th id="156">156</th><td>  assert(llvm::is_sorted(ImportantInstructionSuccessions) &amp;&amp;</td></tr>
+<tr><th id="157">157</th><td>         <q>"expected function features are sorted"</q>);</td></tr>
+<tr><th id="158">158</th><td></td></tr>
+<tr><th id="159">159</th><td>  <em>auto</em> &amp;DomTree = FAM.getResult&lt;DominatorTreeAnalysis&gt;(F);</td></tr>
+<tr><th id="160">160</th><td>  FunctionFeatures FF;</td></tr>
+<tr><th id="161">161</th><td>  size_t InstrCount = getMaxInstructionID() + <var>1</var>;</td></tr>
+<tr><th id="162">162</th><td>  FF.InstructionHistogram.resize(InstrCount);</td></tr>
+<tr><th id="163">163</th><td></td></tr>
+<tr><th id="164">164</th><td>  FF.InstructionPairHistogram.resize(ImportantInstructionSuccessions.size());</td></tr>
+<tr><th id="165">165</th><td></td></tr>
+<tr><th id="166">166</th><td>  <em>int</em> StartID = <var>0</var>;</td></tr>
+<tr><th id="167">167</th><td>  <em>int</em> LastID = StartID;</td></tr>
+<tr><th id="168">168</th><td>  <em>auto</em> getPairIndex = [](size_t a, size_t b) {</td></tr>
+<tr><th id="169">169</th><td>    <em>auto</em> I = llvm::find(ImportantInstructionSuccessions, std::make_pair(a, b));</td></tr>
+<tr><th id="170">170</th><td>    <b>if</b> (I == ImportantInstructionSuccessions.end())</td></tr>
+<tr><th id="171">171</th><td>      <b>return</b> -<var>1</var>;</td></tr>
+<tr><th id="172">172</th><td>    <b>return</b> <b>static_cast</b>&lt;<em>int</em>&gt;(</td></tr>
+<tr><th id="173">173</th><td>        std::distance(ImportantInstructionSuccessions.begin(), I));</td></tr>
+<tr><th id="174">174</th><td>  };</td></tr>
+<tr><th id="175">175</th><td></td></tr>
+<tr><th id="176">176</th><td>  <i>// We don't want debug calls, because they'd just add noise.</i></td></tr>
+<tr><th id="177">177</th><td>  <b>for</b> (<em>const</em> <em>auto</em> &amp;BB : F) {</td></tr>
+<tr><th id="178">178</th><td>    <b>for</b> (<em>const</em> <em>auto</em> &amp;I : BB.instructionsWithoutDebug()) {</td></tr>
+<tr><th id="179">179</th><td>      <em>auto</em> ID = I.getOpcode();</td></tr>
+<tr><th id="180">180</th><td></td></tr>
+<tr><th id="181">181</th><td>      ++FF.InstructionHistogram[ID];</td></tr>
+<tr><th id="182">182</th><td>      <em>int</em> PairIndex = getPairIndex(LastID, ID);</td></tr>
+<tr><th id="183">183</th><td>      <b>if</b> (PairIndex &gt;= <var>0</var>)</td></tr>
+<tr><th id="184">184</th><td>        ++FF.InstructionPairHistogram[PairIndex];</td></tr>
+<tr><th id="185">185</th><td>      LastID = ID;</td></tr>
+<tr><th id="186">186</th><td>      <b>if</b> (isa&lt;CallBase&gt;(I))</td></tr>
+<tr><th id="187">187</th><td>        ++FF[NamedFeatureIndex::Calls];</td></tr>
+<tr><th id="188">188</th><td>    }</td></tr>
+<tr><th id="189">189</th><td>  }</td></tr>
+<tr><th id="190">190</th><td></td></tr>
+<tr><th id="191">191</th><td>  FF[NamedFeatureIndex::InitialSize] = getSize(F, FAM);</td></tr>
+<tr><th id="192">192</th><td>  FF[NamedFeatureIndex::IsLocal] = F.hasLocalLinkage();</td></tr>
+<tr><th id="193">193</th><td>  FF[NamedFeatureIndex::IsLinkOnceODR] = F.hasLinkOnceODRLinkage();</td></tr>
+<tr><th id="194">194</th><td>  FF[NamedFeatureIndex::IsLinkOnce] = F.hasLinkOnceLinkage();</td></tr>
+<tr><th id="195">195</th><td>  FF[NamedFeatureIndex::Blocks] =</td></tr>
+<tr><th id="196">196</th><td>      std::distance(F.getBasicBlockList().begin(), F.getBasicBlockList().end());</td></tr>
+<tr><th id="197">197</th><td>  <em>auto</em> &amp;LI = FAM.getResult&lt;LoopAnalysis&gt;(F);</td></tr>
+<tr><th id="198">198</th><td>  FF[NamedFeatureIndex::Loops] = std::distance(LI.begin(), LI.end());</td></tr>
+<tr><th id="199">199</th><td>  <b>for</b> (<em>auto</em> &amp;L : LI)</td></tr>
+<tr><th id="200">200</th><td>    FF[NamedFeatureIndex::MaxLoopDepth] =</td></tr>
+<tr><th id="201">201</th><td>        std::max(FF[NamedFeatureIndex::MaxLoopDepth],</td></tr>
+<tr><th id="202">202</th><td>                 <b>static_cast</b>&lt;int32_t&gt;(L-&gt;getLoopDepth()));</td></tr>
+<tr><th id="203">203</th><td>  FF[NamedFeatureIndex::MaxDomTreeLevel] = getMaxDominatorTreeDepth(F, DomTree);</td></tr>
+<tr><th id="204">204</th><td>  <b>return</b> FF;</td></tr>
+<tr><th id="205">205</th><td>}</td></tr>
+<tr><th id="206">206</th><td></td></tr>
+<tr><th id="207">207</th><td><em>void</em> IRToNativeSizeLearning::FunctionFeatures::fillTensor(int32_t *Ptr) <em>const</em> {</td></tr>
+<tr><th id="208">208</th><td>  std::copy(NamedFeatures.begin(), NamedFeatures.end(), Ptr);</td></tr>
+<tr><th id="209">209</th><td>  Ptr += NamedFeatures.size();</td></tr>
+<tr><th id="210">210</th><td>  std::copy(InstructionHistogram.begin(), InstructionHistogram.end(), Ptr);</td></tr>
+<tr><th id="211">211</th><td>  Ptr += InstructionHistogram.size();</td></tr>
+<tr><th id="212">212</th><td>  std::copy(InstructionPairHistogram.begin(), InstructionPairHistogram.end(),</td></tr>
+<tr><th id="213">213</th><td>            Ptr);</td></tr>
+<tr><th id="214">214</th><td>}</td></tr>
+<tr><th id="215">215</th><td></td></tr>
+<tr><th id="216">216</th><td><em>bool</em> InlineSizeEstimatorAnalysis::isEvaluatorRequested() {</td></tr>
+<tr><th id="217">217</th><td>  <b>return</b> !TFIR2NativeModelPath.empty();</td></tr>
+<tr><th id="218">218</th><td>}</td></tr>
+<tr><th id="219">219</th><td></td></tr>
+<tr><th id="220">220</th><td>InlineSizeEstimatorAnalysis::InlineSizeEstimatorAnalysis() {</td></tr>
+<tr><th id="221">221</th><td>  <b>if</b> (!isEvaluatorRequested()) {</td></tr>
+<tr><th id="222">222</th><td>    <b>return</b>;</td></tr>
+<tr><th id="223">223</th><td>  }</td></tr>
+<tr><th id="224">224</th><td>  std::vector&lt;TensorSpec&gt; InputSpecs{TensorSpec::createSpec&lt;int32_t&gt;(</td></tr>
+<tr><th id="225">225</th><td>      <q>"serving_default_input_1"</q>,</td></tr>
+<tr><th id="226">226</th><td>      {<var>1</var>, <b>static_cast</b>&lt;int64_t&gt;(</td></tr>
+<tr><th id="227">227</th><td>              IRToNativeSizeLearning::FunctionFeatures::FeatureCount)})};</td></tr>
+<tr><th id="228">228</th><td>  std::vector&lt;TensorSpec&gt; OutputSpecs{</td></tr>
+<tr><th id="229">229</th><td>      TensorSpec::createSpec&lt;<em>float</em>&gt;(<q>"StatefulPartitionedCall"</q>, {<var>1</var>})};</td></tr>
+<tr><th id="230">230</th><td>  Evaluator = std::make_unique&lt;TFModelEvaluator&gt;(</td></tr>
+<tr><th id="231">231</th><td>      TFIR2NativeModelPath.getValue().c_str(), InputSpecs, OutputSpecs);</td></tr>
+<tr><th id="232">232</th><td>  <b>if</b> (!Evaluator || !Evaluator-&gt;isValid()) {</td></tr>
+<tr><th id="233">233</th><td>    Evaluator.reset();</td></tr>
+<tr><th id="234">234</th><td>    <b>return</b>;</td></tr>
+<tr><th id="235">235</th><td>  }</td></tr>
+<tr><th id="236">236</th><td>}</td></tr>
+<tr><th id="237">237</th><td></td></tr>
+<tr><th id="238">238</th><td>InlineSizeEstimatorAnalysis::Result</td></tr>
+<tr><th id="239">239</th><td>InlineSizeEstimatorAnalysis::run(<em>const</em> Function &amp;F,</td></tr>
+<tr><th id="240">240</th><td>                                 FunctionAnalysisManager &amp;FAM) {</td></tr>
+<tr><th id="241">241</th><td>  <b>if</b> (!Evaluator)</td></tr>
+<tr><th id="242">242</th><td>    <b>return</b> None;</td></tr>
+<tr><th id="243">243</th><td>  <em>auto</em> Features = IRToNativeSizeLearning::getFunctionFeatures(</td></tr>
+<tr><th id="244">244</th><td>      <b>const_cast</b>&lt;Function &amp;&gt;(F), FAM);</td></tr>
+<tr><th id="245">245</th><td>  int32_t *V = Evaluator-&gt;getInput&lt;int32_t&gt;(<var>0</var>);</td></tr>
+<tr><th id="246">246</th><td>  Features.fillTensor(V);</td></tr>
+<tr><th id="247">247</th><td>  <em>auto</em> ER = Evaluator-&gt;evaluate();</td></tr>
+<tr><th id="248">248</th><td>  <b>if</b> (!ER)</td></tr>
+<tr><th id="249">249</th><td>    <b>return</b> None;</td></tr>
+<tr><th id="250">250</th><td>  <em>float</em> Ret = *ER-&gt;getTensorValue&lt;<em>float</em>&gt;(<var>0</var>);</td></tr>
+<tr><th id="251">251</th><td>  <b>if</b> (Ret &lt; <var>0.0</var>)</td></tr>
+<tr><th id="252">252</th><td>    Ret = <var>0.0</var>;</td></tr>
+<tr><th id="253">253</th><td>  <b>return</b> <b>static_cast</b>&lt;size_t&gt;(Ret);</td></tr>
+<tr><th id="254">254</th><td>}</td></tr>
+<tr><th id="255">255</th><td></td></tr>
+<tr><th id="256">256</th><td>InlineSizeEstimatorAnalysis::~InlineSizeEstimatorAnalysis() {}</td></tr>
+<tr><th id="257">257</th><td>InlineSizeEstimatorAnalysis::InlineSizeEstimatorAnalysis(</td></tr>
+<tr><th id="258">258</th><td>    InlineSizeEstimatorAnalysis &amp;&amp;Other)</td></tr>
+<tr><th id="259">259</th><td>    : Evaluator(std::move(Other.Evaluator)) {}</td></tr>
+<tr><th id="260">260</th><td></td></tr>
+<tr><th id="261">261</th><td><u>#<span data-ppcond="41">else</span></u></td></tr>
+<tr><th id="262">262</th><td><b>namespace</b> <span class="namespace">llvm</span> {</td></tr>
+<tr><th id="263">263</th><td><b>class</b> <dfn class="type def" id="llvm::TFModelEvaluator" title='llvm::TFModelEvaluator' data-ref="llvm::TFModelEvaluator" data-ref-filename="llvm..TFModelEvaluator">TFModelEvaluator</dfn> {};</td></tr>
+<tr><th id="264">264</th><td>} <i>// namespace llvm</i></td></tr>
+<tr><th id="265">265</th><td><a class="type" href="../../include/llvm/Analysis/InlineSizeEstimatorAnalysis.h.html#llvm::InlineSizeEstimatorAnalysis" title='llvm::InlineSizeEstimatorAnalysis' data-ref="llvm::InlineSizeEstimatorAnalysis" data-ref-filename="llvm..InlineSizeEstimatorAnalysis">InlineSizeEstimatorAnalysis</a>::<dfn class="decl def fn" id="_ZN4llvm27InlineSizeEstimatorAnalysisC1Ev" title='llvm::InlineSizeEstimatorAnalysis::InlineSizeEstimatorAnalysis' data-ref="_ZN4llvm27InlineSizeEstimatorAnalysisC1Ev" data-ref-filename="_ZN4llvm27InlineSizeEstimatorAnalysisC1Ev">InlineSizeEstimatorAnalysis</dfn>() {}</td></tr>
+<tr><th id="266">266</th><td><a class="type" href="../../include/llvm/Analysis/InlineSizeEstimatorAnalysis.h.html#llvm::InlineSizeEstimatorAnalysis" title='llvm::InlineSizeEstimatorAnalysis' data-ref="llvm::InlineSizeEstimatorAnalysis" data-ref-filename="llvm..InlineSizeEstimatorAnalysis">InlineSizeEstimatorAnalysis</a> ::<dfn class="decl def fn" id="_ZN4llvm27InlineSizeEstimatorAnalysisC1EOS0_" title='llvm::InlineSizeEstimatorAnalysis::InlineSizeEstimatorAnalysis' data-ref="_ZN4llvm27InlineSizeEstimatorAnalysisC1EOS0_" data-ref-filename="_ZN4llvm27InlineSizeEstimatorAnalysisC1EOS0_">InlineSizeEstimatorAnalysis</dfn>(</td></tr>
+<tr><th id="267">267</th><td>    <a class="type" href="../../include/llvm/Analysis/InlineSizeEstimatorAnalysis.h.html#llvm::InlineSizeEstimatorAnalysis" title='llvm::InlineSizeEstimatorAnalysis' data-ref="llvm::InlineSizeEstimatorAnalysis" data-ref-filename="llvm..InlineSizeEstimatorAnalysis">InlineSizeEstimatorAnalysis</a> &amp;&amp;) {}</td></tr>
+<tr><th id="268">268</th><td><a class="type" href="../../include/llvm/Analysis/InlineSizeEstimatorAnalysis.h.html#llvm::InlineSizeEstimatorAnalysis" title='llvm::InlineSizeEstimatorAnalysis' data-ref="llvm::InlineSizeEstimatorAnalysis" data-ref-filename="llvm..InlineSizeEstimatorAnalysis">InlineSizeEstimatorAnalysis</a>::<dfn class="decl def fn" id="_ZN4llvm27InlineSizeEstimatorAnalysisD1Ev" title='llvm::InlineSizeEstimatorAnalysis::~InlineSizeEstimatorAnalysis' data-ref="_ZN4llvm27InlineSizeEstimatorAnalysisD1Ev" data-ref-filename="_ZN4llvm27InlineSizeEstimatorAnalysisD1Ev">~InlineSizeEstimatorAnalysis</dfn>() {}</td></tr>
+<tr><th id="269">269</th><td><a class="type" href="../../include/llvm/Analysis/InlineSizeEstimatorAnalysis.h.html#llvm::InlineSizeEstimatorAnalysis" title='llvm::InlineSizeEstimatorAnalysis' data-ref="llvm::InlineSizeEstimatorAnalysis" data-ref-filename="llvm..InlineSizeEstimatorAnalysis">InlineSizeEstimatorAnalysis</a>::<a class="typedef" href="../../include/llvm/Analysis/InlineSizeEstimatorAnalysis.h.html#llvm::InlineSizeEstimatorAnalysis::Result" title='llvm::InlineSizeEstimatorAnalysis::Result' data-type='Optional&lt;size_t&gt;' data-ref="llvm::InlineSizeEstimatorAnalysis::Result" data-ref-filename="llvm..InlineSizeEstimatorAnalysis..Result">Result</a></td></tr>
+<tr><th id="270">270</th><td><a class="type" href="../../include/llvm/Analysis/InlineSizeEstimatorAnalysis.h.html#llvm::InlineSizeEstimatorAnalysis" title='llvm::InlineSizeEstimatorAnalysis' data-ref="llvm::InlineSizeEstimatorAnalysis" data-ref-filename="llvm..InlineSizeEstimatorAnalysis">InlineSizeEstimatorAnalysis</a>::<dfn class="decl def fn" id="_ZN4llvm27InlineSizeEstimatorAnalysis3runERKNS_8FunctionERNS_15AnalysisManagerIS1_JEEE" title='llvm::InlineSizeEstimatorAnalysis::run' data-ref="_ZN4llvm27InlineSizeEstimatorAnalysis3runERKNS_8FunctionERNS_15AnalysisManagerIS1_JEEE" data-ref-filename="_ZN4llvm27InlineSizeEstimatorAnalysis3runERKNS_8FunctionERNS_15AnalysisManagerIS1_JEEE">run</dfn>(<em>const</em> <a class="type" href="../../include/llvm/IR/Function.h.html#llvm::Function" title='llvm::Function' data-ref="llvm::Function" data-ref-filename="llvm..Function">Function</a> &amp;<dfn class="local col9 decl" id="19F" title='F' data-type='const llvm::Function &amp;' data-ref="19F" data-ref-filename="19F">F</dfn>,</td></tr>
+<tr><th id="271">271</th><td>                                 <a class="typedef" href="../../include/llvm/IR/PassManager.h.html#llvm::FunctionAnalysisManager" title='llvm::FunctionAnalysisManager' data-type='AnalysisManager&lt;llvm::Function&gt;' data-ref="llvm::FunctionAnalysisManager" data-ref-filename="llvm..FunctionAnalysisManager">FunctionAnalysisManager</a> &amp;<dfn class="local col0 decl" id="20FAM" title='FAM' data-type='llvm::FunctionAnalysisManager &amp;' data-ref="20FAM" data-ref-filename="20FAM">FAM</dfn>) {</td></tr>
+<tr><th id="272">272</th><td>  <b>return</b> <a class="ref fn fake" href="../../include/llvm/ADT/Optional.h.html#_ZN4llvm8OptionalC1ENS_8NoneTypeE" title='llvm::Optional::Optional&lt;T&gt;' data-ref="_ZN4llvm8OptionalC1ENS_8NoneTypeE" data-ref-filename="_ZN4llvm8OptionalC1ENS_8NoneTypeE"></a><a class="ref" href="../../include/llvm/ADT/None.h.html#llvm::None" title='llvm::None' data-ref="llvm::None" data-ref-filename="llvm..None">None</a>;</td></tr>
+<tr><th id="273">273</th><td>}</td></tr>
+<tr><th id="274">274</th><td><em>bool</em> <a class="type" href="../../include/llvm/Analysis/InlineSizeEstimatorAnalysis.h.html#llvm::InlineSizeEstimatorAnalysis" title='llvm::InlineSizeEstimatorAnalysis' data-ref="llvm::InlineSizeEstimatorAnalysis" data-ref-filename="llvm..InlineSizeEstimatorAnalysis">InlineSizeEstimatorAnalysis</a>::<dfn class="decl def fn" id="_ZN4llvm27InlineSizeEstimatorAnalysis20isEvaluatorRequestedEv" title='llvm::InlineSizeEstimatorAnalysis::isEvaluatorRequested' data-ref="_ZN4llvm27InlineSizeEstimatorAnalysis20isEvaluatorRequestedEv" data-ref-filename="_ZN4llvm27InlineSizeEstimatorAnalysis20isEvaluatorRequestedEv">isEvaluatorRequested</dfn>() { <b>return</b> <b>false</b>; }</td></tr>
+<tr><th id="275">275</th><td><u>#<span data-ppcond="41">endif</span></u></td></tr>
+<tr><th id="276">276</th><td></td></tr>
+<tr><th id="277">277</th><td><a class="type" href="../../include/llvm/IR/PassManager.h.html#llvm::PreservedAnalyses" title='llvm::PreservedAnalyses' data-ref="llvm::PreservedAnalyses" data-ref-filename="llvm..PreservedAnalyses">PreservedAnalyses</a></td></tr>
+<tr><th id="278">278</th><td><a class="type" href="../../include/llvm/Analysis/InlineSizeEstimatorAnalysis.h.html#llvm::InlineSizeEstimatorAnalysisPrinterPass" title='llvm::InlineSizeEstimatorAnalysisPrinterPass' data-ref="llvm::InlineSizeEstimatorAnalysisPrinterPass" data-ref-filename="llvm..InlineSizeEstimatorAnalysisPrinterPass">InlineSizeEstimatorAnalysisPrinterPass</a>::<dfn class="decl def fn" id="_ZN4llvm38InlineSizeEstimatorAnalysisPrinterPass3runERNS_8FunctionERNS_15AnalysisManagerIS1_JEEE" title='llvm::InlineSizeEstimatorAnalysisPrinterPass::run' data-ref="_ZN4llvm38InlineSizeEstimatorAnalysisPrinterPass3runERNS_8FunctionERNS_15AnalysisManagerIS1_JEEE" data-ref-filename="_ZN4llvm38InlineSizeEstimatorAnalysisPrinterPass3runERNS_8FunctionERNS_15AnalysisManagerIS1_JEEE">run</dfn>(<a class="type" href="../../include/llvm/IR/Function.h.html#llvm::Function" title='llvm::Function' data-ref="llvm::Function" data-ref-filename="llvm..Function">Function</a> &amp;<dfn class="local col1 decl" id="21F" title='F' data-type='llvm::Function &amp;' data-ref="21F" data-ref-filename="21F">F</dfn>,</td></tr>
+<tr><th id="279">279</th><td>                                            <a class="typedef" href="../../include/llvm/IR/PassManager.h.html#llvm::FunctionAnalysisManager" title='llvm::FunctionAnalysisManager' data-type='AnalysisManager&lt;llvm::Function&gt;' data-ref="llvm::FunctionAnalysisManager" data-ref-filename="llvm..FunctionAnalysisManager">FunctionAnalysisManager</a> &amp;<dfn class="local col2 decl" id="22AM" title='AM' data-type='llvm::FunctionAnalysisManager &amp;' data-ref="22AM" data-ref-filename="22AM">AM</dfn>) {</td></tr>
+<tr><th id="280">280</th><td>  <a class="member field" href="../../include/llvm/Analysis/InlineSizeEstimatorAnalysis.h.html#llvm::InlineSizeEstimatorAnalysisPrinterPass::OS" title='llvm::InlineSizeEstimatorAnalysisPrinterPass::OS' data-ref="llvm::InlineSizeEstimatorAnalysisPrinterPass::OS" data-ref-filename="llvm..InlineSizeEstimatorAnalysisPrinterPass..OS">OS</a> <a class="ref fn" href="../../include/llvm/Support/raw_ostream.h.html#_ZN4llvm11raw_ostreamlsEPKc" title='llvm::raw_ostream::operator&lt;&lt;' data-ref="_ZN4llvm11raw_ostreamlsEPKc" data-ref-filename="_ZN4llvm11raw_ostreamlsEPKc">&lt;&lt;</a> <q>"[InlineSizeEstimatorAnalysis] size estimate for "</q> <a class="ref fn" href="../../include/llvm/Support/raw_ostream.h.html#_ZN4llvm11raw_ostreamlsENS_9StringRefE" title='llvm::raw_ostream::operator&lt;&lt;' data-ref="_ZN4llvm11raw_ostreamlsENS_9StringRefE" data-ref-filename="_ZN4llvm11raw_ostreamlsENS_9StringRefE">&lt;&lt;</a> <a class="local col1 ref" href="#21F" title='F' data-ref="21F" data-ref-filename="21F">F</a>.<a class="ref fn" href="../../include/llvm/IR/Value.h.html#_ZNK4llvm5Value7getNameEv" title='llvm::Value::getName' data-ref="_ZNK4llvm5Value7getNameEv" data-ref-filename="_ZNK4llvm5Value7getNameEv">getName</a>()</td></tr>
+<tr><th id="281">281</th><td>     <a class="ref fn" href="../../include/llvm/Support/raw_ostream.h.html#_ZN4llvm11raw_ostreamlsEPKc" title='llvm::raw_ostream::operator&lt;&lt;' data-ref="_ZN4llvm11raw_ostreamlsEPKc" data-ref-filename="_ZN4llvm11raw_ostreamlsEPKc">&lt;&lt;</a> <q>": "</q> <a class="ref fn" href="../../include/llvm/ADT/Optional.h.html#_ZN4llvmlsERNS_11raw_ostreamERKNS_8OptionalIT_EE" title='llvm::operator&lt;&lt;' data-ref="_ZN4llvmlsERNS_11raw_ostreamERKNS_8OptionalIT_EE" data-ref-filename="_ZN4llvmlsERNS_11raw_ostreamERKNS_8OptionalIT_EE">&lt;&lt;</a> <a class="local col2 ref" href="#22AM" title='AM' data-ref="22AM" data-ref-filename="22AM">AM</a>.<a class="ref fn" href="../../include/llvm/IR/PassManager.h.html#_ZN4llvm15AnalysisManager9getResultERT_DpT0_" title='llvm::AnalysisManager::getResult' data-ref="_ZN4llvm15AnalysisManager9getResultERT_DpT0_" data-ref-filename="_ZN4llvm15AnalysisManager9getResultERT_DpT0_">getResult</a>&lt;<a class="type" href="../../include/llvm/Analysis/InlineSizeEstimatorAnalysis.h.html#llvm::InlineSizeEstimatorAnalysis" title='llvm::InlineSizeEstimatorAnalysis' data-ref="llvm::InlineSizeEstimatorAnalysis" data-ref-filename="llvm..InlineSizeEstimatorAnalysis">InlineSizeEstimatorAnalysis</a>&gt;(<span class='refarg'><a class="local col1 ref" href="#21F" title='F' data-ref="21F" data-ref-filename="21F">F</a></span>) <a class="ref fn" href="../../include/llvm/Support/raw_ostream.h.html#_ZN4llvm11raw_ostreamlsEPKc" title='llvm::raw_ostream::operator&lt;&lt;' data-ref="_ZN4llvm11raw_ostreamlsEPKc" data-ref-filename="_ZN4llvm11raw_ostreamlsEPKc">&lt;&lt;</a> <q>"\n"</q>;</td></tr>
+<tr><th id="282">282</th><td>  <b>return</b> <a class="type" href="../../include/llvm/IR/PassManager.h.html#llvm::PreservedAnalyses" title='llvm::PreservedAnalyses' data-ref="llvm::PreservedAnalyses" data-ref-filename="llvm..PreservedAnalyses">PreservedAnalyses</a>::<a class="ref fn" href="../../include/llvm/IR/PassManager.h.html#_ZN4llvm17PreservedAnalyses3allEv" title='llvm::PreservedAnalyses::all' data-ref="_ZN4llvm17PreservedAnalyses3allEv" data-ref-filename="_ZN4llvm17PreservedAnalyses3allEv">all</a>();</td></tr>
+<tr><th id="283">283</th><td>}</td></tr>
+<tr><th id="284">284</th><td></td></tr>
+</table><hr/><p id='footer'>
+Generated on <em>2021-Jul-01</em> from project llvm revision <em>12</em>

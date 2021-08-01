@@ -1,0 +1,16 @@
+<dec f='llvm/compiler-rt/lib/xray/xray_fdr_controller.h' l='27' type='BufferQueue::Buffer &amp;'/>
+<use f='llvm/compiler-rt/lib/xray/xray_fdr_controller.h' l='47' u='m' c='__xray::FDRController::hasSpace'/>
+<use f='llvm/compiler-rt/lib/xray/xray_fdr_controller.h' l='47' u='m' c='__xray::FDRController::hasSpace'/>
+<use f='llvm/compiler-rt/lib/xray/xray_fdr_controller.h' l='48' u='m' c='__xray::FDRController::hasSpace'/>
+<use f='llvm/compiler-rt/lib/xray/xray_fdr_controller.h' l='48' u='m' c='__xray::FDRController::hasSpace'/>
+<use f='llvm/compiler-rt/lib/xray/xray_fdr_controller.h' l='56' u='a' c='__xray::FDRController::getNewBuffer'/>
+<use f='llvm/compiler-rt/lib/xray/xray_fdr_controller.h' l='66' u='m' c='__xray::FDRController::getNewBuffer'/>
+<use f='llvm/compiler-rt/lib/xray/xray_fdr_controller.h' l='125' u='m' c='__xray::FDRController::prepareBuffer'/>
+<use f='llvm/compiler-rt/lib/xray/xray_fdr_controller.h' l='138' u='a' c='__xray::FDRController::returnBuffer'/>
+<use f='llvm/compiler-rt/lib/xray/xray_fdr_controller.h' l='142' u='a' c='__xray::FDRController::returnBuffer'/>
+<use f='llvm/compiler-rt/lib/xray/xray_fdr_controller.h' l='154' u='m' c='__xray::FDRController::recordPreamble'/>
+<use f='llvm/compiler-rt/lib/xray/xray_fdr_controller.h' l='171' u='m' c='__xray::FDRController::recordPreamble'/>
+<use f='llvm/compiler-rt/lib/xray/xray_fdr_controller.h' l='191' u='m' c='__xray::FDRController::rewindRecords'/>
+<use f='llvm/compiler-rt/lib/xray/xray_fdr_controller.h' l='210' u='m' c='__xray::FDRController::rewindRecords'/>
+<use f='llvm/compiler-rt/lib/xray/xray_fdr_controller.h' l='217' u='m' c='__xray::FDRController::rewindRecords'/>
+<use f='llvm/compiler-rt/lib/xray/xray_fdr_controller.h' l='239' u='w' c='__xray::FDRController::FDRController{Version}'/>

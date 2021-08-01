@@ -1,0 +1,10 @@
+<dec f='llvm/llvm/include/llvm/XRay/Graph.h' l='318' type='llvm::xray::Graph::EdgeView::GraphT &amp;'/>
+<use f='llvm/llvm/include/llvm/XRay/Graph.h' l='321' u='c' c='_ZN4llvm4xray5Graph8EdgeView5beginEv'/>
+<use f='llvm/llvm/include/llvm/XRay/Graph.h' l='322' u='c' c='_ZN4llvm4xray5Graph8EdgeView3endEv'/>
+<use f='llvm/llvm/include/llvm/XRay/Graph.h' l='323' u='c' c='_ZNK4llvm4xray5Graph8EdgeView6cbeginEv'/>
+<use f='llvm/llvm/include/llvm/XRay/Graph.h' l='324' u='c' c='_ZNK4llvm4xray5Graph8EdgeView4cendEv'/>
+<use f='llvm/llvm/include/llvm/XRay/Graph.h' l='325' u='c' c='_ZNK4llvm4xray5Graph8EdgeView5beginEv'/>
+<use f='llvm/llvm/include/llvm/XRay/Graph.h' l='326' u='c' c='_ZNK4llvm4xray5Graph8EdgeView3endEv'/>
+<use f='llvm/llvm/include/llvm/XRay/Graph.h' l='327' u='c' c='_ZNK4llvm4xray5Graph8EdgeView4sizeEv'/>
+<use f='llvm/llvm/include/llvm/XRay/Graph.h' l='328' u='c' c='_ZNK4llvm4xray5Graph8EdgeView5emptyEv'/>
+<use f='llvm/llvm/include/llvm/XRay/Graph.h' l='329' u='w' c='_ZN4llvm4xray5Graph8EdgeViewC1ERNSt11conditionalIXTL0__EKNS0_5GraphIT_T0_T1_EES9_E4typeE'/>

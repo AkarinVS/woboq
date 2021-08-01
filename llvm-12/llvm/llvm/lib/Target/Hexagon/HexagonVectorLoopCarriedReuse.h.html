@@ -1,0 +1,156 @@
+<!doctype html>
+<html>
+<head>
+<meta name="viewport" content="width=device-width, initial-scale=1.0"><title>HexagonVectorLoopCarriedReuse.h source code [llvm/llvm/lib/Target/Hexagon/HexagonVectorLoopCarriedReuse.h] - Woboq Code Browser</title>
+<meta name="woboq:interestingDefinitions" content="llvm::HexagonVectorLoopCarriedReusePass "/>
+<link rel="stylesheet" href="../../../../.././data/qtcreator.css" title="QtCreator"/>
+<link rel="alternate stylesheet" href="../../../../.././data/kdevelop.css" title="KDevelop"/>
+<script type="text/javascript" src="../../../../.././data/jquery/jquery.min.js"></script>
+<script type="text/javascript" src="../../../../.././data/jquery/jquery-ui.min.js"></script>
+<script>var file = 'llvm/llvm/lib/Target/Hexagon/HexagonVectorLoopCarriedReuse.h'; var root_path = '../../../../..'; var data_path = '../../../../.././data'; var ecma_script_api_version = 2;</script>
+<script src='../../../../.././data/codebrowser.js'></script>
+</head>
+<body><div id='header'><h1 id='breadcrumb'><span>Browse the source code of </span><a href='../../../..'>llvm</a>/<a href='../../..'>llvm</a>/<a href='../..'>lib</a>/<a href='..'>Target</a>/<a href='./'>Hexagon</a>/<a href='HexagonVectorLoopCarriedReuse.h.html'>HexagonVectorLoopCarriedReuse.h</a></h1></div>
+<hr/><div id='content'><table class="code">
+<tr><th id="1">1</th><td><i>//===- HexagonVectorLoopCarriedReuse.h ------------------------------------===//</i></td></tr>
+<tr><th id="2">2</th><td><i>//</i></td></tr>
+<tr><th id="3">3</th><td><i>// Part of the LLVM Project, under the Apache License v2.0 with LLVM Exceptions.</i></td></tr>
+<tr><th id="4">4</th><td><i>// See <a href="https://llvm.org/LICENSE.txt">https://llvm.org/LICENSE.txt</a> for license information.</i></td></tr>
+<tr><th id="5">5</th><td><i>// SPDX-License-Identifier: Apache-2.0 WITH LLVM-exception</i></td></tr>
+<tr><th id="6">6</th><td><i>//</i></td></tr>
+<tr><th id="7">7</th><td><i>//===----------------------------------------------------------------------===//</i></td></tr>
+<tr><th id="8">8</th><td><i>//</i></td></tr>
+<tr><th id="9">9</th><td><i>// This pass removes the computation of provably redundant expressions that have</i></td></tr>
+<tr><th id="10">10</th><td><i>// been computed earlier in a previous iteration. It relies on the use of PHIs</i></td></tr>
+<tr><th id="11">11</th><td><i>// to identify loop carried dependences. This is scalar replacement for vector</i></td></tr>
+<tr><th id="12">12</th><td><i>// types.</i></td></tr>
+<tr><th id="13">13</th><td><i>//</i></td></tr>
+<tr><th id="14">14</th><td><i>//-----------------------------------------------------------------------------</i></td></tr>
+<tr><th id="15">15</th><td><i>// Motivation: Consider the case where we have the following loop structure.</i></td></tr>
+<tr><th id="16">16</th><td><i>//</i></td></tr>
+<tr><th id="17">17</th><td><i>// Loop:</i></td></tr>
+<tr><th id="18">18</th><td><i>//  t0 = a[i];</i></td></tr>
+<tr><th id="19">19</th><td><i>//  t1 = f(t0);</i></td></tr>
+<tr><th id="20">20</th><td><i>//  t2 = g(t1);</i></td></tr>
+<tr><th id="21">21</th><td><i>//  ...</i></td></tr>
+<tr><th id="22">22</th><td><i>//  t3 = a[i+1];</i></td></tr>
+<tr><th id="23">23</th><td><i>//  t4 = f(t3);</i></td></tr>
+<tr><th id="24">24</th><td><i>//  t5 = g(t4);</i></td></tr>
+<tr><th id="25">25</th><td><i>//  t6 = op(t2, t5)</i></td></tr>
+<tr><th id="26">26</th><td><i>//  cond_branch &lt;Loop&gt;</i></td></tr>
+<tr><th id="27">27</th><td><i>//</i></td></tr>
+<tr><th id="28">28</th><td><i>// This can be converted to</i></td></tr>
+<tr><th id="29">29</th><td><i>//  t00 = a[0];</i></td></tr>
+<tr><th id="30">30</th><td><i>//  t10 = f(t00);</i></td></tr>
+<tr><th id="31">31</th><td><i>//  t20 = g(t10);</i></td></tr>
+<tr><th id="32">32</th><td><i>// Loop:</i></td></tr>
+<tr><th id="33">33</th><td><i>//  t2 = t20;</i></td></tr>
+<tr><th id="34">34</th><td><i>//  t3 = a[i+1];</i></td></tr>
+<tr><th id="35">35</th><td><i>//  t4 = f(t3);</i></td></tr>
+<tr><th id="36">36</th><td><i>//  t5 = g(t4);</i></td></tr>
+<tr><th id="37">37</th><td><i>//  t6 = op(t2, t5)</i></td></tr>
+<tr><th id="38">38</th><td><i>//  t20 = t5</i></td></tr>
+<tr><th id="39">39</th><td><i>//  cond_branch &lt;Loop&gt;</i></td></tr>
+<tr><th id="40">40</th><td><i>//</i></td></tr>
+<tr><th id="41">41</th><td><i>// SROA does a good job of reusing a[i+1] as a[i] in the next iteration.</i></td></tr>
+<tr><th id="42">42</th><td><i>// Such a loop comes to this pass in the following form.</i></td></tr>
+<tr><th id="43">43</th><td><i>//</i></td></tr>
+<tr><th id="44">44</th><td><i>// LoopPreheader:</i></td></tr>
+<tr><th id="45">45</th><td><i>//  X0 = a[0];</i></td></tr>
+<tr><th id="46">46</th><td><i>// Loop:</i></td></tr>
+<tr><th id="47">47</th><td><i>//  X2 = PHI&lt;(X0, LoopPreheader), (X1, Loop)&gt;</i></td></tr>
+<tr><th id="48">48</th><td><i>//  t1 = f(X2)   &lt;-- I1</i></td></tr>
+<tr><th id="49">49</th><td><i>//  t2 = g(t1)</i></td></tr>
+<tr><th id="50">50</th><td><i>//  ...</i></td></tr>
+<tr><th id="51">51</th><td><i>//  X1 = a[i+1]</i></td></tr>
+<tr><th id="52">52</th><td><i>//  t4 = f(X1)   &lt;-- I2</i></td></tr>
+<tr><th id="53">53</th><td><i>//  t5 = g(t4)</i></td></tr>
+<tr><th id="54">54</th><td><i>//  t6 = op(t2, t5)</i></td></tr>
+<tr><th id="55">55</th><td><i>//  cond_branch &lt;Loop&gt;</i></td></tr>
+<tr><th id="56">56</th><td><i>//</i></td></tr>
+<tr><th id="57">57</th><td><i>// In this pass, we look for PHIs such as X2 whose incoming values come only</i></td></tr>
+<tr><th id="58">58</th><td><i>// from the Loop Preheader and over the backedge and additionaly, both these</i></td></tr>
+<tr><th id="59">59</th><td><i>// values are the results of the same operation in terms of opcode. We call such</i></td></tr>
+<tr><th id="60">60</th><td><i>// a PHI node a dependence chain or DepChain. In this case, the dependence of X2</i></td></tr>
+<tr><th id="61">61</th><td><i>// over X1 is carried over only one iteration and so the DepChain is only one</i></td></tr>
+<tr><th id="62">62</th><td><i>// PHI node long.</i></td></tr>
+<tr><th id="63">63</th><td><i>//</i></td></tr>
+<tr><th id="64">64</th><td><i>// Then, we traverse the uses of the PHI (X2) and the uses of the value of the</i></td></tr>
+<tr><th id="65">65</th><td><i>// PHI coming  over the backedge (X1). We stop at the first pair of such users</i></td></tr>
+<tr><th id="66">66</th><td><i>// I1 (of X2) and I2 (of X1) that meet the following conditions.</i></td></tr>
+<tr><th id="67">67</th><td><i>// 1. I1 and I2 are the same operation, but with different operands.</i></td></tr>
+<tr><th id="68">68</th><td><i>// 2. X2 and X1 are used at the same operand number in the two instructions.</i></td></tr>
+<tr><th id="69">69</th><td><i>// 3. All other operands Op1 of I1 and Op2 of I2 are also such that there is a</i></td></tr>
+<tr><th id="70">70</th><td><i>//    a DepChain from Op1 to Op2 of the same length as that between X2 and X1.</i></td></tr>
+<tr><th id="71">71</th><td><i>//</i></td></tr>
+<tr><th id="72">72</th><td><i>// We then make the following transformation</i></td></tr>
+<tr><th id="73">73</th><td><i>// LoopPreheader:</i></td></tr>
+<tr><th id="74">74</th><td><i>//  X0 = a[0];</i></td></tr>
+<tr><th id="75">75</th><td><i>//  Y0 = f(X0);</i></td></tr>
+<tr><th id="76">76</th><td><i>// Loop:</i></td></tr>
+<tr><th id="77">77</th><td><i>//  X2 = PHI&lt;(X0, LoopPreheader), (X1, Loop)&gt;</i></td></tr>
+<tr><th id="78">78</th><td><i>//  Y2 = PHI&lt;(Y0, LoopPreheader), (t4, Loop)&gt;</i></td></tr>
+<tr><th id="79">79</th><td><i>//  t1 = f(X2)   &lt;-- Will be removed by DCE.</i></td></tr>
+<tr><th id="80">80</th><td><i>//  t2 = g(Y2)</i></td></tr>
+<tr><th id="81">81</th><td><i>//  ...</i></td></tr>
+<tr><th id="82">82</th><td><i>//  X1 = a[i+1]</i></td></tr>
+<tr><th id="83">83</th><td><i>//  t4 = f(X1)</i></td></tr>
+<tr><th id="84">84</th><td><i>//  t5 = g(t4)</i></td></tr>
+<tr><th id="85">85</th><td><i>//  t6 = op(t2, t5)</i></td></tr>
+<tr><th id="86">86</th><td><i>//  cond_branch &lt;Loop&gt;</i></td></tr>
+<tr><th id="87">87</th><td><i>//</i></td></tr>
+<tr><th id="88">88</th><td><i>// We proceed until we cannot find any more such instructions I1 and I2.</i></td></tr>
+<tr><th id="89">89</th><td><i>//</i></td></tr>
+<tr><th id="90">90</th><td><i>// --- DepChains &amp; Loop carried dependences ---</i></td></tr>
+<tr><th id="91">91</th><td><i>// Consider a single basic block loop such as</i></td></tr>
+<tr><th id="92">92</th><td><i>//</i></td></tr>
+<tr><th id="93">93</th><td><i>// LoopPreheader:</i></td></tr>
+<tr><th id="94">94</th><td><i>//  X0 = ...</i></td></tr>
+<tr><th id="95">95</th><td><i>//  Y0 = ...</i></td></tr>
+<tr><th id="96">96</th><td><i>// Loop:</i></td></tr>
+<tr><th id="97">97</th><td><i>//  X2 = PHI&lt;(X0, LoopPreheader), (X1, Loop)&gt;</i></td></tr>
+<tr><th id="98">98</th><td><i>//  Y2 = PHI&lt;(Y0, LoopPreheader), (X2, Loop)&gt;</i></td></tr>
+<tr><th id="99">99</th><td><i>//  ...</i></td></tr>
+<tr><th id="100">100</th><td><i>//  X1 = ...</i></td></tr>
+<tr><th id="101">101</th><td><i>//  ...</i></td></tr>
+<tr><th id="102">102</th><td><i>//  cond_branch &lt;Loop&gt;</i></td></tr>
+<tr><th id="103">103</th><td><i>//</i></td></tr>
+<tr><th id="104">104</th><td><i>// Then there is a dependence between X2 and X1 that goes back one iteration,</i></td></tr>
+<tr><th id="105">105</th><td><i>// i.e. X1 is used as X2 in the very next iteration. We represent this as a</i></td></tr>
+<tr><th id="106">106</th><td><i>// DepChain from X2 to X1 (X2-&gt;X1).</i></td></tr>
+<tr><th id="107">107</th><td><i>// Similarly, there is a dependence between Y2 and X1 that goes back two</i></td></tr>
+<tr><th id="108">108</th><td><i>// iterations. X1 is used as Y2 two iterations after it is computed. This is</i></td></tr>
+<tr><th id="109">109</th><td><i>// represented by a DepChain as (Y2-&gt;X2-&gt;X1).</i></td></tr>
+<tr><th id="110">110</th><td><i>//</i></td></tr>
+<tr><th id="111">111</th><td><i>// A DepChain has the following properties.</i></td></tr>
+<tr><th id="112">112</th><td><i>// 1. Num of edges in DepChain = Number of Instructions in DepChain = Number of</i></td></tr>
+<tr><th id="113">113</th><td><i>//    iterations of carried dependence + 1.</i></td></tr>
+<tr><th id="114">114</th><td><i>// 2. All instructions in the DepChain except the last are PHIs.</i></td></tr>
+<tr><th id="115">115</th><td><i>//</i></td></tr>
+<tr><th id="116">116</th><td><i>//===----------------------------------------------------------------------===//</i></td></tr>
+<tr><th id="117">117</th><td></td></tr>
+<tr><th id="118">118</th><td><u>#<span data-ppcond="118">ifndef</span> <span class="macro" data-ref="_M/LLVM_LIB_TARGET_HEXAGON_HEXAGONVLCR_H">LLVM_LIB_TARGET_HEXAGON_HEXAGONVLCR_H</span></u></td></tr>
+<tr><th id="119">119</th><td><u>#define <dfn class="macro" id="_M/LLVM_LIB_TARGET_HEXAGON_HEXAGONVLCR_H" data-ref="_M/LLVM_LIB_TARGET_HEXAGON_HEXAGONVLCR_H">LLVM_LIB_TARGET_HEXAGON_HEXAGONVLCR_H</dfn></u></td></tr>
+<tr><th id="120">120</th><td></td></tr>
+<tr><th id="121">121</th><td><u>#include <a href="../../../include/llvm/Transforms/Scalar/LoopPassManager.h.html">"llvm/Transforms/Scalar/LoopPassManager.h"</a></u></td></tr>
+<tr><th id="122">122</th><td></td></tr>
+<tr><th id="123">123</th><td><b>namespace</b> <span class="namespace">llvm</span> {</td></tr>
+<tr><th id="124">124</th><td></td></tr>
+<tr><th id="125">125</th><td><b>class</b> <a class="type" href="../../../include/llvm/Analysis/LoopInfo.h.html#llvm::Loop" title='llvm::Loop' data-ref="llvm::Loop" data-ref-filename="llvm..Loop" id="llvm::Loop">Loop</a>;</td></tr>
+<tr><th id="126">126</th><td></td></tr>
+<tr><th id="127">127</th><td><i class="doc">/// Hexagon Vector Loop Carried Reuse Pass</i></td></tr>
+<tr><th id="128">128</th><td><b>struct</b> <dfn class="type def" id="llvm::HexagonVectorLoopCarriedReusePass" title='llvm::HexagonVectorLoopCarriedReusePass' data-ref="llvm::HexagonVectorLoopCarriedReusePass" data-ref-filename="llvm..HexagonVectorLoopCarriedReusePass">HexagonVectorLoopCarriedReusePass</dfn></td></tr>
+<tr><th id="129">129</th><td>    : <b>public</b> <a class="type" href="../../../include/llvm/IR/PassManager.h.html#llvm::PassInfoMixin" title='llvm::PassInfoMixin' data-ref="llvm::PassInfoMixin" data-ref-filename="llvm..PassInfoMixin">PassInfoMixin</a>&lt;<a class="type" href="#llvm::HexagonVectorLoopCarriedReusePass" title='llvm::HexagonVectorLoopCarriedReusePass' data-ref="llvm::HexagonVectorLoopCarriedReusePass" data-ref-filename="llvm..HexagonVectorLoopCarriedReusePass">HexagonVectorLoopCarriedReusePass</a>&gt; {</td></tr>
+<tr><th id="130">130</th><td>  <dfn class="decl def fn" id="_ZN4llvm33HexagonVectorLoopCarriedReusePassC1Ev" title='llvm::HexagonVectorLoopCarriedReusePass::HexagonVectorLoopCarriedReusePass' data-ref="_ZN4llvm33HexagonVectorLoopCarriedReusePassC1Ev" data-ref-filename="_ZN4llvm33HexagonVectorLoopCarriedReusePassC1Ev">HexagonVectorLoopCarriedReusePass</dfn>() {}</td></tr>
+<tr><th id="131">131</th><td></td></tr>
+<tr><th id="132">132</th><td>  <i class="doc">/// Run pass over the Loop.</i></td></tr>
+<tr><th id="133">133</th><td>  <a class="type" href="../../../include/llvm/IR/PassManager.h.html#llvm::PreservedAnalyses" title='llvm::PreservedAnalyses' data-ref="llvm::PreservedAnalyses" data-ref-filename="llvm..PreservedAnalyses">PreservedAnalyses</a> <dfn class="decl fn" id="_ZN4llvm33HexagonVectorLoopCarriedReusePass3runERNS_4LoopERNS_15AnalysisManagerIS1_JRNS_27LoopStandardAnalysisResultsEEEES5_RNS_10LPMUpdaterE" title='llvm::HexagonVectorLoopCarriedReusePass::run' data-ref="_ZN4llvm33HexagonVectorLoopCarriedReusePass3runERNS_4LoopERNS_15AnalysisManagerIS1_JRNS_27LoopStandardAnalysisResultsEEEES5_RNS_10LPMUpdaterE" data-ref-filename="_ZN4llvm33HexagonVectorLoopCarriedReusePass3runERNS_4LoopERNS_15AnalysisManagerIS1_JRNS_27LoopStandardAnalysisResultsEEEES5_RNS_10LPMUpdaterE">run</dfn>(<a class="type" href="../../../include/llvm/Analysis/LoopInfo.h.html#llvm::Loop" title='llvm::Loop' data-ref="llvm::Loop" data-ref-filename="llvm..Loop">Loop</a> &amp;<dfn class="local col6 decl" id="96L" title='L' data-type='llvm::Loop &amp;' data-ref="96L" data-ref-filename="96L">L</dfn>, <a class="typedef" href="../../../include/llvm/Analysis/LoopAnalysisManager.h.html#llvm::LoopAnalysisManager" title='llvm::LoopAnalysisManager' data-type='AnalysisManager&lt;llvm::Loop, llvm::LoopStandardAnalysisResults &amp;&gt;' data-ref="llvm::LoopAnalysisManager" data-ref-filename="llvm..LoopAnalysisManager">LoopAnalysisManager</a> &amp;<dfn class="local col7 decl" id="97LAM" title='LAM' data-type='llvm::LoopAnalysisManager &amp;' data-ref="97LAM" data-ref-filename="97LAM">LAM</dfn>,</td></tr>
+<tr><th id="134">134</th><td>                        <a class="type" href="../../../include/llvm/Analysis/LoopAnalysisManager.h.html#llvm::LoopStandardAnalysisResults" title='llvm::LoopStandardAnalysisResults' data-ref="llvm::LoopStandardAnalysisResults" data-ref-filename="llvm..LoopStandardAnalysisResults">LoopStandardAnalysisResults</a> &amp;<dfn class="local col8 decl" id="98AR" title='AR' data-type='llvm::LoopStandardAnalysisResults &amp;' data-ref="98AR" data-ref-filename="98AR">AR</dfn>, <a class="type" href="../../../include/llvm/Transforms/Scalar/LoopPassManager.h.html#llvm::LPMUpdater" title='llvm::LPMUpdater' data-ref="llvm::LPMUpdater" data-ref-filename="llvm..LPMUpdater">LPMUpdater</a> &amp;<dfn class="local col9 decl" id="99U" title='U' data-type='llvm::LPMUpdater &amp;' data-ref="99U" data-ref-filename="99U">U</dfn>);</td></tr>
+<tr><th id="135">135</th><td>};</td></tr>
+<tr><th id="136">136</th><td></td></tr>
+<tr><th id="137">137</th><td>} <i>// end namespace llvm</i></td></tr>
+<tr><th id="138">138</th><td></td></tr>
+<tr><th id="139">139</th><td><u>#<span data-ppcond="118">endif</span> // LLVM_LIB_TARGET_HEXAGON_HEXAGONVLCR_H</u></td></tr>
+<tr><th id="140">140</th><td></td></tr>
+</table><hr/><p id='footer'>
+Generated while processing <a href='HexagonTargetMachine.cpp.html'>llvm/llvm/lib/Target/Hexagon/HexagonTargetMachine.cpp</a><br/>Generated on <em>2021-Jul-01</em> from project llvm revision <em>12</em>
