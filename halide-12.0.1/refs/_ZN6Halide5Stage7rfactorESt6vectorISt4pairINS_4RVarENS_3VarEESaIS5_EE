@@ -1,0 +1,148 @@
+<dec f='halide/build/include/Halide.h' l='16069' type='Halide::Func Halide::Stage::rfactor(std::vector&lt;std::pair&lt;RVar, Var&gt; &gt; preserved)'/>
+<doc f='halide/build/include/Halide.h' l='15999'>/** Calling rfactor() on an associative update definition a Func will split
+     * the update into an intermediate which computes the partial results and
+     * replaces the current update definition with a new definition which merges
+     * the partial results. If called on a init/pure definition, this will
+     * throw an error. rfactor() will automatically infer the associative reduction
+     * operator and identity of the operator. If it can&apos;t prove the operation
+     * is associative or if it cannot find an identity for that operator, this
+     * will throw an error. In addition, commutativity of the operator is required
+     * if rfactor() is called on the inner dimension but excluding the outer
+     * dimensions.
+     *
+     * rfactor() takes as input &apos;preserved&apos;, which is a list of &lt;RVar, Var&gt; pairs.
+     * The rvars not listed in &apos;preserved&apos; are removed from the original Func and
+     * are lifted to the intermediate Func. The remaining rvars (the ones in
+     * &apos;preserved&apos;) are made pure in the intermediate Func. The intermediate Func&apos;s
+     * update definition inherits all scheduling directives (e.g. split,fuse, etc.)
+     * applied to the original Func&apos;s update definition. The loop order of the
+     * intermediate Func&apos;s update definition is the same as the original, although
+     * the RVars in &apos;preserved&apos; are replaced by the new pure Vars. The loop order of the
+     * intermediate Func&apos;s init definition from innermost to outermost is the args&apos;
+     * order of the original Func&apos;s init definition followed by the new pure Vars.
+     *
+     * The intermediate Func also inherits storage order from the original Func
+     * with the new pure Vars added to the outermost.
+     *
+     * For example, f.update(0).rfactor({{r.y, u}}) would rewrite a pipeline like this:
+     \code
+     f(x, y) = 0;
+     f(x, y) += g(r.x, r.y);
+     \endcode
+     * into a pipeline like this:
+     \code
+     f_intm(x, y, u) = 0;
+     f_intm(x, y, u) += g(r.x, u);
+
+     f(x, y) = 0;
+     f(x, y) += f_intm(x, y, r.y);
+     \endcode
+     *
+     * This has a variety of uses. You can use it to split computation of an associative reduction:
+     \code
+     f(x, y) = 10;
+     RDom r(0, 96);
+     f(x, y) = max(f(x, y), g(x, y, r.x));
+     f.update(0).split(r.x, rxo, rxi, 8).reorder(y, x).parallel(x);
+     f.update(0).rfactor({{rxo, u}}).compute_root().parallel(u).update(0).parallel(u);
+     \endcode
+     *
+     *, which is equivalent to:
+     \code
+     parallel for u = 0 to 11:
+       for y:
+         for x:
+           f_intm(x, y, u) = -inf
+     parallel for x:
+       for y:
+         parallel for u = 0 to 11:
+           for rxi = 0 to 7:
+             f_intm(x, y, u) = max(f_intm(x, y, u), g(8*u + rxi))
+     for y:
+       for x:
+         f(x, y) = 10
+     parallel for x:
+       for y:
+         for rxo = 0 to 11:
+           f(x, y) = max(f(x, y), f_intm(x, y, rxo))
+     \endcode
+     *
+     */
+    // @{</doc>
+<use f='halide/python_bindings/src/PyStage.cpp' l='14' u='a' c='_ZN6Halide14PythonBindings12define_stageERN8pybind117module_E'/>
+<dec f='halide/src/Func.h' l='189' type='Halide::Func Halide::Stage::rfactor(std::vector&lt;std::pair&lt;RVar, Var&gt; &gt; preserved)'/>
+<doc f='halide/src/Func.h' l='119'>/** Calling rfactor() on an associative update definition a Func will split
+     * the update into an intermediate which computes the partial results and
+     * replaces the current update definition with a new definition which merges
+     * the partial results. If called on a init/pure definition, this will
+     * throw an error. rfactor() will automatically infer the associative reduction
+     * operator and identity of the operator. If it can&apos;t prove the operation
+     * is associative or if it cannot find an identity for that operator, this
+     * will throw an error. In addition, commutativity of the operator is required
+     * if rfactor() is called on the inner dimension but excluding the outer
+     * dimensions.
+     *
+     * rfactor() takes as input &apos;preserved&apos;, which is a list of &lt;RVar, Var&gt; pairs.
+     * The rvars not listed in &apos;preserved&apos; are removed from the original Func and
+     * are lifted to the intermediate Func. The remaining rvars (the ones in
+     * &apos;preserved&apos;) are made pure in the intermediate Func. The intermediate Func&apos;s
+     * update definition inherits all scheduling directives (e.g. split,fuse, etc.)
+     * applied to the original Func&apos;s update definition. The loop order of the
+     * intermediate Func&apos;s update definition is the same as the original, although
+     * the RVars in &apos;preserved&apos; are replaced by the new pure Vars. The loop order of the
+     * intermediate Func&apos;s init definition from innermost to outermost is the args&apos;
+     * order of the original Func&apos;s init definition followed by the new pure Vars.
+     *
+     * The intermediate Func also inherits storage order from the original Func
+     * with the new pure Vars added to the outermost.
+     *
+     * For example, f.update(0).rfactor({{r.y, u}}) would rewrite a pipeline like this:
+     \code
+     f(x, y) = 0;
+     f(x, y) += g(r.x, r.y);
+     \endcode
+     * into a pipeline like this:
+     \code
+     f_intm(x, y, u) = 0;
+     f_intm(x, y, u) += g(r.x, u);
+
+     f(x, y) = 0;
+     f(x, y) += f_intm(x, y, r.y);
+     \endcode
+     *
+     * This has a variety of uses. You can use it to split computation of an associative reduction:
+     \code
+     f(x, y) = 10;
+     RDom r(0, 96);
+     f(x, y) = max(f(x, y), g(x, y, r.x));
+     f.update(0).split(r.x, rxo, rxi, 8).reorder(y, x).parallel(x);
+     f.update(0).rfactor({{rxo, u}}).compute_root().parallel(u).update(0).parallel(u);
+     \endcode
+     *
+     *, which is equivalent to:
+     \code
+     parallel for u = 0 to 11:
+       for y:
+         for x:
+           f_intm(x, y, u) = -inf
+     parallel for x:
+       for y:
+         parallel for u = 0 to 11:
+           for rxi = 0 to 7:
+             f_intm(x, y, u) = max(f_intm(x, y, u), g(8*u + rxi))
+     for y:
+       for x:
+         f(x, y) = 10
+     parallel for x:
+       for y:
+         for rxo = 0 to 11:
+           f(x, y) = max(f(x, y), f_intm(x, y, rxo))
+     \endcode
+     *
+     */
+    // @{</doc>
+<use f='halide/src/Func.cpp' l='667' u='c' c='_ZN6Halide5Stage7rfactorERKNS_4RVarERKNS_3VarE'/>
+<def f='halide/src/Func.cpp' l='670' ll='967' type='Halide::Func Halide::Stage::rfactor(vector&lt;pair&lt;Halide::RVar, Halide::Var&gt; &gt; preserved)'/>
+<use f='halide/src/autoschedulers/li2018/GradientAutoscheduler.cpp' l='682' u='c' c='_ZN6Halide8Internal13Autoscheduler12_GLOBAL__N_114apply_scheduleERKNS_13MachineParamsERKNS_6TargetENS_4FuncEiRKSt6vectorIiSaIiEEbRNSt7__cxx1119basic_o10833929'/>
+<use f='halide/tutorial/lesson_18_parallel_associative_reductions.cpp' l='136' u='c' c='main'/>
+<use f='halide/tutorial/lesson_18_parallel_associative_reductions.cpp' l='284' u='c' c='main'/>

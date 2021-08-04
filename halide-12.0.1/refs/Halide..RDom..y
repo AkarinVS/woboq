@@ -1,0 +1,52 @@
+<dec f='halide/build/include/Halide.h' l='15675' type='Halide::RVar'/>
+<offset>448</offset>
+<use f='halide/python_bindings/src/PyRDom.cpp' l='50' u='a' c='_ZN6Halide14PythonBindings11define_rdomERN8pybind117module_E'/>
+<dec f='halide/src/RDom.h' l='337' type='Halide::RVar'/>
+<offset>448</offset>
+<use f='halide/src/Generator.cpp' l='2324' u='a' c='_ZN6Halide8Internal14generator_testEv'/>
+<use f='halide/src/Generator.cpp' l='2324' u='a' c='_ZN6Halide8Internal14generator_testEv'/>
+<use f='halide/src/Generator.cpp' l='2325' u='r' c='_ZN6Halide8Internal14generator_testEv'/>
+<use f='halide/src/RDom.cpp' l='79' u='a' c='_ZN6Halide4RDom9init_varsERKNSt7__cxx1112basic_stringIcSt11char_traitsIcESaIcEEE'/>
+<use f='halide/src/RDom.cpp' l='205' u='r' c='_ZNK6Halide4RDomixEi'/>
+<use f='halide/src/autoschedulers/adams2019/cost_model_generator.cpp' l='210' u='a' c='_ZN9CostModel8generateEv'/>
+<use f='halide/src/autoschedulers/adams2019/cost_model_generator.cpp' l='211' u='a' c='_ZN9CostModel8generateEv'/>
+<use f='halide/src/autoschedulers/adams2019/cost_model_generator.cpp' l='424' u='a' c='_ZN9CostModel8generateEv'/>
+<use f='halide/src/autoschedulers/adams2019/demo_generator.cpp' l='22' u='a' c='_ZN12_GLOBAL__N_18ConvRelu8generateEv'/>
+<use f='halide/src/autoschedulers/adams2019/demo_generator.cpp' l='22' u='m' c='_ZN12_GLOBAL__N_18ConvRelu8generateEv'/>
+<use f='halide/src/autoschedulers/adams2019/included_schedule_file_generator.cpp' l='30' u='a' c='_ZN12_GLOBAL__N_120IncludedScheduleFile8generateEv'/>
+<use f='halide/src/autoschedulers/adams2019/included_schedule_file_generator.cpp' l='30' u='m' c='_ZN12_GLOBAL__N_120IncludedScheduleFile8generateEv'/>
+<use f='halide/src/autoschedulers/adams2019/test.cpp' l='519' u='m' c='main'/>
+<use f='halide/src/autoschedulers/adams2019/test.cpp' l='521' u='m' c='main'/>
+<use f='halide/src/autoschedulers/adams2019/test.cpp' l='521' u='m' c='main'/>
+<use f='halide/src/autoschedulers/adams2019/test.cpp' l='550' u='m' c='main'/>
+<use f='halide/src/autoschedulers/adams2019/test.cpp' l='551' u='m' c='main'/>
+<use f='halide/src/autoschedulers/adams2019/test.cpp' l='864' u='a' c='main'/>
+<use f='halide/src/autoschedulers/li2018/demo_generator.cpp' l='22' u='a' c='_ZN12_GLOBAL__N_18ConvRelu8generateEv'/>
+<use f='halide/src/autoschedulers/li2018/demo_generator.cpp' l='22' u='m' c='_ZN12_GLOBAL__N_18ConvRelu8generateEv'/>
+<use f='halide/src/autoschedulers/li2018/test.cpp' l='75' u='m' c='main'/>
+<use f='halide/src/autoschedulers/li2018/test.cpp' l='108' u='a' c='main'/>
+<use f='halide/src/autoschedulers/li2018/test.cpp' l='124' u='a' c='main'/>
+<use f='halide/test/generator/rdom_input_generator.cpp' l='19' u='a' c='_ZN12_GLOBAL__N_19RDomInput8generateEv'/>
+<use f='halide/test/generator/rdom_input_generator.cpp' l='19' u='a' c='_ZN12_GLOBAL__N_19RDomInput8generateEv'/>
+<use f='halide/tutorial/lesson_09_update_definitions.cpp' l='206' u='r' c='main'/>
+<use f='halide/tutorial/lesson_09_update_definitions.cpp' l='655' u='m' c='main'/>
+<use f='halide/tutorial/lesson_09_update_definitions.cpp' l='769' u='m' c='main'/>
+<use f='halide/tutorial/lesson_09_update_definitions.cpp' l='770' u='m' c='main'/>
+<use f='halide/tutorial/lesson_17_predicated_rdom.cpp' l='58' u='m' c='main'/>
+<use f='halide/tutorial/lesson_17_predicated_rdom.cpp' l='58' u='m' c='main'/>
+<use f='halide/tutorial/lesson_17_predicated_rdom.cpp' l='61' u='a' c='main'/>
+<use f='halide/tutorial/lesson_17_predicated_rdom.cpp' l='109' u='m' c='main'/>
+<use f='halide/tutorial/lesson_17_predicated_rdom.cpp' l='110' u='m' c='main'/>
+<use f='halide/tutorial/lesson_17_predicated_rdom.cpp' l='111' u='m' c='main'/>
+<use f='halide/tutorial/lesson_17_predicated_rdom.cpp' l='117' u='a' c='main'/>
+<use f='halide/tutorial/lesson_17_predicated_rdom.cpp' l='164' u='a' c='main'/>
+<use f='halide/tutorial/lesson_17_predicated_rdom.cpp' l='165' u='a' c='main'/>
+<use f='halide/tutorial/lesson_17_predicated_rdom.cpp' l='166' u='a' c='main'/>
+<use f='halide/tutorial/lesson_17_predicated_rdom.cpp' l='172' u='a' c='main'/>
+<use f='halide/tutorial/lesson_17_predicated_rdom.cpp' l='173' u='a' c='main'/>
+<use f='halide/tutorial/lesson_18_parallel_associative_reductions.cpp' l='46' u='r' c='main'/>
+<use f='halide/tutorial/lesson_18_parallel_associative_reductions.cpp' l='120' u='r' c='main'/>
+<use f='halide/tutorial/lesson_18_parallel_associative_reductions.cpp' l='136' u='r' c='main'/>
+<use f='halide/tutorial/lesson_18_parallel_associative_reductions.cpp' l='205' u='r' c='main'/>
+<use f='halide/tutorial/lesson_18_parallel_associative_reductions.cpp' l='273' u='r' c='main'/>
+<use f='halide/tutorial/lesson_18_parallel_associative_reductions.cpp' l='280' u='r' c='main'/>

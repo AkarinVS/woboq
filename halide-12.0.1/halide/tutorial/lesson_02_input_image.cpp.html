@@ -1,0 +1,121 @@
+<!doctype html>
+<html>
+<head>
+<meta name="viewport" content="width=device-width, initial-scale=1.0"><title>lesson_02_input_image.cpp source code [halide/tutorial/lesson_02_input_image.cpp] - Woboq Code Browser</title>
+<meta name="woboq:interestingDefinitions" content="main "/>
+<link rel="stylesheet" href="../.././data/qtcreator.css" title="QtCreator"/>
+<link rel="alternate stylesheet" href="../.././data/kdevelop.css" title="KDevelop"/>
+<script type="text/javascript" src="../.././data/jquery/jquery.min.js"></script>
+<script type="text/javascript" src="../.././data/jquery/jquery-ui.min.js"></script>
+<script>var file = 'halide/tutorial/lesson_02_input_image.cpp'; var root_path = '../..'; var data_path = '../.././data'; var ecma_script_api_version = 2;</script>
+<script src='../.././data/codebrowser.js'></script>
+</head>
+<body><div id='header'><h1 id='breadcrumb'><span>Browse the source code of </span><a href='..'>halide</a>/<a href='./'>tutorial</a>/<a href='lesson_02_input_image.cpp.html'>lesson_02_input_image.cpp</a></h1></div>
+<hr/><div id='content'><table class="code">
+<tr><th id="1">1</th><td><i>// Halide tutorial lesson 2: Processing images</i></td></tr>
+<tr><th id="2">2</th><td><i></i></td></tr>
+<tr><th id="3">3</th><td><i>// This lesson demonstrates how to pass in input images and manipulate</i></td></tr>
+<tr><th id="4">4</th><td><i>// them.</i></td></tr>
+<tr><th id="5">5</th><td><i></i></td></tr>
+<tr><th id="6">6</th><td><i>// On linux, you can compile and run it like so:</i></td></tr>
+<tr><th id="7">7</th><td><i>// g++ lesson_02*.cpp -g -I &lt;path/to/Halide.h&gt; -I &lt;path/to/tools/halide_image_io.h&gt; -L &lt;path/to/libHalide.so&gt; -lHalide `libpng-config --cflags --ldflags` -ljpeg -lpthread -ldl -o lesson_02 -std=c++11</i></td></tr>
+<tr><th id="8">8</th><td><i>// LD_LIBRARY_PATH=&lt;path/to/libHalide.so&gt; ./lesson_02</i></td></tr>
+<tr><th id="9">9</th><td><i></i></td></tr>
+<tr><th id="10">10</th><td><i>// On os x:</i></td></tr>
+<tr><th id="11">11</th><td><i>// g++ lesson_02*.cpp -g -I &lt;path/to/Halide.h&gt; -I &lt;path/to/tools/halide_image_io.h&gt; -L &lt;path/to/libHalide.so&gt; -lHalide `libpng-config --cflags --ldflags` -ljpeg -o lesson_02 -std=c++11</i></td></tr>
+<tr><th id="12">12</th><td><i>// DYLD_LIBRARY_PATH=&lt;path/to/libHalide.dylib&gt; ./lesson_02</i></td></tr>
+<tr><th id="13">13</th><td><i></i></td></tr>
+<tr><th id="14">14</th><td><i>// If you have the entire Halide source tree, you can also build it by</i></td></tr>
+<tr><th id="15">15</th><td><i>// running:</i></td></tr>
+<tr><th id="16">16</th><td><i>//    make tutorial_lesson_02_input_image</i></td></tr>
+<tr><th id="17">17</th><td><i>// in a shell with the current directory at the top of the halide</i></td></tr>
+<tr><th id="18">18</th><td><i>// source tree.</i></td></tr>
+<tr><th id="19">19</th><td><i></i></td></tr>
+<tr><th id="20">20</th><td><i>// The only Halide header file you need is Halide.h. It includes all of Halide.</i></td></tr>
+<tr><th id="21">21</th><td><u>#include <a href="../build/include/Halide.h.html">"Halide.h"</a></u></td></tr>
+<tr><th id="22">22</th><td></td></tr>
+<tr><th id="23">23</th><td><i>// Include some support code for loading pngs.</i></td></tr>
+<tr><th id="24">24</th><td><u>#include <a href="../tools/halide_image_io.h.html">"halide_image_io.h"</a></u></td></tr>
+<tr><th id="25">25</th><td><b>using</b> <b>namespace</b> <span class="namespace">Halide::Tools</span>;</td></tr>
+<tr><th id="26">26</th><td></td></tr>
+<tr><th id="27">27</th><td><em>int</em> <dfn class="decl def fn" id="main" title='main' data-ref="main" data-ref-filename="main">main</dfn>(<em>int</em> <dfn class="local col1 decl" id="1argc" title='argc' data-type='int' data-ref="1argc" data-ref-filename="1argc">argc</dfn>, <em>char</em> **<dfn class="local col2 decl" id="2argv" title='argv' data-type='char **' data-ref="2argv" data-ref-filename="2argv">argv</dfn>) {</td></tr>
+<tr><th id="28">28</th><td></td></tr>
+<tr><th id="29">29</th><td>    <i>// This program defines a single-stage imaging pipeline that</i></td></tr>
+<tr><th id="30">30</th><td><i>    // brightens an image.</i></td></tr>
+<tr><th id="31">31</th><td><i></i></td></tr>
+<tr><th id="32">32</th><td><i>    // First we'll load the input image we wish to brighten.</i></td></tr>
+<tr><th id="33">33</th><td>    <span class="namespace">Halide::</span><a class="type" href="../build/include/Halide.h.html#Halide::Buffer" title='Halide::Buffer' data-ref="Halide::Buffer" data-ref-filename="Halide..Buffer">Buffer</a>&lt;<a class="typedef" href="../../include/bits/stdint-uintn.h.html#uint8_t" title='uint8_t' data-type='__uint8_t' data-ref="uint8_t" data-ref-filename="uint8_t">uint8_t</a>&gt; <dfn class="local col3 decl" id="3input" title='input' data-type='Halide::Buffer&lt;uint8_t&gt;' data-ref="3input" data-ref-filename="3input">input</dfn> = <a class="ref fn fake" href="../tools/halide_image_io.h.html#_ZN6Halide5Tools10load_imagecvT_Ev" title='Halide::Tools::load_image::operator type-parameter-0-0' data-ref="_ZN6Halide5Tools10load_imagecvT_Ev" data-ref-filename="_ZN6Halide5Tools10load_imagecvT_Ev"></a><a class="type" href="../tools/halide_image_io.h.html#Halide::Tools::load_image" title='Halide::Tools::load_image' data-ref="Halide::Tools::load_image" data-ref-filename="Halide..Tools..load_image">load_image</a><a class="ref fn" href="../tools/halide_image_io.h.html#_ZN6Halide5Tools10load_imageC1ERKNSt7__cxx1112basic_stringIcSt11char_traitsIcESaIcEEE" title='Halide::Tools::load_image::load_image' data-ref="_ZN6Halide5Tools10load_imageC1ERKNSt7__cxx1112basic_stringIcSt11char_traitsIcESaIcEEE" data-ref-filename="_ZN6Halide5Tools10load_imageC1ERKNSt7__cxx1112basic_stringIcSt11char_traitsIcESaIcEEE">(</a><span class='ref fn fake' title='std::__cxx11::basic_string::basic_string&lt;_CharT, _Traits, _Alloc&gt;' data-ref="_ZNSt7__cxx1112basic_stringC1EPKT_RKT1_" data-ref-filename="_ZNSt7__cxx1112basic_stringC1EPKT_RKT1_"></span><q>"images/rgb.png"</q>);</td></tr>
+<tr><th id="34">34</th><td></td></tr>
+<tr><th id="35">35</th><td>    <i>// See figures/lesson_02_input.jpg for a smaller version.</i></td></tr>
+<tr><th id="36">36</th><td><i></i></td></tr>
+<tr><th id="37">37</th><td><i>    // Next we define our Func object that represents our one pipeline</i></td></tr>
+<tr><th id="38">38</th><td><i>    // stage.</i></td></tr>
+<tr><th id="39">39</th><td>    <span class="namespace">Halide::</span><a class="type" href="../build/include/Halide.h.html#Halide::Func" title='Halide::Func' data-ref="Halide::Func" data-ref-filename="Halide..Func">Func</a> <a class="ref fn fake" href="../build/include/Halide.h.html#_ZN6Halide4FuncC1Ev" title='Halide::Func::Func' data-ref="_ZN6Halide4FuncC1Ev" data-ref-filename="_ZN6Halide4FuncC1Ev"></a><dfn class="local col4 decl" id="4brighter" title='brighter' data-type='Halide::Func' data-ref="4brighter" data-ref-filename="4brighter">brighter</dfn>;</td></tr>
+<tr><th id="40">40</th><td></td></tr>
+<tr><th id="41">41</th><td>    <i>// Our Func will have three arguments, representing the position</i></td></tr>
+<tr><th id="42">42</th><td><i>    // in the image and the color channel. Halide treats color</i></td></tr>
+<tr><th id="43">43</th><td><i>    // channels as an extra dimension of the image.</i></td></tr>
+<tr><th id="44">44</th><td>    <span class="namespace">Halide::</span><a class="type" href="../build/include/Halide.h.html#Halide::Var" title='Halide::Var' data-ref="Halide::Var" data-ref-filename="Halide..Var">Var</a> <a class="ref fn fake" href="../build/include/Halide.h.html#_ZN6Halide3VarC1Ev" title='Halide::Var::Var' data-ref="_ZN6Halide3VarC1Ev" data-ref-filename="_ZN6Halide3VarC1Ev"></a><dfn class="local col5 decl" id="5x" title='x' data-type='Halide::Var' data-ref="5x" data-ref-filename="5x">x</dfn>, <a class="ref fn fake" href="../build/include/Halide.h.html#_ZN6Halide3VarC1Ev" title='Halide::Var::Var' data-ref="_ZN6Halide3VarC1Ev" data-ref-filename="_ZN6Halide3VarC1Ev"></a><dfn class="local col6 decl" id="6y" title='y' data-type='Halide::Var' data-ref="6y" data-ref-filename="6y">y</dfn>, <a class="ref fn fake" href="../build/include/Halide.h.html#_ZN6Halide3VarC1Ev" title='Halide::Var::Var' data-ref="_ZN6Halide3VarC1Ev" data-ref-filename="_ZN6Halide3VarC1Ev"></a><dfn class="local col7 decl" id="7c" title='c' data-type='Halide::Var' data-ref="7c" data-ref-filename="7c">c</dfn>;</td></tr>
+<tr><th id="45">45</th><td></td></tr>
+<tr><th id="46">46</th><td>    <i>// Normally we'd probably write the whole function definition on</i></td></tr>
+<tr><th id="47">47</th><td><i>    // one line. Here we'll break it apart so we can explain what</i></td></tr>
+<tr><th id="48">48</th><td><i>    // we're doing at every step.</i></td></tr>
+<tr><th id="49">49</th><td><i></i></td></tr>
+<tr><th id="50">50</th><td><i>    // For each pixel of the input image.</i></td></tr>
+<tr><th id="51">51</th><td>    <span class="namespace">Halide::</span><a class="type" href="../build/include/Halide.h.html#Halide::Expr" title='Halide::Expr' data-ref="Halide::Expr" data-ref-filename="Halide..Expr">Expr</a> <dfn class="local col8 decl" id="8value" title='value' data-type='Halide::Expr' data-ref="8value" data-ref-filename="8value">value</dfn> = <a class="local col3 ref" href="#3input" title='input' data-ref="3input" data-ref-filename="3input">input</a><a class="ref fn" href="../build/include/Halide.h.html#_ZNK6Halide6BufferclERKNS_4ExprEDpTL0__" title='Halide::Buffer::operator()' data-ref="_ZNK6Halide6BufferclERKNS_4ExprEDpTL0__" data-ref-filename="_ZNK6Halide6BufferclERKNS_4ExprEDpTL0__">(<a class="ref fn fake" href="../build/include/Halide.h.html#_ZNK6Halide3VarcvRKNS_4ExprEEv" title='Halide::Var::operator const Halide::Expr &amp;' data-ref="_ZNK6Halide3VarcvRKNS_4ExprEEv" data-ref-filename="_ZNK6Halide3VarcvRKNS_4ExprEEv"></a><a class="local col5 ref" href="#5x" title='x' data-ref="5x" data-ref-filename="5x">x</a>, <a class="ref fn fake" href="../build/include/Halide.h.html#15704" title='Halide::Var::Var' data-ref="_ZN6Halide3VarC1ERKS0_" data-ref-filename="_ZN6Halide3VarC1ERKS0_"></a><a class="local col6 ref" href="#6y" title='y' data-ref="6y" data-ref-filename="6y">y</a>, <a class="ref fn fake" href="../build/include/Halide.h.html#15704" title='Halide::Var::Var' data-ref="_ZN6Halide3VarC1ERKS0_" data-ref-filename="_ZN6Halide3VarC1ERKS0_"></a><a class="local col7 ref" href="#7c" title='c' data-ref="7c" data-ref-filename="7c">c</a>)</a>;</td></tr>
+<tr><th id="52">52</th><td></td></tr>
+<tr><th id="53">53</th><td>    <i>// Cast it to a floating point value.</i></td></tr>
+<tr><th id="54">54</th><td>    <a class="local col8 ref" href="#8value" title='value' data-ref="8value" data-ref-filename="8value">value</a> <a class="ref fn" href="../build/include/Halide.h.html#4003" title='Halide::Expr::operator=' data-ref="_ZN6Halide4ExpraSEOS0_" data-ref-filename="_ZN6Halide4ExpraSEOS0_">=</a> <span class="namespace">Halide::</span><a class="ref fn" href="../build/include/Halide.h.html#_ZN6Halide4castENS_4ExprE" title='Halide::cast' data-ref="_ZN6Halide4castENS_4ExprE" data-ref-filename="_ZN6Halide4castENS_4ExprE">cast</a>&lt;<em>float</em>&gt;(<a class="ref fn fake" href="../build/include/Halide.h.html#4003" title='Halide::Expr::Expr' data-ref="_ZN6Halide4ExprC1ERKS0_" data-ref-filename="_ZN6Halide4ExprC1ERKS0_"></a><a class="local col8 ref" href="#8value" title='value' data-ref="8value" data-ref-filename="8value">value</a>);</td></tr>
+<tr><th id="55">55</th><td></td></tr>
+<tr><th id="56">56</th><td>    <i>// Multiply it by 1.5 to brighten it. Halide represents real</i></td></tr>
+<tr><th id="57">57</th><td><i>    // numbers as floats, not doubles, so we stick an 'f' on the end</i></td></tr>
+<tr><th id="58">58</th><td><i>    // of our constant.</i></td></tr>
+<tr><th id="59">59</th><td>    <a class="local col8 ref" href="#8value" title='value' data-ref="8value" data-ref-filename="8value">value</a> <a class="ref fn" href="../build/include/Halide.h.html#4003" title='Halide::Expr::operator=' data-ref="_ZN6Halide4ExpraSEOS0_" data-ref-filename="_ZN6Halide4ExpraSEOS0_">=</a> <a class="ref fn fake" href="../build/include/Halide.h.html#4003" title='Halide::Expr::Expr' data-ref="_ZN6Halide4ExprC1ERKS0_" data-ref-filename="_ZN6Halide4ExprC1ERKS0_"></a><a class="local col8 ref" href="#8value" title='value' data-ref="8value" data-ref-filename="8value">value</a> <a class="ref fn" href="../build/include/Halide.h.html#_ZN6HalidemlENS_4ExprEf" title='Halide::operator*' data-ref="_ZN6HalidemlENS_4ExprEf" data-ref-filename="_ZN6HalidemlENS_4ExprEf">*</a> <var>1.5f</var>;</td></tr>
+<tr><th id="60">60</th><td></td></tr>
+<tr><th id="61">61</th><td>    <i>// Clamp it to be less than 255, so we don't get overflow when we</i></td></tr>
+<tr><th id="62">62</th><td><i>    // cast it back to an 8-bit unsigned int.</i></td></tr>
+<tr><th id="63">63</th><td>    <a class="local col8 ref" href="#8value" title='value' data-ref="8value" data-ref-filename="8value">value</a> <a class="ref fn" href="../build/include/Halide.h.html#4003" title='Halide::Expr::operator=' data-ref="_ZN6Halide4ExpraSEOS0_" data-ref-filename="_ZN6Halide4ExpraSEOS0_">=</a> <span class="namespace">Halide::</span><a class="ref fn" href="../build/include/Halide.h.html#_ZN6Halide3minENS_4ExprEf" title='Halide::min' data-ref="_ZN6Halide3minENS_4ExprEf" data-ref-filename="_ZN6Halide3minENS_4ExprEf">min</a>(<a class="ref fn fake" href="../build/include/Halide.h.html#4003" title='Halide::Expr::Expr' data-ref="_ZN6Halide4ExprC1ERKS0_" data-ref-filename="_ZN6Halide4ExprC1ERKS0_"></a><a class="local col8 ref" href="#8value" title='value' data-ref="8value" data-ref-filename="8value">value</a>, <var>255.0f</var>);</td></tr>
+<tr><th id="64">64</th><td></td></tr>
+<tr><th id="65">65</th><td>    <i>// Cast it back to an 8-bit unsigned integer.</i></td></tr>
+<tr><th id="66">66</th><td>    <a class="local col8 ref" href="#8value" title='value' data-ref="8value" data-ref-filename="8value">value</a> <a class="ref fn" href="../build/include/Halide.h.html#4003" title='Halide::Expr::operator=' data-ref="_ZN6Halide4ExpraSEOS0_" data-ref-filename="_ZN6Halide4ExpraSEOS0_">=</a> <span class="namespace">Halide::</span><a class="ref fn" href="../build/include/Halide.h.html#_ZN6Halide4castENS_4ExprE" title='Halide::cast' data-ref="_ZN6Halide4castENS_4ExprE" data-ref-filename="_ZN6Halide4castENS_4ExprE">cast</a>&lt;<a class="typedef" href="../../include/bits/stdint-uintn.h.html#uint8_t" title='uint8_t' data-type='__uint8_t' data-ref="uint8_t" data-ref-filename="uint8_t">uint8_t</a>&gt;(<a class="ref fn fake" href="../build/include/Halide.h.html#4003" title='Halide::Expr::Expr' data-ref="_ZN6Halide4ExprC1ERKS0_" data-ref-filename="_ZN6Halide4ExprC1ERKS0_"></a><a class="local col8 ref" href="#8value" title='value' data-ref="8value" data-ref-filename="8value">value</a>);</td></tr>
+<tr><th id="67">67</th><td></td></tr>
+<tr><th id="68">68</th><td>    <i>// Define the function.</i></td></tr>
+<tr><th id="69">69</th><td>    <a class="local col4 ref" href="#4brighter" title='brighter' data-ref="4brighter" data-ref-filename="4brighter">brighter</a><a class="ref fn" href="../build/include/Halide.h.html#_ZNK6Halide4FuncclEDpOT_" title='Halide::Func::operator()' data-ref="_ZNK6Halide4FuncclEDpOT_" data-ref-filename="_ZNK6Halide4FuncclEDpOT_">(<a class="local col5 ref" href="#5x" title='x' data-ref="5x" data-ref-filename="5x">x</a>, <a class="local col6 ref" href="#6y" title='y' data-ref="6y" data-ref-filename="6y">y</a>, <a class="local col7 ref" href="#7c" title='c' data-ref="7c" data-ref-filename="7c">c</a>)</a> <a class="ref fn" href="../build/include/Halide.h.html#_ZN6Halide7FuncRefaSERKNS_4ExprE" title='Halide::FuncRef::operator=' data-ref="_ZN6Halide7FuncRefaSERKNS_4ExprE" data-ref-filename="_ZN6Halide7FuncRefaSERKNS_4ExprE">=</a> <a class="local col8 ref" href="#8value" title='value' data-ref="8value" data-ref-filename="8value">value</a>;</td></tr>
+<tr><th id="70">70</th><td></td></tr>
+<tr><th id="71">71</th><td>    <i>// The equivalent one-liner to all of the above is:</i></td></tr>
+<tr><th id="72">72</th><td><i>    //</i></td></tr>
+<tr><th id="73">73</th><td><i>    // brighter(x, y, c) = Halide::cast&lt;uint8_t&gt;(min(input(x, y, c) * 1.5f, 255));</i></td></tr>
+<tr><th id="74">74</th><td><i>    //</i></td></tr>
+<tr><th id="75">75</th><td><i>    // In the shorter version:</i></td></tr>
+<tr><th id="76">76</th><td><i>    // - I skipped the cast to float, because multiplying by 1.5f does</i></td></tr>
+<tr><th id="77">77</th><td><i>    //   that automatically.</i></td></tr>
+<tr><th id="78">78</th><td><i>    // - I also used an integer constant as the second argument in the</i></td></tr>
+<tr><th id="79">79</th><td><i>    //   call to min, because it gets cast to float to be compatible</i></td></tr>
+<tr><th id="80">80</th><td><i>    //   with the first argument.</i></td></tr>
+<tr><th id="81">81</th><td><i>    // - I left the Halide:: off the call to min. It's unnecessary due</i></td></tr>
+<tr><th id="82">82</th><td><i>    //   to Koenig lookup.</i></td></tr>
+<tr><th id="83">83</th><td><i></i></td></tr>
+<tr><th id="84">84</th><td><i>    // Remember, all we've done so far is build a representation of a</i></td></tr>
+<tr><th id="85">85</th><td><i>    // Halide program in memory. We haven't actually processed any</i></td></tr>
+<tr><th id="86">86</th><td><i>    // pixels yet. We haven't even compiled that Halide program yet.</i></td></tr>
+<tr><th id="87">87</th><td><i></i></td></tr>
+<tr><th id="88">88</th><td><i>    // So now we'll realize the Func. The size of the output image</i></td></tr>
+<tr><th id="89">89</th><td><i>    // should match the size of the input image. If we just wanted to</i></td></tr>
+<tr><th id="90">90</th><td><i>    // brighten a portion of the input image we could request a</i></td></tr>
+<tr><th id="91">91</th><td><i>    // smaller size. If we request a larger size Halide will throw an</i></td></tr>
+<tr><th id="92">92</th><td><i>    // error at runtime telling us we're trying to read out of bounds</i></td></tr>
+<tr><th id="93">93</th><td><i>    // on the input image.</i></td></tr>
+<tr><th id="94">94</th><td>    <span class="namespace">Halide::</span><a class="type" href="../build/include/Halide.h.html#Halide::Buffer" title='Halide::Buffer' data-ref="Halide::Buffer" data-ref-filename="Halide..Buffer">Buffer</a>&lt;<a class="typedef" href="../../include/bits/stdint-uintn.h.html#uint8_t" title='uint8_t' data-type='__uint8_t' data-ref="uint8_t" data-ref-filename="uint8_t">uint8_t</a>&gt; <dfn class="local col9 decl" id="9output" title='output' data-type='Halide::Buffer&lt;uint8_t&gt;' data-ref="9output" data-ref-filename="9output">output</dfn> =</td></tr>
+<tr><th id="95">95</th><td>        <a class="ref fn fake" href="../build/include/Halide.h.html#_ZNK6Halide11RealizationcvNS_6BufferIT_EEEv" title='Halide::Realization::operator Buffer&lt;type-parameter-0-0&gt;' data-ref="_ZNK6Halide11RealizationcvNS_6BufferIT_EEEv" data-ref-filename="_ZNK6Halide11RealizationcvNS_6BufferIT_EEEv"></a><a class="local col4 ref" href="#4brighter" title='brighter' data-ref="4brighter" data-ref-filename="4brighter">brighter</a>.<a class="ref fn" href="../build/include/Halide.h.html#_ZN6Halide4Func7realizeESt6vectorIiSaIiEERKNS_6TargetERKNS_8ParamMapE" title='Halide::Func::realize' data-ref="_ZN6Halide4Func7realizeESt6vectorIiSaIiEERKNS_6TargetERKNS_8ParamMapE" data-ref-filename="_ZN6Halide4Func7realizeESt6vectorIiSaIiEERKNS_6TargetERKNS_8ParamMapE">realize</a>(<span class='ref fn fake' title='std::vector::vector&lt;_Tp, _Alloc&gt;' data-ref="_ZNSt6vectorC1ESt16initializer_listIT_ERKT0_" data-ref-filename="_ZNSt6vectorC1ESt16initializer_listIT_ERKT0_"></span>{<a class="local col3 ref" href="#3input" title='input' data-ref="3input" data-ref-filename="3input">input</a>.<a class="ref fn" href="../build/include/Halide.h.html#11513" title='Halide::Buffer::width' data-ref="_ZNK6Halide6Buffer5widthEDpOTL0__" data-ref-filename="_ZNK6Halide6Buffer5widthEDpOTL0__">width</a>(), <a class="local col3 ref" href="#3input" title='input' data-ref="3input" data-ref-filename="3input">input</a>.<a class="ref fn" href="../build/include/Halide.h.html#11514" title='Halide::Buffer::height' data-ref="_ZNK6Halide6Buffer6heightEDpOTL0__" data-ref-filename="_ZNK6Halide6Buffer6heightEDpOTL0__">height</a>(), <a class="local col3 ref" href="#3input" title='input' data-ref="3input" data-ref-filename="3input">input</a>.<a class="ref fn" href="../build/include/Halide.h.html#11515" title='Halide::Buffer::channels' data-ref="_ZNK6Halide6Buffer8channelsEDpOTL0__" data-ref-filename="_ZNK6Halide6Buffer8channelsEDpOTL0__">channels</a>()});</td></tr>
+<tr><th id="96">96</th><td></td></tr>
+<tr><th id="97">97</th><td>    <i>// Save the output for inspection. It should look like a bright parrot.</i></td></tr>
+<tr><th id="98">98</th><td>    <a class="ref fn" href="../tools/halide_image_io.h.html#_ZN6Halide5Tools10save_imageERT_RKNSt7__cxx1112basic_stringIcSt11char_traitsIcESaIcEEE" title='Halide::Tools::save_image' data-ref="_ZN6Halide5Tools10save_imageERT_RKNSt7__cxx1112basic_stringIcSt11char_traitsIcESaIcEEE" data-ref-filename="_ZN6Halide5Tools10save_imageERT_RKNSt7__cxx1112basic_stringIcSt11char_traitsIcESaIcEEE">save_image</a>(<span class='refarg'><a class="local col9 ref" href="#9output" title='output' data-ref="9output" data-ref-filename="9output">output</a></span>, <span class='ref fn fake' title='std::__cxx11::basic_string::basic_string&lt;_CharT, _Traits, _Alloc&gt;' data-ref="_ZNSt7__cxx1112basic_stringC1EPKT_RKT1_" data-ref-filename="_ZNSt7__cxx1112basic_stringC1EPKT_RKT1_"></span><q>"brighter.png"</q>);</td></tr>
+<tr><th id="99">99</th><td></td></tr>
+<tr><th id="100">100</th><td>    <i>// See figures/lesson_02_output.jpg for a small version of the output.</i></td></tr>
+<tr><th id="101">101</th><td></td></tr>
+<tr><th id="102">102</th><td>    <a class="ref fn" href="../../include/stdio.h.html#printf" title='printf' data-ref="printf" data-ref-filename="printf">printf</a>(<q>"Success!\n"</q>);</td></tr>
+<tr><th id="103">103</th><td>    <b>return</b> <var>0</var>;</td></tr>
+<tr><th id="104">104</th><td>}</td></tr>
+<tr><th id="105">105</th><td></td></tr>
+</table><hr/><p id='footer'>
+Generated on <em>2021-Aug-03</em> from project halide revision <em>v12.0.1</em>

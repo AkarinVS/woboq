@@ -1,0 +1,24 @@
+<use f='halide/tools/halide_image_io.h' l='639' u='w' c='_ZN6Halide5Tools8Internal10FileOpenerC1ERKNSt7__cxx1112basic_stringIcSt11char_traitsIcESaIcEEEPKc'/>
+<use f='halide/tools/halide_image_io.h' l='644' u='r' c='_ZN6Halide5Tools8Internal10FileOpenerD1Ev'/>
+<use f='halide/tools/halide_image_io.h' l='645' u='r' c='_ZN6Halide5Tools8Internal10FileOpenerD1Ev'/>
+<use f='halide/tools/halide_image_io.h' l='653' u='r' c='_ZN6Halide5Tools8Internal10FileOpener9read_lineEPci'/>
+<use f='halide/tools/halide_image_io.h' l='672' u='r' c='_ZN6Halide5Tools8Internal10FileOpener10read_bytesEPvm'/>
+<use f='halide/tools/halide_image_io.h' l='686' u='r' c='_ZN6Halide5Tools8Internal10FileOpener11write_bytesEPKvm'/>
+<dec f='halide/tools/halide_image_io.h' l='699' type='FILE *const'/>
+<use f='halide/tools/halide_image_io.h' l='758' u='r' c='_ZN6Halide5Tools8Internal8load_pngERKNSt7__cxx1112basic_stringIcSt11char_traitsIcESaIcEEEPT_'/>
+<use f='halide/tools/halide_image_io.h' l='784' u='r' c='_ZN6Halide5Tools8Internal8load_pngERKNSt7__cxx1112basic_stringIcSt11char_traitsIcESaIcEEEPT_'/>
+<use f='halide/tools/halide_image_io.h' l='855' u='r' c='_ZN6Halide5Tools8Internal8save_pngERT_RKNSt7__cxx1112basic_stringIcSt11char_traitsIcESaIcEEE'/>
+<use f='halide/tools/halide_image_io.h' l='874' u='r' c='_ZN6Halide5Tools8Internal8save_pngERT_RKNSt7__cxx1112basic_stringIcSt11char_traitsIcESaIcEEE'/>
+<use f='halide/tools/halide_image_io.h' l='906' u='r' c='_ZN6Halide5Tools8Internal15read_pnm_headerERNS1_10FileOpenerERKNSt7__cxx1112basic_stringIcSt11char_traitsIcESaIcEEEPiSC_SC_'/>
+<use f='halide/tools/halide_image_io.h' l='991' u='r' c='_ZN6Halide5Tools8Internal8save_pnmERT_iRKNSt7__cxx1112basic_stringIcSt11char_traitsIcESaIcEEE'/>
+<use f='halide/tools/halide_image_io.h' l='995' u='r' c='_ZN6Halide5Tools8Internal8save_pnmERT_iRKNSt7__cxx1112basic_stringIcSt11char_traitsIcESaIcEEE'/>
+<use f='halide/tools/halide_image_io.h' l='1057' u='r' c='_ZN6Halide5Tools8Internal8load_jpgERKNSt7__cxx1112basic_stringIcSt11char_traitsIcESaIcEEEPT_'/>
+<use f='halide/tools/halide_image_io.h' l='1065' u='r' c='_ZN6Halide5Tools8Internal8load_jpgERKNSt7__cxx1112basic_stringIcSt11char_traitsIcESaIcEEEPT_'/>
+<use f='halide/tools/halide_image_io.h' l='1119' u='r' c='_ZN6Halide5Tools8Internal8save_jpgERT_RKNSt7__cxx1112basic_stringIcSt11char_traitsIcESaIcEEE'/>
+<use f='halide/tools/halide_image_io.h' l='1130' u='r' c='_ZN6Halide5Tools8Internal8save_jpgERT_RKNSt7__cxx1112basic_stringIcSt11char_traitsIcESaIcEEE'/>
+<use f='halide/tools/halide_image_io.h' l='1204' u='r' c='_ZN6Halide5Tools8Internal8load_tmpERKNSt7__cxx1112basic_stringIcSt11char_traitsIcESaIcEEEPT_'/>
+<use f='halide/tools/halide_image_io.h' l='1296' u='r' c='_ZN6Halide5Tools8Internal8save_tmpERT_RKNSt7__cxx1112basic_stringIcSt11char_traitsIcESaIcEEE'/>
+<use f='halide/tools/halide_image_io.h' l='1350' u='r' c='_ZN6Halide5Tools8Internal8load_matERKNSt7__cxx1112basic_stringIcSt11char_traitsIcESaIcEEEPT_'/>
+<use f='halide/tools/halide_image_io.h' l='1569' u='r' c='_ZN6Halide5Tools8Internal8save_matERT_RKNSt7__cxx1112basic_stringIcSt11char_traitsIcESaIcEEE'/>
+<use f='halide/tools/halide_image_io.h' l='1812' u='r' c='_ZN6Halide5Tools8Internal9save_tiffERT_RKNSt7__cxx1112basic_stringIcSt11char_traitsIcESaIcEEE'/>
+<offset>0</offset>

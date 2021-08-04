@@ -1,0 +1,1611 @@
+<!doctype html>
+<html>
+<head>
+<meta name="viewport" content="width=device-width, initial-scale=1.0"><title>WasmExecutor.cpp source code [halide/src/WasmExecutor.cpp] - Woboq Code Browser</title>
+<meta name="woboq:interestingDefinitions" content="Halide::Internal::WasmModuleContents "/>
+<link rel="stylesheet" href="../.././data/qtcreator.css" title="QtCreator"/>
+<link rel="alternate stylesheet" href="../.././data/kdevelop.css" title="KDevelop"/>
+<script type="text/javascript" src="../.././data/jquery/jquery.min.js"></script>
+<script type="text/javascript" src="../.././data/jquery/jquery-ui.min.js"></script>
+<script>var file = 'halide/src/WasmExecutor.cpp'; var root_path = '../..'; var data_path = '../.././data'; var ecma_script_api_version = 2;</script>
+<script src='../.././data/codebrowser.js'></script>
+</head>
+<body><div id='header'><h1 id='breadcrumb'><span>Browse the source code of </span><a href='..'>halide</a>/<a href='./'>src</a>/<a href='WasmExecutor.cpp.html'>WasmExecutor.cpp</a></h1></div>
+<hr/><div id='content'><table class="code">
+<tr><th id="1">1</th><td><u>#include <a href="WasmExecutor.h.html">"WasmExecutor.h"</a></u></td></tr>
+<tr><th id="2">2</th><td></td></tr>
+<tr><th id="3">3</th><td><u>#include <a href="CodeGen_Posix.h.html">"CodeGen_Posix.h"</a></u></td></tr>
+<tr><th id="4">4</th><td><u>#include <a href="CodeGen_Targets.h.html">"CodeGen_Targets.h"</a></u></td></tr>
+<tr><th id="5">5</th><td><u>#include <a href="Error.h.html">"Error.h"</a></u></td></tr>
+<tr><th id="6">6</th><td><u>#include <a href="Float16.h.html">"Float16.h"</a></u></td></tr>
+<tr><th id="7">7</th><td><u>#include <a href="Func.h.html">"Func.h"</a></u></td></tr>
+<tr><th id="8">8</th><td><u>#include <a href="ImageParam.h.html">"ImageParam.h"</a></u></td></tr>
+<tr><th id="9">9</th><td><u>#include <a href="JITModule.h.html">"JITModule.h"</a></u></td></tr>
+<tr><th id="10">10</th><td><u>#<span data-ppcond="10">if</span> WITH_WABT</u></td></tr>
+<tr><th id="11">11</th><td><u>#include "LLVM_Headers.h"</u></td></tr>
+<tr><th id="12">12</th><td><u>#<span data-ppcond="10">endif</span></u></td></tr>
+<tr><th id="13">13</th><td><u>#include <a href="LLVM_Output.h.html">"LLVM_Output.h"</a></u></td></tr>
+<tr><th id="14">14</th><td><u>#include <a href="LLVM_Runtime_Linker.h.html">"LLVM_Runtime_Linker.h"</a></u></td></tr>
+<tr><th id="15">15</th><td><u>#include <a href="Target.h.html">"Target.h"</a></u></td></tr>
+<tr><th id="16">16</th><td></td></tr>
+<tr><th id="17">17</th><td><u>#include &lt;cmath&gt;</u></td></tr>
+<tr><th id="18">18</th><td><u>#include &lt;csignal&gt;</u></td></tr>
+<tr><th id="19">19</th><td><u>#include &lt;cstdlib&gt;</u></td></tr>
+<tr><th id="20">20</th><td><u>#include &lt;mutex&gt;</u></td></tr>
+<tr><th id="21">21</th><td><u>#include &lt;sstream&gt;</u></td></tr>
+<tr><th id="22">22</th><td><u>#include &lt;unordered_map&gt;</u></td></tr>
+<tr><th id="23">23</th><td><u>#include &lt;vector&gt;</u></td></tr>
+<tr><th id="24">24</th><td></td></tr>
+<tr><th id="25">25</th><td><u>#<span data-ppcond="25">if</span> WITH_WABT</u></td></tr>
+<tr><th id="26">26</th><td><u>#include "wabt-src/src/binary-reader.h"</u></td></tr>
+<tr><th id="27">27</th><td><u>#include "wabt-src/src/error-formatter.h"</u></td></tr>
+<tr><th id="28">28</th><td><u>#include "wabt-src/src/feature.h"</u></td></tr>
+<tr><th id="29">29</th><td><u>#include "wabt-src/src/interp/binary-reader-interp.h"</u></td></tr>
+<tr><th id="30">30</th><td><u>#include "wabt-src/src/interp/interp-util.h"</u></td></tr>
+<tr><th id="31">31</th><td><u>#include "wabt-src/src/interp/interp-wasi.h"</u></td></tr>
+<tr><th id="32">32</th><td><u>#include "wabt-src/src/interp/interp.h"</u></td></tr>
+<tr><th id="33">33</th><td><u>#include "wabt-src/src/option-parser.h"</u></td></tr>
+<tr><th id="34">34</th><td><u>#include "wabt-src/src/stream.h"</u></td></tr>
+<tr><th id="35">35</th><td><u>#<span data-ppcond="25">endif</span></u></td></tr>
+<tr><th id="36">36</th><td></td></tr>
+<tr><th id="37">37</th><td><b>namespace</b> <span class="namespace">Halide</span> {</td></tr>
+<tr><th id="38">38</th><td><b>namespace</b> <span class="namespace">Internal</span> {</td></tr>
+<tr><th id="39">39</th><td></td></tr>
+<tr><th id="40">40</th><td><i  data-doc="Halide::Internal::kTrampolineSuffix">// Trampolines do not use "_argv" as the suffix because</i></td></tr>
+<tr><th id="41">41</th><td><i  data-doc="Halide::Internal::kTrampolineSuffix">// that name may already exist and if so, will return an int</i></td></tr>
+<tr><th id="42">42</th><td><i  data-doc="Halide::Internal::kTrampolineSuffix">// instead of taking a pointer at the end of the args list to</i></td></tr>
+<tr><th id="43">43</th><td><i  data-doc="Halide::Internal::kTrampolineSuffix">// receive the result value.</i></td></tr>
+<tr><th id="44">44</th><td><em>static</em> <em>const</em> <em>char</em> <dfn class="tu decl def" id="Halide::Internal::kTrampolineSuffix" title='Halide::Internal::kTrampolineSuffix' data-type='const char [12]' data-ref="Halide::Internal::kTrampolineSuffix" data-ref-filename="Halide..Internal..kTrampolineSuffix">kTrampolineSuffix</dfn>[] = <q>"_trampoline"</q>;</td></tr>
+<tr><th id="45">45</th><td></td></tr>
+<tr><th id="46">46</th><td><u>#<span data-ppcond="46">if</span> WITH_WABT</u></td></tr>
+<tr><th id="47">47</th><td></td></tr>
+<tr><th id="48">48</th><td><b>namespace</b> {</td></tr>
+<tr><th id="49">49</th><td></td></tr>
+<tr><th id="50">50</th><td><i>// ---------------------</i></td></tr>
+<tr><th id="51">51</th><td><i>// General debug helpers</i></td></tr>
+<tr><th id="52">52</th><td><i>// ---------------------</i></td></tr>
+<tr><th id="53">53</th><td><i></i></td></tr>
+<tr><th id="54">54</th><td><i>// Debugging the WebAssembly JIT support is usually disconnected from the rest of HL_DEBUG_CODEGEN</i></td></tr>
+<tr><th id="55">55</th><td><u>#define WASM_DEBUG_LEVEL 0</u></td></tr>
+<tr><th id="56">56</th><td></td></tr>
+<tr><th id="57">57</th><td><b>struct</b> debug_sink {</td></tr>
+<tr><th id="58">58</th><td>    debug_sink() = <b>default</b>;</td></tr>
+<tr><th id="59">59</th><td></td></tr>
+<tr><th id="60">60</th><td>    <b>template</b>&lt;<b>typename</b> T&gt;</td></tr>
+<tr><th id="61">61</th><td>    <b>inline</b> debug_sink &amp;<b>operator</b>&lt;&lt;(T &amp;&amp;x) {</td></tr>
+<tr><th id="62">62</th><td>        <b>return</b> *<b>this</b>;</td></tr>
+<tr><th id="63">63</th><td>    }</td></tr>
+<tr><th id="64">64</th><td>};</td></tr>
+<tr><th id="65">65</th><td></td></tr>
+<tr><th id="66">66</th><td><u>#if WASM_DEBUG_LEVEL</u></td></tr>
+<tr><th id="67">67</th><td><u>#define wdebug(x) Halide::Internal::debug(((x) &lt;= WASM_DEBUG_LEVEL) ? 0 : 255)</u></td></tr>
+<tr><th id="68">68</th><td><u>#define wassert(x) internal_assert(x)</u></td></tr>
+<tr><th id="69">69</th><td><u>#else</u></td></tr>
+<tr><th id="70">70</th><td><u>#define wdebug(x) debug_sink()</u></td></tr>
+<tr><th id="71">71</th><td><u>#define wassert(x) debug_sink()</u></td></tr>
+<tr><th id="72">72</th><td><u>#endif</u></td></tr>
+<tr><th id="73">73</th><td></td></tr>
+<tr><th id="74">74</th><td><i>// ---------------------</i></td></tr>
+<tr><th id="75">75</th><td><i>// BDMalloc</i></td></tr>
+<tr><th id="76">76</th><td><i>// ---------------------</i></td></tr>
+<tr><th id="77">77</th><td></td></tr>
+<tr><th id="78">78</th><td><b>template</b>&lt;<b>typename</b> T&gt;</td></tr>
+<tr><th id="79">79</th><td><b>inline</b> T align_up(T p, <em>int</em> alignment = <var>32</var>) {</td></tr>
+<tr><th id="80">80</th><td>    <b>return</b> (p + alignment - <var>1</var>) &amp; ~(alignment - <var>1</var>);</td></tr>
+<tr><th id="81">81</th><td>}</td></tr>
+<tr><th id="82">82</th><td></td></tr>
+<tr><th id="83">83</th><td><i>// Debugging our Malloc is extremely noisy and usually undesired</i></td></tr>
+<tr><th id="84">84</th><td></td></tr>
+<tr><th id="85">85</th><td><u>#define BDMALLOC_DEBUG_LEVEL 0</u></td></tr>
+<tr><th id="86">86</th><td><u>#if BDMALLOC_DEBUG_LEVEL</u></td></tr>
+<tr><th id="87">87</th><td><u>#define bddebug(x) Halide::Internal::debug(((x) &lt;= BDMALLOC_DEBUG_LEVEL) ? 0 : 255)</u></td></tr>
+<tr><th id="88">88</th><td><u>#else</u></td></tr>
+<tr><th id="89">89</th><td><u>#define bddebug(x) debug_sink()</u></td></tr>
+<tr><th id="90">90</th><td><u>#endif</u></td></tr>
+<tr><th id="91">91</th><td></td></tr>
+<tr><th id="92">92</th><td><i>// BDMalloc aka BrainDeadMalloc. This is an *extremely* simple-minded implementation</i></td></tr>
+<tr><th id="93">93</th><td><i>// of malloc/free on top of a WasmMemoryObject, and is intended to be just barely adequate</i></td></tr>
+<tr><th id="94">94</th><td><i>// to allow Halide's JIT-based tests to pass. It is neither memory-efficient nor performant,</i></td></tr>
+<tr><th id="95">95</th><td><i>// nor has it been particularly well-vetted for potential buffer overruns and such.</i></td></tr>
+<tr><th id="96">96</th><td><b>class</b> BDMalloc {</td></tr>
+<tr><th id="97">97</th><td>    <b>struct</b> Region {</td></tr>
+<tr><th id="98">98</th><td>        uint32_t size : <var>31</var>;</td></tr>
+<tr><th id="99">99</th><td>        uint32_t used : <var>1</var>;</td></tr>
+<tr><th id="100">100</th><td>    };</td></tr>
+<tr><th id="101">101</th><td></td></tr>
+<tr><th id="102">102</th><td>    uint32_t total_size = <var>0</var>;</td></tr>
+<tr><th id="103">103</th><td>    std::map&lt;uint32_t, Region&gt; regions;</td></tr>
+<tr><th id="104">104</th><td></td></tr>
+<tr><th id="105">105</th><td><b>public</b>:</td></tr>
+<tr><th id="106">106</th><td>    BDMalloc() = <b>default</b>;</td></tr>
+<tr><th id="107">107</th><td></td></tr>
+<tr><th id="108">108</th><td>    uint32_t get_total_size() <em>const</em> {</td></tr>
+<tr><th id="109">109</th><td>        <b>return</b> total_size;</td></tr>
+<tr><th id="110">110</th><td>    }</td></tr>
+<tr><th id="111">111</th><td></td></tr>
+<tr><th id="112">112</th><td>    <em>bool</em> inited() <em>const</em> {</td></tr>
+<tr><th id="113">113</th><td>        <b>return</b> total_size &gt; <var>0</var>;</td></tr>
+<tr><th id="114">114</th><td>    }</td></tr>
+<tr><th id="115">115</th><td></td></tr>
+<tr><th id="116">116</th><td>    <em>void</em> init(uint32_t total_size, uint32_t heap_start = <var>1</var>) {</td></tr>
+<tr><th id="117">117</th><td>        <b>this</b>-&gt;total_size = total_size;</td></tr>
+<tr><th id="118">118</th><td>        regions.clear();</td></tr>
+<tr><th id="119">119</th><td></td></tr>
+<tr><th id="120">120</th><td>        internal_assert(heap_start &lt; total_size);</td></tr>
+<tr><th id="121">121</th><td>        <i>// Area before heap_start is permanently off-limits</i></td></tr>
+<tr><th id="122">122</th><td>        regions[<var>0</var>] = {heap_start, <b>true</b>};</td></tr>
+<tr><th id="123">123</th><td>        <i>// Everything else is free</i></td></tr>
+<tr><th id="124">124</th><td>        regions[heap_start] = {total_size - heap_start, <b>false</b>};</td></tr>
+<tr><th id="125">125</th><td>    }</td></tr>
+<tr><th id="126">126</th><td></td></tr>
+<tr><th id="127">127</th><td>    <em>void</em> reset() {</td></tr>
+<tr><th id="128">128</th><td>        <b>this</b>-&gt;total_size = <var>0</var>;</td></tr>
+<tr><th id="129">129</th><td>        regions.clear();</td></tr>
+<tr><th id="130">130</th><td>    }</td></tr>
+<tr><th id="131">131</th><td></td></tr>
+<tr><th id="132">132</th><td>    uint32_t alloc_region(uint32_t requested_size) {</td></tr>
+<tr><th id="133">133</th><td>        internal_assert(requested_size &gt; <var>0</var>);</td></tr>
+<tr><th id="134">134</th><td></td></tr>
+<tr><th id="135">135</th><td>        bddebug(<var>1</var>) &lt;&lt; <q>"begin alloc_region "</q> &lt;&lt; requested_size &lt;&lt; <q>"\n"</q>;</td></tr>
+<tr><th id="136">136</th><td>        validate();</td></tr>
+<tr><th id="137">137</th><td></td></tr>
+<tr><th id="138">138</th><td>        <i>// TODO: this would be faster with a basic free list,</i></td></tr>
+<tr><th id="139">139</th><td><i>        // but for most Halide test code, there aren't enough allocations</i></td></tr>
+<tr><th id="140">140</th><td><i>        // for this to be worthwhile, or at least that's my observation from</i></td></tr>
+<tr><th id="141">141</th><td><i>        // a first run-thru. Consider adding it if any of the JIT-based tests</i></td></tr>
+<tr><th id="142">142</th><td><i>        // seem unreasonably slow; as it is, a linear search for the first free</i></td></tr>
+<tr><th id="143">143</th><td><i>        // block of adequate size is (apparently) performant enough.</i></td></tr>
+<tr><th id="144">144</th><td><i></i></td></tr>
+<tr><th id="145">145</th><td><i>        // alignment and min-block-size are the same for our purposes here.</i></td></tr>
+<tr><th id="146">146</th><td>        <b>constexpr</b> uint32_t kAlignment = <var>32</var>;</td></tr>
+<tr><th id="147">147</th><td>        <em>const</em> uint32_t size = std::max(align_up((uint32_t)requested_size, kAlignment), kAlignment);</td></tr>
+<tr><th id="148">148</th><td></td></tr>
+<tr><th id="149">149</th><td>        <b>constexpr</b> uint32_t kMaxAllocSize = <var>0x7fffffff</var>;</td></tr>
+<tr><th id="150">150</th><td>        internal_assert(size &lt;= kMaxAllocSize);</td></tr>
+<tr><th id="151">151</th><td>        bddebug(<var>2</var>) &lt;&lt; <q>"size -&gt; "</q> &lt;&lt; size &lt;&lt; <q>"\n"</q>;</td></tr>
+<tr><th id="152">152</th><td></td></tr>
+<tr><th id="153">153</th><td>        <b>for</b> (<em>auto</em> it = regions.begin(); it != regions.end(); it++) {</td></tr>
+<tr><th id="154">154</th><td>            <em>const</em> uint32_t start = it-&gt;first;</td></tr>
+<tr><th id="155">155</th><td>            Region &amp;r = it-&gt;second;</td></tr>
+<tr><th id="156">156</th><td>            <b>if</b> (!r.used &amp;&amp; r.size &gt;= size) {</td></tr>
+<tr><th id="157">157</th><td>                bddebug(<var>2</var>) &lt;&lt; <q>"alloc @ "</q> &lt;&lt; start &lt;&lt; <q>","</q> &lt;&lt; (uint32_t)r.size &lt;&lt; <q>"\n"</q>;</td></tr>
+<tr><th id="158">158</th><td>                <b>if</b> (r.size &gt; size + kAlignment) {</td></tr>
+<tr><th id="159">159</th><td>                    <i>// Split the block</i></td></tr>
+<tr><th id="160">160</th><td>                    <em>const</em> uint32_t r2_start = start + size;</td></tr>
+<tr><th id="161">161</th><td>                    <em>const</em> uint32_t r2_size = r.size - size;</td></tr>
+<tr><th id="162">162</th><td>                    regions[r2_start] = {r2_size, <b>false</b>};</td></tr>
+<tr><th id="163">163</th><td>                    r.size = size;</td></tr>
+<tr><th id="164">164</th><td>                    bddebug(<var>2</var>) &lt;&lt; <q>"split: r-&gt; "</q> &lt;&lt; start &lt;&lt; <q>","</q> &lt;&lt; (uint32_t)r.size &lt;&lt; <q>","</q> &lt;&lt; (start + r.size) &lt;&lt; <q>"\n"</q>;</td></tr>
+<tr><th id="165">165</th><td>                    bddebug(<var>2</var>) &lt;&lt; <q>"split: r2-&gt; "</q> &lt;&lt; r2_start &lt;&lt; <q>","</q> &lt;&lt; r2_size &lt;&lt; <q>","</q> &lt;&lt; (r2_start + r2_size) &lt;&lt; <q>"\n"</q>;</td></tr>
+<tr><th id="166">166</th><td>                }</td></tr>
+<tr><th id="167">167</th><td>                <i>// Just return the block</i></td></tr>
+<tr><th id="168">168</th><td>                r.used = <b>true</b>;</td></tr>
+<tr><th id="169">169</th><td>                bddebug(<var>1</var>) &lt;&lt; <q>"end alloc_region "</q> &lt;&lt; requested_size &lt;&lt; <q>"\n"</q>;</td></tr>
+<tr><th id="170">170</th><td>                validate();</td></tr>
+<tr><th id="171">171</th><td>                <b>return</b> start;</td></tr>
+<tr><th id="172">172</th><td>            }</td></tr>
+<tr><th id="173">173</th><td>        }</td></tr>
+<tr><th id="174">174</th><td>        bddebug(<var>1</var>) &lt;&lt; <q>"fail alloc_region "</q> &lt;&lt; requested_size &lt;&lt; <q>"\n"</q>;</td></tr>
+<tr><th id="175">175</th><td>        validate();</td></tr>
+<tr><th id="176">176</th><td>        <b>return</b> <var>0</var>;</td></tr>
+<tr><th id="177">177</th><td>    }</td></tr>
+<tr><th id="178">178</th><td></td></tr>
+<tr><th id="179">179</th><td>    <em>void</em> free_region(uint32_t start) {</td></tr>
+<tr><th id="180">180</th><td>        bddebug(<var>1</var>) &lt;&lt; <q>"begin free_region "</q> &lt;&lt; start &lt;&lt; <q>"\n"</q>;</td></tr>
+<tr><th id="181">181</th><td>        validate();</td></tr>
+<tr><th id="182">182</th><td></td></tr>
+<tr><th id="183">183</th><td>        <i>// Can't free region at zero</i></td></tr>
+<tr><th id="184">184</th><td>        <b>if</b> (!start) {</td></tr>
+<tr><th id="185">185</th><td>            <b>return</b>;</td></tr>
+<tr><th id="186">186</th><td>        }</td></tr>
+<tr><th id="187">187</th><td></td></tr>
+<tr><th id="188">188</th><td>        internal_assert(start &gt; <var>0</var>);</td></tr>
+<tr><th id="189">189</th><td>        <em>auto</em> it = regions.find(start);</td></tr>
+<tr><th id="190">190</th><td>        internal_assert(it != regions.end());</td></tr>
+<tr><th id="191">191</th><td>        internal_assert(it-&gt;second.used);</td></tr>
+<tr><th id="192">192</th><td>        it-&gt;second.used = <b>false</b>;</td></tr>
+<tr><th id="193">193</th><td>        <i>// If prev region is free, combine with it</i></td></tr>
+<tr><th id="194">194</th><td>        <b>if</b> (it != regions.begin()) {</td></tr>
+<tr><th id="195">195</th><td>            <em>auto</em> prev = std::prev(it);</td></tr>
+<tr><th id="196">196</th><td>            <b>if</b> (!prev-&gt;second.used) {</td></tr>
+<tr><th id="197">197</th><td>                bddebug(<var>2</var>) &lt;&lt; <q>"combine prev: "</q> &lt;&lt; prev-&gt;first &lt;&lt; <q>" w/ "</q> &lt;&lt; it-&gt;first &lt;&lt; <q>"\n"</q>;</td></tr>
+<tr><th id="198">198</th><td>                prev-&gt;second.size += it-&gt;second.size;</td></tr>
+<tr><th id="199">199</th><td>                regions.erase(it);</td></tr>
+<tr><th id="200">200</th><td>                it = prev;</td></tr>
+<tr><th id="201">201</th><td>            }</td></tr>
+<tr><th id="202">202</th><td>        }</td></tr>
+<tr><th id="203">203</th><td>        <i>// If next region is free, combine with it</i></td></tr>
+<tr><th id="204">204</th><td>        <em>auto</em> next = std::next(it);</td></tr>
+<tr><th id="205">205</th><td>        <b>if</b> (next != regions.end() &amp;&amp; !next-&gt;second.used) {</td></tr>
+<tr><th id="206">206</th><td>            bddebug(<var>2</var>) &lt;&lt; <q>"combine next: "</q> &lt;&lt; next-&gt;first &lt;&lt; <q>" w/ "</q> &lt;&lt; it-&gt;first &lt;&lt; <q>" "</q></td></tr>
+<tr><th id="207">207</th><td>                       &lt;&lt; <q>"\n"</q>;</td></tr>
+<tr><th id="208">208</th><td>            it-&gt;second.size += next-&gt;second.size;</td></tr>
+<tr><th id="209">209</th><td>            regions.erase(next);</td></tr>
+<tr><th id="210">210</th><td>        }</td></tr>
+<tr><th id="211">211</th><td></td></tr>
+<tr><th id="212">212</th><td>        bddebug(<var>1</var>) &lt;&lt; <q>"end free_region "</q> &lt;&lt; start &lt;&lt; <q>"\n"</q>;</td></tr>
+<tr><th id="213">213</th><td>        validate();</td></tr>
+<tr><th id="214">214</th><td>    }</td></tr>
+<tr><th id="215">215</th><td></td></tr>
+<tr><th id="216">216</th><td>    <em>void</em> grow_total_size(uint32_t new_total_size) {</td></tr>
+<tr><th id="217">217</th><td>        bddebug(<var>1</var>) &lt;&lt; <q>"begin grow_total_size "</q> &lt;&lt; new_total_size &lt;&lt; <q>"\n"</q>;</td></tr>
+<tr><th id="218">218</th><td>        validate();</td></tr>
+<tr><th id="219">219</th><td></td></tr>
+<tr><th id="220">220</th><td>        internal_assert(new_total_size &gt; total_size);</td></tr>
+<tr><th id="221">221</th><td>        <em>auto</em> it = regions.rbegin();</td></tr>
+<tr><th id="222">222</th><td>        <em>const</em> uint32_t start = it-&gt;first;</td></tr>
+<tr><th id="223">223</th><td>        Region &amp;r = it-&gt;second;</td></tr>
+<tr><th id="224">224</th><td>        uint32_t r_end = start + r.size;</td></tr>
+<tr><th id="225">225</th><td>        internal_assert(r_end == total_size);</td></tr>
+<tr><th id="226">226</th><td>        uint32_t delta = new_total_size - r_end;</td></tr>
+<tr><th id="227">227</th><td>        <b>if</b> (r.used) {</td></tr>
+<tr><th id="228">228</th><td>            <i>// Add a free region after the last one</i></td></tr>
+<tr><th id="229">229</th><td>            regions[r_end] = {delta, <b>false</b>};</td></tr>
+<tr><th id="230">230</th><td>        } <b>else</b> {</td></tr>
+<tr><th id="231">231</th><td>            <i>// Just extend the last (free) region</i></td></tr>
+<tr><th id="232">232</th><td>            r.size += delta;</td></tr>
+<tr><th id="233">233</th><td>        }</td></tr>
+<tr><th id="234">234</th><td></td></tr>
+<tr><th id="235">235</th><td>        <i>// bookkeeping</i></td></tr>
+<tr><th id="236">236</th><td>        total_size = new_total_size;</td></tr>
+<tr><th id="237">237</th><td></td></tr>
+<tr><th id="238">238</th><td>        bddebug(<var>1</var>) &lt;&lt; <q>"end grow_total_size "</q> &lt;&lt; new_total_size &lt;&lt; <q>"\n"</q>;</td></tr>
+<tr><th id="239">239</th><td>        validate();</td></tr>
+<tr><th id="240">240</th><td>    }</td></tr>
+<tr><th id="241">241</th><td></td></tr>
+<tr><th id="242">242</th><td>    <em>void</em> validate() <em>const</em> {</td></tr>
+<tr><th id="243">243</th><td>        internal_assert(total_size &gt; <var>0</var>);</td></tr>
+<tr><th id="244">244</th><td><u>#if (BDMALLOC_DEBUG_LEVEL &gt;= 1) || (WASM_DEBUG_LEVEL &gt;= 1)</u></td></tr>
+<tr><th id="245">245</th><td>        uint32_t prev_end = <var>0</var>;</td></tr>
+<tr><th id="246">246</th><td>        <em>bool</em> prev_used = <b>false</b>;</td></tr>
+<tr><th id="247">247</th><td>        <b>for</b> (<em>auto</em> it : regions) {</td></tr>
+<tr><th id="248">248</th><td>            <em>const</em> uint32_t start = it.first;</td></tr>
+<tr><th id="249">249</th><td>            <em>const</em> Region &amp;r = it.second;</td></tr>
+<tr><th id="250">250</th><td>            bddebug(<var>2</var>) &lt;&lt; <q>"R: "</q> &lt;&lt; start &lt;&lt; <q>".."</q> &lt;&lt; (start + r.size - <var>1</var>) &lt;&lt; <q>","</q> &lt;&lt; r.used &lt;&lt; <q>"\n"</q>;</td></tr>
+<tr><th id="251">251</th><td>            wassert(start == prev_end) &lt;&lt; <q>"start "</q> &lt;&lt; start &lt;&lt; <q>" prev_end "</q> &lt;&lt; prev_end &lt;&lt; <q>"\n"</q>;</td></tr>
+<tr><th id="252">252</th><td>            <i>// it's OK to have two used regions in a row, but not two free ones</i></td></tr>
+<tr><th id="253">253</th><td>            wassert(!(!prev_used &amp;&amp; !r.used));</td></tr>
+<tr><th id="254">254</th><td>            prev_end = start + r.size;</td></tr>
+<tr><th id="255">255</th><td>            prev_used = r.used;</td></tr>
+<tr><th id="256">256</th><td>        }</td></tr>
+<tr><th id="257">257</th><td>        wassert(prev_end == total_size) &lt;&lt; <q>"prev_end "</q> &lt;&lt; prev_end &lt;&lt; <q>" total_size "</q> &lt;&lt; total_size &lt;&lt; <q>"\n"</q>;</td></tr>
+<tr><th id="258">258</th><td>        bddebug(<var>2</var>) &lt;&lt; <q>"\n"</q>;</td></tr>
+<tr><th id="259">259</th><td><u>#endif</u></td></tr>
+<tr><th id="260">260</th><td>    }</td></tr>
+<tr><th id="261">261</th><td>};</td></tr>
+<tr><th id="262">262</th><td></td></tr>
+<tr><th id="263">263</th><td><i>// ---------------------</i></td></tr>
+<tr><th id="264">264</th><td><i>// General Wasm helpers</i></td></tr>
+<tr><th id="265">265</th><td><i>// ---------------------</i></td></tr>
+<tr><th id="266">266</th><td></td></tr>
+<tr><th id="267">267</th><td><b>using</b> wasm32_ptr_t = int32_t;</td></tr>
+<tr><th id="268">268</th><td></td></tr>
+<tr><th id="269">269</th><td><em>const</em> wasm32_ptr_t kMagicJitUserContextValue = -<var>1</var>;</td></tr>
+<tr><th id="270">270</th><td></td></tr>
+<tr><th id="271">271</th><td><i>// TODO: vector codegen can underead allocated buffers; we need to deliberately</i></td></tr>
+<tr><th id="272">272</th><td><i>// allocate extra and return a pointer partway in to avoid out-of-bounds access</i></td></tr>
+<tr><th id="273">273</th><td><i>// failures. <a href="https://github.com/halide/Halide/issues/3738">https://github.com/halide/Halide/issues/3738</a></i></td></tr>
+<tr><th id="274">274</th><td><b>constexpr</b> size_t kExtraMallocSlop = <var>32</var>;</td></tr>
+<tr><th id="275">275</th><td></td></tr>
+<tr><th id="276">276</th><td>std::vector&lt;<em>char</em>&gt; compile_to_wasm(<em>const</em> Module &amp;module, <em>const</em> std::string &amp;fn_name) {</td></tr>
+<tr><th id="277">277</th><td>    <em>static</em> std::mutex link_lock;</td></tr>
+<tr><th id="278">278</th><td>    std::lock_guard&lt;std::mutex&gt; lock(link_lock);</td></tr>
+<tr><th id="279">279</th><td></td></tr>
+<tr><th id="280">280</th><td>    llvm::LLVMContext context;</td></tr>
+<tr><th id="281">281</th><td>    std::unique_ptr&lt;llvm::Module&gt; fn_module;</td></tr>
+<tr><th id="282">282</th><td></td></tr>
+<tr><th id="283">283</th><td>    <i>// Default wasm stack size is ~64k, but schedules with lots of</i></td></tr>
+<tr><th id="284">284</th><td><i>    // alloca usage (heavily inlined, or tracing enabled) can blow thru</i></td></tr>
+<tr><th id="285">285</th><td><i>    // this, which crashes in amusing ways, so ask for extra stack space</i></td></tr>
+<tr><th id="286">286</th><td><i>    // for the alloca usage.</i></td></tr>
+<tr><th id="287">287</th><td>    size_t stack_size = <var>65536</var>;</td></tr>
+<tr><th id="288">288</th><td>    {</td></tr>
+<tr><th id="289">289</th><td>        std::unique_ptr&lt;CodeGen_Posix&gt; cg(new_CodeGen_WebAssembly(module.target()));</td></tr>
+<tr><th id="290">290</th><td>        cg-&gt;set_context(context);</td></tr>
+<tr><th id="291">291</th><td>        fn_module = cg-&gt;compile(module);</td></tr>
+<tr><th id="292">292</th><td>        stack_size += cg-&gt;get_requested_alloca_total();</td></tr>
+<tr><th id="293">293</th><td>    }</td></tr>
+<tr><th id="294">294</th><td></td></tr>
+<tr><th id="295">295</th><td>    stack_size = align_up(stack_size);</td></tr>
+<tr><th id="296">296</th><td>    wdebug(<var>1</var>) &lt;&lt; <q>"Requesting stack size of "</q> &lt;&lt; stack_size &lt;&lt; <q>"\n"</q>;</td></tr>
+<tr><th id="297">297</th><td></td></tr>
+<tr><th id="298">298</th><td>    std::unique_ptr&lt;llvm::Module&gt; llvm_module =</td></tr>
+<tr><th id="299">299</th><td>        link_with_wasm_jit_runtime(&amp;context, module.target(), std::move(fn_module));</td></tr>
+<tr><th id="300">300</th><td></td></tr>
+<tr><th id="301">301</th><td>    llvm::SmallVector&lt;<em>char</em>, <var>4096</var>&gt; object;</td></tr>
+<tr><th id="302">302</th><td>    llvm::raw_svector_ostream object_stream(object);</td></tr>
+<tr><th id="303">303</th><td>    compile_llvm_module_to_object(*llvm_module, object_stream);</td></tr>
+<tr><th id="304">304</th><td></td></tr>
+<tr><th id="305">305</th><td>    <i>// TODO: surely there's a better way that doesn't require spooling things</i></td></tr>
+<tr><th id="306">306</th><td><i>    // out to temp files</i></td></tr>
+<tr><th id="307">307</th><td>    TemporaryFile obj_file(<q>""</q>, <q>".o"</q>);</td></tr>
+<tr><th id="308">308</th><td>    write_entire_file(obj_file.pathname(), object.data(), object.size());</td></tr>
+<tr><th id="309">309</th><td><u>#if WASM_DEBUG_LEVEL</u></td></tr>
+<tr><th id="310">310</th><td>    obj_file.detach();</td></tr>
+<tr><th id="311">311</th><td>    wdebug(<var>1</var>) &lt;&lt; <q>"Dumping obj_file to "</q> &lt;&lt; obj_file.pathname() &lt;&lt; <q>"\n"</q>;</td></tr>
+<tr><th id="312">312</th><td><u>#endif</u></td></tr>
+<tr><th id="313">313</th><td></td></tr>
+<tr><th id="314">314</th><td>    TemporaryFile wasm_output(<q>""</q>, <q>".wasm"</q>);</td></tr>
+<tr><th id="315">315</th><td></td></tr>
+<tr><th id="316">316</th><td>    std::string lld_arg_strs[] = {</td></tr>
+<tr><th id="317">317</th><td>        <q>"HalideJITLinker"</q>,</td></tr>
+<tr><th id="318">318</th><td>        <i>// For debugging purposes:</i></td></tr>
+<tr><th id="319">319</th><td><i>        // "--verbose",</i></td></tr>
+<tr><th id="320">320</th><td><i>        // "-error-limit=0",</i></td></tr>
+<tr><th id="321">321</th><td><i>        // "--print-gc-sections",</i></td></tr>
+<tr><th id="322">322</th><td>        <q>"--export=__heap_base"</q>,</td></tr>
+<tr><th id="323">323</th><td>        <q>"--allow-undefined"</q>,</td></tr>
+<tr><th id="324">324</th><td>        <q>"-zstack-size="</q> + std::to_string(stack_size),</td></tr>
+<tr><th id="325">325</th><td>        obj_file.pathname(),</td></tr>
+<tr><th id="326">326</th><td>        <q>"--entry="</q> + fn_name,</td></tr>
+<tr><th id="327">327</th><td>        <q>"-o"</q>,</td></tr>
+<tr><th id="328">328</th><td>        wasm_output.pathname()};</td></tr>
+<tr><th id="329">329</th><td></td></tr>
+<tr><th id="330">330</th><td>    <b>constexpr</b> <em>int</em> c = <b>sizeof</b>(lld_arg_strs) / <b>sizeof</b>(lld_arg_strs[<var>0</var>]);</td></tr>
+<tr><th id="331">331</th><td>    <em>const</em> <em>char</em> *lld_args[c];</td></tr>
+<tr><th id="332">332</th><td>    <b>for</b> (<em>int</em> i = <var>0</var>; i &lt; c; ++i) {</td></tr>
+<tr><th id="333">333</th><td>        lld_args[i] = lld_arg_strs[i].c_str();</td></tr>
+<tr><th id="334">334</th><td>    }</td></tr>
+<tr><th id="335">335</th><td></td></tr>
+<tr><th id="336">336</th><td>    <i>// lld will temporarily hijack the signal handlers to ensure that temp files get cleaned up,</i></td></tr>
+<tr><th id="337">337</th><td><i>    // but rather than preserving custom handlers in place, it restores the default handlers.</i></td></tr>
+<tr><th id="338">338</th><td><i>    // This conflicts with some of our testing infrastructure, which relies on a SIGABRT handler</i></td></tr>
+<tr><th id="339">339</th><td><i>    // set at global-ctor time to stay set. Therefore we'll save and restore this ourselves.</i></td></tr>
+<tr><th id="340">340</th><td><i>    // Note that we must restore it before using internal_error (and also on the non-error path).</i></td></tr>
+<tr><th id="341">341</th><td>    <em>auto</em> old_abort_handler = std::signal(SIGABRT, SIG_DFL);</td></tr>
+<tr><th id="342">342</th><td></td></tr>
+<tr><th id="343">343</th><td>    <b>if</b> (!lld::wasm::link(lld_args, <i>/*CanExitEarly*/</i> <b>false</b>, llvm::outs(), llvm::errs())) {</td></tr>
+<tr><th id="344">344</th><td>        std::signal(SIGABRT, old_abort_handler);</td></tr>
+<tr><th id="345">345</th><td>        internal_error &lt;&lt; <q>"lld::wasm::link failed\n"</q>;</td></tr>
+<tr><th id="346">346</th><td>    }</td></tr>
+<tr><th id="347">347</th><td></td></tr>
+<tr><th id="348">348</th><td>    std::signal(SIGABRT, old_abort_handler);</td></tr>
+<tr><th id="349">349</th><td></td></tr>
+<tr><th id="350">350</th><td><u>#if WASM_DEBUG_LEVEL</u></td></tr>
+<tr><th id="351">351</th><td>    wasm_output.detach();</td></tr>
+<tr><th id="352">352</th><td>    wdebug(<var>1</var>) &lt;&lt; <q>"Dumping linked wasm to "</q> &lt;&lt; wasm_output.pathname() &lt;&lt; <q>"\n"</q>;</td></tr>
+<tr><th id="353">353</th><td><u>#endif</u></td></tr>
+<tr><th id="354">354</th><td></td></tr>
+<tr><th id="355">355</th><td>    <b>return</b> read_entire_file(wasm_output.pathname());</td></tr>
+<tr><th id="356">356</th><td>}</td></tr>
+<tr><th id="357">357</th><td></td></tr>
+<tr><th id="358">358</th><td><b>inline</b> <b>constexpr</b> <em>int</em> halide_type_code(halide_type_code_t code, <em>int</em> bits) {</td></tr>
+<tr><th id="359">359</th><td>    <b>return</b> ((<em>int</em>)code) | (bits &lt;&lt; <var>8</var>);</td></tr>
+<tr><th id="360">360</th><td>}</td></tr>
+<tr><th id="361">361</th><td></td></tr>
+<tr><th id="362">362</th><td><i>// dynamic_type_dispatch is a utility for functors that want to be able</i></td></tr>
+<tr><th id="363">363</th><td><i>// to dynamically dispatch a halide_type_t to type-specialized code.</i></td></tr>
+<tr><th id="364">364</th><td><i>// To use it, a functor must be a *templated* class, e.g.</i></td></tr>
+<tr><th id="365">365</th><td><i>//</i></td></tr>
+<tr><th id="366">366</th><td><i>//     template&lt;typename T&gt; class MyFunctor { int operator()(arg1, arg2...); };</i></td></tr>
+<tr><th id="367">367</th><td><i>//</i></td></tr>
+<tr><th id="368">368</th><td><i>// dynamic_type_dispatch() is called with a halide_type_t as the first argument,</i></td></tr>
+<tr><th id="369">369</th><td><i>// followed by the arguments to the Functor's operator():</i></td></tr>
+<tr><th id="370">370</th><td><i>//</i></td></tr>
+<tr><th id="371">371</th><td><i>//     auto result = dynamic_type_dispatch&lt;MyFunctor&gt;(some_halide_type, arg1, arg2);</i></td></tr>
+<tr><th id="372">372</th><td><i>//</i></td></tr>
+<tr><th id="373">373</th><td><i>// Note that this means that the functor must be able to instantiate its</i></td></tr>
+<tr><th id="374">374</th><td><i>// operator() for all the Halide scalar types; it also means that all those</i></td></tr>
+<tr><th id="375">375</th><td><i>// variants *will* be instantiated (increasing code size), so this approach</i></td></tr>
+<tr><th id="376">376</th><td><i>// should only be used when strictly necessary.</i></td></tr>
+<tr><th id="377">377</th><td><i></i></td></tr>
+<tr><th id="378">378</th><td><i>// clang-format off</i></td></tr>
+<tr><th id="379">379</th><td><b>template</b>&lt;<b>template</b>&lt;<b>typename</b>&gt; <b>class</b> Functor, <b>typename</b>... Args&gt;</td></tr>
+<tr><th id="380">380</th><td><em>auto</em> dynamic_type_dispatch(<em>const</em> halide_type_t &amp;type, Args &amp;&amp;... args) -&gt; <b>decltype</b>(std::declval&lt;Functor&lt;uint8_t&gt;&gt;()(std::forward&lt;Args&gt;(args)...)) {</td></tr>
+<tr><th id="381">381</th><td></td></tr>
+<tr><th id="382">382</th><td><u>#define HANDLE_CASE(CODE, BITS, TYPE)  \</u></td></tr>
+<tr><th id="383">383</th><td><u>    case halide_type_code(CODE, BITS): \</u></td></tr>
+<tr><th id="384">384</th><td><u>        return Functor&lt;TYPE&gt;()(std::forward&lt;Args&gt;(args)...);</u></td></tr>
+<tr><th id="385">385</th><td></td></tr>
+<tr><th id="386">386</th><td>    <b>switch</b> (halide_type_code((halide_type_code_t)type.code, type.bits)) {</td></tr>
+<tr><th id="387">387</th><td>        HANDLE_CASE(halide_type_bfloat, <var>16</var>, bfloat16_t)</td></tr>
+<tr><th id="388">388</th><td>        HANDLE_CASE(halide_type_float, <var>16</var>, float16_t)</td></tr>
+<tr><th id="389">389</th><td>        HANDLE_CASE(halide_type_float, <var>32</var>, <em>float</em>)</td></tr>
+<tr><th id="390">390</th><td>        HANDLE_CASE(halide_type_float, <var>64</var>, <em>double</em>)</td></tr>
+<tr><th id="391">391</th><td>        HANDLE_CASE(halide_type_int, <var>8</var>, int8_t)</td></tr>
+<tr><th id="392">392</th><td>        HANDLE_CASE(halide_type_int, <var>16</var>, int16_t)</td></tr>
+<tr><th id="393">393</th><td>        HANDLE_CASE(halide_type_int, <var>32</var>, int32_t)</td></tr>
+<tr><th id="394">394</th><td>        HANDLE_CASE(halide_type_int, <var>64</var>, int64_t)</td></tr>
+<tr><th id="395">395</th><td>        HANDLE_CASE(halide_type_uint, <var>1</var>, <em>bool</em>)</td></tr>
+<tr><th id="396">396</th><td>        HANDLE_CASE(halide_type_uint, <var>8</var>, uint8_t)</td></tr>
+<tr><th id="397">397</th><td>        HANDLE_CASE(halide_type_uint, <var>16</var>, uint16_t)</td></tr>
+<tr><th id="398">398</th><td>        HANDLE_CASE(halide_type_uint, <var>32</var>, uint32_t)</td></tr>
+<tr><th id="399">399</th><td>        HANDLE_CASE(halide_type_uint, <var>64</var>, uint64_t)</td></tr>
+<tr><th id="400">400</th><td>        HANDLE_CASE(halide_type_handle, <var>64</var>, <em>void</em> *)</td></tr>
+<tr><th id="401">401</th><td>    <b>default</b>:</td></tr>
+<tr><th id="402">402</th><td>        internal_error;</td></tr>
+<tr><th id="403">403</th><td>        <b>using</b> ReturnType = <b>decltype</b>(std::declval&lt;Functor&lt;uint8_t&gt;&gt;()(std::forward&lt;Args&gt;(args)...));</td></tr>
+<tr><th id="404">404</th><td>        <b>return</b> ReturnType();</td></tr>
+<tr><th id="405">405</th><td>    }</td></tr>
+<tr><th id="406">406</th><td></td></tr>
+<tr><th id="407">407</th><td><u>#undef HANDLE_CASE</u></td></tr>
+<tr><th id="408">408</th><td>}</td></tr>
+<tr><th id="409">409</th><td><i>// clang-format on</i></td></tr>
+<tr><th id="410">410</th><td></td></tr>
+<tr><th id="411">411</th><td>std::string to_string(<em>const</em> wabt::MemoryStream &amp;m) {</td></tr>
+<tr><th id="412">412</th><td>    wabt::OutputBuffer &amp;o = <b>const_cast</b>&lt;wabt::MemoryStream *&gt;(&amp;m)-&gt;output_buffer();</td></tr>
+<tr><th id="413">413</th><td>    <b>return</b> std::string((<em>const</em> <em>char</em> *)o.data.data(), o.data.size());</td></tr>
+<tr><th id="414">414</th><td>}</td></tr>
+<tr><th id="415">415</th><td></td></tr>
+<tr><th id="416">416</th><td><b>struct</b> WabtContext {</td></tr>
+<tr><th id="417">417</th><td>    JITUserContext *<em>const</em> jit_user_context;</td></tr>
+<tr><th id="418">418</th><td>    wabt::interp::Memory &amp;memory;</td></tr>
+<tr><th id="419">419</th><td>    BDMalloc &amp;bdmalloc;</td></tr>
+<tr><th id="420">420</th><td></td></tr>
+<tr><th id="421">421</th><td>    <b>explicit</b> WabtContext(JITUserContext *jit_user_context, wabt::interp::Memory &amp;memory, BDMalloc &amp;bdmalloc)</td></tr>
+<tr><th id="422">422</th><td>        : jit_user_context(jit_user_context), memory(memory), bdmalloc(bdmalloc) {</td></tr>
+<tr><th id="423">423</th><td>    }</td></tr>
+<tr><th id="424">424</th><td></td></tr>
+<tr><th id="425">425</th><td>    WabtContext(<em>const</em> WabtContext &amp;) = <b>delete</b>;</td></tr>
+<tr><th id="426">426</th><td>    WabtContext(WabtContext &amp;&amp;) = <b>delete</b>;</td></tr>
+<tr><th id="427">427</th><td>    <em>void</em> <b>operator</b>=(<em>const</em> WabtContext &amp;) = <b>delete</b>;</td></tr>
+<tr><th id="428">428</th><td>    <em>void</em> <b>operator</b>=(WabtContext &amp;&amp;) = <b>delete</b>;</td></tr>
+<tr><th id="429">429</th><td>};</td></tr>
+<tr><th id="430">430</th><td></td></tr>
+<tr><th id="431">431</th><td>WabtContext &amp;get_wabt_context(wabt::interp::Thread &amp;thread) {</td></tr>
+<tr><th id="432">432</th><td>    <em>void</em> *host_info = thread.host_info();</td></tr>
+<tr><th id="433">433</th><td>    wassert(host_info);</td></tr>
+<tr><th id="434">434</th><td>    <b>return</b> *(WabtContext *)host_info;</td></tr>
+<tr><th id="435">435</th><td>}</td></tr>
+<tr><th id="436">436</th><td></td></tr>
+<tr><th id="437">437</th><td>uint8_t *get_wasm_memory_base(WabtContext &amp;wabt_context) {</td></tr>
+<tr><th id="438">438</th><td>    <b>return</b> wabt_context.memory.UnsafeData();</td></tr>
+<tr><th id="439">439</th><td>}</td></tr>
+<tr><th id="440">440</th><td></td></tr>
+<tr><th id="441">441</th><td>wasm32_ptr_t wabt_malloc(WabtContext &amp;wabt_context, size_t size) {</td></tr>
+<tr><th id="442">442</th><td>    wasm32_ptr_t p = wabt_context.bdmalloc.alloc_region(size);</td></tr>
+<tr><th id="443">443</th><td>    <b>if</b> (!p) {</td></tr>
+<tr><th id="444">444</th><td>        <b>constexpr</b> <em>int</em> kWasmPageSize = <var>65536</var>;</td></tr>
+<tr><th id="445">445</th><td>        <em>const</em> int32_t pages_needed = (size + kWasmPageSize - <var>1</var>) / <var>65536</var>;</td></tr>
+<tr><th id="446">446</th><td>        wdebug(<var>1</var>) &lt;&lt; <q>"attempting to grow by pages: "</q> &lt;&lt; pages_needed &lt;&lt; <q>"\n"</q>;</td></tr>
+<tr><th id="447">447</th><td></td></tr>
+<tr><th id="448">448</th><td>        wabt::Result r = wabt_context.memory.Grow(pages_needed);</td></tr>
+<tr><th id="449">449</th><td>        internal_assert(Succeeded(r)) &lt;&lt; <q>"Memory::Grow() failed"</q>;</td></tr>
+<tr><th id="450">450</th><td></td></tr>
+<tr><th id="451">451</th><td>        wabt_context.bdmalloc.grow_total_size(wabt_context.memory.ByteSize());</td></tr>
+<tr><th id="452">452</th><td>        p = wabt_context.bdmalloc.alloc_region(size);</td></tr>
+<tr><th id="453">453</th><td>    }</td></tr>
+<tr><th id="454">454</th><td></td></tr>
+<tr><th id="455">455</th><td>    wdebug(<var>2</var>) &lt;&lt; <q>"allocation of "</q> &lt;&lt; size &lt;&lt; <q>" at: "</q> &lt;&lt; p &lt;&lt; <q>"\n"</q>;</td></tr>
+<tr><th id="456">456</th><td>    <b>return</b> p;</td></tr>
+<tr><th id="457">457</th><td>}</td></tr>
+<tr><th id="458">458</th><td></td></tr>
+<tr><th id="459">459</th><td><em>void</em> wabt_free(WabtContext &amp;wabt_context, wasm32_ptr_t ptr) {</td></tr>
+<tr><th id="460">460</th><td>    wdebug(<var>2</var>) &lt;&lt; <q>"freeing ptr at: "</q> &lt;&lt; ptr &lt;&lt; <q>"\n"</q>;</td></tr>
+<tr><th id="461">461</th><td>    wabt_context.bdmalloc.free_region(ptr);</td></tr>
+<tr><th id="462">462</th><td>}</td></tr>
+<tr><th id="463">463</th><td></td></tr>
+<tr><th id="464">464</th><td><i>// Some internal code can call halide_error(null, ...), so this needs to be resilient to that.</i></td></tr>
+<tr><th id="465">465</th><td><i>// Callers must expect null and not crash.</i></td></tr>
+<tr><th id="466">466</th><td>JITUserContext *get_jit_user_context(WabtContext &amp;wabt_context, <em>const</em> wabt::interp::Value &amp;arg) {</td></tr>
+<tr><th id="467">467</th><td>    int32_t ucon_magic = arg.Get&lt;int32_t&gt;();</td></tr>
+<tr><th id="468">468</th><td>    <b>if</b> (ucon_magic == <var>0</var>) {</td></tr>
+<tr><th id="469">469</th><td>        <b>return</b> <b>nullptr</b>;</td></tr>
+<tr><th id="470">470</th><td>    }</td></tr>
+<tr><th id="471">471</th><td>    wassert(ucon_magic == kMagicJitUserContextValue);</td></tr>
+<tr><th id="472">472</th><td>    JITUserContext *jit_user_context = wabt_context.jit_user_context;</td></tr>
+<tr><th id="473">473</th><td>    wassert(jit_user_context);</td></tr>
+<tr><th id="474">474</th><td>    <b>return</b> jit_user_context;</td></tr>
+<tr><th id="475">475</th><td>}</td></tr>
+<tr><th id="476">476</th><td></td></tr>
+<tr><th id="477">477</th><td><i>// -----------------------</i></td></tr>
+<tr><th id="478">478</th><td><i>// halide_buffer_t &lt;-&gt; wasm_halide_buffer_t helpers</i></td></tr>
+<tr><th id="479">479</th><td><i>// -----------------------</i></td></tr>
+<tr><th id="480">480</th><td></td></tr>
+<tr><th id="481">481</th><td><b>struct</b> wasm_halide_buffer_t {</td></tr>
+<tr><th id="482">482</th><td>    uint64_t device;</td></tr>
+<tr><th id="483">483</th><td>    wasm32_ptr_t device_interface;  <i>// halide_device_interface_t*</i></td></tr>
+<tr><th id="484">484</th><td>    wasm32_ptr_t host;              <i>// uint8_t*</i></td></tr>
+<tr><th id="485">485</th><td>    uint64_t flags;</td></tr>
+<tr><th id="486">486</th><td>    halide_type_t type;</td></tr>
+<tr><th id="487">487</th><td>    int32_t dimensions;</td></tr>
+<tr><th id="488">488</th><td>    wasm32_ptr_t dim;      <i>// halide_dimension_t*</i></td></tr>
+<tr><th id="489">489</th><td>    wasm32_ptr_t padding;  <i>// always zero</i></td></tr>
+<tr><th id="490">490</th><td>};</td></tr>
+<tr><th id="491">491</th><td></td></tr>
+<tr><th id="492">492</th><td><em>void</em> dump_hostbuf(WabtContext &amp;wabt_context, <em>const</em> halide_buffer_t *buf, <em>const</em> std::string &amp;label) {</td></tr>
+<tr><th id="493">493</th><td><u>#if WASM_DEBUG_LEVEL &gt;= 2</u></td></tr>
+<tr><th id="494">494</th><td>    <em>const</em> halide_dimension_t *dim = buf-&gt;dim;</td></tr>
+<tr><th id="495">495</th><td>    <em>const</em> uint8_t *host = buf-&gt;host;</td></tr>
+<tr><th id="496">496</th><td></td></tr>
+<tr><th id="497">497</th><td>    wdebug(<var>1</var>) &lt;&lt; label &lt;&lt; <q>" = "</q> &lt;&lt; (<em>void</em> *)buf &lt;&lt; <q>" = {\n"</q>;</td></tr>
+<tr><th id="498">498</th><td>    wdebug(<var>1</var>) &lt;&lt; <q>"  device = "</q> &lt;&lt; buf-&gt;device &lt;&lt; <q>"\n"</q>;</td></tr>
+<tr><th id="499">499</th><td>    wdebug(<var>1</var>) &lt;&lt; <q>"  device_interface = "</q> &lt;&lt; buf-&gt;device_interface &lt;&lt; <q>"\n"</q>;</td></tr>
+<tr><th id="500">500</th><td>    wdebug(<var>1</var>) &lt;&lt; <q>"  host = "</q> &lt;&lt; (<em>void</em> *)host &lt;&lt; <q>" = {\n"</q>;</td></tr>
+<tr><th id="501">501</th><td>    <b>if</b> (host) {</td></tr>
+<tr><th id="502">502</th><td>        wdebug(<var>1</var>) &lt;&lt; <q>"    "</q> &lt;&lt; (<em>int</em>)host[<var>0</var>] &lt;&lt; <q>", "</q> &lt;&lt; (<em>int</em>)host[<var>1</var>] &lt;&lt; <q>", "</q> &lt;&lt; (<em>int</em>)host[<var>2</var>] &lt;&lt; <q>", "</q> &lt;&lt; (<em>int</em>)host[<var>3</var>] &lt;&lt; <q>"...\n"</q>;</td></tr>
+<tr><th id="503">503</th><td>    }</td></tr>
+<tr><th id="504">504</th><td>    wdebug(<var>1</var>) &lt;&lt; <q>"  }\n"</q>;</td></tr>
+<tr><th id="505">505</th><td>    wdebug(<var>1</var>) &lt;&lt; <q>"  flags = "</q> &lt;&lt; buf-&gt;flags &lt;&lt; <q>"\n"</q>;</td></tr>
+<tr><th id="506">506</th><td>    wdebug(<var>1</var>) &lt;&lt; <q>"  type = "</q> &lt;&lt; (<em>int</em>)buf-&gt;type.code &lt;&lt; <q>","</q> &lt;&lt; (<em>int</em>)buf-&gt;type.bits &lt;&lt; <q>","</q> &lt;&lt; buf-&gt;type.lanes &lt;&lt; <q>"\n"</q>;</td></tr>
+<tr><th id="507">507</th><td>    wdebug(<var>1</var>) &lt;&lt; <q>"  dimensions = "</q> &lt;&lt; buf-&gt;dimensions &lt;&lt; <q>"\n"</q>;</td></tr>
+<tr><th id="508">508</th><td>    wdebug(<var>1</var>) &lt;&lt; <q>"  dim = "</q> &lt;&lt; (<em>void</em> *)buf-&gt;dim &lt;&lt; <q>" = {\n"</q>;</td></tr>
+<tr><th id="509">509</th><td>    <b>for</b> (<em>int</em> i = <var>0</var>; i &lt; buf-&gt;dimensions; i++) {</td></tr>
+<tr><th id="510">510</th><td>        <em>const</em> <em>auto</em> &amp;d = dim[i];</td></tr>
+<tr><th id="511">511</th><td>        wdebug(<var>1</var>) &lt;&lt; <q>"    {"</q> &lt;&lt; d.min &lt;&lt; <q>","</q> &lt;&lt; d.extent &lt;&lt; <q>","</q> &lt;&lt; d.stride &lt;&lt; <q>","</q> &lt;&lt; d.flags &lt;&lt; <q>"},\n"</q>;</td></tr>
+<tr><th id="512">512</th><td>    }</td></tr>
+<tr><th id="513">513</th><td>    wdebug(<var>1</var>) &lt;&lt; <q>"  }\n"</q>;</td></tr>
+<tr><th id="514">514</th><td>    wdebug(<var>1</var>) &lt;&lt; <q>"  padding = "</q> &lt;&lt; buf-&gt;padding &lt;&lt; <q>"\n"</q>;</td></tr>
+<tr><th id="515">515</th><td>    wdebug(<var>1</var>) &lt;&lt; <q>"}\n"</q>;</td></tr>
+<tr><th id="516">516</th><td><u>#endif</u></td></tr>
+<tr><th id="517">517</th><td>}</td></tr>
+<tr><th id="518">518</th><td></td></tr>
+<tr><th id="519">519</th><td><em>void</em> dump_wasmbuf(WabtContext &amp;wabt_context, wasm32_ptr_t buf_ptr, <em>const</em> std::string &amp;label) {</td></tr>
+<tr><th id="520">520</th><td><u>#if WASM_DEBUG_LEVEL &gt;= 2</u></td></tr>
+<tr><th id="521">521</th><td>    wassert(buf_ptr);</td></tr>
+<tr><th id="522">522</th><td></td></tr>
+<tr><th id="523">523</th><td>    uint8_t *base = get_wasm_memory_base(wabt_context);</td></tr>
+<tr><th id="524">524</th><td>    wasm_halide_buffer_t *buf = (wasm_halide_buffer_t *)(base + buf_ptr);</td></tr>
+<tr><th id="525">525</th><td>    halide_dimension_t *dim = buf-&gt;dim ? (halide_dimension_t *)(base + buf-&gt;dim) : <b>nullptr</b>;</td></tr>
+<tr><th id="526">526</th><td>    uint8_t *host = buf-&gt;host ? (base + buf-&gt;host) : <b>nullptr</b>;</td></tr>
+<tr><th id="527">527</th><td></td></tr>
+<tr><th id="528">528</th><td>    wdebug(<var>1</var>) &lt;&lt; label &lt;&lt; <q>" = "</q> &lt;&lt; buf_ptr &lt;&lt; <q>" -&gt; "</q> &lt;&lt; (<em>void</em> *)buf &lt;&lt; <q>" = {\n"</q>;</td></tr>
+<tr><th id="529">529</th><td>    wdebug(<var>1</var>) &lt;&lt; <q>"  device = "</q> &lt;&lt; buf-&gt;device &lt;&lt; <q>"\n"</q>;</td></tr>
+<tr><th id="530">530</th><td>    wdebug(<var>1</var>) &lt;&lt; <q>"  device_interface = "</q> &lt;&lt; buf-&gt;device_interface &lt;&lt; <q>"\n"</q>;</td></tr>
+<tr><th id="531">531</th><td>    wdebug(<var>1</var>) &lt;&lt; <q>"  host = "</q> &lt;&lt; buf-&gt;host &lt;&lt; <q>" -&gt; "</q> &lt;&lt; (<em>void</em> *)host &lt;&lt; <q>" = {\n"</q>;</td></tr>
+<tr><th id="532">532</th><td>    <b>if</b> (host) {</td></tr>
+<tr><th id="533">533</th><td>        wdebug(<var>1</var>) &lt;&lt; <q>"    "</q> &lt;&lt; (<em>int</em>)host[<var>0</var>] &lt;&lt; <q>", "</q> &lt;&lt; (<em>int</em>)host[<var>1</var>] &lt;&lt; <q>", "</q> &lt;&lt; (<em>int</em>)host[<var>2</var>] &lt;&lt; <q>", "</q> &lt;&lt; (<em>int</em>)host[<var>3</var>] &lt;&lt; <q>"...\n"</q>;</td></tr>
+<tr><th id="534">534</th><td>    }</td></tr>
+<tr><th id="535">535</th><td>    wdebug(<var>1</var>) &lt;&lt; <q>"  }\n"</q>;</td></tr>
+<tr><th id="536">536</th><td>    wdebug(<var>1</var>) &lt;&lt; <q>"  flags = "</q> &lt;&lt; buf-&gt;flags &lt;&lt; <q>"\n"</q>;</td></tr>
+<tr><th id="537">537</th><td>    wdebug(<var>1</var>) &lt;&lt; <q>"  type = "</q> &lt;&lt; (<em>int</em>)buf-&gt;type.code &lt;&lt; <q>","</q> &lt;&lt; (<em>int</em>)buf-&gt;type.bits &lt;&lt; <q>","</q> &lt;&lt; buf-&gt;type.lanes &lt;&lt; <q>"\n"</q>;</td></tr>
+<tr><th id="538">538</th><td>    wdebug(<var>1</var>) &lt;&lt; <q>"  dimensions = "</q> &lt;&lt; buf-&gt;dimensions &lt;&lt; <q>"\n"</q>;</td></tr>
+<tr><th id="539">539</th><td>    wdebug(<var>1</var>) &lt;&lt; <q>"  dim = "</q> &lt;&lt; buf-&gt;dim &lt;&lt; <q>" -&gt; "</q> &lt;&lt; (<em>void</em> *)dim &lt;&lt; <q>" = {\n"</q>;</td></tr>
+<tr><th id="540">540</th><td>    <b>for</b> (<em>int</em> i = <var>0</var>; i &lt; buf-&gt;dimensions; i++) {</td></tr>
+<tr><th id="541">541</th><td>        <em>const</em> <em>auto</em> &amp;d = dim[i];</td></tr>
+<tr><th id="542">542</th><td>        wdebug(<var>1</var>) &lt;&lt; <q>"    {"</q> &lt;&lt; d.min &lt;&lt; <q>","</q> &lt;&lt; d.extent &lt;&lt; <q>","</q> &lt;&lt; d.stride &lt;&lt; <q>","</q> &lt;&lt; d.flags &lt;&lt; <q>"},\n"</q>;</td></tr>
+<tr><th id="543">543</th><td>    }</td></tr>
+<tr><th id="544">544</th><td>    wdebug(<var>1</var>) &lt;&lt; <q>"  }\n"</q>;</td></tr>
+<tr><th id="545">545</th><td>    wdebug(<var>1</var>) &lt;&lt; <q>"  padding = "</q> &lt;&lt; buf-&gt;padding &lt;&lt; <q>"\n"</q>;</td></tr>
+<tr><th id="546">546</th><td>    wdebug(<var>1</var>) &lt;&lt; <q>"}\n"</q>;</td></tr>
+<tr><th id="547">547</th><td><u>#endif</u></td></tr>
+<tr><th id="548">548</th><td>}</td></tr>
+<tr><th id="549">549</th><td></td></tr>
+<tr><th id="550">550</th><td><b>static_assert</b>(<b>sizeof</b>(halide_type_t) == <var>4</var>, <q>"halide_type_t"</q>);</td></tr>
+<tr><th id="551">551</th><td><b>static_assert</b>(<b>sizeof</b>(halide_dimension_t) == <var>16</var>, <q>"halide_dimension_t"</q>);</td></tr>
+<tr><th id="552">552</th><td><b>static_assert</b>(<b>sizeof</b>(wasm_halide_buffer_t) == <var>40</var>, <q>"wasm_halide_buffer_t"</q>);</td></tr>
+<tr><th id="553">553</th><td></td></tr>
+<tr><th id="554">554</th><td><i>// Given a halide_buffer_t on the host, allocate a wasm_halide_buffer_t in wasm</i></td></tr>
+<tr><th id="555">555</th><td><i>// memory space and copy all relevant data. The resulting buf is laid out in</i></td></tr>
+<tr><th id="556">556</th><td><i>// contiguous memory, and can be free with a single free().</i></td></tr>
+<tr><th id="557">557</th><td>wasm32_ptr_t hostbuf_to_wasmbuf(WabtContext &amp;wabt_context, <em>const</em> halide_buffer_t *src) {</td></tr>
+<tr><th id="558">558</th><td>    <b>static_assert</b>(<b>sizeof</b>(halide_type_t) == <var>4</var>, <q>"halide_type_t"</q>);</td></tr>
+<tr><th id="559">559</th><td>    <b>static_assert</b>(<b>sizeof</b>(halide_dimension_t) == <var>16</var>, <q>"halide_dimension_t"</q>);</td></tr>
+<tr><th id="560">560</th><td>    <b>static_assert</b>(<b>sizeof</b>(wasm_halide_buffer_t) == <var>40</var>, <q>"wasm_halide_buffer_t"</q>);</td></tr>
+<tr><th id="561">561</th><td></td></tr>
+<tr><th id="562">562</th><td>    wdebug(<var>2</var>) &lt;&lt; <q>"\nhostbuf_to_wasmbuf:\n"</q>;</td></tr>
+<tr><th id="563">563</th><td>    <b>if</b> (!src) {</td></tr>
+<tr><th id="564">564</th><td>        <b>return</b> <var>0</var>;</td></tr>
+<tr><th id="565">565</th><td>    }</td></tr>
+<tr><th id="566">566</th><td></td></tr>
+<tr><th id="567">567</th><td>    dump_hostbuf(wabt_context, src, <q>"src"</q>);</td></tr>
+<tr><th id="568">568</th><td></td></tr>
+<tr><th id="569">569</th><td>    wassert(src-&gt;device == <var>0</var>);</td></tr>
+<tr><th id="570">570</th><td>    wassert(src-&gt;device_interface == <b>nullptr</b>);</td></tr>
+<tr><th id="571">571</th><td></td></tr>
+<tr><th id="572">572</th><td>    <i>// Assume our malloc() has everything 32-byte aligned,</i></td></tr>
+<tr><th id="573">573</th><td><i>    // and insert enough padding for host to also be 32-byte aligned.</i></td></tr>
+<tr><th id="574">574</th><td>    <em>const</em> size_t dims_size_in_bytes = <b>sizeof</b>(halide_dimension_t) * src-&gt;dimensions;</td></tr>
+<tr><th id="575">575</th><td>    <em>const</em> size_t dims_offset = <b>sizeof</b>(wasm_halide_buffer_t);</td></tr>
+<tr><th id="576">576</th><td>    <em>const</em> size_t mem_needed_base = <b>sizeof</b>(wasm_halide_buffer_t) + dims_size_in_bytes;</td></tr>
+<tr><th id="577">577</th><td>    <em>const</em> size_t host_offset = align_up(mem_needed_base);</td></tr>
+<tr><th id="578">578</th><td>    <em>const</em> size_t host_size_in_bytes = src-&gt;size_in_bytes();</td></tr>
+<tr><th id="579">579</th><td>    <em>const</em> size_t mem_needed = host_offset + host_size_in_bytes;</td></tr>
+<tr><th id="580">580</th><td></td></tr>
+<tr><th id="581">581</th><td>    <em>const</em> wasm32_ptr_t dst_ptr = wabt_malloc(wabt_context, mem_needed);</td></tr>
+<tr><th id="582">582</th><td>    wassert(dst_ptr);</td></tr>
+<tr><th id="583">583</th><td></td></tr>
+<tr><th id="584">584</th><td>    uint8_t *base = get_wasm_memory_base(wabt_context);</td></tr>
+<tr><th id="585">585</th><td></td></tr>
+<tr><th id="586">586</th><td>    wasm_halide_buffer_t *dst = (wasm_halide_buffer_t *)(base + dst_ptr);</td></tr>
+<tr><th id="587">587</th><td>    dst-&gt;device = <var>0</var>;</td></tr>
+<tr><th id="588">588</th><td>    dst-&gt;device_interface = <var>0</var>;</td></tr>
+<tr><th id="589">589</th><td>    dst-&gt;host = src-&gt;host ? (dst_ptr + host_offset) : <var>0</var>;</td></tr>
+<tr><th id="590">590</th><td>    dst-&gt;flags = src-&gt;flags;</td></tr>
+<tr><th id="591">591</th><td>    dst-&gt;type = src-&gt;type;</td></tr>
+<tr><th id="592">592</th><td>    dst-&gt;dimensions = src-&gt;dimensions;</td></tr>
+<tr><th id="593">593</th><td>    dst-&gt;dim = src-&gt;dimensions ? (dst_ptr + dims_offset) : <var>0</var>;</td></tr>
+<tr><th id="594">594</th><td>    dst-&gt;padding = <var>0</var>;</td></tr>
+<tr><th id="595">595</th><td></td></tr>
+<tr><th id="596">596</th><td>    <b>if</b> (src-&gt;dim) {</td></tr>
+<tr><th id="597">597</th><td>        memcpy(base + dst-&gt;dim, src-&gt;dim, dims_size_in_bytes);</td></tr>
+<tr><th id="598">598</th><td>    }</td></tr>
+<tr><th id="599">599</th><td>    <b>if</b> (src-&gt;host) {</td></tr>
+<tr><th id="600">600</th><td>        memcpy(base + dst-&gt;host, src-&gt;host, host_size_in_bytes);</td></tr>
+<tr><th id="601">601</th><td>    }</td></tr>
+<tr><th id="602">602</th><td></td></tr>
+<tr><th id="603">603</th><td>    dump_wasmbuf(wabt_context, dst_ptr, <q>"dst"</q>);</td></tr>
+<tr><th id="604">604</th><td></td></tr>
+<tr><th id="605">605</th><td>    <b>return</b> dst_ptr;</td></tr>
+<tr><th id="606">606</th><td>}</td></tr>
+<tr><th id="607">607</th><td></td></tr>
+<tr><th id="608">608</th><td><i>// Given a pointer to a wasm_halide_buffer_t in wasm memory space,</i></td></tr>
+<tr><th id="609">609</th><td><i>// allocate a Buffer&lt;&gt; on the host and copy all relevant data.</i></td></tr>
+<tr><th id="610">610</th><td><em>void</em> wasmbuf_to_hostbuf(WabtContext &amp;wabt_context, wasm32_ptr_t src_ptr, Halide::Runtime::Buffer&lt;&gt; &amp;dst) {</td></tr>
+<tr><th id="611">611</th><td>    wdebug(<var>2</var>) &lt;&lt; <q>"\nwasmbuf_to_hostbuf:\n"</q>;</td></tr>
+<tr><th id="612">612</th><td></td></tr>
+<tr><th id="613">613</th><td>    dump_wasmbuf(wabt_context, src_ptr, <q>"src"</q>);</td></tr>
+<tr><th id="614">614</th><td></td></tr>
+<tr><th id="615">615</th><td>    wassert(src_ptr);</td></tr>
+<tr><th id="616">616</th><td></td></tr>
+<tr><th id="617">617</th><td>    uint8_t *base = get_wasm_memory_base(wabt_context);</td></tr>
+<tr><th id="618">618</th><td></td></tr>
+<tr><th id="619">619</th><td>    wasm_halide_buffer_t *src = (wasm_halide_buffer_t *)(base + src_ptr);</td></tr>
+<tr><th id="620">620</th><td></td></tr>
+<tr><th id="621">621</th><td>    wassert(src-&gt;device == <var>0</var>);</td></tr>
+<tr><th id="622">622</th><td>    wassert(src-&gt;device_interface == <var>0</var>);</td></tr>
+<tr><th id="623">623</th><td></td></tr>
+<tr><th id="624">624</th><td>    halide_buffer_t dst_tmp;</td></tr>
+<tr><th id="625">625</th><td>    dst_tmp.device = <var>0</var>;</td></tr>
+<tr><th id="626">626</th><td>    dst_tmp.device_interface = <b>nullptr</b>;</td></tr>
+<tr><th id="627">627</th><td>    dst_tmp.host = <b>nullptr</b>;  <i>// src-&gt;host ? (base + src-&gt;host) : nullptr;</i></td></tr>
+<tr><th id="628">628</th><td>    dst_tmp.flags = src-&gt;flags;</td></tr>
+<tr><th id="629">629</th><td>    dst_tmp.type = src-&gt;type;</td></tr>
+<tr><th id="630">630</th><td>    dst_tmp.dimensions = src-&gt;dimensions;</td></tr>
+<tr><th id="631">631</th><td>    dst_tmp.dim = src-&gt;dim ? (halide_dimension_t *)(base + src-&gt;dim) : <b>nullptr</b>;</td></tr>
+<tr><th id="632">632</th><td>    dst_tmp.padding = <b>nullptr</b>;</td></tr>
+<tr><th id="633">633</th><td></td></tr>
+<tr><th id="634">634</th><td>    dump_hostbuf(wabt_context, &amp;dst_tmp, <q>"dst_tmp"</q>);</td></tr>
+<tr><th id="635">635</th><td></td></tr>
+<tr><th id="636">636</th><td>    dst = Halide::Runtime::Buffer&lt;&gt;(dst_tmp);</td></tr>
+<tr><th id="637">637</th><td>    <b>if</b> (src-&gt;host) {</td></tr>
+<tr><th id="638">638</th><td>        <i>// Don't use dst.copy(); it can tweak strides in ways that matter.</i></td></tr>
+<tr><th id="639">639</th><td>        dst.allocate();</td></tr>
+<tr><th id="640">640</th><td>        <em>const</em> size_t host_size_in_bytes = dst.raw_buffer()-&gt;size_in_bytes();</td></tr>
+<tr><th id="641">641</th><td>        memcpy(dst.raw_buffer()-&gt;host, base + src-&gt;host, host_size_in_bytes);</td></tr>
+<tr><th id="642">642</th><td>    }</td></tr>
+<tr><th id="643">643</th><td>    dump_hostbuf(wabt_context, dst.raw_buffer(), <q>"dst"</q>);</td></tr>
+<tr><th id="644">644</th><td>}</td></tr>
+<tr><th id="645">645</th><td></td></tr>
+<tr><th id="646">646</th><td><i>// Given a wasm_halide_buffer_t, copy possibly-changed data into a halide_buffer_t.</i></td></tr>
+<tr><th id="647">647</th><td><i>// Both buffers are asserted to match in type and dimensions.</i></td></tr>
+<tr><th id="648">648</th><td><em>void</em> copy_wasmbuf_to_existing_hostbuf(WabtContext &amp;wabt_context, wasm32_ptr_t src_ptr, halide_buffer_t *dst) {</td></tr>
+<tr><th id="649">649</th><td>    wassert(src_ptr &amp;&amp; dst);</td></tr>
+<tr><th id="650">650</th><td></td></tr>
+<tr><th id="651">651</th><td>    wdebug(<var>2</var>) &lt;&lt; <q>"\ncopy_wasmbuf_to_existing_hostbuf:\n"</q>;</td></tr>
+<tr><th id="652">652</th><td>    dump_wasmbuf(wabt_context, src_ptr, <q>"src"</q>);</td></tr>
+<tr><th id="653">653</th><td></td></tr>
+<tr><th id="654">654</th><td>    uint8_t *base = get_wasm_memory_base(wabt_context);</td></tr>
+<tr><th id="655">655</th><td></td></tr>
+<tr><th id="656">656</th><td>    wasm_halide_buffer_t *src = (wasm_halide_buffer_t *)(base + src_ptr);</td></tr>
+<tr><th id="657">657</th><td>    wassert(src-&gt;device == <var>0</var>);</td></tr>
+<tr><th id="658">658</th><td>    wassert(src-&gt;device_interface == <var>0</var>);</td></tr>
+<tr><th id="659">659</th><td>    wassert(src-&gt;dimensions == dst-&gt;dimensions);</td></tr>
+<tr><th id="660">660</th><td>    wassert(src-&gt;type == dst-&gt;type);</td></tr>
+<tr><th id="661">661</th><td></td></tr>
+<tr><th id="662">662</th><td>    dump_hostbuf(wabt_context, dst, <q>"dst_pre"</q>);</td></tr>
+<tr><th id="663">663</th><td></td></tr>
+<tr><th id="664">664</th><td>    <b>if</b> (src-&gt;dimensions) {</td></tr>
+<tr><th id="665">665</th><td>        memcpy(dst-&gt;dim, base + src-&gt;dim, <b>sizeof</b>(halide_dimension_t) * src-&gt;dimensions);</td></tr>
+<tr><th id="666">666</th><td>    }</td></tr>
+<tr><th id="667">667</th><td>    <b>if</b> (src-&gt;host) {</td></tr>
+<tr><th id="668">668</th><td>        size_t host_size_in_bytes = dst-&gt;size_in_bytes();</td></tr>
+<tr><th id="669">669</th><td>        memcpy(dst-&gt;host, base + src-&gt;host, host_size_in_bytes);</td></tr>
+<tr><th id="670">670</th><td>    }</td></tr>
+<tr><th id="671">671</th><td></td></tr>
+<tr><th id="672">672</th><td>    dst-&gt;device = <var>0</var>;</td></tr>
+<tr><th id="673">673</th><td>    dst-&gt;device_interface = <b>nullptr</b>;</td></tr>
+<tr><th id="674">674</th><td>    dst-&gt;flags = src-&gt;flags;</td></tr>
+<tr><th id="675">675</th><td></td></tr>
+<tr><th id="676">676</th><td>    dump_hostbuf(wabt_context, dst, <q>"dst_post"</q>);</td></tr>
+<tr><th id="677">677</th><td>}</td></tr>
+<tr><th id="678">678</th><td></td></tr>
+<tr><th id="679">679</th><td><i>// Given a halide_buffer_t, copy possibly-changed data into a wasm_halide_buffer_t.</i></td></tr>
+<tr><th id="680">680</th><td><i>// Both buffers are asserted to match in type and dimensions.</i></td></tr>
+<tr><th id="681">681</th><td><em>void</em> copy_hostbuf_to_existing_wasmbuf(WabtContext &amp;wabt_context, <em>const</em> halide_buffer_t *src, wasm32_ptr_t dst_ptr) {</td></tr>
+<tr><th id="682">682</th><td>    wassert(src &amp;&amp; dst_ptr);</td></tr>
+<tr><th id="683">683</th><td></td></tr>
+<tr><th id="684">684</th><td>    wdebug(<var>1</var>) &lt;&lt; <q>"\ncopy_hostbuf_to_existing_wasmbuf:\n"</q>;</td></tr>
+<tr><th id="685">685</th><td>    dump_hostbuf(wabt_context, src, <q>"src"</q>);</td></tr>
+<tr><th id="686">686</th><td></td></tr>
+<tr><th id="687">687</th><td>    uint8_t *base = get_wasm_memory_base(wabt_context);</td></tr>
+<tr><th id="688">688</th><td></td></tr>
+<tr><th id="689">689</th><td>    wasm_halide_buffer_t *dst = (wasm_halide_buffer_t *)(base + dst_ptr);</td></tr>
+<tr><th id="690">690</th><td>    wassert(src-&gt;device == <var>0</var>);</td></tr>
+<tr><th id="691">691</th><td>    wassert(src-&gt;device_interface == <var>0</var>);</td></tr>
+<tr><th id="692">692</th><td>    wassert(src-&gt;dimensions == dst-&gt;dimensions);</td></tr>
+<tr><th id="693">693</th><td>    wassert(src-&gt;type == dst-&gt;type);</td></tr>
+<tr><th id="694">694</th><td></td></tr>
+<tr><th id="695">695</th><td>    dump_wasmbuf(wabt_context, dst_ptr, <q>"dst_pre"</q>);</td></tr>
+<tr><th id="696">696</th><td></td></tr>
+<tr><th id="697">697</th><td>    <b>if</b> (src-&gt;dimensions) {</td></tr>
+<tr><th id="698">698</th><td>        memcpy(base + dst-&gt;dim, src-&gt;dim, <b>sizeof</b>(halide_dimension_t) * src-&gt;dimensions);</td></tr>
+<tr><th id="699">699</th><td>    }</td></tr>
+<tr><th id="700">700</th><td>    <b>if</b> (src-&gt;host) {</td></tr>
+<tr><th id="701">701</th><td>        size_t host_size_in_bytes = src-&gt;size_in_bytes();</td></tr>
+<tr><th id="702">702</th><td>        memcpy(base + dst-&gt;host, src-&gt;host, host_size_in_bytes);</td></tr>
+<tr><th id="703">703</th><td>    }</td></tr>
+<tr><th id="704">704</th><td></td></tr>
+<tr><th id="705">705</th><td>    dst-&gt;device = <var>0</var>;</td></tr>
+<tr><th id="706">706</th><td>    dst-&gt;device_interface = <var>0</var>;</td></tr>
+<tr><th id="707">707</th><td>    dst-&gt;flags = src-&gt;flags;</td></tr>
+<tr><th id="708">708</th><td></td></tr>
+<tr><th id="709">709</th><td>    dump_wasmbuf(wabt_context, dst_ptr, <q>"dst_post"</q>);</td></tr>
+<tr><th id="710">710</th><td>}</td></tr>
+<tr><th id="711">711</th><td></td></tr>
+<tr><th id="712">712</th><td><i>// --------------------------------------------------</i></td></tr>
+<tr><th id="713">713</th><td><i>// Helpers for converting to/from wabt::interp::Value</i></td></tr>
+<tr><th id="714">714</th><td><i>// --------------------------------------------------</i></td></tr>
+<tr><th id="715">715</th><td></td></tr>
+<tr><th id="716">716</th><td><b>template</b>&lt;<b>typename</b> T&gt;</td></tr>
+<tr><th id="717">717</th><td><b>struct</b> LoadValue {</td></tr>
+<tr><th id="718">718</th><td>    <b>inline</b> wabt::interp::Value <b>operator</b>()(<em>const</em> <em>void</em> *src) {</td></tr>
+<tr><th id="719">719</th><td>        <em>const</em> T val = *(<em>const</em> T *)(src);</td></tr>
+<tr><th id="720">720</th><td>        <b>return</b> wabt::interp::Value::Make(val);</td></tr>
+<tr><th id="721">721</th><td>    }</td></tr>
+<tr><th id="722">722</th><td>};</td></tr>
+<tr><th id="723">723</th><td></td></tr>
+<tr><th id="724">724</th><td><b>template</b>&lt;&gt;</td></tr>
+<tr><th id="725">725</th><td><b>inline</b> wabt::interp::Value LoadValue&lt;<em>bool</em>&gt;::<b>operator</b>()(<em>const</em> <em>void</em> *src) {</td></tr>
+<tr><th id="726">726</th><td>    <i>// WABT doesn't do bools. Stash as u8 for now.</i></td></tr>
+<tr><th id="727">727</th><td>    <em>const</em> uint8_t val = *(<em>const</em> uint8_t *)src;</td></tr>
+<tr><th id="728">728</th><td>    <b>return</b> wabt::interp::Value::Make(val);</td></tr>
+<tr><th id="729">729</th><td>}</td></tr>
+<tr><th id="730">730</th><td></td></tr>
+<tr><th id="731">731</th><td><b>template</b>&lt;&gt;</td></tr>
+<tr><th id="732">732</th><td><b>inline</b> wabt::interp::Value LoadValue&lt;<em>void</em> *&gt;::<b>operator</b>()(<em>const</em> <em>void</em> *src) {</td></tr>
+<tr><th id="733">733</th><td>    <i>// Halide 'handle' types are always uint64, even on 32-bit systems</i></td></tr>
+<tr><th id="734">734</th><td>    <em>const</em> uint64_t val = *(<em>const</em> uint64_t *)src;</td></tr>
+<tr><th id="735">735</th><td>    <b>return</b> wabt::interp::Value::Make(val);</td></tr>
+<tr><th id="736">736</th><td>}</td></tr>
+<tr><th id="737">737</th><td></td></tr>
+<tr><th id="738">738</th><td><b>template</b>&lt;&gt;</td></tr>
+<tr><th id="739">739</th><td><b>inline</b> wabt::interp::Value LoadValue&lt;float16_t&gt;::<b>operator</b>()(<em>const</em> <em>void</em> *src) {</td></tr>
+<tr><th id="740">740</th><td>    <em>const</em> uint16_t val = *(<em>const</em> uint16_t *)src;</td></tr>
+<tr><th id="741">741</th><td>    <b>return</b> wabt::interp::Value::Make(val);</td></tr>
+<tr><th id="742">742</th><td>}</td></tr>
+<tr><th id="743">743</th><td></td></tr>
+<tr><th id="744">744</th><td><b>template</b>&lt;&gt;</td></tr>
+<tr><th id="745">745</th><td><b>inline</b> wabt::interp::Value LoadValue&lt;bfloat16_t&gt;::<b>operator</b>()(<em>const</em> <em>void</em> *src) {</td></tr>
+<tr><th id="746">746</th><td>    <em>const</em> uint16_t val = *(<em>const</em> uint16_t *)src;</td></tr>
+<tr><th id="747">747</th><td>    <b>return</b> wabt::interp::Value::Make(val);</td></tr>
+<tr><th id="748">748</th><td>}</td></tr>
+<tr><th id="749">749</th><td></td></tr>
+<tr><th id="750">750</th><td><b>inline</b> wabt::interp::Value load_value(<em>const</em> Type &amp;t, <em>const</em> <em>void</em> *src) {</td></tr>
+<tr><th id="751">751</th><td>    <b>return</b> dynamic_type_dispatch&lt;LoadValue&gt;(t, src);</td></tr>
+<tr><th id="752">752</th><td>}</td></tr>
+<tr><th id="753">753</th><td></td></tr>
+<tr><th id="754">754</th><td><b>template</b>&lt;<b>typename</b> T&gt;</td></tr>
+<tr><th id="755">755</th><td><b>inline</b> wabt::interp::Value load_value(<em>const</em> T &amp;val) {</td></tr>
+<tr><th id="756">756</th><td>    <b>return</b> LoadValue&lt;T&gt;()(&amp;val);</td></tr>
+<tr><th id="757">757</th><td>}</td></tr>
+<tr><th id="758">758</th><td></td></tr>
+<tr><th id="759">759</th><td><i>// -----</i></td></tr>
+<tr><th id="760">760</th><td></td></tr>
+<tr><th id="761">761</th><td><b>template</b>&lt;<b>typename</b> T&gt;</td></tr>
+<tr><th id="762">762</th><td><b>struct</b> StoreValue {</td></tr>
+<tr><th id="763">763</th><td>    <b>inline</b> <em>void</em> <b>operator</b>()(<em>const</em> wabt::interp::Value &amp;src, <em>void</em> *dst) {</td></tr>
+<tr><th id="764">764</th><td>        *(T *)dst = src.Get&lt;T&gt;();</td></tr>
+<tr><th id="765">765</th><td>    }</td></tr>
+<tr><th id="766">766</th><td>};</td></tr>
+<tr><th id="767">767</th><td></td></tr>
+<tr><th id="768">768</th><td><b>template</b>&lt;&gt;</td></tr>
+<tr><th id="769">769</th><td><b>inline</b> <em>void</em> StoreValue&lt;<em>bool</em>&gt;::<b>operator</b>()(<em>const</em> wabt::interp::Value &amp;src, <em>void</em> *dst) {</td></tr>
+<tr><th id="770">770</th><td>    <i>// WABT doesn't do bools. Stash as u8 for now.</i></td></tr>
+<tr><th id="771">771</th><td>    *(uint8_t *)dst = src.Get&lt;uint8_t&gt;();</td></tr>
+<tr><th id="772">772</th><td>}</td></tr>
+<tr><th id="773">773</th><td></td></tr>
+<tr><th id="774">774</th><td><b>template</b>&lt;&gt;</td></tr>
+<tr><th id="775">775</th><td><b>inline</b> <em>void</em> StoreValue&lt;<em>void</em> *&gt;::<b>operator</b>()(<em>const</em> wabt::interp::Value &amp;src, <em>void</em> *dst) {</td></tr>
+<tr><th id="776">776</th><td>    <i>// Halide 'handle' types are always uint64, even on 32-bit systems</i></td></tr>
+<tr><th id="777">777</th><td>    *(uint64_t *)dst = src.Get&lt;uint64_t&gt;();</td></tr>
+<tr><th id="778">778</th><td>}</td></tr>
+<tr><th id="779">779</th><td></td></tr>
+<tr><th id="780">780</th><td><b>template</b>&lt;&gt;</td></tr>
+<tr><th id="781">781</th><td><b>inline</b> <em>void</em> StoreValue&lt;float16_t&gt;::<b>operator</b>()(<em>const</em> wabt::interp::Value &amp;src, <em>void</em> *dst) {</td></tr>
+<tr><th id="782">782</th><td>    *(uint16_t *)dst = src.Get&lt;uint16_t&gt;();</td></tr>
+<tr><th id="783">783</th><td>}</td></tr>
+<tr><th id="784">784</th><td></td></tr>
+<tr><th id="785">785</th><td><b>template</b>&lt;&gt;</td></tr>
+<tr><th id="786">786</th><td><b>inline</b> <em>void</em> StoreValue&lt;bfloat16_t&gt;::<b>operator</b>()(<em>const</em> wabt::interp::Value &amp;src, <em>void</em> *dst) {</td></tr>
+<tr><th id="787">787</th><td>    *(uint16_t *)dst = src.Get&lt;uint16_t&gt;();</td></tr>
+<tr><th id="788">788</th><td>}</td></tr>
+<tr><th id="789">789</th><td></td></tr>
+<tr><th id="790">790</th><td><b>inline</b> <em>void</em> store_value(<em>const</em> Type &amp;t, <em>const</em> wabt::interp::Value &amp;src, <em>void</em> *dst) {</td></tr>
+<tr><th id="791">791</th><td>    dynamic_type_dispatch&lt;StoreValue&gt;(t, src, dst);</td></tr>
+<tr><th id="792">792</th><td>}</td></tr>
+<tr><th id="793">793</th><td></td></tr>
+<tr><th id="794">794</th><td><b>template</b>&lt;<b>typename</b> T&gt;</td></tr>
+<tr><th id="795">795</th><td><b>inline</b> <em>void</em> store_value(<em>const</em> wabt::interp::Value &amp;src, T *dst) {</td></tr>
+<tr><th id="796">796</th><td>    StoreValue&lt;T&gt;()(src, dst);</td></tr>
+<tr><th id="797">797</th><td>}</td></tr>
+<tr><th id="798">798</th><td></td></tr>
+<tr><th id="799">799</th><td><i>// --------------------------------------------------</i></td></tr>
+<tr><th id="800">800</th><td><i>// Host Callback Functions</i></td></tr>
+<tr><th id="801">801</th><td><i>// --------------------------------------------------</i></td></tr>
+<tr><th id="802">802</th><td></td></tr>
+<tr><th id="803">803</th><td><b>template</b>&lt;<b>typename</b> T, T some_func(T)&gt;</td></tr>
+<tr><th id="804">804</th><td>wabt::Result wabt_posix_math_1(wabt::interp::Thread &amp;thread,</td></tr>
+<tr><th id="805">805</th><td>                               <em>const</em> wabt::interp::Values &amp;args,</td></tr>
+<tr><th id="806">806</th><td>                               wabt::interp::Values &amp;results,</td></tr>
+<tr><th id="807">807</th><td>                               wabt::interp::Trap::Ptr *trap) {</td></tr>
+<tr><th id="808">808</th><td>    wassert(args.size() == <var>1</var>);</td></tr>
+<tr><th id="809">809</th><td>    <em>const</em> T in = args[<var>0</var>].Get&lt;T&gt;();</td></tr>
+<tr><th id="810">810</th><td>    <em>const</em> T out = some_func(in);</td></tr>
+<tr><th id="811">811</th><td>    results[<var>0</var>] = wabt::interp::Value::Make(out);</td></tr>
+<tr><th id="812">812</th><td>    <b>return</b> wabt::Result::Ok;</td></tr>
+<tr><th id="813">813</th><td>}</td></tr>
+<tr><th id="814">814</th><td></td></tr>
+<tr><th id="815">815</th><td><b>template</b>&lt;<b>typename</b> T, T some_func(T, T)&gt;</td></tr>
+<tr><th id="816">816</th><td>wabt::Result wabt_posix_math_2(wabt::interp::Thread &amp;thread,</td></tr>
+<tr><th id="817">817</th><td>                               <em>const</em> wabt::interp::Values &amp;args,</td></tr>
+<tr><th id="818">818</th><td>                               wabt::interp::Values &amp;results,</td></tr>
+<tr><th id="819">819</th><td>                               wabt::interp::Trap::Ptr *trap) {</td></tr>
+<tr><th id="820">820</th><td>    wassert(args.size() == <var>2</var>);</td></tr>
+<tr><th id="821">821</th><td>    <em>const</em> T in1 = args[<var>0</var>].Get&lt;T&gt;();</td></tr>
+<tr><th id="822">822</th><td>    <em>const</em> T in2 = args[<var>1</var>].Get&lt;T&gt;();</td></tr>
+<tr><th id="823">823</th><td>    <em>const</em> T out = some_func(in1, in2);</td></tr>
+<tr><th id="824">824</th><td>    results[<var>0</var>] = wabt::interp::Value::Make(out);</td></tr>
+<tr><th id="825">825</th><td>    <b>return</b> wabt::Result::Ok;</td></tr>
+<tr><th id="826">826</th><td>}</td></tr>
+<tr><th id="827">827</th><td></td></tr>
+<tr><th id="828">828</th><td><u>#define WABT_HOST_CALLBACK(x)                                              \</u></td></tr>
+<tr><th id="829">829</th><td><u>    wabt::Result wabt_jit_##x##_callback(wabt::interp::Thread &amp;thread,     \</u></td></tr>
+<tr><th id="830">830</th><td><u>                                         const wabt::interp::Values &amp;args, \</u></td></tr>
+<tr><th id="831">831</th><td><u>                                         wabt::interp::Values &amp;results,    \</u></td></tr>
+<tr><th id="832">832</th><td><u>                                         wabt::interp::Trap::Ptr *trap)</u></td></tr>
+<tr><th id="833">833</th><td></td></tr>
+<tr><th id="834">834</th><td><u>#define WABT_HOST_CALLBACK_UNIMPLEMENTED(x)                                          \</u></td></tr>
+<tr><th id="835">835</th><td><u>    WABT_HOST_CALLBACK(x) {                                                          \</u></td></tr>
+<tr><th id="836">836</th><td><u>        internal_error &lt;&lt; "WebAssembly JIT does not yet support the " #x "() call."; \</u></td></tr>
+<tr><th id="837">837</th><td><u>        return wabt::Result::Ok;                                                     \</u></td></tr>
+<tr><th id="838">838</th><td><u>    }</u></td></tr>
+<tr><th id="839">839</th><td></td></tr>
+<tr><th id="840">840</th><td>WABT_HOST_CALLBACK(__cxa_atexit) {</td></tr>
+<tr><th id="841">841</th><td>    <i>// nothing</i></td></tr>
+<tr><th id="842">842</th><td>    <b>return</b> wabt::Result::Ok;</td></tr>
+<tr><th id="843">843</th><td>}</td></tr>
+<tr><th id="844">844</th><td></td></tr>
+<tr><th id="845">845</th><td>WABT_HOST_CALLBACK(__extendhfsf2) {</td></tr>
+<tr><th id="846">846</th><td>    <em>const</em> uint16_t in = args[<var>0</var>].Get&lt;uint16_t&gt;();</td></tr>
+<tr><th id="847">847</th><td>    <em>const</em> <em>float</em> out = (<em>float</em>)float16_t::make_from_bits(in);</td></tr>
+<tr><th id="848">848</th><td>    results[<var>0</var>] = wabt::interp::Value::Make(out);</td></tr>
+<tr><th id="849">849</th><td>    <b>return</b> wabt::Result::Ok;</td></tr>
+<tr><th id="850">850</th><td>}</td></tr>
+<tr><th id="851">851</th><td></td></tr>
+<tr><th id="852">852</th><td>WABT_HOST_CALLBACK(__truncsfhf2) {</td></tr>
+<tr><th id="853">853</th><td>    <em>const</em> <em>float</em> in = args[<var>0</var>].Get&lt;<em>float</em>&gt;();</td></tr>
+<tr><th id="854">854</th><td>    <em>const</em> uint16_t out = float16_t(in).to_bits();</td></tr>
+<tr><th id="855">855</th><td>    results[<var>0</var>] = wabt::interp::Value::Make(out);</td></tr>
+<tr><th id="856">856</th><td>    <b>return</b> wabt::Result::Ok;</td></tr>
+<tr><th id="857">857</th><td>}</td></tr>
+<tr><th id="858">858</th><td></td></tr>
+<tr><th id="859">859</th><td>WABT_HOST_CALLBACK(abort) {</td></tr>
+<tr><th id="860">860</th><td>    abort();</td></tr>
+<tr><th id="861">861</th><td>    <b>return</b> wabt::Result::Ok;</td></tr>
+<tr><th id="862">862</th><td>}</td></tr>
+<tr><th id="863">863</th><td></td></tr>
+<tr><th id="864">864</th><td>WABT_HOST_CALLBACK_UNIMPLEMENTED(fclose)</td></tr>
+<tr><th id="865">865</th><td></td></tr>
+<tr><th id="866">866</th><td>WABT_HOST_CALLBACK_UNIMPLEMENTED(fileno)</td></tr>
+<tr><th id="867">867</th><td></td></tr>
+<tr><th id="868">868</th><td>WABT_HOST_CALLBACK_UNIMPLEMENTED(fopen)</td></tr>
+<tr><th id="869">869</th><td></td></tr>
+<tr><th id="870">870</th><td>WABT_HOST_CALLBACK(free) {</td></tr>
+<tr><th id="871">871</th><td>    WabtContext &amp;wabt_context = get_wabt_context(thread);</td></tr>
+<tr><th id="872">872</th><td></td></tr>
+<tr><th id="873">873</th><td>    wasm32_ptr_t p = args[<var>0</var>].Get&lt;int32_t&gt;();</td></tr>
+<tr><th id="874">874</th><td>    <b>if</b> (p) {</td></tr>
+<tr><th id="875">875</th><td>        p -= kExtraMallocSlop;</td></tr>
+<tr><th id="876">876</th><td>    }</td></tr>
+<tr><th id="877">877</th><td>    wabt_free(wabt_context, p);</td></tr>
+<tr><th id="878">878</th><td>    <b>return</b> wabt::Result::Ok;</td></tr>
+<tr><th id="879">879</th><td>}</td></tr>
+<tr><th id="880">880</th><td></td></tr>
+<tr><th id="881">881</th><td>WABT_HOST_CALLBACK_UNIMPLEMENTED(fwrite)</td></tr>
+<tr><th id="882">882</th><td></td></tr>
+<tr><th id="883">883</th><td>WABT_HOST_CALLBACK(getenv) {</td></tr>
+<tr><th id="884">884</th><td>    WabtContext &amp;wabt_context = get_wabt_context(thread);</td></tr>
+<tr><th id="885">885</th><td></td></tr>
+<tr><th id="886">886</th><td>    <em>const</em> int32_t s = args[<var>0</var>].Get&lt;int32_t&gt;();</td></tr>
+<tr><th id="887">887</th><td></td></tr>
+<tr><th id="888">888</th><td>    uint8_t *base = get_wasm_memory_base(wabt_context);</td></tr>
+<tr><th id="889">889</th><td>    <em>char</em> *e = getenv((<em>char</em> *)base + s);</td></tr>
+<tr><th id="890">890</th><td></td></tr>
+<tr><th id="891">891</th><td>    <i>// TODO: this string is leaked</i></td></tr>
+<tr><th id="892">892</th><td>    <b>if</b> (e) {</td></tr>
+<tr><th id="893">893</th><td>        wasm32_ptr_t r = wabt_malloc(wabt_context, strlen(e) + <var>1</var>);</td></tr>
+<tr><th id="894">894</th><td>        strcpy((<em>char</em> *)base + r, e);</td></tr>
+<tr><th id="895">895</th><td>        results[<var>0</var>] = wabt::interp::Value::Make(r);</td></tr>
+<tr><th id="896">896</th><td>    } <b>else</b> {</td></tr>
+<tr><th id="897">897</th><td>        results[<var>0</var>] = wabt::interp::Value::Make(<var>0</var>);</td></tr>
+<tr><th id="898">898</th><td>    }</td></tr>
+<tr><th id="899">899</th><td>    <b>return</b> wabt::Result::Ok;</td></tr>
+<tr><th id="900">900</th><td>}</td></tr>
+<tr><th id="901">901</th><td></td></tr>
+<tr><th id="902">902</th><td>WABT_HOST_CALLBACK(halide_print) {</td></tr>
+<tr><th id="903">903</th><td>    WabtContext &amp;wabt_context = get_wabt_context(thread);</td></tr>
+<tr><th id="904">904</th><td></td></tr>
+<tr><th id="905">905</th><td>    wassert(args.size() == <var>2</var>);</td></tr>
+<tr><th id="906">906</th><td></td></tr>
+<tr><th id="907">907</th><td>    JITUserContext *jit_user_context = get_jit_user_context(wabt_context, args[<var>0</var>]);</td></tr>
+<tr><th id="908">908</th><td>    <em>const</em> int32_t str_address = args[<var>1</var>].Get&lt;int32_t&gt;();</td></tr>
+<tr><th id="909">909</th><td></td></tr>
+<tr><th id="910">910</th><td>    uint8_t *p = get_wasm_memory_base(wabt_context);</td></tr>
+<tr><th id="911">911</th><td>    <em>const</em> <em>char</em> *str = (<em>const</em> <em>char</em> *)p + str_address;</td></tr>
+<tr><th id="912">912</th><td></td></tr>
+<tr><th id="913">913</th><td>    <b>if</b> (jit_user_context &amp;&amp; jit_user_context-&gt;handlers.custom_print != <b>nullptr</b>) {</td></tr>
+<tr><th id="914">914</th><td>        (*jit_user_context-&gt;handlers.custom_print)(jit_user_context, str);</td></tr>
+<tr><th id="915">915</th><td>    } <b>else</b> {</td></tr>
+<tr><th id="916">916</th><td>        std::cout &lt;&lt; str;</td></tr>
+<tr><th id="917">917</th><td>    }</td></tr>
+<tr><th id="918">918</th><td>    <b>return</b> wabt::Result::Ok;</td></tr>
+<tr><th id="919">919</th><td>}</td></tr>
+<tr><th id="920">920</th><td></td></tr>
+<tr><th id="921">921</th><td>WABT_HOST_CALLBACK(halide_trace_helper) {</td></tr>
+<tr><th id="922">922</th><td>    WabtContext &amp;wabt_context = get_wabt_context(thread);</td></tr>
+<tr><th id="923">923</th><td></td></tr>
+<tr><th id="924">924</th><td>    wassert(args.size() == <var>12</var>);</td></tr>
+<tr><th id="925">925</th><td></td></tr>
+<tr><th id="926">926</th><td>    uint8_t *base = get_wasm_memory_base(wabt_context);</td></tr>
+<tr><th id="927">927</th><td></td></tr>
+<tr><th id="928">928</th><td>    JITUserContext *jit_user_context = get_jit_user_context(wabt_context, args[<var>0</var>]);</td></tr>
+<tr><th id="929">929</th><td></td></tr>
+<tr><th id="930">930</th><td>    <em>const</em> wasm32_ptr_t func_name_ptr = args[<var>1</var>].Get&lt;int32_t&gt;();</td></tr>
+<tr><th id="931">931</th><td>    <em>const</em> wasm32_ptr_t value_ptr = args[<var>2</var>].Get&lt;int32_t&gt;();</td></tr>
+<tr><th id="932">932</th><td>    <em>const</em> wasm32_ptr_t coordinates_ptr = args[<var>3</var>].Get&lt;int32_t&gt;();</td></tr>
+<tr><th id="933">933</th><td>    <em>const</em> <em>int</em> type_code = args[<var>4</var>].Get&lt;int32_t&gt;();</td></tr>
+<tr><th id="934">934</th><td>    <em>const</em> <em>int</em> type_bits = args[<var>5</var>].Get&lt;int32_t&gt;();</td></tr>
+<tr><th id="935">935</th><td>    <em>const</em> <em>int</em> type_lanes = args[<var>6</var>].Get&lt;int32_t&gt;();</td></tr>
+<tr><th id="936">936</th><td>    <em>const</em> <em>int</em> trace_code = args[<var>7</var>].Get&lt;int32_t&gt;();</td></tr>
+<tr><th id="937">937</th><td>    <em>const</em> <em>int</em> parent_id = args[<var>8</var>].Get&lt;int32_t&gt;();</td></tr>
+<tr><th id="938">938</th><td>    <em>const</em> <em>int</em> value_index = args[<var>9</var>].Get&lt;int32_t&gt;();</td></tr>
+<tr><th id="939">939</th><td>    <em>const</em> <em>int</em> dimensions = args[<var>10</var>].Get&lt;int32_t&gt;();</td></tr>
+<tr><th id="940">940</th><td>    <em>const</em> wasm32_ptr_t trace_tag_ptr = args[<var>11</var>].Get&lt;int32_t&gt;();</td></tr>
+<tr><th id="941">941</th><td></td></tr>
+<tr><th id="942">942</th><td>    wassert(dimensions &gt;= <var>0</var> &amp;&amp; dimensions &lt; <var>1024</var>);  <i>// not a hard limit, just a sanity check</i></td></tr>
+<tr><th id="943">943</th><td></td></tr>
+<tr><th id="944">944</th><td>    halide_trace_event_t event;</td></tr>
+<tr><th id="945">945</th><td>    event.func = (<em>const</em> <em>char</em> *)(base + func_name_ptr);</td></tr>
+<tr><th id="946">946</th><td>    event.value = value_ptr ? ((<em>void</em> *)(base + value_ptr)) : <b>nullptr</b>;</td></tr>
+<tr><th id="947">947</th><td>    event.coordinates = coordinates_ptr ? ((int32_t *)(base + coordinates_ptr)) : <b>nullptr</b>;</td></tr>
+<tr><th id="948">948</th><td>    event.trace_tag = (<em>const</em> <em>char</em> *)(base + trace_tag_ptr);</td></tr>
+<tr><th id="949">949</th><td>    event.type.code = (halide_type_code_t)type_code;</td></tr>
+<tr><th id="950">950</th><td>    event.type.bits = (uint8_t)type_bits;</td></tr>
+<tr><th id="951">951</th><td>    event.type.lanes = (uint16_t)type_lanes;</td></tr>
+<tr><th id="952">952</th><td>    event.event = (halide_trace_event_code_t)trace_code;</td></tr>
+<tr><th id="953">953</th><td>    event.parent_id = parent_id;</td></tr>
+<tr><th id="954">954</th><td>    event.value_index = value_index;</td></tr>
+<tr><th id="955">955</th><td>    event.dimensions = dimensions;</td></tr>
+<tr><th id="956">956</th><td></td></tr>
+<tr><th id="957">957</th><td>    int32_t result = <var>0</var>;</td></tr>
+<tr><th id="958">958</th><td>    <b>if</b> (jit_user_context &amp;&amp; jit_user_context-&gt;handlers.custom_trace != <b>nullptr</b>) {</td></tr>
+<tr><th id="959">959</th><td>        result = (*jit_user_context-&gt;handlers.custom_trace)(jit_user_context, &amp;event);</td></tr>
+<tr><th id="960">960</th><td>    } <b>else</b> {</td></tr>
+<tr><th id="961">961</th><td>        debug(<var>0</var>) &lt;&lt; <q>"Dropping trace event due to lack of trace handler.\n"</q>;</td></tr>
+<tr><th id="962">962</th><td>    }</td></tr>
+<tr><th id="963">963</th><td></td></tr>
+<tr><th id="964">964</th><td>    results[<var>0</var>] = wabt::interp::Value::Make(result);</td></tr>
+<tr><th id="965">965</th><td>    <b>return</b> wabt::Result::Ok;</td></tr>
+<tr><th id="966">966</th><td>}</td></tr>
+<tr><th id="967">967</th><td></td></tr>
+<tr><th id="968">968</th><td>WABT_HOST_CALLBACK(halide_error) {</td></tr>
+<tr><th id="969">969</th><td>    WabtContext &amp;wabt_context = get_wabt_context(thread);</td></tr>
+<tr><th id="970">970</th><td></td></tr>
+<tr><th id="971">971</th><td>    wassert(args.size() == <var>2</var>);</td></tr>
+<tr><th id="972">972</th><td></td></tr>
+<tr><th id="973">973</th><td>    JITUserContext *jit_user_context = get_jit_user_context(wabt_context, args[<var>0</var>]);</td></tr>
+<tr><th id="974">974</th><td>    <em>const</em> int32_t str_address = args[<var>1</var>].Get&lt;int32_t&gt;();</td></tr>
+<tr><th id="975">975</th><td></td></tr>
+<tr><th id="976">976</th><td>    uint8_t *p = get_wasm_memory_base(wabt_context);</td></tr>
+<tr><th id="977">977</th><td>    <em>const</em> <em>char</em> *str = (<em>const</em> <em>char</em> *)p + str_address;</td></tr>
+<tr><th id="978">978</th><td></td></tr>
+<tr><th id="979">979</th><td>    <b>if</b> (jit_user_context &amp;&amp; jit_user_context-&gt;handlers.custom_error != <b>nullptr</b>) {</td></tr>
+<tr><th id="980">980</th><td>        (*jit_user_context-&gt;handlers.custom_error)(jit_user_context, str);</td></tr>
+<tr><th id="981">981</th><td>    } <b>else</b> {</td></tr>
+<tr><th id="982">982</th><td>        halide_runtime_error &lt;&lt; str;</td></tr>
+<tr><th id="983">983</th><td>    }</td></tr>
+<tr><th id="984">984</th><td>    <b>return</b> wabt::Result::Ok;</td></tr>
+<tr><th id="985">985</th><td>}</td></tr>
+<tr><th id="986">986</th><td></td></tr>
+<tr><th id="987">987</th><td>WABT_HOST_CALLBACK(malloc) {</td></tr>
+<tr><th id="988">988</th><td>    WabtContext &amp;wabt_context = get_wabt_context(thread);</td></tr>
+<tr><th id="989">989</th><td></td></tr>
+<tr><th id="990">990</th><td>    size_t size = args[<var>0</var>].Get&lt;int32_t&gt;() + kExtraMallocSlop;</td></tr>
+<tr><th id="991">991</th><td>    wasm32_ptr_t p = wabt_malloc(wabt_context, size);</td></tr>
+<tr><th id="992">992</th><td>    <b>if</b> (p) {</td></tr>
+<tr><th id="993">993</th><td>        p += kExtraMallocSlop;</td></tr>
+<tr><th id="994">994</th><td>    }</td></tr>
+<tr><th id="995">995</th><td>    results[<var>0</var>] = wabt::interp::Value::Make(p);</td></tr>
+<tr><th id="996">996</th><td>    <b>return</b> wabt::Result::Ok;</td></tr>
+<tr><th id="997">997</th><td>}</td></tr>
+<tr><th id="998">998</th><td></td></tr>
+<tr><th id="999">999</th><td>WABT_HOST_CALLBACK(memcpy) {</td></tr>
+<tr><th id="1000">1000</th><td>    WabtContext &amp;wabt_context = get_wabt_context(thread);</td></tr>
+<tr><th id="1001">1001</th><td></td></tr>
+<tr><th id="1002">1002</th><td>    <em>const</em> int32_t dst = args[<var>0</var>].Get&lt;int32_t&gt;();</td></tr>
+<tr><th id="1003">1003</th><td>    <em>const</em> int32_t src = args[<var>1</var>].Get&lt;int32_t&gt;();</td></tr>
+<tr><th id="1004">1004</th><td>    <em>const</em> int32_t n = args[<var>2</var>].Get&lt;int32_t&gt;();</td></tr>
+<tr><th id="1005">1005</th><td></td></tr>
+<tr><th id="1006">1006</th><td>    uint8_t *base = get_wasm_memory_base(wabt_context);</td></tr>
+<tr><th id="1007">1007</th><td></td></tr>
+<tr><th id="1008">1008</th><td>    memcpy(base + dst, base + src, n);</td></tr>
+<tr><th id="1009">1009</th><td></td></tr>
+<tr><th id="1010">1010</th><td>    results[<var>0</var>] = wabt::interp::Value::Make(dst);</td></tr>
+<tr><th id="1011">1011</th><td>    <b>return</b> wabt::Result::Ok;</td></tr>
+<tr><th id="1012">1012</th><td>}</td></tr>
+<tr><th id="1013">1013</th><td></td></tr>
+<tr><th id="1014">1014</th><td>WABT_HOST_CALLBACK(memset) {</td></tr>
+<tr><th id="1015">1015</th><td>    WabtContext &amp;wabt_context = get_wabt_context(thread);</td></tr>
+<tr><th id="1016">1016</th><td></td></tr>
+<tr><th id="1017">1017</th><td>    <em>const</em> int32_t s = args[<var>0</var>].Get&lt;int32_t&gt;();</td></tr>
+<tr><th id="1018">1018</th><td>    <em>const</em> int32_t c = args[<var>1</var>].Get&lt;int32_t&gt;();</td></tr>
+<tr><th id="1019">1019</th><td>    <em>const</em> int32_t n = args[<var>2</var>].Get&lt;int32_t&gt;();</td></tr>
+<tr><th id="1020">1020</th><td></td></tr>
+<tr><th id="1021">1021</th><td>    uint8_t *base = get_wasm_memory_base(wabt_context);</td></tr>
+<tr><th id="1022">1022</th><td>    memset(base + s, c, n);</td></tr>
+<tr><th id="1023">1023</th><td></td></tr>
+<tr><th id="1024">1024</th><td>    results[<var>0</var>] = wabt::interp::Value::Make(s);</td></tr>
+<tr><th id="1025">1025</th><td>    <b>return</b> wabt::Result::Ok;</td></tr>
+<tr><th id="1026">1026</th><td>}</td></tr>
+<tr><th id="1027">1027</th><td></td></tr>
+<tr><th id="1028">1028</th><td>WABT_HOST_CALLBACK(memcmp) {</td></tr>
+<tr><th id="1029">1029</th><td>    WabtContext &amp;wabt_context = get_wabt_context(thread);</td></tr>
+<tr><th id="1030">1030</th><td></td></tr>
+<tr><th id="1031">1031</th><td>    <em>const</em> int32_t s1 = args[<var>0</var>].Get&lt;int32_t&gt;();</td></tr>
+<tr><th id="1032">1032</th><td>    <em>const</em> int32_t s2 = args[<var>1</var>].Get&lt;int32_t&gt;();</td></tr>
+<tr><th id="1033">1033</th><td>    <em>const</em> int32_t n = args[<var>2</var>].Get&lt;int32_t&gt;();</td></tr>
+<tr><th id="1034">1034</th><td></td></tr>
+<tr><th id="1035">1035</th><td>    uint8_t *base = get_wasm_memory_base(wabt_context);</td></tr>
+<tr><th id="1036">1036</th><td></td></tr>
+<tr><th id="1037">1037</th><td>    <em>const</em> int32_t r = memcmp(base + s1, base + s2, n);</td></tr>
+<tr><th id="1038">1038</th><td></td></tr>
+<tr><th id="1039">1039</th><td>    results[<var>0</var>] = wabt::interp::Value::Make(r);</td></tr>
+<tr><th id="1040">1040</th><td>    <b>return</b> wabt::Result::Ok;</td></tr>
+<tr><th id="1041">1041</th><td>}</td></tr>
+<tr><th id="1042">1042</th><td></td></tr>
+<tr><th id="1043">1043</th><td>WABT_HOST_CALLBACK(strlen) {</td></tr>
+<tr><th id="1044">1044</th><td>    WabtContext &amp;wabt_context = get_wabt_context(thread);</td></tr>
+<tr><th id="1045">1045</th><td>    <em>const</em> int32_t s = args[<var>0</var>].Get&lt;int32_t&gt;();</td></tr>
+<tr><th id="1046">1046</th><td></td></tr>
+<tr><th id="1047">1047</th><td>    uint8_t *base = get_wasm_memory_base(wabt_context);</td></tr>
+<tr><th id="1048">1048</th><td>    int32_t r = strlen((<em>char</em> *)base + s);</td></tr>
+<tr><th id="1049">1049</th><td></td></tr>
+<tr><th id="1050">1050</th><td>    results[<var>0</var>] = wabt::interp::Value::Make(r);</td></tr>
+<tr><th id="1051">1051</th><td>    <b>return</b> wabt::Result::Ok;</td></tr>
+<tr><th id="1052">1052</th><td>}</td></tr>
+<tr><th id="1053">1053</th><td></td></tr>
+<tr><th id="1054">1054</th><td>WABT_HOST_CALLBACK_UNIMPLEMENTED(write)</td></tr>
+<tr><th id="1055">1055</th><td></td></tr>
+<tr><th id="1056">1056</th><td><b>using</b> HostCallbackMap = std::unordered_map&lt;std::string, wabt::interp::HostFunc::Callback&gt;;</td></tr>
+<tr><th id="1057">1057</th><td></td></tr>
+<tr><th id="1058">1058</th><td><i>// clang-format off</i></td></tr>
+<tr><th id="1059">1059</th><td><em>const</em> HostCallbackMap &amp;get_host_callback_map() {</td></tr>
+<tr><th id="1060">1060</th><td></td></tr>
+<tr><th id="1061">1061</th><td>    <em>static</em> HostCallbackMap m = {</td></tr>
+<tr><th id="1062">1062</th><td>        <i>// General runtime functions.</i></td></tr>
+<tr><th id="1063">1063</th><td></td></tr>
+<tr><th id="1064">1064</th><td>        <u>#define DEFINE_CALLBACK(f) { #f, wabt_jit_##f##_callback },</u></td></tr>
+<tr><th id="1065">1065</th><td></td></tr>
+<tr><th id="1066">1066</th><td>        DEFINE_CALLBACK(__cxa_atexit)</td></tr>
+<tr><th id="1067">1067</th><td>        DEFINE_CALLBACK(__extendhfsf2)</td></tr>
+<tr><th id="1068">1068</th><td>        DEFINE_CALLBACK(__truncsfhf2)</td></tr>
+<tr><th id="1069">1069</th><td>        DEFINE_CALLBACK(abort)</td></tr>
+<tr><th id="1070">1070</th><td>        DEFINE_CALLBACK(fclose)</td></tr>
+<tr><th id="1071">1071</th><td>        DEFINE_CALLBACK(fileno)</td></tr>
+<tr><th id="1072">1072</th><td>        DEFINE_CALLBACK(fopen)</td></tr>
+<tr><th id="1073">1073</th><td>        DEFINE_CALLBACK(free)</td></tr>
+<tr><th id="1074">1074</th><td>        DEFINE_CALLBACK(fwrite)</td></tr>
+<tr><th id="1075">1075</th><td>        DEFINE_CALLBACK(getenv)</td></tr>
+<tr><th id="1076">1076</th><td>        DEFINE_CALLBACK(halide_error)</td></tr>
+<tr><th id="1077">1077</th><td>        DEFINE_CALLBACK(halide_print)</td></tr>
+<tr><th id="1078">1078</th><td>        DEFINE_CALLBACK(halide_trace_helper)</td></tr>
+<tr><th id="1079">1079</th><td>        DEFINE_CALLBACK(malloc)</td></tr>
+<tr><th id="1080">1080</th><td>        DEFINE_CALLBACK(memcmp)</td></tr>
+<tr><th id="1081">1081</th><td>        DEFINE_CALLBACK(memcpy)</td></tr>
+<tr><th id="1082">1082</th><td>        DEFINE_CALLBACK(memset)</td></tr>
+<tr><th id="1083">1083</th><td>        DEFINE_CALLBACK(strlen)</td></tr>
+<tr><th id="1084">1084</th><td>        DEFINE_CALLBACK(write)</td></tr>
+<tr><th id="1085">1085</th><td></td></tr>
+<tr><th id="1086">1086</th><td>        <u>#undef DEFINE_CALLBACK</u></td></tr>
+<tr><th id="1087">1087</th><td></td></tr>
+<tr><th id="1088">1088</th><td>        <i>// Posix math.</i></td></tr>
+<tr><th id="1089">1089</th><td>        <u>#define DEFINE_POSIX_MATH_CALLBACK(t, f) { #f, wabt_posix_math_1&lt;t, ::f&gt; },</u></td></tr>
+<tr><th id="1090">1090</th><td></td></tr>
+<tr><th id="1091">1091</th><td>        DEFINE_POSIX_MATH_CALLBACK(<em>double</em>, acos)</td></tr>
+<tr><th id="1092">1092</th><td>        DEFINE_POSIX_MATH_CALLBACK(<em>double</em>, acosh)</td></tr>
+<tr><th id="1093">1093</th><td>        DEFINE_POSIX_MATH_CALLBACK(<em>double</em>, asin)</td></tr>
+<tr><th id="1094">1094</th><td>        DEFINE_POSIX_MATH_CALLBACK(<em>double</em>, asinh)</td></tr>
+<tr><th id="1095">1095</th><td>        DEFINE_POSIX_MATH_CALLBACK(<em>double</em>, atan)</td></tr>
+<tr><th id="1096">1096</th><td>        DEFINE_POSIX_MATH_CALLBACK(<em>double</em>, atanh)</td></tr>
+<tr><th id="1097">1097</th><td>        DEFINE_POSIX_MATH_CALLBACK(<em>double</em>, cos)</td></tr>
+<tr><th id="1098">1098</th><td>        DEFINE_POSIX_MATH_CALLBACK(<em>double</em>, cosh)</td></tr>
+<tr><th id="1099">1099</th><td>        DEFINE_POSIX_MATH_CALLBACK(<em>double</em>, exp)</td></tr>
+<tr><th id="1100">1100</th><td>        DEFINE_POSIX_MATH_CALLBACK(<em>double</em>, log)</td></tr>
+<tr><th id="1101">1101</th><td>        DEFINE_POSIX_MATH_CALLBACK(<em>double</em>, round)</td></tr>
+<tr><th id="1102">1102</th><td>        DEFINE_POSIX_MATH_CALLBACK(<em>double</em>, sin)</td></tr>
+<tr><th id="1103">1103</th><td>        DEFINE_POSIX_MATH_CALLBACK(<em>double</em>, sinh)</td></tr>
+<tr><th id="1104">1104</th><td>        DEFINE_POSIX_MATH_CALLBACK(<em>double</em>, tan)</td></tr>
+<tr><th id="1105">1105</th><td>        DEFINE_POSIX_MATH_CALLBACK(<em>double</em>, tanh)</td></tr>
+<tr><th id="1106">1106</th><td></td></tr>
+<tr><th id="1107">1107</th><td>        DEFINE_POSIX_MATH_CALLBACK(<em>float</em>, acosf)</td></tr>
+<tr><th id="1108">1108</th><td>        DEFINE_POSIX_MATH_CALLBACK(<em>float</em>, acoshf)</td></tr>
+<tr><th id="1109">1109</th><td>        DEFINE_POSIX_MATH_CALLBACK(<em>float</em>, asinf)</td></tr>
+<tr><th id="1110">1110</th><td>        DEFINE_POSIX_MATH_CALLBACK(<em>float</em>, asinhf)</td></tr>
+<tr><th id="1111">1111</th><td>        DEFINE_POSIX_MATH_CALLBACK(<em>float</em>, atanf)</td></tr>
+<tr><th id="1112">1112</th><td>        DEFINE_POSIX_MATH_CALLBACK(<em>float</em>, atanhf)</td></tr>
+<tr><th id="1113">1113</th><td>        DEFINE_POSIX_MATH_CALLBACK(<em>float</em>, cosf)</td></tr>
+<tr><th id="1114">1114</th><td>        DEFINE_POSIX_MATH_CALLBACK(<em>float</em>, coshf)</td></tr>
+<tr><th id="1115">1115</th><td>        DEFINE_POSIX_MATH_CALLBACK(<em>float</em>, expf)</td></tr>
+<tr><th id="1116">1116</th><td>        DEFINE_POSIX_MATH_CALLBACK(<em>float</em>, logf)</td></tr>
+<tr><th id="1117">1117</th><td>        DEFINE_POSIX_MATH_CALLBACK(<em>float</em>, roundf)</td></tr>
+<tr><th id="1118">1118</th><td>        DEFINE_POSIX_MATH_CALLBACK(<em>float</em>, sinf)</td></tr>
+<tr><th id="1119">1119</th><td>        DEFINE_POSIX_MATH_CALLBACK(<em>float</em>, sinhf)</td></tr>
+<tr><th id="1120">1120</th><td>        DEFINE_POSIX_MATH_CALLBACK(<em>float</em>, tanf)</td></tr>
+<tr><th id="1121">1121</th><td>        DEFINE_POSIX_MATH_CALLBACK(<em>float</em>, tanhf)</td></tr>
+<tr><th id="1122">1122</th><td></td></tr>
+<tr><th id="1123">1123</th><td>        <u>#undef DEFINE_POSIX_MATH_CALLBACK</u></td></tr>
+<tr><th id="1124">1124</th><td></td></tr>
+<tr><th id="1125">1125</th><td>        <u>#define DEFINE_POSIX_MATH_CALLBACK2(t, f) { #f, wabt_posix_math_2&lt;t, ::f&gt; },</u></td></tr>
+<tr><th id="1126">1126</th><td></td></tr>
+<tr><th id="1127">1127</th><td>        DEFINE_POSIX_MATH_CALLBACK2(<em>float</em>, atan2f)</td></tr>
+<tr><th id="1128">1128</th><td>        DEFINE_POSIX_MATH_CALLBACK2(<em>double</em>, atan2)</td></tr>
+<tr><th id="1129">1129</th><td>        DEFINE_POSIX_MATH_CALLBACK2(<em>float</em>, fminf)</td></tr>
+<tr><th id="1130">1130</th><td>        DEFINE_POSIX_MATH_CALLBACK2(<em>double</em>, fmin)</td></tr>
+<tr><th id="1131">1131</th><td>        DEFINE_POSIX_MATH_CALLBACK2(<em>float</em>, fmaxf)</td></tr>
+<tr><th id="1132">1132</th><td>        DEFINE_POSIX_MATH_CALLBACK2(<em>double</em>, fmax)</td></tr>
+<tr><th id="1133">1133</th><td>        DEFINE_POSIX_MATH_CALLBACK2(<em>float</em>, powf)</td></tr>
+<tr><th id="1134">1134</th><td>        DEFINE_POSIX_MATH_CALLBACK2(<em>double</em>, pow)</td></tr>
+<tr><th id="1135">1135</th><td></td></tr>
+<tr><th id="1136">1136</th><td>        <u>#undef DEFINE_POSIX_MATH_CALLBACK2</u></td></tr>
+<tr><th id="1137">1137</th><td>    };</td></tr>
+<tr><th id="1138">1138</th><td></td></tr>
+<tr><th id="1139">1139</th><td>    <b>return</b> m;</td></tr>
+<tr><th id="1140">1140</th><td>}</td></tr>
+<tr><th id="1141">1141</th><td><i>// clang-format on</i></td></tr>
+<tr><th id="1142">1142</th><td><i></i></td></tr>
+<tr><th id="1143">1143</th><td><i>// --------------------------------------------------</i></td></tr>
+<tr><th id="1144">1144</th><td><i>// Host Callback Functions</i></td></tr>
+<tr><th id="1145">1145</th><td><i>// --------------------------------------------------</i></td></tr>
+<tr><th id="1146">1146</th><td></td></tr>
+<tr><th id="1147">1147</th><td><b>struct</b> ExternArgType {</td></tr>
+<tr><th id="1148">1148</th><td>    halide_type_t type;</td></tr>
+<tr><th id="1149">1149</th><td>    <em>bool</em> is_void;</td></tr>
+<tr><th id="1150">1150</th><td>    <em>bool</em> is_buffer;</td></tr>
+<tr><th id="1151">1151</th><td>    <em>bool</em> is_ucon;</td></tr>
+<tr><th id="1152">1152</th><td>};</td></tr>
+<tr><th id="1153">1153</th><td></td></tr>
+<tr><th id="1154">1154</th><td><b>using</b> TrampolineFn = <em>void</em> (*)(<em>void</em> **);</td></tr>
+<tr><th id="1155">1155</th><td></td></tr>
+<tr><th id="1156">1156</th><td>wabt::Result extern_callback_wrapper(<em>const</em> std::vector&lt;ExternArgType&gt; &amp;arg_types,</td></tr>
+<tr><th id="1157">1157</th><td>                                     TrampolineFn trampoline_fn,</td></tr>
+<tr><th id="1158">1158</th><td>                                     wabt::interp::Thread &amp;thread,</td></tr>
+<tr><th id="1159">1159</th><td>                                     <em>const</em> wabt::interp::Values &amp;args,</td></tr>
+<tr><th id="1160">1160</th><td>                                     wabt::interp::Values &amp;results,</td></tr>
+<tr><th id="1161">1161</th><td>                                     wabt::interp::Trap::Ptr *trap) {</td></tr>
+<tr><th id="1162">1162</th><td>    WabtContext &amp;wabt_context = get_wabt_context(thread);</td></tr>
+<tr><th id="1163">1163</th><td></td></tr>
+<tr><th id="1164">1164</th><td>    wassert(arg_types.size() &gt;= <var>1</var>);</td></tr>
+<tr><th id="1165">1165</th><td>    <em>const</em> size_t arg_types_len = arg_types.size() - <var>1</var>;</td></tr>
+<tr><th id="1166">1166</th><td>    <em>const</em> ExternArgType &amp;ret_type = arg_types[<var>0</var>];</td></tr>
+<tr><th id="1167">1167</th><td></td></tr>
+<tr><th id="1168">1168</th><td>    <i>// There's wasted space here, but that's ok.</i></td></tr>
+<tr><th id="1169">1169</th><td>    std::vector&lt;Halide::Runtime::Buffer&lt;&gt;&gt; buffers(arg_types_len);</td></tr>
+<tr><th id="1170">1170</th><td>    std::vector&lt;uint64_t&gt; scalars(arg_types_len, <var>0</var>);</td></tr>
+<tr><th id="1171">1171</th><td>    std::vector&lt;<em>void</em> *&gt; trampoline_args(arg_types_len, <b>nullptr</b>);</td></tr>
+<tr><th id="1172">1172</th><td></td></tr>
+<tr><th id="1173">1173</th><td>    <b>for</b> (size_t i = <var>0</var>; i &lt; arg_types_len; ++i) {</td></tr>
+<tr><th id="1174">1174</th><td>        <em>const</em> <em>auto</em> &amp;a = arg_types[i + <var>1</var>];</td></tr>
+<tr><th id="1175">1175</th><td>        <b>if</b> (a.is_ucon) {</td></tr>
+<tr><th id="1176">1176</th><td>            <i>// We have to special-case ucon because Halide considers it an int64 everywhere</i></td></tr>
+<tr><th id="1177">1177</th><td><i>            // (even for wasm, where pointers are int32), and trying to extract it as an</i></td></tr>
+<tr><th id="1178">1178</th><td><i>            // int64 from a Value that is int32 will assert-fail. In JIT mode the value</i></td></tr>
+<tr><th id="1179">1179</th><td><i>            // doesn't even matter (except for guarding that it is our predicted constant).</i></td></tr>
+<tr><th id="1180">1180</th><td>            wassert(args[i].Get&lt;int32_t&gt;() == <var>0</var> || args[i].Get&lt;int32_t&gt;() == kMagicJitUserContextValue);</td></tr>
+<tr><th id="1181">1181</th><td>            store_value(Int(<var>32</var>), args[i], &amp;scalars[i]);</td></tr>
+<tr><th id="1182">1182</th><td>            trampoline_args[i] = &amp;scalars[i];</td></tr>
+<tr><th id="1183">1183</th><td>        } <b>else</b> <b>if</b> (a.is_buffer) {</td></tr>
+<tr><th id="1184">1184</th><td>            <em>const</em> wasm32_ptr_t buf_ptr = args[i].Get&lt;int32_t&gt;();</td></tr>
+<tr><th id="1185">1185</th><td>            wasmbuf_to_hostbuf(wabt_context, buf_ptr, buffers[i]);</td></tr>
+<tr><th id="1186">1186</th><td>            trampoline_args[i] = buffers[i].raw_buffer();</td></tr>
+<tr><th id="1187">1187</th><td>        } <b>else</b> {</td></tr>
+<tr><th id="1188">1188</th><td>            store_value(a.type, args[i], &amp;scalars[i]);</td></tr>
+<tr><th id="1189">1189</th><td>            trampoline_args[i] = &amp;scalars[i];</td></tr>
+<tr><th id="1190">1190</th><td>        }</td></tr>
+<tr><th id="1191">1191</th><td>    }</td></tr>
+<tr><th id="1192">1192</th><td></td></tr>
+<tr><th id="1193">1193</th><td>    <i>// The return value (if any) is always scalar.</i></td></tr>
+<tr><th id="1194">1194</th><td>    uint64_t ret_val = <var>0</var>;</td></tr>
+<tr><th id="1195">1195</th><td>    <em>const</em> <em>bool</em> has_retval = !ret_type.is_void;</td></tr>
+<tr><th id="1196">1196</th><td>    internal_assert(!ret_type.is_buffer);</td></tr>
+<tr><th id="1197">1197</th><td>    <b>if</b> (has_retval) {</td></tr>
+<tr><th id="1198">1198</th><td>        trampoline_args.push_back(&amp;ret_val);</td></tr>
+<tr><th id="1199">1199</th><td>    }</td></tr>
+<tr><th id="1200">1200</th><td>    (*trampoline_fn)(trampoline_args.data());</td></tr>
+<tr><th id="1201">1201</th><td></td></tr>
+<tr><th id="1202">1202</th><td>    <b>if</b> (has_retval) {</td></tr>
+<tr><th id="1203">1203</th><td>        results[<var>0</var>] = dynamic_type_dispatch&lt;LoadValue&gt;(ret_type.type, (<em>void</em> *)&amp;ret_val);</td></tr>
+<tr><th id="1204">1204</th><td>    }</td></tr>
+<tr><th id="1205">1205</th><td></td></tr>
+<tr><th id="1206">1206</th><td>    <i>// Progagate buffer data backwards. Note that for arbitrary extern functions,</i></td></tr>
+<tr><th id="1207">1207</th><td><i>    // we have no idea which buffers might be "input only", so we copy all data for all of them.</i></td></tr>
+<tr><th id="1208">1208</th><td>    <b>for</b> (size_t i = <var>0</var>; i &lt; arg_types_len; ++i) {</td></tr>
+<tr><th id="1209">1209</th><td>        <em>const</em> <em>auto</em> &amp;a = arg_types[i + <var>1</var>];</td></tr>
+<tr><th id="1210">1210</th><td>        <b>if</b> (a.is_buffer) {</td></tr>
+<tr><th id="1211">1211</th><td>            <em>const</em> wasm32_ptr_t buf_ptr = args[i].Get&lt;int32_t&gt;();</td></tr>
+<tr><th id="1212">1212</th><td>            copy_hostbuf_to_existing_wasmbuf(wabt_context, buffers[i], buf_ptr);</td></tr>
+<tr><th id="1213">1213</th><td>        }</td></tr>
+<tr><th id="1214">1214</th><td>    }</td></tr>
+<tr><th id="1215">1215</th><td></td></tr>
+<tr><th id="1216">1216</th><td>    <b>return</b> wabt::Result::Ok;</td></tr>
+<tr><th id="1217">1217</th><td>}</td></tr>
+<tr><th id="1218">1218</th><td></td></tr>
+<tr><th id="1219">1219</th><td><em>bool</em> should_skip_extern_symbol(<em>const</em> std::string &amp;name) {</td></tr>
+<tr><th id="1220">1220</th><td>    <em>static</em> std::set&lt;std::string&gt; symbols = {</td></tr>
+<tr><th id="1221">1221</th><td>        <q>"halide_print"</q>,</td></tr>
+<tr><th id="1222">1222</th><td>        <q>"halide_error"</q>};</td></tr>
+<tr><th id="1223">1223</th><td>    <b>return</b> symbols.count(name) &gt; <var>0</var>;</td></tr>
+<tr><th id="1224">1224</th><td>}</td></tr>
+<tr><th id="1225">1225</th><td></td></tr>
+<tr><th id="1226">1226</th><td>wabt::interp::HostFunc::Ptr make_extern_callback(wabt::interp::Store &amp;store,</td></tr>
+<tr><th id="1227">1227</th><td>                                                 <em>const</em> std::map&lt;std::string, Halide::JITExtern&gt; &amp;jit_externs,</td></tr>
+<tr><th id="1228">1228</th><td>                                                 <em>const</em> JITModule &amp;trampolines,</td></tr>
+<tr><th id="1229">1229</th><td>                                                 <em>const</em> wabt::interp::ImportDesc &amp;import) {</td></tr>
+<tr><th id="1230">1230</th><td>    <em>const</em> std::string &amp;fn_name = import.type.name;</td></tr>
+<tr><th id="1231">1231</th><td>    <b>if</b> (should_skip_extern_symbol(fn_name)) {</td></tr>
+<tr><th id="1232">1232</th><td>        wdebug(<var>1</var>) &lt;&lt; <q>"Skipping extern symbol: "</q> &lt;&lt; fn_name &lt;&lt; <q>"\n"</q>;</td></tr>
+<tr><th id="1233">1233</th><td>        <b>return</b> wabt::interp::HostFunc::Ptr();</td></tr>
+<tr><th id="1234">1234</th><td>    }</td></tr>
+<tr><th id="1235">1235</th><td></td></tr>
+<tr><th id="1236">1236</th><td>    <em>const</em> <em>auto</em> it = jit_externs.find(fn_name);</td></tr>
+<tr><th id="1237">1237</th><td>    <b>if</b> (it == jit_externs.end()) {</td></tr>
+<tr><th id="1238">1238</th><td>        wdebug(<var>1</var>) &lt;&lt; <q>"Extern symbol not found in JIT Externs: "</q> &lt;&lt; fn_name &lt;&lt; <q>"\n"</q>;</td></tr>
+<tr><th id="1239">1239</th><td>        <b>return</b> wabt::interp::HostFunc::Ptr();</td></tr>
+<tr><th id="1240">1240</th><td>    }</td></tr>
+<tr><th id="1241">1241</th><td>    <em>const</em> ExternSignature &amp;sig = it-&gt;second.extern_c_function().signature();</td></tr>
+<tr><th id="1242">1242</th><td></td></tr>
+<tr><th id="1243">1243</th><td>    <em>const</em> <em>auto</em> &amp;tramp_it = trampolines.exports().find(fn_name + kTrampolineSuffix);</td></tr>
+<tr><th id="1244">1244</th><td>    <b>if</b> (tramp_it == trampolines.exports().end()) {</td></tr>
+<tr><th id="1245">1245</th><td>        wdebug(<var>1</var>) &lt;&lt; <q>"Extern symbol not found in trampolines: "</q> &lt;&lt; fn_name &lt;&lt; <q>"\n"</q>;</td></tr>
+<tr><th id="1246">1246</th><td>        <b>return</b> wabt::interp::HostFunc::Ptr();</td></tr>
+<tr><th id="1247">1247</th><td>    }</td></tr>
+<tr><th id="1248">1248</th><td>    TrampolineFn trampoline_fn = (TrampolineFn)tramp_it-&gt;second.address;</td></tr>
+<tr><th id="1249">1249</th><td></td></tr>
+<tr><th id="1250">1250</th><td>    <em>const</em> size_t arg_count = sig.arg_types().size();</td></tr>
+<tr><th id="1251">1251</th><td></td></tr>
+<tr><th id="1252">1252</th><td>    std::vector&lt;ExternArgType&gt; arg_types;</td></tr>
+<tr><th id="1253">1253</th><td></td></tr>
+<tr><th id="1254">1254</th><td>    <b>if</b> (sig.is_void_return()) {</td></tr>
+<tr><th id="1255">1255</th><td>        <em>const</em> <em>bool</em> is_void = <b>true</b>;</td></tr>
+<tr><th id="1256">1256</th><td>        <em>const</em> <em>bool</em> is_buffer = <b>false</b>;</td></tr>
+<tr><th id="1257">1257</th><td>        <em>const</em> <em>bool</em> is_ucon = <b>false</b>;</td></tr>
+<tr><th id="1258">1258</th><td>        <i>// Specifying a type here with bits == 0 should trigger a proper 'void' return type</i></td></tr>
+<tr><th id="1259">1259</th><td>        arg_types.push_back(ExternArgType{{halide_type_int, <var>0</var>, <var>0</var>}, is_void, is_buffer, is_ucon});</td></tr>
+<tr><th id="1260">1260</th><td>    } <b>else</b> {</td></tr>
+<tr><th id="1261">1261</th><td>        <em>const</em> Type &amp;t = sig.ret_type();</td></tr>
+<tr><th id="1262">1262</th><td>        <em>const</em> <em>bool</em> is_void = <b>false</b>;</td></tr>
+<tr><th id="1263">1263</th><td>        <em>const</em> <em>bool</em> is_buffer = (t == type_of&lt;halide_buffer_t *&gt;());</td></tr>
+<tr><th id="1264">1264</th><td>        <em>const</em> <em>bool</em> is_ucon = <b>false</b>;</td></tr>
+<tr><th id="1265">1265</th><td>        user_assert(t.lanes() == <var>1</var>) &lt;&lt; <q>"Halide Extern functions cannot return vector values."</q>;</td></tr>
+<tr><th id="1266">1266</th><td>        user_assert(!is_buffer) &lt;&lt; <q>"Halide Extern functions cannot return halide_buffer_t."</q>;</td></tr>
+<tr><th id="1267">1267</th><td>        arg_types.push_back(ExternArgType{t, is_void, is_buffer, is_ucon});</td></tr>
+<tr><th id="1268">1268</th><td>    }</td></tr>
+<tr><th id="1269">1269</th><td>    <b>for</b> (size_t i = <var>0</var>; i &lt; arg_count; ++i) {</td></tr>
+<tr><th id="1270">1270</th><td>        <em>const</em> Type &amp;t = sig.arg_types()[i];</td></tr>
+<tr><th id="1271">1271</th><td>        <em>const</em> <em>bool</em> is_void = <b>false</b>;</td></tr>
+<tr><th id="1272">1272</th><td>        <em>const</em> <em>bool</em> is_buffer = (t == type_of&lt;halide_buffer_t *&gt;());</td></tr>
+<tr><th id="1273">1273</th><td>        <i>// Since arbitrary pointer args aren't legal for extern calls,</i></td></tr>
+<tr><th id="1274">1274</th><td><i>        // assume that anything that is a void* is a user context.</i></td></tr>
+<tr><th id="1275">1275</th><td>        <em>const</em> <em>bool</em> is_ucon = (t == type_of&lt;<em>void</em> *&gt;());</td></tr>
+<tr><th id="1276">1276</th><td>        user_assert(t.lanes() == <var>1</var>) &lt;&lt; <q>"Halide Extern functions cannot accept vector values as arguments."</q>;</td></tr>
+<tr><th id="1277">1277</th><td>        arg_types.push_back(ExternArgType{t, is_void, is_buffer, is_ucon});</td></tr>
+<tr><th id="1278">1278</th><td>    }</td></tr>
+<tr><th id="1279">1279</th><td></td></tr>
+<tr><th id="1280">1280</th><td>    <em>const</em> <em>auto</em> callback_wrapper =</td></tr>
+<tr><th id="1281">1281</th><td>        [arg_types, trampoline_fn](wabt::interp::Thread &amp;thread,</td></tr>
+<tr><th id="1282">1282</th><td>                                   <em>const</em> wabt::interp::Values &amp;args,</td></tr>
+<tr><th id="1283">1283</th><td>                                   wabt::interp::Values &amp;results,</td></tr>
+<tr><th id="1284">1284</th><td>                                   wabt::interp::Trap::Ptr *trap) -&gt; wabt::Result {</td></tr>
+<tr><th id="1285">1285</th><td>        <b>return</b> extern_callback_wrapper(arg_types, trampoline_fn, thread, args, results, trap);</td></tr>
+<tr><th id="1286">1286</th><td>    };</td></tr>
+<tr><th id="1287">1287</th><td></td></tr>
+<tr><th id="1288">1288</th><td>    <em>auto</em> func_type = *wabt::cast&lt;wabt::interp::FuncType&gt;(import.type.type.get());</td></tr>
+<tr><th id="1289">1289</th><td>    <em>auto</em> host_func = wabt::interp::HostFunc::New(store, func_type, callback_wrapper);</td></tr>
+<tr><th id="1290">1290</th><td></td></tr>
+<tr><th id="1291">1291</th><td>    <b>return</b> host_func;</td></tr>
+<tr><th id="1292">1292</th><td>}</td></tr>
+<tr><th id="1293">1293</th><td></td></tr>
+<tr><th id="1294">1294</th><td>wabt::Features calc_features(<em>const</em> Target &amp;target) {</td></tr>
+<tr><th id="1295">1295</th><td>    wabt::Features f;</td></tr>
+<tr><th id="1296">1296</th><td>    <b>if</b> (target.has_feature(Target::WasmSignExt)) {</td></tr>
+<tr><th id="1297">1297</th><td>        f.enable_sign_extension();</td></tr>
+<tr><th id="1298">1298</th><td>    }</td></tr>
+<tr><th id="1299">1299</th><td>    <b>if</b> (target.has_feature(Target::WasmSimd128)) {</td></tr>
+<tr><th id="1300">1300</th><td>        f.enable_simd();</td></tr>
+<tr><th id="1301">1301</th><td>    }</td></tr>
+<tr><th id="1302">1302</th><td>    <b>if</b> (target.has_feature(Target::WasmSatFloatToInt)) {</td></tr>
+<tr><th id="1303">1303</th><td>        f.enable_sat_float_to_int();</td></tr>
+<tr><th id="1304">1304</th><td>    }</td></tr>
+<tr><th id="1305">1305</th><td>    <b>return</b> f;</td></tr>
+<tr><th id="1306">1306</th><td>}</td></tr>
+<tr><th id="1307">1307</th><td></td></tr>
+<tr><th id="1308">1308</th><td>}  <i>// namespace</i></td></tr>
+<tr><th id="1309">1309</th><td></td></tr>
+<tr><th id="1310">1310</th><td><u>#<span data-ppcond="46">endif</span>  // WITH_WABT</u></td></tr>
+<tr><th id="1311">1311</th><td></td></tr>
+<tr><th id="1312">1312</th><td><b>struct</b> <dfn class="type def" id="Halide::Internal::WasmModuleContents" title='Halide::Internal::WasmModuleContents' data-ref="Halide::Internal::WasmModuleContents" data-ref-filename="Halide..Internal..WasmModuleContents">WasmModuleContents</dfn> {</td></tr>
+<tr><th id="1313">1313</th><td>    <em>mutable</em> <a class="type" href="IntrusivePtr.h.html#Halide::Internal::RefCount" title='Halide::Internal::RefCount' data-ref="Halide::Internal::RefCount" data-ref-filename="Halide..Internal..RefCount">RefCount</a> <dfn class="decl field" id="Halide::Internal::WasmModuleContents::ref_count" title='Halide::Internal::WasmModuleContents::ref_count' data-ref="Halide::Internal::WasmModuleContents::ref_count" data-ref-filename="Halide..Internal..WasmModuleContents..ref_count">ref_count</dfn>;</td></tr>
+<tr><th id="1314">1314</th><td></td></tr>
+<tr><th id="1315">1315</th><td>    <em>const</em> <a class="type" href="Target.h.html#Halide::Target" title='Halide::Target' data-ref="Halide::Target" data-ref-filename="Halide..Target">Target</a> <dfn class="decl field" id="Halide::Internal::WasmModuleContents::target" title='Halide::Internal::WasmModuleContents::target' data-ref="Halide::Internal::WasmModuleContents::target" data-ref-filename="Halide..Internal..WasmModuleContents..target">target</dfn>;</td></tr>
+<tr><th id="1316">1316</th><td>    <em>const</em> <span class="namespace">std::</span><span class='type' title='std::vector' data-ref="std::vector" data-ref-filename="std..vector">vector</span>&lt;<a class="type" href="Argument.h.html#Halide::Argument" title='Halide::Argument' data-ref="Halide::Argument" data-ref-filename="Halide..Argument">Argument</a>&gt; <dfn class="decl field" id="Halide::Internal::WasmModuleContents::arguments" title='Halide::Internal::WasmModuleContents::arguments' data-ref="Halide::Internal::WasmModuleContents::arguments" data-ref-filename="Halide..Internal..WasmModuleContents..arguments">arguments</dfn>;</td></tr>
+<tr><th id="1317">1317</th><td>    <span class="namespace">std::</span><span class='type' title='std::map' data-ref="std::map" data-ref-filename="std..map">map</span>&lt;<span class="namespace">std::</span><span class='typedef' title='std::string' data-type='basic_string&lt;char&gt;' data-ref="std::string" data-ref-filename="std..string">string</span>, <span class="namespace">Halide::</span><a class="type" href="Pipeline.h.html#Halide::JITExtern" title='Halide::JITExtern' data-ref="Halide::JITExtern" data-ref-filename="Halide..JITExtern">JITExtern</a>&gt; <dfn class="decl field" id="Halide::Internal::WasmModuleContents::jit_externs" title='Halide::Internal::WasmModuleContents::jit_externs' data-ref="Halide::Internal::WasmModuleContents::jit_externs" data-ref-filename="Halide..Internal..WasmModuleContents..jit_externs">jit_externs</dfn>;</td></tr>
+<tr><th id="1318">1318</th><td>    <span class="namespace">std::</span><span class='type' title='std::vector' data-ref="std::vector" data-ref-filename="std..vector">vector</span>&lt;<a class="type" href="JITModule.h.html#Halide::Internal::JITModule" title='Halide::Internal::JITModule' data-ref="Halide::Internal::JITModule" data-ref-filename="Halide..Internal..JITModule">JITModule</a>&gt; <dfn class="decl field" id="Halide::Internal::WasmModuleContents::extern_deps" title='Halide::Internal::WasmModuleContents::extern_deps' data-ref="Halide::Internal::WasmModuleContents::extern_deps" data-ref-filename="Halide..Internal..WasmModuleContents..extern_deps">extern_deps</dfn>;</td></tr>
+<tr><th id="1319">1319</th><td>    <a class="type" href="JITModule.h.html#Halide::Internal::JITModule" title='Halide::Internal::JITModule' data-ref="Halide::Internal::JITModule" data-ref-filename="Halide..Internal..JITModule">JITModule</a> <dfn class="decl field" id="Halide::Internal::WasmModuleContents::trampolines" title='Halide::Internal::WasmModuleContents::trampolines' data-ref="Halide::Internal::WasmModuleContents::trampolines" data-ref-filename="Halide..Internal..WasmModuleContents..trampolines">trampolines</dfn>;</td></tr>
+<tr><th id="1320">1320</th><td></td></tr>
+<tr><th id="1321">1321</th><td><u>#<span data-ppcond="1321">if</span> WITH_WABT</u></td></tr>
+<tr><th id="1322">1322</th><td>    BDMalloc bdmalloc;</td></tr>
+<tr><th id="1323">1323</th><td>    wabt::interp::Store store;</td></tr>
+<tr><th id="1324">1324</th><td>    wabt::interp::Module::Ptr module;</td></tr>
+<tr><th id="1325">1325</th><td>    wabt::interp::Instance::Ptr instance;</td></tr>
+<tr><th id="1326">1326</th><td>    wabt::interp::Thread::Options thread_options;</td></tr>
+<tr><th id="1327">1327</th><td>    wabt::interp::Memory::Ptr memory;</td></tr>
+<tr><th id="1328">1328</th><td><u>#<span data-ppcond="1321">endif</span></u></td></tr>
+<tr><th id="1329">1329</th><td></td></tr>
+<tr><th id="1330">1330</th><td>    <a class="decl fn" href="#_ZN6Halide8Internal18WasmModuleContentsC1ERKNS_6ModuleERKSt6vectorINS_8ArgumentESaIS6_EERKNSt7__cxx1112basic_stringIcSt11char_traitsIcESaIcEEERKSt3map9139084" title='Halide::Internal::WasmModuleContents::WasmModuleContents' data-ref="_ZN6Halide8Internal18WasmModuleContentsC1ERKNS_6ModuleERKSt6vectorINS_8ArgumentESaIS6_EERKNSt7__cxx1112basic_stringIcSt11char_traitsIcESaIcEEERKSt3map9139084" data-ref-filename="_ZN6Halide8Internal18WasmModuleContentsC1ERKNS_6ModuleERKSt6vectorINS_8ArgumentESaIS6_EERKNSt7__cxx1112basic_stringIcSt11char_traitsIcESaIcEEERKSt3map9139084">WasmModuleContents</a>(</td></tr>
+<tr><th id="1331">1331</th><td>        <em>const</em> <a class="type" href="Module.h.html#Halide::Module" title='Halide::Module' data-ref="Halide::Module" data-ref-filename="Halide..Module">Module</a> &amp;<dfn class="local col1 decl" id="1halide_module" title='halide_module' data-type='const Halide::Module &amp;' data-ref="1halide_module" data-ref-filename="1halide_module">halide_module</dfn>,</td></tr>
+<tr><th id="1332">1332</th><td>        <em>const</em> <span class="namespace">std::</span><span class='type' title='std::vector' data-ref="std::vector" data-ref-filename="std..vector">vector</span>&lt;<a class="type" href="Argument.h.html#Halide::Argument" title='Halide::Argument' data-ref="Halide::Argument" data-ref-filename="Halide..Argument">Argument</a>&gt; &amp;<dfn class="local col2 decl" id="2arguments" title='arguments' data-type='const std::vector&lt;Argument&gt; &amp;' data-ref="2arguments" data-ref-filename="2arguments">arguments</dfn>,</td></tr>
+<tr><th id="1333">1333</th><td>        <em>const</em> <span class="namespace">std::</span><span class='typedef' title='std::string' data-type='basic_string&lt;char&gt;' data-ref="std::string" data-ref-filename="std..string">string</span> &amp;<dfn class="local col3 decl" id="3fn_name" title='fn_name' data-type='const std::string &amp;' data-ref="3fn_name" data-ref-filename="3fn_name">fn_name</dfn>,</td></tr>
+<tr><th id="1334">1334</th><td>        <em>const</em> <span class="namespace">std::</span><span class='type' title='std::map' data-ref="std::map" data-ref-filename="std..map">map</span>&lt;<span class="namespace">std::</span><span class='typedef' title='std::string' data-type='basic_string&lt;char&gt;' data-ref="std::string" data-ref-filename="std..string">string</span>, <span class="namespace">Halide::</span><a class="type" href="Pipeline.h.html#Halide::JITExtern" title='Halide::JITExtern' data-ref="Halide::JITExtern" data-ref-filename="Halide..JITExtern">JITExtern</a>&gt; &amp;<dfn class="local col4 decl" id="4jit_externs" title='jit_externs' data-type='const std::map&lt;std::string, Halide::JITExtern&gt; &amp;' data-ref="4jit_externs" data-ref-filename="4jit_externs">jit_externs</dfn>,</td></tr>
+<tr><th id="1335">1335</th><td>        <em>const</em> <span class="namespace">std::</span><span class='type' title='std::vector' data-ref="std::vector" data-ref-filename="std..vector">vector</span>&lt;<a class="type" href="JITModule.h.html#Halide::Internal::JITModule" title='Halide::Internal::JITModule' data-ref="Halide::Internal::JITModule" data-ref-filename="Halide..Internal..JITModule">JITModule</a>&gt; &amp;<dfn class="local col5 decl" id="5extern_deps" title='extern_deps' data-type='const std::vector&lt;JITModule&gt; &amp;' data-ref="5extern_deps" data-ref-filename="5extern_deps">extern_deps</dfn>);</td></tr>
+<tr><th id="1336">1336</th><td></td></tr>
+<tr><th id="1337">1337</th><td>    <em>int</em> <a class="decl fn" href="#_ZN6Halide8Internal18WasmModuleContents3runEPPKv" title='Halide::Internal::WasmModuleContents::run' data-ref="_ZN6Halide8Internal18WasmModuleContents3runEPPKv" data-ref-filename="_ZN6Halide8Internal18WasmModuleContents3runEPPKv">run</a>(<em>const</em> <em>void</em> **<dfn class="local col6 decl" id="6args" title='args' data-type='const void **' data-ref="6args" data-ref-filename="6args">args</dfn>);</td></tr>
+<tr><th id="1338">1338</th><td></td></tr>
+<tr><th id="1339">1339</th><td>    <dfn class="decl def fn" id="_ZN6Halide8Internal18WasmModuleContentsD1Ev" title='Halide::Internal::WasmModuleContents::~WasmModuleContents' data-ref="_ZN6Halide8Internal18WasmModuleContentsD1Ev" data-ref-filename="_ZN6Halide8Internal18WasmModuleContentsD1Ev">~WasmModuleContents</dfn>() = <b>default</b>;</td></tr>
+<tr><th id="1340">1340</th><td>};</td></tr>
+<tr><th id="1341">1341</th><td></td></tr>
+<tr><th id="1342">1342</th><td><a class="type" href="#Halide::Internal::WasmModuleContents" title='Halide::Internal::WasmModuleContents' data-ref="Halide::Internal::WasmModuleContents" data-ref-filename="Halide..Internal..WasmModuleContents">WasmModuleContents</a>::<dfn class="decl def fn" id="_ZN6Halide8Internal18WasmModuleContentsC1ERKNS_6ModuleERKSt6vectorINS_8ArgumentESaIS6_EERKNSt7__cxx1112basic_stringIcSt11char_traitsIcESaIcEEERKSt3map9139084" title='Halide::Internal::WasmModuleContents::WasmModuleContents' data-ref="_ZN6Halide8Internal18WasmModuleContentsC1ERKNS_6ModuleERKSt6vectorINS_8ArgumentESaIS6_EERKNSt7__cxx1112basic_stringIcSt11char_traitsIcESaIcEEERKSt3map9139084" data-ref-filename="_ZN6Halide8Internal18WasmModuleContentsC1ERKNS_6ModuleERKSt6vectorINS_8ArgumentESaIS6_EERKNSt7__cxx1112basic_stringIcSt11char_traitsIcESaIcEEERKSt3map9139084">WasmModuleContents</dfn>(</td></tr>
+<tr><th id="1343">1343</th><td>    <em>const</em> <a class="type" href="Module.h.html#Halide::Module" title='Halide::Module' data-ref="Halide::Module" data-ref-filename="Halide..Module">Module</a> &amp;<dfn class="local col7 decl" id="7halide_module" title='halide_module' data-type='const Halide::Module &amp;' data-ref="7halide_module" data-ref-filename="7halide_module">halide_module</dfn>,</td></tr>
+<tr><th id="1344">1344</th><td>    <em>const</em> <span class="namespace">std::</span><span class='type' title='std::vector' data-ref="std::vector" data-ref-filename="std..vector">vector</span>&lt;<a class="type" href="Argument.h.html#Halide::Argument" title='Halide::Argument' data-ref="Halide::Argument" data-ref-filename="Halide..Argument">Argument</a>&gt; &amp;<dfn class="local col8 decl" id="8arguments" title='arguments' data-type='const std::vector&lt;Argument&gt; &amp;' data-ref="8arguments" data-ref-filename="8arguments">arguments</dfn>,</td></tr>
+<tr><th id="1345">1345</th><td>    <em>const</em> <span class="namespace">std::</span><span class='typedef' title='std::string' data-type='basic_string&lt;char&gt;' data-ref="std::string" data-ref-filename="std..string">string</span> &amp;<dfn class="local col9 decl" id="9fn_name" title='fn_name' data-type='const std::string &amp;' data-ref="9fn_name" data-ref-filename="9fn_name">fn_name</dfn>,</td></tr>
+<tr><th id="1346">1346</th><td>    <em>const</em> <span class="namespace">std::</span><span class='type' title='std::map' data-ref="std::map" data-ref-filename="std..map">map</span>&lt;<span class="namespace">std::</span><span class='typedef' title='std::string' data-type='basic_string&lt;char&gt;' data-ref="std::string" data-ref-filename="std..string">string</span>, <span class="namespace">Halide::</span><a class="type" href="Pipeline.h.html#Halide::JITExtern" title='Halide::JITExtern' data-ref="Halide::JITExtern" data-ref-filename="Halide..JITExtern">JITExtern</a>&gt; &amp;<dfn class="local col0 decl" id="10jit_externs" title='jit_externs' data-type='const std::map&lt;std::string, Halide::JITExtern&gt; &amp;' data-ref="10jit_externs" data-ref-filename="10jit_externs">jit_externs</dfn>,</td></tr>
+<tr><th id="1347">1347</th><td>    <em>const</em> <span class="namespace">std::</span><span class='type' title='std::vector' data-ref="std::vector" data-ref-filename="std..vector">vector</span>&lt;<a class="type" href="JITModule.h.html#Halide::Internal::JITModule" title='Halide::Internal::JITModule' data-ref="Halide::Internal::JITModule" data-ref-filename="Halide..Internal..JITModule">JITModule</a>&gt; &amp;<dfn class="local col1 decl" id="11extern_deps" title='extern_deps' data-type='const std::vector&lt;JITModule&gt; &amp;' data-ref="11extern_deps" data-ref-filename="11extern_deps">extern_deps</dfn>)</td></tr>
+<tr><th id="1348">1348</th><td>    : <a class="member field" href="#Halide::Internal::WasmModuleContents::target" title='Halide::Internal::WasmModuleContents::target' data-ref="Halide::Internal::WasmModuleContents::target" data-ref-filename="Halide..Internal..WasmModuleContents..target">target</a><a class="ref fn" href="Target.h.html#19" title='Halide::Target::Target' data-ref="_ZN6Halide6TargetC1ERKS0_" data-ref-filename="_ZN6Halide6TargetC1ERKS0_">(</a><a class="local col7 ref" href="#7halide_module" title='halide_module' data-ref="7halide_module" data-ref-filename="7halide_module">halide_module</a>.<a class="ref fn" href="Module.h.html#_ZNK6Halide6Module6targetEv" title='Halide::Module::target' data-ref="_ZNK6Halide6Module6targetEv" data-ref-filename="_ZNK6Halide6Module6targetEv">target</a>()),</td></tr>
+<tr><th id="1349">1349</th><td>      <a class="member field" href="#Halide::Internal::WasmModuleContents::arguments" title='Halide::Internal::WasmModuleContents::arguments' data-ref="Halide::Internal::WasmModuleContents::arguments" data-ref-filename="Halide..Internal..WasmModuleContents..arguments">arguments</a><span class='ref fn' title='std::vector::vector&lt;_Tp, _Alloc&gt;' data-ref="_ZNSt6vectorC1ERKSt6vectorIT_T0_E" data-ref-filename="_ZNSt6vectorC1ERKSt6vectorIT_T0_E">(</span><a class="local col8 ref" href="#8arguments" title='arguments' data-ref="8arguments" data-ref-filename="8arguments">arguments</a>),</td></tr>
+<tr><th id="1350">1350</th><td>      <a class="member field" href="#Halide::Internal::WasmModuleContents::jit_externs" title='Halide::Internal::WasmModuleContents::jit_externs' data-ref="Halide::Internal::WasmModuleContents::jit_externs" data-ref-filename="Halide..Internal..WasmModuleContents..jit_externs">jit_externs</a><span class='ref fn' title='std::map::map&lt;_Key, _Tp, _Compare, _Alloc&gt;' data-ref="_ZNSt3mapC1ERKSt3mapIT_T0_T1_T2_E" data-ref-filename="_ZNSt3mapC1ERKSt3mapIT_T0_T1_T2_E">(</span><a class="local col0 ref" href="#10jit_externs" title='jit_externs' data-ref="10jit_externs" data-ref-filename="10jit_externs">jit_externs</a>),</td></tr>
+<tr><th id="1351">1351</th><td>      <a class="member field" href="#Halide::Internal::WasmModuleContents::extern_deps" title='Halide::Internal::WasmModuleContents::extern_deps' data-ref="Halide::Internal::WasmModuleContents::extern_deps" data-ref-filename="Halide..Internal..WasmModuleContents..extern_deps">extern_deps</a><span class='ref fn' title='std::vector::vector&lt;_Tp, _Alloc&gt;' data-ref="_ZNSt6vectorC1ERKSt6vectorIT_T0_E" data-ref-filename="_ZNSt6vectorC1ERKSt6vectorIT_T0_E">(</span><a class="local col1 ref" href="#11extern_deps" title='extern_deps' data-ref="11extern_deps" data-ref-filename="11extern_deps">extern_deps</a>),</td></tr>
+<tr><th id="1352">1352</th><td>      <a class="member field" href="#Halide::Internal::WasmModuleContents::trampolines" title='Halide::Internal::WasmModuleContents::trampolines' data-ref="Halide::Internal::WasmModuleContents::trampolines" data-ref-filename="Halide..Internal..WasmModuleContents..trampolines">trampolines</a><a class="ref fn" href="JITModule.h.html#32" title='Halide::Internal::JITModule::JITModule' data-ref="_ZN6Halide8Internal9JITModuleC1EOS1_" data-ref-filename="_ZN6Halide8Internal9JITModuleC1EOS1_">(</a><a class="type" href="JITModule.h.html#Halide::Internal::JITModule" title='Halide::Internal::JITModule' data-ref="Halide::Internal::JITModule" data-ref-filename="Halide..Internal..JITModule">JITModule</a>::<a class="ref fn" href="JITModule.h.html#_ZN6Halide8Internal9JITModule23make_trampolines_moduleERKNS_6TargetERKSt3mapINSt7__cxx1112basic_stringIcSt11char_traitsIcESaIcEEENS_9JITExternESt4less15121187" title='Halide::Internal::JITModule::make_trampolines_module' data-ref="_ZN6Halide8Internal9JITModule23make_trampolines_moduleERKNS_6TargetERKSt3mapINSt7__cxx1112basic_stringIcSt11char_traitsIcESaIcEEENS_9JITExternESt4less15121187" data-ref-filename="_ZN6Halide8Internal9JITModule23make_trampolines_moduleERKNS_6TargetERKSt3mapINSt7__cxx1112basic_stringIcSt11char_traitsIcESaIcEEENS_9JITExternESt4less15121187">make_trampolines_module</a>(<a class="ref fn" href="Target.h.html#_ZN6Halide15get_host_targetEv" title='Halide::get_host_target' data-ref="_ZN6Halide15get_host_targetEv" data-ref-filename="_ZN6Halide15get_host_targetEv">get_host_target</a>(), <a class="local col0 ref" href="#10jit_externs" title='jit_externs' data-ref="10jit_externs" data-ref-filename="10jit_externs">jit_externs</a>, <span class='ref fn fake' title='std::__cxx11::basic_string::basic_string&lt;_CharT, _Traits, _Alloc&gt;' data-ref="_ZNSt7__cxx1112basic_stringC1EPKT_RKT1_" data-ref-filename="_ZNSt7__cxx1112basic_stringC1EPKT_RKT1_"></span><a class="tu ref" href="#Halide::Internal::kTrampolineSuffix" title='Halide::Internal::kTrampolineSuffix' data-use='r' data-ref="Halide::Internal::kTrampolineSuffix" data-ref-filename="Halide..Internal..kTrampolineSuffix">kTrampolineSuffix</a>, <a class="local col1 ref" href="#11extern_deps" title='extern_deps' data-ref="11extern_deps" data-ref-filename="11extern_deps">extern_deps</a>)) {</td></tr>
+<tr><th id="1353">1353</th><td></td></tr>
+<tr><th id="1354">1354</th><td><u>#<span data-ppcond="1354">if</span> WITH_WABT</u></td></tr>
+<tr><th id="1355">1355</th><td>    <i>// TODO: we should probably move this to LLVM 12 or 13, since LLVM11 won't support SIMD usefully enough for Halide</i></td></tr>
+<tr><th id="1356">1356</th><td>    user_assert(LLVM_VERSION &gt;= <var>110</var>) &lt;&lt; <q>"Using the WebAssembly JIT is only supported under LLVM 11+."</q>;</td></tr>
+<tr><th id="1357">1357</th><td></td></tr>
+<tr><th id="1358">1358</th><td>    user_assert(!target.has_feature(Target::WasmThreads)) &lt;&lt; <q>"wasm_threads requires Emscripten (or a similar compiler); it will never be supported under JIT."</q>;</td></tr>
+<tr><th id="1359">1359</th><td></td></tr>
+<tr><th id="1360">1360</th><td>    wdebug(<var>1</var>) &lt;&lt; <q>"Compiling wasm function "</q> &lt;&lt; fn_name &lt;&lt; <q>"\n"</q>;</td></tr>
+<tr><th id="1361">1361</th><td></td></tr>
+<tr><th id="1362">1362</th><td>    <i>// Compile halide into wasm bytecode.</i></td></tr>
+<tr><th id="1363">1363</th><td>    std::vector&lt;<em>char</em>&gt; final_wasm = compile_to_wasm(halide_module, fn_name);</td></tr>
+<tr><th id="1364">1364</th><td></td></tr>
+<tr><th id="1365">1365</th><td>    store = wabt::interp::Store(calc_features(halide_module.target()));</td></tr>
+<tr><th id="1366">1366</th><td></td></tr>
+<tr><th id="1367">1367</th><td>    <i>// Create a wabt Module for it.</i></td></tr>
+<tr><th id="1368">1368</th><td>    wabt::MemoryStream log_stream;</td></tr>
+<tr><th id="1369">1369</th><td>    <b>constexpr</b> <em>bool</em> kReadDebugNames = <b>true</b>;</td></tr>
+<tr><th id="1370">1370</th><td>    <b>constexpr</b> <em>bool</em> kStopOnFirstError = <b>true</b>;</td></tr>
+<tr><th id="1371">1371</th><td>    <b>constexpr</b> <em>bool</em> kFailOnCustomSectionError = <b>true</b>;</td></tr>
+<tr><th id="1372">1372</th><td>    wabt::ReadBinaryOptions options(store.features(),</td></tr>
+<tr><th id="1373">1373</th><td>                                    &amp;log_stream,</td></tr>
+<tr><th id="1374">1374</th><td>                                    kReadDebugNames,</td></tr>
+<tr><th id="1375">1375</th><td>                                    kStopOnFirstError,</td></tr>
+<tr><th id="1376">1376</th><td>                                    kFailOnCustomSectionError);</td></tr>
+<tr><th id="1377">1377</th><td>    wabt::Errors errors;</td></tr>
+<tr><th id="1378">1378</th><td>    wabt::interp::ModuleDesc module_desc;</td></tr>
+<tr><th id="1379">1379</th><td>    wabt::Result r = wabt::interp::ReadBinaryInterp(final_wasm.data(),</td></tr>
+<tr><th id="1380">1380</th><td>                                                    final_wasm.size(),</td></tr>
+<tr><th id="1381">1381</th><td>                                                    options,</td></tr>
+<tr><th id="1382">1382</th><td>                                                    &amp;errors,</td></tr>
+<tr><th id="1383">1383</th><td>                                                    &amp;module_desc);</td></tr>
+<tr><th id="1384">1384</th><td>    internal_assert(Succeeded(r))</td></tr>
+<tr><th id="1385">1385</th><td>        &lt;&lt; <q>"ReadBinaryInterp failed:\n"</q></td></tr>
+<tr><th id="1386">1386</th><td>        &lt;&lt; wabt::FormatErrorsToString(errors, wabt::Location::Type::Binary) &lt;&lt; <q>"\n"</q></td></tr>
+<tr><th id="1387">1387</th><td>        &lt;&lt; <q>"  log: "</q> &lt;&lt; to_string(log_stream) &lt;&lt; <q>"\n"</q>;</td></tr>
+<tr><th id="1388">1388</th><td></td></tr>
+<tr><th id="1389">1389</th><td>    <b>if</b> (WASM_DEBUG_LEVEL &gt;= <var>2</var>) {</td></tr>
+<tr><th id="1390">1390</th><td>        wabt::MemoryStream dis_stream;</td></tr>
+<tr><th id="1391">1391</th><td>        module_desc.istream.Disassemble(&amp;dis_stream);</td></tr>
+<tr><th id="1392">1392</th><td>        wdebug(WASM_DEBUG_LEVEL) &lt;&lt; <q>"Disassembly:\n"</q></td></tr>
+<tr><th id="1393">1393</th><td>                                 &lt;&lt; to_string(dis_stream) &lt;&lt; <q>"\n"</q>;</td></tr>
+<tr><th id="1394">1394</th><td>    }</td></tr>
+<tr><th id="1395">1395</th><td></td></tr>
+<tr><th id="1396">1396</th><td>    module = wabt::interp::Module::New(store, module_desc);</td></tr>
+<tr><th id="1397">1397</th><td></td></tr>
+<tr><th id="1398">1398</th><td>    <i>// Bind all imports to our callbacks.</i></td></tr>
+<tr><th id="1399">1399</th><td>    wabt::interp::RefVec imports;</td></tr>
+<tr><th id="1400">1400</th><td>    <em>const</em> HostCallbackMap &amp;host_callback_map = get_host_callback_map();</td></tr>
+<tr><th id="1401">1401</th><td>    <b>for</b> (<em>const</em> <em>auto</em> &amp;import : module-&gt;desc().imports) {</td></tr>
+<tr><th id="1402">1402</th><td>        wdebug(<var>1</var>) &lt;&lt; <q>"import="</q> &lt;&lt; import.type.module &lt;&lt; <q>"."</q> &lt;&lt; import.type.name &lt;&lt; <q>"\n"</q>;</td></tr>
+<tr><th id="1403">1403</th><td>        <b>if</b> (import.type.type-&gt;kind == wabt::interp::ExternKind::Func &amp;&amp; import.type.module == <q>"env"</q>) {</td></tr>
+<tr><th id="1404">1404</th><td>            <em>auto</em> it = host_callback_map.find(import.type.name);</td></tr>
+<tr><th id="1405">1405</th><td>            <b>if</b> (it != host_callback_map.end()) {</td></tr>
+<tr><th id="1406">1406</th><td>                <em>auto</em> func_type = *wabt::cast&lt;wabt::interp::FuncType&gt;(import.type.type.get());</td></tr>
+<tr><th id="1407">1407</th><td>                <em>auto</em> host_func = wabt::interp::HostFunc::New(store, func_type, it-&gt;second);</td></tr>
+<tr><th id="1408">1408</th><td>                imports.push_back(host_func.ref());</td></tr>
+<tr><th id="1409">1409</th><td>                <b>continue</b>;</td></tr>
+<tr><th id="1410">1410</th><td>            }</td></tr>
+<tr><th id="1411">1411</th><td></td></tr>
+<tr><th id="1412">1412</th><td>            <i>// If it's not one of the standard host callbacks, assume it must be</i></td></tr>
+<tr><th id="1413">1413</th><td><i>            // a define_extern, and look for it in the jit_externs.</i></td></tr>
+<tr><th id="1414">1414</th><td>            <em>auto</em> host_func = make_extern_callback(store, jit_externs, trampolines, import);</td></tr>
+<tr><th id="1415">1415</th><td>            imports.push_back(host_func.ref());</td></tr>
+<tr><th id="1416">1416</th><td>            <b>continue</b>;</td></tr>
+<tr><th id="1417">1417</th><td>        }</td></tr>
+<tr><th id="1418">1418</th><td>        <i>// By default, just push a null reference. This won't resolve, and</i></td></tr>
+<tr><th id="1419">1419</th><td><i>        // instantiation will fail.</i></td></tr>
+<tr><th id="1420">1420</th><td>        imports.push_back(wabt::interp::Ref::Null);</td></tr>
+<tr><th id="1421">1421</th><td>    }</td></tr>
+<tr><th id="1422">1422</th><td></td></tr>
+<tr><th id="1423">1423</th><td>    wabt::interp::RefPtr&lt;wabt::interp::Trap&gt; trap;</td></tr>
+<tr><th id="1424">1424</th><td>    instance = wabt::interp::Instance::Instantiate(store, module.ref(), imports, &amp;trap);</td></tr>
+<tr><th id="1425">1425</th><td>    internal_assert(instance) &lt;&lt; <q>"Error initializing module: "</q> &lt;&lt; trap-&gt;message() &lt;&lt; <q>"\n"</q>;</td></tr>
+<tr><th id="1426">1426</th><td></td></tr>
+<tr><th id="1427">1427</th><td>    int32_t heap_base = -<var>1</var>;</td></tr>
+<tr><th id="1428">1428</th><td></td></tr>
+<tr><th id="1429">1429</th><td>    <b>for</b> (<em>const</em> <em>auto</em> &amp;e : module_desc.exports) {</td></tr>
+<tr><th id="1430">1430</th><td>        <b>if</b> (e.type.name == <q>"__heap_base"</q>) {</td></tr>
+<tr><th id="1431">1431</th><td>            internal_assert(e.type.type-&gt;kind == wabt::ExternalKind::Global);</td></tr>
+<tr><th id="1432">1432</th><td>            heap_base = store.UnsafeGet&lt;wabt::interp::Global&gt;(instance-&gt;globals()[e.index])-&gt;Get().Get&lt;int32_t&gt;();</td></tr>
+<tr><th id="1433">1433</th><td>            wdebug(<var>1</var>) &lt;&lt; <q>"__heap_base is "</q> &lt;&lt; heap_base &lt;&lt; <q>"\n"</q>;</td></tr>
+<tr><th id="1434">1434</th><td>            <b>continue</b>;</td></tr>
+<tr><th id="1435">1435</th><td>        }</td></tr>
+<tr><th id="1436">1436</th><td>        <b>if</b> (e.type.name == <q>"memory"</q>) {</td></tr>
+<tr><th id="1437">1437</th><td>            internal_assert(e.type.type-&gt;kind == wabt::ExternalKind::Memory);</td></tr>
+<tr><th id="1438">1438</th><td>            internal_assert(!memory.get()) &lt;&lt; <q>"Expected exactly one memory object but saw "</q> &lt;&lt; (<em>void</em> *)memory.get();</td></tr>
+<tr><th id="1439">1439</th><td>            memory = store.UnsafeGet&lt;wabt::interp::Memory&gt;(instance-&gt;memories()[e.index]);</td></tr>
+<tr><th id="1440">1440</th><td>            wdebug(<var>1</var>) &lt;&lt; <q>"heap_size is "</q> &lt;&lt; memory-&gt;ByteSize() &lt;&lt; <q>"\n"</q>;</td></tr>
+<tr><th id="1441">1441</th><td>            <b>continue</b>;</td></tr>
+<tr><th id="1442">1442</th><td>        }</td></tr>
+<tr><th id="1443">1443</th><td>    }</td></tr>
+<tr><th id="1444">1444</th><td>    internal_assert(heap_base &gt;= <var>0</var>) &lt;&lt; <q>"__heap_base not found"</q>;</td></tr>
+<tr><th id="1445">1445</th><td>    internal_assert(memory-&gt;ByteSize() &gt; <var>0</var>) &lt;&lt; <q>"memory size is unlikely"</q>;</td></tr>
+<tr><th id="1446">1446</th><td></td></tr>
+<tr><th id="1447">1447</th><td>    bdmalloc.init(memory-&gt;ByteSize(), heap_base);</td></tr>
+<tr><th id="1448">1448</th><td></td></tr>
+<tr><th id="1449">1449</th><td><u>#<span data-ppcond="1354">endif</span>  // WITH_WABT</u></td></tr>
+<tr><th id="1450">1450</th><td>}</td></tr>
+<tr><th id="1451">1451</th><td></td></tr>
+<tr><th id="1452">1452</th><td><em>int</em> <a class="type" href="#Halide::Internal::WasmModuleContents" title='Halide::Internal::WasmModuleContents' data-ref="Halide::Internal::WasmModuleContents" data-ref-filename="Halide..Internal..WasmModuleContents">WasmModuleContents</a>::<dfn class="decl def fn" id="_ZN6Halide8Internal18WasmModuleContents3runEPPKv" title='Halide::Internal::WasmModuleContents::run' data-ref="_ZN6Halide8Internal18WasmModuleContents3runEPPKv" data-ref-filename="_ZN6Halide8Internal18WasmModuleContents3runEPPKv">run</dfn>(<em>const</em> <em>void</em> **<dfn class="local col2 decl" id="12args" title='args' data-type='const void **' data-ref="12args" data-ref-filename="12args">args</dfn>) {</td></tr>
+<tr><th id="1453">1453</th><td><u>#<span data-ppcond="1453">if</span> WITH_WABT</u></td></tr>
+<tr><th id="1454">1454</th><td>    <em>const</em> <em>auto</em> &amp;module_desc = module-&gt;desc();</td></tr>
+<tr><th id="1455">1455</th><td></td></tr>
+<tr><th id="1456">1456</th><td>    wabt::interp::FuncType *func_type = <b>nullptr</b>;</td></tr>
+<tr><th id="1457">1457</th><td>    wabt::interp::RefPtr&lt;wabt::interp::Func&gt; func;</td></tr>
+<tr><th id="1458">1458</th><td>    std::string func_name;</td></tr>
+<tr><th id="1459">1459</th><td></td></tr>
+<tr><th id="1460">1460</th><td>    <b>for</b> (<em>const</em> <em>auto</em> &amp;e : module_desc.exports) {</td></tr>
+<tr><th id="1461">1461</th><td>        <b>if</b> (e.type.type-&gt;kind == wabt::ExternalKind::Func) {</td></tr>
+<tr><th id="1462">1462</th><td>            wdebug(<var>1</var>) &lt;&lt; <q>"Selecting export '"</q> &lt;&lt; e.type.name &lt;&lt; <q>"'\n"</q>;</td></tr>
+<tr><th id="1463">1463</th><td>            internal_assert(!func_type &amp;&amp; !func) &lt;&lt; <q>"Multiple exported funcs found"</q>;</td></tr>
+<tr><th id="1464">1464</th><td>            func_type = wabt::cast&lt;wabt::interp::FuncType&gt;(e.type.type.get());</td></tr>
+<tr><th id="1465">1465</th><td>            func = store.UnsafeGet&lt;wabt::interp::Func&gt;(instance-&gt;funcs()[e.index]);</td></tr>
+<tr><th id="1466">1466</th><td>            func_name = e.type.name;</td></tr>
+<tr><th id="1467">1467</th><td>            <b>continue</b>;</td></tr>
+<tr><th id="1468">1468</th><td>        }</td></tr>
+<tr><th id="1469">1469</th><td>    }</td></tr>
+<tr><th id="1470">1470</th><td></td></tr>
+<tr><th id="1471">1471</th><td>    JITUserContext *jit_user_context = <b>nullptr</b>;</td></tr>
+<tr><th id="1472">1472</th><td>    <b>for</b> (size_t i = <var>0</var>; i &lt; arguments.size(); i++) {</td></tr>
+<tr><th id="1473">1473</th><td>        <em>const</em> Argument &amp;arg = arguments[i];</td></tr>
+<tr><th id="1474">1474</th><td>        <em>const</em> <em>void</em> *arg_ptr = args[i];</td></tr>
+<tr><th id="1475">1475</th><td>        <b>if</b> (arg.name == <q>"__user_context"</q>) {</td></tr>
+<tr><th id="1476">1476</th><td>            jit_user_context = *(JITUserContext **)<b>const_cast</b>&lt;<em>void</em> *&gt;(arg_ptr);</td></tr>
+<tr><th id="1477">1477</th><td>        }</td></tr>
+<tr><th id="1478">1478</th><td>    }</td></tr>
+<tr><th id="1479">1479</th><td></td></tr>
+<tr><th id="1480">1480</th><td>    WabtContext wabt_context(jit_user_context, *memory, bdmalloc);</td></tr>
+<tr><th id="1481">1481</th><td></td></tr>
+<tr><th id="1482">1482</th><td>    wabt::interp::Values wabt_args;</td></tr>
+<tr><th id="1483">1483</th><td>    wabt::interp::Values wabt_results;</td></tr>
+<tr><th id="1484">1484</th><td>    wabt::interp::Trap::Ptr trap;</td></tr>
+<tr><th id="1485">1485</th><td></td></tr>
+<tr><th id="1486">1486</th><td>    std::vector&lt;wasm32_ptr_t&gt; wbufs(arguments.size(), <var>0</var>);</td></tr>
+<tr><th id="1487">1487</th><td></td></tr>
+<tr><th id="1488">1488</th><td>    <b>for</b> (size_t i = <var>0</var>; i &lt; arguments.size(); i++) {</td></tr>
+<tr><th id="1489">1489</th><td>        <em>const</em> Argument &amp;arg = arguments[i];</td></tr>
+<tr><th id="1490">1490</th><td>        <em>const</em> <em>void</em> *arg_ptr = args[i];</td></tr>
+<tr><th id="1491">1491</th><td>        <b>if</b> (arg.is_buffer()) {</td></tr>
+<tr><th id="1492">1492</th><td>            halide_buffer_t *buf = (halide_buffer_t *)<b>const_cast</b>&lt;<em>void</em> *&gt;(arg_ptr);</td></tr>
+<tr><th id="1493">1493</th><td>            <i>// It's OK for this to be null (let Halide asserts handle it)</i></td></tr>
+<tr><th id="1494">1494</th><td>            wasm32_ptr_t wbuf = hostbuf_to_wasmbuf(wabt_context, buf);</td></tr>
+<tr><th id="1495">1495</th><td>            wbufs[i] = wbuf;</td></tr>
+<tr><th id="1496">1496</th><td>            wabt_args.push_back(load_value(wbuf));</td></tr>
+<tr><th id="1497">1497</th><td>        } <b>else</b> {</td></tr>
+<tr><th id="1498">1498</th><td>            <b>if</b> (arg.name == <q>"__user_context"</q>) {</td></tr>
+<tr><th id="1499">1499</th><td>                wabt_args.push_back(wabt::interp::Value::Make(kMagicJitUserContextValue));</td></tr>
+<tr><th id="1500">1500</th><td>            } <b>else</b> {</td></tr>
+<tr><th id="1501">1501</th><td>                wabt_args.push_back(load_value(arg.type, arg_ptr));</td></tr>
+<tr><th id="1502">1502</th><td>            }</td></tr>
+<tr><th id="1503">1503</th><td>        }</td></tr>
+<tr><th id="1504">1504</th><td>    }</td></tr>
+<tr><th id="1505">1505</th><td></td></tr>
+<tr><th id="1506">1506</th><td>    wabt::interp::Thread::Options options;</td></tr>
+<tr><th id="1507">1507</th><td>    wabt::interp::Thread::Ptr thread = wabt::interp::Thread::New(store, options);</td></tr>
+<tr><th id="1508">1508</th><td>    thread-&gt;set_host_info(&amp;wabt_context);</td></tr>
+<tr><th id="1509">1509</th><td></td></tr>
+<tr><th id="1510">1510</th><td>    <em>auto</em> r = func-&gt;Call(*thread, wabt_args, wabt_results, &amp;trap);</td></tr>
+<tr><th id="1511">1511</th><td>    <b>if</b> (WASM_DEBUG_LEVEL &gt;= <var>2</var>) {</td></tr>
+<tr><th id="1512">1512</th><td>        wabt::MemoryStream call_stream;</td></tr>
+<tr><th id="1513">1513</th><td>        WriteCall(&amp;call_stream, func_name, *func_type, wabt_args, wabt_results, trap);</td></tr>
+<tr><th id="1514">1514</th><td>        wdebug(WASM_DEBUG_LEVEL) &lt;&lt; to_string(call_stream) &lt;&lt; <q>"\n"</q>;</td></tr>
+<tr><th id="1515">1515</th><td>    }</td></tr>
+<tr><th id="1516">1516</th><td>    internal_assert(Succeeded(r)) &lt;&lt; <q>"Func::Call failed: "</q> &lt;&lt; trap-&gt;message() &lt;&lt; <q>"\n"</q>;</td></tr>
+<tr><th id="1517">1517</th><td>    internal_assert(wabt_results.size() == <var>1</var>);</td></tr>
+<tr><th id="1518">1518</th><td>    int32_t result = wabt_results[<var>0</var>].Get&lt;int32_t&gt;();</td></tr>
+<tr><th id="1519">1519</th><td></td></tr>
+<tr><th id="1520">1520</th><td>    wdebug(<var>1</var>) &lt;&lt; <q>"Result is "</q> &lt;&lt; result &lt;&lt; <q>"\n"</q>;</td></tr>
+<tr><th id="1521">1521</th><td></td></tr>
+<tr><th id="1522">1522</th><td>    <b>if</b> (result == <var>0</var>) {</td></tr>
+<tr><th id="1523">1523</th><td>        <i>// Update any output buffers</i></td></tr>
+<tr><th id="1524">1524</th><td>        <b>for</b> (size_t i = <var>0</var>; i &lt; arguments.size(); i++) {</td></tr>
+<tr><th id="1525">1525</th><td>            <em>const</em> Argument &amp;arg = arguments[i];</td></tr>
+<tr><th id="1526">1526</th><td>            <em>const</em> <em>void</em> *arg_ptr = args[i];</td></tr>
+<tr><th id="1527">1527</th><td>            <b>if</b> (arg.is_buffer()) {</td></tr>
+<tr><th id="1528">1528</th><td>                halide_buffer_t *buf = (halide_buffer_t *)<b>const_cast</b>&lt;<em>void</em> *&gt;(arg_ptr);</td></tr>
+<tr><th id="1529">1529</th><td>                copy_wasmbuf_to_existing_hostbuf(wabt_context, wbufs[i], buf);</td></tr>
+<tr><th id="1530">1530</th><td>            }</td></tr>
+<tr><th id="1531">1531</th><td>        }</td></tr>
+<tr><th id="1532">1532</th><td>    }</td></tr>
+<tr><th id="1533">1533</th><td></td></tr>
+<tr><th id="1534">1534</th><td>    <b>for</b> (wasm32_ptr_t p : wbufs) {</td></tr>
+<tr><th id="1535">1535</th><td>        wabt_free(wabt_context, p);</td></tr>
+<tr><th id="1536">1536</th><td>    }</td></tr>
+<tr><th id="1537">1537</th><td></td></tr>
+<tr><th id="1538">1538</th><td>    <i>// Don't do this: things allocated by Halide runtime might need to persist</i></td></tr>
+<tr><th id="1539">1539</th><td><i>    // between multiple invocations of the same function.</i></td></tr>
+<tr><th id="1540">1540</th><td><i>    // bdmalloc.reset();</i></td></tr>
+<tr><th id="1541">1541</th><td></td></tr>
+<tr><th id="1542">1542</th><td>    <b>return</b> result;</td></tr>
+<tr><th id="1543">1543</th><td></td></tr>
+<tr><th id="1544">1544</th><td><u>#<span data-ppcond="1453">endif</span></u></td></tr>
+<tr><th id="1545">1545</th><td></td></tr>
+<tr><th id="1546">1546</th><td>    <a class="macro" href="Error.h.html#134" title="Halide::Internal::ErrorReport(&quot;/fast/tmp/halide.git/src/WasmExecutor.cpp&quot;, 1546, nullptr, 0)" data-ref="_M/internal_error">internal_error</a> <a class="ref fn" href="Error.h.html#_ZN6Halide8Internal11ErrorReportlsERKT_" title='Halide::Internal::ErrorReport::operator&lt;&lt;' data-ref="_ZN6Halide8Internal11ErrorReportlsERKT_" data-ref-filename="_ZN6Halide8Internal11ErrorReportlsERKT_">&lt;&lt;</a> <q>"WasmExecutor is not configured correctly"</q>;</td></tr>
+<tr><th id="1547">1547</th><td>    <b>return</b> -<var>1</var>;</td></tr>
+<tr><th id="1548">1548</th><td>}</td></tr>
+<tr><th id="1549">1549</th><td></td></tr>
+<tr><th id="1550">1550</th><td><b>template</b>&lt;&gt;</td></tr>
+<tr><th id="1551">1551</th><td><a class="type" href="IntrusivePtr.h.html#Halide::Internal::RefCount" title='Halide::Internal::RefCount' data-ref="Halide::Internal::RefCount" data-ref-filename="Halide..Internal..RefCount">RefCount</a> &amp;<dfn class="decl def fn" id="_ZN6Halide8Internal9ref_countEPKT_" title='Halide::Internal::ref_count' data-ref="_ZN6Halide8Internal9ref_countEPKT_" data-ref-filename="_ZN6Halide8Internal9ref_countEPKT_">ref_count</dfn>&lt;<a class="type" href="#Halide::Internal::WasmModuleContents" title='Halide::Internal::WasmModuleContents' data-ref="Halide::Internal::WasmModuleContents" data-ref-filename="Halide..Internal..WasmModuleContents">WasmModuleContents</a>&gt;(<em>const</em> <a class="type" href="#Halide::Internal::WasmModuleContents" title='Halide::Internal::WasmModuleContents' data-ref="Halide::Internal::WasmModuleContents" data-ref-filename="Halide..Internal..WasmModuleContents">WasmModuleContents</a> *<dfn class="local col3 decl" id="13p" title='p' data-type='const Halide::Internal::WasmModuleContents *' data-ref="13p" data-ref-filename="13p">p</dfn>) <b>noexcept</b> {</td></tr>
+<tr><th id="1552">1552</th><td>    <b>return</b> <a class="local col3 ref" href="#13p" title='p' data-ref="13p" data-ref-filename="13p">p</a>-&gt;<a class="ref field" href="#Halide::Internal::WasmModuleContents::ref_count" title='Halide::Internal::WasmModuleContents::ref_count' data-ref="Halide::Internal::WasmModuleContents::ref_count" data-ref-filename="Halide..Internal..WasmModuleContents..ref_count">ref_count</a>;</td></tr>
+<tr><th id="1553">1553</th><td>}</td></tr>
+<tr><th id="1554">1554</th><td></td></tr>
+<tr><th id="1555">1555</th><td><b>template</b>&lt;&gt;</td></tr>
+<tr><th id="1556">1556</th><td><em>void</em> <dfn class="decl def fn" id="_ZN6Halide8Internal7destroyEPKT_" title='Halide::Internal::destroy' data-ref="_ZN6Halide8Internal7destroyEPKT_" data-ref-filename="_ZN6Halide8Internal7destroyEPKT_">destroy</dfn>&lt;<a class="type" href="#Halide::Internal::WasmModuleContents" title='Halide::Internal::WasmModuleContents' data-ref="Halide::Internal::WasmModuleContents" data-ref-filename="Halide..Internal..WasmModuleContents">WasmModuleContents</a>&gt;(<em>const</em> <a class="type" href="#Halide::Internal::WasmModuleContents" title='Halide::Internal::WasmModuleContents' data-ref="Halide::Internal::WasmModuleContents" data-ref-filename="Halide..Internal..WasmModuleContents">WasmModuleContents</a> *<dfn class="local col4 decl" id="14p" title='p' data-type='const Halide::Internal::WasmModuleContents *' data-ref="14p" data-ref-filename="14p">p</dfn>) {</td></tr>
+<tr><th id="1557">1557</th><td>    <b>delete</b> <a class="local col4 ref" href="#14p" title='p' data-ref="14p" data-ref-filename="14p">p</a>;</td></tr>
+<tr><th id="1558">1558</th><td>}</td></tr>
+<tr><th id="1559">1559</th><td></td></tr>
+<tr><th id="1560">1560</th><td><i>/*static*/</i></td></tr>
+<tr><th id="1561">1561</th><td><em>bool</em> <a class="type" href="WasmExecutor.h.html#Halide::Internal::WasmModule" title='Halide::Internal::WasmModule' data-ref="Halide::Internal::WasmModule" data-ref-filename="Halide..Internal..WasmModule">WasmModule</a>::<dfn class="decl def fn" id="_ZN6Halide8Internal10WasmModule14can_jit_targetERKNS_6TargetE" title='Halide::Internal::WasmModule::can_jit_target' data-ref="_ZN6Halide8Internal10WasmModule14can_jit_targetERKNS_6TargetE" data-ref-filename="_ZN6Halide8Internal10WasmModule14can_jit_targetERKNS_6TargetE">can_jit_target</dfn>(<em>const</em> <a class="type" href="Target.h.html#Halide::Target" title='Halide::Target' data-ref="Halide::Target" data-ref-filename="Halide..Target">Target</a> &amp;<dfn class="local col5 decl" id="15target" title='target' data-type='const Halide::Target &amp;' data-ref="15target" data-ref-filename="15target">target</dfn>) {</td></tr>
+<tr><th id="1562">1562</th><td><u>#<span data-ppcond="1562">if</span> WITH_WABT</u></td></tr>
+<tr><th id="1563">1563</th><td>    <b>if</b> (target.arch == Target::WebAssembly) {</td></tr>
+<tr><th id="1564">1564</th><td>        <b>return</b> <b>true</b>;</td></tr>
+<tr><th id="1565">1565</th><td>    }</td></tr>
+<tr><th id="1566">1566</th><td><u>#<span data-ppcond="1562">endif</span></u></td></tr>
+<tr><th id="1567">1567</th><td>    <b>return</b> <b>false</b>;</td></tr>
+<tr><th id="1568">1568</th><td>}</td></tr>
+<tr><th id="1569">1569</th><td></td></tr>
+<tr><th id="1570">1570</th><td><i>/*static*/</i></td></tr>
+<tr><th id="1571">1571</th><td><a class="type" href="WasmExecutor.h.html#Halide::Internal::WasmModule" title='Halide::Internal::WasmModule' data-ref="Halide::Internal::WasmModule" data-ref-filename="Halide..Internal..WasmModule">WasmModule</a> <a class="type" href="WasmExecutor.h.html#Halide::Internal::WasmModule" title='Halide::Internal::WasmModule' data-ref="Halide::Internal::WasmModule" data-ref-filename="Halide..Internal..WasmModule">WasmModule</a>::<dfn class="decl def fn" id="_ZN6Halide8Internal10WasmModule7compileERKNS_6ModuleERKSt6vectorINS_8ArgumentESaIS6_EERKNSt7__cxx1112basic_stringIcSt11char_traitsIcESaIcEEERKSt3mapIS11257875" title='Halide::Internal::WasmModule::compile' data-ref="_ZN6Halide8Internal10WasmModule7compileERKNS_6ModuleERKSt6vectorINS_8ArgumentESaIS6_EERKNSt7__cxx1112basic_stringIcSt11char_traitsIcESaIcEEERKSt3mapIS11257875" data-ref-filename="_ZN6Halide8Internal10WasmModule7compileERKNS_6ModuleERKSt6vectorINS_8ArgumentESaIS6_EERKNSt7__cxx1112basic_stringIcSt11char_traitsIcESaIcEEERKSt3mapIS11257875">compile</dfn>(</td></tr>
+<tr><th id="1572">1572</th><td>    <em>const</em> <a class="type" href="Module.h.html#Halide::Module" title='Halide::Module' data-ref="Halide::Module" data-ref-filename="Halide..Module">Module</a> &amp;<dfn class="local col6 decl" id="16module" title='module' data-type='const Halide::Module &amp;' data-ref="16module" data-ref-filename="16module">module</dfn>,</td></tr>
+<tr><th id="1573">1573</th><td>    <em>const</em> <span class="namespace">std::</span><span class='type' title='std::vector' data-ref="std::vector" data-ref-filename="std..vector">vector</span>&lt;<a class="type" href="Argument.h.html#Halide::Argument" title='Halide::Argument' data-ref="Halide::Argument" data-ref-filename="Halide..Argument">Argument</a>&gt; &amp;<dfn class="local col7 decl" id="17arguments" title='arguments' data-type='const std::vector&lt;Argument&gt; &amp;' data-ref="17arguments" data-ref-filename="17arguments">arguments</dfn>,</td></tr>
+<tr><th id="1574">1574</th><td>    <em>const</em> <span class="namespace">std::</span><span class='typedef' title='std::string' data-type='basic_string&lt;char&gt;' data-ref="std::string" data-ref-filename="std..string">string</span> &amp;<dfn class="local col8 decl" id="18fn_name" title='fn_name' data-type='const std::string &amp;' data-ref="18fn_name" data-ref-filename="18fn_name">fn_name</dfn>,</td></tr>
+<tr><th id="1575">1575</th><td>    <em>const</em> <span class="namespace">std::</span><span class='type' title='std::map' data-ref="std::map" data-ref-filename="std..map">map</span>&lt;<span class="namespace">std::</span><span class='typedef' title='std::string' data-type='basic_string&lt;char&gt;' data-ref="std::string" data-ref-filename="std..string">string</span>, <span class="namespace">Halide::</span><a class="type" href="Pipeline.h.html#Halide::JITExtern" title='Halide::JITExtern' data-ref="Halide::JITExtern" data-ref-filename="Halide..JITExtern">JITExtern</a>&gt; &amp;<dfn class="local col9 decl" id="19jit_externs" title='jit_externs' data-type='const std::map&lt;std::string, Halide::JITExtern&gt; &amp;' data-ref="19jit_externs" data-ref-filename="19jit_externs">jit_externs</dfn>,</td></tr>
+<tr><th id="1576">1576</th><td>    <em>const</em> <span class="namespace">std::</span><span class='type' title='std::vector' data-ref="std::vector" data-ref-filename="std..vector">vector</span>&lt;<a class="type" href="JITModule.h.html#Halide::Internal::JITModule" title='Halide::Internal::JITModule' data-ref="Halide::Internal::JITModule" data-ref-filename="Halide..Internal..JITModule">JITModule</a>&gt; &amp;<dfn class="local col0 decl" id="20extern_deps" title='extern_deps' data-type='const std::vector&lt;JITModule&gt; &amp;' data-ref="20extern_deps" data-ref-filename="20extern_deps">extern_deps</dfn>) {</td></tr>
+<tr><th id="1577">1577</th><td><u>#<span data-ppcond="1577">if</span> !defined(<span class="macro" data-ref="_M/WITH_WABT">WITH_WABT</span>)</u></td></tr>
+<tr><th id="1578">1578</th><td>    <a class="macro" href="Error.h.html#135" title="Halide::Internal::ErrorReport(&quot;/fast/tmp/halide.git/src/WasmExecutor.cpp&quot;, 1578, nullptr, Halide::Internal::ErrorReport::User)" data-ref="_M/user_error">user_error</a> <a class="ref fn" href="Error.h.html#_ZN6Halide8Internal11ErrorReportlsERKT_" title='Halide::Internal::ErrorReport::operator&lt;&lt;' data-ref="_ZN6Halide8Internal11ErrorReportlsERKT_" data-ref-filename="_ZN6Halide8Internal11ErrorReportlsERKT_">&lt;&lt;</a> <q>"Cannot run JITted WebAssembly without configuring a WebAssembly engine."</q>;</td></tr>
+<tr><th id="1579">1579</th><td>    <b>return</b> <a class="type" href="WasmExecutor.h.html#Halide::Internal::WasmModule" title='Halide::Internal::WasmModule' data-ref="Halide::Internal::WasmModule" data-ref-filename="Halide..Internal..WasmModule">WasmModule</a><a class="ref fn" href="WasmExecutor.h.html#27" title='Halide::Internal::WasmModule::WasmModule' data-ref="_ZN6Halide8Internal10WasmModuleC1Ev" data-ref-filename="_ZN6Halide8Internal10WasmModuleC1Ev">(</a>);</td></tr>
+<tr><th id="1580">1580</th><td><u>#<span data-ppcond="1577">else</span></u></td></tr>
+<tr><th id="1581">1581</th><td>    WasmModule wasm_module;</td></tr>
+<tr><th id="1582">1582</th><td>    wasm_module.contents = <b>new</b> WasmModuleContents(module, arguments, fn_name, jit_externs, extern_deps);</td></tr>
+<tr><th id="1583">1583</th><td>    <b>return</b> wasm_module;</td></tr>
+<tr><th id="1584">1584</th><td><u>#<span data-ppcond="1577">endif</span></u></td></tr>
+<tr><th id="1585">1585</th><td>}</td></tr>
+<tr><th id="1586">1586</th><td></td></tr>
+<tr><th id="1587">1587</th><td><i class="doc">/** Run generated previously compiled wasm code with a set of arguments. */</i></td></tr>
+<tr><th id="1588">1588</th><td><em>int</em> <a class="type" href="WasmExecutor.h.html#Halide::Internal::WasmModule" title='Halide::Internal::WasmModule' data-ref="Halide::Internal::WasmModule" data-ref-filename="Halide..Internal..WasmModule">WasmModule</a>::<dfn class="decl def fn" id="_ZN6Halide8Internal10WasmModule3runEPPKv" title='Halide::Internal::WasmModule::run' data-ref="_ZN6Halide8Internal10WasmModule3runEPPKv" data-ref-filename="_ZN6Halide8Internal10WasmModule3runEPPKv">run</dfn>(<em>const</em> <em>void</em> **<dfn class="local col1 decl" id="21args" title='args' data-type='const void **' data-ref="21args" data-ref-filename="21args">args</dfn>) {</td></tr>
+<tr><th id="1589">1589</th><td>    <a class="macro" href="Error.h.html#139" title="(contents.defined()) ? (void)0 : ::Halide::Internal::Voidifier() &amp; ::Halide::Internal::ErrorReport(&quot;/fast/tmp/halide.git/src/WasmExecutor.cpp&quot;, 1589, &quot;contents.defined()&quot;, 0).ref()" data-ref="_M/internal_assert">internal_assert</a>(<a class="member field" href="WasmExecutor.h.html#Halide::Internal::WasmModule::contents" title='Halide::Internal::WasmModule::contents' data-ref="Halide::Internal::WasmModule::contents" data-ref-filename="Halide..Internal..WasmModule..contents">contents</a>.<a class="ref fn" href="IntrusivePtr.h.html#_ZNK6Halide8Internal12IntrusivePtr7definedEv" title='Halide::Internal::IntrusivePtr::defined' data-ref="_ZNK6Halide8Internal12IntrusivePtr7definedEv" data-ref-filename="_ZNK6Halide8Internal12IntrusivePtr7definedEv">defined</a>());</td></tr>
+<tr><th id="1590">1590</th><td>    <b>return</b> <a class="member field" href="WasmExecutor.h.html#Halide::Internal::WasmModule::contents" title='Halide::Internal::WasmModule::contents' data-ref="Halide::Internal::WasmModule::contents" data-ref-filename="Halide..Internal..WasmModule..contents">contents</a><a class="ref fn" href="IntrusivePtr.h.html#_ZNK6Halide8Internal12IntrusivePtrptEv" title='Halide::Internal::IntrusivePtr::operator-&gt;' data-ref="_ZNK6Halide8Internal12IntrusivePtrptEv" data-ref-filename="_ZNK6Halide8Internal12IntrusivePtrptEv">-&gt;</a><a class="ref fn" href="#_ZN6Halide8Internal18WasmModuleContents3runEPPKv" title='Halide::Internal::WasmModuleContents::run' data-ref="_ZN6Halide8Internal18WasmModuleContents3runEPPKv" data-ref-filename="_ZN6Halide8Internal18WasmModuleContents3runEPPKv">run</a>(<a class="local col1 ref" href="#21args" title='args' data-ref="21args" data-ref-filename="21args">args</a>);</td></tr>
+<tr><th id="1591">1591</th><td>}</td></tr>
+<tr><th id="1592">1592</th><td></td></tr>
+<tr><th id="1593">1593</th><td>}  <i>// namespace Internal</i></td></tr>
+<tr><th id="1594">1594</th><td>}  <i>// namespace Halide</i></td></tr>
+<tr><th id="1595">1595</th><td></td></tr>
+</table><hr/><p id='footer'>
+Generated on <em>2021-Aug-03</em> from project halide revision <em>v12.0.1</em>

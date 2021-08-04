@@ -1,0 +1,196 @@
+<dec f='halide/build/include/Halide.h' l='18042' type='Halide::Func &amp; Halide::Func::compute_at(const Halide::Func &amp; f, const Halide::Var &amp; var)'/>
+<doc f='halide/build/include/Halide.h' l='17973'>/** Compute this function as needed for each unique value of the
+     * given var for the given calling function f.
+     *
+     * For example, consider the simple pipeline:
+     \code
+     Func f, g;
+     Var x, y;
+     g(x, y) = x*y;
+     f(x, y) = g(x, y) + g(x, y+1) + g(x+1, y) + g(x+1, y+1);
+     \endcode
+     *
+     * If we schedule f like so:
+     *
+     \code
+     g.compute_at(f, x);
+     \endcode
+     *
+     * Then the C code equivalent to this pipeline will look like this
+     *
+     \code
+
+     int f[height][width];
+     for (int y = 0; y &lt; height; y++) {
+         for (int x = 0; x &lt; width; x++) {
+             int g[2][2];
+             g[0][0] = x*y;
+             g[0][1] = (x+1)*y;
+             g[1][0] = x*(y+1);
+             g[1][1] = (x+1)*(y+1);
+             f[y][x] = g[0][0] + g[1][0] + g[0][1] + g[1][1];
+         }
+     }
+
+     \endcode
+     *
+     * The allocation and computation of g is within f&apos;s loop over x,
+     * and enough of g is computed to satisfy all that f will need for
+     * that iteration. This has excellent locality - values of g are
+     * used as soon as they are computed, but it does redundant
+     * work. Each value of g ends up getting computed four times. If
+     * we instead schedule f like so:
+     *
+     \code
+     g.compute_at(f, y);
+     \endcode
+     *
+     * The equivalent C code is:
+     *
+     \code
+     int f[height][width];
+     for (int y = 0; y &lt; height; y++) {
+         int g[2][width+1];
+         for (int x = 0; x &lt; width; x++) {
+             g[0][x] = x*y;
+             g[1][x] = x*(y+1);
+         }
+         for (int x = 0; x &lt; width; x++) {
+             f[y][x] = g[0][x] + g[1][x] + g[0][x+1] + g[1][x+1];
+         }
+     }
+     \endcode
+     *
+     * The allocation and computation of g is within f&apos;s loop over y,
+     * and enough of g is computed to satisfy all that f will need for
+     * that iteration. This does less redundant work (each point in g
+     * ends up being evaluated twice), but the locality is not quite
+     * as good, and we have to allocate more temporary memory to store
+     * g.
+     */</doc>
+<use f='halide/python_bindings/src/PyFunc.cpp' l='198' u='a' c='_ZN6Halide14PythonBindings11define_funcERN8pybind117module_E'/>
+<dec f='halide/src/Func.h' l='2162' type='Halide::Func &amp; Halide::Func::compute_at(const Halide::Func &amp; f, const Halide::Var &amp; var)'/>
+<doc f='halide/src/Func.h' l='2093'>/** Compute this function as needed for each unique value of the
+     * given var for the given calling function f.
+     *
+     * For example, consider the simple pipeline:
+     \code
+     Func f, g;
+     Var x, y;
+     g(x, y) = x*y;
+     f(x, y) = g(x, y) + g(x, y+1) + g(x+1, y) + g(x+1, y+1);
+     \endcode
+     *
+     * If we schedule f like so:
+     *
+     \code
+     g.compute_at(f, x);
+     \endcode
+     *
+     * Then the C code equivalent to this pipeline will look like this
+     *
+     \code
+
+     int f[height][width];
+     for (int y = 0; y &lt; height; y++) {
+         for (int x = 0; x &lt; width; x++) {
+             int g[2][2];
+             g[0][0] = x*y;
+             g[0][1] = (x+1)*y;
+             g[1][0] = x*(y+1);
+             g[1][1] = (x+1)*(y+1);
+             f[y][x] = g[0][0] + g[1][0] + g[0][1] + g[1][1];
+         }
+     }
+
+     \endcode
+     *
+     * The allocation and computation of g is within f&apos;s loop over x,
+     * and enough of g is computed to satisfy all that f will need for
+     * that iteration. This has excellent locality - values of g are
+     * used as soon as they are computed, but it does redundant
+     * work. Each value of g ends up getting computed four times. If
+     * we instead schedule f like so:
+     *
+     \code
+     g.compute_at(f, y);
+     \endcode
+     *
+     * The equivalent C code is:
+     *
+     \code
+     int f[height][width];
+     for (int y = 0; y &lt; height; y++) {
+         int g[2][width+1];
+         for (int x = 0; x &lt; width; x++) {
+             g[0][x] = x*y;
+             g[1][x] = x*(y+1);
+         }
+         for (int x = 0; x &lt; width; x++) {
+             f[y][x] = g[0][x] + g[1][x] + g[0][x+1] + g[1][x+1];
+         }
+     }
+     \endcode
+     *
+     * The allocation and computation of g is within f&apos;s loop over y,
+     * and enough of g is computed to satisfy all that f will need for
+     * that iteration. This does less redundant work (each point in g
+     * ends up being evaluated twice), but the locality is not quite
+     * as good, and we have to allocate more temporary memory to store
+     * g.
+     */</doc>
+<def f='halide/src/Func.cpp' l='2640' ll='2642' type='Halide::Func &amp; Halide::Func::compute_at(const Halide::Func &amp; f, const Halide::Var &amp; var)'/>
+<use f='halide/src/autoschedulers/adams2019/cost_model_schedule.h' l='190' u='c' c='_Z22do_cost_model_scheduleN6Halide8PipelineE'/>
+<use f='halide/src/autoschedulers/adams2019/cost_model_schedule.h' l='282' u='c' c='_Z22do_cost_model_scheduleN6Halide8PipelineE'/>
+<use f='halide/src/autoschedulers/adams2019/cost_model_schedule.h' l='292' u='c' c='_Z22do_cost_model_scheduleN6Halide8PipelineE'/>
+<use f='halide/src/autoschedulers/adams2019/cost_model_schedule.h' l='336' u='c' c='_Z22do_cost_model_scheduleN6Halide8PipelineE'/>
+<use f='halide/src/autoschedulers/adams2019/cost_model_schedule.h' l='353' u='c' c='_Z22do_cost_model_scheduleN6Halide8PipelineE'/>
+<use f='halide/src/autoschedulers/adams2019/cost_model_schedule.h' l='437' u='c' c='_Z22do_cost_model_scheduleN6Halide8PipelineE'/>
+<use f='halide/src/autoschedulers/adams2019/cost_model_schedule.h' l='733' u='c' c='_Z22do_cost_model_scheduleN6Halide8PipelineE'/>
+<use f='halide/src/autoschedulers/adams2019/cost_model_schedule.h' l='811' u='c' c='_Z22do_cost_model_scheduleN6Halide8PipelineE'/>
+<use f='halide/src/autoschedulers/adams2019/cost_model_schedule.h' l='832' u='c' c='_Z22do_cost_model_scheduleN6Halide8PipelineE'/>
+<use f='halide/src/autoschedulers/adams2019/cost_model_generator.cpp' l='505' u='c' c='_ZN9CostModel8generateEv'/>
+<use f='halide/src/autoschedulers/adams2019/cost_model_generator.cpp' l='509' u='c' c='_ZN9CostModel8generateEv'/>
+<use f='halide/src/autoschedulers/adams2019/cost_model_generator.cpp' l='518' u='c' c='_ZN9CostModel8generateEv'/>
+<use f='halide/src/autoschedulers/adams2019/cost_model_generator.cpp' l='544' u='c' c='_ZN9CostModel8generateEv'/>
+<use f='halide/src/autoschedulers/adams2019/included_schedule_file.schedule.h' l='56' u='c' c='_Z37apply_schedule_included_schedule_fileN6Halide8PipelineENS_6TargetE'/>
+<use f='halide/src/autoschedulers/mullapudi2016/AutoSchedule.cpp' l='2825' u='c' c='_ZN6Halide8Internal12_GLOBAL__N_111Partitioner27generate_group_cpu_scheduleERKNS2_5GroupERKNS_6TargetERKSt3mapINS1_6FStageES9_INSt7__cxx1112basic_stri4682444'/>
+<use f='halide/test/generator/async_parallel_generator.cpp' l='29' u='c' c='_ZN13AsyncParallel8generateEv'/>
+<use f='halide/test/generator/async_parallel_generator.cpp' l='30' u='c' c='_ZN13AsyncParallel8generateEv'/>
+<use f='halide/test/generator/async_parallel_generator.cpp' l='31' u='c' c='_ZN13AsyncParallel8generateEv'/>
+<use f='halide/test/generator/async_parallel_generator.cpp' l='32' u='c' c='_ZN13AsyncParallel8generateEv'/>
+<use f='halide/test/generator/buffer_copy_generator.cpp' l='40' u='c' c='_ZN10BufferCopy8scheduleEv'/>
+<use f='halide/test/generator/buffer_copy_generator.cpp' l='44' u='c' c='_ZN10BufferCopy8scheduleEv'/>
+<use f='halide/test/generator/buffer_copy_generator.cpp' l='49' u='c' c='_ZN10BufferCopy8scheduleEv'/>
+<use f='halide/test/generator/buffer_copy_generator.cpp' l='52' u='c' c='_ZN10BufferCopy8scheduleEv'/>
+<use f='halide/test/generator/buffer_copy_generator.cpp' l='55' u='c' c='_ZN10BufferCopy8scheduleEv'/>
+<use f='halide/test/generator/buffer_copy_generator.cpp' l='58' u='c' c='_ZN10BufferCopy8scheduleEv'/>
+<use f='halide/test/generator/buffer_copy_generator.cpp' l='61' u='c' c='_ZN10BufferCopy8scheduleEv'/>
+<use f='halide/test/generator/extern_output_generator.cpp' l='30' u='c' c='_ZN12_GLOBAL__N_112ExternOutput8scheduleEv'/>
+<use f='halide/test/generator/mandelbrot_generator.cpp' l='83' u='c' c='_ZN12_GLOBAL__N_110Mandelbrot8generateEv'/>
+<use f='halide/test/generator/memory_profiler_mandelbrot_generator.cpp' l='86' u='c' c='_ZN12_GLOBAL__N_110Mandelbrot8generateEv'/>
+<use f='halide/test/generator/nested_externs_generator.cpp' l='91' u='c' c='_ZN12_GLOBAL__N_117NestedExternsRoot8scheduleEv'/>
+<use f='halide/test/generator/tiled_blur_generator.cpp' l='44' u='c' c='_ZN12_GLOBAL__N_19TiledBlur8scheduleEv'/>
+<use f='halide/test/generator/tiled_blur_generator.cpp' l='45' u='c' c='_ZN12_GLOBAL__N_19TiledBlur8scheduleEv'/>
+<use f='halide/tutorial/lesson_08_scheduling_2.cpp' l='200' u='c' c='main'/>
+<use f='halide/tutorial/lesson_08_scheduling_2.cpp' l='282' u='c' c='main'/>
+<use f='halide/tutorial/lesson_08_scheduling_2.cpp' l='392' u='c' c='main'/>
+<use f='halide/tutorial/lesson_08_scheduling_2.cpp' l='486' u='c' c='main'/>
+<use f='halide/tutorial/lesson_08_scheduling_2.cpp' l='580' u='c' c='main'/>
+<use f='halide/tutorial/lesson_09_update_definitions.cpp' l='384' u='c' c='main'/>
+<use f='halide/tutorial/lesson_09_update_definitions.cpp' l='428' u='c' c='main'/>
+<use f='halide/tutorial/lesson_09_update_definitions.cpp' l='479' u='c' c='main'/>
+<use f='halide/tutorial/lesson_09_update_definitions.cpp' l='545' u='c' c='main'/>
+<use f='halide/tutorial/lesson_09_update_definitions.cpp' l='546' u='c' c='main'/>
+<use f='halide/tutorial/lesson_09_update_definitions.cpp' l='784' u='c' c='main'/>
+<use f='halide/tutorial/lesson_12_using_the_gpu.cpp' l='92' u='c' c='_ZN10MyPipeline16schedule_for_cpuEv'/>
+<use f='halide/tutorial/lesson_12_using_the_gpu.cpp' l='101' u='c' c='_ZN10MyPipeline16schedule_for_cpuEv'/>
+<use f='halide/tutorial/lesson_12_using_the_gpu.cpp' l='178' u='c' c='_ZN10MyPipeline16schedule_for_gpuEv'/>
+<use f='halide/tutorial/lesson_15_generators.cpp' l='157' u='c' c='_ZN17MySecondGenerator8generateEv'/>
+<use f='halide/tutorial/lesson_19_wrapper_funcs.cpp' l='146' u='c' c='main'/>
+<use f='halide/tutorial/lesson_19_wrapper_funcs.cpp' l='147' u='c' c='main'/>
+<use f='halide/tutorial/lesson_19_wrapper_funcs.cpp' l='187' u='c' c='main'/>
+<use f='halide/tutorial/lesson_19_wrapper_funcs.cpp' l='188' u='c' c='main'/>
+<use f='halide/tutorial/lesson_19_wrapper_funcs.cpp' l='250' u='c' c='main'/>
+<use f='halide/tutorial/lesson_19_wrapper_funcs.cpp' l='285' u='c' c='main'/>
+<use f='halide/tutorial/lesson_19_wrapper_funcs.cpp' l='380' u='c' c='main'/>

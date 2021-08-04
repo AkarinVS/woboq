@@ -1,0 +1,289 @@
+<!doctype html>
+<html>
+<head>
+<meta name="viewport" content="width=device-width, initial-scale=1.0"><title>ErrorOr.h source code [halide/llvm-install/include/llvm/Support/ErrorOr.h] - Woboq Code Browser</title>
+<meta name="woboq:interestingDefinitions" content="llvm::ErrorOr "/>
+<link rel="stylesheet" href="../../../../.././data/qtcreator.css" title="QtCreator"/>
+<link rel="alternate stylesheet" href="../../../../.././data/kdevelop.css" title="KDevelop"/>
+<script type="text/javascript" src="../../../../.././data/jquery/jquery.min.js"></script>
+<script type="text/javascript" src="../../../../.././data/jquery/jquery-ui.min.js"></script>
+<script>var file = 'halide/llvm-install/include/llvm/Support/ErrorOr.h'; var root_path = '../../../../..'; var data_path = '../../../../.././data'; var ecma_script_api_version = 2;</script>
+<script src='../../../../.././data/codebrowser.js'></script>
+</head>
+<body><div id='header'><h1 id='breadcrumb'><span>Browse the source code of </span><a href='../../../..'>halide</a>/<a href='../../..'>llvm-install</a>/<a href='../..'>include</a>/<a href='..'>llvm</a>/<a href='./'>Support</a>/<a href='ErrorOr.h.html'>ErrorOr.h</a></h1></div>
+<hr/><div id='content'><table class="code">
+<tr><th id="1">1</th><td><i>//===- llvm/Support/ErrorOr.h - Error Smart Pointer -------------*- C++ -*-===//</i></td></tr>
+<tr><th id="2">2</th><td><i>//</i></td></tr>
+<tr><th id="3">3</th><td><i>// Part of the LLVM Project, under the Apache License v2.0 with LLVM Exceptions.</i></td></tr>
+<tr><th id="4">4</th><td><i>// See <a href="https://llvm.org/LICENSE.txt">https://llvm.org/LICENSE.txt</a> for license information.</i></td></tr>
+<tr><th id="5">5</th><td><i>// SPDX-License-Identifier: Apache-2.0 WITH LLVM-exception</i></td></tr>
+<tr><th id="6">6</th><td><i>//</i></td></tr>
+<tr><th id="7">7</th><td><i>//===----------------------------------------------------------------------===//</i></td></tr>
+<tr><th id="8">8</th><td><i>///</i></td></tr>
+<tr><th id="9">9</th><td><i>/// \file</i></td></tr>
+<tr><th id="10">10</th><td><i>///</i></td></tr>
+<tr><th id="11">11</th><td><i>/// Provides ErrorOr&lt;T&gt; smart pointer.</i></td></tr>
+<tr><th id="12">12</th><td><i>///</i></td></tr>
+<tr><th id="13">13</th><td><i>//===----------------------------------------------------------------------===//</i></td></tr>
+<tr><th id="14">14</th><td></td></tr>
+<tr><th id="15">15</th><td><u>#<span data-ppcond="15">ifndef</span> <span class="macro" data-ref="_M/LLVM_SUPPORT_ERROROR_H">LLVM_SUPPORT_ERROROR_H</span></u></td></tr>
+<tr><th id="16">16</th><td><u>#define <dfn class="macro" id="_M/LLVM_SUPPORT_ERROROR_H" data-ref="_M/LLVM_SUPPORT_ERROROR_H">LLVM_SUPPORT_ERROROR_H</dfn></u></td></tr>
+<tr><th id="17">17</th><td></td></tr>
+<tr><th id="18">18</th><td><u>#include <a href="AlignOf.h.html">"llvm/Support/AlignOf.h"</a></u></td></tr>
+<tr><th id="19">19</th><td><u>#include &lt;cassert&gt;</u></td></tr>
+<tr><th id="20">20</th><td><u>#include &lt;system_error&gt;</u></td></tr>
+<tr><th id="21">21</th><td><u>#include &lt;type_traits&gt;</u></td></tr>
+<tr><th id="22">22</th><td><u>#include &lt;utility&gt;</u></td></tr>
+<tr><th id="23">23</th><td></td></tr>
+<tr><th id="24">24</th><td><b>namespace</b> <span class="namespace">llvm</span> {</td></tr>
+<tr><th id="25">25</th><td></td></tr>
+<tr><th id="26">26</th><td><i class="doc">/// Represents either an error or a value T.</i></td></tr>
+<tr><th id="27">27</th><td><i class="doc">///</i></td></tr>
+<tr><th id="28">28</th><td><i class="doc">/// ErrorOr&lt;T&gt; is a pointer-like class that represents the result of an</i></td></tr>
+<tr><th id="29">29</th><td><i class="doc">/// operation. The result is either an error, or a value of type T. This is</i></td></tr>
+<tr><th id="30">30</th><td><i class="doc">/// designed to emulate the usage of returning a pointer where nullptr indicates</i></td></tr>
+<tr><th id="31">31</th><td><i class="doc">/// failure. However instead of just knowing that the operation failed, we also</i></td></tr>
+<tr><th id="32">32</th><td><i class="doc">/// have an error_code and optional user data that describes why it failed.</i></td></tr>
+<tr><th id="33">33</th><td><i class="doc">///</i></td></tr>
+<tr><th id="34">34</th><td><i class="doc">/// It is used like the following.</i></td></tr>
+<tr><th id="35">35</th><td><i class="doc">/// <span class="command">\code</span></i></td></tr>
+<tr><th id="36">36</th><td><i class="doc">///<span class="verb">   ErrorOr&lt;Buffer&gt; getBuffer();</span></i></td></tr>
+<tr><th id="37">37</th><td><i class="doc"><span class="verb"></span>///<span class="verb"></span></i></td></tr>
+<tr><th id="38">38</th><td><i class="doc"><span class="verb"></span>///<span class="verb">   auto buffer = getBuffer();</span></i></td></tr>
+<tr><th id="39">39</th><td><i class="doc"><span class="verb"></span>///<span class="verb">   if (error_code ec = buffer.getError())</span></i></td></tr>
+<tr><th id="40">40</th><td><i class="doc"><span class="verb"></span>///<span class="verb">     return ec;</span></i></td></tr>
+<tr><th id="41">41</th><td><i class="doc"><span class="verb"></span>///<span class="verb">   buffer-&gt;write("adena");</span></i></td></tr>
+<tr><th id="42">42</th><td><i class="doc"><span class="verb"></span>/// \endcode</i></td></tr>
+<tr><th id="43">43</th><td><i class="doc">///</i></td></tr>
+<tr><th id="44">44</th><td><i class="doc">///</i></td></tr>
+<tr><th id="45">45</th><td><i class="doc">/// Implicit conversion to bool returns true if there is a usable value. The</i></td></tr>
+<tr><th id="46">46</th><td><i class="doc">/// unary * and -&gt; operators provide pointer like access to the value. Accessing</i></td></tr>
+<tr><th id="47">47</th><td><i class="doc">/// the value when there is an error has undefined behavior.</i></td></tr>
+<tr><th id="48">48</th><td><i class="doc">///</i></td></tr>
+<tr><th id="49">49</th><td><i class="doc">/// When T is a reference type the behavior is slightly different. The reference</i></td></tr>
+<tr><th id="50">50</th><td><i class="doc">/// is held in a std::reference_wrapper&lt;std::remove_reference&lt;T&gt;::type&gt;, and</i></td></tr>
+<tr><th id="51">51</th><td><i class="doc">/// there is special handling to make operator -&gt; work as if T was not a</i></td></tr>
+<tr><th id="52">52</th><td><i class="doc">/// reference.</i></td></tr>
+<tr><th id="53">53</th><td><i class="doc">///</i></td></tr>
+<tr><th id="54">54</th><td><i class="doc">/// T cannot be a rvalue reference.</i></td></tr>
+<tr><th id="55">55</th><td><b>template</b>&lt;<b>class</b> T&gt;</td></tr>
+<tr><th id="56">56</th><td><b>class</b> <dfn class="type def" id="llvm::ErrorOr" title='llvm::ErrorOr' data-ref="llvm::ErrorOr" data-ref-filename="llvm..ErrorOr">ErrorOr</dfn> {</td></tr>
+<tr><th id="57">57</th><td>  <b>template</b> &lt;<b>class</b> OtherT&gt; <b>friend</b> <b>class</b> <dfn class="type" id="llvm::ErrorOr" title='llvm::ErrorOr' data-ref="llvm::ErrorOr" data-ref-filename="llvm..ErrorOr">ErrorOr</dfn>;</td></tr>
+<tr><th id="58">58</th><td></td></tr>
+<tr><th id="59">59</th><td>  <em>static</em> <b>constexpr</b> <em>bool</em> <dfn class="decl" id="llvm::ErrorOr::isRef" title='llvm::ErrorOr::isRef' data-ref="llvm::ErrorOr::isRef" data-ref-filename="llvm..ErrorOr..isRef">isRef</dfn> = <span class="namespace">std::</span><span class='type' title='std::is_reference' data-ref="std::is_reference" data-ref-filename="std..is_reference">is_reference</span>&lt;T&gt;::value;</td></tr>
+<tr><th id="60">60</th><td></td></tr>
+<tr><th id="61">61</th><td>  <b>using</b> <dfn class="typedef" id="llvm::ErrorOr::wrap" title='llvm::ErrorOr::wrap' data-type='std::reference_wrapper&lt;std::remove_reference_t&lt;T&gt; &gt;' data-ref="llvm::ErrorOr::wrap" data-ref-filename="llvm..ErrorOr..wrap">wrap</dfn> = <span class="namespace">std::</span><span class='type' title='std::reference_wrapper' data-ref="std::reference_wrapper" data-ref-filename="std..reference_wrapper">reference_wrapper</span>&lt;<span class="namespace">std::</span><span class='type' title='std::remove_reference_t' data-ref="std::remove_reference_t" data-ref-filename="std..remove_reference_t">remove_reference_t</span>&lt;T&gt;&gt;;</td></tr>
+<tr><th id="62">62</th><td></td></tr>
+<tr><th id="63">63</th><td><b>public</b>:</td></tr>
+<tr><th id="64">64</th><td>  <b>using</b> <dfn class="typedef" id="llvm::ErrorOr::storage_type" title='llvm::ErrorOr::storage_type' data-type='std::conditional_t&lt;isRef, wrap, T&gt;' data-ref="llvm::ErrorOr::storage_type" data-ref-filename="llvm..ErrorOr..storage_type">storage_type</dfn> = <span class="namespace">std::</span><span class='type' title='std::conditional_t' data-ref="std::conditional_t" data-ref-filename="std..conditional_t">conditional_t</span>&lt;<a class="ref" href="#llvm::ErrorOr::isRef" title='llvm::ErrorOr::isRef' data-ref="llvm::ErrorOr::isRef" data-ref-filename="llvm..ErrorOr..isRef">isRef</a>, <a class="typedef" href="#llvm::ErrorOr::wrap" title='llvm::ErrorOr::wrap' data-type='std::reference_wrapper&lt;std::remove_reference_t&lt;T&gt; &gt;' data-ref="llvm::ErrorOr::wrap" data-ref-filename="llvm..ErrorOr..wrap">wrap</a>, T&gt;;</td></tr>
+<tr><th id="65">65</th><td></td></tr>
+<tr><th id="66">66</th><td><b>private</b>:</td></tr>
+<tr><th id="67">67</th><td>  <b>using</b> <dfn class="typedef" id="llvm::ErrorOr::reference" title='llvm::ErrorOr::reference' data-type='std::remove_reference_t&lt;T&gt; &amp;' data-ref="llvm::ErrorOr::reference" data-ref-filename="llvm..ErrorOr..reference">reference</dfn> = <span class="namespace">std::</span><span class='type' title='std::remove_reference_t' data-ref="std::remove_reference_t" data-ref-filename="std..remove_reference_t">remove_reference_t</span>&lt;T&gt; &amp;;</td></tr>
+<tr><th id="68">68</th><td>  <b>using</b> <dfn class="typedef" id="llvm::ErrorOr::const_reference" title='llvm::ErrorOr::const_reference' data-type='const std::remove_reference_t&lt;T&gt; &amp;' data-ref="llvm::ErrorOr::const_reference" data-ref-filename="llvm..ErrorOr..const_reference">const_reference</dfn> = <em>const</em> <span class="namespace">std::</span><span class='type' title='std::remove_reference_t' data-ref="std::remove_reference_t" data-ref-filename="std..remove_reference_t">remove_reference_t</span>&lt;T&gt; &amp;;</td></tr>
+<tr><th id="69">69</th><td>  <b>using</b> <dfn class="typedef" id="llvm::ErrorOr::pointer" title='llvm::ErrorOr::pointer' data-type='std::remove_reference_t&lt;T&gt; *' data-ref="llvm::ErrorOr::pointer" data-ref-filename="llvm..ErrorOr..pointer">pointer</dfn> = <span class="namespace">std::</span><span class='type' title='std::remove_reference_t' data-ref="std::remove_reference_t" data-ref-filename="std..remove_reference_t">remove_reference_t</span>&lt;T&gt; *;</td></tr>
+<tr><th id="70">70</th><td>  <b>using</b> <dfn class="typedef" id="llvm::ErrorOr::const_pointer" title='llvm::ErrorOr::const_pointer' data-type='const std::remove_reference_t&lt;T&gt; *' data-ref="llvm::ErrorOr::const_pointer" data-ref-filename="llvm..ErrorOr..const_pointer">const_pointer</dfn> = <em>const</em> <span class="namespace">std::</span><span class='type' title='std::remove_reference_t' data-ref="std::remove_reference_t" data-ref-filename="std..remove_reference_t">remove_reference_t</span>&lt;T&gt; *;</td></tr>
+<tr><th id="71">71</th><td></td></tr>
+<tr><th id="72">72</th><td><b>public</b>:</td></tr>
+<tr><th id="73">73</th><td>  <b>template</b> &lt;<b>class</b> E&gt;</td></tr>
+<tr><th id="74">74</th><td>  <dfn class="decl def fn" id="_ZN4llvm7ErrorOrC1ETL0__NSt9enable_ifIXoosr3std18is_error_code_enumIS1_EE5valuesr3std23is_error_condition_enumIS1_EE5valueEPvE4typeE" title='llvm::ErrorOr::ErrorOr&lt;T&gt;' data-ref="_ZN4llvm7ErrorOrC1ETL0__NSt9enable_ifIXoosr3std18is_error_code_enumIS1_EE5valuesr3std23is_error_condition_enumIS1_EE5valueEPvE4typeE" data-ref-filename="_ZN4llvm7ErrorOrC1ETL0__NSt9enable_ifIXoosr3std18is_error_code_enumIS1_EE5valuesr3std23is_error_condition_enumIS1_EE5valueEPvE4typeE">ErrorOr</dfn>(E <dfn class="local col0 decl" id="2440ErrorCode" title='ErrorCode' data-type='E' data-ref="2440ErrorCode" data-ref-filename="2440ErrorCode">ErrorCode</dfn>,</td></tr>
+<tr><th id="75">75</th><td>          <span class="namespace">std::</span><span class='type' title='std::enable_if_t' data-ref="std::enable_if_t" data-ref-filename="std..enable_if_t">enable_if_t</span>&lt;<span class="namespace">std::</span><span class='type' title='std::is_error_code_enum' data-ref="std::is_error_code_enum" data-ref-filename="std..is_error_code_enum">is_error_code_enum</span>&lt;E&gt;::value ||</td></tr>
+<tr><th id="76">76</th><td>                               <span class="namespace">std::</span><span class='type' title='std::is_error_condition_enum' data-ref="std::is_error_condition_enum" data-ref-filename="std..is_error_condition_enum">is_error_condition_enum</span>&lt;E&gt;::value,</td></tr>
+<tr><th id="77">77</th><td>                           <em>void</em> *&gt; = <b>nullptr</b>)</td></tr>
+<tr><th id="78">78</th><td>      : <a class="member field" href="#llvm::ErrorOr::HasError" title='llvm::ErrorOr::HasError' data-ref="llvm::ErrorOr::HasError" data-ref-filename="llvm..ErrorOr..HasError">HasError</a>(<b>true</b>) {</td></tr>
+<tr><th id="79">79</th><td>    <b>new</b> (getErrorStorage()) <span class="namespace">std::</span><span class='type' title='std::error_code' data-ref="std::error_code" data-ref-filename="std..error_code">error_code</span>(make_error_code(<a class="local col0 ref" href="#2440ErrorCode" title='ErrorCode' data-ref="2440ErrorCode" data-ref-filename="2440ErrorCode">ErrorCode</a>));</td></tr>
+<tr><th id="80">80</th><td>  }</td></tr>
+<tr><th id="81">81</th><td></td></tr>
+<tr><th id="82">82</th><td>  <dfn class="decl def fn" id="_ZN4llvm7ErrorOrC1ESt10error_code" title='llvm::ErrorOr::ErrorOr&lt;T&gt;' data-ref="_ZN4llvm7ErrorOrC1ESt10error_code" data-ref-filename="_ZN4llvm7ErrorOrC1ESt10error_code">ErrorOr</dfn>(<span class="namespace">std::</span><span class='type' title='std::error_code' data-ref="std::error_code" data-ref-filename="std..error_code">error_code</span> <dfn class="local col1 decl" id="2441EC" title='EC' data-type='std::error_code' data-ref="2441EC" data-ref-filename="2441EC">EC</dfn>) : <a class="member field" href="#llvm::ErrorOr::HasError" title='llvm::ErrorOr::HasError' data-ref="llvm::ErrorOr::HasError" data-ref-filename="llvm..ErrorOr..HasError">HasError</a>(<b>true</b>) {</td></tr>
+<tr><th id="83">83</th><td>    <b>new</b> (getErrorStorage()) <span class="namespace">std::</span><span class='type' title='std::error_code' data-ref="std::error_code" data-ref-filename="std..error_code">error_code</span><span class='ref fn' title='std::error_code::error_code' data-ref="_ZNSt10error_codeC1ERKS_" data-ref-filename="_ZNSt10error_codeC1ERKS_">(</span><a class="local col1 ref" href="#2441EC" title='EC' data-ref="2441EC" data-ref-filename="2441EC">EC</a>);</td></tr>
+<tr><th id="84">84</th><td>  }</td></tr>
+<tr><th id="85">85</th><td></td></tr>
+<tr><th id="86">86</th><td>  <b>template</b> &lt;<b>class</b> OtherT&gt;</td></tr>
+<tr><th id="87">87</th><td>  <dfn class="decl def fn" id="_ZN4llvm7ErrorOrC1EOTL0__PNSt9enable_ifIXsr3std14is_convertibleIS1_T_EE5valueEvE4typeE" title='llvm::ErrorOr::ErrorOr&lt;T&gt;' data-ref="_ZN4llvm7ErrorOrC1EOTL0__PNSt9enable_ifIXsr3std14is_convertibleIS1_T_EE5valueEvE4typeE" data-ref-filename="_ZN4llvm7ErrorOrC1EOTL0__PNSt9enable_ifIXsr3std14is_convertibleIS1_T_EE5valueEvE4typeE">ErrorOr</dfn>(OtherT &amp;&amp;<dfn class="local col2 decl" id="2442Val" title='Val' data-type='OtherT &amp;&amp;' data-ref="2442Val" data-ref-filename="2442Val">Val</dfn>,</td></tr>
+<tr><th id="88">88</th><td>          <span class="namespace">std::</span><span class='type' title='std::enable_if_t' data-ref="std::enable_if_t" data-ref-filename="std..enable_if_t">enable_if_t</span>&lt;<span class="namespace">std::</span><span class='type' title='std::is_convertible' data-ref="std::is_convertible" data-ref-filename="std..is_convertible">is_convertible</span>&lt;OtherT, T&gt;::value&gt; * = <b>nullptr</b>)</td></tr>
+<tr><th id="89">89</th><td>      : <a class="member field" href="#llvm::ErrorOr::HasError" title='llvm::ErrorOr::HasError' data-ref="llvm::ErrorOr::HasError" data-ref-filename="llvm..ErrorOr..HasError">HasError</a>(<b>false</b>) {</td></tr>
+<tr><th id="90">90</th><td>    <b>new</b> (getStorage()) <a class="typedef" href="#llvm::ErrorOr::storage_type" title='llvm::ErrorOr::storage_type' data-type='std::conditional_t&lt;isRef, wrap, T&gt;' data-ref="llvm::ErrorOr::storage_type" data-ref-filename="llvm..ErrorOr..storage_type">storage_type</a>(<span class="namespace">std::</span>forward&lt;OtherT&gt;(<a class="local col2 ref" href="#2442Val" title='Val' data-ref="2442Val" data-ref-filename="2442Val">Val</a>));</td></tr>
+<tr><th id="91">91</th><td>  }</td></tr>
+<tr><th id="92">92</th><td></td></tr>
+<tr><th id="93">93</th><td>  <dfn class="decl def fn" id="_ZN4llvm7ErrorOrC1ERKNS_7ErrorOrIT_EE" title='llvm::ErrorOr::ErrorOr&lt;T&gt;' data-ref="_ZN4llvm7ErrorOrC1ERKNS_7ErrorOrIT_EE" data-ref-filename="_ZN4llvm7ErrorOrC1ERKNS_7ErrorOrIT_EE">ErrorOr</dfn>(<em>const</em> ErrorOr &amp;<dfn class="local col3 decl" id="2443Other" title='Other' data-type='const ErrorOr&lt;T&gt; &amp;' data-ref="2443Other" data-ref-filename="2443Other">Other</dfn>) {</td></tr>
+<tr><th id="94">94</th><td>    copyConstruct(<a class="local col3 ref" href="#2443Other" title='Other' data-ref="2443Other" data-ref-filename="2443Other">Other</a>);</td></tr>
+<tr><th id="95">95</th><td>  }</td></tr>
+<tr><th id="96">96</th><td></td></tr>
+<tr><th id="97">97</th><td>  <b>template</b> &lt;<b>class</b> OtherT&gt;</td></tr>
+<tr><th id="98">98</th><td>  <dfn class="decl def fn" id="_ZN4llvm7ErrorOrC1ERKNS_7ErrorOrITL0__EEPNSt9enable_ifIXsr3std14is_convertibleIS2_T_EE5valueEvE4typeE" title='llvm::ErrorOr::ErrorOr&lt;T&gt;' data-ref="_ZN4llvm7ErrorOrC1ERKNS_7ErrorOrITL0__EEPNSt9enable_ifIXsr3std14is_convertibleIS2_T_EE5valueEvE4typeE" data-ref-filename="_ZN4llvm7ErrorOrC1ERKNS_7ErrorOrITL0__EEPNSt9enable_ifIXsr3std14is_convertibleIS2_T_EE5valueEvE4typeE">ErrorOr</dfn>(<em>const</em> <a class="type" href="#llvm::ErrorOr" title='llvm::ErrorOr' data-ref="llvm::ErrorOr" data-ref-filename="llvm..ErrorOr">ErrorOr</a>&lt;OtherT&gt; &amp;<dfn class="local col4 decl" id="2444Other" title='Other' data-type='const ErrorOr&lt;OtherT&gt; &amp;' data-ref="2444Other" data-ref-filename="2444Other">Other</dfn>,</td></tr>
+<tr><th id="99">99</th><td>          <span class="namespace">std::</span><span class='type' title='std::enable_if_t' data-ref="std::enable_if_t" data-ref-filename="std..enable_if_t">enable_if_t</span>&lt;<span class="namespace">std::</span><span class='type' title='std::is_convertible' data-ref="std::is_convertible" data-ref-filename="std..is_convertible">is_convertible</span>&lt;OtherT, T&gt;::value&gt; * = <b>nullptr</b>) {</td></tr>
+<tr><th id="100">100</th><td>    copyConstruct(<a class="local col4 ref" href="#2444Other" title='Other' data-ref="2444Other" data-ref-filename="2444Other">Other</a>);</td></tr>
+<tr><th id="101">101</th><td>  }</td></tr>
+<tr><th id="102">102</th><td></td></tr>
+<tr><th id="103">103</th><td>  <b>template</b> &lt;<b>class</b> OtherT&gt;</td></tr>
+<tr><th id="104">104</th><td>  <b>explicit</b> <dfn class="decl def fn" id="_ZN4llvm7ErrorOrC1ERKNS_7ErrorOrITL0__EEPNSt9enable_ifIXntsr3std14is_convertibleIS2_RKT_EE5valueEvE4typeE" title='llvm::ErrorOr::ErrorOr&lt;T&gt;' data-ref="_ZN4llvm7ErrorOrC1ERKNS_7ErrorOrITL0__EEPNSt9enable_ifIXntsr3std14is_convertibleIS2_RKT_EE5valueEvE4typeE" data-ref-filename="_ZN4llvm7ErrorOrC1ERKNS_7ErrorOrITL0__EEPNSt9enable_ifIXntsr3std14is_convertibleIS2_RKT_EE5valueEvE4typeE">ErrorOr</dfn>(</td></tr>
+<tr><th id="105">105</th><td>      <em>const</em> <a class="type" href="#llvm::ErrorOr" title='llvm::ErrorOr' data-ref="llvm::ErrorOr" data-ref-filename="llvm..ErrorOr">ErrorOr</a>&lt;OtherT&gt; &amp;<dfn class="local col5 decl" id="2445Other" title='Other' data-type='const ErrorOr&lt;OtherT&gt; &amp;' data-ref="2445Other" data-ref-filename="2445Other">Other</dfn>,</td></tr>
+<tr><th id="106">106</th><td>      <span class="namespace">std::</span><span class='type' title='std::enable_if_t' data-ref="std::enable_if_t" data-ref-filename="std..enable_if_t">enable_if_t</span>&lt;!<span class="namespace">std::</span><span class='type' title='std::is_convertible' data-ref="std::is_convertible" data-ref-filename="std..is_convertible">is_convertible</span>&lt;OtherT, <em>const</em> T &amp;&gt;::value&gt; * =</td></tr>
+<tr><th id="107">107</th><td>          <b>nullptr</b>) {</td></tr>
+<tr><th id="108">108</th><td>    copyConstruct(<a class="local col5 ref" href="#2445Other" title='Other' data-ref="2445Other" data-ref-filename="2445Other">Other</a>);</td></tr>
+<tr><th id="109">109</th><td>  }</td></tr>
+<tr><th id="110">110</th><td></td></tr>
+<tr><th id="111">111</th><td>  <dfn class="decl def fn" id="_ZN4llvm7ErrorOrC1EONS_7ErrorOrIT_EE" title='llvm::ErrorOr::ErrorOr&lt;T&gt;' data-ref="_ZN4llvm7ErrorOrC1EONS_7ErrorOrIT_EE" data-ref-filename="_ZN4llvm7ErrorOrC1EONS_7ErrorOrIT_EE">ErrorOr</dfn>(ErrorOr &amp;&amp;<dfn class="local col6 decl" id="2446Other" title='Other' data-type='ErrorOr&lt;T&gt; &amp;&amp;' data-ref="2446Other" data-ref-filename="2446Other">Other</dfn>) {</td></tr>
+<tr><th id="112">112</th><td>    moveConstruct(<span class="namespace">std::</span>move(<a class="local col6 ref" href="#2446Other" title='Other' data-ref="2446Other" data-ref-filename="2446Other">Other</a>));</td></tr>
+<tr><th id="113">113</th><td>  }</td></tr>
+<tr><th id="114">114</th><td></td></tr>
+<tr><th id="115">115</th><td>  <b>template</b> &lt;<b>class</b> OtherT&gt;</td></tr>
+<tr><th id="116">116</th><td>  <dfn class="decl def fn" id="_ZN4llvm7ErrorOrC1EONS_7ErrorOrITL0__EEPNSt9enable_ifIXsr3std14is_convertibleIS2_T_EE5valueEvE4typeE" title='llvm::ErrorOr::ErrorOr&lt;T&gt;' data-ref="_ZN4llvm7ErrorOrC1EONS_7ErrorOrITL0__EEPNSt9enable_ifIXsr3std14is_convertibleIS2_T_EE5valueEvE4typeE" data-ref-filename="_ZN4llvm7ErrorOrC1EONS_7ErrorOrITL0__EEPNSt9enable_ifIXsr3std14is_convertibleIS2_T_EE5valueEvE4typeE">ErrorOr</dfn>(<a class="type" href="#llvm::ErrorOr" title='llvm::ErrorOr' data-ref="llvm::ErrorOr" data-ref-filename="llvm..ErrorOr">ErrorOr</a>&lt;OtherT&gt; &amp;&amp;<dfn class="local col7 decl" id="2447Other" title='Other' data-type='ErrorOr&lt;OtherT&gt; &amp;&amp;' data-ref="2447Other" data-ref-filename="2447Other">Other</dfn>,</td></tr>
+<tr><th id="117">117</th><td>          <span class="namespace">std::</span><span class='type' title='std::enable_if_t' data-ref="std::enable_if_t" data-ref-filename="std..enable_if_t">enable_if_t</span>&lt;<span class="namespace">std::</span><span class='type' title='std::is_convertible' data-ref="std::is_convertible" data-ref-filename="std..is_convertible">is_convertible</span>&lt;OtherT, T&gt;::value&gt; * = <b>nullptr</b>) {</td></tr>
+<tr><th id="118">118</th><td>    moveConstruct(<span class="namespace">std::</span>move(<a class="local col7 ref" href="#2447Other" title='Other' data-ref="2447Other" data-ref-filename="2447Other">Other</a>));</td></tr>
+<tr><th id="119">119</th><td>  }</td></tr>
+<tr><th id="120">120</th><td></td></tr>
+<tr><th id="121">121</th><td>  <i>// This might eventually need SFINAE but it's more complex than is_convertible</i></td></tr>
+<tr><th id="122">122</th><td><i>  // &amp; I'm too lazy to write it right now.</i></td></tr>
+<tr><th id="123">123</th><td>  <b>template</b> &lt;<b>class</b> OtherT&gt;</td></tr>
+<tr><th id="124">124</th><td>  <b>explicit</b> <dfn class="decl def fn" id="_ZN4llvm7ErrorOrC1EONS_7ErrorOrITL0__EEPNSt9enable_ifIXntsr3std14is_convertibleIS2_T_EE5valueEvE4typeE" title='llvm::ErrorOr::ErrorOr&lt;T&gt;' data-ref="_ZN4llvm7ErrorOrC1EONS_7ErrorOrITL0__EEPNSt9enable_ifIXntsr3std14is_convertibleIS2_T_EE5valueEvE4typeE" data-ref-filename="_ZN4llvm7ErrorOrC1EONS_7ErrorOrITL0__EEPNSt9enable_ifIXntsr3std14is_convertibleIS2_T_EE5valueEvE4typeE">ErrorOr</dfn>(</td></tr>
+<tr><th id="125">125</th><td>      <a class="type" href="#llvm::ErrorOr" title='llvm::ErrorOr' data-ref="llvm::ErrorOr" data-ref-filename="llvm..ErrorOr">ErrorOr</a>&lt;OtherT&gt; &amp;&amp;<dfn class="local col8 decl" id="2448Other" title='Other' data-type='ErrorOr&lt;OtherT&gt; &amp;&amp;' data-ref="2448Other" data-ref-filename="2448Other">Other</dfn>,</td></tr>
+<tr><th id="126">126</th><td>      <span class="namespace">std::</span><span class='type' title='std::enable_if_t' data-ref="std::enable_if_t" data-ref-filename="std..enable_if_t">enable_if_t</span>&lt;!<span class="namespace">std::</span><span class='type' title='std::is_convertible' data-ref="std::is_convertible" data-ref-filename="std..is_convertible">is_convertible</span>&lt;OtherT, T&gt;::value&gt; * = <b>nullptr</b>) {</td></tr>
+<tr><th id="127">127</th><td>    moveConstruct(<span class="namespace">std::</span>move(<a class="local col8 ref" href="#2448Other" title='Other' data-ref="2448Other" data-ref-filename="2448Other">Other</a>));</td></tr>
+<tr><th id="128">128</th><td>  }</td></tr>
+<tr><th id="129">129</th><td></td></tr>
+<tr><th id="130">130</th><td>  ErrorOr &amp;<dfn class="decl def fn" id="_ZN4llvm7ErrorOraSERKNS_7ErrorOrIT_EE" title='llvm::ErrorOr::operator=' data-ref="_ZN4llvm7ErrorOraSERKNS_7ErrorOrIT_EE" data-ref-filename="_ZN4llvm7ErrorOraSERKNS_7ErrorOrIT_EE"><b>operator</b>=</dfn>(<em>const</em> ErrorOr &amp;<dfn class="local col9 decl" id="2449Other" title='Other' data-type='const ErrorOr&lt;T&gt; &amp;' data-ref="2449Other" data-ref-filename="2449Other">Other</dfn>) {</td></tr>
+<tr><th id="131">131</th><td>    copyAssign(<a class="local col9 ref" href="#2449Other" title='Other' data-ref="2449Other" data-ref-filename="2449Other">Other</a>);</td></tr>
+<tr><th id="132">132</th><td>    <b>return</b> *<b>this</b>;</td></tr>
+<tr><th id="133">133</th><td>  }</td></tr>
+<tr><th id="134">134</th><td></td></tr>
+<tr><th id="135">135</th><td>  ErrorOr &amp;<dfn class="decl def fn" id="_ZN4llvm7ErrorOraSEONS_7ErrorOrIT_EE" title='llvm::ErrorOr::operator=' data-ref="_ZN4llvm7ErrorOraSEONS_7ErrorOrIT_EE" data-ref-filename="_ZN4llvm7ErrorOraSEONS_7ErrorOrIT_EE"><b>operator</b>=</dfn>(ErrorOr &amp;&amp;<dfn class="local col0 decl" id="2450Other" title='Other' data-type='ErrorOr&lt;T&gt; &amp;&amp;' data-ref="2450Other" data-ref-filename="2450Other">Other</dfn>) {</td></tr>
+<tr><th id="136">136</th><td>    moveAssign(<span class="namespace">std::</span>move(<a class="local col0 ref" href="#2450Other" title='Other' data-ref="2450Other" data-ref-filename="2450Other">Other</a>));</td></tr>
+<tr><th id="137">137</th><td>    <b>return</b> *<b>this</b>;</td></tr>
+<tr><th id="138">138</th><td>  }</td></tr>
+<tr><th id="139">139</th><td></td></tr>
+<tr><th id="140">140</th><td>  <dfn class="decl def fn" id="_ZN4llvm7ErrorOrD1Ev" title='llvm::ErrorOr::~ErrorOr&lt;T&gt;' data-ref="_ZN4llvm7ErrorOrD1Ev" data-ref-filename="_ZN4llvm7ErrorOrD1Ev">~ErrorOr</dfn>() {</td></tr>
+<tr><th id="141">141</th><td>    <b>if</b> (!<a class="member field" href="#llvm::ErrorOr::HasError" title='llvm::ErrorOr::HasError' data-ref="llvm::ErrorOr::HasError" data-ref-filename="llvm..ErrorOr..HasError">HasError</a>)</td></tr>
+<tr><th id="142">142</th><td>      getStorage()-&gt;~<a class="typedef" href="#llvm::ErrorOr::storage_type" title='llvm::ErrorOr::storage_type' data-type='std::conditional_t&lt;isRef, wrap, T&gt;' data-ref="llvm::ErrorOr::storage_type" data-ref-filename="llvm..ErrorOr..storage_type">storage_type</a>();</td></tr>
+<tr><th id="143">143</th><td>  }</td></tr>
+<tr><th id="144">144</th><td></td></tr>
+<tr><th id="145">145</th><td>  <i class="doc">/// Return false if there is an error.</i></td></tr>
+<tr><th id="146">146</th><td>  <b>explicit</b> <dfn class="decl def fn" id="_ZNK4llvm7ErrorOrcvbEv" title='llvm::ErrorOr::operator bool' data-ref="_ZNK4llvm7ErrorOrcvbEv" data-ref-filename="_ZNK4llvm7ErrorOrcvbEv"><b>operator</b> <em>bool</em></dfn>() <em>const</em> {</td></tr>
+<tr><th id="147">147</th><td>    <b>return</b> !<a class="member field" href="#llvm::ErrorOr::HasError" title='llvm::ErrorOr::HasError' data-ref="llvm::ErrorOr::HasError" data-ref-filename="llvm..ErrorOr..HasError">HasError</a>;</td></tr>
+<tr><th id="148">148</th><td>  }</td></tr>
+<tr><th id="149">149</th><td></td></tr>
+<tr><th id="150">150</th><td>  <a class="typedef" href="#llvm::ErrorOr::reference" title='llvm::ErrorOr::reference' data-type='std::remove_reference_t&lt;T&gt; &amp;' data-ref="llvm::ErrorOr::reference" data-ref-filename="llvm..ErrorOr..reference">reference</a> <dfn class="decl def fn" id="_ZN4llvm7ErrorOr3getEv" title='llvm::ErrorOr::get' data-ref="_ZN4llvm7ErrorOr3getEv" data-ref-filename="_ZN4llvm7ErrorOr3getEv">get</dfn>() { <b>return</b> *getStorage(); }</td></tr>
+<tr><th id="151">151</th><td>  <a class="typedef" href="#llvm::ErrorOr::const_reference" title='llvm::ErrorOr::const_reference' data-type='const std::remove_reference_t&lt;T&gt; &amp;' data-ref="llvm::ErrorOr::const_reference" data-ref-filename="llvm..ErrorOr..const_reference">const_reference</a> <dfn class="decl def fn" id="_ZNK4llvm7ErrorOr3getEv" title='llvm::ErrorOr::get' data-ref="_ZNK4llvm7ErrorOr3getEv" data-ref-filename="_ZNK4llvm7ErrorOr3getEv">get</dfn>() <em>const</em> { <b>return</b> <b>const_cast</b>&lt;<a class="type" href="#llvm::ErrorOr" title='llvm::ErrorOr' data-ref="llvm::ErrorOr" data-ref-filename="llvm..ErrorOr">ErrorOr</a>&lt;T&gt; *&gt;(<b>this</b>)-&gt;get(); }</td></tr>
+<tr><th id="152">152</th><td></td></tr>
+<tr><th id="153">153</th><td>  <span class="namespace">std::</span><span class='type' title='std::error_code' data-ref="std::error_code" data-ref-filename="std..error_code">error_code</span> <dfn class="decl def fn" id="_ZNK4llvm7ErrorOr8getErrorEv" title='llvm::ErrorOr::getError' data-ref="_ZNK4llvm7ErrorOr8getErrorEv" data-ref-filename="_ZNK4llvm7ErrorOr8getErrorEv">getError</dfn>() <em>const</em> {</td></tr>
+<tr><th id="154">154</th><td>    <b>return</b> <a class="member field" href="#llvm::ErrorOr::HasError" title='llvm::ErrorOr::HasError' data-ref="llvm::ErrorOr::HasError" data-ref-filename="llvm..ErrorOr..HasError">HasError</a> ? *getErrorStorage() : <span class="namespace">std::</span><span class='type' title='std::error_code' data-ref="std::error_code" data-ref-filename="std..error_code">error_code</span><span class='ref fn' title='std::error_code::error_code' data-ref="_ZNSt10error_codeC1Ev" data-ref-filename="_ZNSt10error_codeC1Ev">(</span>);</td></tr>
+<tr><th id="155">155</th><td>  }</td></tr>
+<tr><th id="156">156</th><td></td></tr>
+<tr><th id="157">157</th><td>  <a class="typedef" href="#llvm::ErrorOr::pointer" title='llvm::ErrorOr::pointer' data-type='std::remove_reference_t&lt;T&gt; *' data-ref="llvm::ErrorOr::pointer" data-ref-filename="llvm..ErrorOr..pointer">pointer</a> <dfn class="decl def fn" id="_ZN4llvm7ErrorOrptEv" title='llvm::ErrorOr::operator-&gt;' data-ref="_ZN4llvm7ErrorOrptEv" data-ref-filename="_ZN4llvm7ErrorOrptEv"><b>operator</b> -&gt;</dfn>() {</td></tr>
+<tr><th id="158">158</th><td>    <b>return</b> toPointer(getStorage());</td></tr>
+<tr><th id="159">159</th><td>  }</td></tr>
+<tr><th id="160">160</th><td></td></tr>
+<tr><th id="161">161</th><td>  <a class="typedef" href="#llvm::ErrorOr::const_pointer" title='llvm::ErrorOr::const_pointer' data-type='const std::remove_reference_t&lt;T&gt; *' data-ref="llvm::ErrorOr::const_pointer" data-ref-filename="llvm..ErrorOr..const_pointer">const_pointer</a> <dfn class="decl def fn" id="_ZNK4llvm7ErrorOrptEv" title='llvm::ErrorOr::operator-&gt;' data-ref="_ZNK4llvm7ErrorOrptEv" data-ref-filename="_ZNK4llvm7ErrorOrptEv"><b>operator</b>-&gt;</dfn>() <em>const</em> { <b>return</b> toPointer(getStorage()); }</td></tr>
+<tr><th id="162">162</th><td></td></tr>
+<tr><th id="163">163</th><td>  <a class="typedef" href="#llvm::ErrorOr::reference" title='llvm::ErrorOr::reference' data-type='std::remove_reference_t&lt;T&gt; &amp;' data-ref="llvm::ErrorOr::reference" data-ref-filename="llvm..ErrorOr..reference">reference</a> <dfn class="decl def fn" id="_ZN4llvm7ErrorOrdeEv" title='llvm::ErrorOr::operator*' data-ref="_ZN4llvm7ErrorOrdeEv" data-ref-filename="_ZN4llvm7ErrorOrdeEv"><b>operator</b> *</dfn>() {</td></tr>
+<tr><th id="164">164</th><td>    <b>return</b> *getStorage();</td></tr>
+<tr><th id="165">165</th><td>  }</td></tr>
+<tr><th id="166">166</th><td></td></tr>
+<tr><th id="167">167</th><td>  <a class="typedef" href="#llvm::ErrorOr::const_reference" title='llvm::ErrorOr::const_reference' data-type='const std::remove_reference_t&lt;T&gt; &amp;' data-ref="llvm::ErrorOr::const_reference" data-ref-filename="llvm..ErrorOr..const_reference">const_reference</a> <dfn class="decl def fn" id="_ZNK4llvm7ErrorOrdeEv" title='llvm::ErrorOr::operator*' data-ref="_ZNK4llvm7ErrorOrdeEv" data-ref-filename="_ZNK4llvm7ErrorOrdeEv"><b>operator</b>*</dfn>() <em>const</em> { <b>return</b> *getStorage(); }</td></tr>
+<tr><th id="168">168</th><td></td></tr>
+<tr><th id="169">169</th><td><b>private</b>:</td></tr>
+<tr><th id="170">170</th><td>  <b>template</b> &lt;<b>class</b> OtherT&gt;</td></tr>
+<tr><th id="171">171</th><td>  <em>void</em> <dfn class="decl def fn" id="_ZN4llvm7ErrorOr13copyConstructERKNS_7ErrorOrITL0__EE" title='llvm::ErrorOr::copyConstruct' data-ref="_ZN4llvm7ErrorOr13copyConstructERKNS_7ErrorOrITL0__EE" data-ref-filename="_ZN4llvm7ErrorOr13copyConstructERKNS_7ErrorOrITL0__EE">copyConstruct</dfn>(<em>const</em> <a class="type" href="#llvm::ErrorOr" title='llvm::ErrorOr' data-ref="llvm::ErrorOr" data-ref-filename="llvm..ErrorOr">ErrorOr</a>&lt;OtherT&gt; &amp;<dfn class="local col1 decl" id="2451Other" title='Other' data-type='const ErrorOr&lt;OtherT&gt; &amp;' data-ref="2451Other" data-ref-filename="2451Other">Other</dfn>) {</td></tr>
+<tr><th id="172">172</th><td>    <b>if</b> (!<a class="local col1 ref" href="#2451Other" title='Other' data-ref="2451Other" data-ref-filename="2451Other">Other</a>.HasError) {</td></tr>
+<tr><th id="173">173</th><td>      <i>// Get the other value.</i></td></tr>
+<tr><th id="174">174</th><td>      <a class="member field" href="#llvm::ErrorOr::HasError" title='llvm::ErrorOr::HasError' data-ref="llvm::ErrorOr::HasError" data-ref-filename="llvm..ErrorOr..HasError">HasError</a> = <b>false</b>;</td></tr>
+<tr><th id="175">175</th><td>      <b>new</b> (getStorage()) <a class="typedef" href="#llvm::ErrorOr::storage_type" title='llvm::ErrorOr::storage_type' data-type='std::conditional_t&lt;isRef, wrap, T&gt;' data-ref="llvm::ErrorOr::storage_type" data-ref-filename="llvm..ErrorOr..storage_type">storage_type</a>(*<a class="local col1 ref" href="#2451Other" title='Other' data-ref="2451Other" data-ref-filename="2451Other">Other</a>.getStorage());</td></tr>
+<tr><th id="176">176</th><td>    } <b>else</b> {</td></tr>
+<tr><th id="177">177</th><td>      <i>// Get other's error.</i></td></tr>
+<tr><th id="178">178</th><td>      <a class="member field" href="#llvm::ErrorOr::HasError" title='llvm::ErrorOr::HasError' data-ref="llvm::ErrorOr::HasError" data-ref-filename="llvm..ErrorOr..HasError">HasError</a> = <b>true</b>;</td></tr>
+<tr><th id="179">179</th><td>      <b>new</b> (getErrorStorage()) <span class="namespace">std::</span><span class='type' title='std::error_code' data-ref="std::error_code" data-ref-filename="std..error_code">error_code</span>(<a class="local col1 ref" href="#2451Other" title='Other' data-ref="2451Other" data-ref-filename="2451Other">Other</a>.getError());</td></tr>
+<tr><th id="180">180</th><td>    }</td></tr>
+<tr><th id="181">181</th><td>  }</td></tr>
+<tr><th id="182">182</th><td></td></tr>
+<tr><th id="183">183</th><td>  <b>template</b> &lt;<b>class</b> T1&gt;</td></tr>
+<tr><th id="184">184</th><td>  <em>static</em> <em>bool</em> <dfn class="decl def fn" id="_ZN4llvm7ErrorOr21compareThisIfSameTypeERKTL0__S3_" title='llvm::ErrorOr::compareThisIfSameType' data-ref="_ZN4llvm7ErrorOr21compareThisIfSameTypeERKTL0__S3_" data-ref-filename="_ZN4llvm7ErrorOr21compareThisIfSameTypeERKTL0__S3_">compareThisIfSameType</dfn>(<em>const</em> T1 &amp;<dfn class="local col2 decl" id="2452a" title='a' data-type='const T1 &amp;' data-ref="2452a" data-ref-filename="2452a">a</dfn>, <em>const</em> T1 &amp;<dfn class="local col3 decl" id="2453b" title='b' data-type='const T1 &amp;' data-ref="2453b" data-ref-filename="2453b">b</dfn>) {</td></tr>
+<tr><th id="185">185</th><td>    <b>return</b> &amp;<a class="local col2 ref" href="#2452a" title='a' data-ref="2452a" data-ref-filename="2452a">a</a> == &amp;<a class="local col3 ref" href="#2453b" title='b' data-ref="2453b" data-ref-filename="2453b">b</a>;</td></tr>
+<tr><th id="186">186</th><td>  }</td></tr>
+<tr><th id="187">187</th><td></td></tr>
+<tr><th id="188">188</th><td>  <b>template</b> &lt;<b>class</b> T1, <b>class</b> T2&gt;</td></tr>
+<tr><th id="189">189</th><td>  <em>static</em> <em>bool</em> <dfn class="decl def fn" id="_ZN4llvm7ErrorOr21compareThisIfSameTypeERKTL0__RKTL0_0_" title='llvm::ErrorOr::compareThisIfSameType' data-ref="_ZN4llvm7ErrorOr21compareThisIfSameTypeERKTL0__RKTL0_0_" data-ref-filename="_ZN4llvm7ErrorOr21compareThisIfSameTypeERKTL0__RKTL0_0_">compareThisIfSameType</dfn>(<em>const</em> T1 &amp;<dfn class="local col4 decl" id="2454a" title='a' data-type='const T1 &amp;' data-ref="2454a" data-ref-filename="2454a">a</dfn>, <em>const</em> T2 &amp;<dfn class="local col5 decl" id="2455b" title='b' data-type='const T2 &amp;' data-ref="2455b" data-ref-filename="2455b">b</dfn>) {</td></tr>
+<tr><th id="190">190</th><td>    <b>return</b> <b>false</b>;</td></tr>
+<tr><th id="191">191</th><td>  }</td></tr>
+<tr><th id="192">192</th><td></td></tr>
+<tr><th id="193">193</th><td>  <b>template</b> &lt;<b>class</b> OtherT&gt;</td></tr>
+<tr><th id="194">194</th><td>  <em>void</em> <dfn class="decl def fn" id="_ZN4llvm7ErrorOr10copyAssignERKNS_7ErrorOrITL0__EE" title='llvm::ErrorOr::copyAssign' data-ref="_ZN4llvm7ErrorOr10copyAssignERKNS_7ErrorOrITL0__EE" data-ref-filename="_ZN4llvm7ErrorOr10copyAssignERKNS_7ErrorOrITL0__EE">copyAssign</dfn>(<em>const</em> <a class="type" href="#llvm::ErrorOr" title='llvm::ErrorOr' data-ref="llvm::ErrorOr" data-ref-filename="llvm..ErrorOr">ErrorOr</a>&lt;OtherT&gt; &amp;<dfn class="local col6 decl" id="2456Other" title='Other' data-type='const ErrorOr&lt;OtherT&gt; &amp;' data-ref="2456Other" data-ref-filename="2456Other">Other</dfn>) {</td></tr>
+<tr><th id="195">195</th><td>    <b>if</b> (compareThisIfSameType(*<b>this</b>, <a class="local col6 ref" href="#2456Other" title='Other' data-ref="2456Other" data-ref-filename="2456Other">Other</a>))</td></tr>
+<tr><th id="196">196</th><td>      <b>return</b>;</td></tr>
+<tr><th id="197">197</th><td></td></tr>
+<tr><th id="198">198</th><td>    <b>this</b>-&gt;~ErrorOr();</td></tr>
+<tr><th id="199">199</th><td>    <b>new</b> (<b>this</b>) ErrorOr(<a class="local col6 ref" href="#2456Other" title='Other' data-ref="2456Other" data-ref-filename="2456Other">Other</a>);</td></tr>
+<tr><th id="200">200</th><td>  }</td></tr>
+<tr><th id="201">201</th><td></td></tr>
+<tr><th id="202">202</th><td>  <b>template</b> &lt;<b>class</b> OtherT&gt;</td></tr>
+<tr><th id="203">203</th><td>  <em>void</em> <dfn class="decl def fn" id="_ZN4llvm7ErrorOr13moveConstructEONS_7ErrorOrITL0__EE" title='llvm::ErrorOr::moveConstruct' data-ref="_ZN4llvm7ErrorOr13moveConstructEONS_7ErrorOrITL0__EE" data-ref-filename="_ZN4llvm7ErrorOr13moveConstructEONS_7ErrorOrITL0__EE">moveConstruct</dfn>(<a class="type" href="#llvm::ErrorOr" title='llvm::ErrorOr' data-ref="llvm::ErrorOr" data-ref-filename="llvm..ErrorOr">ErrorOr</a>&lt;OtherT&gt; &amp;&amp;<dfn class="local col7 decl" id="2457Other" title='Other' data-type='ErrorOr&lt;OtherT&gt; &amp;&amp;' data-ref="2457Other" data-ref-filename="2457Other">Other</dfn>) {</td></tr>
+<tr><th id="204">204</th><td>    <b>if</b> (!<a class="local col7 ref" href="#2457Other" title='Other' data-ref="2457Other" data-ref-filename="2457Other">Other</a>.HasError) {</td></tr>
+<tr><th id="205">205</th><td>      <i>// Get the other value.</i></td></tr>
+<tr><th id="206">206</th><td>      <a class="member field" href="#llvm::ErrorOr::HasError" title='llvm::ErrorOr::HasError' data-ref="llvm::ErrorOr::HasError" data-ref-filename="llvm..ErrorOr..HasError">HasError</a> = <b>false</b>;</td></tr>
+<tr><th id="207">207</th><td>      <b>new</b> (getStorage()) <a class="typedef" href="#llvm::ErrorOr::storage_type" title='llvm::ErrorOr::storage_type' data-type='std::conditional_t&lt;isRef, wrap, T&gt;' data-ref="llvm::ErrorOr::storage_type" data-ref-filename="llvm..ErrorOr..storage_type">storage_type</a>(<span class="namespace">std::</span>move(*<a class="local col7 ref" href="#2457Other" title='Other' data-ref="2457Other" data-ref-filename="2457Other">Other</a>.getStorage()));</td></tr>
+<tr><th id="208">208</th><td>    } <b>else</b> {</td></tr>
+<tr><th id="209">209</th><td>      <i>// Get other's error.</i></td></tr>
+<tr><th id="210">210</th><td>      <a class="member field" href="#llvm::ErrorOr::HasError" title='llvm::ErrorOr::HasError' data-ref="llvm::ErrorOr::HasError" data-ref-filename="llvm..ErrorOr..HasError">HasError</a> = <b>true</b>;</td></tr>
+<tr><th id="211">211</th><td>      <b>new</b> (getErrorStorage()) <span class="namespace">std::</span><span class='type' title='std::error_code' data-ref="std::error_code" data-ref-filename="std..error_code">error_code</span>(<a class="local col7 ref" href="#2457Other" title='Other' data-ref="2457Other" data-ref-filename="2457Other">Other</a>.getError());</td></tr>
+<tr><th id="212">212</th><td>    }</td></tr>
+<tr><th id="213">213</th><td>  }</td></tr>
+<tr><th id="214">214</th><td></td></tr>
+<tr><th id="215">215</th><td>  <b>template</b> &lt;<b>class</b> OtherT&gt;</td></tr>
+<tr><th id="216">216</th><td>  <em>void</em> <dfn class="decl def fn" id="_ZN4llvm7ErrorOr10moveAssignEONS_7ErrorOrITL0__EE" title='llvm::ErrorOr::moveAssign' data-ref="_ZN4llvm7ErrorOr10moveAssignEONS_7ErrorOrITL0__EE" data-ref-filename="_ZN4llvm7ErrorOr10moveAssignEONS_7ErrorOrITL0__EE">moveAssign</dfn>(<a class="type" href="#llvm::ErrorOr" title='llvm::ErrorOr' data-ref="llvm::ErrorOr" data-ref-filename="llvm..ErrorOr">ErrorOr</a>&lt;OtherT&gt; &amp;&amp;<dfn class="local col8 decl" id="2458Other" title='Other' data-type='ErrorOr&lt;OtherT&gt; &amp;&amp;' data-ref="2458Other" data-ref-filename="2458Other">Other</dfn>) {</td></tr>
+<tr><th id="217">217</th><td>    <b>if</b> (compareThisIfSameType(*<b>this</b>, <a class="local col8 ref" href="#2458Other" title='Other' data-ref="2458Other" data-ref-filename="2458Other">Other</a>))</td></tr>
+<tr><th id="218">218</th><td>      <b>return</b>;</td></tr>
+<tr><th id="219">219</th><td></td></tr>
+<tr><th id="220">220</th><td>    <b>this</b>-&gt;~ErrorOr();</td></tr>
+<tr><th id="221">221</th><td>    <b>new</b> (<b>this</b>) ErrorOr(<span class="namespace">std::</span>move(<a class="local col8 ref" href="#2458Other" title='Other' data-ref="2458Other" data-ref-filename="2458Other">Other</a>));</td></tr>
+<tr><th id="222">222</th><td>  }</td></tr>
+<tr><th id="223">223</th><td></td></tr>
+<tr><th id="224">224</th><td>  <a class="typedef" href="#llvm::ErrorOr::pointer" title='llvm::ErrorOr::pointer' data-type='std::remove_reference_t&lt;T&gt; *' data-ref="llvm::ErrorOr::pointer" data-ref-filename="llvm..ErrorOr..pointer">pointer</a> <dfn class="decl def fn" id="_ZN4llvm7ErrorOr9toPointerEPNSt16remove_referenceIT_E4typeE" title='llvm::ErrorOr::toPointer' data-ref="_ZN4llvm7ErrorOr9toPointerEPNSt16remove_referenceIT_E4typeE" data-ref-filename="_ZN4llvm7ErrorOr9toPointerEPNSt16remove_referenceIT_E4typeE">toPointer</dfn>(<a class="typedef" href="#llvm::ErrorOr::pointer" title='llvm::ErrorOr::pointer' data-type='std::remove_reference_t&lt;T&gt; *' data-ref="llvm::ErrorOr::pointer" data-ref-filename="llvm..ErrorOr..pointer">pointer</a> <dfn class="local col9 decl" id="2459Val" title='Val' data-type='llvm::ErrorOr::pointer' data-ref="2459Val" data-ref-filename="2459Val">Val</dfn>) {</td></tr>
+<tr><th id="225">225</th><td>    <b>return</b> <a class="local col9 ref" href="#2459Val" title='Val' data-ref="2459Val" data-ref-filename="2459Val">Val</a>;</td></tr>
+<tr><th id="226">226</th><td>  }</td></tr>
+<tr><th id="227">227</th><td></td></tr>
+<tr><th id="228">228</th><td>  <a class="typedef" href="#llvm::ErrorOr::const_pointer" title='llvm::ErrorOr::const_pointer' data-type='const std::remove_reference_t&lt;T&gt; *' data-ref="llvm::ErrorOr::const_pointer" data-ref-filename="llvm..ErrorOr..const_pointer">const_pointer</a> <dfn class="decl def fn" id="_ZNK4llvm7ErrorOr9toPointerEPKNSt16remove_referenceIT_E4typeE" title='llvm::ErrorOr::toPointer' data-ref="_ZNK4llvm7ErrorOr9toPointerEPKNSt16remove_referenceIT_E4typeE" data-ref-filename="_ZNK4llvm7ErrorOr9toPointerEPKNSt16remove_referenceIT_E4typeE">toPointer</dfn>(<a class="typedef" href="#llvm::ErrorOr::const_pointer" title='llvm::ErrorOr::const_pointer' data-type='const std::remove_reference_t&lt;T&gt; *' data-ref="llvm::ErrorOr::const_pointer" data-ref-filename="llvm..ErrorOr..const_pointer">const_pointer</a> <dfn class="local col0 decl" id="2460Val" title='Val' data-type='llvm::ErrorOr::const_pointer' data-ref="2460Val" data-ref-filename="2460Val">Val</dfn>) <em>const</em> { <b>return</b> <a class="local col0 ref" href="#2460Val" title='Val' data-ref="2460Val" data-ref-filename="2460Val">Val</a>; }</td></tr>
+<tr><th id="229">229</th><td></td></tr>
+<tr><th id="230">230</th><td>  <a class="typedef" href="#llvm::ErrorOr::pointer" title='llvm::ErrorOr::pointer' data-type='std::remove_reference_t&lt;T&gt; *' data-ref="llvm::ErrorOr::pointer" data-ref-filename="llvm..ErrorOr..pointer">pointer</a> <dfn class="decl def fn" id="_ZN4llvm7ErrorOr9toPointerEPSt17reference_wrapperINSt16remove_referenceIT_E4typeEE" title='llvm::ErrorOr::toPointer' data-ref="_ZN4llvm7ErrorOr9toPointerEPSt17reference_wrapperINSt16remove_referenceIT_E4typeEE" data-ref-filename="_ZN4llvm7ErrorOr9toPointerEPSt17reference_wrapperINSt16remove_referenceIT_E4typeEE">toPointer</dfn>(<a class="typedef" href="#llvm::ErrorOr::wrap" title='llvm::ErrorOr::wrap' data-type='std::reference_wrapper&lt;std::remove_reference_t&lt;T&gt; &gt;' data-ref="llvm::ErrorOr::wrap" data-ref-filename="llvm..ErrorOr..wrap">wrap</a> *<dfn class="local col1 decl" id="2461Val" title='Val' data-type='llvm::ErrorOr::wrap *' data-ref="2461Val" data-ref-filename="2461Val">Val</dfn>) {</td></tr>
+<tr><th id="231">231</th><td>    <b>return</b> &amp;<a class="local col1 ref" href="#2461Val" title='Val' data-ref="2461Val" data-ref-filename="2461Val">Val</a>-&gt;get();</td></tr>
+<tr><th id="232">232</th><td>  }</td></tr>
+<tr><th id="233">233</th><td></td></tr>
+<tr><th id="234">234</th><td>  <a class="typedef" href="#llvm::ErrorOr::const_pointer" title='llvm::ErrorOr::const_pointer' data-type='const std::remove_reference_t&lt;T&gt; *' data-ref="llvm::ErrorOr::const_pointer" data-ref-filename="llvm..ErrorOr..const_pointer">const_pointer</a> <dfn class="decl def fn" id="_ZNK4llvm7ErrorOr9toPointerEPKSt17reference_wrapperINSt16remove_referenceIT_E4typeEE" title='llvm::ErrorOr::toPointer' data-ref="_ZNK4llvm7ErrorOr9toPointerEPKSt17reference_wrapperINSt16remove_referenceIT_E4typeEE" data-ref-filename="_ZNK4llvm7ErrorOr9toPointerEPKSt17reference_wrapperINSt16remove_referenceIT_E4typeEE">toPointer</dfn>(<em>const</em> <a class="typedef" href="#llvm::ErrorOr::wrap" title='llvm::ErrorOr::wrap' data-type='std::reference_wrapper&lt;std::remove_reference_t&lt;T&gt; &gt;' data-ref="llvm::ErrorOr::wrap" data-ref-filename="llvm..ErrorOr..wrap">wrap</a> *<dfn class="local col2 decl" id="2462Val" title='Val' data-type='const llvm::ErrorOr::wrap *' data-ref="2462Val" data-ref-filename="2462Val">Val</dfn>) <em>const</em> { <b>return</b> &amp;<a class="local col2 ref" href="#2462Val" title='Val' data-ref="2462Val" data-ref-filename="2462Val">Val</a>-&gt;get(); }</td></tr>
+<tr><th id="235">235</th><td></td></tr>
+<tr><th id="236">236</th><td>  <a class="typedef" href="#llvm::ErrorOr::storage_type" title='llvm::ErrorOr::storage_type' data-type='std::conditional_t&lt;isRef, wrap, T&gt;' data-ref="llvm::ErrorOr::storage_type" data-ref-filename="llvm..ErrorOr..storage_type">storage_type</a> *<dfn class="decl def fn" id="_ZN4llvm7ErrorOr10getStorageEv" title='llvm::ErrorOr::getStorage' data-ref="_ZN4llvm7ErrorOr10getStorageEv" data-ref-filename="_ZN4llvm7ErrorOr10getStorageEv">getStorage</dfn>() {</td></tr>
+<tr><th id="237">237</th><td>    <a class="macro" href="../../../../../include/assert.h.html#50" title="(static_cast&lt;void&gt; (0))" data-ref="_M/assert">assert</a>(!HasError &amp;&amp; <q>"Cannot get value when an error exists!"</q>);</td></tr>
+<tr><th id="238">238</th><td>    <b>return</b> <b>reinterpret_cast</b>&lt;<a class="typedef" href="#llvm::ErrorOr::storage_type" title='llvm::ErrorOr::storage_type' data-type='std::conditional_t&lt;isRef, wrap, T&gt;' data-ref="llvm::ErrorOr::storage_type" data-ref-filename="llvm..ErrorOr..storage_type">storage_type</a> *&gt;(&amp;<a class="ref field" href="#llvm::ErrorOr::(anonymous)::TStorage" title='llvm::ErrorOr::(anonymous union)::TStorage' data-ref="llvm::ErrorOr::(anonymous)::TStorage" data-ref-filename="llvm..ErrorOr..(anonymous)..TStorage">TStorage</a>);</td></tr>
+<tr><th id="239">239</th><td>  }</td></tr>
+<tr><th id="240">240</th><td></td></tr>
+<tr><th id="241">241</th><td>  <em>const</em> <a class="typedef" href="#llvm::ErrorOr::storage_type" title='llvm::ErrorOr::storage_type' data-type='std::conditional_t&lt;isRef, wrap, T&gt;' data-ref="llvm::ErrorOr::storage_type" data-ref-filename="llvm..ErrorOr..storage_type">storage_type</a> *<dfn class="decl def fn" id="_ZNK4llvm7ErrorOr10getStorageEv" title='llvm::ErrorOr::getStorage' data-ref="_ZNK4llvm7ErrorOr10getStorageEv" data-ref-filename="_ZNK4llvm7ErrorOr10getStorageEv">getStorage</dfn>() <em>const</em> {</td></tr>
+<tr><th id="242">242</th><td>    <a class="macro" href="../../../../../include/assert.h.html#50" title="(static_cast&lt;void&gt; (0))" data-ref="_M/assert">assert</a>(!HasError &amp;&amp; <q>"Cannot get value when an error exists!"</q>);</td></tr>
+<tr><th id="243">243</th><td>    <b>return</b> <b>reinterpret_cast</b>&lt;<em>const</em> <a class="typedef" href="#llvm::ErrorOr::storage_type" title='llvm::ErrorOr::storage_type' data-type='std::conditional_t&lt;isRef, wrap, T&gt;' data-ref="llvm::ErrorOr::storage_type" data-ref-filename="llvm..ErrorOr..storage_type">storage_type</a> *&gt;(&amp;<a class="ref field" href="#llvm::ErrorOr::(anonymous)::TStorage" title='llvm::ErrorOr::(anonymous union)::TStorage' data-ref="llvm::ErrorOr::(anonymous)::TStorage" data-ref-filename="llvm..ErrorOr..(anonymous)..TStorage">TStorage</a>);</td></tr>
+<tr><th id="244">244</th><td>  }</td></tr>
+<tr><th id="245">245</th><td></td></tr>
+<tr><th id="246">246</th><td>  <span class="namespace">std::</span><span class='type' title='std::error_code' data-ref="std::error_code" data-ref-filename="std..error_code">error_code</span> *<dfn class="decl def fn" id="_ZN4llvm7ErrorOr15getErrorStorageEv" title='llvm::ErrorOr::getErrorStorage' data-ref="_ZN4llvm7ErrorOr15getErrorStorageEv" data-ref-filename="_ZN4llvm7ErrorOr15getErrorStorageEv">getErrorStorage</dfn>() {</td></tr>
+<tr><th id="247">247</th><td>    <a class="macro" href="../../../../../include/assert.h.html#50" title="(static_cast&lt;void&gt; (0))" data-ref="_M/assert">assert</a>(HasError &amp;&amp; <q>"Cannot get error when a value exists!"</q>);</td></tr>
+<tr><th id="248">248</th><td>    <b>return</b> <b>reinterpret_cast</b>&lt;<span class="namespace">std::</span><span class='type' title='std::error_code' data-ref="std::error_code" data-ref-filename="std..error_code">error_code</span> *&gt;(&amp;<a class="ref field" href="#llvm::ErrorOr::(anonymous)::ErrorStorage" title='llvm::ErrorOr::(anonymous union)::ErrorStorage' data-ref="llvm::ErrorOr::(anonymous)::ErrorStorage" data-ref-filename="llvm..ErrorOr..(anonymous)..ErrorStorage">ErrorStorage</a>);</td></tr>
+<tr><th id="249">249</th><td>  }</td></tr>
+<tr><th id="250">250</th><td></td></tr>
+<tr><th id="251">251</th><td>  <em>const</em> <span class="namespace">std::</span><span class='type' title='std::error_code' data-ref="std::error_code" data-ref-filename="std..error_code">error_code</span> *<dfn class="decl def fn" id="_ZNK4llvm7ErrorOr15getErrorStorageEv" title='llvm::ErrorOr::getErrorStorage' data-ref="_ZNK4llvm7ErrorOr15getErrorStorageEv" data-ref-filename="_ZNK4llvm7ErrorOr15getErrorStorageEv">getErrorStorage</dfn>() <em>const</em> {</td></tr>
+<tr><th id="252">252</th><td>    <b>return</b> <b>const_cast</b>&lt;<a class="type" href="#llvm::ErrorOr" title='llvm::ErrorOr' data-ref="llvm::ErrorOr" data-ref-filename="llvm..ErrorOr">ErrorOr</a>&lt;T&gt; *&gt;(<b>this</b>)-&gt;getErrorStorage();</td></tr>
+<tr><th id="253">253</th><td>  }</td></tr>
+<tr><th id="254">254</th><td></td></tr>
+<tr><th id="255">255</th><td>  <b>union</b> {</td></tr>
+<tr><th id="256">256</th><td>    <a class="type" href="AlignOf.h.html#llvm::AlignedCharArrayUnion" title='llvm::AlignedCharArrayUnion' data-ref="llvm::AlignedCharArrayUnion" data-ref-filename="llvm..AlignedCharArrayUnion">AlignedCharArrayUnion</a>&lt;<a class="typedef" href="#llvm::ErrorOr::storage_type" title='llvm::ErrorOr::storage_type' data-type='std::conditional_t&lt;isRef, wrap, T&gt;' data-ref="llvm::ErrorOr::storage_type" data-ref-filename="llvm..ErrorOr..storage_type">storage_type</a>&gt; <dfn class="decl field" id="llvm::ErrorOr::(anonymous)::TStorage" title='llvm::ErrorOr::(anonymous union)::TStorage' data-ref="llvm::ErrorOr::(anonymous)::TStorage" data-ref-filename="llvm..ErrorOr..(anonymous)..TStorage">TStorage</dfn>;</td></tr>
+<tr><th id="257">257</th><td>    <a class="type" href="AlignOf.h.html#llvm::AlignedCharArrayUnion" title='llvm::AlignedCharArrayUnion' data-ref="llvm::AlignedCharArrayUnion" data-ref-filename="llvm..AlignedCharArrayUnion">AlignedCharArrayUnion</a>&lt;<span class="namespace">std::</span><span class='type' title='std::error_code' data-ref="std::error_code" data-ref-filename="std..error_code">error_code</span>&gt; <dfn class="decl field" id="llvm::ErrorOr::(anonymous)::ErrorStorage" title='llvm::ErrorOr::(anonymous union)::ErrorStorage' data-ref="llvm::ErrorOr::(anonymous)::ErrorStorage" data-ref-filename="llvm..ErrorOr..(anonymous)..ErrorStorage">ErrorStorage</dfn>;</td></tr>
+<tr><th id="258">258</th><td>  };</td></tr>
+<tr><th id="259">259</th><td>  <em>bool</em> <dfn class="decl field" id="llvm::ErrorOr::HasError" title='llvm::ErrorOr::HasError' data-ref="llvm::ErrorOr::HasError" data-ref-filename="llvm..ErrorOr..HasError">HasError</dfn> : <var>1</var>;</td></tr>
+<tr><th id="260">260</th><td>};</td></tr>
+<tr><th id="261">261</th><td></td></tr>
+<tr><th id="262">262</th><td><b>template</b> &lt;<b>class</b> T, <b>class</b> E&gt;</td></tr>
+<tr><th id="263">263</th><td><span class="namespace">std::</span><span class='type' title='std::enable_if_t' data-ref="std::enable_if_t" data-ref-filename="std..enable_if_t">enable_if_t</span>&lt;<span class="namespace">std::</span><span class='type' title='std::is_error_code_enum' data-ref="std::is_error_code_enum" data-ref-filename="std..is_error_code_enum">is_error_code_enum</span>&lt;E&gt;::value ||</td></tr>
+<tr><th id="264">264</th><td>                     <span class="namespace">std::</span><span class='type' title='std::is_error_condition_enum' data-ref="std::is_error_condition_enum" data-ref-filename="std..is_error_condition_enum">is_error_condition_enum</span>&lt;E&gt;::value,</td></tr>
+<tr><th id="265">265</th><td>                 <em>bool</em>&gt;</td></tr>
+<tr><th id="266">266</th><td><dfn class="decl def fn" id="_ZN4llvmeqERKNS_7ErrorOrIT_EET0_" title='llvm::operator==' data-ref="_ZN4llvmeqERKNS_7ErrorOrIT_EET0_" data-ref-filename="_ZN4llvmeqERKNS_7ErrorOrIT_EET0_"><b>operator</b>==</dfn>(<em>const</em> <a class="type" href="#llvm::ErrorOr" title='llvm::ErrorOr' data-ref="llvm::ErrorOr" data-ref-filename="llvm..ErrorOr">ErrorOr</a>&lt;T&gt; &amp;<dfn class="local col3 decl" id="2463Err" title='Err' data-type='const ErrorOr&lt;T&gt; &amp;' data-ref="2463Err" data-ref-filename="2463Err">Err</dfn>, E <dfn class="local col4 decl" id="2464Code" title='Code' data-type='E' data-ref="2464Code" data-ref-filename="2464Code">Code</dfn>) {</td></tr>
+<tr><th id="267">267</th><td>  <b>return</b> <a class="local col3 ref" href="#2463Err" title='Err' data-ref="2463Err" data-ref-filename="2463Err">Err</a>.getError() == <a class="local col4 ref" href="#2464Code" title='Code' data-ref="2464Code" data-ref-filename="2464Code">Code</a>;</td></tr>
+<tr><th id="268">268</th><td>}</td></tr>
+<tr><th id="269">269</th><td></td></tr>
+<tr><th id="270">270</th><td>} <i>// end namespace llvm</i></td></tr>
+<tr><th id="271">271</th><td></td></tr>
+<tr><th id="272">272</th><td><u>#<span data-ppcond="15">endif</span> // LLVM_SUPPORT_ERROROR_H</u></td></tr>
+<tr><th id="273">273</th><td></td></tr>
+</table><hr/><p id='footer'>
+Generated while processing <a href='../../../../src/CodeGen_ARM.cpp.html'>halide/src/CodeGen_ARM.cpp</a><br/>Generated on <em>2021-Aug-03</em> from project halide revision <em>v12.0.1</em>

@@ -1,0 +1,457 @@
+<def f='halide/build/include/Halide.h' l='15531' ll='15677'/>
+<use f='halide/build/include/Halide.h' l='15572' c='_ZN6Halide4RDomC1ERKNS_6BufferIT_EE'/>
+<use f='halide/build/include/Halide.h' l='15590' c='_ZNK6Halide4RDom7same_asERKS0_'/>
+<use f='halide/build/include/Halide.h' l='15683' c='_ZN6HalidelsERSoRKNS_4RDomE'/>
+<use f='halide/build/include/Halide.h' l='15920' c='_ZN6Halide9VarOrRVarC1ERKNS_4RDomE'/>
+<use f='halide/build/include/Halide.h' l='21128' c='_ZN6Halide8Internal5equalERKNS_4RDomES3_'/>
+<use f='halide/build/include/Halide.h' l='21128' c='_ZN6Halide8Internal5equalERKNS_4RDomES3_'/>
+<use f='halide/build/include/Halide.h' l='25901'/>
+<use f='halide/build/include/Halide.h' l='27045' c='_ZN6Halide3sumERKNS_4RDomENS_4ExprERKNSt7__cxx1112basic_stringIcSt11char_traitsIcESaIcEEE'/>
+<use f='halide/build/include/Halide.h' l='27046' c='_ZN6Halide14saturating_sumERKNS_4RDomENS_4ExprERKNSt7__cxx1112basic_stringIcSt11char_traitsIcESaIcEEE'/>
+<use f='halide/build/include/Halide.h' l='27047' c='_ZN6Halide7productERKNS_4RDomENS_4ExprERKNSt7__cxx1112basic_stringIcSt11char_traitsIcESaIcEEE'/>
+<use f='halide/build/include/Halide.h' l='27048' c='_ZN6Halide7maximumERKNS_4RDomENS_4ExprERKNSt7__cxx1112basic_stringIcSt11char_traitsIcESaIcEEE'/>
+<use f='halide/build/include/Halide.h' l='27049' c='_ZN6Halide7minimumERKNS_4RDomENS_4ExprERKNSt7__cxx1112basic_stringIcSt11char_traitsIcESaIcEEE'/>
+<use f='halide/build/include/Halide.h' l='27059' c='_ZN6Halide6argmaxERKNS_4RDomENS_4ExprERKNSt7__cxx1112basic_stringIcSt11char_traitsIcESaIcEEE'/>
+<use f='halide/build/include/Halide.h' l='27060' c='_ZN6Halide6argminERKNS_4RDomENS_4ExprERKNSt7__cxx1112basic_stringIcSt11char_traitsIcESaIcEEE'/>
+<use f='halide/build/include/Halide.h' l='27074' c='_ZN6Halide3sumERKNS_4RDomENS_4ExprERKNS_4FuncE'/>
+<use f='halide/build/include/Halide.h' l='27075' c='_ZN6Halide14saturating_sumERKNS_4RDomENS_4ExprERKNS_4FuncE'/>
+<use f='halide/build/include/Halide.h' l='27076' c='_ZN6Halide7productERKNS_4RDomENS_4ExprERKNS_4FuncE'/>
+<use f='halide/build/include/Halide.h' l='27077' c='_ZN6Halide7maximumERKNS_4RDomENS_4ExprERKNS_4FuncE'/>
+<use f='halide/build/include/Halide.h' l='27078' c='_ZN6Halide7minimumERKNS_4RDomENS_4ExprERKNS_4FuncE'/>
+<use f='halide/build/include/Halide.h' l='27081' c='_ZN6Halide6argmaxERKNS_4RDomENS_4ExprERKNS_4FuncE'/>
+<use f='halide/build/include/Halide.h' l='27082' c='_ZN6Halide6argminERKNS_4RDomENS_4ExprERKNS_4FuncE'/>
+<size>200</size>
+<doc f='halide/build/include/Halide.h' l='15414'>/** A multi-dimensional domain over which to iterate. Used when
+ * defining functions with update definitions.
+ *
+ * An reduction is a function with a two-part definition. It has an
+ * initial value, which looks much like a pure function, and an update
+ * definition, which may refer to some RDom. Evaluating such a
+ * function first initializes it over the required domain (which is
+ * inferred based on usage), and then runs update rule for all points
+ * in the RDom. For example:
+ *
+ \code
+ Func f;
+ Var x;
+ RDom r(0, 10);
+ f(x) = x; // the initial value
+ f(r) = f(r) * 2;
+ Buffer&lt;int&gt; result = f.realize({10});
+ \endcode
+ *
+ * This function creates a single-dimensional buffer of size 10, in
+ * which element x contains the value x*2. Internally, first the
+ * initialization rule fills in x at every site, and then the update
+ * definition doubles every site.
+ *
+ * One use of reductions is to build a function recursively (pure
+ * functions in halide cannot be recursive). For example, this
+ * function fills in an array with the first 20 fibonacci numbers:
+ *
+ \code
+ Func f;
+ Var x;
+ RDom r(2, 18);
+ f(x) = 1;
+ f(r) = f(r-1) + f(r-2);
+ \endcode
+ *
+ * Another use of reductions is to perform scattering operations, as
+ * unlike a pure function declaration, the left-hand-side of an update
+ * definition may contain general expressions:
+ *
+ \code
+ ImageParam input(UInt(8), 2);
+ Func histogram;
+ Var x;
+ RDom r(input); // Iterate over all pixels in the input
+ histogram(x) = 0;
+ histogram(input(r.x, r.y)) = histogram(input(r.x, r.y)) + 1;
+ \endcode
+ *
+ * An update definition may also be multi-dimensional. This example
+ * computes a summed-area table by first summing horizontally and then
+ * vertically:
+ *
+ \code
+ ImageParam input(Float(32), 2);
+ Func sum_x, sum_y;
+ Var x, y;
+ RDom r(input);
+ sum_x(x, y)     = input(x, y);
+ sum_x(r.x, r.y) = sum_x(r.x, r.y) + sum_x(r.x-1, r.y);
+ sum_y(x, y)     = sum_x(x, y);
+ sum_y(r.x, r.y) = sum_y(r.x, r.y) + sum_y(r.x, r.y-1);
+ \endcode
+ *
+ * You can also mix pure dimensions with reduction variables. In the
+ * previous example, note that there&apos;s no need for the y coordinate in
+ * sum_x to be traversed serially. The sum within each row is entirely
+ * independent. The rows could be computed in parallel, or in a
+ * different order, without changing the meaning. Therefore, we can
+ * instead write this definition as follows:
+ *
+ \code
+ ImageParam input(Float(32), 2);
+ Func sum_x, sum_y;
+ Var x, y;
+ RDom r(input);
+ sum_x(x, y)   = input(x, y);
+ sum_x(r.x, y) = sum_x(r.x, y) + sum_x(r.x-1, y);
+ sum_y(x, y)   = sum_x(x, y);
+ sum_y(x, r.y) = sum_y(x, r.y) + sum_y(x, r.y-1);
+ \endcode
+ *
+ * This lets us schedule it more flexibly. You can now parallelize the
+ * update step of sum_x over y by calling:
+ \code
+ sum_x.update().parallel(y).
+ \endcode
+ *
+ * Note that calling sum_x.parallel(y) only parallelizes the
+ * initialization step, and not the update step! Scheduling the update
+ * step of a reduction must be done using the handle returned by
+ * \ref Func::update(). This code parallelizes both the initialization
+ * step and the update step:
+ *
+ \code
+ sum_x.parallel(y);
+ sum_x.update().parallel(y);
+ \endcode
+ *
+ * When you mix reduction variables and pure dimensions, the reduction
+ * domain is traversed outermost. That is, for each point in the
+ * reduction domain, the inferred pure domain is traversed in its
+ * entirety. For the above example, this means that sum_x walks down
+ * the columns, and sum_y walks along the rows. This may not be
+ * cache-coherent. You may try reordering these dimensions using the
+ * schedule, but Halide will return an error if it decides that this
+ * risks changing the meaning of your function. The solution lies in
+ * clever scheduling. If we say:
+ *
+ \code
+ sum_x.compute_at(sum_y, y);
+ \endcode
+ *
+ * Then the sum in x is computed only as necessary for each scanline
+ * of the sum in y. This not only results in sum_x walking along the
+ * rows, it also improves the locality of the entire pipeline.
+ */</doc>
+<mbr r='Halide::RDom::dom' o='0' t='Internal::ReductionDomain'/>
+<fun r='_ZN6Halide4RDom9init_varsERKNSt7__cxx1112basic_stringIcSt11char_traitsIcESaIcEEE'/>
+<fun r='_ZN6Halide4RDom22initialize_from_regionERKSt6vectorINS_5RangeESaIS2_EENSt7__cxx1112basic_stringIcSt11char_traitsIcESaIcEEE'/>
+<fun r='_ZN6Halide4RDom22initialize_from_regionERSt6vectorINS_5RangeESaIS2_EERKNS_4ExprES8_DpOT_'/>
+<fun r='_ZN6Halide4RDomC1Ev'/>
+<fun r='_ZN6Halide4RDomC1ERKSt6vectorINS_5RangeESaIS2_EENSt7__cxx1112basic_stringIcSt11char_traitsIcESaIcEEE'/>
+<fun r='_ZN6Halide4RDomC1ENS_4ExprES1_DpOT_'/>
+<fun r='_ZN6Halide4RDomC1ERKNS_6BufferIvEE'/>
+<fun r='_ZN6Halide4RDomC1ERKNS_16OutputImageParamE'/>
+<fun r='_ZN6Halide4RDomC1ERKNS_6BufferIT_EE'/>
+<fun r='_ZN6Halide4RDomC1ERKNS_8Internal15ReductionDomainE'/>
+<fun r='_ZNK6Halide4RDom6domainEv'/>
+<fun r='_ZNK6Halide4RDom7definedEv'/>
+<fun r='_ZNK6Halide4RDom7same_asERKS0_'/>
+<fun r='_ZNK6Halide4RDom10dimensionsEv'/>
+<fun r='_ZNK6Halide4RDomixEi'/>
+<fun r='_ZNK6Halide4RDomcvNS_4RVarEEv'/>
+<fun r='_ZNK6Halide4RDomcvNS_4ExprEEv'/>
+<fun r='_ZN6Halide4RDom5whereENS_4ExprE'/>
+<mbr r='Halide::RDom::x' o='64' t='Halide::RVar'/>
+<mbr r='Halide::RDom::y' o='448' t='Halide::RVar'/>
+<mbr r='Halide::RDom::z' o='832' t='Halide::RVar'/>
+<mbr r='Halide::RDom::w' o='1216' t='Halide::RVar'/>
+<use f='halide/python_bindings/src/PyExpr.cpp' l='40' c='_ZN6Halide14PythonBindings11define_exprERN8pybind117module_E'/>
+<use f='halide/python_bindings/src/PyExpr.cpp' l='66' c='_ZN6Halide14PythonBindings11define_exprERN8pybind117module_E'/>
+<size>200</size>
+<use f='halide/python_bindings/src/PyInlineReductions.cpp' l='11' c='_ZN6Halide14PythonBindings24define_inline_reductionsERN8pybind117module_E'/>
+<use f='halide/python_bindings/src/PyInlineReductions.cpp' l='16' c='_ZN6Halide14PythonBindings24define_inline_reductionsERN8pybind117module_E'/>
+<use f='halide/python_bindings/src/PyInlineReductions.cpp' l='21' c='_ZN6Halide14PythonBindings24define_inline_reductionsERN8pybind117module_E'/>
+<use f='halide/python_bindings/src/PyInlineReductions.cpp' l='26' c='_ZN6Halide14PythonBindings24define_inline_reductionsERN8pybind117module_E'/>
+<use f='halide/python_bindings/src/PyInlineReductions.cpp' l='35' c='_ZN6Halide14PythonBindings24define_inline_reductionsERN8pybind117module_E'/>
+<use f='halide/python_bindings/src/PyInlineReductions.cpp' l='46' c='_ZN6Halide14PythonBindings24define_inline_reductionsERN8pybind117module_E'/>
+<size>200</size>
+<use f='halide/python_bindings/src/PyRDom.cpp' l='13' c='_ZN6Halide14PythonBindings11define_rvarERN8pybind117module_E'/>
+<use f='halide/python_bindings/src/PyRDom.cpp' l='23' c='_ZN6Halide14PythonBindings11define_rvarERN8pybind117module_E'/>
+<use f='halide/python_bindings/src/PyRDom.cpp' l='32' c='_ZN6Halide14PythonBindings11define_rdomERN8pybind117module_E'/>
+<use f='halide/python_bindings/src/PyRDom.cpp' l='43' c='_ZN6Halide14PythonBindings11define_rdomERN8pybind117module_E'/>
+<use f='halide/python_bindings/src/PyRDom.cpp' l='53' c='_ZN6Halide14PythonBindings11define_rdomERN8pybind117module_E'/>
+<size>200</size>
+<use f='halide/python_bindings/src/PyVarOrRVar.cpp' l='11' c='_ZN6Halide14PythonBindings18define_var_or_rvarERN8pybind117module_E'/>
+<use f='halide/python_bindings/src/PyVarOrRVar.cpp' l='19' c='_ZN6Halide14PythonBindings18define_var_or_rvarERN8pybind117module_E'/>
+<size>200</size>
+<def f='halide/src/RDom.h' l='193' ll='339'/>
+<use f='halide/src/RDom.h' l='234' c='_ZN6Halide4RDomC1ERKNS_6BufferIT_EE'/>
+<use f='halide/src/RDom.h' l='252' c='_ZNK6Halide4RDom7same_asERKS0_'/>
+<use f='halide/src/RDom.h' l='345' c='_ZN6HalidelsERSoRKNS_4RDomE'/>
+<use f='halide/src/Func.h' l='40' c='_ZN6Halide9VarOrRVarC1ERKNS_4RDomE'/>
+<size>200</size>
+<doc f='halide/src/RDom.h' l='76'>/** A multi-dimensional domain over which to iterate. Used when
+ * defining functions with update definitions.
+ *
+ * An reduction is a function with a two-part definition. It has an
+ * initial value, which looks much like a pure function, and an update
+ * definition, which may refer to some RDom. Evaluating such a
+ * function first initializes it over the required domain (which is
+ * inferred based on usage), and then runs update rule for all points
+ * in the RDom. For example:
+ *
+ \code
+ Func f;
+ Var x;
+ RDom r(0, 10);
+ f(x) = x; // the initial value
+ f(r) = f(r) * 2;
+ Buffer&lt;int&gt; result = f.realize({10});
+ \endcode
+ *
+ * This function creates a single-dimensional buffer of size 10, in
+ * which element x contains the value x*2. Internally, first the
+ * initialization rule fills in x at every site, and then the update
+ * definition doubles every site.
+ *
+ * One use of reductions is to build a function recursively (pure
+ * functions in halide cannot be recursive). For example, this
+ * function fills in an array with the first 20 fibonacci numbers:
+ *
+ \code
+ Func f;
+ Var x;
+ RDom r(2, 18);
+ f(x) = 1;
+ f(r) = f(r-1) + f(r-2);
+ \endcode
+ *
+ * Another use of reductions is to perform scattering operations, as
+ * unlike a pure function declaration, the left-hand-side of an update
+ * definition may contain general expressions:
+ *
+ \code
+ ImageParam input(UInt(8), 2);
+ Func histogram;
+ Var x;
+ RDom r(input); // Iterate over all pixels in the input
+ histogram(x) = 0;
+ histogram(input(r.x, r.y)) = histogram(input(r.x, r.y)) + 1;
+ \endcode
+ *
+ * An update definition may also be multi-dimensional. This example
+ * computes a summed-area table by first summing horizontally and then
+ * vertically:
+ *
+ \code
+ ImageParam input(Float(32), 2);
+ Func sum_x, sum_y;
+ Var x, y;
+ RDom r(input);
+ sum_x(x, y)     = input(x, y);
+ sum_x(r.x, r.y) = sum_x(r.x, r.y) + sum_x(r.x-1, r.y);
+ sum_y(x, y)     = sum_x(x, y);
+ sum_y(r.x, r.y) = sum_y(r.x, r.y) + sum_y(r.x, r.y-1);
+ \endcode
+ *
+ * You can also mix pure dimensions with reduction variables. In the
+ * previous example, note that there&apos;s no need for the y coordinate in
+ * sum_x to be traversed serially. The sum within each row is entirely
+ * independent. The rows could be computed in parallel, or in a
+ * different order, without changing the meaning. Therefore, we can
+ * instead write this definition as follows:
+ *
+ \code
+ ImageParam input(Float(32), 2);
+ Func sum_x, sum_y;
+ Var x, y;
+ RDom r(input);
+ sum_x(x, y)   = input(x, y);
+ sum_x(r.x, y) = sum_x(r.x, y) + sum_x(r.x-1, y);
+ sum_y(x, y)   = sum_x(x, y);
+ sum_y(x, r.y) = sum_y(x, r.y) + sum_y(x, r.y-1);
+ \endcode
+ *
+ * This lets us schedule it more flexibly. You can now parallelize the
+ * update step of sum_x over y by calling:
+ \code
+ sum_x.update().parallel(y).
+ \endcode
+ *
+ * Note that calling sum_x.parallel(y) only parallelizes the
+ * initialization step, and not the update step! Scheduling the update
+ * step of a reduction must be done using the handle returned by
+ * \ref Func::update(). This code parallelizes both the initialization
+ * step and the update step:
+ *
+ \code
+ sum_x.parallel(y);
+ sum_x.update().parallel(y);
+ \endcode
+ *
+ * When you mix reduction variables and pure dimensions, the reduction
+ * domain is traversed outermost. That is, for each point in the
+ * reduction domain, the inferred pure domain is traversed in its
+ * entirety. For the above example, this means that sum_x walks down
+ * the columns, and sum_y walks along the rows. This may not be
+ * cache-coherent. You may try reordering these dimensions using the
+ * schedule, but Halide will return an error if it decides that this
+ * risks changing the meaning of your function. The solution lies in
+ * clever scheduling. If we say:
+ *
+ \code
+ sum_x.compute_at(sum_y, y);
+ \endcode
+ *
+ * Then the sum in x is computed only as necessary for each scanline
+ * of the sum in y. This not only results in sum_x walking along the
+ * rows, it also improves the locality of the entire pipeline.
+ */</doc>
+<mbr r='Halide::RDom::dom' o='0' t='Internal::ReductionDomain'/>
+<fun r='_ZN6Halide4RDom9init_varsERKNSt7__cxx1112basic_stringIcSt11char_traitsIcESaIcEEE'/>
+<fun r='_ZN6Halide4RDom22initialize_from_regionERKSt6vectorINS_5RangeESaIS2_EENSt7__cxx1112basic_stringIcSt11char_traitsIcESaIcEEE'/>
+<fun r='_ZN6Halide4RDom22initialize_from_regionERSt6vectorINS_5RangeESaIS2_EERKNS_4ExprES8_DpOT_'/>
+<fun r='_ZN6Halide4RDomC1Ev'/>
+<fun r='_ZN6Halide4RDomC1ERKSt6vectorINS_5RangeESaIS2_EENSt7__cxx1112basic_stringIcSt11char_traitsIcESaIcEEE'/>
+<fun r='_ZN6Halide4RDomC1ENS_4ExprES1_DpOT_'/>
+<fun r='_ZN6Halide4RDomC1ERKNS_6BufferIvEE'/>
+<fun r='_ZN6Halide4RDomC1ERKNS_16OutputImageParamE'/>
+<fun r='_ZN6Halide4RDomC1ERKNS_6BufferIT_EE'/>
+<fun r='_ZN6Halide4RDomC1ERKNS_8Internal15ReductionDomainE'/>
+<fun r='_ZNK6Halide4RDom6domainEv'/>
+<fun r='_ZNK6Halide4RDom7definedEv'/>
+<fun r='_ZNK6Halide4RDom7same_asERKS0_'/>
+<fun r='_ZNK6Halide4RDom10dimensionsEv'/>
+<fun r='_ZNK6Halide4RDomixEi'/>
+<fun r='_ZNK6Halide4RDomcvNS_4RVarEEv'/>
+<fun r='_ZNK6Halide4RDomcvNS_4ExprEEv'/>
+<fun r='_ZN6Halide4RDom5whereENS_4ExprE'/>
+<mbr r='Halide::RDom::x' o='64' t='Halide::RVar'/>
+<mbr r='Halide::RDom::y' o='448' t='Halide::RVar'/>
+<mbr r='Halide::RDom::z' o='832' t='Halide::RVar'/>
+<mbr r='Halide::RDom::w' o='1216' t='Halide::RVar'/>
+<use f='halide/src/InlineReductions.h' l='57' c='_ZN6Halide3sumERKNS_4RDomENS_4ExprERKNSt7__cxx1112basic_stringIcSt11char_traitsIcESaIcEEE'/>
+<use f='halide/src/InlineReductions.h' l='58' c='_ZN6Halide14saturating_sumERKNS_4RDomENS_4ExprERKNSt7__cxx1112basic_stringIcSt11char_traitsIcESaIcEEE'/>
+<use f='halide/src/InlineReductions.h' l='59' c='_ZN6Halide7productERKNS_4RDomENS_4ExprERKNSt7__cxx1112basic_stringIcSt11char_traitsIcESaIcEEE'/>
+<use f='halide/src/InlineReductions.h' l='60' c='_ZN6Halide7maximumERKNS_4RDomENS_4ExprERKNSt7__cxx1112basic_stringIcSt11char_traitsIcESaIcEEE'/>
+<use f='halide/src/InlineReductions.h' l='61' c='_ZN6Halide7minimumERKNS_4RDomENS_4ExprERKNSt7__cxx1112basic_stringIcSt11char_traitsIcESaIcEEE'/>
+<use f='halide/src/InlineReductions.h' l='71' c='_ZN6Halide6argmaxERKNS_4RDomENS_4ExprERKNSt7__cxx1112basic_stringIcSt11char_traitsIcESaIcEEE'/>
+<use f='halide/src/InlineReductions.h' l='72' c='_ZN6Halide6argminERKNS_4RDomENS_4ExprERKNSt7__cxx1112basic_stringIcSt11char_traitsIcESaIcEEE'/>
+<use f='halide/src/InlineReductions.h' l='86' c='_ZN6Halide3sumERKNS_4RDomENS_4ExprERKNS_4FuncE'/>
+<use f='halide/src/InlineReductions.h' l='87' c='_ZN6Halide14saturating_sumERKNS_4RDomENS_4ExprERKNS_4FuncE'/>
+<use f='halide/src/InlineReductions.h' l='88' c='_ZN6Halide7productERKNS_4RDomENS_4ExprERKNS_4FuncE'/>
+<use f='halide/src/InlineReductions.h' l='89' c='_ZN6Halide7maximumERKNS_4RDomENS_4ExprERKNS_4FuncE'/>
+<use f='halide/src/InlineReductions.h' l='90' c='_ZN6Halide7minimumERKNS_4RDomENS_4ExprERKNS_4FuncE'/>
+<use f='halide/src/InlineReductions.h' l='93' c='_ZN6Halide6argmaxERKNS_4RDomENS_4ExprERKNS_4FuncE'/>
+<use f='halide/src/InlineReductions.h' l='94' c='_ZN6Halide6argminERKNS_4RDomENS_4ExprERKNS_4FuncE'/>
+<use f='halide/src/Bounds.cpp' l='3059' c='_ZN6Halide8Internal12_GLOBAL__N_119constant_bound_testEv'/>
+<size>200</size>
+<use f='halide/src/DerivativeUtils.h' l='65' c='_ZN6Halide8Internal5equalERKNS_4RDomES3_'/>
+<use f='halide/src/DerivativeUtils.h' l='65' c='_ZN6Halide8Internal5equalERKNS_4RDomES3_'/>
+<use f='halide/src/Derivative.cpp' l='1445' c='_ZN6Halide8Internal12_GLOBAL__N_126ReverseAccumulationVisitor30propagate_halide_function_callENS_4ExprERKNSt7__cxx1112basic_stringIcSt11char_traitsIcE10448212'/>
+<use f='halide/src/Derivative.cpp' l='1495' c='_ZN6Halide8Internal12_GLOBAL__N_126ReverseAccumulationVisitor30propagate_halide_function_callENS_4ExprERKNSt7__cxx1112basic_stringIcSt11char_traitsIcE10448212'/>
+<use f='halide/src/Derivative.cpp' l='1732' c='_ZN6Halide8Internal12_GLOBAL__N_126ReverseAccumulationVisitor30propagate_halide_function_callENS_4ExprERKNSt7__cxx1112basic_stringIcSt11char_traitsIcE10448212'/>
+<use f='halide/src/Derivative.cpp' l='1734' c='_ZN6Halide8Internal12_GLOBAL__N_126ReverseAccumulationVisitor30propagate_halide_function_callENS_4ExprERKNSt7__cxx1112basic_stringIcSt11char_traitsIcE10448212'/>
+<size>200</size>
+<use f='halide/src/DerivativeUtils.cpp' l='319' c='_ZN6Halide8Internal5equalERKNS_4RDomES3_'/>
+<use f='halide/src/DerivativeUtils.cpp' l='319' c='_ZN6Halide8Internal5equalERKNS_4RDomES3_'/>
+<use f='halide/src/DerivativeUtils.cpp' l='391' c='_ZN6Halide8Internal13solve_inverseENS_4ExprERKNSt7__cxx1112basic_stringIcSt11char_traitsIcESaIcEEES9_'/>
+<size>200</size>
+<use f='halide/src/Func.cpp' l='764' c='_ZN6Halide5Stage7rfactorESt6vectorISt4pairINS_4RVarENS_3VarEESaIS5_EE'/>
+<use f='halide/src/Func.cpp' l='803' c='_ZN6Halide5Stage7rfactorESt6vectorISt4pairINS_4RVarENS_3VarEESaIS5_EE'/>
+<size>200</size>
+<use f='halide/src/Generator.h' l='2967'/>
+<use f='halide/src/Generator.cpp' l='2317' c='_ZN6Halide8Internal14generator_testEv'/>
+<size>200</size>
+<use f='halide/src/InlineReductions.cpp' l='24'/>
+<use f='halide/src/InlineReductions.cpp' l='26' c='_ZN6Halide8Internal12_GLOBAL__N_112FindFreeVarsC1ERKNS_4RDomERKNSt7__cxx1112basic_stringIcSt11char_traitsIcESaIcEEE'/>
+<use f='halide/src/InlineReductions.cpp' l='76' c='_ZN6Halide8Internal12_GLOBAL__N_112FindFreeVars5visitEPKNS0_8VariableE'/>
+<use f='halide/src/InlineReductions.cpp' l='112' c='_ZN6Halide3sumENS_4ExprERKNSt7__cxx1112basic_stringIcSt11char_traitsIcESaIcEEE'/>
+<use f='halide/src/InlineReductions.cpp' l='116' c='_ZN6Halide3sumENS_4ExprERKNS_4FuncE'/>
+<use f='halide/src/InlineReductions.cpp' l='119' c='_ZN6Halide3sumERKNS_4RDomENS_4ExprERKNSt7__cxx1112basic_stringIcSt11char_traitsIcESaIcEEE'/>
+<use f='halide/src/InlineReductions.cpp' l='123' c='_ZN6Halide3sumERKNS_4RDomENS_4ExprERKNS_4FuncE'/>
+<use f='halide/src/InlineReductions.cpp' l='138' c='_ZN6Halide14saturating_sumENS_4ExprERKNSt7__cxx1112basic_stringIcSt11char_traitsIcESaIcEEE'/>
+<use f='halide/src/InlineReductions.cpp' l='142' c='_ZN6Halide14saturating_sumENS_4ExprERKNS_4FuncE'/>
+<use f='halide/src/InlineReductions.cpp' l='145' c='_ZN6Halide14saturating_sumERKNS_4RDomENS_4ExprERKNSt7__cxx1112basic_stringIcSt11char_traitsIcESaIcEEE'/>
+<use f='halide/src/InlineReductions.cpp' l='149' c='_ZN6Halide14saturating_sumERKNS_4RDomENS_4ExprERKNS_4FuncE'/>
+<use f='halide/src/InlineReductions.cpp' l='165' c='_ZN6Halide7productENS_4ExprERKNSt7__cxx1112basic_stringIcSt11char_traitsIcESaIcEEE'/>
+<use f='halide/src/InlineReductions.cpp' l='169' c='_ZN6Halide7productENS_4ExprERKNS_4FuncE'/>
+<use f='halide/src/InlineReductions.cpp' l='172' c='_ZN6Halide7productERKNS_4RDomENS_4ExprERKNSt7__cxx1112basic_stringIcSt11char_traitsIcESaIcEEE'/>
+<use f='halide/src/InlineReductions.cpp' l='176' c='_ZN6Halide7productERKNS_4RDomENS_4ExprERKNS_4FuncE'/>
+<use f='halide/src/InlineReductions.cpp' l='191' c='_ZN6Halide7maximumENS_4ExprERKNSt7__cxx1112basic_stringIcSt11char_traitsIcESaIcEEE'/>
+<use f='halide/src/InlineReductions.cpp' l='195' c='_ZN6Halide7maximumENS_4ExprERKNS_4FuncE'/>
+<use f='halide/src/InlineReductions.cpp' l='198' c='_ZN6Halide7maximumERKNS_4RDomENS_4ExprERKNSt7__cxx1112basic_stringIcSt11char_traitsIcESaIcEEE'/>
+<use f='halide/src/InlineReductions.cpp' l='202' c='_ZN6Halide7maximumERKNS_4RDomENS_4ExprERKNS_4FuncE'/>
+<use f='halide/src/InlineReductions.cpp' l='218' c='_ZN6Halide7minimumENS_4ExprERKNSt7__cxx1112basic_stringIcSt11char_traitsIcESaIcEEE'/>
+<use f='halide/src/InlineReductions.cpp' l='222' c='_ZN6Halide7minimumENS_4ExprERKNS_4FuncE'/>
+<use f='halide/src/InlineReductions.cpp' l='225' c='_ZN6Halide7minimumERKNS_4RDomENS_4ExprERKNSt7__cxx1112basic_stringIcSt11char_traitsIcESaIcEEE'/>
+<use f='halide/src/InlineReductions.cpp' l='229' c='_ZN6Halide7minimumERKNS_4RDomENS_4ExprERKNS_4FuncE'/>
+<use f='halide/src/InlineReductions.cpp' l='245' c='_ZN6Halide6argmaxENS_4ExprERKNSt7__cxx1112basic_stringIcSt11char_traitsIcESaIcEEE'/>
+<use f='halide/src/InlineReductions.cpp' l='249' c='_ZN6Halide6argmaxENS_4ExprERKNS_4FuncE'/>
+<use f='halide/src/InlineReductions.cpp' l='252' c='_ZN6Halide6argmaxERKNS_4RDomENS_4ExprERKNSt7__cxx1112basic_stringIcSt11char_traitsIcESaIcEEE'/>
+<use f='halide/src/InlineReductions.cpp' l='256' c='_ZN6Halide6argmaxERKNS_4RDomENS_4ExprERKNS_4FuncE'/>
+<use f='halide/src/InlineReductions.cpp' l='284' c='_ZN6Halide6argminENS_4ExprERKNSt7__cxx1112basic_stringIcSt11char_traitsIcESaIcEEE'/>
+<use f='halide/src/InlineReductions.cpp' l='288' c='_ZN6Halide6argminENS_4ExprERKNS_4FuncE'/>
+<use f='halide/src/InlineReductions.cpp' l='291' c='_ZN6Halide6argminERKNS_4RDomENS_4ExprERKNSt7__cxx1112basic_stringIcSt11char_traitsIcESaIcEEE'/>
+<use f='halide/src/InlineReductions.cpp' l='295' c='_ZN6Halide6argminERKNS_4RDomENS_4ExprERKNS_4FuncE'/>
+<size>200</size>
+<use f='halide/src/RDom.cpp' l='253' c='_ZN6HalidelsERSoRKNS_4RDomE'/>
+<size>200</size>
+<fun r='_ZN6Halide4RDom9init_varsERKNSt7__cxx1112basic_stringIcSt11char_traitsIcESaIcEEE'/>
+<fun r='_ZN6Halide4RDomC1ERKNS_8Internal15ReductionDomainE'/>
+<fun r='_ZN6Halide4RDom22initialize_from_regionERKSt6vectorINS_5RangeESaIS2_EENSt7__cxx1112basic_stringIcSt11char_traitsIcESaIcEEE'/>
+<fun r='_ZN6Halide4RDomC1ERKNS_6BufferIvEE'/>
+<fun r='_ZN6Halide4RDomC1ERKNS_16OutputImageParamE'/>
+<fun r='_ZNK6Halide4RDom10dimensionsEv'/>
+<fun r='_ZNK6Halide4RDomixEi'/>
+<fun r='_ZNK6Halide4RDomcvNS_4ExprEEv'/>
+<fun r='_ZNK6Halide4RDomcvNS_4RVarEEv'/>
+<fun r='_ZN6Halide4RDom5whereENS_4ExprE'/>
+<use f='halide/src/autoschedulers/adams2019/cost_model_generator.cpp' l='208' c='_ZN9CostModel8generateEv'/>
+<use f='halide/src/autoschedulers/adams2019/cost_model_generator.cpp' l='217' c='_ZN9CostModel8generateEv'/>
+<use f='halide/src/autoschedulers/adams2019/cost_model_generator.cpp' l='227' c='_ZN9CostModel8generateEv'/>
+<use f='halide/src/autoschedulers/adams2019/cost_model_generator.cpp' l='233' c='_ZN9CostModel8generateEv'/>
+<use f='halide/src/autoschedulers/adams2019/cost_model_generator.cpp' l='401' c='_ZN9CostModel8generateEv'/>
+<use f='halide/src/autoschedulers/adams2019/cost_model_generator.cpp' l='413' c='_ZN9CostModel8generateEv'/>
+<use f='halide/src/autoschedulers/adams2019/cost_model_generator.cpp' l='423' c='_ZN9CostModel8generateEv'/>
+<size>200</size>
+<use f='halide/src/autoschedulers/adams2019/test.cpp' l='283' c='main'/>
+<use f='halide/src/autoschedulers/adams2019/test.cpp' l='318' c='main'/>
+<use f='halide/src/autoschedulers/adams2019/test.cpp' l='386' c='main'/>
+<use f='halide/src/autoschedulers/adams2019/test.cpp' l='420' c='main'/>
+<use f='halide/src/autoschedulers/adams2019/test.cpp' l='491' c='main'/>
+<use f='halide/src/autoschedulers/adams2019/test.cpp' l='518' c='main'/>
+<use f='halide/src/autoschedulers/adams2019/test.cpp' l='549' c='main'/>
+<use f='halide/src/autoschedulers/adams2019/test.cpp' l='728' c='main'/>
+<use f='halide/src/autoschedulers/adams2019/test.cpp' l='755' c='main'/>
+<use f='halide/src/autoschedulers/adams2019/test.cpp' l='832' c='main'/>
+<use f='halide/src/autoschedulers/adams2019/test.cpp' l='862' c='main'/>
+<size>200</size>
+<use f='halide/src/autoschedulers/adams2019/test_function_dag.cpp' l='118' c='_Z11test_matmulRKN6Halide13MachineParamsERKNS_6TargetE'/>
+<size>200</size>
+<use f='halide/src/autoschedulers/li2018/test.cpp' l='58' c='main'/>
+<use f='halide/src/autoschedulers/li2018/test.cpp' l='73' c='main'/>
+<use f='halide/src/autoschedulers/li2018/test.cpp' l='89' c='main'/>
+<use f='halide/src/autoschedulers/li2018/test.cpp' l='105' c='main'/>
+<use f='halide/src/autoschedulers/li2018/test.cpp' l='121' c='main'/>
+<size>200</size>
+<use f='halide/tutorial/lesson_09_update_definitions.cpp' l='152' c='main'/>
+<use f='halide/tutorial/lesson_09_update_definitions.cpp' l='201' c='main'/>
+<use f='halide/tutorial/lesson_09_update_definitions.cpp' l='597' c='main'/>
+<use f='halide/tutorial/lesson_09_update_definitions.cpp' l='650' c='main'/>
+<use f='halide/tutorial/lesson_09_update_definitions.cpp' l='709' c='main'/>
+<use f='halide/tutorial/lesson_09_update_definitions.cpp' l='766' c='main'/>
+<size>200</size>
+<use f='halide/tutorial/lesson_13_tuples.cpp' l='160' c='main'/>
+<use f='halide/tutorial/lesson_13_tuples.cpp' l='262' c='main'/>
+<size>200</size>
+<use f='halide/tutorial/lesson_17_predicated_rdom.cpp' l='45' c='main'/>
+<use f='halide/tutorial/lesson_17_predicated_rdom.cpp' l='106' c='main'/>
+<use f='halide/tutorial/lesson_17_predicated_rdom.cpp' l='163' c='main'/>
+<use f='halide/tutorial/lesson_17_predicated_rdom.cpp' l='171' c='main'/>
+<size>200</size>
+<use f='halide/tutorial/lesson_18_parallel_associative_reductions.cpp' l='45' c='main'/>
+<use f='halide/tutorial/lesson_18_parallel_associative_reductions.cpp' l='77' c='main'/>
+<use f='halide/tutorial/lesson_18_parallel_associative_reductions.cpp' l='84' c='main'/>
+<use f='halide/tutorial/lesson_18_parallel_associative_reductions.cpp' l='119' c='main'/>
+<use f='halide/tutorial/lesson_18_parallel_associative_reductions.cpp' l='204' c='main'/>
+<use f='halide/tutorial/lesson_18_parallel_associative_reductions.cpp' l='272' c='main'/>
+<size>200</size>
+<use f='halide/tutorial/lesson_19_wrapper_funcs.cpp' l='346' c='main'/>
+<size>200</size>

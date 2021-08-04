@@ -1,0 +1,199 @@
+<!doctype html>
+<html>
+<head>
+<meta name="viewport" content="width=device-width, initial-scale=1.0"><title>acquire_release_aottest.cpp source code [halide/test/generator/acquire_release_aottest.cpp] - Woboq Code Browser</title>
+<meta name="woboq:interestingDefinitions" content="main "/>
+<link rel="stylesheet" href="../../.././data/qtcreator.css" title="QtCreator"/>
+<link rel="alternate stylesheet" href="../../.././data/kdevelop.css" title="KDevelop"/>
+<script type="text/javascript" src="../../.././data/jquery/jquery.min.js"></script>
+<script type="text/javascript" src="../../.././data/jquery/jquery-ui.min.js"></script>
+<script>var file = 'halide/test/generator/acquire_release_aottest.cpp'; var root_path = '../../..'; var data_path = '../../.././data'; var ecma_script_api_version = 2;</script>
+<script src='../../.././data/codebrowser.js'></script>
+</head>
+<body><div id='header'><h1 id='breadcrumb'><span>Browse the source code of </span><a href='../..'>halide</a>/<a href='..'>test</a>/<a href='./'>generator</a>/<a href='acquire_release_aottest.cpp.html'>acquire_release_aottest.cpp</a></h1></div>
+<hr/><div id='content'><table class="code">
+<tr><th id="1">1</th><td><u>#include <a href="../../../include/stdio.h.html">&lt;stdio.h&gt;</a></u></td></tr>
+<tr><th id="2">2</th><td></td></tr>
+<tr><th id="3">3</th><td><u>#<span data-ppcond="3">ifdef</span> <span class="macro" data-ref="_M/_WIN32">_WIN32</span></u></td></tr>
+<tr><th id="4">4</th><td><em>int</em> main(<em>int</em> argc, <em>char</em> **argv) {</td></tr>
+<tr><th id="5">5</th><td>    printf(<q>"[SKIP] Test requires weak linkage, which is not available on Windows.\n"</q>);</td></tr>
+<tr><th id="6">6</th><td>    <b>return</b> <var>0</var>;</td></tr>
+<tr><th id="7">7</th><td>}</td></tr>
+<tr><th id="8">8</th><td><u>#<span data-ppcond="3">else</span></u></td></tr>
+<tr><th id="9">9</th><td></td></tr>
+<tr><th id="10">10</th><td><u>#include <a href="../../build/include/HalideBuffer.h.html">"HalideBuffer.h"</a></u></td></tr>
+<tr><th id="11">11</th><td><u>#include <a href="../../build/include/HalideRuntime.h.html">"HalideRuntime.h"</a></u></td></tr>
+<tr><th id="12">12</th><td><u>#include <a href="../../../include/assert.h.html">&lt;assert.h&gt;</a></u></td></tr>
+<tr><th id="13">13</th><td><u>#include &lt;math.h&gt;</u></td></tr>
+<tr><th id="14">14</th><td><u>#include <a href="../../../include/string.h.html">&lt;string.h&gt;</a></u></td></tr>
+<tr><th id="15">15</th><td></td></tr>
+<tr><th id="16">16</th><td><u>#include <a href="../../build/test/generator/acquire_release.h.html">"acquire_release.h"</a></u></td></tr>
+<tr><th id="17">17</th><td><u>#include <a href="../common/gpu_context.h.html">"gpu_context.h"</a></u></td></tr>
+<tr><th id="18">18</th><td></td></tr>
+<tr><th id="19">19</th><td><b>using</b> <b>namespace</b> <span class="namespace">Halide::Runtime</span>;</td></tr>
+<tr><th id="20">20</th><td></td></tr>
+<tr><th id="21">21</th><td><em>const</em> <em>int</em> <dfn class="tu decl def" id="W" title='W' data-type='const int' data-ref="W" data-ref-filename="W">W</dfn> = <var>256</var>, <dfn class="tu decl def" id="H" title='H' data-type='const int' data-ref="H" data-ref-filename="H">H</dfn> = <var>256</var>;</td></tr>
+<tr><th id="22">22</th><td></td></tr>
+<tr><th id="23">23</th><td><u>#<span data-ppcond="23">if</span> defined(<span class="macro" data-ref="_M/TEST_OPENCL">TEST_OPENCL</span>)</u></td></tr>
+<tr><th id="24">24</th><td></td></tr>
+<tr><th id="25">25</th><td><i>// Just use a global context and queue, created and destroyed by main.</i></td></tr>
+<tr><th id="26">26</th><td>cl_context cl_ctx = <b>nullptr</b>;</td></tr>
+<tr><th id="27">27</th><td>cl_command_queue cl_q = <b>nullptr</b>;</td></tr>
+<tr><th id="28">28</th><td></td></tr>
+<tr><th id="29">29</th><td><i>// Create the global context. This is just a helper function not called by Halide.</i></td></tr>
+<tr><th id="30">30</th><td><em>bool</em> init_context() {</td></tr>
+<tr><th id="31">31</th><td>    <b>return</b> create_opencl_context(cl_ctx, cl_q);</td></tr>
+<tr><th id="32">32</th><td>}</td></tr>
+<tr><th id="33">33</th><td></td></tr>
+<tr><th id="34">34</th><td><em>void</em> destroy_context() {</td></tr>
+<tr><th id="35">35</th><td>    destroy_opencl_context(cl_ctx, cl_q);</td></tr>
+<tr><th id="36">36</th><td>    cl_q = <b>nullptr</b>;</td></tr>
+<tr><th id="37">37</th><td>    cl_ctx = <b>nullptr</b>;</td></tr>
+<tr><th id="38">38</th><td>}</td></tr>
+<tr><th id="39">39</th><td></td></tr>
+<tr><th id="40">40</th><td><i>// These functions replace the acquire/release implementation in src/runtime/opencl.cpp.</i></td></tr>
+<tr><th id="41">41</th><td><i>// Since we don't parallelize access to the GPU in the schedule, we don't need synchronization</i></td></tr>
+<tr><th id="42">42</th><td><i>// in our implementation of these functions.</i></td></tr>
+<tr><th id="43">43</th><td><b>extern</b> <q>"C"</q> <em>int</em> halide_acquire_cl_context(<em>void</em> *user_context, cl_context *ctx, cl_command_queue *q) {</td></tr>
+<tr><th id="44">44</th><td>    printf(<q>"Acquired CL context %p\n"</q>, cl_ctx);</td></tr>
+<tr><th id="45">45</th><td>    *ctx = cl_ctx;</td></tr>
+<tr><th id="46">46</th><td>    *q = cl_q;</td></tr>
+<tr><th id="47">47</th><td>    <b>return</b> <var>0</var>;</td></tr>
+<tr><th id="48">48</th><td>}</td></tr>
+<tr><th id="49">49</th><td></td></tr>
+<tr><th id="50">50</th><td><b>extern</b> <q>"C"</q> <em>int</em> halide_release_cl_context(<em>void</em> *user_context) {</td></tr>
+<tr><th id="51">51</th><td>    printf(<q>"Releasing CL context %p\n"</q>, cl_ctx);</td></tr>
+<tr><th id="52">52</th><td>    <b>return</b> <var>0</var>;</td></tr>
+<tr><th id="53">53</th><td>}</td></tr>
+<tr><th id="54">54</th><td><u>#<span data-ppcond="23">elif</span> defined(<span class="macro" data-ref="_M/TEST_CUDA">TEST_CUDA</span>)</u></td></tr>
+<tr><th id="55">55</th><td>CUcontext cuda_ctx = <b>nullptr</b>;</td></tr>
+<tr><th id="56">56</th><td></td></tr>
+<tr><th id="57">57</th><td><em>bool</em> init_context() {</td></tr>
+<tr><th id="58">58</th><td>    <b>return</b> create_cuda_context(cuda_ctx);</td></tr>
+<tr><th id="59">59</th><td>}</td></tr>
+<tr><th id="60">60</th><td></td></tr>
+<tr><th id="61">61</th><td><em>void</em> destroy_context() {</td></tr>
+<tr><th id="62">62</th><td>    destroy_cuda_context(cuda_ctx);</td></tr>
+<tr><th id="63">63</th><td>    cuda_ctx = <b>nullptr</b>;</td></tr>
+<tr><th id="64">64</th><td>}</td></tr>
+<tr><th id="65">65</th><td></td></tr>
+<tr><th id="66">66</th><td><i>// These functions replace the acquire/release implementation in src/runtime/cuda.cpp.</i></td></tr>
+<tr><th id="67">67</th><td><i>// Since we don't parallelize access to the GPU in the schedule, we don't need synchronization</i></td></tr>
+<tr><th id="68">68</th><td><i>// in our implementation of these functions.</i></td></tr>
+<tr><th id="69">69</th><td><b>extern</b> <q>"C"</q> <em>int</em> halide_cuda_acquire_context(<em>void</em> *user_context, CUcontext *ctx, <em>bool</em> create = <b>true</b>) {</td></tr>
+<tr><th id="70">70</th><td>    printf(<q>"Acquired CUDA context %p\n"</q>, cuda_ctx);</td></tr>
+<tr><th id="71">71</th><td>    *ctx = cuda_ctx;</td></tr>
+<tr><th id="72">72</th><td>    <b>return</b> <var>0</var>;</td></tr>
+<tr><th id="73">73</th><td>}</td></tr>
+<tr><th id="74">74</th><td></td></tr>
+<tr><th id="75">75</th><td><b>extern</b> <q>"C"</q> <em>int</em> halide_cuda_release_context(<em>void</em> *user_context) {</td></tr>
+<tr><th id="76">76</th><td>    printf(<q>"Releasing CUDA context %p\n"</q>, cuda_ctx);</td></tr>
+<tr><th id="77">77</th><td>    <b>return</b> <var>0</var>;</td></tr>
+<tr><th id="78">78</th><td>}</td></tr>
+<tr><th id="79">79</th><td><u>#<span data-ppcond="23">elif</span> defined(<span class="macro" data-ref="_M/TEST_METAL">TEST_METAL</span>) &amp;&amp; defined(<span class="macro" data-ref="_M/__OBJC__">__OBJC__</span>)</u></td></tr>
+<tr><th id="80">80</th><td></td></tr>
+<tr><th id="81">81</th><td><b>struct</b> gpu_context {</td></tr>
+<tr><th id="82">82</th><td>    id&lt;MTLDevice&gt; device;</td></tr>
+<tr><th id="83">83</th><td>    id&lt;MTLCommandQueue&gt; queue;</td></tr>
+<tr><th id="84">84</th><td>} metal_context;</td></tr>
+<tr><th id="85">85</th><td></td></tr>
+<tr><th id="86">86</th><td><em>bool</em> init_context() {</td></tr>
+<tr><th id="87">87</th><td>    <b>return</b> create_metal_context(metal_context.device, metal_context.queue);</td></tr>
+<tr><th id="88">88</th><td>}</td></tr>
+<tr><th id="89">89</th><td></td></tr>
+<tr><th id="90">90</th><td><em>void</em> destroy_context() {</td></tr>
+<tr><th id="91">91</th><td>    destroy_metal_context(metal_context.device, metal_context.queue);</td></tr>
+<tr><th id="92">92</th><td>    metal_context.device = <b>nullptr</b>;</td></tr>
+<tr><th id="93">93</th><td>    metal_context.queue = <b>nullptr</b>;</td></tr>
+<tr><th id="94">94</th><td>}</td></tr>
+<tr><th id="95">95</th><td></td></tr>
+<tr><th id="96">96</th><td><em>int</em> halide_metal_acquire_context(<em>void</em> *user_context, id&lt;MTLDevice&gt; *device_ret,</td></tr>
+<tr><th id="97">97</th><td>                                 id&lt;MTLCommandQueue&gt; *queue_ret, <em>bool</em> create) {</td></tr>
+<tr><th id="98">98</th><td>    *device_ret = metal_context.device;</td></tr>
+<tr><th id="99">99</th><td>    *queue_ret = metal_context.queue;</td></tr>
+<tr><th id="100">100</th><td></td></tr>
+<tr><th id="101">101</th><td>    <b>return</b> <var>0</var>;</td></tr>
+<tr><th id="102">102</th><td>}</td></tr>
+<tr><th id="103">103</th><td></td></tr>
+<tr><th id="104">104</th><td><em>int</em> halide_metal_release_context(<em>void</em> *user_context) {</td></tr>
+<tr><th id="105">105</th><td>    <b>return</b> <var>0</var>;</td></tr>
+<tr><th id="106">106</th><td>}</td></tr>
+<tr><th id="107">107</th><td><u>#<span data-ppcond="23">else</span></u></td></tr>
+<tr><th id="108">108</th><td><i>// Just use the default implementation of acquire/release.</i></td></tr>
+<tr><th id="109">109</th><td><em>bool</em> <dfn class="decl def fn" id="_Z12init_contextv" title='init_context' data-ref="_Z12init_contextv" data-ref-filename="_Z12init_contextv">init_context</dfn>() {</td></tr>
+<tr><th id="110">110</th><td>    <a class="ref fn" href="../../../include/stdio.h.html#printf" title='printf' data-ref="printf" data-ref-filename="printf">printf</a>(<q>"Using default implementation of acquire/release\n"</q>);</td></tr>
+<tr><th id="111">111</th><td>    <b>return</b> <b>true</b>;</td></tr>
+<tr><th id="112">112</th><td>}</td></tr>
+<tr><th id="113">113</th><td><em>void</em> <dfn class="decl def fn" id="_Z15destroy_contextv" title='destroy_context' data-ref="_Z15destroy_contextv" data-ref-filename="_Z15destroy_contextv">destroy_context</dfn>() {</td></tr>
+<tr><th id="114">114</th><td>}</td></tr>
+<tr><th id="115">115</th><td><u>#<span data-ppcond="23">endif</span></u></td></tr>
+<tr><th id="116">116</th><td></td></tr>
+<tr><th id="117">117</th><td><em>bool</em> <dfn class="decl def fn" id="_Z8run_testv" title='run_test' data-ref="_Z8run_testv" data-ref-filename="_Z8run_testv">run_test</dfn>() {</td></tr>
+<tr><th id="118">118</th><td>    <i>// Initialize the runtime specific GPU context.</i></td></tr>
+<tr><th id="119">119</th><td>    <b>if</b> (!<a class="ref fn" href="#_Z12init_contextv" title='init_context' data-ref="_Z12init_contextv" data-ref-filename="_Z12init_contextv">init_context</a>()) {</td></tr>
+<tr><th id="120">120</th><td>        <b>return</b> <b>false</b>;</td></tr>
+<tr><th id="121">121</th><td>    }</td></tr>
+<tr><th id="122">122</th><td></td></tr>
+<tr><th id="123">123</th><td>    <i>// Everything else is a normal Halide program. The GPU runtime will call</i></td></tr>
+<tr><th id="124">124</th><td><i>    // the above acquire/release functions to get the context instead of using</i></td></tr>
+<tr><th id="125">125</th><td><i>    // its own internal context.</i></td></tr>
+<tr><th id="126">126</th><td>    <a class="type" href="../../build/include/HalideBuffer.h.html#Halide::Runtime::Buffer" title='Halide::Runtime::Buffer' data-ref="Halide::Runtime::Buffer" data-ref-filename="Halide..Runtime..Buffer">Buffer</a>&lt;<em>float</em>&gt; <dfn class="local col4 decl" id="4input" title='input' data-type='Buffer&lt;float&gt;' data-ref="4input" data-ref-filename="4input">input</dfn><a class="ref fn" href="../../build/include/HalideBuffer.h.html#_ZN6Halide7Runtime6BufferC1EiiDpTL0__" title='Halide::Runtime::Buffer::Buffer&lt;T, D&gt;' data-ref="_ZN6Halide7Runtime6BufferC1EiiDpTL0__" data-ref-filename="_ZN6Halide7Runtime6BufferC1EiiDpTL0__">(</a><a class="tu ref" href="#W" title='W' data-use='r' data-ref="W" data-ref-filename="W">W</a>, <a class="tu ref" href="#H" title='H' data-use='r' data-ref="H" data-ref-filename="H">H</a>);</td></tr>
+<tr><th id="127">127</th><td>    <b>for</b> (<em>int</em> <dfn class="local col5 decl" id="5y" title='y' data-type='int' data-ref="5y" data-ref-filename="5y">y</dfn> = <var>0</var>; <a class="local col5 ref" href="#5y" title='y' data-ref="5y" data-ref-filename="5y">y</a> &lt; <a class="local col4 ref" href="#4input" title='input' data-ref="4input" data-ref-filename="4input">input</a>.<a class="ref fn" href="../../build/include/HalideBuffer.h.html#_ZNK6Halide7Runtime6Buffer6heightEv" title='Halide::Runtime::Buffer::height' data-ref="_ZNK6Halide7Runtime6Buffer6heightEv" data-ref-filename="_ZNK6Halide7Runtime6Buffer6heightEv">height</a>(); <a class="local col5 ref" href="#5y" title='y' data-ref="5y" data-ref-filename="5y">y</a>++) {</td></tr>
+<tr><th id="128">128</th><td>        <b>for</b> (<em>int</em> <dfn class="local col6 decl" id="6x" title='x' data-type='int' data-ref="6x" data-ref-filename="6x">x</dfn> = <var>0</var>; <a class="local col6 ref" href="#6x" title='x' data-ref="6x" data-ref-filename="6x">x</a> &lt; <a class="local col4 ref" href="#4input" title='input' data-ref="4input" data-ref-filename="4input">input</a>.<a class="ref fn" href="../../build/include/HalideBuffer.h.html#_ZNK6Halide7Runtime6Buffer5widthEv" title='Halide::Runtime::Buffer::width' data-ref="_ZNK6Halide7Runtime6Buffer5widthEv" data-ref-filename="_ZNK6Halide7Runtime6Buffer5widthEv">width</a>(); <a class="local col6 ref" href="#6x" title='x' data-ref="6x" data-ref-filename="6x">x</a>++) {</td></tr>
+<tr><th id="129">129</th><td>            <a class="local col4 ref" href="#4input" title='input' data-ref="4input" data-ref-filename="4input">input</a><a class="ref fn" href="../../build/include/HalideBuffer.h.html#_ZN6Halide7Runtime6BufferclEiDpTL0__" title='Halide::Runtime::Buffer::operator()' data-ref="_ZN6Halide7Runtime6BufferclEiDpTL0__" data-ref-filename="_ZN6Halide7Runtime6BufferclEiDpTL0__">(<a class="local col6 ref" href="#6x" title='x' data-ref="6x" data-ref-filename="6x">x</a>, <a class="local col5 ref" href="#5y" title='y' data-ref="5y" data-ref-filename="5y">y</a>)</a> = (<em>float</em>)(<a class="local col6 ref" href="#6x" title='x' data-ref="6x" data-ref-filename="6x">x</a> * <a class="local col5 ref" href="#5y" title='y' data-ref="5y" data-ref-filename="5y">y</a>);</td></tr>
+<tr><th id="130">130</th><td>        }</td></tr>
+<tr><th id="131">131</th><td>    }</td></tr>
+<tr><th id="132">132</th><td></td></tr>
+<tr><th id="133">133</th><td>    <a class="local col4 ref" href="#4input" title='input' data-ref="4input" data-ref-filename="4input">input</a>.<a class="ref fn" href="../../build/include/HalideBuffer.h.html#_ZN6Halide7Runtime6Buffer14set_host_dirtyEb" title='Halide::Runtime::Buffer::set_host_dirty' data-ref="_ZN6Halide7Runtime6Buffer14set_host_dirtyEb" data-ref-filename="_ZN6Halide7Runtime6Buffer14set_host_dirtyEb">set_host_dirty</a>(<b>true</b>);</td></tr>
+<tr><th id="134">134</th><td></td></tr>
+<tr><th id="135">135</th><td>    <a class="type" href="../../build/include/HalideBuffer.h.html#Halide::Runtime::Buffer" title='Halide::Runtime::Buffer' data-ref="Halide::Runtime::Buffer" data-ref-filename="Halide..Runtime..Buffer">Buffer</a>&lt;<em>float</em>&gt; <dfn class="local col7 decl" id="7output" title='output' data-type='Buffer&lt;float&gt;' data-ref="7output" data-ref-filename="7output">output</dfn><a class="ref fn" href="../../build/include/HalideBuffer.h.html#_ZN6Halide7Runtime6BufferC1EiiDpTL0__" title='Halide::Runtime::Buffer::Buffer&lt;T, D&gt;' data-ref="_ZN6Halide7Runtime6BufferC1EiiDpTL0__" data-ref-filename="_ZN6Halide7Runtime6BufferC1EiiDpTL0__">(</a><a class="tu ref" href="#W" title='W' data-use='r' data-ref="W" data-ref-filename="W">W</a>, <a class="tu ref" href="#H" title='H' data-use='r' data-ref="H" data-ref-filename="H">H</a>);</td></tr>
+<tr><th id="136">136</th><td></td></tr>
+<tr><th id="137">137</th><td>    <a class="ref fn" href="../../build/test/generator/acquire_release.h.html#acquire_release" title='acquire_release' data-ref="acquire_release" data-ref-filename="acquire_release">acquire_release</a>(<a class="ref fn fake" href="../../build/include/HalideBuffer.h.html#_ZN6Halide7Runtime6BuffercvP15halide_buffer_tEv" title='Halide::Runtime::Buffer::operator halide_buffer_t *' data-ref="_ZN6Halide7Runtime6BuffercvP15halide_buffer_tEv" data-ref-filename="_ZN6Halide7Runtime6BuffercvP15halide_buffer_tEv"></a><a class="local col4 ref" href="#4input" title='input' data-ref="4input" data-ref-filename="4input">input</a>, <a class="ref fn fake" href="../../build/include/HalideBuffer.h.html#_ZN6Halide7Runtime6BuffercvP15halide_buffer_tEv" title='Halide::Runtime::Buffer::operator halide_buffer_t *' data-ref="_ZN6Halide7Runtime6BuffercvP15halide_buffer_tEv" data-ref-filename="_ZN6Halide7Runtime6BuffercvP15halide_buffer_tEv"></a><a class="local col7 ref" href="#7output" title='output' data-ref="7output" data-ref-filename="7output">output</a>);</td></tr>
+<tr><th id="138">138</th><td></td></tr>
+<tr><th id="139">139</th><td>    <a class="local col7 ref" href="#7output" title='output' data-ref="7output" data-ref-filename="7output">output</a>.<a class="ref fn" href="../../build/include/HalideBuffer.h.html#_ZN6Halide7Runtime6Buffer12copy_to_hostEPv" title='Halide::Runtime::Buffer::copy_to_host' data-ref="_ZN6Halide7Runtime6Buffer12copy_to_hostEPv" data-ref-filename="_ZN6Halide7Runtime6Buffer12copy_to_hostEPv">copy_to_host</a>();</td></tr>
+<tr><th id="140">140</th><td></td></tr>
+<tr><th id="141">141</th><td>    <b>for</b> (<em>int</em> <dfn class="local col8 decl" id="8y" title='y' data-type='int' data-ref="8y" data-ref-filename="8y">y</dfn> = <var>0</var>; <a class="local col8 ref" href="#8y" title='y' data-ref="8y" data-ref-filename="8y">y</a> &lt; <a class="local col7 ref" href="#7output" title='output' data-ref="7output" data-ref-filename="7output">output</a>.<a class="ref fn" href="../../build/include/HalideBuffer.h.html#_ZNK6Halide7Runtime6Buffer6heightEv" title='Halide::Runtime::Buffer::height' data-ref="_ZNK6Halide7Runtime6Buffer6heightEv" data-ref-filename="_ZNK6Halide7Runtime6Buffer6heightEv">height</a>(); <a class="local col8 ref" href="#8y" title='y' data-ref="8y" data-ref-filename="8y">y</a>++) {</td></tr>
+<tr><th id="142">142</th><td>        <b>for</b> (<em>int</em> <dfn class="local col9 decl" id="9x" title='x' data-type='int' data-ref="9x" data-ref-filename="9x">x</dfn> = <var>0</var>; <a class="local col9 ref" href="#9x" title='x' data-ref="9x" data-ref-filename="9x">x</a> &lt; <a class="local col7 ref" href="#7output" title='output' data-ref="7output" data-ref-filename="7output">output</a>.<a class="ref fn" href="../../build/include/HalideBuffer.h.html#_ZNK6Halide7Runtime6Buffer5widthEv" title='Halide::Runtime::Buffer::width' data-ref="_ZNK6Halide7Runtime6Buffer5widthEv" data-ref-filename="_ZNK6Halide7Runtime6Buffer5widthEv">width</a>(); <a class="local col9 ref" href="#9x" title='x' data-ref="9x" data-ref-filename="9x">x</a>++) {</td></tr>
+<tr><th id="143">143</th><td>            <b>if</b> (<a class="local col4 ref" href="#4input" title='input' data-ref="4input" data-ref-filename="4input">input</a><a class="ref fn" href="../../build/include/HalideBuffer.h.html#_ZN6Halide7Runtime6BufferclEiDpTL0__" title='Halide::Runtime::Buffer::operator()' data-ref="_ZN6Halide7Runtime6BufferclEiDpTL0__" data-ref-filename="_ZN6Halide7Runtime6BufferclEiDpTL0__">(<a class="local col9 ref" href="#9x" title='x' data-ref="9x" data-ref-filename="9x">x</a>, <a class="local col8 ref" href="#8y" title='y' data-ref="8y" data-ref-filename="8y">y</a>)</a> * <var>2.0f</var> + <var>1.0f</var> != <a class="local col7 ref" href="#7output" title='output' data-ref="7output" data-ref-filename="7output">output</a><a class="ref fn" href="../../build/include/HalideBuffer.h.html#_ZN6Halide7Runtime6BufferclEiDpTL0__" title='Halide::Runtime::Buffer::operator()' data-ref="_ZN6Halide7Runtime6BufferclEiDpTL0__" data-ref-filename="_ZN6Halide7Runtime6BufferclEiDpTL0__">(<a class="local col9 ref" href="#9x" title='x' data-ref="9x" data-ref-filename="9x">x</a>, <a class="local col8 ref" href="#8y" title='y' data-ref="8y" data-ref-filename="8y">y</a>)</a>) {</td></tr>
+<tr><th id="144">144</th><td>                <a class="ref fn" href="../../../include/stdio.h.html#printf" title='printf' data-ref="printf" data-ref-filename="printf">printf</a>(<q>"Error at (%d, %d): %f != %f\n"</q>, <a class="local col9 ref" href="#9x" title='x' data-ref="9x" data-ref-filename="9x">x</a>, <a class="local col8 ref" href="#8y" title='y' data-ref="8y" data-ref-filename="8y">y</a>, <a class="local col4 ref" href="#4input" title='input' data-ref="4input" data-ref-filename="4input">input</a><a class="ref fn" href="../../build/include/HalideBuffer.h.html#_ZN6Halide7Runtime6BufferclEiDpTL0__" title='Halide::Runtime::Buffer::operator()' data-ref="_ZN6Halide7Runtime6BufferclEiDpTL0__" data-ref-filename="_ZN6Halide7Runtime6BufferclEiDpTL0__">(<a class="local col9 ref" href="#9x" title='x' data-ref="9x" data-ref-filename="9x">x</a>, <a class="local col8 ref" href="#8y" title='y' data-ref="8y" data-ref-filename="8y">y</a>)</a> * <var>2.0f</var> + <var>1.0f</var>,</td></tr>
+<tr><th id="145">145</th><td>                       <a class="local col7 ref" href="#7output" title='output' data-ref="7output" data-ref-filename="7output">output</a><a class="ref fn" href="../../build/include/HalideBuffer.h.html#_ZN6Halide7Runtime6BufferclEiDpTL0__" title='Halide::Runtime::Buffer::operator()' data-ref="_ZN6Halide7Runtime6BufferclEiDpTL0__" data-ref-filename="_ZN6Halide7Runtime6BufferclEiDpTL0__">(<a class="local col9 ref" href="#9x" title='x' data-ref="9x" data-ref-filename="9x">x</a>, <a class="local col8 ref" href="#8y" title='y' data-ref="8y" data-ref-filename="8y">y</a>)</a>);</td></tr>
+<tr><th id="146">146</th><td>                <b>return</b> <b>false</b>;</td></tr>
+<tr><th id="147">147</th><td>            }</td></tr>
+<tr><th id="148">148</th><td>        }</td></tr>
+<tr><th id="149">149</th><td>    }</td></tr>
+<tr><th id="150">150</th><td></td></tr>
+<tr><th id="151">151</th><td>    <em>const</em> <a class="type" href="../../build/include/HalideRuntime.h.html#halide_device_interface_t" title='halide_device_interface_t' data-ref="halide_device_interface_t" data-ref-filename="halide_device_interface_t">halide_device_interface_t</a> *<dfn class="local col0 decl" id="10interface" title='interface' data-type='const halide_device_interface_t *' data-ref="10interface" data-ref-filename="10interface">interface</dfn> = <a class="local col7 ref" href="#7output" title='output' data-ref="7output" data-ref-filename="7output">output</a>.<a class="ref fn" href="../../build/include/HalideBuffer.h.html#_ZN6Halide7Runtime6Buffer10raw_bufferEv" title='Halide::Runtime::Buffer::raw_buffer' data-ref="_ZN6Halide7Runtime6Buffer10raw_bufferEv" data-ref-filename="_ZN6Halide7Runtime6Buffer10raw_bufferEv">raw_buffer</a>()-&gt;<a class="ref field" href="../../build/include/HalideRuntime.h.html#halide_buffer_t::device_interface" title='halide_buffer_t::device_interface' data-ref="halide_buffer_t::device_interface" data-ref-filename="halide_buffer_t..device_interface">device_interface</a>;</td></tr>
+<tr><th id="152">152</th><td></td></tr>
+<tr><th id="153">153</th><td>    <i>// We need to free our GPU buffers before destroying the context.</i></td></tr>
+<tr><th id="154">154</th><td>    <a class="local col4 ref" href="#4input" title='input' data-ref="4input" data-ref-filename="4input">input</a>.<a class="ref fn" href="../../build/include/HalideBuffer.h.html#_ZN6Halide7Runtime6Buffer11device_freeEPv" title='Halide::Runtime::Buffer::device_free' data-ref="_ZN6Halide7Runtime6Buffer11device_freeEPv" data-ref-filename="_ZN6Halide7Runtime6Buffer11device_freeEPv">device_free</a>();</td></tr>
+<tr><th id="155">155</th><td>    <a class="local col7 ref" href="#7output" title='output' data-ref="7output" data-ref-filename="7output">output</a>.<a class="ref fn" href="../../build/include/HalideBuffer.h.html#_ZN6Halide7Runtime6Buffer11device_freeEPv" title='Halide::Runtime::Buffer::device_free' data-ref="_ZN6Halide7Runtime6Buffer11device_freeEPv" data-ref-filename="_ZN6Halide7Runtime6Buffer11device_freeEPv">device_free</a>();</td></tr>
+<tr><th id="156">156</th><td></td></tr>
+<tr><th id="157">157</th><td>    <b>if</b> (<a class="local col0 ref" href="#10interface" title='interface' data-ref="10interface" data-ref-filename="10interface">interface</a> != <b>nullptr</b>) {</td></tr>
+<tr><th id="158">158</th><td>        <a class="ref fn" href="../../build/include/HalideRuntime.h.html#halide_device_release" title='halide_device_release' data-ref="halide_device_release" data-ref-filename="halide_device_release">halide_device_release</a>(<b>nullptr</b>, <a class="local col0 ref" href="#10interface" title='interface' data-ref="10interface" data-ref-filename="10interface">interface</a>);</td></tr>
+<tr><th id="159">159</th><td></td></tr>
+<tr><th id="160">160</th><td>        <i>// Free the context we created.</i></td></tr>
+<tr><th id="161">161</th><td>        <a class="ref fn" href="#_Z15destroy_contextv" title='destroy_context' data-ref="_Z15destroy_contextv" data-ref-filename="_Z15destroy_contextv">destroy_context</a>();</td></tr>
+<tr><th id="162">162</th><td>    } <b>else</b> {</td></tr>
+<tr><th id="163">163</th><td>        <a class="ref fn" href="../../../include/stdio.h.html#printf" title='printf' data-ref="printf" data-ref-filename="printf">printf</a>(<q>"Device interface is nullptr.\n"</q>);</td></tr>
+<tr><th id="164">164</th><td>    }</td></tr>
+<tr><th id="165">165</th><td></td></tr>
+<tr><th id="166">166</th><td>    <a class="ref fn" href="../../../include/stdio.h.html#printf" title='printf' data-ref="printf" data-ref-filename="printf">printf</a>(<q>"Success!\n"</q>);</td></tr>
+<tr><th id="167">167</th><td>    <b>return</b> <b>true</b>;</td></tr>
+<tr><th id="168">168</th><td>}</td></tr>
+<tr><th id="169">169</th><td></td></tr>
+<tr><th id="170">170</th><td><em>int</em> <dfn class="decl def fn" id="main" title='main' data-ref="main" data-ref-filename="main">main</dfn>(<em>int</em> <dfn class="local col1 decl" id="11argc" title='argc' data-type='int' data-ref="11argc" data-ref-filename="11argc">argc</dfn>, <em>char</em> **<dfn class="local col2 decl" id="12argv" title='argv' data-type='char **' data-ref="12argv" data-ref-filename="12argv">argv</dfn>) {</td></tr>
+<tr><th id="171">171</th><td>    <b>if</b> (!<a class="ref fn" href="#_Z8run_testv" title='run_test' data-ref="_Z8run_testv" data-ref-filename="_Z8run_testv">run_test</a>()) {</td></tr>
+<tr><th id="172">172</th><td>        <b>return</b> -<var>1</var>;</td></tr>
+<tr><th id="173">173</th><td>    }</td></tr>
+<tr><th id="174">174</th><td></td></tr>
+<tr><th id="175">175</th><td>    <b>if</b> (!<a class="ref fn" href="#_Z8run_testv" title='run_test' data-ref="_Z8run_testv" data-ref-filename="_Z8run_testv">run_test</a>()) {</td></tr>
+<tr><th id="176">176</th><td>        <b>return</b> -<var>1</var>;</td></tr>
+<tr><th id="177">177</th><td>    }</td></tr>
+<tr><th id="178">178</th><td></td></tr>
+<tr><th id="179">179</th><td>    <b>return</b> <var>0</var>;</td></tr>
+<tr><th id="180">180</th><td>}</td></tr>
+<tr><th id="181">181</th><td></td></tr>
+<tr><th id="182">182</th><td><u>#<span data-ppcond="3">endif</span></u></td></tr>
+<tr><th id="183">183</th><td></td></tr>
+</table><hr/><p id='footer'>
+Generated on <em>2021-Aug-03</em> from project halide revision <em>v12.0.1</em>

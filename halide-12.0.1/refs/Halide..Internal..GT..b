@@ -1,0 +1,24 @@
+<dec f='halide/build/include/Halide.h' l='12032' type='Halide::Expr'/>
+<offset>320</offset>
+<dec f='halide/src/IR.h' l='140' type='Halide::Expr'/>
+<offset>320</offset>
+<use f='halide/src/Bounds.cpp' l='799' u='r' c='_ZN6Halide8Internal12_GLOBAL__N_16Bounds5visitEPKNS0_2GTE'/>
+<use f='halide/src/Bounds.cpp' l='2517' u='r' c='_ZN6Halide8Internal12_GLOBAL__N_112BoxesTouched5visitEPKNS0_10IfThenElseE'/>
+<use f='halide/src/CodeGen_C.cpp' l='1910' u='r' c='_ZN6Halide8Internal9CodeGen_C5visitEPKNS0_2GTE'/>
+<use f='halide/src/CodeGen_LLVM.cpp' l='1677' u='r' c='_ZN6Halide8Internal12CodeGen_LLVM5visitEPKNS0_2GTE'/>
+<use f='halide/src/CodeGen_LLVM.cpp' l='1682' u='r' c='_ZN6Halide8Internal12CodeGen_LLVM5visitEPKNS0_2GTE'/>
+<use f='halide/src/CodeGen_OpenCL_Dev.cpp' l='719' u='r' c='_ZN6Halide8Internal12_GLOBAL__N_118CodeGen_OpenCL_Dev16CodeGen_OpenCL_C5visitEPKNS0_2GTE'/>
+<use f='halide/src/CodeGen_OpenGLCompute_Dev.cpp' l='314' u='r' c='_ZN6Halide8Internal12_GLOBAL__N_123CodeGen_OpenGLCompute_C5visitEPKNS0_2GTE'/>
+<use f='halide/src/CodeGen_X86.cpp' l='318' u='r' c='_ZN6Halide8Internal12_GLOBAL__N_111CodeGen_X865visitEPKNS0_2GTE'/>
+<use f='halide/src/Derivative.cpp' l='1001' u='r' c='_ZN6Halide8Internal12_GLOBAL__N_126ReverseAccumulationVisitor5visitEPKNS0_2GTE'/>
+<use f='halide/src/Derivative.cpp' l='1001' u='m' c='_ZN6Halide8Internal12_GLOBAL__N_126ReverseAccumulationVisitor5visitEPKNS0_2GTE'/>
+<use f='halide/src/IR.cpp' l='162' u='w' c='_ZN6Halide8Internal2GT4makeENS_4ExprES2_'/>
+<use f='halide/src/IRPrinter.cpp' l='595' u='r' c='_ZN6Halide8Internal9IRPrinter5visitEPKNS0_2GTE'/>
+<use f='halide/src/IRVisitor.cpp' l='85' u='m' c='_ZN6Halide8Internal9IRVisitor5visitEPKNS0_2GTE'/>
+<use f='halide/src/IRVisitor.cpp' l='356' u='r' c='_ZN6Halide8Internal14IRGraphVisitor5visitEPKNS0_2GTE'/>
+<use f='halide/src/Monotonic.cpp' l='393' u='r' c='_ZN6Halide8Internal12_GLOBAL__N_116DerivativeBounds5visitEPKNS0_2GTE'/>
+<use f='halide/src/Simplify_LT.cpp' l='538' u='r' c='_ZN6Halide8Internal8Simplify5visitEPKNS0_2GTEPNS1_8ExprInfoE'/>
+<use f='halide/src/Simplify_LT.cpp' l='539' u='r' c='_ZN6Halide8Internal8Simplify5visitEPKNS0_2GTEPNS1_8ExprInfoE'/>
+<use f='halide/src/Simplify_LT.cpp' l='546' u='r' c='_ZN6Halide8Internal8Simplify5visitEPKNS0_2GTEPNS1_8ExprInfoE'/>
+<use f='halide/src/Solve.cpp' l='956' u='r' c='_ZN6Halide8Internal12_GLOBAL__N_116SolveForInterval5visitEPKNS0_2GTE'/>
+<use f='halide/src/StmtToHtml.cpp' l='268' u='r' c='_ZN6Halide8Internal12_GLOBAL__N_110StmtToHtml5visitEPKNS0_2GTE'/>

@@ -1,0 +1,98 @@
+<!doctype html>
+<html>
+<head>
+<meta name="viewport" content="width=device-width, initial-scale=1.0"><title>lesson_10_aot_compilation_generate.cpp source code [halide/tutorial/lesson_10_aot_compilation_generate.cpp] - Woboq Code Browser</title>
+<meta name="woboq:interestingDefinitions" content="main "/>
+<link rel="stylesheet" href="../.././data/qtcreator.css" title="QtCreator"/>
+<link rel="alternate stylesheet" href="../.././data/kdevelop.css" title="KDevelop"/>
+<script type="text/javascript" src="../.././data/jquery/jquery.min.js"></script>
+<script type="text/javascript" src="../.././data/jquery/jquery-ui.min.js"></script>
+<script>var file = 'halide/tutorial/lesson_10_aot_compilation_generate.cpp'; var root_path = '../..'; var data_path = '../.././data'; var ecma_script_api_version = 2;</script>
+<script src='../.././data/codebrowser.js'></script>
+</head>
+<body><div id='header'><h1 id='breadcrumb'><span>Browse the source code of </span><a href='..'>halide</a>/<a href='./'>tutorial</a>/<a href='lesson_10_aot_compilation_generate.cpp.html'>lesson_10_aot_compilation_generate.cpp</a></h1></div>
+<hr/><div id='content'><table class="code">
+<tr><th id="1">1</th><td><i>// Halide tutorial lesson 10: AOT compilation part 1</i></td></tr>
+<tr><th id="2">2</th><td><i></i></td></tr>
+<tr><th id="3">3</th><td><i>// This lesson demonstrates how to use Halide as an more traditional</i></td></tr>
+<tr><th id="4">4</th><td><i>// ahead-of-time (AOT) compiler.</i></td></tr>
+<tr><th id="5">5</th><td><i></i></td></tr>
+<tr><th id="6">6</th><td><i>// This lesson is split across two files. The first (this one), builds</i></td></tr>
+<tr><th id="7">7</th><td><i>// a Halide pipeline and compiles it to a static library and</i></td></tr>
+<tr><th id="8">8</th><td><i>// header. The second (lesson_10_aot_compilation_run.cpp), uses that</i></td></tr>
+<tr><th id="9">9</th><td><i>// static library to actually run the pipeline. This means that</i></td></tr>
+<tr><th id="10">10</th><td><i>// compiling this code is a multi-step process.</i></td></tr>
+<tr><th id="11">11</th><td><i></i></td></tr>
+<tr><th id="12">12</th><td><i>// On linux, you can compile and run it like so:</i></td></tr>
+<tr><th id="13">13</th><td><i>// g++ lesson_10*generate.cpp -g -std=c++11 -I &lt;path/to/Halide.h&gt; -L &lt;path/to/libHalide.so&gt; -lHalide -lpthread -ldl -o lesson_10_generate</i></td></tr>
+<tr><th id="14">14</th><td><i>// LD_LIBRARY_PATH=&lt;path/to/libHalide.so&gt; ./lesson_10_generate</i></td></tr>
+<tr><th id="15">15</th><td><i>// g++ lesson_10*run.cpp lesson_10_halide.a -std=c++11 -I &lt;path/to/Halide.h&gt; -lpthread -ldl -o lesson_10_run</i></td></tr>
+<tr><th id="16">16</th><td><i>// ./lesson_10_run</i></td></tr>
+<tr><th id="17">17</th><td><i></i></td></tr>
+<tr><th id="18">18</th><td><i>// On os x:</i></td></tr>
+<tr><th id="19">19</th><td><i>// g++ lesson_10*generate.cpp -g -std=c++11 -I &lt;path/to/Halide.h&gt; -L &lt;path/to/libHalide.so&gt; -lHalide -o lesson_10_generate</i></td></tr>
+<tr><th id="20">20</th><td><i>// DYLD_LIBRARY_PATH=&lt;path/to/libHalide.dylib&gt; ./lesson_10_generate</i></td></tr>
+<tr><th id="21">21</th><td><i>// g++ lesson_10*run.cpp lesson_10_halide.a -o lesson_10_run -I &lt;path/to/Halide.h&gt;</i></td></tr>
+<tr><th id="22">22</th><td><i>// ./lesson_10_run</i></td></tr>
+<tr><th id="23">23</th><td><i></i></td></tr>
+<tr><th id="24">24</th><td><i>// The benefits of this approach are that the final program:</i></td></tr>
+<tr><th id="25">25</th><td><i>// - Doesn't do any jit compilation at runtime, so it's fast.</i></td></tr>
+<tr><th id="26">26</th><td><i>// - Doesn't depend on libHalide at all, so it's a small, easy-to-deploy binary.</i></td></tr>
+<tr><th id="27">27</th><td><i></i></td></tr>
+<tr><th id="28">28</th><td><i>// If you have the entire Halide source tree, you can also build it by</i></td></tr>
+<tr><th id="29">29</th><td><i>// running:</i></td></tr>
+<tr><th id="30">30</th><td><i>//    make tutorial_lesson_10_aot_compilation_run</i></td></tr>
+<tr><th id="31">31</th><td><i>// in a shell with the current directory at the top of the halide</i></td></tr>
+<tr><th id="32">32</th><td><i>// source tree.</i></td></tr>
+<tr><th id="33">33</th><td></td></tr>
+<tr><th id="34">34</th><td><u>#include <a href="../build/include/Halide.h.html">"Halide.h"</a></u></td></tr>
+<tr><th id="35">35</th><td><u>#include <a href="../../include/stdio.h.html">&lt;stdio.h&gt;</a></u></td></tr>
+<tr><th id="36">36</th><td><b>using</b> <b>namespace</b> <span class="namespace">Halide</span>;</td></tr>
+<tr><th id="37">37</th><td></td></tr>
+<tr><th id="38">38</th><td><em>int</em> <dfn class="decl def fn" id="main" title='main' data-ref="main" data-ref-filename="main">main</dfn>(<em>int</em> <dfn class="local col1 decl" id="1argc" title='argc' data-type='int' data-ref="1argc" data-ref-filename="1argc">argc</dfn>, <em>char</em> **<dfn class="local col2 decl" id="2argv" title='argv' data-type='char **' data-ref="2argv" data-ref-filename="2argv">argv</dfn>) {</td></tr>
+<tr><th id="39">39</th><td></td></tr>
+<tr><th id="40">40</th><td>    <i>// We'll define a simple one-stage pipeline:</i></td></tr>
+<tr><th id="41">41</th><td>    <a class="type" href="../build/include/Halide.h.html#Halide::Func" title='Halide::Func' data-ref="Halide::Func" data-ref-filename="Halide..Func">Func</a> <a class="ref fn fake" href="../build/include/Halide.h.html#_ZN6Halide4FuncC1Ev" title='Halide::Func::Func' data-ref="_ZN6Halide4FuncC1Ev" data-ref-filename="_ZN6Halide4FuncC1Ev"></a><dfn class="local col3 decl" id="3brighter" title='brighter' data-type='Halide::Func' data-ref="3brighter" data-ref-filename="3brighter">brighter</dfn>;</td></tr>
+<tr><th id="42">42</th><td>    <a class="type" href="../build/include/Halide.h.html#Halide::Var" title='Halide::Var' data-ref="Halide::Var" data-ref-filename="Halide..Var">Var</a> <a class="ref fn fake" href="../build/include/Halide.h.html#_ZN6Halide3VarC1Ev" title='Halide::Var::Var' data-ref="_ZN6Halide3VarC1Ev" data-ref-filename="_ZN6Halide3VarC1Ev"></a><dfn class="local col4 decl" id="4x" title='x' data-type='Halide::Var' data-ref="4x" data-ref-filename="4x">x</dfn>, <a class="ref fn fake" href="../build/include/Halide.h.html#_ZN6Halide3VarC1Ev" title='Halide::Var::Var' data-ref="_ZN6Halide3VarC1Ev" data-ref-filename="_ZN6Halide3VarC1Ev"></a><dfn class="local col5 decl" id="5y" title='y' data-type='Halide::Var' data-ref="5y" data-ref-filename="5y">y</dfn>;</td></tr>
+<tr><th id="43">43</th><td></td></tr>
+<tr><th id="44">44</th><td>    <i>// The pipeline will depend on one scalar parameter.</i></td></tr>
+<tr><th id="45">45</th><td>    <a class="type" href="../build/include/Halide.h.html#Halide::Param" title='Halide::Param' data-ref="Halide::Param" data-ref-filename="Halide..Param">Param</a>&lt;<a class="typedef" href="../../include/bits/stdint-uintn.h.html#uint8_t" title='uint8_t' data-type='__uint8_t' data-ref="uint8_t" data-ref-filename="uint8_t">uint8_t</a>&gt; <a class="ref fn fake" href="../build/include/Halide.h.html#_ZN6Halide5ParamC1Ev" title='Halide::Param::Param&lt;T&gt;' data-ref="_ZN6Halide5ParamC1Ev" data-ref-filename="_ZN6Halide5ParamC1Ev"></a><dfn class="local col6 decl" id="6offset" title='offset' data-type='Param&lt;uint8_t&gt;' data-ref="6offset" data-ref-filename="6offset">offset</dfn>;</td></tr>
+<tr><th id="46">46</th><td></td></tr>
+<tr><th id="47">47</th><td>    <i>// And take one grayscale 8-bit input buffer. The first</i></td></tr>
+<tr><th id="48">48</th><td><i>    // constructor argument gives the type of a pixel, and the second</i></td></tr>
+<tr><th id="49">49</th><td><i>    // specifies the number of dimensions (not the number of</i></td></tr>
+<tr><th id="50">50</th><td><i>    // channels!). For a grayscale image this is two; for a color</i></td></tr>
+<tr><th id="51">51</th><td><i>    // image it's three. Currently, four dimensions is the maximum for</i></td></tr>
+<tr><th id="52">52</th><td><i>    // inputs and outputs.</i></td></tr>
+<tr><th id="53">53</th><td>    <a class="type" href="../build/include/Halide.h.html#Halide::ImageParam" title='Halide::ImageParam' data-ref="Halide::ImageParam" data-ref-filename="Halide..ImageParam">ImageParam</a> <dfn class="local col7 decl" id="7input" title='input' data-type='Halide::ImageParam' data-ref="7input" data-ref-filename="7input">input</dfn><a class="ref fn" href="../build/include/Halide.h.html#_ZN6Halide10ImageParamC1ENS_4TypeEi" title='Halide::ImageParam::ImageParam' data-ref="_ZN6Halide10ImageParamC1ENS_4TypeEi" data-ref-filename="_ZN6Halide10ImageParamC1ENS_4TypeEi">(</a><a class="ref fn" href="../build/include/Halide.h.html#_ZN6Halide7type_ofEv" title='Halide::type_of' data-ref="_ZN6Halide7type_ofEv" data-ref-filename="_ZN6Halide7type_ofEv">type_of</a>&lt;<a class="typedef" href="../../include/bits/stdint-uintn.h.html#uint8_t" title='uint8_t' data-type='__uint8_t' data-ref="uint8_t" data-ref-filename="uint8_t">uint8_t</a>&gt;(), <var>2</var>);</td></tr>
+<tr><th id="54">54</th><td></td></tr>
+<tr><th id="55">55</th><td>    <i>// If we were jit-compiling, these would just be an int and a</i></td></tr>
+<tr><th id="56">56</th><td><i>    // Buffer, but because we want to compile the pipeline once and</i></td></tr>
+<tr><th id="57">57</th><td><i>    // have it work for any value of the parameter, we need to make a</i></td></tr>
+<tr><th id="58">58</th><td><i>    // Param object, which can be used like an Expr, and an ImageParam</i></td></tr>
+<tr><th id="59">59</th><td><i>    // object, which can be used like a Buffer.</i></td></tr>
+<tr><th id="60">60</th><td><i></i></td></tr>
+<tr><th id="61">61</th><td><i>    // Define the Func.</i></td></tr>
+<tr><th id="62">62</th><td>    <a class="local col3 ref" href="#3brighter" title='brighter' data-ref="3brighter" data-ref-filename="3brighter">brighter</a><a class="ref fn" href="../build/include/Halide.h.html#_ZNK6Halide4FuncclEDpOT_" title='Halide::Func::operator()' data-ref="_ZNK6Halide4FuncclEDpOT_" data-ref-filename="_ZNK6Halide4FuncclEDpOT_">(<a class="local col4 ref" href="#4x" title='x' data-ref="4x" data-ref-filename="4x">x</a>, <a class="local col5 ref" href="#5y" title='y' data-ref="5y" data-ref-filename="5y">y</a>)</a> <a class="ref fn" href="../build/include/Halide.h.html#_ZN6Halide7FuncRefaSERKNS_4ExprE" title='Halide::FuncRef::operator=' data-ref="_ZN6Halide7FuncRefaSERKNS_4ExprE" data-ref-filename="_ZN6Halide7FuncRefaSERKNS_4ExprE">=</a> <a class="local col7 ref" href="#7input" title='input' data-ref="7input" data-ref-filename="7input">input</a><a class="ref fn" href="../build/include/Halide.h.html#_ZNK6Halide10ImageParamclEDpOT_" title='Halide::ImageParam::operator()' data-ref="_ZNK6Halide10ImageParamclEDpOT_" data-ref-filename="_ZNK6Halide10ImageParamclEDpOT_">(<a class="local col4 ref" href="#4x" title='x' data-ref="4x" data-ref-filename="4x">x</a>, <a class="local col5 ref" href="#5y" title='y' data-ref="5y" data-ref-filename="5y">y</a>)</a> <a class="ref fn" href="../build/include/Halide.h.html#_ZN6HalideplENS_4ExprES0_" title='Halide::operator+' data-ref="_ZN6HalideplENS_4ExprES0_" data-ref-filename="_ZN6HalideplENS_4ExprES0_">+</a> <a class="ref fn fake" href="../build/include/Halide.h.html#_ZNK6Halide5ParamcvNS_4ExprEEv" title='Halide::Param::operator Expr' data-ref="_ZNK6Halide5ParamcvNS_4ExprEEv" data-ref-filename="_ZNK6Halide5ParamcvNS_4ExprEEv"></a><a class="local col6 ref" href="#6offset" title='offset' data-ref="6offset" data-ref-filename="6offset">offset</a>;</td></tr>
+<tr><th id="63">63</th><td></td></tr>
+<tr><th id="64">64</th><td>    <i>// Schedule it.</i></td></tr>
+<tr><th id="65">65</th><td>    <a class="local col3 ref" href="#3brighter" title='brighter' data-ref="3brighter" data-ref-filename="3brighter">brighter</a>.<a class="ref fn" href="../build/include/Halide.h.html#_ZN6Halide4Func9vectorizeERKNS_9VarOrRVarERKNS_4ExprENS_12TailStrategyE" title='Halide::Func::vectorize' data-ref="_ZN6Halide4Func9vectorizeERKNS_9VarOrRVarERKNS_4ExprENS_12TailStrategyE" data-ref-filename="_ZN6Halide4Func9vectorizeERKNS_9VarOrRVarERKNS_4ExprENS_12TailStrategyE">vectorize</a>(<a class="ref fn fake" href="../build/include/Halide.h.html#_ZN6Halide9VarOrRVarC1ERKNS_3VarE" title='Halide::VarOrRVar::VarOrRVar' data-ref="_ZN6Halide9VarOrRVarC1ERKNS_3VarE" data-ref-filename="_ZN6Halide9VarOrRVarC1ERKNS_3VarE"></a><a class="local col4 ref" href="#4x" title='x' data-ref="4x" data-ref-filename="4x">x</a>, <a class="ref fn fake" href="../build/include/Halide.h.html#_ZN6Halide4ExprC1Ei" title='Halide::Expr::Expr' data-ref="_ZN6Halide4ExprC1Ei" data-ref-filename="_ZN6Halide4ExprC1Ei"></a><var>16</var>).<a class="ref fn" href="../build/include/Halide.h.html#_ZN6Halide4Func8parallelERKNS_9VarOrRVarE" title='Halide::Func::parallel' data-ref="_ZN6Halide4Func8parallelERKNS_9VarOrRVarE" data-ref-filename="_ZN6Halide4Func8parallelERKNS_9VarOrRVarE">parallel</a>(<a class="ref fn fake" href="../build/include/Halide.h.html#_ZN6Halide9VarOrRVarC1ERKNS_3VarE" title='Halide::VarOrRVar::VarOrRVar' data-ref="_ZN6Halide9VarOrRVarC1ERKNS_3VarE" data-ref-filename="_ZN6Halide9VarOrRVarC1ERKNS_3VarE"></a><a class="local col5 ref" href="#5y" title='y' data-ref="5y" data-ref-filename="5y">y</a>);</td></tr>
+<tr><th id="66">66</th><td></td></tr>
+<tr><th id="67">67</th><td>    <i>// This time, instead of calling brighter.realize(...), which</i></td></tr>
+<tr><th id="68">68</th><td><i>    // would compile and run the pipeline immediately, we'll call a</i></td></tr>
+<tr><th id="69">69</th><td><i>    // method that compiles the pipeline to a static library and header.</i></td></tr>
+<tr><th id="70">70</th><td><i>    //</i></td></tr>
+<tr><th id="71">71</th><td><i>    // For AOT-compiled code, we need to explicitly declare the</i></td></tr>
+<tr><th id="72">72</th><td><i>    // arguments to the routine. This routine takes two. Arguments are</i></td></tr>
+<tr><th id="73">73</th><td><i>    // usually Params or ImageParams.</i></td></tr>
+<tr><th id="74">74</th><td>    <a class="local col3 ref" href="#3brighter" title='brighter' data-ref="3brighter" data-ref-filename="3brighter">brighter</a>.<a class="ref fn" href="../build/include/Halide.h.html#_ZN6Halide4Func25compile_to_static_libraryERKNSt7__cxx1112basic_stringIcSt11char_traitsIcESaIcEEERKSt6vectorINS_8ArgumentESaISA_EES8_RKNS_6TargetE" title='Halide::Func::compile_to_static_library' data-ref="_ZN6Halide4Func25compile_to_static_libraryERKNSt7__cxx1112basic_stringIcSt11char_traitsIcESaIcEEERKSt6vectorINS_8ArgumentESaISA_EES8_RKNS_6TargetE" data-ref-filename="_ZN6Halide4Func25compile_to_static_libraryERKNSt7__cxx1112basic_stringIcSt11char_traitsIcESaIcEEERKSt6vectorINS_8ArgumentESaISA_EES8_RKNS_6TargetE">compile_to_static_library</a>(<span class='ref fn fake' title='std::__cxx11::basic_string::basic_string&lt;_CharT, _Traits, _Alloc&gt;' data-ref="_ZNSt7__cxx1112basic_stringC1EPKT_RKT1_" data-ref-filename="_ZNSt7__cxx1112basic_stringC1EPKT_RKT1_"></span><q>"lesson_10_halide"</q>, <span class='ref fn fake' title='std::vector::vector&lt;_Tp, _Alloc&gt;' data-ref="_ZNSt6vectorC1ESt16initializer_listIT_ERKT0_" data-ref-filename="_ZNSt6vectorC1ESt16initializer_listIT_ERKT0_"></span>{<a class="local col7 ref" href="#7input" title='input' data-ref="7input" data-ref-filename="7input">input</a>, <a class="local col6 ref" href="#6offset" title='offset' data-ref="6offset" data-ref-filename="6offset">offset</a>}, <span class='ref fn fake' title='std::__cxx11::basic_string::basic_string&lt;_CharT, _Traits, _Alloc&gt;' data-ref="_ZNSt7__cxx1112basic_stringC1EPKT_RKT1_" data-ref-filename="_ZNSt7__cxx1112basic_stringC1EPKT_RKT1_"></span><q>"brighter"</q>);</td></tr>
+<tr><th id="75">75</th><td></td></tr>
+<tr><th id="76">76</th><td>    <a class="ref fn" href="../../include/stdio.h.html#printf" title='printf' data-ref="printf" data-ref-filename="printf">printf</a>(<q>"Halide pipeline compiled, but not yet run.\n"</q>);</td></tr>
+<tr><th id="77">77</th><td></td></tr>
+<tr><th id="78">78</th><td>    <i>// To continue this lesson, look in the file lesson_10_aot_compilation_run.cpp</i></td></tr>
+<tr><th id="79">79</th><td></td></tr>
+<tr><th id="80">80</th><td>    <b>return</b> <var>0</var>;</td></tr>
+<tr><th id="81">81</th><td>}</td></tr>
+<tr><th id="82">82</th><td></td></tr>
+</table><hr/><p id='footer'>
+Generated on <em>2021-Aug-03</em> from project halide revision <em>v12.0.1</em>

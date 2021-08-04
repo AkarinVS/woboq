@@ -1,0 +1,5 @@
+<use f='halide/build/_deps/pybind11-src/include/pybind11/numpy.h' l='1540' u='w' c='_ZN8pybind116detail16vectorize_helperC1EOTL0__'/>
+<dec f='halide/build/_deps/pybind11-src/include/pybind11/numpy.h' l='1550' type='remove_reference_t&lt;Func&gt;'/>
+<use f='halide/build/_deps/pybind11-src/include/pybind11/numpy.h' l='1590' c='_ZN8pybind116detail16vectorize_helper3runEDpRNS0_13vectorize_argIT1_E4typeESt16integer_sequenceImJXspTL0__EEES8_ImJXspTL0_0_EEES8_ImJXspTL0_1_EEE'/>
+<use f='halide/build/_deps/pybind11-src/include/pybind11/numpy.h' l='1625' c='_ZN8pybind116detail16vectorize_helper13apply_trivialERSt5arrayINS_11buffer_infoEL_ZNS1_11NVectorizedEEERS2_IPvL_ZNS1_1NEEEPT0_mSt16integer_sequenceImJ5065055'/>
+<use f='halide/build/_deps/pybind11-src/include/pybind11/numpy.h' l='1644' c='_ZN8pybind116detail16vectorize_helper15apply_broadcastERSt5arrayINS_11buffer_infoEL_ZNS1_11NVectorizedEEERS2_IPvL_ZNS1_1NEEEPT0_mRKSt6vectorIlSaIlEESt7135190'/>

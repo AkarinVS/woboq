@@ -1,0 +1,57 @@
+<dec f='halide/build/include/Halide.h' l='11987' type='Halide::Expr'/>
+<offset>320</offset>
+<dec f='halide/src/IR.h' l='95' type='Halide::Expr'/>
+<offset>320</offset>
+<use f='halide/src/Bounds.cpp' l='735' u='m' c='_ZN6Halide8Internal12_GLOBAL__N_16Bounds5visitEPKNS0_3MaxE'/>
+<use f='halide/src/Bounds.cpp' l='738' u='r' c='_ZN6Halide8Internal12_GLOBAL__N_16Bounds5visitEPKNS0_3MaxE'/>
+<use f='halide/src/CodeGen_ARM.cpp' l='828' u='r' c='_ZN6Halide8Internal12_GLOBAL__N_111CodeGen_ARM5visitEPKNS0_3MaxE'/>
+<use f='halide/src/CodeGen_C.cpp' l='1862' u='r' c='_ZN6Halide8Internal9CodeGen_C5visitEPKNS0_3MaxE'/>
+<use f='halide/src/CodeGen_C.cpp' l='1865' u='r' c='_ZN6Halide8Internal9CodeGen_C5visitEPKNS0_3MaxE'/>
+<use f='halide/src/CodeGen_D3D12Compute_Dev.cpp' l='267' u='r' c='_ZN6Halide8Internal12_GLOBAL__N_124CodeGen_D3D12Compute_Dev22CodeGen_D3D12Compute_C5visitEPKNS0_3MaxE'/>
+<use f='halide/src/CodeGen_Hexagon.cpp' l='2070' u='r' c='_ZN6Halide8Internal12_GLOBAL__N_115CodeGen_Hexagon5visitEPKNS0_3MaxE'/>
+<use f='halide/src/CodeGen_Hexagon.cpp' l='2071' u='r' c='_ZN6Halide8Internal12_GLOBAL__N_115CodeGen_Hexagon5visitEPKNS0_3MaxE'/>
+<use f='halide/src/CodeGen_Hexagon.cpp' l='2073' u='r' c='_ZN6Halide8Internal12_GLOBAL__N_115CodeGen_Hexagon5visitEPKNS0_3MaxE'/>
+<use f='halide/src/CodeGen_Hexagon.cpp' l='2073' u='r' c='_ZN6Halide8Internal12_GLOBAL__N_115CodeGen_Hexagon5visitEPKNS0_3MaxE'/>
+<use f='halide/src/CodeGen_LLVM.cpp' l='1589' u='r' c='_ZN6Halide8Internal12CodeGen_LLVM5visitEPKNS0_3MaxE'/>
+<use f='halide/src/CodeGen_LLVM.cpp' l='1593' u='r' c='_ZN6Halide8Internal12CodeGen_LLVM5visitEPKNS0_3MaxE'/>
+<use f='halide/src/CodeGen_LLVM.cpp' l='1600' u='m' c='_ZN6Halide8Internal12CodeGen_LLVM5visitEPKNS0_3MaxE'/>
+<use f='halide/src/CodeGen_LLVM.cpp' l='1602' u='r' c='_ZN6Halide8Internal12CodeGen_LLVM5visitEPKNS0_3MaxE'/>
+<use f='halide/src/CodeGen_LLVM.cpp' l='1754' u='r' c='_ZN6Halide8Internal12_GLOBAL__N_110promote_64ERKNS_4ExprE'/>
+<use f='halide/src/CodeGen_Metal_Dev.cpp' l='220' u='r' c='_ZN6Halide8Internal12_GLOBAL__N_117CodeGen_Metal_Dev15CodeGen_Metal_C5visitEPKNS0_3MaxE'/>
+<use f='halide/src/CodeGen_OpenCL_Dev.cpp' l='859' u='r' c='_ZN6Halide8Internal12_GLOBAL__N_118CodeGen_OpenCL_Dev16CodeGen_OpenCL_C5visitEPKNS0_3MaxE'/>
+<use f='halide/src/CodeGen_OpenGLCompute_Dev.cpp' l='256' u='r' c='_ZN6Halide8Internal12_GLOBAL__N_123CodeGen_OpenGLCompute_C5visitEPKNS0_3MaxE'/>
+<use f='halide/src/CodeGen_PowerPC.cpp' l='136' u='r' c='_ZN6Halide8Internal12_GLOBAL__N_115CodeGen_PowerPC5visitEPKNS0_3MaxE'/>
+<use f='halide/src/Derivative.cpp' l='953' u='r' c='_ZN6Halide8Internal12_GLOBAL__N_126ReverseAccumulationVisitor5visitEPKNS0_3MaxE'/>
+<use f='halide/src/Derivative.cpp' l='955' u='r' c='_ZN6Halide8Internal12_GLOBAL__N_126ReverseAccumulationVisitor5visitEPKNS0_3MaxE'/>
+<use f='halide/src/Derivative.cpp' l='956' u='r' c='_ZN6Halide8Internal12_GLOBAL__N_126ReverseAccumulationVisitor5visitEPKNS0_3MaxE'/>
+<use f='halide/src/HexagonOptimize.cpp' l='1933' u='r' c='_ZN6Halide8Internal12_GLOBAL__N_114span_of_boundsERKNS0_8IntervalE'/>
+<use f='halide/src/HexagonOptimize.cpp' l='1933' u='r' c='_ZN6Halide8Internal12_GLOBAL__N_114span_of_boundsERKNS0_8IntervalE'/>
+<use f='halide/src/IR.cpp' l='102' u='w' c='_ZN6Halide8Internal3Max4makeENS_4ExprES2_'/>
+<use f='halide/src/IRPrinter.cpp' l='555' u='r' c='_ZN6Halide8Internal9IRPrinter5visitEPKNS0_3MaxE'/>
+<use f='halide/src/IRVisitor.cpp' l='60' u='m' c='_ZN6Halide8Internal9IRVisitor5visitEPKNS0_3MaxE'/>
+<use f='halide/src/IRVisitor.cpp' l='331' u='r' c='_ZN6Halide8Internal14IRGraphVisitor5visitEPKNS0_3MaxE'/>
+<use f='halide/src/ModulusRemainder.cpp' l='135' u='r' c='_ZN6Halide8Internal12_GLOBAL__N_123ComputeModulusRemainder5visitEPKNS0_3MaxE'/>
+<use f='halide/src/Monotonic.cpp' l='339' u='m' c='_ZN6Halide8Internal12_GLOBAL__N_116DerivativeBounds5visitEPKNS0_3MaxE'/>
+<use f='halide/src/PartitionLoops.cpp' l='47' u='r' c='_ZN6Halide8Internal12_GLOBAL__N_124MarkClampedRampsAsLikely5visitEPKNS0_3MaxE'/>
+<use f='halide/src/PartitionLoops.cpp' l='48' u='m' c='_ZN6Halide8Internal12_GLOBAL__N_124MarkClampedRampsAsLikely5visitEPKNS0_3MaxE'/>
+<use f='halide/src/PartitionLoops.cpp' l='49' u='r' c='_ZN6Halide8Internal12_GLOBAL__N_124MarkClampedRampsAsLikely5visitEPKNS0_3MaxE'/>
+<use f='halide/src/PartitionLoops.cpp' l='311' u='r' c='_ZN6Halide8Internal12_GLOBAL__N_119FindSimplifications5visitEPKNS0_3MaxE'/>
+<use f='halide/src/PartitionLoops.cpp' l='314' u='m' c='_ZN6Halide8Internal12_GLOBAL__N_119FindSimplifications5visitEPKNS0_3MaxE'/>
+<use f='halide/src/PartitionLoops.cpp' l='322' u='r' c='_ZN6Halide8Internal12_GLOBAL__N_119FindSimplifications5visitEPKNS0_3MaxE'/>
+<use f='halide/src/PartitionLoops.cpp' l='326' u='r' c='_ZN6Halide8Internal12_GLOBAL__N_119FindSimplifications5visitEPKNS0_3MaxE'/>
+<use f='halide/src/PartitionLoops.cpp' l='326' u='r' c='_ZN6Halide8Internal12_GLOBAL__N_119FindSimplifications5visitEPKNS0_3MaxE'/>
+<use f='halide/src/PartitionLoops.cpp' l='328' u='r' c='_ZN6Halide8Internal12_GLOBAL__N_119FindSimplifications5visitEPKNS0_3MaxE'/>
+<use f='halide/src/PartitionLoops.cpp' l='328' u='r' c='_ZN6Halide8Internal12_GLOBAL__N_119FindSimplifications5visitEPKNS0_3MaxE'/>
+<use f='halide/src/Simplify_Let.cpp' l='145' u='r' c='_ZN6Halide8Internal8Simplify12simplify_letEPKT_PNS1_8ExprInfoE'/>
+<use f='halide/src/Simplify_Let.cpp' l='146' u='r' c='_ZN6Halide8Internal8Simplify12simplify_letEPKT_PNS1_8ExprInfoE'/>
+<use f='halide/src/Simplify_Max.cpp' l='9' u='r' c='_ZN6Halide8Internal8Simplify5visitEPKNS0_3MaxEPNS1_8ExprInfoE'/>
+<use f='halide/src/Simplify_Max.cpp' l='302' u='r' c='_ZN6Halide8Internal8Simplify5visitEPKNS0_3MaxEPNS1_8ExprInfoE'/>
+<use f='halide/src/Simplify_Max.cpp' l='309' u='r' c='_ZN6Halide8Internal8Simplify5visitEPKNS0_3MaxEPNS1_8ExprInfoE'/>
+<use f='halide/src/Solve.cpp' l='1007' u='r' c='_ZN6Halide8Internal12_GLOBAL__N_116SolveForInterval5visitEPKNS0_2LEE'/>
+<use f='halide/src/Solve.cpp' l='1065' u='r' c='_ZN6Halide8Internal12_GLOBAL__N_116SolveForInterval5visitEPKNS0_2GEE'/>
+<use f='halide/src/StmtToHtml.cpp' l='284' u='r' c='_ZN6Halide8Internal12_GLOBAL__N_110StmtToHtml5visitEPKNS0_3MaxE'/>
+<use f='halide/src/TrimNoOps.cpp' l='267' u='r' c='_ZN6Halide8Internal12_GLOBAL__N_119SimplifyUsingBounds5visitEPKNS0_3MaxE'/>
+<use f='halide/src/VectorizeLoops.cpp' l='105' u='m' c='_ZN6Halide8Internal12_GLOBAL__N_122bounds_of_nested_lanesERKNS_4ExprE'/>
+<use f='halide/src/VectorizeLoops.cpp' l='109' u='r' c='_ZN6Halide8Internal12_GLOBAL__N_122bounds_of_nested_lanesERKNS_4ExprE'/>
+<use f='halide/src/VectorizeLoops.cpp' l='1102' u='r' c='_ZN6Halide8Internal12_GLOBAL__N_110VectorSubs5visitEPKNS0_6AtomicE'/>
+<use f='halide/src/autoschedulers/adams2019/FunctionDAG.cpp' l='683' u='r' c='_ZN6Halide8Internal13Autoscheduler11FunctionDAGC1ERKSt6vectorINS0_8FunctionESaIS4_EERKNS_13MachineParamsERKNS_6TargetE'/>

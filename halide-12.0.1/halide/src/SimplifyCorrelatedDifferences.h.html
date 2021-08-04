@@ -1,0 +1,74 @@
+<!doctype html>
+<html>
+<head>
+<meta name="viewport" content="width=device-width, initial-scale=1.0"><title>SimplifyCorrelatedDifferences.h source code [halide/src/SimplifyCorrelatedDifferences.h] - Woboq Code Browser</title>
+<link rel="stylesheet" href="../.././data/qtcreator.css" title="QtCreator"/>
+<link rel="alternate stylesheet" href="../.././data/kdevelop.css" title="KDevelop"/>
+<script type="text/javascript" src="../.././data/jquery/jquery.min.js"></script>
+<script type="text/javascript" src="../.././data/jquery/jquery-ui.min.js"></script>
+<script>var file = 'halide/src/SimplifyCorrelatedDifferences.h'; var root_path = '../..'; var data_path = '../.././data'; var ecma_script_api_version = 2;</script>
+<script src='../.././data/codebrowser.js'></script>
+</head>
+<body><div id='header'><h1 id='breadcrumb'><span>Browse the source code of </span><a href='..'>halide</a>/<a href='./'>src</a>/<a href='SimplifyCorrelatedDifferences.h.html'>SimplifyCorrelatedDifferences.h</a></h1></div>
+<hr/><div id='content'><table class="code">
+<tr><th id="1">1</th><td><u>#<span data-ppcond="1">ifndef</span> <span class="macro" data-ref="_M/HALIDE_SIMPLIFY_CORRELATED_DIFFERENCES">HALIDE_SIMPLIFY_CORRELATED_DIFFERENCES</span></u></td></tr>
+<tr><th id="2">2</th><td><u>#define <dfn class="macro" id="_M/HALIDE_SIMPLIFY_CORRELATED_DIFFERENCES" data-ref="_M/HALIDE_SIMPLIFY_CORRELATED_DIFFERENCES">HALIDE_SIMPLIFY_CORRELATED_DIFFERENCES</dfn></u></td></tr>
+<tr><th id="3">3</th><td></td></tr>
+<tr><th id="4">4</th><td><u>#include <a href="Expr.h.html">"Expr.h"</a></u></td></tr>
+<tr><th id="5">5</th><td></td></tr>
+<tr><th id="6">6</th><td><i class="doc">/**<span class="command"> \file</span></i></td></tr>
+<tr><th id="7">7</th><td><i class="doc"> * Defines a simplification pass for handling differences of correlated expressions.</i></td></tr>
+<tr><th id="8">8</th><td><i class="doc"> */</i></td></tr>
+<tr><th id="9">9</th><td></td></tr>
+<tr><th id="10">10</th><td><b>namespace</b> <span class="namespace">Halide</span> {</td></tr>
+<tr><th id="11">11</th><td><b>namespace</b> <span class="namespace">Internal</span> {</td></tr>
+<tr><th id="12">12</th><td></td></tr>
+<tr><th id="13">13</th><td><i class="doc">/** Symbolic interval arithmetic can be extremely conservative in</i></td></tr>
+<tr><th id="14">14</th><td><i class="doc"> * cases where we analyze the difference between two correlated</i></td></tr>
+<tr><th id="15">15</th><td><i class="doc"> * expressions. For example, consider:</i></td></tr>
+<tr><th id="16">16</th><td><i class="doc"> *</i></td></tr>
+<tr><th id="17">17</th><td><i class="doc"> * for x in [0, 10]:</i></td></tr>
+<tr><th id="18">18</th><td><i class="doc"> *   let y = x + 3</i></td></tr>
+<tr><th id="19">19</th><td><i class="doc"> *   let z = y - x</i></td></tr>
+<tr><th id="20">20</th><td><i class="doc"> *</i></td></tr>
+<tr><th id="21">21</th><td><i class="doc"> * x lies within [0, 10]. Interval arithmetic will correctly determine</i></td></tr>
+<tr><th id="22">22</th><td><i class="doc"> * that y lies within [3, 13]. When z is encountered, it is treated as</i></td></tr>
+<tr><th id="23">23</th><td><i class="doc"> * a difference of two independent variables, and gives [3 - 10, 13 -</i></td></tr>
+<tr><th id="24">24</th><td><i class="doc"> * 0] = [-7, 13] instead of the tighter interval [3, 3]. It</i></td></tr>
+<tr><th id="25">25</th><td><i class="doc"> * doesn't understand that y and x are correlated.</i></td></tr>
+<tr><th id="26">26</th><td><i class="doc"> *</i></td></tr>
+<tr><th id="27">27</th><td><i class="doc"> * In practice, this problem causes problems for unrolling, and</i></td></tr>
+<tr><th id="28">28</th><td><i class="doc"> * arbitrarily-bad overconservative behavior in bounds inference</i></td></tr>
+<tr><th id="29">29</th><td><i class="doc"> * (e.g. <a href="https://github.com/halide/Halide/issues/3697">https://github.com/halide/Halide/issues/3697</a> )</i></td></tr>
+<tr><th id="30">30</th><td><i class="doc"> *</i></td></tr>
+<tr><th id="31">31</th><td><i class="doc"> * The function below attempts to address this by walking the IR,</i></td></tr>
+<tr><th id="32">32</th><td><i class="doc"> * remembering whether each let variable is monotonic increasing,</i></td></tr>
+<tr><th id="33">33</th><td><i class="doc"> * decreasing, unknown, or constant w.r.t each loop var. When it</i></td></tr>
+<tr><th id="34">34</th><td><i class="doc"> * encounters a subtract node where both sides have the same</i></td></tr>
+<tr><th id="35">35</th><td><i class="doc"> * monotonicity it substitutes, solves, and attempts to generally</i></td></tr>
+<tr><th id="36">36</th><td><i class="doc"> * simplify as aggressively as possible to try to cancel out the</i></td></tr>
+<tr><th id="37">37</th><td><i class="doc"> * repeated dependence on the loop var. The same is done for addition</i></td></tr>
+<tr><th id="38">38</th><td><i class="doc"> * nodes with arguments of opposite monotonicity.</i></td></tr>
+<tr><th id="39">39</th><td><i class="doc"> *</i></td></tr>
+<tr><th id="40">40</th><td><i class="doc"> * Bounds inference is particularly sensitive to these false</i></td></tr>
+<tr><th id="41">41</th><td><i class="doc"> * dependencies, but removing false dependencies also helps other</i></td></tr>
+<tr><th id="42">42</th><td><i class="doc"> * lowering passes. E.g. if this simplification means a value no</i></td></tr>
+<tr><th id="43">43</th><td><i class="doc"> * longer depends on a loop variable, it can remain scalar during</i></td></tr>
+<tr><th id="44">44</th><td><i class="doc"> * vectorization of that loop, or we can lift it out as a loop</i></td></tr>
+<tr><th id="45">45</th><td><i class="doc"> * invariant, or it might avoid some of the complex paths in GPU</i></td></tr>
+<tr><th id="46">46</th><td><i class="doc"> * codegen that trigger when values depend on the block index</i></td></tr>
+<tr><th id="47">47</th><td><i class="doc"> * (e.g. warp shuffles).</i></td></tr>
+<tr><th id="48">48</th><td><i class="doc"> *</i></td></tr>
+<tr><th id="49">49</th><td><i class="doc"> * This pass is safe to use on code with repeated instances of the</i></td></tr>
+<tr><th id="50">50</th><td><i class="doc"> * same variable name (it must be, because we want to run it before</i></td></tr>
+<tr><th id="51">51</th><td><i class="doc"> * allocation bounds inference).</i></td></tr>
+<tr><th id="52">52</th><td><i class="doc"> */</i></td></tr>
+<tr><th id="53">53</th><td><a class="type" href="Expr.h.html#Halide::Internal::Stmt" title='Halide::Internal::Stmt' data-ref="Halide::Internal::Stmt" data-ref-filename="Halide..Internal..Stmt">Stmt</a> <dfn class="decl fn" id="_ZN6Halide8Internal31simplify_correlated_differencesERKNS0_4StmtE" title='Halide::Internal::simplify_correlated_differences' data-ref="_ZN6Halide8Internal31simplify_correlated_differencesERKNS0_4StmtE" data-ref-filename="_ZN6Halide8Internal31simplify_correlated_differencesERKNS0_4StmtE">simplify_correlated_differences</dfn>(<em>const</em> <a class="type" href="Expr.h.html#Halide::Internal::Stmt" title='Halide::Internal::Stmt' data-ref="Halide::Internal::Stmt" data-ref-filename="Halide..Internal..Stmt">Stmt</a> &amp;);</td></tr>
+<tr><th id="54">54</th><td></td></tr>
+<tr><th id="55">55</th><td>}  <i>// namespace Internal</i></td></tr>
+<tr><th id="56">56</th><td>}  <i>// namespace Halide</i></td></tr>
+<tr><th id="57">57</th><td></td></tr>
+<tr><th id="58">58</th><td><u>#<span data-ppcond="1">endif</span></u></td></tr>
+<tr><th id="59">59</th><td></td></tr>
+</table><hr/><p id='footer'>
+Generated while processing <a href='Lower.cpp.html'>halide/src/Lower.cpp</a><br/>Generated on <em>2021-Aug-03</em> from project halide revision <em>v12.0.1</em>
