@@ -1,3 +1,21 @@
+<def f='halide/halide-install/include/Halide.h' l='5051' ll='5127'/>
+<use f='halide/halide-install/include/Halide.h' l='5129' c='_ZN6Halide6TargetC1ENS0_2OSENS0_4ArchEiRKSt6vectorINS0_7FeatureESaIS4_EE'/>
+<use f='halide/halide-install/include/Halide.h' l='5129' c='_ZN6Halide6TargetC1ENS0_2OSENS0_4ArchEiRKSt6vectorINS0_7FeatureESaIS4_EE'/>
+<use f='halide/halide-install/include/Halide.h' l='5158' c='_ZN6Halide6Target11set_featureENS0_7FeatureEb'/>
+<use f='halide/halide-install/include/Halide.h' l='5160' c='_ZN6Halide6Target12set_featuresERKSt6vectorINS0_7FeatureESaIS2_EEb'/>
+<use f='halide/halide-install/include/Halide.h' l='5162' c='_ZNK6Halide6Target11has_featureENS0_7FeatureE'/>
+<use f='halide/halide-install/include/Halide.h' l='5165' c='_ZNK6Halide6Target11has_featureE23halide_target_feature_t'/>
+<use f='halide/halide-install/include/Halide.h' l='5168' c='_ZNK6Halide6Target15features_any_ofERKSt6vectorINS0_7FeatureESaIS2_EE'/>
+<use f='halide/halide-install/include/Halide.h' l='5170' c='_ZNK6Halide6Target15features_all_ofERKSt6vectorINS0_7FeatureESaIS2_EE'/>
+<use f='halide/halide-install/include/Halide.h' l='5176' c='_ZNK6Halide6Target12with_featureENS0_7FeatureE'/>
+<use f='halide/halide-install/include/Halide.h' l='5182' c='_ZNK6Halide6Target15without_featureENS0_7FeatureE'/>
+<use f='halide/halide-install/include/Halide.h' l='5294' c='_ZN6Halide6Target15feature_to_nameB5cxx11ENS0_7FeatureE'/>
+<use f='halide/halide-install/include/Halide.h' l='5299' c='_ZN6Halide6Target17feature_from_nameERKNSt7__cxx1112basic_stringIcSt11char_traitsIcESaIcEEE'/>
+<use f='halide/halide-install/include/Halide.h' l='5323' c='_ZN6Halide29target_feature_for_device_apiENS_9DeviceAPIE'/>
+<doc f='halide/halide-install/include/Halide.h' l='5047'>/** Optional features a target can have.
+     * Corresponds to feature_name_map in Target.cpp.
+     * See definitions in HalideRuntime.h for full information.
+     */</doc>
 <def f='halide/build/include/Halide.h' l='5051' ll='5127'/>
 <use f='halide/build/include/Halide.h' l='5129' c='_ZN6Halide6TargetC1ENS0_2OSENS0_4ArchEiRKSt6vectorINS0_7FeatureESaIS4_EE'/>
 <use f='halide/build/include/Halide.h' l='5129' c='_ZN6Halide6TargetC1ENS0_2OSENS0_4ArchEiRKSt6vectorINS0_7FeatureESaIS4_EE'/>

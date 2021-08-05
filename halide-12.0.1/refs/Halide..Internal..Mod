@@ -1,3 +1,26 @@
+<inh f='halide/halide-install/include/Halide.h' l='3903' c='Halide::Internal::ExprNode'/>
+<def f='halide/halide-install/include/Halide.h' l='11968' ll='11974'/>
+<use f='halide/halide-install/include/Halide.h' l='11968'/>
+<use f='halide/halide-install/include/Halide.h' l='12824' c='_ZN6Halide8Internal9IRVisitor5visitEPKNS0_3ModE'/>
+<use f='halide/halide-install/include/Halide.h' l='12894' c='_ZN6Halide8Internal14IRGraphVisitor5visitEPKNS0_3ModE'/>
+<use f='halide/halide-install/include/Halide.h' l='12966' c='_ZN6Halide8Internal15VariadicVisitor13dispatch_exprEPKNS0_12BaseExprNodeEDpOTL0__'/>
+<use f='halide/halide-install/include/Halide.h' l='19090' c='_ZN6Halide8Internal9IRPrinter5visitEPKNS0_3ModE'/>
+<use f='halide/halide-install/include/Halide.h' l='19323' c='_ZN6Halide8Internal9CodeGen_C5visitEPKNS0_3ModE'/>
+<use f='halide/halide-install/include/Halide.h' l='20076' c='_ZN6Halide8Internal12CodeGen_LLVM5visitEPKNS0_3ModE'/>
+<use f='halide/halide-install/include/Halide.h' l='28064' c='_ZN6Halide8Internal9IRMatcherlsERSoRKNS1_5BinOpINS0_3ModET_T0_EE'/>
+<use f='halide/halide-install/include/Halide.h' l='28196' c='_ZN6Halide8Internal9IRMatcherrmEOT_OT0_'/>
+<use f='halide/halide-install/include/Halide.h' l='28210' c='_ZN6Halide8Internal9IRMatcher20constant_fold_bin_opER13halide_type_tll'/>
+<use f='halide/halide-install/include/Halide.h' l='28215' c='_ZN6Halide8Internal9IRMatcher20constant_fold_bin_opER13halide_type_tmm'/>
+<use f='halide/halide-install/include/Halide.h' l='28220' c='_ZN6Halide8Internal9IRMatcher20constant_fold_bin_opER13halide_type_tdd'/>
+<use f='halide/halide-install/include/Halide.h' l='30027' c='_ZN6Halide8Internal9IRMutator5visitEPKNS0_3ModE'/>
+<size>48</size>
+<doc f='halide/halide-install/include/Halide.h' l='11965'>/** The remainder of a / b. Mostly equivalent to &apos;%&apos; in C, except that
+ * the result here is always positive. For floats, this is equivalent
+ * to calling fmod. */</doc>
+<mbr r='Halide::Internal::Mod::a' o='256' t='Halide::Expr'/>
+<mbr r='Halide::Internal::Mod::b' o='320' t='Halide::Expr'/>
+<fun r='_ZN6Halide8Internal3Mod4makeENS_4ExprES2_'/>
+<smbr r='Halide::Internal::Mod::_node_type' t='const Halide::Internal::IRNodeType'/>
 <inh f='halide/build/include/Halide.h' l='3903' c='Halide::Internal::ExprNode'/>
 <def f='halide/build/include/Halide.h' l='11968' ll='11974'/>
 <use f='halide/build/include/Halide.h' l='11968'/>

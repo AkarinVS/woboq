@@ -1,3 +1,6 @@
+<def f='halide/halide-install/include/Halide.h' l='5017' ll='5028'/>
+<use f='halide/halide-install/include/Halide.h' l='5017'/>
+<use f='halide/halide-install/include/Halide.h' l='5129' c='_ZN6Halide6TargetC1ENS0_2OSENS0_4ArchEiRKSt6vectorINS0_7FeatureESaIS4_EE'/>
 <def f='halide/build/include/Halide.h' l='5017' ll='5028'/>
 <use f='halide/build/include/Halide.h' l='5017'/>
 <use f='halide/build/include/Halide.h' l='5129' c='_ZN6Halide6TargetC1ENS0_2OSENS0_4ArchEiRKSt6vectorINS0_7FeatureESaIS4_EE'/>

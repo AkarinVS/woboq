@@ -1,3 +1,10 @@
+<dec f='halide/halide-install/include/Halide.h' l='14757' type='Halide::Realization *'/>
+<use f='halide/halide-install/include/Halide.h' l='14762' u='w' c='_ZN6Halide8Pipeline14RealizationArgC1ERNS_11RealizationE'/>
+<use f='halide/halide-install/include/Halide.h' l='14765' u='w' c='_ZN6Halide8Pipeline14RealizationArgC1EONS_11RealizationE'/>
+<use f='halide/halide-install/include/Halide.h' l='14786' u='r' c='_ZNK6Halide8Pipeline14RealizationArg4sizeEv'/>
+<use f='halide/halide-install/include/Halide.h' l='14787' u='r' c='_ZNK6Halide8Pipeline14RealizationArg4sizeEv'/>
+<offset>0</offset>
+<doc f='halide/halide-install/include/Halide.h' l='14756'>// Only one of the following may be non-null</doc>
 <dec f='halide/build/include/Halide.h' l='14757' type='Halide::Realization *'/>
 <use f='halide/build/include/Halide.h' l='14762' u='w' c='_ZN6Halide8Pipeline14RealizationArgC1ERNS_11RealizationE'/>
 <use f='halide/build/include/Halide.h' l='14765' u='w' c='_ZN6Halide8Pipeline14RealizationArgC1EONS_11RealizationE'/>

@@ -1,3 +1,24 @@
+<inh f='halide/halide-install/include/Halide.h' l='3903' c='Halide::Internal::ExprNode'/>
+<def f='halide/halide-install/include/Halide.h' l='12004' ll='12010'/>
+<use f='halide/halide-install/include/Halide.h' l='12004'/>
+<use f='halide/halide-install/include/Halide.h' l='12828' c='_ZN6Halide8Internal9IRVisitor5visitEPKNS0_2NEE'/>
+<use f='halide/halide-install/include/Halide.h' l='12898' c='_ZN6Halide8Internal14IRGraphVisitor5visitEPKNS0_2NEE'/>
+<use f='halide/halide-install/include/Halide.h' l='12978' c='_ZN6Halide8Internal15VariadicVisitor13dispatch_exprEPKNS0_12BaseExprNodeEDpOTL0__'/>
+<use f='halide/halide-install/include/Halide.h' l='19094' c='_ZN6Halide8Internal9IRPrinter5visitEPKNS0_2NEE'/>
+<use f='halide/halide-install/include/Halide.h' l='19327' c='_ZN6Halide8Internal9CodeGen_C5visitEPKNS0_2NEE'/>
+<use f='halide/halide-install/include/Halide.h' l='20080' c='_ZN6Halide8Internal12CodeGen_LLVM5visitEPKNS0_2NEE'/>
+<use f='halide/halide-install/include/Halide.h' l='28058' c='_ZN6Halide8Internal9IRMatcherlsERSoRKNS1_5CmpOpINS0_2NEET_T0_EE'/>
+<use f='halide/halide-install/include/Halide.h' l='28394' c='_ZN6Halide8Internal9IRMatcherneEOT_OT0_'/>
+<use f='halide/halide-install/include/Halide.h' l='28404' c='_ZN6Halide8Internal9IRMatcher20constant_fold_cmp_opEll'/>
+<use f='halide/halide-install/include/Halide.h' l='28409' c='_ZN6Halide8Internal9IRMatcher20constant_fold_cmp_opEmm'/>
+<use f='halide/halide-install/include/Halide.h' l='28414' c='_ZN6Halide8Internal9IRMatcher20constant_fold_cmp_opEdd'/>
+<use f='halide/halide-install/include/Halide.h' l='30031' c='_ZN6Halide8Internal9IRMutator5visitEPKNS0_2NEE'/>
+<size>48</size>
+<doc f='halide/halide-install/include/Halide.h' l='12003'>/** Is the first expression not equal to the second */</doc>
+<mbr r='Halide::Internal::NE::a' o='256' t='Halide::Expr'/>
+<mbr r='Halide::Internal::NE::b' o='320' t='Halide::Expr'/>
+<fun r='_ZN6Halide8Internal2NE4makeENS_4ExprES2_'/>
+<smbr r='Halide::Internal::NE::_node_type' t='const Halide::Internal::IRNodeType'/>
 <inh f='halide/build/include/Halide.h' l='3903' c='Halide::Internal::ExprNode'/>
 <def f='halide/build/include/Halide.h' l='12004' ll='12010'/>
 <use f='halide/build/include/Halide.h' l='12004'/>

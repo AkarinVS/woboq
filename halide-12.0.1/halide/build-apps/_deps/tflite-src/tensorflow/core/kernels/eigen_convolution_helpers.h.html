@@ -1,0 +1,105 @@
+<!doctype html>
+<html>
+<head>
+<meta name="viewport" content="width=device-width, initial-scale=1.0"><title>eigen_convolution_helpers.h source code [halide/build-apps/_deps/tflite-src/tensorflow/core/kernels/eigen_convolution_helpers.h] - Woboq Code Browser</title>
+<meta name="woboq:interestingDefinitions" content="EigenForTFLite::internal::TensorEvaluatorHasPartialPacket "/>
+<link rel="stylesheet" href="../../../../../../.././data/qtcreator.css" title="QtCreator"/>
+<link rel="alternate stylesheet" href="../../../../../../.././data/kdevelop.css" title="KDevelop"/>
+<script type="text/javascript" src="../../../../../../.././data/jquery/jquery.min.js"></script>
+<script type="text/javascript" src="../../../../../../.././data/jquery/jquery-ui.min.js"></script>
+<script>var file = 'halide/build-apps/_deps/tflite-src/tensorflow/core/kernels/eigen_convolution_helpers.h'; var root_path = '../../../../../../..'; var data_path = '../../../../../../.././data'; var ecma_script_api_version = 2;</script>
+<script src='../../../../../../.././data/codebrowser.js'></script>
+</head>
+<body><div id='header'><h1 id='breadcrumb'><span>Browse the source code of </span><a href='../../../../../..'>halide</a>/<a href='../../../../..'>build-apps</a>/<a href='../../../..'>_deps</a>/<a href='../../..'>tflite-src</a>/<a href='../..'>tensorflow</a>/<a href='..'>core</a>/<a href='./'>kernels</a>/<a href='eigen_convolution_helpers.h.html'>eigen_convolution_helpers.h</a></h1></div>
+<hr/><div id='content'><table class="code">
+<tr><th id="1">1</th><td><i>/* Copyright 2019 The TensorFlow Authors. All Rights Reserved.</i></td></tr>
+<tr><th id="2">2</th><td><i></i></td></tr>
+<tr><th id="3">3</th><td><i>Licensed under the Apache License, Version 2.0 (the "License");</i></td></tr>
+<tr><th id="4">4</th><td><i>you may not use this file except in compliance with the License.</i></td></tr>
+<tr><th id="5">5</th><td><i>You may obtain a copy of the License at</i></td></tr>
+<tr><th id="6">6</th><td><i></i></td></tr>
+<tr><th id="7">7</th><td><i>    <a href="http://www.apache.org/licenses/LICENSE-2.0">http://www.apache.org/licenses/LICENSE-2.0</a></i></td></tr>
+<tr><th id="8">8</th><td><i></i></td></tr>
+<tr><th id="9">9</th><td><i>Unless required by applicable law or agreed to in writing, software</i></td></tr>
+<tr><th id="10">10</th><td><i>distributed under the License is distributed on an "AS IS" BASIS,</i></td></tr>
+<tr><th id="11">11</th><td><i>WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.</i></td></tr>
+<tr><th id="12">12</th><td><i>See the License for the specific language governing permissions and</i></td></tr>
+<tr><th id="13">13</th><td><i>limitations under the License.</i></td></tr>
+<tr><th id="14">14</th><td><i>==============================================================================*/</i></td></tr>
+<tr><th id="15">15</th><td></td></tr>
+<tr><th id="16">16</th><td><u>#<span data-ppcond="16">ifndef</span> <span class="macro" data-ref="_M/TENSORFLOW_CORE_KERNELS_EIGEN_CONVOLUTION_HELPERS_H_">TENSORFLOW_CORE_KERNELS_EIGEN_CONVOLUTION_HELPERS_H_</span></u></td></tr>
+<tr><th id="17">17</th><td><u>#define <dfn class="macro" id="_M/TENSORFLOW_CORE_KERNELS_EIGEN_CONVOLUTION_HELPERS_H_" data-ref="_M/TENSORFLOW_CORE_KERNELS_EIGEN_CONVOLUTION_HELPERS_H_">TENSORFLOW_CORE_KERNELS_EIGEN_CONVOLUTION_HELPERS_H_</dfn></u></td></tr>
+<tr><th id="18">18</th><td></td></tr>
+<tr><th id="19">19</th><td><u>#include <a href="../../../third_party/eigen3/unsupported/Eigen/CXX11/Tensor.html">"third_party/eigen3/unsupported/Eigen/CXX11/Tensor"</a></u></td></tr>
+<tr><th id="20">20</th><td></td></tr>
+<tr><th id="21">21</th><td><b>namespace</b> <a class="macro" href="../../lite/kernels/internal/optimized/eigen_spatial_convolutions.h.html#30" title="EigenForTFLite" data-ref="_M/Eigen">Eigen</a> {</td></tr>
+<tr><th id="22">22</th><td><b>namespace</b> <span class="namespace">internal</span> {</td></tr>
+<tr><th id="23">23</th><td></td></tr>
+<tr><th id="24">24</th><td><i>// TensorEvaluatorHasPartialPacket&lt;TensorEvaluatorType, PacketType, IndexType&gt;</i></td></tr>
+<tr><th id="25">25</th><td><i>// provides `value` that is true if TensorEvaluatorType has `PacketType</i></td></tr>
+<tr><th id="26">26</th><td><i>// partialPacket&lt;PacketType&gt;(IndexType, unpacket_traits&lt;PacketType&gt;::mask_t)</i></td></tr>
+<tr><th id="27">27</th><td><i>// const` and if the PacketType supports masked load.</i></td></tr>
+<tr><th id="28">28</th><td><i>//</i></td></tr>
+<tr><th id="29">29</th><td><i>// Partial packets are used to:</i></td></tr>
+<tr><th id="30">30</th><td><i>//</i></td></tr>
+<tr><th id="31">31</th><td><i>// 1) Split the packet over two columns in eigen based spatial convolution and</i></td></tr>
+<tr><th id="32">32</th><td><i>// use partial loads for each individual part before combining them to get the</i></td></tr>
+<tr><th id="33">33</th><td><i>// required packet. This class is used to pick the correct implementation of</i></td></tr>
+<tr><th id="34">34</th><td><i>// loadPacketStandard function.</i></td></tr>
+<tr><th id="35">35</th><td><i>//</i></td></tr>
+<tr><th id="36">36</th><td><i>// 2) Split the packet over two rows (within the same column) in eigen based</i></td></tr>
+<tr><th id="37">37</th><td><i>// cuboid convolution and use partial loads for each individual part before</i></td></tr>
+<tr><th id="38">38</th><td><i>// combining them to get the required packet. This class is used to pick the</i></td></tr>
+<tr><th id="39">39</th><td><i>// correct implementation of loadPacketStandard function. This usage is similar</i></td></tr>
+<tr><th id="40">40</th><td><i>// to the usage in eigen based spatial convolution described above.</i></td></tr>
+<tr><th id="41">41</th><td><i>//</i></td></tr>
+<tr><th id="42">42</th><td><i>// 3) Finalize packing of columns in gemm_pack_colmajor after processing</i></td></tr>
+<tr><th id="43">43</th><td><i>//    vectorized part with full packets (see eigen_spatial_convolutions.h).</i></td></tr>
+<tr><th id="44">44</th><td><b>template</b> &lt;<b>typename</b> TensorEvaluatorType, <b>typename</b> PacketType, <b>typename</b> IndexType&gt;</td></tr>
+<tr><th id="45">45</th><td><b>class</b> <dfn class="type def" id="EigenForTFLite::internal::TensorEvaluatorHasPartialPacket" title='EigenForTFLite::internal::TensorEvaluatorHasPartialPacket' data-ref="EigenForTFLite::internal::TensorEvaluatorHasPartialPacket" data-ref-filename="EigenForTFLite..internal..TensorEvaluatorHasPartialPacket">TensorEvaluatorHasPartialPacket</dfn> {</td></tr>
+<tr><th id="46">46</th><td> <b>public</b>:</td></tr>
+<tr><th id="47">47</th><td>  <b>template</b> &lt;<b>typename</b> TensorEvaluatorT, <b>typename</b> PacketT, <b>typename</b> IndexT&gt;</td></tr>
+<tr><th id="48">48</th><td>  <em>static</em> <em>auto</em> <dfn class="decl fn" id="_ZN14EigenForTFLite8internal31TensorEvaluatorHasPartialPacket20functionExistsSfinaeEPNSt9enable_ifIXaasr15unpacket_traitsITL0_0_EE21masked_load_availa2842226" title='EigenForTFLite::internal::TensorEvaluatorHasPartialPacket::functionExistsSfinae' data-ref="_ZN14EigenForTFLite8internal31TensorEvaluatorHasPartialPacket20functionExistsSfinaeEPNSt9enable_ifIXaasr15unpacket_traitsITL0_0_EE21masked_load_availa2842226" data-ref-filename="_ZN14EigenForTFLite8internal31TensorEvaluatorHasPartialPacket20functionExistsSfinaeEPNSt9enable_ifIXaasr15unpacket_traitsITL0_0_EE21masked_load_availa2842226">functionExistsSfinae</dfn>(</td></tr>
+<tr><th id="49">49</th><td>      <b>typename</b> <span class="namespace">std::</span><span class='type' title='std::enable_if' data-ref="std::enable_if" data-ref-filename="std..enable_if">enable_if</span>&lt;</td></tr>
+<tr><th id="50">50</th><td>          <a class="type" href="../../../../../eigen/Eigen/src/Core/util/XprHelper.h.html#EigenForTFLite::internal::unpacket_traits" title='EigenForTFLite::internal::unpacket_traits' data-ref="EigenForTFLite::internal::unpacket_traits" data-ref-filename="EigenForTFLite..internal..unpacket_traits">unpacket_traits</a>&lt;PacketT&gt;::masked_load_available &amp;&amp;</td></tr>
+<tr><th id="51">51</th><td>          <span class="namespace">std::</span><span class='type' title='std::is_same' data-ref="std::is_same" data-ref-filename="std..is_same">is_same</span>&lt;PacketT,</td></tr>
+<tr><th id="52">52</th><td>                       <b>decltype</b>(<span class="namespace">std::</span>declval&lt;<em>const</em> TensorEvaluatorT&gt;()</td></tr>
+<tr><th id="53">53</th><td>                                    .<b>template</b> partialPacket&lt;PacketT&gt;(</td></tr>
+<tr><th id="54">54</th><td>                                        <span class="namespace">std::</span>declval&lt;IndexT&gt;(),</td></tr>
+<tr><th id="55">55</th><td>                                        <span class="namespace">std::</span>declval&lt;<b>typename</b> <a class="type" href="../../../../../eigen/Eigen/src/Core/util/XprHelper.h.html#EigenForTFLite::internal::unpacket_traits" title='EigenForTFLite::internal::unpacket_traits' data-ref="EigenForTFLite::internal::unpacket_traits" data-ref-filename="EigenForTFLite..internal..unpacket_traits">unpacket_traits</a>&lt;</td></tr>
+<tr><th id="56">56</th><td>                                            PacketT&gt;::mask_t&gt;()))&gt;::value&gt;::</td></tr>
+<tr><th id="57">57</th><td>          type*) -&gt; <span class="namespace">std::</span><span class='typedef' title='std::true_type' data-type='integral_constant&lt;bool, true&gt;' data-ref="std::true_type" data-ref-filename="std..true_type">true_type</span>;</td></tr>
+<tr><th id="58">58</th><td></td></tr>
+<tr><th id="59">59</th><td>  <b>template</b> &lt;<b>typename</b> TensorEvaluatorT, <b>typename</b> PacketT, <b>typename</b> IndexT&gt;</td></tr>
+<tr><th id="60">60</th><td>  <em>static</em> <em>auto</em> <dfn class="decl fn" id="_ZN14EigenForTFLite8internal31TensorEvaluatorHasPartialPacket20functionExistsSfinaeEz" title='EigenForTFLite::internal::TensorEvaluatorHasPartialPacket::functionExistsSfinae' data-ref="_ZN14EigenForTFLite8internal31TensorEvaluatorHasPartialPacket20functionExistsSfinaeEz" data-ref-filename="_ZN14EigenForTFLite8internal31TensorEvaluatorHasPartialPacket20functionExistsSfinaeEz">functionExistsSfinae</dfn>(...) -&gt; <span class="namespace">std::</span><span class='typedef' title='std::false_type' data-type='integral_constant&lt;bool, false&gt;' data-ref="std::false_type" data-ref-filename="std..false_type">false_type</span>;</td></tr>
+<tr><th id="61">61</th><td></td></tr>
+<tr><th id="62">62</th><td>  <b>typedef</b> <b>decltype</b>(</td></tr>
+<tr><th id="63">63</th><td>      functionExistsSfinae&lt;TensorEvaluatorType, PacketType, IndexType&gt;(</td></tr>
+<tr><th id="64">64</th><td>          <b>nullptr</b>)) <dfn class="typedef" id="EigenForTFLite::internal::TensorEvaluatorHasPartialPacket::status" title='EigenForTFLite::internal::TensorEvaluatorHasPartialPacket::status' data-type='decltype(functionExistsSfinae&lt;TensorEvaluatorType, PacketType, IndexType&gt;(nullptr))' data-ref="EigenForTFLite::internal::TensorEvaluatorHasPartialPacket::status" data-ref-filename="EigenForTFLite..internal..TensorEvaluatorHasPartialPacket..status">status</dfn>;</td></tr>
+<tr><th id="65">65</th><td></td></tr>
+<tr><th id="66">66</th><td>  <em>static</em> <b>constexpr</b> <em>bool</em> <dfn class="decl" id="EigenForTFLite::internal::TensorEvaluatorHasPartialPacket::value" title='EigenForTFLite::internal::TensorEvaluatorHasPartialPacket::value' data-ref="EigenForTFLite::internal::TensorEvaluatorHasPartialPacket::value" data-ref-filename="EigenForTFLite..internal..TensorEvaluatorHasPartialPacket..value">value</dfn> = <a class="typedef" href="#EigenForTFLite::internal::TensorEvaluatorHasPartialPacket::status" title='EigenForTFLite::internal::TensorEvaluatorHasPartialPacket::status' data-type='decltype(functionExistsSfinae&lt;TensorEvaluatorType, PacketType, IndexType&gt;(nullptr))' data-ref="EigenForTFLite::internal::TensorEvaluatorHasPartialPacket::status" data-ref-filename="EigenForTFLite..internal..TensorEvaluatorHasPartialPacket..status">status</a>::value;</td></tr>
+<tr><th id="67">67</th><td>};</td></tr>
+<tr><th id="68">68</th><td></td></tr>
+<tr><th id="69">69</th><td><i>// Compute a mask for loading/storing coefficients in/from a packet in a</i></td></tr>
+<tr><th id="70">70</th><td><i>// [from, to) range. If the mask bit is 1, element will be loaded/stored.</i></td></tr>
+<tr><th id="71">71</th><td><b>template</b> &lt;<b>typename</b> Packet&gt;</td></tr>
+<tr><th id="72">72</th><td><a class="macro" href="../../../../../eigen/Eigen/src/Core/util/Macros.h.html#862" title="" data-ref="_M/EIGEN_DEVICE_FUNC">EIGEN_DEVICE_FUNC</a> <a class="macro" href="../../../../../eigen/Eigen/src/Core/util/Macros.h.html#816" title="__attribute__((always_inline)) inline" data-ref="_M/EIGEN_ALWAYS_INLINE">EIGEN_ALWAYS_INLINE</a></td></tr>
+<tr><th id="73">73</th><td>    <b>typename</b> <span class="namespace">std::</span><span class='type' title='std::enable_if' data-ref="std::enable_if" data-ref-filename="std..enable_if">enable_if</span>&lt;<a class="type" href="../../../../../eigen/Eigen/src/Core/util/XprHelper.h.html#EigenForTFLite::internal::unpacket_traits" title='EigenForTFLite::internal::unpacket_traits' data-ref="EigenForTFLite::internal::unpacket_traits" data-ref-filename="EigenForTFLite..internal..unpacket_traits">unpacket_traits</a>&lt;Packet&gt;::masked_load_available,</td></tr>
+<tr><th id="74">74</th><td>                            <b>typename</b> <a class="type" href="../../../../../eigen/Eigen/src/Core/util/XprHelper.h.html#EigenForTFLite::internal::unpacket_traits" title='EigenForTFLite::internal::unpacket_traits' data-ref="EigenForTFLite::internal::unpacket_traits" data-ref-filename="EigenForTFLite..internal..unpacket_traits">unpacket_traits</a>&lt;Packet&gt;::mask_t&gt;::type</td></tr>
+<tr><th id="75">75</th><td>    <dfn class="decl def fn" id="_ZN14EigenForTFLite8internal4maskEii" title='EigenForTFLite::internal::mask' data-ref="_ZN14EigenForTFLite8internal4maskEii" data-ref-filename="_ZN14EigenForTFLite8internal4maskEii">mask</dfn>(<em>int</em> <dfn class="local col6 decl" id="226from" title='from' data-type='int' data-ref="226from" data-ref-filename="226from">from</dfn>, <em>int</em> <dfn class="local col7 decl" id="227to" title='to' data-type='int' data-ref="227to" data-ref-filename="227to">to</dfn>) {</td></tr>
+<tr><th id="76">76</th><td>  <em>const</em> <a class="typedef" href="../../../../../eigen/Eigen/src/Core/util/Meta.h.html#EigenForTFLite::Index" title='EigenForTFLite::Index' data-type='std::ptrdiff_t' data-ref="EigenForTFLite::Index" data-ref-filename="EigenForTFLite..Index">Index</a> <dfn class="local col8 decl" id="228packet_size" title='packet_size' data-type='const EigenForTFLite::Index' data-ref="228packet_size" data-ref-filename="228packet_size">packet_size</dfn> = <span class="namespace">internal::</span><a class="type" href="../../../../../eigen/Eigen/src/Core/util/XprHelper.h.html#EigenForTFLite::internal::unpacket_traits" title='EigenForTFLite::internal::unpacket_traits' data-ref="EigenForTFLite::internal::unpacket_traits" data-ref-filename="EigenForTFLite..internal..unpacket_traits">unpacket_traits</a>&lt;Packet&gt;::size;</td></tr>
+<tr><th id="77">77</th><td>  <a class="macro" href="../../../../../eigen/Eigen/src/Core/util/Macros.h.html#923" title="" data-ref="_M/eigen_assert">eigen_assert</a>(<var>0</var> &lt;= from &amp;&amp; to &lt;= (packet_size + <var>1</var>) &amp;&amp; from &lt; to);</td></tr>
+<tr><th id="78">78</th><td></td></tr>
+<tr><th id="79">79</th><td>  <b>using</b> <dfn class="local col9 typedef" id="229Mask" title='Mask' data-type='typename internal::unpacket_traits&lt;Packet&gt;::mask_t' data-ref="229Mask" data-ref-filename="229Mask">Mask</dfn> = <b>typename</b> <span class="namespace">internal::</span><a class="type" href="../../../../../eigen/Eigen/src/Core/util/XprHelper.h.html#EigenForTFLite::internal::unpacket_traits" title='EigenForTFLite::internal::unpacket_traits' data-ref="EigenForTFLite::internal::unpacket_traits" data-ref-filename="EigenForTFLite..internal..unpacket_traits">unpacket_traits</a>&lt;Packet&gt;::mask_t;</td></tr>
+<tr><th id="80">80</th><td>  <em>const</em> <a class="local col9 typedef" href="#229Mask" title='Mask' data-type='typename internal::unpacket_traits&lt;Packet&gt;::mask_t' data-ref="229Mask" data-ref-filename="229Mask">Mask</a> <dfn class="local col0 decl" id="230mask_max" title='mask_max' data-type='const Mask' data-ref="230mask_max" data-ref-filename="230mask_max">mask_max</dfn> = <span class="namespace">std::</span><span class='type' title='std::numeric_limits' data-ref="std::numeric_limits" data-ref-filename="std..numeric_limits">numeric_limits</span>&lt;<a class="local col9 typedef" href="#229Mask" title='Mask' data-type='typename internal::unpacket_traits&lt;Packet&gt;::mask_t' data-ref="229Mask" data-ref-filename="229Mask">Mask</a>&gt;::max();</td></tr>
+<tr><th id="81">81</th><td></td></tr>
+<tr><th id="82">82</th><td>  <b>return</b> (<a class="local col0 ref" href="#230mask_max" title='mask_max' data-ref="230mask_max" data-ref-filename="230mask_max">mask_max</a> &gt;&gt; (<a class="local col8 ref" href="#228packet_size" title='packet_size' data-ref="228packet_size" data-ref-filename="228packet_size">packet_size</a> - <a class="local col7 ref" href="#227to" title='to' data-ref="227to" data-ref-filename="227to">to</a>)) ^ (<a class="local col0 ref" href="#230mask_max" title='mask_max' data-ref="230mask_max" data-ref-filename="230mask_max">mask_max</a> &gt;&gt; (<a class="local col8 ref" href="#228packet_size" title='packet_size' data-ref="228packet_size" data-ref-filename="228packet_size">packet_size</a> - <a class="local col6 ref" href="#226from" title='from' data-ref="226from" data-ref-filename="226from">from</a>));</td></tr>
+<tr><th id="83">83</th><td>}</td></tr>
+<tr><th id="84">84</th><td></td></tr>
+<tr><th id="85">85</th><td>}  <i>// namespace internal</i></td></tr>
+<tr><th id="86">86</th><td>}  <i>// namespace Eigen</i></td></tr>
+<tr><th id="87">87</th><td></td></tr>
+<tr><th id="88">88</th><td><u>#<span data-ppcond="16">endif</span>  // TENSORFLOW_CORE_KERNELS_EIGEN_CONVOLUTION_HELPERS_H_</u></td></tr>
+<tr><th id="89">89</th><td></td></tr>
+</table><hr/><p id='footer'>
+Generated while processing <a href='../../lite/kernels/conv.cc.html'>halide/build-apps/_deps/tflite-src/tensorflow/lite/kernels/conv.cc</a><br/>Generated on <em>2021-Aug-05</em> from project halide revision <em>v12.0.1</em>

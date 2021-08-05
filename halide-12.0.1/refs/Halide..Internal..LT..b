@@ -1,3 +1,5 @@
+<dec f='halide/halide-install/include/Halide.h' l='12014' type='Halide::Expr'/>
+<offset>320</offset>
 <dec f='halide/build/include/Halide.h' l='12014' type='Halide::Expr'/>
 <offset>320</offset>
 <dec f='halide/src/IR.h' l='122' type='Halide::Expr'/>

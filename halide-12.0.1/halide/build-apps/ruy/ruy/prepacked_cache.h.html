@@ -1,0 +1,158 @@
+<!doctype html>
+<html>
+<head>
+<meta name="viewport" content="width=device-width, initial-scale=1.0"><title>prepacked_cache.h source code [halide/build-apps/ruy/ruy/prepacked_cache.h] - Woboq Code Browser</title>
+<meta name="woboq:interestingDefinitions" content="ruy::PrepackedCache "/>
+<link rel="stylesheet" href="../../../.././data/qtcreator.css" title="QtCreator"/>
+<link rel="alternate stylesheet" href="../../../.././data/kdevelop.css" title="KDevelop"/>
+<script type="text/javascript" src="../../../.././data/jquery/jquery.min.js"></script>
+<script type="text/javascript" src="../../../.././data/jquery/jquery-ui.min.js"></script>
+<script>var file = 'halide/build-apps/ruy/ruy/prepacked_cache.h'; var root_path = '../../../..'; var data_path = '../../../.././data'; var ecma_script_api_version = 2;</script>
+<script src='../../../.././data/codebrowser.js'></script>
+</head>
+<body><div id='header'><h1 id='breadcrumb'><span>Browse the source code of </span><a href='../../..'>halide</a>/<a href='../..'>build-apps</a>/<a href='..'>ruy</a>/<a href='./'>ruy</a>/<a href='prepacked_cache.h.html'>prepacked_cache.h</a></h1></div>
+<hr/><div id='content'><table class="code">
+<tr><th id="1">1</th><td><i>/* Copyright 2019 Google LLC. All Rights Reserved.</i></td></tr>
+<tr><th id="2">2</th><td><i></i></td></tr>
+<tr><th id="3">3</th><td><i>Licensed under the Apache License, Version 2.0 (the "License");</i></td></tr>
+<tr><th id="4">4</th><td><i>you may not use this file except in compliance with the License.</i></td></tr>
+<tr><th id="5">5</th><td><i>You may obtain a copy of the License at</i></td></tr>
+<tr><th id="6">6</th><td><i></i></td></tr>
+<tr><th id="7">7</th><td><i>    <a href="http://www.apache.org/licenses/LICENSE-2.0">http://www.apache.org/licenses/LICENSE-2.0</a></i></td></tr>
+<tr><th id="8">8</th><td><i></i></td></tr>
+<tr><th id="9">9</th><td><i>Unless required by applicable law or agreed to in writing, software</i></td></tr>
+<tr><th id="10">10</th><td><i>distributed under the License is distributed on an "AS IS" BASIS,</i></td></tr>
+<tr><th id="11">11</th><td><i>WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.</i></td></tr>
+<tr><th id="12">12</th><td><i>See the License for the specific language governing permissions and</i></td></tr>
+<tr><th id="13">13</th><td><i>limitations under the License.</i></td></tr>
+<tr><th id="14">14</th><td><i>==============================================================================*/</i></td></tr>
+<tr><th id="15">15</th><td></td></tr>
+<tr><th id="16">16</th><td><u>#<span data-ppcond="16">ifndef</span> <span class="macro" data-ref="_M/RUY_RUY_PREPACKED_CACHE_H_">RUY_RUY_PREPACKED_CACHE_H_</span></u></td></tr>
+<tr><th id="17">17</th><td><u>#define <dfn class="macro" id="_M/RUY_RUY_PREPACKED_CACHE_H_" data-ref="_M/RUY_RUY_PREPACKED_CACHE_H_">RUY_RUY_PREPACKED_CACHE_H_</dfn></u></td></tr>
+<tr><th id="18">18</th><td></td></tr>
+<tr><th id="19">19</th><td><u>#include &lt;cstddef&gt;</u></td></tr>
+<tr><th id="20">20</th><td><u>#include &lt;cstdint&gt;</u></td></tr>
+<tr><th id="21">21</th><td><u>#include &lt;unordered_map&gt;</u></td></tr>
+<tr><th id="22">22</th><td></td></tr>
+<tr><th id="23">23</th><td><u>#include <a href="mat.h.html">"ruy/mat.h"</a></u></td></tr>
+<tr><th id="24">24</th><td></td></tr>
+<tr><th id="25">25</th><td><b>namespace</b> <span class="namespace">ruy</span> {</td></tr>
+<tr><th id="26">26</th><td></td></tr>
+<tr><th id="27">27</th><td><i>// "Low effort" Least Recently Used Cache for Prepacked Matrices</i></td></tr>
+<tr><th id="28">28</th><td><i>// A cache mechanism for prepacked matrices that ejects oldest entries.</i></td></tr>
+<tr><th id="29">29</th><td><i>// The implementation is "low effort" in the following ways:</i></td></tr>
+<tr><th id="30">30</th><td><i>//  - we just linearly search for the oldest entry when doing an ejection</i></td></tr>
+<tr><th id="31">31</th><td><i>//  - the ejection policy is very simple: if the new size would be above the</i></td></tr>
+<tr><th id="32">32</th><td><i>// .  threshold, we will eject entries until the size is below the threshold.</i></td></tr>
+<tr><th id="33">33</th><td><i>// Current use cases (RNNs with GEMV operations) indicate that ejection is rare</i></td></tr>
+<tr><th id="34">34</th><td><i>// and memory constraints are tight, so we devote no additional storage to the</i></td></tr>
+<tr><th id="35">35</th><td><i>// LRU mechanism and accept O(n) search to eject oldest entry. In practice,</i></td></tr>
+<tr><th id="36">36</th><td><i>// the number of total entries has not been shown to be large.</i></td></tr>
+<tr><th id="37">37</th><td><i>//</i></td></tr>
+<tr><th id="38">38</th><td><i>// An instance of PrepackedCache is always owned by a Context. Just like</i></td></tr>
+<tr><th id="39">39</th><td><i>// Context, no "thread safety" consideration is applicable to this class:</i></td></tr>
+<tr><th id="40">40</th><td><i>// no two threads may simulaneously be accessing the same instance.</i></td></tr>
+<tr><th id="41">41</th><td><b>class</b> <dfn class="type def" id="ruy::PrepackedCache" title='ruy::PrepackedCache' data-ref="ruy::PrepackedCache" data-ref-filename="ruy..PrepackedCache">PrepackedCache</dfn> final {</td></tr>
+<tr><th id="42">42</th><td> <b>public</b>:</td></tr>
+<tr><th id="43">43</th><td>  <b>enum</b> <b>class</b> <dfn class="type def" id="ruy::PrepackedCache::Action" title='ruy::PrepackedCache::Action' data-ref="ruy::PrepackedCache::Action" data-ref-filename="ruy..PrepackedCache..Action">Action</dfn> { <dfn class="enum" id="ruy::PrepackedCache::Action::kGotExistingEntry" title='ruy::PrepackedCache::Action::kGotExistingEntry' data-ref="ruy::PrepackedCache::Action::kGotExistingEntry" data-ref-filename="ruy..PrepackedCache..Action..kGotExistingEntry">kGotExistingEntry</dfn>, <dfn class="enum" id="ruy::PrepackedCache::Action::kInsertedNewEntry" title='ruy::PrepackedCache::Action::kInsertedNewEntry' data-ref="ruy::PrepackedCache::Action::kInsertedNewEntry" data-ref-filename="ruy..PrepackedCache..Action..kInsertedNewEntry">kInsertedNewEntry</dfn> };</td></tr>
+<tr><th id="44">44</th><td></td></tr>
+<tr><th id="45">45</th><td>  <em>static</em> <b>constexpr</b> <em>int</em> <dfn class="decl" id="ruy::PrepackedCache::kDefaultMaxBuffersBytes" title='ruy::PrepackedCache::kDefaultMaxBuffersBytes' data-ref="ruy::PrepackedCache::kDefaultMaxBuffersBytes" data-ref-filename="ruy..PrepackedCache..kDefaultMaxBuffersBytes">kDefaultMaxBuffersBytes</dfn> = <var>1</var> &lt;&lt; <var>28</var>;</td></tr>
+<tr><th id="46">46</th><td></td></tr>
+<tr><th id="47">47</th><td>  <i>// A key in this key-value cache. Equality of keys implies interchangeable</i></td></tr>
+<tr><th id="48">48</th><td><i>  // packed matrices, so we must be careful to make this Key type specific</i></td></tr>
+<tr><th id="49">49</th><td><i>  // enough, and its equality comparison operator strict enough.</i></td></tr>
+<tr><th id="50">50</th><td><i>  //</i></td></tr>
+<tr><th id="51">51</th><td><i>  // These keys need to be used before the packed matrix buffers are allocated</i></td></tr>
+<tr><th id="52">52</th><td><i>  // (since they are used to determine whether to allocate a new buffer).</i></td></tr>
+<tr><th id="53">53</th><td><i>  // So they instead use the source matrix's data pointer. On the other hand,</i></td></tr>
+<tr><th id="54">54</th><td><i>  // the packed matrix's layout structure is already available by the time we</i></td></tr>
+<tr><th id="55">55</th><td><i>  // need to handle Keys, and that's fortunate because it is more specific</i></td></tr>
+<tr><th id="56">56</th><td><i>  // than the source matrix's layout: it also encodes details about the kernel's</i></td></tr>
+<tr><th id="57">57</th><td><i>  // small-scale block layout. In the past, we made the kernel function pointer</i></td></tr>
+<tr><th id="58">58</th><td><i>  // part of the cache key, but all that is relevant here is the packed layout.</i></td></tr>
+<tr><th id="59">59</th><td><i>  //</i></td></tr>
+<tr><th id="60">60</th><td><i>  // The only other field that needs to be involved is the zero_point, for</i></td></tr>
+<tr><th id="61">61</th><td><i>  // quantized matrices, although it seems far-fetched that the same matrix</i></td></tr>
+<tr><th id="62">62</th><td><i>  // data would be reused with different zero_point values.</i></td></tr>
+<tr><th id="63">63</th><td><i>  //</i></td></tr>
+<tr><th id="64">64</th><td><i>  // The data types (PEMat::data_type and PEMat::sums_type) are omitted based on</i></td></tr>
+<tr><th id="65">65</th><td><i>  // the "strict aliasing" model: each memory location should contain data of</i></td></tr>
+<tr><th id="66">66</th><td><i>  // only one type. This could be relaxed in the future, by adding data types</i></td></tr>
+<tr><th id="67">67</th><td><i>  // to this Key type, if a use case arises.</i></td></tr>
+<tr><th id="68">68</th><td>  <b>struct</b> <dfn class="type def" id="ruy::PrepackedCache::Key" title='ruy::PrepackedCache::Key' data-ref="ruy::PrepackedCache::Key" data-ref-filename="ruy..PrepackedCache..Key">Key</dfn> {</td></tr>
+<tr><th id="69">69</th><td>    <i>// The source matrix's data pointer.</i></td></tr>
+<tr><th id="70">70</th><td>    <em>const</em> <em>void</em>* <dfn class="decl field" id="ruy::PrepackedCache::Key::src_data" title='ruy::PrepackedCache::Key::src_data' data-ref="ruy::PrepackedCache::Key::src_data" data-ref-filename="ruy..PrepackedCache..Key..src_data">src_data</dfn>;</td></tr>
+<tr><th id="71">71</th><td>    <i>// The packed matrix's layout, see PEMat::layout.</i></td></tr>
+<tr><th id="72">72</th><td>    <a class="type" href="mat.h.html#ruy::PMatLayout" title='ruy::PMatLayout' data-ref="ruy::PMatLayout" data-ref-filename="ruy..PMatLayout">PMatLayout</a> <dfn class="decl field" id="ruy::PrepackedCache::Key::packed_layout" title='ruy::PrepackedCache::Key::packed_layout' data-ref="ruy::PrepackedCache::Key::packed_layout" data-ref-filename="ruy..PrepackedCache..Key..packed_layout">packed_layout</dfn>;</td></tr>
+<tr><th id="73">73</th><td>    <i>// The packed matrix's zero point (for integer-quantized matrices only).</i></td></tr>
+<tr><th id="74">74</th><td>    <span class="namespace">std::</span><a class="typedef" href="../../../../include/bits/stdint-intn.h.html#int32_t" title='int32_t' data-type='__int32_t' data-ref="int32_t" data-ref-filename="int32_t">int32_t</a> <dfn class="decl field" id="ruy::PrepackedCache::Key::zero_point" title='ruy::PrepackedCache::Key::zero_point' data-ref="ruy::PrepackedCache::Key::zero_point" data-ref-filename="ruy..PrepackedCache..Key..zero_point">zero_point</dfn>;</td></tr>
+<tr><th id="75">75</th><td>  };</td></tr>
+<tr><th id="76">76</th><td></td></tr>
+<tr><th id="77">77</th><td>  <b>friend</b> <em>bool</em> <dfn class="decl def fn" id="_ZN3ruyeqERKNS_14PrepackedCache3KeyES3_" title='ruy::operator==' data-ref="_ZN3ruyeqERKNS_14PrepackedCache3KeyES3_" data-ref-filename="_ZN3ruyeqERKNS_14PrepackedCache3KeyES3_"><b>operator</b>==</dfn>(<em>const</em> <a class="type" href="#ruy::PrepackedCache::Key" title='ruy::PrepackedCache::Key' data-ref="ruy::PrepackedCache::Key" data-ref-filename="ruy..PrepackedCache..Key">Key</a>&amp; <dfn class="local col1 decl" id="1a" title='a' data-type='const ruy::PrepackedCache::Key &amp;' data-ref="1a" data-ref-filename="1a">a</dfn>, <em>const</em> <a class="type" href="#ruy::PrepackedCache::Key" title='ruy::PrepackedCache::Key' data-ref="ruy::PrepackedCache::Key" data-ref-filename="ruy..PrepackedCache..Key">Key</a>&amp; <dfn class="local col2 decl" id="2b" title='b' data-type='const ruy::PrepackedCache::Key &amp;' data-ref="2b" data-ref-filename="2b">b</dfn>) {</td></tr>
+<tr><th id="78">78</th><td>    <b>return</b> <a class="local col1 ref" href="#1a" title='a' data-ref="1a" data-ref-filename="1a">a</a>.<a class="ref field" href="#ruy::PrepackedCache::Key::src_data" title='ruy::PrepackedCache::Key::src_data' data-ref="ruy::PrepackedCache::Key::src_data" data-ref-filename="ruy..PrepackedCache..Key..src_data">src_data</a> == <a class="local col2 ref" href="#2b" title='b' data-ref="2b" data-ref-filename="2b">b</a>.<a class="ref field" href="#ruy::PrepackedCache::Key::src_data" title='ruy::PrepackedCache::Key::src_data' data-ref="ruy::PrepackedCache::Key::src_data" data-ref-filename="ruy..PrepackedCache..Key..src_data">src_data</a> &amp;&amp; <a class="local col1 ref" href="#1a" title='a' data-ref="1a" data-ref-filename="1a">a</a>.<a class="ref field" href="#ruy::PrepackedCache::Key::packed_layout" title='ruy::PrepackedCache::Key::packed_layout' data-ref="ruy::PrepackedCache::Key::packed_layout" data-ref-filename="ruy..PrepackedCache..Key..packed_layout">packed_layout</a> <a class="ref fn" href="mat.h.html#_ZN3ruyeqERKNS_10PMatLayoutES2_" title='ruy::operator==' data-ref="_ZN3ruyeqERKNS_10PMatLayoutES2_" data-ref-filename="_ZN3ruyeqERKNS_10PMatLayoutES2_">==</a> <a class="local col2 ref" href="#2b" title='b' data-ref="2b" data-ref-filename="2b">b</a>.<a class="ref field" href="#ruy::PrepackedCache::Key::packed_layout" title='ruy::PrepackedCache::Key::packed_layout' data-ref="ruy::PrepackedCache::Key::packed_layout" data-ref-filename="ruy..PrepackedCache..Key..packed_layout">packed_layout</a> &amp;&amp;</td></tr>
+<tr><th id="79">79</th><td>           <a class="local col1 ref" href="#1a" title='a' data-ref="1a" data-ref-filename="1a">a</a>.<a class="ref field" href="#ruy::PrepackedCache::Key::zero_point" title='ruy::PrepackedCache::Key::zero_point' data-ref="ruy::PrepackedCache::Key::zero_point" data-ref-filename="ruy..PrepackedCache..Key..zero_point">zero_point</a> == <a class="local col2 ref" href="#2b" title='b' data-ref="2b" data-ref-filename="2b">b</a>.<a class="ref field" href="#ruy::PrepackedCache::Key::zero_point" title='ruy::PrepackedCache::Key::zero_point' data-ref="ruy::PrepackedCache::Key::zero_point" data-ref-filename="ruy..PrepackedCache..Key..zero_point">zero_point</a>;</td></tr>
+<tr><th id="80">80</th><td>  }</td></tr>
+<tr><th id="81">81</th><td></td></tr>
+<tr><th id="82">82</th><td>  <b>struct</b> <dfn class="type def" id="ruy::PrepackedCache::KeyHash" title='ruy::PrepackedCache::KeyHash' data-ref="ruy::PrepackedCache::KeyHash" data-ref-filename="ruy..PrepackedCache..KeyHash">KeyHash</dfn> {</td></tr>
+<tr><th id="83">83</th><td>    <span class="namespace">std::</span><span class='typedef' title='std::size_t' data-type='unsigned long' data-ref="std::size_t" data-ref-filename="std..size_t">size_t</span> <dfn class="decl fn" id="_ZNK3ruy14PrepackedCache7KeyHashclERKNS0_3KeyE" title='ruy::PrepackedCache::KeyHash::operator()' data-ref="_ZNK3ruy14PrepackedCache7KeyHashclERKNS0_3KeyE" data-ref-filename="_ZNK3ruy14PrepackedCache7KeyHashclERKNS0_3KeyE"><b>operator</b>()</dfn>(<em>const</em> <a class="type" href="#ruy::PrepackedCache::Key" title='ruy::PrepackedCache::Key' data-ref="ruy::PrepackedCache::Key" data-ref-filename="ruy..PrepackedCache..Key">Key</a>&amp;) <em>const</em>;</td></tr>
+<tr><th id="84">84</th><td>  };</td></tr>
+<tr><th id="85">85</th><td></td></tr>
+<tr><th id="86">86</th><td>  <i>// A dummy timestamp to associate to each entry (see struct Entry) to</i></td></tr>
+<tr><th id="87">87</th><td><i>  // determine which entry is "least recently used" when ejecting entries.</i></td></tr>
+<tr><th id="88">88</th><td><i>  // This is just an integer counter, not related to physical time.</i></td></tr>
+<tr><th id="89">89</th><td><i>  // It does not need to be atomic because only one thread uses an instance</i></td></tr>
+<tr><th id="90">90</th><td><i>  // of PrepackedCache at a time (see class comment).</i></td></tr>
+<tr><th id="91">91</th><td>  <b>using</b> <dfn class="typedef" id="ruy::PrepackedCache::Timestamp" title='ruy::PrepackedCache::Timestamp' data-type='std::uint64_t' data-ref="ruy::PrepackedCache::Timestamp" data-ref-filename="ruy..PrepackedCache..Timestamp">Timestamp</dfn> = <span class="namespace">std::</span><a class="typedef" href="../../../../include/bits/stdint-uintn.h.html#uint64_t" title='uint64_t' data-type='__uint64_t' data-ref="uint64_t" data-ref-filename="uint64_t">uint64_t</a>;</td></tr>
+<tr><th id="92">92</th><td></td></tr>
+<tr><th id="93">93</th><td>  <b>struct</b> <dfn class="type def" id="ruy::PrepackedCache::Entry" title='ruy::PrepackedCache::Entry' data-ref="ruy::PrepackedCache::Entry" data-ref-filename="ruy..PrepackedCache..Entry">Entry</dfn> {</td></tr>
+<tr><th id="94">94</th><td>    <a class="type" href="mat.h.html#ruy::PEMat" title='ruy::PEMat' data-ref="ruy::PEMat" data-ref-filename="ruy..PEMat">PEMat</a> <dfn class="decl field" id="ruy::PrepackedCache::Entry::packed_matrix" title='ruy::PrepackedCache::Entry::packed_matrix' data-ref="ruy::PrepackedCache::Entry::packed_matrix" data-ref-filename="ruy..PrepackedCache..Entry..packed_matrix">packed_matrix</dfn>;</td></tr>
+<tr><th id="95">95</th><td>    <a class="typedef" href="#ruy::PrepackedCache::Timestamp" title='ruy::PrepackedCache::Timestamp' data-type='std::uint64_t' data-ref="ruy::PrepackedCache::Timestamp" data-ref-filename="ruy..PrepackedCache..Timestamp">Timestamp</a> <dfn class="decl field" id="ruy::PrepackedCache::Entry::timestamp" title='ruy::PrepackedCache::Entry::timestamp' data-ref="ruy::PrepackedCache::Entry::timestamp" data-ref-filename="ruy..PrepackedCache..Entry..timestamp">timestamp</dfn>;</td></tr>
+<tr><th id="96">96</th><td>  };</td></tr>
+<tr><th id="97">97</th><td></td></tr>
+<tr><th id="98">98</th><td>  <b>explicit</b> <dfn class="decl def fn" id="_ZN3ruy14PrepackedCacheC1Ei" title='ruy::PrepackedCache::PrepackedCache' data-ref="_ZN3ruy14PrepackedCacheC1Ei" data-ref-filename="_ZN3ruy14PrepackedCacheC1Ei">PrepackedCache</dfn>(<em>int</em> <dfn class="local col3 decl" id="3max_buffers_bytes" title='max_buffers_bytes' data-type='int' data-ref="3max_buffers_bytes" data-ref-filename="3max_buffers_bytes">max_buffers_bytes</dfn> = <a class="member" href="#ruy::PrepackedCache::kDefaultMaxBuffersBytes" title='ruy::PrepackedCache::kDefaultMaxBuffersBytes' data-ref="ruy::PrepackedCache::kDefaultMaxBuffersBytes" data-ref-filename="ruy..PrepackedCache..kDefaultMaxBuffersBytes">kDefaultMaxBuffersBytes</a>)</td></tr>
+<tr><th id="99">99</th><td>      : <a class="member field" href="#ruy::PrepackedCache::max_buffers_bytes_" title='ruy::PrepackedCache::max_buffers_bytes_' data-ref="ruy::PrepackedCache::max_buffers_bytes_" data-ref-filename="ruy..PrepackedCache..max_buffers_bytes_">max_buffers_bytes_</a>(<a class="local col3 ref" href="#3max_buffers_bytes" title='max_buffers_bytes' data-ref="3max_buffers_bytes" data-ref-filename="3max_buffers_bytes">max_buffers_bytes</a>) {}</td></tr>
+<tr><th id="100">100</th><td></td></tr>
+<tr><th id="101">101</th><td>  <dfn class="decl fn" id="_ZN3ruy14PrepackedCacheD1Ev" title='ruy::PrepackedCache::~PrepackedCache' data-ref="_ZN3ruy14PrepackedCacheD1Ev" data-ref-filename="_ZN3ruy14PrepackedCacheD1Ev">~PrepackedCache</dfn>();</td></tr>
+<tr><th id="102">102</th><td></td></tr>
+<tr><th id="103">103</th><td>  <i>// Returns the total size in bytes of buffers held in this cache.</i></td></tr>
+<tr><th id="104">104</th><td>  <span class="namespace">std::</span><span class='typedef' title='std::ptrdiff_t' data-type='long' data-ref="std::ptrdiff_t" data-ref-filename="std..ptrdiff_t">ptrdiff_t</span> <dfn class="decl def fn" id="_ZNK3ruy14PrepackedCache12BuffersBytesEv" title='ruy::PrepackedCache::BuffersBytes' data-ref="_ZNK3ruy14PrepackedCache12BuffersBytesEv" data-ref-filename="_ZNK3ruy14PrepackedCache12BuffersBytesEv">BuffersBytes</dfn>() <em>const</em> { <b>return</b> <a class="member field" href="#ruy::PrepackedCache::buffers_bytes_" title='ruy::PrepackedCache::buffers_bytes_' data-ref="ruy::PrepackedCache::buffers_bytes_" data-ref-filename="ruy..PrepackedCache..buffers_bytes_">buffers_bytes_</a>; }</td></tr>
+<tr><th id="105">105</th><td></td></tr>
+<tr><th id="106">106</th><td>  <i>// Returns the number of packed matrices held in this cache.</i></td></tr>
+<tr><th id="107">107</th><td>  <em>int</em> <dfn class="decl def fn" id="_ZNK3ruy14PrepackedCache11MatrixCountEv" title='ruy::PrepackedCache::MatrixCount' data-ref="_ZNK3ruy14PrepackedCache11MatrixCountEv" data-ref-filename="_ZNK3ruy14PrepackedCache11MatrixCountEv">MatrixCount</dfn>() <em>const</em> { <b>return</b> <a class="member field" href="#ruy::PrepackedCache::cache_" title='ruy::PrepackedCache::cache_' data-ref="ruy::PrepackedCache::cache_" data-ref-filename="ruy..PrepackedCache..cache_">cache_</a>.<span class='ref fn' title='std::unordered_map::size' data-ref="_ZNKSt13unordered_map4sizeEv" data-ref-filename="_ZNKSt13unordered_map4sizeEv">size</span>(); }</td></tr>
+<tr><th id="108">108</th><td></td></tr>
+<tr><th id="109">109</th><td>  <i>// This is the method by which new matrices are cached, and existing cache</i></td></tr>
+<tr><th id="110">110</th><td><i>  // entries are queried.</i></td></tr>
+<tr><th id="111">111</th><td><i>  // `src_data` is the source matrix data pointer.</i></td></tr>
+<tr><th id="112">112</th><td><i>  // `packed_matrix` is a packed matrix structure where all fields have already</i></td></tr>
+<tr><th id="113">113</th><td><i>  // been populated, except for the `data` and `sums` pointers which have not</i></td></tr>
+<tr><th id="114">114</th><td><i>  // yet been allocated.</i></td></tr>
+<tr><th id="115">115</th><td><i>  //</i></td></tr>
+<tr><th id="116">116</th><td><i>  // This method:</i></td></tr>
+<tr><th id="117">117</th><td><i>  // 1. Queries the cache for an entry matching the given `src_data` pointer and</i></td></tr>
+<tr><th id="118">118</th><td><i>  //    the relevant fields of `packed_matrix`, particularly its `layout`.</i></td></tr>
+<tr><th id="119">119</th><td><i>  // 2. If a matching cache entry does not exist, it is created and inserted</i></td></tr>
+<tr><th id="120">120</th><td><i>  //    into the cache, and its `data` and `sums` buffers are allocated.</i></td></tr>
+<tr><th id="121">121</th><td><i>  // 3. The `packed_matrix` has its `data` and `sums` pointers set to point</i></td></tr>
+<tr><th id="122">122</th><td><i>  //    to the allocated buffers.</i></td></tr>
+<tr><th id="123">123</th><td><i>  // 4. The cache entry's timestamp is updated so it's the most recently used</i></td></tr>
+<tr><th id="124">124</th><td><i>  //    entry.</i></td></tr>
+<tr><th id="125">125</th><td><i>  // 5. The return value is Action::kInsertedNewEntry if at step 2 a new</i></td></tr>
+<tr><th id="126">126</th><td><i>  //    entry was created. Otherwise it is Action::kGotExistingEntry.</i></td></tr>
+<tr><th id="127">127</th><td>  <a class="type" href="#ruy::PrepackedCache::Action" title='ruy::PrepackedCache::Action' data-ref="ruy::PrepackedCache::Action" data-ref-filename="ruy..PrepackedCache..Action">Action</a> <dfn class="decl fn" id="_ZN3ruy14PrepackedCache3GetEPKvPNS_5PEMatE" title='ruy::PrepackedCache::Get' data-ref="_ZN3ruy14PrepackedCache3GetEPKvPNS_5PEMatE" data-ref-filename="_ZN3ruy14PrepackedCache3GetEPKvPNS_5PEMatE">Get</dfn>(<em>const</em> <em>void</em>* <dfn class="local col4 decl" id="4src_data" title='src_data' data-type='const void *' data-ref="4src_data" data-ref-filename="4src_data">src_data</dfn>, <a class="type" href="mat.h.html#ruy::PEMat" title='ruy::PEMat' data-ref="ruy::PEMat" data-ref-filename="ruy..PEMat">PEMat</a>* <dfn class="local col5 decl" id="5packed_matrix" title='packed_matrix' data-type='ruy::PEMat *' data-ref="5packed_matrix" data-ref-filename="5packed_matrix">packed_matrix</dfn>);</td></tr>
+<tr><th id="128">128</th><td></td></tr>
+<tr><th id="129">129</th><td> <b>private</b>:</td></tr>
+<tr><th id="130">130</th><td>  <em>void</em> <dfn class="decl fn" id="_ZN3ruy14PrepackedCache8EjectOneEv" title='ruy::PrepackedCache::EjectOne' data-ref="_ZN3ruy14PrepackedCache8EjectOneEv" data-ref-filename="_ZN3ruy14PrepackedCache8EjectOneEv">EjectOne</dfn>();</td></tr>
+<tr><th id="131">131</th><td>  <em>void</em> <dfn class="decl fn" id="_ZN3ruy14PrepackedCache17EjectUntilRoomForEl" title='ruy::PrepackedCache::EjectUntilRoomFor' data-ref="_ZN3ruy14PrepackedCache17EjectUntilRoomForEl" data-ref-filename="_ZN3ruy14PrepackedCache17EjectUntilRoomForEl">EjectUntilRoomFor</dfn>(<span class="namespace">std::</span><span class='typedef' title='std::ptrdiff_t' data-type='long' data-ref="std::ptrdiff_t" data-ref-filename="std..ptrdiff_t">ptrdiff_t</span> <dfn class="local col6 decl" id="6new_bytes" title='new_bytes' data-type='std::ptrdiff_t' data-ref="6new_bytes" data-ref-filename="6new_bytes">new_bytes</dfn>);</td></tr>
+<tr><th id="132">132</th><td></td></tr>
+<tr><th id="133">133</th><td>  <span class="namespace">std::</span><span class='type' title='std::unordered_map' data-ref="std::unordered_map" data-ref-filename="std..unordered_map">unordered_map</span>&lt;<a class="type" href="#ruy::PrepackedCache::Key" title='ruy::PrepackedCache::Key' data-ref="ruy::PrepackedCache::Key" data-ref-filename="ruy..PrepackedCache..Key">Key</a>, <a class="type" href="#ruy::PrepackedCache::Entry" title='ruy::PrepackedCache::Entry' data-ref="ruy::PrepackedCache::Entry" data-ref-filename="ruy..PrepackedCache..Entry">Entry</a>, <a class="type" href="#ruy::PrepackedCache::KeyHash" title='ruy::PrepackedCache::KeyHash' data-ref="ruy::PrepackedCache::KeyHash" data-ref-filename="ruy..PrepackedCache..KeyHash">KeyHash</a>&gt; <dfn class="decl field" id="ruy::PrepackedCache::cache_" title='ruy::PrepackedCache::cache_' data-ref="ruy::PrepackedCache::cache_" data-ref-filename="ruy..PrepackedCache..cache_">cache_</dfn>;</td></tr>
+<tr><th id="134">134</th><td>  <em>const</em> <span class="namespace">std::</span><span class='typedef' title='std::ptrdiff_t' data-type='long' data-ref="std::ptrdiff_t" data-ref-filename="std..ptrdiff_t">ptrdiff_t</span> <dfn class="decl field" id="ruy::PrepackedCache::max_buffers_bytes_" title='ruy::PrepackedCache::max_buffers_bytes_' data-ref="ruy::PrepackedCache::max_buffers_bytes_" data-ref-filename="ruy..PrepackedCache..max_buffers_bytes_">max_buffers_bytes_</dfn>;</td></tr>
+<tr><th id="135">135</th><td>  <span class="namespace">std::</span><span class='typedef' title='std::ptrdiff_t' data-type='long' data-ref="std::ptrdiff_t" data-ref-filename="std..ptrdiff_t">ptrdiff_t</span> <dfn class="decl field" id="ruy::PrepackedCache::buffers_bytes_" title='ruy::PrepackedCache::buffers_bytes_' data-ref="ruy::PrepackedCache::buffers_bytes_" data-ref-filename="ruy..PrepackedCache..buffers_bytes_">buffers_bytes_</dfn> = <var>0</var>;</td></tr>
+<tr><th id="136">136</th><td>  <a class="typedef" href="#ruy::PrepackedCache::Timestamp" title='ruy::PrepackedCache::Timestamp' data-type='std::uint64_t' data-ref="ruy::PrepackedCache::Timestamp" data-ref-filename="ruy..PrepackedCache..Timestamp">Timestamp</a> <dfn class="decl field" id="ruy::PrepackedCache::timestamp_" title='ruy::PrepackedCache::timestamp_' data-ref="ruy::PrepackedCache::timestamp_" data-ref-filename="ruy..PrepackedCache..timestamp_">timestamp_</dfn> = <var>0</var>;</td></tr>
+<tr><th id="137">137</th><td>};</td></tr>
+<tr><th id="138">138</th><td></td></tr>
+<tr><th id="139">139</th><td>}  <i>// namespace ruy</i></td></tr>
+<tr><th id="140">140</th><td></td></tr>
+<tr><th id="141">141</th><td><u>#<span data-ppcond="16">endif</span>  // RUY_RUY_PREPACKED_CACHE_H_</u></td></tr>
+<tr><th id="142">142</th><td></td></tr>
+</table><hr/><p id='footer'>
+Generated while processing <a href='context.cc.html'>halide/build-apps/ruy/ruy/context.cc</a><br/>Generated on <em>2021-Aug-05</em> from project halide revision <em>v12.0.1</em>

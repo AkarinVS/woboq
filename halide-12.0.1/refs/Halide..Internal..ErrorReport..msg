@@ -1,3 +1,6 @@
+<dec f='halide/halide-install/include/Halide.h' l='2408' type='std::ostringstream'/>
+<use f='halide/halide-install/include/Halide.h' l='2420' c='_ZN6Halide8Internal11ErrorReportlsERKT_'/>
+<offset>0</offset>
 <dec f='halide/build/include/Halide.h' l='2408' type='std::ostringstream'/>
 <use f='halide/build/include/Halide.h' l='2420' c='_ZN6Halide8Internal11ErrorReportlsERKT_'/>
 <offset>0</offset>

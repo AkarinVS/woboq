@@ -1,0 +1,126 @@
+<!doctype html>
+<html>
+<head>
+<meta name="viewport" content="width=device-width, initial-scale=1.0"><title>string_util.h source code [halide/build-apps/_deps/tflite-src/tensorflow/lite/string_util.h] - Woboq Code Browser</title>
+<meta name="woboq:interestingDefinitions" content="tflite::DynamicBuffer "/>
+<link rel="stylesheet" href="../../../../../.././data/qtcreator.css" title="QtCreator"/>
+<link rel="alternate stylesheet" href="../../../../../.././data/kdevelop.css" title="KDevelop"/>
+<script type="text/javascript" src="../../../../../.././data/jquery/jquery.min.js"></script>
+<script type="text/javascript" src="../../../../../.././data/jquery/jquery-ui.min.js"></script>
+<script>var file = 'halide/build-apps/_deps/tflite-src/tensorflow/lite/string_util.h'; var root_path = '../../../../../..'; var data_path = '../../../../../.././data'; var ecma_script_api_version = 2;</script>
+<script src='../../../../../.././data/codebrowser.js'></script>
+</head>
+<body><div id='header'><h1 id='breadcrumb'><span>Browse the source code of </span><a href='../../../../..'>halide</a>/<a href='../../../..'>build-apps</a>/<a href='../../..'>_deps</a>/<a href='../..'>tflite-src</a>/<a href='..'>tensorflow</a>/<a href='./'>lite</a>/<a href='string_util.h.html'>string_util.h</a></h1></div>
+<hr/><div id='content'><table class="code">
+<tr><th id="1">1</th><td><i>/* Copyright 2017 The TensorFlow Authors. All Rights Reserved.</i></td></tr>
+<tr><th id="2">2</th><td><i></i></td></tr>
+<tr><th id="3">3</th><td><i>Licensed under the Apache License, Version 2.0 (the "License");</i></td></tr>
+<tr><th id="4">4</th><td><i>you may not use this file except in compliance with the License.</i></td></tr>
+<tr><th id="5">5</th><td><i>You may obtain a copy of the License at</i></td></tr>
+<tr><th id="6">6</th><td><i></i></td></tr>
+<tr><th id="7">7</th><td><i>    <a href="http://www.apache.org/licenses/LICENSE-2.0">http://www.apache.org/licenses/LICENSE-2.0</a></i></td></tr>
+<tr><th id="8">8</th><td><i></i></td></tr>
+<tr><th id="9">9</th><td><i>Unless required by applicable law or agreed to in writing, software</i></td></tr>
+<tr><th id="10">10</th><td><i>distributed under the License is distributed on an "AS IS" BASIS,</i></td></tr>
+<tr><th id="11">11</th><td><i>WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.</i></td></tr>
+<tr><th id="12">12</th><td><i>See the License for the specific language governing permissions and</i></td></tr>
+<tr><th id="13">13</th><td><i>limitations under the License.</i></td></tr>
+<tr><th id="14">14</th><td><i>==============================================================================*/</i></td></tr>
+<tr><th id="15">15</th><td><i></i></td></tr>
+<tr><th id="16">16</th><td><i>// Util methods to read and write String tensors.</i></td></tr>
+<tr><th id="17">17</th><td><i>// String tensors are considered to be char tensor with protocol.</i></td></tr>
+<tr><th id="18">18</th><td><i>//   [0, 3] 4 bytes: N, num of strings in the tensor in little endian.</i></td></tr>
+<tr><th id="19">19</th><td><i>//   [(i+1)*4, (i+1)*4+3] 4 bytes: offset of i-th string in little endian,</i></td></tr>
+<tr><th id="20">20</th><td><i>//                                 for i from 0 to N-1.</i></td></tr>
+<tr><th id="21">21</th><td><i>//   [(N+1)*4, (N+1)*4+3] 4 bytes: length of the whole char buffer.</i></td></tr>
+<tr><th id="22">22</th><td><i>//   [offset(i), offset(i+1) - 1] : content of i-th string.</i></td></tr>
+<tr><th id="23">23</th><td><i>// Example of a string tensor:</i></td></tr>
+<tr><th id="24">24</th><td><i>// [</i></td></tr>
+<tr><th id="25">25</th><td><i>//   2, 0, 0, 0,     # 2 strings.</i></td></tr>
+<tr><th id="26">26</th><td><i>//   16, 0, 0, 0,    # 0-th string starts from index 16.</i></td></tr>
+<tr><th id="27">27</th><td><i>//   18, 0, 0, 0,    # 1-st string starts from index 18.</i></td></tr>
+<tr><th id="28">28</th><td><i>//   18, 0, 0, 0,    # total length of array.</i></td></tr>
+<tr><th id="29">29</th><td><i>//   'A', 'B',       # 0-th string [16..17]: "AB"</i></td></tr>
+<tr><th id="30">30</th><td><i>// ]                 # 1-th string, empty</i></td></tr>
+<tr><th id="31">31</th><td><i>//</i></td></tr>
+<tr><th id="32">32</th><td><i>// A typical usage:</i></td></tr>
+<tr><th id="33">33</th><td><i>// In op.Eval(context, node):</i></td></tr>
+<tr><th id="34">34</th><td><i>//   DynamicBuffer buf;</i></td></tr>
+<tr><th id="35">35</th><td><i>//   # Add string "AB" to tensor, string is stored in dynamic buffer.</i></td></tr>
+<tr><th id="36">36</th><td><i>//   buf.AddString("AB", 2);</i></td></tr>
+<tr><th id="37">37</th><td><i>//   # Write content of DynamicBuffer to tensor in format of string tensor</i></td></tr>
+<tr><th id="38">38</th><td><i>//   # described above.</i></td></tr>
+<tr><th id="39">39</th><td><i>//   buf.WriteToTensor(tensor, nullptr)</i></td></tr>
+<tr><th id="40">40</th><td></td></tr>
+<tr><th id="41">41</th><td><u>#<span data-ppcond="41">ifndef</span> <span class="macro" data-ref="_M/TENSORFLOW_LITE_STRING_UTIL_H_">TENSORFLOW_LITE_STRING_UTIL_H_</span></u></td></tr>
+<tr><th id="42">42</th><td><u>#define <dfn class="macro" id="_M/TENSORFLOW_LITE_STRING_UTIL_H_" data-ref="_M/TENSORFLOW_LITE_STRING_UTIL_H_">TENSORFLOW_LITE_STRING_UTIL_H_</dfn></u></td></tr>
+<tr><th id="43">43</th><td></td></tr>
+<tr><th id="44">44</th><td><u>#include &lt;stddef.h&gt;</u></td></tr>
+<tr><th id="45">45</th><td><u>#include &lt;stdint.h&gt;</u></td></tr>
+<tr><th id="46">46</th><td></td></tr>
+<tr><th id="47">47</th><td><u>#include &lt;vector&gt;</u></td></tr>
+<tr><th id="48">48</th><td></td></tr>
+<tr><th id="49">49</th><td><u>#include <a href="c/common.h.html">"tensorflow/lite/c/common.h"</a></u></td></tr>
+<tr><th id="50">50</th><td><u>#include <a href="string_type.h.html">"tensorflow/lite/string_type.h"</a></u></td></tr>
+<tr><th id="51">51</th><td></td></tr>
+<tr><th id="52">52</th><td><b>namespace</b> <span class="namespace">tflite</span> {</td></tr>
+<tr><th id="53">53</th><td></td></tr>
+<tr><th id="54">54</th><td><i>// Convenient structure to store string pointer and length.</i></td></tr>
+<tr><th id="55">55</th><td><b>typedef</b> <b>struct</b> {</td></tr>
+<tr><th id="56">56</th><td>  <em>const</em> <em>char</em>* <dfn class="decl field" id="tflite::(anonymous)::str" title='tflite::(anonymous struct)::str' data-ref="tflite::(anonymous)::str" data-ref-filename="tflite..(anonymous)..str">str</dfn>;</td></tr>
+<tr><th id="57">57</th><td>  <em>int</em> <dfn class="decl field" id="tflite::(anonymous)::len" title='tflite::(anonymous struct)::len' data-ref="tflite::(anonymous)::len" data-ref-filename="tflite..(anonymous)..len">len</dfn>;</td></tr>
+<tr><th id="58">58</th><td>} <dfn class="typedef" id="tflite::StringRef" title='tflite::StringRef' data-type='struct StringRef' data-ref="tflite::StringRef" data-ref-filename="tflite..StringRef">StringRef</dfn>;</td></tr>
+<tr><th id="59">59</th><td></td></tr>
+<tr><th id="60">60</th><td><i>// DynamicBuffer holds temporary buffer that will be used to create a dynamic</i></td></tr>
+<tr><th id="61">61</th><td><i>// tensor. A typical usage is to initialize a DynamicBuffer object, fill in</i></td></tr>
+<tr><th id="62">62</th><td><i>// content and call CreateStringTensor in op.Eval().</i></td></tr>
+<tr><th id="63">63</th><td><b>class</b> <dfn class="type def" id="tflite::DynamicBuffer" title='tflite::DynamicBuffer' data-ref="tflite::DynamicBuffer" data-ref-filename="tflite..DynamicBuffer">DynamicBuffer</dfn> {</td></tr>
+<tr><th id="64">64</th><td> <b>public</b>:</td></tr>
+<tr><th id="65">65</th><td>  <dfn class="decl def fn" id="_ZN6tflite13DynamicBufferC1Ev" title='tflite::DynamicBuffer::DynamicBuffer' data-ref="_ZN6tflite13DynamicBufferC1Ev" data-ref-filename="_ZN6tflite13DynamicBufferC1Ev">DynamicBuffer</dfn>() : <a class="member field" href="#tflite::DynamicBuffer::offset_" title='tflite::DynamicBuffer::offset_' data-ref="tflite::DynamicBuffer::offset_" data-ref-filename="tflite..DynamicBuffer..offset_">offset_</a><span class='ref fn' title='std::vector::vector&lt;_Tp, _Alloc&gt;' data-ref="_ZNSt6vectorC1ESt16initializer_listIT_ERKT0_" data-ref-filename="_ZNSt6vectorC1ESt16initializer_listIT_ERKT0_">(</span>{<var>0</var>}) {}</td></tr>
+<tr><th id="66">66</th><td></td></tr>
+<tr><th id="67">67</th><td>  <i>// Add string to dynamic buffer by resizing the buffer and copying the data.</i></td></tr>
+<tr><th id="68">68</th><td>  <em>void</em> <dfn class="decl fn" id="_ZN6tflite13DynamicBuffer9AddStringERKNS_9StringRefE" title='tflite::DynamicBuffer::AddString' data-ref="_ZN6tflite13DynamicBuffer9AddStringERKNS_9StringRefE" data-ref-filename="_ZN6tflite13DynamicBuffer9AddStringERKNS_9StringRefE">AddString</dfn>(<em>const</em> <a class="typedef" href="#tflite::StringRef" title='tflite::StringRef' data-type='struct StringRef' data-ref="tflite::StringRef" data-ref-filename="tflite..StringRef">StringRef</a>&amp; <dfn class="local col1 decl" id="1string" title='string' data-type='const tflite::StringRef &amp;' data-ref="1string" data-ref-filename="1string">string</dfn>);</td></tr>
+<tr><th id="69">69</th><td></td></tr>
+<tr><th id="70">70</th><td>  <i>// Add string to dynamic buffer by resizing the buffer and copying the data.</i></td></tr>
+<tr><th id="71">71</th><td>  <em>void</em> <dfn class="decl fn" id="_ZN6tflite13DynamicBuffer9AddStringEPKcm" title='tflite::DynamicBuffer::AddString' data-ref="_ZN6tflite13DynamicBuffer9AddStringEPKcm" data-ref-filename="_ZN6tflite13DynamicBuffer9AddStringEPKcm">AddString</dfn>(<em>const</em> <em>char</em>* <dfn class="local col2 decl" id="2str" title='str' data-type='const char *' data-ref="2str" data-ref-filename="2str">str</dfn>, <span class='typedef' title='size_t' data-type='unsigned long' data-ref="size_t" data-ref-filename="size_t">size_t</span> <dfn class="local col3 decl" id="3len" title='len' data-type='size_t' data-ref="3len" data-ref-filename="3len">len</dfn>);</td></tr>
+<tr><th id="72">72</th><td></td></tr>
+<tr><th id="73">73</th><td>  <i>// Join a list of string with separator, and add as a single string to the</i></td></tr>
+<tr><th id="74">74</th><td><i>  // buffer.</i></td></tr>
+<tr><th id="75">75</th><td>  <em>void</em> <dfn class="decl fn" id="_ZN6tflite13DynamicBuffer15AddJoinedStringERKSt6vectorINS_9StringRefESaIS2_EEc" title='tflite::DynamicBuffer::AddJoinedString' data-ref="_ZN6tflite13DynamicBuffer15AddJoinedStringERKSt6vectorINS_9StringRefESaIS2_EEc" data-ref-filename="_ZN6tflite13DynamicBuffer15AddJoinedStringERKSt6vectorINS_9StringRefESaIS2_EEc">AddJoinedString</dfn>(<em>const</em> <span class="namespace">std::</span><span class='type' title='std::vector' data-ref="std::vector" data-ref-filename="std..vector">vector</span>&lt;<a class="typedef" href="#tflite::StringRef" title='tflite::StringRef' data-type='struct StringRef' data-ref="tflite::StringRef" data-ref-filename="tflite..StringRef">StringRef</a>&gt;&amp; <dfn class="local col4 decl" id="4strings" title='strings' data-type='const std::vector&lt;StringRef&gt; &amp;' data-ref="4strings" data-ref-filename="4strings">strings</dfn>, <em>char</em> <dfn class="local col5 decl" id="5separator" title='separator' data-type='char' data-ref="5separator" data-ref-filename="5separator">separator</dfn>);</td></tr>
+<tr><th id="76">76</th><td>  <em>void</em> <dfn class="decl fn" id="_ZN6tflite13DynamicBuffer15AddJoinedStringERKSt6vectorINS_9StringRefESaIS2_EES2_" title='tflite::DynamicBuffer::AddJoinedString' data-ref="_ZN6tflite13DynamicBuffer15AddJoinedStringERKSt6vectorINS_9StringRefESaIS2_EES2_" data-ref-filename="_ZN6tflite13DynamicBuffer15AddJoinedStringERKSt6vectorINS_9StringRefESaIS2_EES2_">AddJoinedString</dfn>(<em>const</em> <span class="namespace">std::</span><span class='type' title='std::vector' data-ref="std::vector" data-ref-filename="std..vector">vector</span>&lt;<a class="typedef" href="#tflite::StringRef" title='tflite::StringRef' data-type='struct StringRef' data-ref="tflite::StringRef" data-ref-filename="tflite..StringRef">StringRef</a>&gt;&amp; <dfn class="local col6 decl" id="6strings" title='strings' data-type='const std::vector&lt;StringRef&gt; &amp;' data-ref="6strings" data-ref-filename="6strings">strings</dfn>,</td></tr>
+<tr><th id="77">77</th><td>                       <a class="typedef" href="#tflite::StringRef" title='tflite::StringRef' data-type='struct StringRef' data-ref="tflite::StringRef" data-ref-filename="tflite..StringRef">StringRef</a> <dfn class="local col7 decl" id="7separator" title='separator' data-type='tflite::StringRef' data-ref="7separator" data-ref-filename="7separator">separator</dfn>);</td></tr>
+<tr><th id="78">78</th><td></td></tr>
+<tr><th id="79">79</th><td>  <i>// Fill content into a buffer and returns the number of bytes stored.</i></td></tr>
+<tr><th id="80">80</th><td><i>  // The function allocates space for the buffer but does NOT take ownership.</i></td></tr>
+<tr><th id="81">81</th><td>  <em>int</em> <dfn class="decl fn" id="_ZN6tflite13DynamicBuffer13WriteToBufferEPPc" title='tflite::DynamicBuffer::WriteToBuffer' data-ref="_ZN6tflite13DynamicBuffer13WriteToBufferEPPc" data-ref-filename="_ZN6tflite13DynamicBuffer13WriteToBufferEPPc">WriteToBuffer</dfn>(<em>char</em>** <dfn class="local col8 decl" id="8buffer" title='buffer' data-type='char **' data-ref="8buffer" data-ref-filename="8buffer">buffer</dfn>);</td></tr>
+<tr><th id="82">82</th><td></td></tr>
+<tr><th id="83">83</th><td>  <i>// Fill content into a string tensor, with the given new_shape. The new shape</i></td></tr>
+<tr><th id="84">84</th><td><i>  // must match the number of strings in this object. Caller relinquishes</i></td></tr>
+<tr><th id="85">85</th><td><i>  // ownership of new_shape. If 'new_shape' is nullptr, keep the tensor's</i></td></tr>
+<tr><th id="86">86</th><td><i>  // existing shape.</i></td></tr>
+<tr><th id="87">87</th><td>  <em>void</em> <dfn class="decl fn" id="_ZN6tflite13DynamicBuffer13WriteToTensorEP12TfLiteTensorP14TfLiteIntArray" title='tflite::DynamicBuffer::WriteToTensor' data-ref="_ZN6tflite13DynamicBuffer13WriteToTensorEP12TfLiteTensorP14TfLiteIntArray" data-ref-filename="_ZN6tflite13DynamicBuffer13WriteToTensorEP12TfLiteTensorP14TfLiteIntArray">WriteToTensor</dfn>(<a class="typedef" href="c/common.h.html#TfLiteTensor" title='TfLiteTensor' data-type='struct TfLiteTensor' data-ref="TfLiteTensor" data-ref-filename="TfLiteTensor">TfLiteTensor</a>* <dfn class="local col9 decl" id="9tensor" title='tensor' data-type='TfLiteTensor *' data-ref="9tensor" data-ref-filename="9tensor">tensor</dfn>, <a class="typedef" href="c/common.h.html#TfLiteIntArray" title='TfLiteIntArray' data-type='struct TfLiteIntArray' data-ref="TfLiteIntArray" data-ref-filename="TfLiteIntArray">TfLiteIntArray</a>* <dfn class="local col0 decl" id="10new_shape" title='new_shape' data-type='TfLiteIntArray *' data-ref="10new_shape" data-ref-filename="10new_shape">new_shape</dfn>);</td></tr>
+<tr><th id="88">88</th><td></td></tr>
+<tr><th id="89">89</th><td>  <i>// Fill content into a string tensor. Set shape to {num_strings}.</i></td></tr>
+<tr><th id="90">90</th><td>  <em>void</em> <dfn class="decl fn" id="_ZN6tflite13DynamicBuffer21WriteToTensorAsVectorEP12TfLiteTensor" title='tflite::DynamicBuffer::WriteToTensorAsVector' data-ref="_ZN6tflite13DynamicBuffer21WriteToTensorAsVectorEP12TfLiteTensor" data-ref-filename="_ZN6tflite13DynamicBuffer21WriteToTensorAsVectorEP12TfLiteTensor">WriteToTensorAsVector</dfn>(<a class="typedef" href="c/common.h.html#TfLiteTensor" title='TfLiteTensor' data-type='struct TfLiteTensor' data-ref="TfLiteTensor" data-ref-filename="TfLiteTensor">TfLiteTensor</a>* <dfn class="local col1 decl" id="11tensor" title='tensor' data-type='TfLiteTensor *' data-ref="11tensor" data-ref-filename="11tensor">tensor</dfn>);</td></tr>
+<tr><th id="91">91</th><td></td></tr>
+<tr><th id="92">92</th><td> <b>private</b>:</td></tr>
+<tr><th id="93">93</th><td>  <i>// Data buffer to store contents of strings, not including headers.</i></td></tr>
+<tr><th id="94">94</th><td>  <span class="namespace">std::</span><span class='type' title='std::vector' data-ref="std::vector" data-ref-filename="std..vector">vector</span>&lt;<em>char</em>&gt; <dfn class="decl field" id="tflite::DynamicBuffer::data_" title='tflite::DynamicBuffer::data_' data-ref="tflite::DynamicBuffer::data_" data-ref-filename="tflite..DynamicBuffer..data_">data_</dfn>;</td></tr>
+<tr><th id="95">95</th><td>  <i>// Offset of the starting index of each string in data buffer.</i></td></tr>
+<tr><th id="96">96</th><td>  <span class="namespace">std::</span><span class='type' title='std::vector' data-ref="std::vector" data-ref-filename="std..vector">vector</span>&lt;<a class="typedef" href="../../../../../../include/bits/stdint-intn.h.html#int32_t" title='int32_t' data-type='__int32_t' data-ref="int32_t" data-ref-filename="int32_t">int32_t</a>&gt; <dfn class="decl field" id="tflite::DynamicBuffer::offset_" title='tflite::DynamicBuffer::offset_' data-ref="tflite::DynamicBuffer::offset_" data-ref-filename="tflite..DynamicBuffer..offset_">offset_</dfn>;</td></tr>
+<tr><th id="97">97</th><td>};</td></tr>
+<tr><th id="98">98</th><td></td></tr>
+<tr><th id="99">99</th><td><i>// Return num of strings in a String tensor.</i></td></tr>
+<tr><th id="100">100</th><td><em>int</em> <dfn class="decl fn" id="_ZN6tflite14GetStringCountEPKv" title='tflite::GetStringCount' data-ref="_ZN6tflite14GetStringCountEPKv" data-ref-filename="_ZN6tflite14GetStringCountEPKv">GetStringCount</dfn>(<em>const</em> <em>void</em>* <dfn class="local col2 decl" id="12raw_buffer" title='raw_buffer' data-type='const void *' data-ref="12raw_buffer" data-ref-filename="12raw_buffer">raw_buffer</dfn>);</td></tr>
+<tr><th id="101">101</th><td><em>int</em> <dfn class="decl fn" id="_ZN6tflite14GetStringCountEPK12TfLiteTensor" title='tflite::GetStringCount' data-ref="_ZN6tflite14GetStringCountEPK12TfLiteTensor" data-ref-filename="_ZN6tflite14GetStringCountEPK12TfLiteTensor">GetStringCount</dfn>(<em>const</em> <a class="typedef" href="c/common.h.html#TfLiteTensor" title='TfLiteTensor' data-type='struct TfLiteTensor' data-ref="TfLiteTensor" data-ref-filename="TfLiteTensor">TfLiteTensor</a>* <dfn class="local col3 decl" id="13tensor" title='tensor' data-type='const TfLiteTensor *' data-ref="13tensor" data-ref-filename="13tensor">tensor</dfn>);</td></tr>
+<tr><th id="102">102</th><td></td></tr>
+<tr><th id="103">103</th><td><i>// Get String pointer and length of index-th string in tensor.</i></td></tr>
+<tr><th id="104">104</th><td><i>// NOTE: This will not create a copy of string data.</i></td></tr>
+<tr><th id="105">105</th><td><a class="typedef" href="#tflite::StringRef" title='tflite::StringRef' data-type='struct StringRef' data-ref="tflite::StringRef" data-ref-filename="tflite..StringRef">StringRef</a> <dfn class="decl fn" id="_ZN6tflite9GetStringEPKvi" title='tflite::GetString' data-ref="_ZN6tflite9GetStringEPKvi" data-ref-filename="_ZN6tflite9GetStringEPKvi">GetString</dfn>(<em>const</em> <em>void</em>* <dfn class="local col4 decl" id="14raw_buffer" title='raw_buffer' data-type='const void *' data-ref="14raw_buffer" data-ref-filename="14raw_buffer">raw_buffer</dfn>, <em>int</em> <dfn class="local col5 decl" id="15string_index" title='string_index' data-type='int' data-ref="15string_index" data-ref-filename="15string_index">string_index</dfn>);</td></tr>
+<tr><th id="106">106</th><td><a class="typedef" href="#tflite::StringRef" title='tflite::StringRef' data-type='struct StringRef' data-ref="tflite::StringRef" data-ref-filename="tflite..StringRef">StringRef</a> <dfn class="decl fn" id="_ZN6tflite9GetStringEPK12TfLiteTensori" title='tflite::GetString' data-ref="_ZN6tflite9GetStringEPK12TfLiteTensori" data-ref-filename="_ZN6tflite9GetStringEPK12TfLiteTensori">GetString</dfn>(<em>const</em> <a class="typedef" href="c/common.h.html#TfLiteTensor" title='TfLiteTensor' data-type='struct TfLiteTensor' data-ref="TfLiteTensor" data-ref-filename="TfLiteTensor">TfLiteTensor</a>* <dfn class="local col6 decl" id="16tensor" title='tensor' data-type='const TfLiteTensor *' data-ref="16tensor" data-ref-filename="16tensor">tensor</dfn>, <em>int</em> <dfn class="local col7 decl" id="17string_index" title='string_index' data-type='int' data-ref="17string_index" data-ref-filename="17string_index">string_index</dfn>);</td></tr>
+<tr><th id="107">107</th><td>}  <i>// namespace tflite</i></td></tr>
+<tr><th id="108">108</th><td></td></tr>
+<tr><th id="109">109</th><td><u>#<span data-ppcond="41">endif</span>  // TENSORFLOW_LITE_STRING_UTIL_H_</u></td></tr>
+<tr><th id="110">110</th><td></td></tr>
+</table><hr/><p id='footer'>
+Generated while processing <a href='examples/label_image/bitmap_helpers.cc.html'>halide/build-apps/_deps/tflite-src/tensorflow/lite/examples/label_image/bitmap_helpers.cc</a><br/>Generated on <em>2021-Aug-05</em> from project halide revision <em>v12.0.1</em>

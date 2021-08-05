@@ -1,3 +1,5 @@
+<dec f='halide/halide-install/include/Halide.h' l='5977' type='Halide::Expr'/>
+<offset>768</offset>
 <dec f='halide/build/include/Halide.h' l='5977' type='Halide::Expr'/>
 <offset>768</offset>
 <dec f='halide/src/Schedule.h' l='260' type='Halide::Expr'/>

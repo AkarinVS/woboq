@@ -1,0 +1,11 @@
+<dec f='halide/build-apps/abseil-cpp/absl/strings/internal/str_format/extension.h' l='142' type='8'/>
+<use f='halide/build-apps/abseil-cpp/absl/strings/internal/str_format/extension.h' l='345'/>
+<use f='halide/build-apps/abseil-cpp/absl/strings/internal/str_format/arg.h' l='59' c='_ZN4absl14lts_2020_02_2519str_format_internal17FormatConvertImplERKNSt7__cxx1112basic_stringIcSt11char_traitsIcESaIcEEENS1_20FormatConversionSpecEPNS1_14FormatSinkImplE'/>
+<use f='halide/build-apps/abseil-cpp/absl/strings/internal/str_format/arg.h' l='62' c='_ZN4absl14lts_2020_02_2519str_format_internal17FormatConvertImplENS0_11string_viewENS1_20FormatConversionSpecEPNS1_14FormatSinkImplE'/>
+<use f='halide/build-apps/abseil-cpp/absl/strings/internal/str_format/arg.h' l='64' u='r' c='_ZN4absl14lts_2020_02_2519str_format_internal17FormatConvertImplEPKcNS1_20FormatConversionSpecEPNS1_14FormatSinkImplE'/>
+<use f='halide/build-apps/abseil-cpp/absl/strings/internal/str_format/arg.h' l='70' c='_ZN4absl14lts_2020_02_2519str_format_internal17FormatConvertImplERKT_NS1_20FormatConversionSpecEPNS1_14FormatSinkImplE'/>
+<use f='halide/build-apps/abseil-cpp/absl/strings/internal/str_format/arg.h' l='170' c='_ZN4absl14lts_2020_02_2519str_format_internal17FormatConvertImplERKNS1_15StreamedWrapperIT_EENS1_20FormatConversionSpecEPNS1_14FormatSinkImplE'/>
+<use f='halide/build-apps/abseil-cpp/absl/strings/internal/str_format/bind.h' l='199' c='_ZN4absl14lts_2020_02_2519str_format_internal17FormatConvertImplERKNS1_15StreamedWrapperITL0__EENS1_20FormatConversionSpecEPNS1_14FormatSinkImplE'/>
+<use f='halide/build-apps/abseil-cpp/absl/strings/internal/str_format/arg.cc' l='260' c='_ZN4absl14lts_2020_02_2519str_format_internal17FormatConvertImplERKNSt7__cxx1112basic_stringIcSt11char_traitsIcESaIcEEENS1_20FormatConversionSpecEPNS1_14FormatSinkImplE'/>
+<use f='halide/build-apps/abseil-cpp/absl/strings/internal/str_format/arg.cc' l='266' c='_ZN4absl14lts_2020_02_2519str_format_internal17FormatConvertImplENS0_11string_viewENS1_20FormatConversionSpecEPNS1_14FormatSinkImplE'/>
+<use f='halide/build-apps/abseil-cpp/absl/strings/internal/str_format/arg.cc' l='272' u='r' c='_ZN4absl14lts_2020_02_2519str_format_internal17FormatConvertImplEPKcNS1_20FormatConversionSpecEPNS1_14FormatSinkImplE'/>

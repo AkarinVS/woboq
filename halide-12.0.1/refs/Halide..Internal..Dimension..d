@@ -1,3 +1,5 @@
+<dec f='halide/halide-install/include/Halide.h' l='21276' type='int'/>
+<offset>64</offset>
 <dec f='halide/build/include/Halide.h' l='21276' type='int'/>
 <offset>64</offset>
 <dec f='halide/src/Dimension.h' l='92' type='int'/>

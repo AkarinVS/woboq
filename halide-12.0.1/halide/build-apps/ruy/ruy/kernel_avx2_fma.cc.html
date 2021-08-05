@@ -1,0 +1,1027 @@
+<!doctype html>
+<html>
+<head>
+<meta name="viewport" content="width=device-width, initial-scale=1.0"><title>kernel_avx2_fma.cc source code [halide/build-apps/ruy/ruy/kernel_avx2_fma.cc] - Woboq Code Browser</title>
+<link rel="stylesheet" href="../../../.././data/qtcreator.css" title="QtCreator"/>
+<link rel="alternate stylesheet" href="../../../.././data/kdevelop.css" title="KDevelop"/>
+<script type="text/javascript" src="../../../.././data/jquery/jquery.min.js"></script>
+<script type="text/javascript" src="../../../.././data/jquery/jquery-ui.min.js"></script>
+<script>var file = 'halide/build-apps/ruy/ruy/kernel_avx2_fma.cc'; var root_path = '../../../..'; var data_path = '../../../.././data'; var ecma_script_api_version = 2;</script>
+<script src='../../../.././data/codebrowser.js'></script>
+</head>
+<body><div id='header'><h1 id='breadcrumb'><span>Browse the source code of </span><a href='../../..'>halide</a>/<a href='../..'>build-apps</a>/<a href='..'>ruy</a>/<a href='./'>ruy</a>/<a href='kernel_avx2_fma.cc.html'>kernel_avx2_fma.cc</a></h1></div>
+<hr/><div id='content'><table class="code">
+<tr><th id="1">1</th><td><i>/* Copyright 2019 Google LLC. All Rights Reserved.</i></td></tr>
+<tr><th id="2">2</th><td><i></i></td></tr>
+<tr><th id="3">3</th><td><i>Licensed under the Apache License, Version 2.0 (the "License");</i></td></tr>
+<tr><th id="4">4</th><td><i>you may not use this file except in compliance with the License.</i></td></tr>
+<tr><th id="5">5</th><td><i>You may obtain a copy of the License at</i></td></tr>
+<tr><th id="6">6</th><td><i></i></td></tr>
+<tr><th id="7">7</th><td><i>    <a href="http://www.apache.org/licenses/LICENSE-2.0">http://www.apache.org/licenses/LICENSE-2.0</a></i></td></tr>
+<tr><th id="8">8</th><td><i></i></td></tr>
+<tr><th id="9">9</th><td><i>Unless required by applicable law or agreed to in writing, software</i></td></tr>
+<tr><th id="10">10</th><td><i>distributed under the License is distributed on an "AS IS" BASIS,</i></td></tr>
+<tr><th id="11">11</th><td><i>WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.</i></td></tr>
+<tr><th id="12">12</th><td><i>See the License for the specific language governing permissions and</i></td></tr>
+<tr><th id="13">13</th><td><i>limitations under the License.</i></td></tr>
+<tr><th id="14">14</th><td><i>==============================================================================*/</i></td></tr>
+<tr><th id="15">15</th><td></td></tr>
+<tr><th id="16">16</th><td><u>#include &lt;algorithm&gt;</u></td></tr>
+<tr><th id="17">17</th><td><u>#include &lt;cstdint&gt;</u></td></tr>
+<tr><th id="18">18</th><td><u>#include &lt;cstring&gt;</u></td></tr>
+<tr><th id="19">19</th><td></td></tr>
+<tr><th id="20">20</th><td><u>#include <a href="check_macros.h.html">"ruy/check_macros.h"</a></u></td></tr>
+<tr><th id="21">21</th><td><u>#include <a href="kernel_common.h.html">"ruy/kernel_common.h"</a></u></td></tr>
+<tr><th id="22">22</th><td><u>#include <a href="kernel_x86.h.html">"ruy/kernel_x86.h"</a></u></td></tr>
+<tr><th id="23">23</th><td><u>#include <a href="opt_set.h.html">"ruy/opt_set.h"</a></u></td></tr>
+<tr><th id="24">24</th><td><u>#include <a href="platform.h.html">"ruy/platform.h"</a></u></td></tr>
+<tr><th id="25">25</th><td><u>#include <a href="profiler/instrumentation.h.html">"ruy/profiler/instrumentation.h"</a></u></td></tr>
+<tr><th id="26">26</th><td></td></tr>
+<tr><th id="27">27</th><td><u>#<span data-ppcond="27">if</span> <a class="macro" href="platform.h.html#143" title="0" data-ref="_M/RUY_PLATFORM_AVX2_FMA">RUY_PLATFORM_AVX2_FMA</a> &amp;&amp; <a class="macro" href="opt_set.h.html#49" title="(((~0) &amp; 0x2) != 0)" data-ref="_M/RUY_OPT">RUY_OPT</a>(ASM)</u></td></tr>
+<tr><th id="28">28</th><td><u>#include &lt;immintrin.h&gt;  // IWYU pragma: keep</u></td></tr>
+<tr><th id="29">29</th><td><u>#<span data-ppcond="27">endif</span></u></td></tr>
+<tr><th id="30">30</th><td></td></tr>
+<tr><th id="31">31</th><td><b>namespace</b> <span class="namespace">ruy</span> {</td></tr>
+<tr><th id="32">32</th><td></td></tr>
+<tr><th id="33">33</th><td><u>#<span data-ppcond="33">if</span> !(<a class="macro" href="platform.h.html#143" title="0" data-ref="_M/RUY_PLATFORM_AVX2_FMA">RUY_PLATFORM_AVX2_FMA</a> &amp;&amp; <a class="macro" href="opt_set.h.html#49" title="(((~0) &amp; 0x2) != 0)" data-ref="_M/RUY_OPT">RUY_OPT</a>(ASM))</u></td></tr>
+<tr><th id="34">34</th><td></td></tr>
+<tr><th id="35">35</th><td><em>void</em> <dfn class="decl def fn" id="_ZN3ruy14Kernel8bitAvx2ERKNS_16KernelParams8bitILi8ELi8EEE" title='ruy::Kernel8bitAvx2' data-ref="_ZN3ruy14Kernel8bitAvx2ERKNS_16KernelParams8bitILi8ELi8EEE" data-ref-filename="_ZN3ruy14Kernel8bitAvx2ERKNS_16KernelParams8bitILi8ELi8EEE">Kernel8bitAvx2</dfn>(<em>const</em> <a class="type" href="kernel_common.h.html#ruy::KernelParams8bit" title='ruy::KernelParams8bit' data-ref="ruy::KernelParams8bit" data-ref-filename="ruy..KernelParams8bit">KernelParams8bit</a>&lt;<var>8</var>, <var>8</var>&gt;&amp;) {</td></tr>
+<tr><th id="36">36</th><td>  <i>// CPU-ID-based checks should disable the path that would reach this point.</i></td></tr>
+<tr><th id="37">37</th><td>  <a class="macro" href="check_macros.h.html#129" title="if (false) ruy::check_macros::CheckImpl(false, &quot;/fast/tmp/halide.git/build-apps/ruy/ruy/kernel_avx2_fma.cc&quot;, 37, &quot;RUY_CHECK&quot;, &quot;false&quot;)" data-ref="_M/RUY_DCHECK">RUY_DCHECK</a>(<b>false</b>);</td></tr>
+<tr><th id="38">38</th><td>}</td></tr>
+<tr><th id="39">39</th><td></td></tr>
+<tr><th id="40">40</th><td><em>void</em> <dfn class="decl def fn" id="_ZN3ruy23Kernel8bitAvx2SingleColERKNS_16KernelParams8bitILi8ELi8EEE" title='ruy::Kernel8bitAvx2SingleCol' data-ref="_ZN3ruy23Kernel8bitAvx2SingleColERKNS_16KernelParams8bitILi8ELi8EEE" data-ref-filename="_ZN3ruy23Kernel8bitAvx2SingleColERKNS_16KernelParams8bitILi8ELi8EEE">Kernel8bitAvx2SingleCol</dfn>(<em>const</em> <a class="type" href="kernel_common.h.html#ruy::KernelParams8bit" title='ruy::KernelParams8bit' data-ref="ruy::KernelParams8bit" data-ref-filename="ruy..KernelParams8bit">KernelParams8bit</a>&lt;<var>8</var>, <var>8</var>&gt;&amp;) {</td></tr>
+<tr><th id="41">41</th><td>  <i>// CPU-ID-based checks should disable the path that would reach this point.</i></td></tr>
+<tr><th id="42">42</th><td>  <a class="macro" href="check_macros.h.html#129" title="if (false) ruy::check_macros::CheckImpl(false, &quot;/fast/tmp/halide.git/build-apps/ruy/ruy/kernel_avx2_fma.cc&quot;, 42, &quot;RUY_CHECK&quot;, &quot;false&quot;)" data-ref="_M/RUY_DCHECK">RUY_DCHECK</a>(<b>false</b>);</td></tr>
+<tr><th id="43">43</th><td>}</td></tr>
+<tr><th id="44">44</th><td></td></tr>
+<tr><th id="45">45</th><td><em>void</em> <dfn class="decl def fn" id="_ZN3ruy15KernelFloatAvx2ERKNS_17KernelParamsFloatILi8ELi8EEE" title='ruy::KernelFloatAvx2' data-ref="_ZN3ruy15KernelFloatAvx2ERKNS_17KernelParamsFloatILi8ELi8EEE" data-ref-filename="_ZN3ruy15KernelFloatAvx2ERKNS_17KernelParamsFloatILi8ELi8EEE">KernelFloatAvx2</dfn>(<em>const</em> <a class="type" href="kernel_common.h.html#ruy::KernelParamsFloat" title='ruy::KernelParamsFloat' data-ref="ruy::KernelParamsFloat" data-ref-filename="ruy..KernelParamsFloat">KernelParamsFloat</a>&lt;<var>8</var>, <var>8</var>&gt;&amp;) {</td></tr>
+<tr><th id="46">46</th><td>  <i>// CPU-ID-based checks should disable the path that would reach this point.</i></td></tr>
+<tr><th id="47">47</th><td>  <a class="macro" href="check_macros.h.html#129" title="if (false) ruy::check_macros::CheckImpl(false, &quot;/fast/tmp/halide.git/build-apps/ruy/ruy/kernel_avx2_fma.cc&quot;, 47, &quot;RUY_CHECK&quot;, &quot;false&quot;)" data-ref="_M/RUY_DCHECK">RUY_DCHECK</a>(<b>false</b>);</td></tr>
+<tr><th id="48">48</th><td>}</td></tr>
+<tr><th id="49">49</th><td></td></tr>
+<tr><th id="50">50</th><td><em>void</em> <dfn class="decl def fn" id="_ZN3ruy24KernelFloatAvx2SingleColERKNS_17KernelParamsFloatILi8ELi8EEE" title='ruy::KernelFloatAvx2SingleCol' data-ref="_ZN3ruy24KernelFloatAvx2SingleColERKNS_17KernelParamsFloatILi8ELi8EEE" data-ref-filename="_ZN3ruy24KernelFloatAvx2SingleColERKNS_17KernelParamsFloatILi8ELi8EEE">KernelFloatAvx2SingleCol</dfn>(<em>const</em> <a class="type" href="kernel_common.h.html#ruy::KernelParamsFloat" title='ruy::KernelParamsFloat' data-ref="ruy::KernelParamsFloat" data-ref-filename="ruy..KernelParamsFloat">KernelParamsFloat</a>&lt;<var>8</var>, <var>8</var>&gt;&amp;) {</td></tr>
+<tr><th id="51">51</th><td>  <i>// CPU-ID-based checks should disable the path that would reach this point.</i></td></tr>
+<tr><th id="52">52</th><td>  <a class="macro" href="check_macros.h.html#129" title="if (false) ruy::check_macros::CheckImpl(false, &quot;/fast/tmp/halide.git/build-apps/ruy/ruy/kernel_avx2_fma.cc&quot;, 52, &quot;RUY_CHECK&quot;, &quot;false&quot;)" data-ref="_M/RUY_DCHECK">RUY_DCHECK</a>(<b>false</b>);</td></tr>
+<tr><th id="53">53</th><td>}</td></tr>
+<tr><th id="54">54</th><td></td></tr>
+<tr><th id="55">55</th><td><u>#<span data-ppcond="33">else</span>  // RUY_PLATFORM_AVX2_FMA &amp;&amp; RUY_OPT(ASM)</u></td></tr>
+<tr><th id="56">56</th><td></td></tr>
+<tr><th id="57">57</th><td><em>static</em> <b>constexpr</b> <em>int</em> kAvx8bitBlockSize = <var>8</var>;</td></tr>
+<tr><th id="58">58</th><td><em>static</em> <b>constexpr</b> <em>int</em> kAvx8bitInnerSize = <var>4</var>;</td></tr>
+<tr><th id="59">59</th><td></td></tr>
+<tr><th id="60">60</th><td><b>namespace</b> {</td></tr>
+<tr><th id="61">61</th><td><b>namespace</b> intrin_utils {</td></tr>
+<tr><th id="62">62</th><td></td></tr>
+<tr><th id="63">63</th><td><b>template</b> &lt;&gt;</td></tr>
+<tr><th id="64">64</th><td><b>inline</b> __m256i mm256_shuffle_epi8&lt;Path::kAvx2Fma&gt;(<em>const</em> __m256i&amp; a,</td></tr>
+<tr><th id="65">65</th><td>                                                  <em>const</em> __m256i&amp; b) {</td></tr>
+<tr><th id="66">66</th><td>  <b>return</b> _mm256_shuffle_epi8(a, b);</td></tr>
+<tr><th id="67">67</th><td>}</td></tr>
+<tr><th id="68">68</th><td></td></tr>
+<tr><th id="69">69</th><td><i>// Make an inline function for FMA so we can share the float kernels</i></td></tr>
+<tr><th id="70">70</th><td><i>// with non-FMA code.</i></td></tr>
+<tr><th id="71">71</th><td><b>template</b> &lt;&gt;</td></tr>
+<tr><th id="72">72</th><td><b>inline</b> __m256 MulAdd&lt;Path::kAvx2Fma&gt;(<em>const</em> __m256&amp; a, <em>const</em> __m256&amp; b,</td></tr>
+<tr><th id="73">73</th><td>                                     <em>const</em> __m256&amp; c) {</td></tr>
+<tr><th id="74">74</th><td>  <b>return</b> _mm256_fmadd_ps(a, b, c);</td></tr>
+<tr><th id="75">75</th><td>}</td></tr>
+<tr><th id="76">76</th><td></td></tr>
+<tr><th id="77">77</th><td><b>template</b> &lt;&gt;</td></tr>
+<tr><th id="78">78</th><td><b>inline</b> __m128i mm256_extracti128_si256&lt;Path::kAvx2Fma&gt;(<em>const</em> __m256i&amp; a,</td></tr>
+<tr><th id="79">79</th><td>                                                       <em>const</em> <em>int</em> imm) {</td></tr>
+<tr><th id="80">80</th><td>  <b>switch</b> (imm) {</td></tr>
+<tr><th id="81">81</th><td>    <b>case</b> <var>0</var>:</td></tr>
+<tr><th id="82">82</th><td>      <b>return</b> _mm256_extracti128_si256(a, <var>0</var>);</td></tr>
+<tr><th id="83">83</th><td>    <b>case</b> <var>1</var>:</td></tr>
+<tr><th id="84">84</th><td>      <b>return</b> _mm256_extracti128_si256(a, <var>1</var>);</td></tr>
+<tr><th id="85">85</th><td>    <b>default</b>:</td></tr>
+<tr><th id="86">86</th><td>      RUY_DCHECK_LT(imm, <var>2</var>);</td></tr>
+<tr><th id="87">87</th><td>      <b>return</b> _mm_setzero_si128();</td></tr>
+<tr><th id="88">88</th><td>  }</td></tr>
+<tr><th id="89">89</th><td>}</td></tr>
+<tr><th id="90">90</th><td></td></tr>
+<tr><th id="91">91</th><td>__m256i mm256_blendv_epi32(<em>const</em> __m256i&amp; a, <em>const</em> __m256i&amp; b,</td></tr>
+<tr><th id="92">92</th><td>                           <em>const</em> __m256i&amp; mask) {</td></tr>
+<tr><th id="93">93</th><td>  __m256 result =</td></tr>
+<tr><th id="94">94</th><td>      _mm256_blendv_ps(_mm256_castsi256_ps(a), _mm256_castsi256_ps(b),</td></tr>
+<tr><th id="95">95</th><td>                       _mm256_castsi256_ps(mask));</td></tr>
+<tr><th id="96">96</th><td>  <b>return</b> _mm256_castps_si256(result);</td></tr>
+<tr><th id="97">97</th><td>}</td></tr>
+<tr><th id="98">98</th><td></td></tr>
+<tr><th id="99">99</th><td>}  <i>// namespace intrin_utils</i></td></tr>
+<tr><th id="100">100</th><td>}  <i>// namespace</i></td></tr>
+<tr><th id="101">101</th><td></td></tr>
+<tr><th id="102">102</th><td><b>template</b> &lt;Path path&gt;</td></tr>
+<tr><th id="103">103</th><td><em>void</em> Kernel8bitAvx2Impl(<em>const</em> KernelParams8bit&lt;<var>8</var>, <var>8</var>&gt;&amp; params) {</td></tr>
+<tr><th id="104">104</th><td>  profiler::ScopeLabel label(<q>"Kernel kAvx2Fma 8-bit"</q>);</td></tr>
+<tr><th id="105">105</th><td>  <em>const</em> std::int8_t splitter_idx_data[<var>32</var>] = {</td></tr>
+<tr><th id="106">106</th><td>      <var>0</var>, <var>1</var>, <var>4</var>, <var>5</var>, <var>8</var>,  <var>9</var>,  <var>12</var>, <var>13</var>,  <i>//</i></td></tr>
+<tr><th id="107">107</th><td>      <var>2</var>, <var>3</var>, <var>6</var>, <var>7</var>, <var>10</var>, <var>11</var>, <var>14</var>, <var>15</var>,  <i>//</i></td></tr>
+<tr><th id="108">108</th><td>      <var>0</var>, <var>1</var>, <var>4</var>, <var>5</var>, <var>8</var>,  <var>9</var>,  <var>12</var>, <var>13</var>,  <i>//</i></td></tr>
+<tr><th id="109">109</th><td>      <var>2</var>, <var>3</var>, <var>6</var>, <var>7</var>, <var>10</var>, <var>11</var>, <var>14</var>, <var>15</var>   <i>//</i></td></tr>
+<tr><th id="110">110</th><td>  };</td></tr>
+<tr><th id="111">111</th><td></td></tr>
+<tr><th id="112">112</th><td>  std::int32_t dst_stride = <var>0</var>;</td></tr>
+<tr><th id="113">113</th><td>  <b>if</b> ((params.dst_type_id == DstTypeId&lt;std::int8_t&gt;::kValue) ||</td></tr>
+<tr><th id="114">114</th><td>      (params.dst_type_id == DstTypeId&lt;std::uint8_t&gt;::kValue)) {</td></tr>
+<tr><th id="115">115</th><td>    dst_stride = params.dst_stride;</td></tr>
+<tr><th id="116">116</th><td>  } <b>else</b> <b>if</b> (params.dst_type_id == DstTypeId&lt;std::int16_t&gt;::kValue) {</td></tr>
+<tr><th id="117">117</th><td>    dst_stride = params.dst_stride / <b>sizeof</b>(std::int16_t);</td></tr>
+<tr><th id="118">118</th><td>  } <b>else</b> <b>if</b> (params.dst_type_id == DstTypeId&lt;std::int32_t&gt;::kValue) {</td></tr>
+<tr><th id="119">119</th><td>    dst_stride = params.dst_stride / <b>sizeof</b>(std::int32_t);</td></tr>
+<tr><th id="120">120</th><td>  } <b>else</b> {</td></tr>
+<tr><th id="121">121</th><td>    RUY_DCHECK(<b>false</b>);</td></tr>
+<tr><th id="122">122</th><td>  }</td></tr>
+<tr><th id="123">123</th><td></td></tr>
+<tr><th id="124">124</th><td>  <em>const</em> std::int8_t* rhs_col_ptr = params.rhs_base_ptr;</td></tr>
+<tr><th id="125">125</th><td>  <em>void</em>* dst_col_ptr = params.dst_base_ptr;</td></tr>
+<tr><th id="126">126</th><td></td></tr>
+<tr><th id="127">127</th><td>  <b>for</b> (<em>int</em> col = params.start_col; col &lt;= params.last_col;</td></tr>
+<tr><th id="128">128</th><td>       col += kAvx8bitBlockSize) {</td></tr>
+<tr><th id="129">129</th><td>    <em>const</em> std::int8_t* lhs_col_ptr = params.lhs_base_ptr;</td></tr>
+<tr><th id="130">130</th><td>    <em>void</em>* dst_ptr = dst_col_ptr;</td></tr>
+<tr><th id="131">131</th><td></td></tr>
+<tr><th id="132">132</th><td>    <em>const</em> std::int32_t lhs_zero_point = params.lhs_zero_point;</td></tr>
+<tr><th id="133">133</th><td>    <em>const</em> <em>bool</em> has_rhs_sums_offsets =</td></tr>
+<tr><th id="134">134</th><td>        (params.flags &amp; RUY_ASM_FLAG_HAS_RHS_SUMS) &amp;&amp; lhs_zero_point;</td></tr>
+<tr><th id="135">135</th><td>    std::int32_t rhs_sums_offsets[<var>8</var>];</td></tr>
+<tr><th id="136">136</th><td>    <b>if</b> (has_rhs_sums_offsets) {</td></tr>
+<tr><th id="137">137</th><td>      <em>const</em> __m256i rhs_sums_offset_v = _mm256_mullo_epi32(</td></tr>
+<tr><th id="138">138</th><td>          _mm256_set1_epi32(lhs_zero_point),</td></tr>
+<tr><th id="139">139</th><td>          _mm256_loadu_si256(</td></tr>
+<tr><th id="140">140</th><td>              <b>reinterpret_cast</b>&lt;__m256i <em>const</em>*&gt;(&amp;params.rhs_sums[col])));</td></tr>
+<tr><th id="141">141</th><td>      _mm256_storeu_si256(<b>reinterpret_cast</b>&lt;__m256i*&gt;(rhs_sums_offsets),</td></tr>
+<tr><th id="142">142</th><td>                          rhs_sums_offset_v);</td></tr>
+<tr><th id="143">143</th><td>    }</td></tr>
+<tr><th id="144">144</th><td></td></tr>
+<tr><th id="145">145</th><td>    <b>for</b> (<em>int</em> row = params.start_row; row &lt;= params.last_row;</td></tr>
+<tr><th id="146">146</th><td>         row += kAvx8bitBlockSize) {</td></tr>
+<tr><th id="147">147</th><td>      <em>int</em> channel =</td></tr>
+<tr><th id="148">148</th><td>          (params.flags &amp; RUY_ASM_FLAG_CHANNEL_DIMENSION_IS_COL) ? col : row;</td></tr>
+<tr><th id="149">149</th><td>      <em>int</em> multiplier_channel =</td></tr>
+<tr><th id="150">150</th><td>          (params.flags &amp; RUY_ASM_FLAG_HAS_PERCHANNEL) ? channel : <var>0</var>;</td></tr>
+<tr><th id="151">151</th><td>      <em>const</em> <em>int</em> residual_rows =</td></tr>
+<tr><th id="152">152</th><td>          std::min(params.dst_rows - row, kAvx8bitBlockSize);</td></tr>
+<tr><th id="153">153</th><td>      <em>const</em> <em>int</em> residual_cols =</td></tr>
+<tr><th id="154">154</th><td>          std::min(params.dst_cols - col, kAvx8bitBlockSize);</td></tr>
+<tr><th id="155">155</th><td></td></tr>
+<tr><th id="156">156</th><td>      <em>const</em> __m256i splitter_idx = _mm256_loadu_si256(</td></tr>
+<tr><th id="157">157</th><td>          <b>reinterpret_cast</b>&lt;__m256i <em>const</em>*&gt;(splitter_idx_data));</td></tr>
+<tr><th id="158">158</th><td></td></tr>
+<tr><th id="159">159</th><td>      __m256i accum_data_v0;</td></tr>
+<tr><th id="160">160</th><td>      __m256i accum_data_v1;</td></tr>
+<tr><th id="161">161</th><td>      __m256i accum_data_v2;</td></tr>
+<tr><th id="162">162</th><td>      __m256i accum_data_v3;</td></tr>
+<tr><th id="163">163</th><td>      __m256i accum_data_v4;</td></tr>
+<tr><th id="164">164</th><td>      __m256i accum_data_v5;</td></tr>
+<tr><th id="165">165</th><td>      __m256i accum_data_v6;</td></tr>
+<tr><th id="166">166</th><td>      __m256i accum_data_v7;</td></tr>
+<tr><th id="167">167</th><td></td></tr>
+<tr><th id="168">168</th><td>      <i>// initial_accum_data will be the initialize of each of the</i></td></tr>
+<tr><th id="169">169</th><td><i>      // accum_data_* accumulator registers. We compute into it terms that are</i></td></tr>
+<tr><th id="170">170</th><td><i>      // identical across columns.</i></td></tr>
+<tr><th id="171">171</th><td>      __m256i initial_accum_data = _mm256_set1_epi32(params.prod_zp_depth);</td></tr>
+<tr><th id="172">172</th><td></td></tr>
+<tr><th id="173">173</th><td>      <i>// In the channels-are-rows case, we can load bias here.</i></td></tr>
+<tr><th id="174">174</th><td>      <b>if</b> ((params.flags &amp; RUY_ASM_FLAG_HAS_BIAS) &amp;&amp;</td></tr>
+<tr><th id="175">175</th><td>          !(params.flags &amp; RUY_ASM_FLAG_CHANNEL_DIMENSION_IS_COL)) {</td></tr>
+<tr><th id="176">176</th><td>        initial_accum_data = _mm256_add_epi32(</td></tr>
+<tr><th id="177">177</th><td>            initial_accum_data,</td></tr>
+<tr><th id="178">178</th><td>            _mm256_loadu_si256(</td></tr>
+<tr><th id="179">179</th><td>                <b>reinterpret_cast</b>&lt;<em>const</em> __m256i*&gt;(params.bias + row)));</td></tr>
+<tr><th id="180">180</th><td>      }</td></tr>
+<tr><th id="181">181</th><td></td></tr>
+<tr><th id="182">182</th><td>      <i>// Adjustments common across columns.</i></td></tr>
+<tr><th id="183">183</th><td>      <em>const</em> std::int32_t rhs_zero_point = params.rhs_zero_point;</td></tr>
+<tr><th id="184">184</th><td>      <b>if</b> ((params.flags &amp; RUY_ASM_FLAG_HAS_LHS_SUMS) &amp;&amp; rhs_zero_point) {</td></tr>
+<tr><th id="185">185</th><td>        <em>const</em> __m256i lhs_sums_offset = _mm256_mullo_epi32(</td></tr>
+<tr><th id="186">186</th><td>            _mm256_set1_epi32(rhs_zero_point),</td></tr>
+<tr><th id="187">187</th><td>            _mm256_loadu_si256(</td></tr>
+<tr><th id="188">188</th><td>                <b>reinterpret_cast</b>&lt;__m256i <em>const</em>*&gt;(&amp;params.lhs_sums[row])));</td></tr>
+<tr><th id="189">189</th><td>        initial_accum_data =</td></tr>
+<tr><th id="190">190</th><td>            _mm256_sub_epi32(initial_accum_data, lhs_sums_offset);</td></tr>
+<tr><th id="191">191</th><td>      }</td></tr>
+<tr><th id="192">192</th><td></td></tr>
+<tr><th id="193">193</th><td>      <i>// Adjustments differing across columns.</i></td></tr>
+<tr><th id="194">194</th><td>      <b>if</b> (has_rhs_sums_offsets) {</td></tr>
+<tr><th id="195">195</th><td>        accum_data_v0 = _mm256_sub_epi32(</td></tr>
+<tr><th id="196">196</th><td>            initial_accum_data, _mm256_set1_epi32(rhs_sums_offsets[<var>0</var>]));</td></tr>
+<tr><th id="197">197</th><td>        accum_data_v1 = _mm256_sub_epi32(</td></tr>
+<tr><th id="198">198</th><td>            initial_accum_data, _mm256_set1_epi32(rhs_sums_offsets[<var>1</var>]));</td></tr>
+<tr><th id="199">199</th><td>        accum_data_v2 = _mm256_sub_epi32(</td></tr>
+<tr><th id="200">200</th><td>            initial_accum_data, _mm256_set1_epi32(rhs_sums_offsets[<var>2</var>]));</td></tr>
+<tr><th id="201">201</th><td>        accum_data_v3 = _mm256_sub_epi32(</td></tr>
+<tr><th id="202">202</th><td>            initial_accum_data, _mm256_set1_epi32(rhs_sums_offsets[<var>3</var>]));</td></tr>
+<tr><th id="203">203</th><td>        accum_data_v4 = _mm256_sub_epi32(</td></tr>
+<tr><th id="204">204</th><td>            initial_accum_data, _mm256_set1_epi32(rhs_sums_offsets[<var>4</var>]));</td></tr>
+<tr><th id="205">205</th><td>        accum_data_v5 = _mm256_sub_epi32(</td></tr>
+<tr><th id="206">206</th><td>            initial_accum_data, _mm256_set1_epi32(rhs_sums_offsets[<var>5</var>]));</td></tr>
+<tr><th id="207">207</th><td>        accum_data_v6 = _mm256_sub_epi32(</td></tr>
+<tr><th id="208">208</th><td>            initial_accum_data, _mm256_set1_epi32(rhs_sums_offsets[<var>6</var>]));</td></tr>
+<tr><th id="209">209</th><td>        accum_data_v7 = _mm256_sub_epi32(</td></tr>
+<tr><th id="210">210</th><td>            initial_accum_data, _mm256_set1_epi32(rhs_sums_offsets[<var>7</var>]));</td></tr>
+<tr><th id="211">211</th><td>      } <b>else</b> {</td></tr>
+<tr><th id="212">212</th><td>        accum_data_v0 = initial_accum_data;</td></tr>
+<tr><th id="213">213</th><td>        accum_data_v1 = initial_accum_data;</td></tr>
+<tr><th id="214">214</th><td>        accum_data_v2 = initial_accum_data;</td></tr>
+<tr><th id="215">215</th><td>        accum_data_v3 = initial_accum_data;</td></tr>
+<tr><th id="216">216</th><td>        accum_data_v4 = initial_accum_data;</td></tr>
+<tr><th id="217">217</th><td>        accum_data_v5 = initial_accum_data;</td></tr>
+<tr><th id="218">218</th><td>        accum_data_v6 = initial_accum_data;</td></tr>
+<tr><th id="219">219</th><td>        accum_data_v7 = initial_accum_data;</td></tr>
+<tr><th id="220">220</th><td>      }</td></tr>
+<tr><th id="221">221</th><td></td></tr>
+<tr><th id="222">222</th><td>      <i>// Finally, in the channels-are-columns case, load bias data here.</i></td></tr>
+<tr><th id="223">223</th><td>      <b>if</b> ((params.flags &amp; RUY_ASM_FLAG_HAS_BIAS) &amp;&amp;</td></tr>
+<tr><th id="224">224</th><td>          (params.flags &amp; RUY_ASM_FLAG_CHANNEL_DIMENSION_IS_COL)) {</td></tr>
+<tr><th id="225">225</th><td>        <em>const</em> __m256i bias_data = _mm256_loadu_si256(</td></tr>
+<tr><th id="226">226</th><td>            <b>reinterpret_cast</b>&lt;<em>const</em> __m256i*&gt;(params.bias + col));</td></tr>
+<tr><th id="227">227</th><td>        accum_data_v0 = _mm256_add_epi32(</td></tr>
+<tr><th id="228">228</th><td>            accum_data_v0,</td></tr>
+<tr><th id="229">229</th><td>            _mm256_permutevar8x32_epi32(bias_data, _mm256_set1_epi32(<var>0</var>)));</td></tr>
+<tr><th id="230">230</th><td>        accum_data_v1 = _mm256_add_epi32(</td></tr>
+<tr><th id="231">231</th><td>            accum_data_v1,</td></tr>
+<tr><th id="232">232</th><td>            _mm256_permutevar8x32_epi32(bias_data, _mm256_set1_epi32(<var>1</var>)));</td></tr>
+<tr><th id="233">233</th><td>        accum_data_v2 = _mm256_add_epi32(</td></tr>
+<tr><th id="234">234</th><td>            accum_data_v2,</td></tr>
+<tr><th id="235">235</th><td>            _mm256_permutevar8x32_epi32(bias_data, _mm256_set1_epi32(<var>2</var>)));</td></tr>
+<tr><th id="236">236</th><td>        accum_data_v3 = _mm256_add_epi32(</td></tr>
+<tr><th id="237">237</th><td>            accum_data_v3,</td></tr>
+<tr><th id="238">238</th><td>            _mm256_permutevar8x32_epi32(bias_data, _mm256_set1_epi32(<var>3</var>)));</td></tr>
+<tr><th id="239">239</th><td>        accum_data_v4 = _mm256_add_epi32(</td></tr>
+<tr><th id="240">240</th><td>            accum_data_v4,</td></tr>
+<tr><th id="241">241</th><td>            _mm256_permutevar8x32_epi32(bias_data, _mm256_set1_epi32(<var>4</var>)));</td></tr>
+<tr><th id="242">242</th><td>        accum_data_v5 = _mm256_add_epi32(</td></tr>
+<tr><th id="243">243</th><td>            accum_data_v5,</td></tr>
+<tr><th id="244">244</th><td>            _mm256_permutevar8x32_epi32(bias_data, _mm256_set1_epi32(<var>5</var>)));</td></tr>
+<tr><th id="245">245</th><td>        accum_data_v6 = _mm256_add_epi32(</td></tr>
+<tr><th id="246">246</th><td>            accum_data_v6,</td></tr>
+<tr><th id="247">247</th><td>            _mm256_permutevar8x32_epi32(bias_data, _mm256_set1_epi32(<var>6</var>)));</td></tr>
+<tr><th id="248">248</th><td>        accum_data_v7 = _mm256_add_epi32(</td></tr>
+<tr><th id="249">249</th><td>            accum_data_v7,</td></tr>
+<tr><th id="250">250</th><td>            _mm256_permutevar8x32_epi32(bias_data, _mm256_set1_epi32(<var>7</var>)));</td></tr>
+<tr><th id="251">251</th><td>      }</td></tr>
+<tr><th id="252">252</th><td></td></tr>
+<tr><th id="253">253</th><td>      <em>const</em> std::int8_t* lhs_ptr = lhs_col_ptr;</td></tr>
+<tr><th id="254">254</th><td>      <em>const</em> std::int8_t* rhs_ptr = rhs_col_ptr;</td></tr>
+<tr><th id="255">255</th><td>      <b>for</b> (<em>int</em> d = <var>0</var>; d &lt; params.depth; d += kAvx8bitInnerSize) {</td></tr>
+<tr><th id="256">256</th><td>        <em>const</em> __m256i lhs_data =</td></tr>
+<tr><th id="257">257</th><td>            _mm256_load_si256(<b>reinterpret_cast</b>&lt;<em>const</em> __m256i*&gt;(lhs_ptr));</td></tr>
+<tr><th id="258">258</th><td>        <em>const</em> __m256i rhs_data_8bit =</td></tr>
+<tr><th id="259">259</th><td>            _mm256_load_si256(<b>reinterpret_cast</b>&lt;<em>const</em> __m256i*&gt;(rhs_ptr));</td></tr>
+<tr><th id="260">260</th><td></td></tr>
+<tr><th id="261">261</th><td>        <i>// Each "int32" is two 16-bit RHS values, sign extended from 8-bit.</i></td></tr>
+<tr><th id="262">262</th><td>        std::int32_t rhs_data[<var>16</var>];</td></tr>
+<tr><th id="263">263</th><td>        <em>const</em> __m128i rhs_data_bottom_lane =</td></tr>
+<tr><th id="264">264</th><td>            _mm256_castsi256_si128(rhs_data_8bit);</td></tr>
+<tr><th id="265">265</th><td>        <em>const</em> __m128i rhs_data_top_lane =</td></tr>
+<tr><th id="266">266</th><td>            _mm256_extracti128_si256(rhs_data_8bit, <var>1</var>);</td></tr>
+<tr><th id="267">267</th><td>        <em>const</em> __m256i rhs_16_bit_dup_low =</td></tr>
+<tr><th id="268">268</th><td>            _mm256_cvtepi8_epi16(rhs_data_bottom_lane);</td></tr>
+<tr><th id="269">269</th><td>        <em>const</em> __m256i rhs_16_bit_dup_high =</td></tr>
+<tr><th id="270">270</th><td>            _mm256_cvtepi8_epi16(rhs_data_top_lane);</td></tr>
+<tr><th id="271">271</th><td>        <i>// Now that we have cast the RHS data, we store it so that each value</i></td></tr>
+<tr><th id="272">272</th><td><i>        // can be separately loaded in the accumulation loop.</i></td></tr>
+<tr><th id="273">273</th><td>        _mm256_storeu_si256(<b>reinterpret_cast</b>&lt;__m256i*&gt;(rhs_data),</td></tr>
+<tr><th id="274">274</th><td>                            rhs_16_bit_dup_low);</td></tr>
+<tr><th id="275">275</th><td>        _mm256_storeu_si256(<b>reinterpret_cast</b>&lt;__m256i*&gt;(rhs_data + <var>8</var>),</td></tr>
+<tr><th id="276">276</th><td>                            rhs_16_bit_dup_high);</td></tr>
+<tr><th id="277">277</th><td></td></tr>
+<tr><th id="278">278</th><td>        <em>const</em> __m256i lhs_data_split =</td></tr>
+<tr><th id="279">279</th><td>            _mm256_shuffle_epi8(lhs_data, splitter_idx);</td></tr>
+<tr><th id="280">280</th><td>        <em>const</em> __m256i lhs_data_split_expand_bottom =</td></tr>
+<tr><th id="281">281</th><td>            _mm256_cvtepi8_epi16(_mm256_extracti128_si256(lhs_data_split, <var>0</var>));</td></tr>
+<tr><th id="282">282</th><td>        <em>const</em> __m256i lhs_data_split_expand_top =</td></tr>
+<tr><th id="283">283</th><td>            _mm256_cvtepi8_epi16(_mm256_extracti128_si256(lhs_data_split, <var>1</var>));</td></tr>
+<tr><th id="284">284</th><td></td></tr>
+<tr><th id="285">285</th><td>        <i>// Take bytes 0, 1, 4, 5, 8, 9, ... expanded to 16-bit.</i></td></tr>
+<tr><th id="286">286</th><td>        <em>const</em> __m256i lhs_16_bit_low = _mm256_permute2x128_si256(</td></tr>
+<tr><th id="287">287</th><td>            lhs_data_split_expand_bottom, lhs_data_split_expand_top, <var>0x20</var>);</td></tr>
+<tr><th id="288">288</th><td>        <i>// Take bytes 2, 3, 6, 7, 10, 11, ... expanded to 16-bit.</i></td></tr>
+<tr><th id="289">289</th><td>        <em>const</em> __m256i lhs_16_bit_high = _mm256_permute2x128_si256(</td></tr>
+<tr><th id="290">290</th><td>            lhs_data_split_expand_bottom, lhs_data_split_expand_top, <var>0x31</var>);</td></tr>
+<tr><th id="291">291</th><td></td></tr>
+<tr><th id="292">292</th><td>        __m256i rhs0 = _mm256_lddqu_si256(<b>reinterpret_cast</b>&lt;<em>const</em> __m256i*&gt;(</td></tr>
+<tr><th id="293">293</th><td>            rhs_data));  <i>// Load [0 1 2 3 4 5 6 7]</i></td></tr>
+<tr><th id="294">294</th><td>        __m256i rhs1 = _mm256_lddqu_si256(</td></tr>
+<tr><th id="295">295</th><td>            <b>reinterpret_cast</b>&lt;<em>const</em> __m256i*&gt;(rhs_data + <var>8</var>));  <i>// Load [8 - 15]</i></td></tr>
+<tr><th id="296">296</th><td>        __m256i rhs0_3 =</td></tr>
+<tr><th id="297">297</th><td>            _mm256_permute2f128_si256(rhs0, rhs0, <var>0</var>);  <i>// [0 1 2 3 0 1 2 3]</i></td></tr>
+<tr><th id="298">298</th><td>        __m256i rhs4_7 =</td></tr>
+<tr><th id="299">299</th><td>            _mm256_permute2f128_si256(rhs0, rhs0, <var>0x11</var>);  <i>// [4 5 6 7 4 5 6 7]</i></td></tr>
+<tr><th id="300">300</th><td>        __m256i rhs8_11 =</td></tr>
+<tr><th id="301">301</th><td>            _mm256_permute2f128_si256(rhs1, rhs1, <var>0</var>);  <i>// [8 9 10 11 8 9 10 11]</i></td></tr>
+<tr><th id="302">302</th><td>        __m256i rhs12_15 =</td></tr>
+<tr><th id="303">303</th><td>            _mm256_permute2f128_si256(rhs1, rhs1, <var>17</var>);  <i>// [12 - 15, 12 - 15]</i></td></tr>
+<tr><th id="304">304</th><td></td></tr>
+<tr><th id="305">305</th><td>        <em>auto</em> process_column = [=](__m256i&amp; rhs_dup_lo, __m256i&amp; rhs_dup_hi,</td></tr>
+<tr><th id="306">306</th><td>                                  __m256i&amp; accum) {</td></tr>
+<tr><th id="307">307</th><td>          accum = _mm256_add_epi32(</td></tr>
+<tr><th id="308">308</th><td>              accum, _mm256_madd_epi16(lhs_16_bit_low, rhs_dup_lo));</td></tr>
+<tr><th id="309">309</th><td>          accum = _mm256_add_epi32(</td></tr>
+<tr><th id="310">310</th><td>              accum, _mm256_madd_epi16(lhs_16_bit_high, rhs_dup_hi));</td></tr>
+<tr><th id="311">311</th><td>        };</td></tr>
+<tr><th id="312">312</th><td>        __m256i tmp0, tmp1, tmp2, tmp3;</td></tr>
+<tr><th id="313">313</th><td>        tmp0 = _mm256_shuffle_epi32(rhs0_3, <var>0</var>);</td></tr>
+<tr><th id="314">314</th><td>        tmp1 = _mm256_shuffle_epi32(rhs0_3, <var>0x55</var>);</td></tr>
+<tr><th id="315">315</th><td>        process_column(tmp0, tmp1, accum_data_v0);</td></tr>
+<tr><th id="316">316</th><td>        tmp2 = _mm256_shuffle_epi32(rhs0_3, <var>0xaa</var>);</td></tr>
+<tr><th id="317">317</th><td>        tmp3 = _mm256_shuffle_epi32(rhs0_3, <var>0xff</var>);</td></tr>
+<tr><th id="318">318</th><td>        process_column(tmp2, tmp3, accum_data_v1);</td></tr>
+<tr><th id="319">319</th><td></td></tr>
+<tr><th id="320">320</th><td>        tmp0 = _mm256_shuffle_epi32(rhs4_7, <var>0</var>);</td></tr>
+<tr><th id="321">321</th><td>        tmp1 = _mm256_shuffle_epi32(rhs4_7, <var>0x55</var>);</td></tr>
+<tr><th id="322">322</th><td>        process_column(tmp0, tmp1, accum_data_v2);</td></tr>
+<tr><th id="323">323</th><td>        tmp2 = _mm256_shuffle_epi32(rhs4_7, <var>0xaa</var>);</td></tr>
+<tr><th id="324">324</th><td>        tmp3 = _mm256_shuffle_epi32(rhs4_7, <var>0xff</var>);</td></tr>
+<tr><th id="325">325</th><td>        process_column(tmp2, tmp3, accum_data_v3);</td></tr>
+<tr><th id="326">326</th><td></td></tr>
+<tr><th id="327">327</th><td>        tmp0 = _mm256_shuffle_epi32(rhs8_11, <var>0</var>);</td></tr>
+<tr><th id="328">328</th><td>        tmp1 = _mm256_shuffle_epi32(rhs8_11, <var>0x55</var>);</td></tr>
+<tr><th id="329">329</th><td>        process_column(tmp0, tmp1, accum_data_v4);</td></tr>
+<tr><th id="330">330</th><td>        tmp2 = _mm256_shuffle_epi32(rhs8_11, <var>0xaa</var>);</td></tr>
+<tr><th id="331">331</th><td>        tmp3 = _mm256_shuffle_epi32(rhs8_11, <var>0xff</var>);</td></tr>
+<tr><th id="332">332</th><td>        process_column(tmp2, tmp3, accum_data_v5);</td></tr>
+<tr><th id="333">333</th><td></td></tr>
+<tr><th id="334">334</th><td>        tmp0 = _mm256_shuffle_epi32(rhs12_15, <var>0</var>);</td></tr>
+<tr><th id="335">335</th><td>        tmp1 = _mm256_shuffle_epi32(rhs12_15, <var>0x55</var>);</td></tr>
+<tr><th id="336">336</th><td>        process_column(tmp0, tmp1, accum_data_v6);</td></tr>
+<tr><th id="337">337</th><td>        tmp2 = _mm256_shuffle_epi32(rhs12_15, <var>0xaa</var>);</td></tr>
+<tr><th id="338">338</th><td>        tmp3 = _mm256_shuffle_epi32(rhs12_15, <var>0xff</var>);</td></tr>
+<tr><th id="339">339</th><td>        process_column(tmp2, tmp3, accum_data_v7);</td></tr>
+<tr><th id="340">340</th><td></td></tr>
+<tr><th id="341">341</th><td>        lhs_ptr += kAvx8bitBlockSize * kAvx8bitInnerSize;</td></tr>
+<tr><th id="342">342</th><td>        rhs_ptr += kAvx8bitBlockSize * kAvx8bitInnerSize;</td></tr>
+<tr><th id="343">343</th><td>      }</td></tr>
+<tr><th id="344">344</th><td></td></tr>
+<tr><th id="345">345</th><td>      <b>if</b> (params.dst_type_id != DstTypeId&lt;std::int32_t&gt;::kValue) {</td></tr>
+<tr><th id="346">346</th><td>        __m256i m_vector;</td></tr>
+<tr><th id="347">347</th><td>        __m256i e_vector;</td></tr>
+<tr><th id="348">348</th><td>        <i>// Does not make use of RUY_ASM_FLAG_NEEDS_LEFT_SHIFT.</i></td></tr>
+<tr><th id="349">349</th><td>        m_vector = _mm256_loadu_si256(<b>reinterpret_cast</b>&lt;<em>const</em> __m256i*&gt;(</td></tr>
+<tr><th id="350">350</th><td>            params.multiplier_fixedpoint + multiplier_channel));</td></tr>
+<tr><th id="351">351</th><td>        e_vector = _mm256_loadu_si256(<b>reinterpret_cast</b>&lt;<em>const</em> __m256i*&gt;(</td></tr>
+<tr><th id="352">352</th><td>            params.multiplier_exponent + multiplier_channel));</td></tr>
+<tr><th id="353">353</th><td></td></tr>
+<tr><th id="354">354</th><td>        <em>const</em> __m256i m_64bit_low =</td></tr>
+<tr><th id="355">355</th><td>            _mm256_cvtepi32_epi64(_mm256_extracti128_si256(m_vector, <var>0</var>));</td></tr>
+<tr><th id="356">356</th><td>        <em>const</em> __m256i m_64bit_high =</td></tr>
+<tr><th id="357">357</th><td>            _mm256_cvtepi32_epi64(_mm256_extracti128_si256(m_vector, <var>1</var>));</td></tr>
+<tr><th id="358">358</th><td></td></tr>
+<tr><th id="359">359</th><td>        <em>const</em> __m256i zero_vector = _mm256_setzero_si256();</td></tr>
+<tr><th id="360">360</th><td>        <em>const</em> __m256i left_shift = _mm256_max_epi32(e_vector, zero_vector);</td></tr>
+<tr><th id="361">361</th><td>        <em>const</em> __m256i neg_e_vector = _mm256_sub_epi32(zero_vector, e_vector);</td></tr>
+<tr><th id="362">362</th><td>        <em>const</em> __m256i right_shift = _mm256_max_epi32(neg_e_vector, zero_vector);</td></tr>
+<tr><th id="363">363</th><td>        <em>const</em> __m256i final_right_shift = _mm256_set1_epi32(<var>31</var>);</td></tr>
+<tr><th id="364">364</th><td>        <em>const</em> __m256i final_right_shift_low = _mm256_cvtepi32_epi64(</td></tr>
+<tr><th id="365">365</th><td>            _mm256_extracti128_si256(final_right_shift, <var>0</var>));</td></tr>
+<tr><th id="366">366</th><td>        <em>const</em> __m256i final_right_shift_high = _mm256_cvtepi32_epi64(</td></tr>
+<tr><th id="367">367</th><td>            _mm256_extracti128_si256(final_right_shift, <var>1</var>));</td></tr>
+<tr><th id="368">368</th><td>        <em>const</em> __m256i convert_to_unsigned_64 =</td></tr>
+<tr><th id="369">369</th><td>            _mm256_set1_epi64x(<var>0x8000000000000000</var>);</td></tr>
+<tr><th id="370">370</th><td></td></tr>
+<tr><th id="371">371</th><td>        __m256i post_scaling_offset = _mm256_setzero_si256();</td></tr>
+<tr><th id="372">372</th><td>        <i>// A "half" added for rounding prior to truncation of 64-bit value.</i></td></tr>
+<tr><th id="373">373</th><td>        <em>const</em> __m256i offset_vector = _mm256_add_epi64(</td></tr>
+<tr><th id="374">374</th><td>            _mm256_slli_epi64(_mm256_set1_epi64x(<var>1</var>), <var>30</var>),</td></tr>
+<tr><th id="375">375</th><td>            convert_to_unsigned_64);</td></tr>
+<tr><th id="376">376</th><td></td></tr>
+<tr><th id="377">377</th><td>        <b>if</b> (params.dst_zero_point) {</td></tr>
+<tr><th id="378">378</th><td>          post_scaling_offset = _mm256_set1_epi32(params.dst_zero_point);</td></tr>
+<tr><th id="379">379</th><td>        }</td></tr>
+<tr><th id="380">380</th><td></td></tr>
+<tr><th id="381">381</th><td>        <em>const</em> __m256i repack_perm = _mm256_setr_epi32(<var>0</var>, <var>2</var>, <var>4</var>, <var>6</var>, <var>1</var>, <var>3</var>, <var>5</var>, <var>7</var>);</td></tr>
+<tr><th id="382">382</th><td></td></tr>
+<tr><th id="383">383</th><td>        <i>// We cannot do</i></td></tr>
+<tr><th id="384">384</th><td><i>        //</i></td></tr>
+<tr><th id="385">385</th><td><i>        // scaled_v_low =</i></td></tr>
+<tr><th id="386">386</th><td><i>        //     _mm256_srav_epi64(scaled_v_low, final_right_shift_low);</i></td></tr>
+<tr><th id="387">387</th><td><i>        // scaled_v_high =</i></td></tr>
+<tr><th id="388">388</th><td><i>        //     _mm256_srav_epi64(scaled_v_high, final_right_shift_high);</i></td></tr>
+<tr><th id="389">389</th><td><i>        //</i></td></tr>
+<tr><th id="390">390</th><td><i>        // since this instruction is not in AVX2. Instead we use</i></td></tr>
+<tr><th id="391">391</th><td><i>        // _mm256_srlv_epi64, but this is an unsigned shift, so we applied</i></td></tr>
+<tr><th id="392">392</th><td><i>        // offsets before (convert_to_unsigned_64) and after</i></td></tr>
+<tr><th id="393">393</th><td><i>        // (convert_to_signed_halved).</i></td></tr>
+<tr><th id="394">394</th><td><i>        //</i></td></tr>
+<tr><th id="395">395</th><td><i>        // The overall process is, for 64-bit scaled accumulator:</i></td></tr>
+<tr><th id="396">396</th><td><i>        // unsigned_accum = signed_accum + 1 &lt;&lt; 63;</i></td></tr>
+<tr><th id="397">397</th><td><i>        // unsigned_accum = (unsigned_accum &gt;&gt; right_shift) &gt;&gt; 31;</i></td></tr>
+<tr><th id="398">398</th><td><i>        // signed_accum = unsigned_accum - ((1 &lt;&lt; 32) &gt;&gt; right_shift) / 2 * 2;</i></td></tr>
+<tr><th id="399">399</th><td><i></i></td></tr>
+<tr><th id="400">400</th><td><i>        // There are various ways to repack the results, in the absence of</i></td></tr>
+<tr><th id="401">401</th><td><i>        // _mm256_cvtepi64_epi32() or anything like it.</i></td></tr>
+<tr><th id="402">402</th><td><i>        // A.</i></td></tr>
+<tr><th id="403">403</th><td><i>        // accum_data_v[j] =</i></td></tr>
+<tr><th id="404">404</th><td><i>        //     _mm256_set_epi32(_mm256_extract_epi32(scaled_v_high, 6),</i></td></tr>
+<tr><th id="405">405</th><td><i>        //                      _mm256_extract_epi32(scaled_v_high, 4),</i></td></tr>
+<tr><th id="406">406</th><td><i>        //                      _mm256_extract_epi32(scaled_v_high, 2),</i></td></tr>
+<tr><th id="407">407</th><td><i>        //                      _mm256_extract_epi32(scaled_v_high, 0),</i></td></tr>
+<tr><th id="408">408</th><td><i>        //                      _mm256_extract_epi32(scaled_v_low, 6),</i></td></tr>
+<tr><th id="409">409</th><td><i>        //                      _mm256_extract_epi32(scaled_v_low, 4),</i></td></tr>
+<tr><th id="410">410</th><td><i>        //                      _mm256_extract_epi32(scaled_v_low, 2),</i></td></tr>
+<tr><th id="411">411</th><td><i>        //                      _mm256_extract_epi32(scaled_v_low, 0));</i></td></tr>
+<tr><th id="412">412</th><td><i>        // B.</i></td></tr>
+<tr><th id="413">413</th><td><i>        // scaled_v_low = _mm256_shuffle_epi32(scaled_v_low, 0xd8);</i></td></tr>
+<tr><th id="414">414</th><td><i>        // scaled_v_high = _mm256_shuffle_epi32(scaled_v_high, 0xd8);</i></td></tr>
+<tr><th id="415">415</th><td><i>        // accum_data_v[j] =</i></td></tr>
+<tr><th id="416">416</th><td><i>        //     _mm256_set_epi64x(_mm256_extract_epi64(scaled_v_high, 2),</i></td></tr>
+<tr><th id="417">417</th><td><i>        //                       _mm256_extract_epi64(scaled_v_high, 0),</i></td></tr>
+<tr><th id="418">418</th><td><i>        //                       _mm256_extract_epi64(scaled_v_low, 2),</i></td></tr>
+<tr><th id="419">419</th><td><i>        //                       _mm256_extract_epi64(scaled_v_low, 0));</i></td></tr>
+<tr><th id="420">420</th><td><i>        // C.</i></td></tr>
+<tr><th id="421">421</th><td><i>        // scaled_v_low =</i></td></tr>
+<tr><th id="422">422</th><td><i>        //     _mm256_permutevar8x32_epi32(scaled_v_low, repack_perm);</i></td></tr>
+<tr><th id="423">423</th><td><i>        // scaled_v_high =</i></td></tr>
+<tr><th id="424">424</th><td><i>        //     _mm256_permutevar8x32_epi32(scaled_v_high, repack_perm);</i></td></tr>
+<tr><th id="425">425</th><td><i>        // accum_data_v[j] =</i></td></tr>
+<tr><th id="426">426</th><td><i>        //     _mm256_permute2x128_si256(scaled_v_low, scaled_v_high, 0x20);</i></td></tr>
+<tr><th id="427">427</th><td><i>        //</i></td></tr>
+<tr><th id="428">428</th><td><i>        // However, we choose the following because it uses two lighter</i></td></tr>
+<tr><th id="429">429</th><td><i>        // instructions. The permutation does have a longer latency, but this</i></td></tr>
+<tr><th id="430">430</th><td><i>        // loop can be unrolled.</i></td></tr>
+<tr><th id="431">431</th><td><i>        // D.</i></td></tr>
+<tr><th id="432">432</th><td><i>        // scaled_v_high = _mm256_slli_epi64(scaled_v_high, 32);</i></td></tr>
+<tr><th id="433">433</th><td><i>        // __m256i results =</i></td></tr>
+<tr><th id="434">434</th><td><i>        //     _mm256_blend_epi32(scaled_v_low, scaled_v_high, 0xaa);</i></td></tr>
+<tr><th id="435">435</th><td><i>        // results = _mm256_permutevar8x32_epi32(results, repack_perm);</i></td></tr>
+<tr><th id="436">436</th><td><i>        // accum_data_v[j] = _mm256_add_epi32(results, post_scaling_offset);</i></td></tr>
+<tr><th id="437">437</th><td><i></i></td></tr>
+<tr><th id="438">438</th><td><i>        // This multiplier code is complex and expensive enough on x86, that</i></td></tr>
+<tr><th id="439">439</th><td><i>        // we prefer to implement the channels-are-columns case by transposing</i></td></tr>
+<tr><th id="440">440</th><td><i>        // around it, rather than duplicate it (which would also require</i></td></tr>
+<tr><th id="441">441</th><td><i>        // duplicating the above code computing the multiplier constants).</i></td></tr>
+<tr><th id="442">442</th><td><i>        // This is one instance where channels-are-columns has lower performance</i></td></tr>
+<tr><th id="443">443</th><td><i>        // than channels-are-rows.</i></td></tr>
+<tr><th id="444">444</th><td>        <em>const</em> <em>bool</em> transpose_around_multiplier =</td></tr>
+<tr><th id="445">445</th><td>            (params.flags &amp; RUY_ASM_FLAG_HAS_PERCHANNEL) &amp;&amp;</td></tr>
+<tr><th id="446">446</th><td>            (params.flags &amp; RUY_ASM_FLAG_CHANNEL_DIMENSION_IS_COL);</td></tr>
+<tr><th id="447">447</th><td>        <b>if</b> (transpose_around_multiplier) {</td></tr>
+<tr><th id="448">448</th><td>          <i>// Transpose the 8x8 accumulators block. Will be un-transposed below</i></td></tr>
+<tr><th id="449">449</th><td><i>          // after the multplier implementation.</i></td></tr>
+<tr><th id="450">450</th><td>          intrin_utils::mm256_transpose8x8_epi32&lt;path&gt;(</td></tr>
+<tr><th id="451">451</th><td>              &amp;accum_data_v0, &amp;accum_data_v1, &amp;accum_data_v2, &amp;accum_data_v3,</td></tr>
+<tr><th id="452">452</th><td>              &amp;accum_data_v4, &amp;accum_data_v5, &amp;accum_data_v6, &amp;accum_data_v7);</td></tr>
+<tr><th id="453">453</th><td>        }</td></tr>
+<tr><th id="454">454</th><td></td></tr>
+<tr><th id="455">455</th><td>        <em>auto</em> rounding_right_shift = [=](__m256i&amp; results,</td></tr>
+<tr><th id="456">456</th><td>                                        <em>const</em> __m256i&amp; exponent) {</td></tr>
+<tr><th id="457">457</th><td>          <i>// Construct the "nudge" value for each lane if the exponent is</i></td></tr>
+<tr><th id="458">458</th><td><i>          // greater than 0. Otherwise, the nudge is 0.</i></td></tr>
+<tr><th id="459">459</th><td>          <em>const</em> __m256i zeros = _mm256_setzero_si256();</td></tr>
+<tr><th id="460">460</th><td>          <em>const</em> __m256i mask_rightshift_gtz =</td></tr>
+<tr><th id="461">461</th><td>              _mm256_cmpgt_epi32(exponent, zeros);</td></tr>
+<tr><th id="462">462</th><td>          <em>const</em> __m256i one_shift_exp_minus1 = _mm256_sllv_epi32(</td></tr>
+<tr><th id="463">463</th><td>              _mm256_set1_epi32(<var>1</var>),</td></tr>
+<tr><th id="464">464</th><td>              _mm256_sub_epi32(exponent, _mm256_set1_epi32(<var>1</var>)));</td></tr>
+<tr><th id="465">465</th><td>          __m256i nudge = intrin_utils::mm256_blendv_epi32(</td></tr>
+<tr><th id="466">466</th><td>              zeros, one_shift_exp_minus1, mask_rightshift_gtz);</td></tr>
+<tr><th id="467">467</th><td>          <i>// Calculate the shifted sum (results + nudge) &gt;&gt; exp.</i></td></tr>
+<tr><th id="468">468</th><td>          <em>const</em> __m256i r_plus_nudge = _mm256_add_epi32(results, nudge);</td></tr>
+<tr><th id="469">469</th><td>          <em>const</em> __m256i shifted_sum = _mm256_srav_epi32(r_plus_nudge, exponent);</td></tr>
+<tr><th id="470">470</th><td></td></tr>
+<tr><th id="471">471</th><td>          <i>// Identify overflow in each lane and create mask.</i></td></tr>
+<tr><th id="472">472</th><td>          <em>const</em> __m256i one_shift_31minus_exp = _mm256_sllv_epi32(</td></tr>
+<tr><th id="473">473</th><td>              _mm256_set1_epi32(<var>1</var>),</td></tr>
+<tr><th id="474">474</th><td>              _mm256_sub_epi32(_mm256_set1_epi32(<var>31</var>), exponent));</td></tr>
+<tr><th id="475">475</th><td>          <em>const</em> __m256i mask_num_plus_nudge_overflow = _mm256_cmpgt_epi32(</td></tr>
+<tr><th id="476">476</th><td>              results, _mm256_sub_epi32(_mm256_set1_epi32(<var>0x7fffffff</var>), nudge));</td></tr>
+<tr><th id="477">477</th><td>          <i>// Fill results with either (results + nudge) &gt;&gt; exponent or</i></td></tr>
+<tr><th id="478">478</th><td><i>          // 1 &lt;&lt; (31 - exp) in the case of overflow.</i></td></tr>
+<tr><th id="479">479</th><td>          results = intrin_utils::mm256_blendv_epi32(</td></tr>
+<tr><th id="480">480</th><td>              shifted_sum, one_shift_31minus_exp, mask_num_plus_nudge_overflow);</td></tr>
+<tr><th id="481">481</th><td>        };</td></tr>
+<tr><th id="482">482</th><td></td></tr>
+<tr><th id="483">483</th><td>        <em>auto</em> apply_multiplier = [=](__m256i&amp; accum) {</td></tr>
+<tr><th id="484">484</th><td>          __m256i shifted_accum = _mm256_sllv_epi32(accum, left_shift);</td></tr>
+<tr><th id="485">485</th><td>          <i>// Apply the fixed-point part of the multiplier.</i></td></tr>
+<tr><th id="486">486</th><td>          __m256i scaled_v_low = _mm256_mul_epi32(</td></tr>
+<tr><th id="487">487</th><td>              _mm256_cvtepi32_epi64(_mm256_extracti128_si256(shifted_accum, <var>0</var>)),</td></tr>
+<tr><th id="488">488</th><td>              m_64bit_low);</td></tr>
+<tr><th id="489">489</th><td>          __m256i scaled_v_high = _mm256_mul_epi32(</td></tr>
+<tr><th id="490">490</th><td>              _mm256_cvtepi32_epi64(_mm256_extracti128_si256(shifted_accum, <var>1</var>)),</td></tr>
+<tr><th id="491">491</th><td>              m_64bit_high);</td></tr>
+<tr><th id="492">492</th><td></td></tr>
+<tr><th id="493">493</th><td>          scaled_v_low = _mm256_add_epi64(scaled_v_low, offset_vector);</td></tr>
+<tr><th id="494">494</th><td>          scaled_v_high = _mm256_add_epi64(scaled_v_high, offset_vector);</td></tr>
+<tr><th id="495">495</th><td></td></tr>
+<tr><th id="496">496</th><td>          scaled_v_low = _mm256_srlv_epi64(scaled_v_low, final_right_shift_low);</td></tr>
+<tr><th id="497">497</th><td>          scaled_v_high =</td></tr>
+<tr><th id="498">498</th><td>              _mm256_srlv_epi64(scaled_v_high, final_right_shift_high);</td></tr>
+<tr><th id="499">499</th><td></td></tr>
+<tr><th id="500">500</th><td>          scaled_v_high = _mm256_slli_epi64(scaled_v_high, <var>32</var>);</td></tr>
+<tr><th id="501">501</th><td>          __m256i results =</td></tr>
+<tr><th id="502">502</th><td>              _mm256_blend_epi32(scaled_v_low, scaled_v_high, <var>0xaa</var>);</td></tr>
+<tr><th id="503">503</th><td>          results = _mm256_permutevar8x32_epi32(results, repack_perm);</td></tr>
+<tr><th id="504">504</th><td>          <i>// Now do a Rounding Right Shift.</i></td></tr>
+<tr><th id="505">505</th><td>          rounding_right_shift(results, right_shift);</td></tr>
+<tr><th id="506">506</th><td>          accum = _mm256_add_epi32(results, post_scaling_offset);</td></tr>
+<tr><th id="507">507</th><td>        };</td></tr>
+<tr><th id="508">508</th><td>        apply_multiplier(accum_data_v0);</td></tr>
+<tr><th id="509">509</th><td>        apply_multiplier(accum_data_v1);</td></tr>
+<tr><th id="510">510</th><td>        apply_multiplier(accum_data_v2);</td></tr>
+<tr><th id="511">511</th><td>        apply_multiplier(accum_data_v3);</td></tr>
+<tr><th id="512">512</th><td>        apply_multiplier(accum_data_v4);</td></tr>
+<tr><th id="513">513</th><td>        apply_multiplier(accum_data_v5);</td></tr>
+<tr><th id="514">514</th><td>        apply_multiplier(accum_data_v6);</td></tr>
+<tr><th id="515">515</th><td>        apply_multiplier(accum_data_v7);</td></tr>
+<tr><th id="516">516</th><td>        <i>// See above comment: here we transpose again to undo the transposition</i></td></tr>
+<tr><th id="517">517</th><td><i>        // of the 8x8 block of accumulators used to implement the</i></td></tr>
+<tr><th id="518">518</th><td><i>        // channels-are-columns case.</i></td></tr>
+<tr><th id="519">519</th><td>        <b>if</b> (transpose_around_multiplier) {</td></tr>
+<tr><th id="520">520</th><td>          intrin_utils::mm256_transpose8x8_epi32&lt;path&gt;(</td></tr>
+<tr><th id="521">521</th><td>              &amp;accum_data_v0, &amp;accum_data_v1, &amp;accum_data_v2, &amp;accum_data_v3,</td></tr>
+<tr><th id="522">522</th><td>              &amp;accum_data_v4, &amp;accum_data_v5, &amp;accum_data_v6, &amp;accum_data_v7);</td></tr>
+<tr><th id="523">523</th><td>        }</td></tr>
+<tr><th id="524">524</th><td>      }</td></tr>
+<tr><th id="525">525</th><td>      <em>const</em> __m256i clamp_max_v = _mm256_set1_epi32(params.clamp_max);</td></tr>
+<tr><th id="526">526</th><td>      <em>const</em> __m256i clamp_min_v = _mm256_set1_epi32(params.clamp_min);</td></tr>
+<tr><th id="527">527</th><td>      <em>const</em> <em>bool</em> store_full_block = (residual_rows == kAvx8bitBlockSize) &amp;&amp;</td></tr>
+<tr><th id="528">528</th><td>                                    (residual_cols == kAvx8bitBlockSize);</td></tr>
+<tr><th id="529">529</th><td></td></tr>
+<tr><th id="530">530</th><td>      __m256i accum_data_v[kAvx8bitBlockSize];</td></tr>
+<tr><th id="531">531</th><td>      <b>if</b> (!store_full_block) {</td></tr>
+<tr><th id="532">532</th><td>        accum_data_v[<var>0</var>] = accum_data_v0;</td></tr>
+<tr><th id="533">533</th><td>        accum_data_v[<var>1</var>] = accum_data_v1;</td></tr>
+<tr><th id="534">534</th><td>        accum_data_v[<var>2</var>] = accum_data_v2;</td></tr>
+<tr><th id="535">535</th><td>        accum_data_v[<var>3</var>] = accum_data_v3;</td></tr>
+<tr><th id="536">536</th><td>        accum_data_v[<var>4</var>] = accum_data_v4;</td></tr>
+<tr><th id="537">537</th><td>        accum_data_v[<var>5</var>] = accum_data_v5;</td></tr>
+<tr><th id="538">538</th><td>        accum_data_v[<var>6</var>] = accum_data_v6;</td></tr>
+<tr><th id="539">539</th><td>        accum_data_v[<var>7</var>] = accum_data_v7;</td></tr>
+<tr><th id="540">540</th><td>      }</td></tr>
+<tr><th id="541">541</th><td></td></tr>
+<tr><th id="542">542</th><td>      <b>if</b> (params.dst_type_id == DstTypeId&lt;std::int8_t&gt;::kValue) {</td></tr>
+<tr><th id="543">543</th><td>        std::int8_t* tmp_ptr = <b>static_cast</b>&lt;std::int8_t*&gt;(dst_ptr);</td></tr>
+<tr><th id="544">544</th><td>        <b>if</b> (store_full_block) {</td></tr>
+<tr><th id="545">545</th><td>          accum_data_v0 = _mm256_min_epi32(accum_data_v0, clamp_max_v);</td></tr>
+<tr><th id="546">546</th><td>          accum_data_v0 = _mm256_max_epi32(accum_data_v0, clamp_min_v);</td></tr>
+<tr><th id="547">547</th><td>          accum_data_v1 = _mm256_min_epi32(accum_data_v1, clamp_max_v);</td></tr>
+<tr><th id="548">548</th><td>          accum_data_v1 = _mm256_max_epi32(accum_data_v1, clamp_min_v);</td></tr>
+<tr><th id="549">549</th><td>          accum_data_v2 = _mm256_min_epi32(accum_data_v2, clamp_max_v);</td></tr>
+<tr><th id="550">550</th><td>          accum_data_v2 = _mm256_max_epi32(accum_data_v2, clamp_min_v);</td></tr>
+<tr><th id="551">551</th><td>          accum_data_v3 = _mm256_min_epi32(accum_data_v3, clamp_max_v);</td></tr>
+<tr><th id="552">552</th><td>          accum_data_v3 = _mm256_max_epi32(accum_data_v3, clamp_min_v);</td></tr>
+<tr><th id="553">553</th><td>          accum_data_v4 = _mm256_min_epi32(accum_data_v4, clamp_max_v);</td></tr>
+<tr><th id="554">554</th><td>          accum_data_v4 = _mm256_max_epi32(accum_data_v4, clamp_min_v);</td></tr>
+<tr><th id="555">555</th><td>          accum_data_v5 = _mm256_min_epi32(accum_data_v5, clamp_max_v);</td></tr>
+<tr><th id="556">556</th><td>          accum_data_v5 = _mm256_max_epi32(accum_data_v5, clamp_min_v);</td></tr>
+<tr><th id="557">557</th><td>          accum_data_v6 = _mm256_min_epi32(accum_data_v6, clamp_max_v);</td></tr>
+<tr><th id="558">558</th><td>          accum_data_v6 = _mm256_max_epi32(accum_data_v6, clamp_min_v);</td></tr>
+<tr><th id="559">559</th><td>          accum_data_v7 = _mm256_min_epi32(accum_data_v7, clamp_max_v);</td></tr>
+<tr><th id="560">560</th><td>          accum_data_v7 = _mm256_max_epi32(accum_data_v7, clamp_min_v);</td></tr>
+<tr><th id="561">561</th><td>          intrin_utils::mm256_storeu_cvtepi32_epi8&lt;path&gt;(</td></tr>
+<tr><th id="562">562</th><td>              &amp;tmp_ptr[<var>0</var> * dst_stride], accum_data_v0);</td></tr>
+<tr><th id="563">563</th><td>          intrin_utils::mm256_storeu_cvtepi32_epi8&lt;path&gt;(</td></tr>
+<tr><th id="564">564</th><td>              &amp;tmp_ptr[<var>1</var> * dst_stride], accum_data_v1);</td></tr>
+<tr><th id="565">565</th><td>          intrin_utils::mm256_storeu_cvtepi32_epi8&lt;path&gt;(</td></tr>
+<tr><th id="566">566</th><td>              &amp;tmp_ptr[<var>2</var> * dst_stride], accum_data_v2);</td></tr>
+<tr><th id="567">567</th><td>          intrin_utils::mm256_storeu_cvtepi32_epi8&lt;path&gt;(</td></tr>
+<tr><th id="568">568</th><td>              &amp;tmp_ptr[<var>3</var> * dst_stride], accum_data_v3);</td></tr>
+<tr><th id="569">569</th><td>          intrin_utils::mm256_storeu_cvtepi32_epi8&lt;path&gt;(</td></tr>
+<tr><th id="570">570</th><td>              &amp;tmp_ptr[<var>4</var> * dst_stride], accum_data_v4);</td></tr>
+<tr><th id="571">571</th><td>          intrin_utils::mm256_storeu_cvtepi32_epi8&lt;path&gt;(</td></tr>
+<tr><th id="572">572</th><td>              &amp;tmp_ptr[<var>5</var> * dst_stride], accum_data_v5);</td></tr>
+<tr><th id="573">573</th><td>          intrin_utils::mm256_storeu_cvtepi32_epi8&lt;path&gt;(</td></tr>
+<tr><th id="574">574</th><td>              &amp;tmp_ptr[<var>6</var> * dst_stride], accum_data_v6);</td></tr>
+<tr><th id="575">575</th><td>          intrin_utils::mm256_storeu_cvtepi32_epi8&lt;path&gt;(</td></tr>
+<tr><th id="576">576</th><td>              &amp;tmp_ptr[<var>7</var> * dst_stride], accum_data_v7);</td></tr>
+<tr><th id="577">577</th><td>        } <b>else</b> {</td></tr>
+<tr><th id="578">578</th><td>          <b>for</b> (<em>int</em> j = <var>0</var>; j &lt; residual_cols; ++j) {</td></tr>
+<tr><th id="579">579</th><td>            __m256i result = accum_data_v[j];</td></tr>
+<tr><th id="580">580</th><td>            result = _mm256_min_epi32(result, clamp_max_v);</td></tr>
+<tr><th id="581">581</th><td>            result = _mm256_max_epi32(result, clamp_min_v);</td></tr>
+<tr><th id="582">582</th><td>            intrin_utils::mm256_n_storeu_cvtepi32_epi8&lt;path&gt;(</td></tr>
+<tr><th id="583">583</th><td>                tmp_ptr, residual_rows, result);</td></tr>
+<tr><th id="584">584</th><td>            tmp_ptr += dst_stride;</td></tr>
+<tr><th id="585">585</th><td>          }</td></tr>
+<tr><th id="586">586</th><td>        }</td></tr>
+<tr><th id="587">587</th><td>        dst_ptr = <b>static_cast</b>&lt;<em>void</em>*&gt;(<b>static_cast</b>&lt;std::int8_t*&gt;(dst_ptr) +</td></tr>
+<tr><th id="588">588</th><td>                                     kAvx8bitBlockSize);</td></tr>
+<tr><th id="589">589</th><td>      } <b>else</b> <b>if</b> (params.dst_type_id == DstTypeId&lt;std::uint8_t&gt;::kValue) {</td></tr>
+<tr><th id="590">590</th><td>        std::uint8_t* tmp_ptr = <b>static_cast</b>&lt;std::uint8_t*&gt;(dst_ptr);</td></tr>
+<tr><th id="591">591</th><td>        <b>if</b> (store_full_block) {</td></tr>
+<tr><th id="592">592</th><td>          accum_data_v0 = _mm256_min_epi32(accum_data_v0, clamp_max_v);</td></tr>
+<tr><th id="593">593</th><td>          accum_data_v0 = _mm256_max_epi32(accum_data_v0, clamp_min_v);</td></tr>
+<tr><th id="594">594</th><td>          accum_data_v1 = _mm256_min_epi32(accum_data_v1, clamp_max_v);</td></tr>
+<tr><th id="595">595</th><td>          accum_data_v1 = _mm256_max_epi32(accum_data_v1, clamp_min_v);</td></tr>
+<tr><th id="596">596</th><td>          accum_data_v2 = _mm256_min_epi32(accum_data_v2, clamp_max_v);</td></tr>
+<tr><th id="597">597</th><td>          accum_data_v2 = _mm256_max_epi32(accum_data_v2, clamp_min_v);</td></tr>
+<tr><th id="598">598</th><td>          accum_data_v3 = _mm256_min_epi32(accum_data_v3, clamp_max_v);</td></tr>
+<tr><th id="599">599</th><td>          accum_data_v3 = _mm256_max_epi32(accum_data_v3, clamp_min_v);</td></tr>
+<tr><th id="600">600</th><td>          accum_data_v4 = _mm256_min_epi32(accum_data_v4, clamp_max_v);</td></tr>
+<tr><th id="601">601</th><td>          accum_data_v4 = _mm256_max_epi32(accum_data_v4, clamp_min_v);</td></tr>
+<tr><th id="602">602</th><td>          accum_data_v5 = _mm256_min_epi32(accum_data_v5, clamp_max_v);</td></tr>
+<tr><th id="603">603</th><td>          accum_data_v5 = _mm256_max_epi32(accum_data_v5, clamp_min_v);</td></tr>
+<tr><th id="604">604</th><td>          accum_data_v6 = _mm256_min_epi32(accum_data_v6, clamp_max_v);</td></tr>
+<tr><th id="605">605</th><td>          accum_data_v6 = _mm256_max_epi32(accum_data_v6, clamp_min_v);</td></tr>
+<tr><th id="606">606</th><td>          accum_data_v7 = _mm256_min_epi32(accum_data_v7, clamp_max_v);</td></tr>
+<tr><th id="607">607</th><td>          accum_data_v7 = _mm256_max_epi32(accum_data_v7, clamp_min_v);</td></tr>
+<tr><th id="608">608</th><td>          intrin_utils::mm256_storeu_cvtepi32_epi8&lt;path&gt;(&amp;tmp_ptr[<var>0</var>],</td></tr>
+<tr><th id="609">609</th><td>                                                         accum_data_v0);</td></tr>
+<tr><th id="610">610</th><td>          intrin_utils::mm256_storeu_cvtepi32_epi8&lt;path&gt;(&amp;tmp_ptr[dst_stride],</td></tr>
+<tr><th id="611">611</th><td>                                                         accum_data_v1);</td></tr>
+<tr><th id="612">612</th><td>          intrin_utils::mm256_storeu_cvtepi32_epi8&lt;path&gt;(</td></tr>
+<tr><th id="613">613</th><td>              &amp;tmp_ptr[<var>2</var> * dst_stride], accum_data_v2);</td></tr>
+<tr><th id="614">614</th><td>          intrin_utils::mm256_storeu_cvtepi32_epi8&lt;path&gt;(</td></tr>
+<tr><th id="615">615</th><td>              &amp;tmp_ptr[<var>3</var> * dst_stride], accum_data_v3);</td></tr>
+<tr><th id="616">616</th><td>          intrin_utils::mm256_storeu_cvtepi32_epi8&lt;path&gt;(</td></tr>
+<tr><th id="617">617</th><td>              &amp;tmp_ptr[<var>4</var> * dst_stride], accum_data_v4);</td></tr>
+<tr><th id="618">618</th><td>          intrin_utils::mm256_storeu_cvtepi32_epi8&lt;path&gt;(</td></tr>
+<tr><th id="619">619</th><td>              &amp;tmp_ptr[<var>5</var> * dst_stride], accum_data_v5);</td></tr>
+<tr><th id="620">620</th><td>          intrin_utils::mm256_storeu_cvtepi32_epi8&lt;path&gt;(</td></tr>
+<tr><th id="621">621</th><td>              &amp;tmp_ptr[<var>6</var> * dst_stride], accum_data_v6);</td></tr>
+<tr><th id="622">622</th><td>          intrin_utils::mm256_storeu_cvtepi32_epi8&lt;path&gt;(</td></tr>
+<tr><th id="623">623</th><td>              &amp;tmp_ptr[<var>7</var> * dst_stride], accum_data_v7);</td></tr>
+<tr><th id="624">624</th><td>        } <b>else</b> {</td></tr>
+<tr><th id="625">625</th><td>          <b>for</b> (<em>int</em> j = <var>0</var>; j &lt; residual_cols; ++j) {</td></tr>
+<tr><th id="626">626</th><td>            __m256i result = accum_data_v[j];</td></tr>
+<tr><th id="627">627</th><td>            result = _mm256_min_epi32(result, clamp_max_v);</td></tr>
+<tr><th id="628">628</th><td>            result = _mm256_max_epi32(result, clamp_min_v);</td></tr>
+<tr><th id="629">629</th><td>            intrin_utils::mm256_n_storeu_cvtepi32_epi8&lt;path&gt;(</td></tr>
+<tr><th id="630">630</th><td>                tmp_ptr, residual_rows, result);</td></tr>
+<tr><th id="631">631</th><td>            tmp_ptr += dst_stride;</td></tr>
+<tr><th id="632">632</th><td>          }</td></tr>
+<tr><th id="633">633</th><td>        }</td></tr>
+<tr><th id="634">634</th><td>        dst_ptr = <b>static_cast</b>&lt;<em>void</em>*&gt;(<b>static_cast</b>&lt;std::uint8_t*&gt;(dst_ptr) +</td></tr>
+<tr><th id="635">635</th><td>                                     kAvx8bitBlockSize);</td></tr>
+<tr><th id="636">636</th><td>      } <b>else</b> <b>if</b> (params.dst_type_id == DstTypeId&lt;std::int16_t&gt;::kValue) {</td></tr>
+<tr><th id="637">637</th><td>        std::int16_t* tmp_ptr = <b>static_cast</b>&lt;std::int16_t*&gt;(dst_ptr);</td></tr>
+<tr><th id="638">638</th><td>        <b>if</b> (store_full_block) {</td></tr>
+<tr><th id="639">639</th><td>          accum_data_v0 = _mm256_min_epi32(accum_data_v0, clamp_max_v);</td></tr>
+<tr><th id="640">640</th><td>          accum_data_v0 = _mm256_max_epi32(accum_data_v0, clamp_min_v);</td></tr>
+<tr><th id="641">641</th><td>          accum_data_v1 = _mm256_min_epi32(accum_data_v1, clamp_max_v);</td></tr>
+<tr><th id="642">642</th><td>          accum_data_v1 = _mm256_max_epi32(accum_data_v1, clamp_min_v);</td></tr>
+<tr><th id="643">643</th><td>          accum_data_v2 = _mm256_min_epi32(accum_data_v2, clamp_max_v);</td></tr>
+<tr><th id="644">644</th><td>          accum_data_v2 = _mm256_max_epi32(accum_data_v2, clamp_min_v);</td></tr>
+<tr><th id="645">645</th><td>          accum_data_v3 = _mm256_min_epi32(accum_data_v3, clamp_max_v);</td></tr>
+<tr><th id="646">646</th><td>          accum_data_v3 = _mm256_max_epi32(accum_data_v3, clamp_min_v);</td></tr>
+<tr><th id="647">647</th><td>          accum_data_v4 = _mm256_min_epi32(accum_data_v4, clamp_max_v);</td></tr>
+<tr><th id="648">648</th><td>          accum_data_v4 = _mm256_max_epi32(accum_data_v4, clamp_min_v);</td></tr>
+<tr><th id="649">649</th><td>          accum_data_v5 = _mm256_min_epi32(accum_data_v5, clamp_max_v);</td></tr>
+<tr><th id="650">650</th><td>          accum_data_v5 = _mm256_max_epi32(accum_data_v5, clamp_min_v);</td></tr>
+<tr><th id="651">651</th><td>          accum_data_v6 = _mm256_min_epi32(accum_data_v6, clamp_max_v);</td></tr>
+<tr><th id="652">652</th><td>          accum_data_v6 = _mm256_max_epi32(accum_data_v6, clamp_min_v);</td></tr>
+<tr><th id="653">653</th><td>          accum_data_v7 = _mm256_min_epi32(accum_data_v7, clamp_max_v);</td></tr>
+<tr><th id="654">654</th><td>          accum_data_v7 = _mm256_max_epi32(accum_data_v7, clamp_min_v);</td></tr>
+<tr><th id="655">655</th><td>          intrin_utils::mm256_storeu_cvtepi32_epi16&lt;path&gt;(&amp;tmp_ptr[<var>0</var>],</td></tr>
+<tr><th id="656">656</th><td>                                                          accum_data_v0);</td></tr>
+<tr><th id="657">657</th><td>          intrin_utils::mm256_storeu_cvtepi32_epi16&lt;path&gt;(&amp;tmp_ptr[dst_stride],</td></tr>
+<tr><th id="658">658</th><td>                                                          accum_data_v1);</td></tr>
+<tr><th id="659">659</th><td>          intrin_utils::mm256_storeu_cvtepi32_epi16&lt;path&gt;(</td></tr>
+<tr><th id="660">660</th><td>              &amp;tmp_ptr[<var>2</var> * dst_stride], accum_data_v2);</td></tr>
+<tr><th id="661">661</th><td>          intrin_utils::mm256_storeu_cvtepi32_epi16&lt;path&gt;(</td></tr>
+<tr><th id="662">662</th><td>              &amp;tmp_ptr[<var>3</var> * dst_stride], accum_data_v3);</td></tr>
+<tr><th id="663">663</th><td>          intrin_utils::mm256_storeu_cvtepi32_epi16&lt;path&gt;(</td></tr>
+<tr><th id="664">664</th><td>              &amp;tmp_ptr[<var>4</var> * dst_stride], accum_data_v4);</td></tr>
+<tr><th id="665">665</th><td>          intrin_utils::mm256_storeu_cvtepi32_epi16&lt;path&gt;(</td></tr>
+<tr><th id="666">666</th><td>              &amp;tmp_ptr[<var>5</var> * dst_stride], accum_data_v5);</td></tr>
+<tr><th id="667">667</th><td>          intrin_utils::mm256_storeu_cvtepi32_epi16&lt;path&gt;(</td></tr>
+<tr><th id="668">668</th><td>              &amp;tmp_ptr[<var>6</var> * dst_stride], accum_data_v6);</td></tr>
+<tr><th id="669">669</th><td>          intrin_utils::mm256_storeu_cvtepi32_epi16&lt;path&gt;(</td></tr>
+<tr><th id="670">670</th><td>              &amp;tmp_ptr[<var>7</var> * dst_stride], accum_data_v7);</td></tr>
+<tr><th id="671">671</th><td>        } <b>else</b> {</td></tr>
+<tr><th id="672">672</th><td>          <b>for</b> (<em>int</em> j = <var>0</var>; j &lt; residual_cols; ++j) {</td></tr>
+<tr><th id="673">673</th><td>            __m256i result = accum_data_v[j];</td></tr>
+<tr><th id="674">674</th><td>            result = _mm256_min_epi32(result, clamp_max_v);</td></tr>
+<tr><th id="675">675</th><td>            result = _mm256_max_epi32(result, clamp_min_v);</td></tr>
+<tr><th id="676">676</th><td>            intrin_utils::mm256_n_storeu_cvtepi32_epi16&lt;path&gt;(</td></tr>
+<tr><th id="677">677</th><td>                tmp_ptr, residual_rows, result);</td></tr>
+<tr><th id="678">678</th><td>            tmp_ptr += dst_stride;</td></tr>
+<tr><th id="679">679</th><td>          }</td></tr>
+<tr><th id="680">680</th><td>        }</td></tr>
+<tr><th id="681">681</th><td>        dst_ptr = <b>static_cast</b>&lt;<em>void</em>*&gt;(<b>static_cast</b>&lt;std::int16_t*&gt;(dst_ptr) +</td></tr>
+<tr><th id="682">682</th><td>                                     kAvx8bitBlockSize);</td></tr>
+<tr><th id="683">683</th><td>      } <b>else</b> <b>if</b> (params.dst_type_id == DstTypeId&lt;std::int32_t&gt;::kValue) {</td></tr>
+<tr><th id="684">684</th><td>        <b>if</b> (store_full_block) {</td></tr>
+<tr><th id="685">685</th><td>          std::int32_t* tmp_ptr = <b>static_cast</b>&lt;std::int32_t*&gt;(dst_ptr);</td></tr>
+<tr><th id="686">686</th><td>          intrin_utils::mm256_storeu_epi32&lt;path&gt;(&amp;tmp_ptr[<var>0</var>], accum_data_v0);</td></tr>
+<tr><th id="687">687</th><td>          intrin_utils::mm256_storeu_epi32&lt;path&gt;(&amp;tmp_ptr[dst_stride],</td></tr>
+<tr><th id="688">688</th><td>                                                 accum_data_v1);</td></tr>
+<tr><th id="689">689</th><td>          intrin_utils::mm256_storeu_epi32&lt;path&gt;(&amp;tmp_ptr[<var>2</var> * dst_stride],</td></tr>
+<tr><th id="690">690</th><td>                                                 accum_data_v2);</td></tr>
+<tr><th id="691">691</th><td>          intrin_utils::mm256_storeu_epi32&lt;path&gt;(&amp;tmp_ptr[<var>3</var> * dst_stride],</td></tr>
+<tr><th id="692">692</th><td>                                                 accum_data_v3);</td></tr>
+<tr><th id="693">693</th><td>          intrin_utils::mm256_storeu_epi32&lt;path&gt;(&amp;tmp_ptr[<var>4</var> * dst_stride],</td></tr>
+<tr><th id="694">694</th><td>                                                 accum_data_v4);</td></tr>
+<tr><th id="695">695</th><td>          intrin_utils::mm256_storeu_epi32&lt;path&gt;(&amp;tmp_ptr[<var>5</var> * dst_stride],</td></tr>
+<tr><th id="696">696</th><td>                                                 accum_data_v5);</td></tr>
+<tr><th id="697">697</th><td>          intrin_utils::mm256_storeu_epi32&lt;path&gt;(&amp;tmp_ptr[<var>6</var> * dst_stride],</td></tr>
+<tr><th id="698">698</th><td>                                                 accum_data_v6);</td></tr>
+<tr><th id="699">699</th><td>          intrin_utils::mm256_storeu_epi32&lt;path&gt;(&amp;tmp_ptr[<var>7</var> * dst_stride],</td></tr>
+<tr><th id="700">700</th><td>                                                 accum_data_v7);</td></tr>
+<tr><th id="701">701</th><td>        } <b>else</b> {</td></tr>
+<tr><th id="702">702</th><td>          std::int32_t* dst_block_ptr = <b>static_cast</b>&lt;std::int32_t*&gt;(dst_ptr);</td></tr>
+<tr><th id="703">703</th><td>          <b>for</b> (<em>int</em> j = <var>0</var>; j &lt; residual_cols; ++j) {</td></tr>
+<tr><th id="704">704</th><td>            intrin_utils::mm256_n_storeu_epi32&lt;path&gt;(</td></tr>
+<tr><th id="705">705</th><td>                dst_block_ptr, residual_rows, accum_data_v[j]);</td></tr>
+<tr><th id="706">706</th><td>            dst_block_ptr += dst_stride;</td></tr>
+<tr><th id="707">707</th><td>          }</td></tr>
+<tr><th id="708">708</th><td>        }</td></tr>
+<tr><th id="709">709</th><td>        dst_ptr = <b>static_cast</b>&lt;<em>void</em>*&gt;(<b>static_cast</b>&lt;std::int32_t*&gt;(dst_ptr) +</td></tr>
+<tr><th id="710">710</th><td>                                     kAvx8bitBlockSize);</td></tr>
+<tr><th id="711">711</th><td>      } <b>else</b> {</td></tr>
+<tr><th id="712">712</th><td>        RUY_DCHECK(<b>false</b>);</td></tr>
+<tr><th id="713">713</th><td>      }</td></tr>
+<tr><th id="714">714</th><td></td></tr>
+<tr><th id="715">715</th><td>      lhs_col_ptr += kAvx8bitBlockSize * params.lhs_stride;</td></tr>
+<tr><th id="716">716</th><td>    }  <i>// End row-block loop.</i></td></tr>
+<tr><th id="717">717</th><td></td></tr>
+<tr><th id="718">718</th><td>    dst_col_ptr = <b>static_cast</b>&lt;<em>void</em>*&gt;(<b>static_cast</b>&lt;<em>char</em>*&gt;(dst_col_ptr) +</td></tr>
+<tr><th id="719">719</th><td>                                     kAvx8bitBlockSize * params.dst_stride);</td></tr>
+<tr><th id="720">720</th><td>    rhs_col_ptr += kAvx8bitBlockSize * params.rhs_stride;</td></tr>
+<tr><th id="721">721</th><td>  }  <i>// End col-block loop.</i></td></tr>
+<tr><th id="722">722</th><td>}  <i>// NOLINT(readability/fn_size)</i></td></tr>
+<tr><th id="723">723</th><td></td></tr>
+<tr><th id="724">724</th><td><em>void</em> Kernel8bitAvx2(<em>const</em> KernelParams8bit&lt;<var>8</var>, <var>8</var>&gt;&amp; params) {</td></tr>
+<tr><th id="725">725</th><td>  Kernel8bitAvx2Impl&lt;Path::kAvx2Fma&gt;(params);</td></tr>
+<tr><th id="726">726</th><td>}</td></tr>
+<tr><th id="727">727</th><td></td></tr>
+<tr><th id="728">728</th><td><b>template</b> &lt;Path path&gt;</td></tr>
+<tr><th id="729">729</th><td><em>void</em> Kernel8bitAvx2SingleColImpl(<em>const</em> KernelParams8bit&lt;<var>8</var>, <var>8</var>&gt;&amp; params) {</td></tr>
+<tr><th id="730">730</th><td>  profiler::ScopeLabel label(<q>"Kernel kAvx2Fma 8-bit GEMV"</q>);</td></tr>
+<tr><th id="731">731</th><td></td></tr>
+<tr><th id="732">732</th><td>  RUY_DCHECK_EQ(params.dst_cols, <var>1</var>);</td></tr>
+<tr><th id="733">733</th><td>  RUY_DCHECK_EQ(params.last_col, <var>0</var>);</td></tr>
+<tr><th id="734">734</th><td>  RUY_DCHECK_EQ(params.start_col, <var>0</var>);</td></tr>
+<tr><th id="735">735</th><td></td></tr>
+<tr><th id="736">736</th><td>  <em>const</em> std::int8_t splitter_idx_data[<var>32</var>] = {</td></tr>
+<tr><th id="737">737</th><td>      <var>0</var>, <var>1</var>, <var>4</var>, <var>5</var>, <var>8</var>,  <var>9</var>,  <var>12</var>, <var>13</var>,  <i>//</i></td></tr>
+<tr><th id="738">738</th><td>      <var>2</var>, <var>3</var>, <var>6</var>, <var>7</var>, <var>10</var>, <var>11</var>, <var>14</var>, <var>15</var>,  <i>//</i></td></tr>
+<tr><th id="739">739</th><td>      <var>0</var>, <var>1</var>, <var>4</var>, <var>5</var>, <var>8</var>,  <var>9</var>,  <var>12</var>, <var>13</var>,  <i>//</i></td></tr>
+<tr><th id="740">740</th><td>      <var>2</var>, <var>3</var>, <var>6</var>, <var>7</var>, <var>10</var>, <var>11</var>, <var>14</var>, <var>15</var>   <i>//</i></td></tr>
+<tr><th id="741">741</th><td>  };</td></tr>
+<tr><th id="742">742</th><td></td></tr>
+<tr><th id="743">743</th><td>  <em>int</em> bias_ptr_block_increment =</td></tr>
+<tr><th id="744">744</th><td>      params.flags &amp; RUY_ASM_FLAG_HAS_BIAS ? kAvx8bitBlockSize : <var>0</var>;</td></tr>
+<tr><th id="745">745</th><td></td></tr>
+<tr><th id="746">746</th><td>  <em>const</em> std::int8_t* rhs_col_ptr = params.rhs_base_ptr;</td></tr>
+<tr><th id="747">747</th><td>  <em>void</em>* dst_col_ptr = params.dst_base_ptr;</td></tr>
+<tr><th id="748">748</th><td>  <em>const</em> std::int32_t* bias_col_ptr = params.bias;</td></tr>
+<tr><th id="749">749</th><td>  <b>if</b> (params.flags &amp; RUY_ASM_FLAG_HAS_BIAS) {</td></tr>
+<tr><th id="750">750</th><td>    bias_col_ptr += params.start_row;</td></tr>
+<tr><th id="751">751</th><td>  }</td></tr>
+<tr><th id="752">752</th><td></td></tr>
+<tr><th id="753">753</th><td>  <em>const</em> std::int8_t* lhs_col_ptr = params.lhs_base_ptr;</td></tr>
+<tr><th id="754">754</th><td>  <em>void</em>* dst_ptr = dst_col_ptr;</td></tr>
+<tr><th id="755">755</th><td>  <em>const</em> std::int32_t* bias_ptr = bias_col_ptr;</td></tr>
+<tr><th id="756">756</th><td></td></tr>
+<tr><th id="757">757</th><td>  <em>const</em> std::int32_t lhs_zero_point = params.lhs_zero_point;</td></tr>
+<tr><th id="758">758</th><td>  <em>const</em> <em>bool</em> has_rhs_sums_offsets =</td></tr>
+<tr><th id="759">759</th><td>      (params.flags &amp; RUY_ASM_FLAG_HAS_RHS_SUMS) &amp;&amp; lhs_zero_point;</td></tr>
+<tr><th id="760">760</th><td>  std::int32_t rhs_sums_offsets[<var>8</var>];</td></tr>
+<tr><th id="761">761</th><td>  <b>if</b> (has_rhs_sums_offsets) {</td></tr>
+<tr><th id="762">762</th><td>    <em>const</em> __m256i rhs_sums_offset_v = _mm256_mullo_epi32(</td></tr>
+<tr><th id="763">763</th><td>        _mm256_set1_epi32(lhs_zero_point),</td></tr>
+<tr><th id="764">764</th><td>        _mm256_loadu_si256(</td></tr>
+<tr><th id="765">765</th><td>            <b>reinterpret_cast</b>&lt;__m256i <em>const</em>*&gt;(&amp;params.rhs_sums[<var>0</var>])));</td></tr>
+<tr><th id="766">766</th><td>    _mm256_storeu_si256(<b>reinterpret_cast</b>&lt;__m256i*&gt;(rhs_sums_offsets),</td></tr>
+<tr><th id="767">767</th><td>                        rhs_sums_offset_v);</td></tr>
+<tr><th id="768">768</th><td>  }</td></tr>
+<tr><th id="769">769</th><td></td></tr>
+<tr><th id="770">770</th><td>  <b>for</b> (<em>int</em> row = params.start_row; row &lt;= params.last_row;</td></tr>
+<tr><th id="771">771</th><td>       row += kAvx8bitBlockSize) {</td></tr>
+<tr><th id="772">772</th><td>    <em>const</em> <em>int</em> residual_rows =</td></tr>
+<tr><th id="773">773</th><td>        std::min(params.dst_rows - row, kAvx8bitBlockSize);</td></tr>
+<tr><th id="774">774</th><td></td></tr>
+<tr><th id="775">775</th><td>    <em>const</em> __m256i splitter_idx =</td></tr>
+<tr><th id="776">776</th><td>        _mm256_loadu_si256(<b>reinterpret_cast</b>&lt;__m256i <em>const</em>*&gt;(splitter_idx_data));</td></tr>
+<tr><th id="777">777</th><td></td></tr>
+<tr><th id="778">778</th><td>    __m256i accum_data_v0;</td></tr>
+<tr><th id="779">779</th><td></td></tr>
+<tr><th id="780">780</th><td>    <i>// Initialize with bias.</i></td></tr>
+<tr><th id="781">781</th><td>    __m256i initial_accum_data =</td></tr>
+<tr><th id="782">782</th><td>        _mm256_loadu_si256(<b>reinterpret_cast</b>&lt;<em>const</em> __m256i*&gt;(bias_ptr));</td></tr>
+<tr><th id="783">783</th><td>    bias_ptr += bias_ptr_block_increment;</td></tr>
+<tr><th id="784">784</th><td></td></tr>
+<tr><th id="785">785</th><td>    <i>// Adjustments common across columns.</i></td></tr>
+<tr><th id="786">786</th><td>    <em>const</em> std::int32_t rhs_zero_point = params.rhs_zero_point;</td></tr>
+<tr><th id="787">787</th><td>    <b>if</b> ((params.flags &amp; RUY_ASM_FLAG_HAS_LHS_SUMS) &amp;&amp; rhs_zero_point) {</td></tr>
+<tr><th id="788">788</th><td>      <em>const</em> __m256i lhs_sums_offset = _mm256_mullo_epi32(</td></tr>
+<tr><th id="789">789</th><td>          _mm256_set1_epi32(rhs_zero_point),</td></tr>
+<tr><th id="790">790</th><td>          _mm256_loadu_si256(</td></tr>
+<tr><th id="791">791</th><td>              <b>reinterpret_cast</b>&lt;__m256i <em>const</em>*&gt;(&amp;params.lhs_sums[row])));</td></tr>
+<tr><th id="792">792</th><td>      initial_accum_data =</td></tr>
+<tr><th id="793">793</th><td>          _mm256_sub_epi32(initial_accum_data, lhs_sums_offset);</td></tr>
+<tr><th id="794">794</th><td>    }</td></tr>
+<tr><th id="795">795</th><td>    <em>const</em> std::int32_t prod_zp_depth = params.prod_zp_depth;</td></tr>
+<tr><th id="796">796</th><td>    <b>if</b> (prod_zp_depth) {</td></tr>
+<tr><th id="797">797</th><td>      initial_accum_data = _mm256_add_epi32(initial_accum_data,</td></tr>
+<tr><th id="798">798</th><td>                                            _mm256_set1_epi32(prod_zp_depth));</td></tr>
+<tr><th id="799">799</th><td>    }</td></tr>
+<tr><th id="800">800</th><td></td></tr>
+<tr><th id="801">801</th><td>    <i>// Adjustments differing across columns.</i></td></tr>
+<tr><th id="802">802</th><td>    <b>if</b> (has_rhs_sums_offsets) {</td></tr>
+<tr><th id="803">803</th><td>      accum_data_v0 = _mm256_sub_epi32(initial_accum_data,</td></tr>
+<tr><th id="804">804</th><td>                                       _mm256_set1_epi32(rhs_sums_offsets[<var>0</var>]));</td></tr>
+<tr><th id="805">805</th><td>    } <b>else</b> {</td></tr>
+<tr><th id="806">806</th><td>      accum_data_v0 = initial_accum_data;</td></tr>
+<tr><th id="807">807</th><td>    }</td></tr>
+<tr><th id="808">808</th><td></td></tr>
+<tr><th id="809">809</th><td>    <em>const</em> std::int8_t* lhs_ptr = lhs_col_ptr;</td></tr>
+<tr><th id="810">810</th><td>    <em>const</em> std::int8_t* rhs_ptr = rhs_col_ptr;</td></tr>
+<tr><th id="811">811</th><td>    <b>for</b> (<em>int</em> d = <var>0</var>; d &lt; params.depth; d += kAvx8bitInnerSize) {</td></tr>
+<tr><th id="812">812</th><td>      <em>const</em> __m256i lhs_data =</td></tr>
+<tr><th id="813">813</th><td>          _mm256_load_si256(<b>reinterpret_cast</b>&lt;<em>const</em> __m256i*&gt;(lhs_ptr));</td></tr>
+<tr><th id="814">814</th><td>      <em>const</em> __m128i rhs_data_8bit = intrin_utils::mm_loadu_si32&lt;path&gt;(rhs_ptr);</td></tr>
+<tr><th id="815">815</th><td></td></tr>
+<tr><th id="816">816</th><td>      <i>// Each "int32" is two 16-bit RHS values, sign extended from 8-bit.</i></td></tr>
+<tr><th id="817">817</th><td><i>      // For simplicity we load 4x the data that we need and process twice the</i></td></tr>
+<tr><th id="818">818</th><td><i>      // data  that we need  and store only the data we need.</i></td></tr>
+<tr><th id="819">819</th><td>      std::int32_t rhs_data[<var>2</var>];</td></tr>
+<tr><th id="820">820</th><td>      <em>const</em> __m128i rhs_16_bit_dup = _mm_cvtepi8_epi16(rhs_data_8bit);</td></tr>
+<tr><th id="821">821</th><td>      <i>// Now that we have cast the RHS data, we store it so that each value</i></td></tr>
+<tr><th id="822">822</th><td><i>      // can be separately loaded in the accumulation loop.</i></td></tr>
+<tr><th id="823">823</th><td>      _mm_storeu_si64(<b>reinterpret_cast</b>&lt;__m128i*&gt;(rhs_data), rhs_16_bit_dup);</td></tr>
+<tr><th id="824">824</th><td></td></tr>
+<tr><th id="825">825</th><td>      <i>// NOTE: There may be opportunities for permuting the data in the packing</i></td></tr>
+<tr><th id="826">826</th><td><i>      // code instead of here.</i></td></tr>
+<tr><th id="827">827</th><td>      <em>const</em> __m256i lhs_data_split =</td></tr>
+<tr><th id="828">828</th><td>          _mm256_shuffle_epi8(lhs_data, splitter_idx);</td></tr>
+<tr><th id="829">829</th><td>      <em>const</em> __m256i lhs_data_split_expand_bottom =</td></tr>
+<tr><th id="830">830</th><td>          _mm256_cvtepi8_epi16(_mm256_extracti128_si256(lhs_data_split, <var>0</var>));</td></tr>
+<tr><th id="831">831</th><td>      <em>const</em> __m256i lhs_data_split_expand_top =</td></tr>
+<tr><th id="832">832</th><td>          _mm256_cvtepi8_epi16(_mm256_extracti128_si256(lhs_data_split, <var>1</var>));</td></tr>
+<tr><th id="833">833</th><td></td></tr>
+<tr><th id="834">834</th><td>      <i>// Take bytes 0, 1, 4, 5, 8, 9, ... expanded to 16-bit.</i></td></tr>
+<tr><th id="835">835</th><td>      <em>const</em> __m256i lhs_16_bit_low = _mm256_permute2x128_si256(</td></tr>
+<tr><th id="836">836</th><td>          lhs_data_split_expand_bottom, lhs_data_split_expand_top, <var>0x20</var>);</td></tr>
+<tr><th id="837">837</th><td>      <i>// Take bytes 2, 3, 6, 7, 10, 11, ... expanded to 16-bit.</i></td></tr>
+<tr><th id="838">838</th><td>      <em>const</em> __m256i lhs_16_bit_high = _mm256_permute2x128_si256(</td></tr>
+<tr><th id="839">839</th><td>          lhs_data_split_expand_bottom, lhs_data_split_expand_top, <var>0x31</var>);</td></tr>
+<tr><th id="840">840</th><td>      <i>// Accumulate for column 0.</i></td></tr>
+<tr><th id="841">841</th><td>      <em>const</em> std::int32_t low_rhs_value = rhs_data[<var>0</var>];</td></tr>
+<tr><th id="842">842</th><td>      <em>const</em> std::int32_t high_rhs_value = rhs_data[<var>1</var>];</td></tr>
+<tr><th id="843">843</th><td></td></tr>
+<tr><th id="844">844</th><td>      <em>const</em> __m256i rhs_16_bit_dup_low = _mm256_set1_epi32(low_rhs_value);</td></tr>
+<tr><th id="845">845</th><td>      <em>const</em> __m256i rhs_16_bit_dup_high = _mm256_set1_epi32(high_rhs_value);</td></tr>
+<tr><th id="846">846</th><td></td></tr>
+<tr><th id="847">847</th><td>      accum_data_v0 = _mm256_add_epi32(</td></tr>
+<tr><th id="848">848</th><td>          accum_data_v0, _mm256_madd_epi16(lhs_16_bit_low, rhs_16_bit_dup_low));</td></tr>
+<tr><th id="849">849</th><td>      accum_data_v0 = _mm256_add_epi32(</td></tr>
+<tr><th id="850">850</th><td>          accum_data_v0,</td></tr>
+<tr><th id="851">851</th><td>          _mm256_madd_epi16(lhs_16_bit_high, rhs_16_bit_dup_high));</td></tr>
+<tr><th id="852">852</th><td></td></tr>
+<tr><th id="853">853</th><td>      lhs_ptr += kAvx8bitBlockSize * kAvx8bitInnerSize;</td></tr>
+<tr><th id="854">854</th><td>      rhs_ptr += kAvx8bitBlockSize * kAvx8bitInnerSize;</td></tr>
+<tr><th id="855">855</th><td>    }</td></tr>
+<tr><th id="856">856</th><td></td></tr>
+<tr><th id="857">857</th><td>    <b>if</b> (params.dst_type_id != DstTypeId&lt;std::int32_t&gt;::kValue) {</td></tr>
+<tr><th id="858">858</th><td>      __m256i m_vector;</td></tr>
+<tr><th id="859">859</th><td>      __m256i e_vector;</td></tr>
+<tr><th id="860">860</th><td>      <i>// Does not make use of RUY_ASM_FLAG_NEEDS_LEFT_SHIFT.</i></td></tr>
+<tr><th id="861">861</th><td>      <em>int</em> channel = (params.flags &amp; RUY_ASM_FLAG_HAS_PERCHANNEL) ? row : <var>0</var>;</td></tr>
+<tr><th id="862">862</th><td>      m_vector = _mm256_loadu_si256(<b>reinterpret_cast</b>&lt;<em>const</em> __m256i*&gt;(</td></tr>
+<tr><th id="863">863</th><td>          params.multiplier_fixedpoint + channel));</td></tr>
+<tr><th id="864">864</th><td>      e_vector = _mm256_loadu_si256(<b>reinterpret_cast</b>&lt;<em>const</em> __m256i*&gt;(</td></tr>
+<tr><th id="865">865</th><td>          params.multiplier_exponent + channel));</td></tr>
+<tr><th id="866">866</th><td></td></tr>
+<tr><th id="867">867</th><td>      <em>const</em> __m256i m_64bit_low =</td></tr>
+<tr><th id="868">868</th><td>          _mm256_cvtepi32_epi64(_mm256_extracti128_si256(m_vector, <var>0</var>));</td></tr>
+<tr><th id="869">869</th><td>      <em>const</em> __m256i m_64bit_high =</td></tr>
+<tr><th id="870">870</th><td>          _mm256_cvtepi32_epi64(_mm256_extracti128_si256(m_vector, <var>1</var>));</td></tr>
+<tr><th id="871">871</th><td></td></tr>
+<tr><th id="872">872</th><td>      <em>const</em> __m256i zero_vector = _mm256_setzero_si256();</td></tr>
+<tr><th id="873">873</th><td>      <em>const</em> __m256i left_shift = _mm256_max_epi32(e_vector, zero_vector);</td></tr>
+<tr><th id="874">874</th><td>      <em>const</em> __m256i neg_e_vector = _mm256_sub_epi32(zero_vector, e_vector);</td></tr>
+<tr><th id="875">875</th><td>      <em>const</em> __m256i right_shift = _mm256_max_epi32(neg_e_vector, zero_vector);</td></tr>
+<tr><th id="876">876</th><td>      <em>const</em> __m256i final_right_shift = _mm256_set1_epi32(<var>31</var>);</td></tr>
+<tr><th id="877">877</th><td>      <em>const</em> __m256i final_right_shift_low =</td></tr>
+<tr><th id="878">878</th><td>          _mm256_cvtepi32_epi64(_mm256_extracti128_si256(final_right_shift, <var>0</var>));</td></tr>
+<tr><th id="879">879</th><td>      <em>const</em> __m256i final_right_shift_high =</td></tr>
+<tr><th id="880">880</th><td>          _mm256_cvtepi32_epi64(_mm256_extracti128_si256(final_right_shift, <var>1</var>));</td></tr>
+<tr><th id="881">881</th><td>      <em>const</em> __m256i convert_to_unsigned_64 =</td></tr>
+<tr><th id="882">882</th><td>          _mm256_set1_epi64x(<var>0x8000000000000000</var>);</td></tr>
+<tr><th id="883">883</th><td></td></tr>
+<tr><th id="884">884</th><td>      __m256i post_scaling_offset = _mm256_setzero_si256();</td></tr>
+<tr><th id="885">885</th><td>      <i>// A "half" added for rounding prior to truncation of 64-bit value.</i></td></tr>
+<tr><th id="886">886</th><td>      <em>const</em> __m256i offset_vector = _mm256_add_epi64(</td></tr>
+<tr><th id="887">887</th><td>          _mm256_slli_epi64(_mm256_set1_epi64x(<var>1</var>), <var>30</var>),</td></tr>
+<tr><th id="888">888</th><td>          convert_to_unsigned_64);</td></tr>
+<tr><th id="889">889</th><td></td></tr>
+<tr><th id="890">890</th><td>      <b>if</b> (params.dst_zero_point) {</td></tr>
+<tr><th id="891">891</th><td>        post_scaling_offset = _mm256_set1_epi32(params.dst_zero_point);</td></tr>
+<tr><th id="892">892</th><td>      }</td></tr>
+<tr><th id="893">893</th><td></td></tr>
+<tr><th id="894">894</th><td>      <em>const</em> __m256i repack_perm = _mm256_setr_epi32(<var>0</var>, <var>2</var>, <var>4</var>, <var>6</var>, <var>1</var>, <var>3</var>, <var>5</var>, <var>7</var>);</td></tr>
+<tr><th id="895">895</th><td></td></tr>
+<tr><th id="896">896</th><td>      <i>// See GEMM version for details of this process.</i></td></tr>
+<tr><th id="897">897</th><td>      {</td></tr>
+<tr><th id="898">898</th><td>        __m256i shifted_accum = _mm256_sllv_epi32(accum_data_v0, left_shift);</td></tr>
+<tr><th id="899">899</th><td>        <i>// Apply the fixed-point part of the multiplier.</i></td></tr>
+<tr><th id="900">900</th><td>        __m256i scaled_v_low = _mm256_mul_epi32(</td></tr>
+<tr><th id="901">901</th><td>            _mm256_cvtepi32_epi64(_mm256_extracti128_si256(shifted_accum, <var>0</var>)),</td></tr>
+<tr><th id="902">902</th><td>            m_64bit_low);</td></tr>
+<tr><th id="903">903</th><td>        __m256i scaled_v_high = _mm256_mul_epi32(</td></tr>
+<tr><th id="904">904</th><td>            _mm256_cvtepi32_epi64(_mm256_extracti128_si256(shifted_accum, <var>1</var>)),</td></tr>
+<tr><th id="905">905</th><td>            m_64bit_high);</td></tr>
+<tr><th id="906">906</th><td></td></tr>
+<tr><th id="907">907</th><td>        scaled_v_low = _mm256_add_epi64(scaled_v_low, offset_vector);</td></tr>
+<tr><th id="908">908</th><td>        scaled_v_high = _mm256_add_epi64(scaled_v_high, offset_vector);</td></tr>
+<tr><th id="909">909</th><td></td></tr>
+<tr><th id="910">910</th><td>        scaled_v_low = _mm256_srlv_epi64(scaled_v_low, final_right_shift_low);</td></tr>
+<tr><th id="911">911</th><td>        scaled_v_high =</td></tr>
+<tr><th id="912">912</th><td>            _mm256_srlv_epi64(scaled_v_high, final_right_shift_high);</td></tr>
+<tr><th id="913">913</th><td></td></tr>
+<tr><th id="914">914</th><td>        scaled_v_high = _mm256_slli_epi64(scaled_v_high, <var>32</var>);</td></tr>
+<tr><th id="915">915</th><td>        __m256i results = _mm256_blend_epi32(scaled_v_low, scaled_v_high, <var>0xaa</var>);</td></tr>
+<tr><th id="916">916</th><td>        results = _mm256_permutevar8x32_epi32(results, repack_perm);</td></tr>
+<tr><th id="917">917</th><td></td></tr>
+<tr><th id="918">918</th><td>        <i>// Now do a Rounding Right Shift.</i></td></tr>
+<tr><th id="919">919</th><td><i>        // First, construct the nudge value for each lane.</i></td></tr>
+<tr><th id="920">920</th><td>        <em>const</em> __m256i zeros = _mm256_setzero_si256();</td></tr>
+<tr><th id="921">921</th><td>        <em>const</em> __m256i mask_rightshift_gtz =</td></tr>
+<tr><th id="922">922</th><td>            _mm256_cmpgt_epi32(right_shift, zeros);</td></tr>
+<tr><th id="923">923</th><td>        <em>const</em> __m256i one_shift_exp_minus1 = _mm256_sllv_epi32(</td></tr>
+<tr><th id="924">924</th><td>            _mm256_set1_epi32(<var>1</var>),</td></tr>
+<tr><th id="925">925</th><td>            _mm256_sub_epi32(right_shift, _mm256_set1_epi32(<var>1</var>)));</td></tr>
+<tr><th id="926">926</th><td>        __m256i nudge = intrin_utils::mm256_blendv_epi32(</td></tr>
+<tr><th id="927">927</th><td>            zeros, one_shift_exp_minus1, mask_rightshift_gtz);</td></tr>
+<tr><th id="928">928</th><td>        <i>// Calculate the shifted sum (results + nudge) &gt;&gt; exp.</i></td></tr>
+<tr><th id="929">929</th><td>        <em>const</em> __m256i r_plus_nudge = _mm256_add_epi32(results, nudge);</td></tr>
+<tr><th id="930">930</th><td>        <em>const</em> __m256i shifted_sum =</td></tr>
+<tr><th id="931">931</th><td>            _mm256_srav_epi32(r_plus_nudge, right_shift);</td></tr>
+<tr><th id="932">932</th><td></td></tr>
+<tr><th id="933">933</th><td>        <i>// Identify overflow in each lane and create mask.</i></td></tr>
+<tr><th id="934">934</th><td>        <em>const</em> __m256i one_shift_31minus_exp = _mm256_sllv_epi32(</td></tr>
+<tr><th id="935">935</th><td>            _mm256_set1_epi32(<var>1</var>),</td></tr>
+<tr><th id="936">936</th><td>            _mm256_sub_epi32(_mm256_set1_epi32(<var>31</var>), right_shift));</td></tr>
+<tr><th id="937">937</th><td>        <em>const</em> __m256i mask_num_plus_nudge_overflow = _mm256_cmpgt_epi32(</td></tr>
+<tr><th id="938">938</th><td>            results, _mm256_sub_epi32(_mm256_set1_epi32(<var>0x7fffffff</var>), nudge));</td></tr>
+<tr><th id="939">939</th><td>        <i>// Fill results with either (results + nudge) &gt;&gt; exponent or</i></td></tr>
+<tr><th id="940">940</th><td><i>        // 1 &lt;&lt; (31 - exp) in the case of overflow.</i></td></tr>
+<tr><th id="941">941</th><td>        results = intrin_utils::mm256_blendv_epi32(</td></tr>
+<tr><th id="942">942</th><td>            shifted_sum, one_shift_31minus_exp, mask_num_plus_nudge_overflow);</td></tr>
+<tr><th id="943">943</th><td></td></tr>
+<tr><th id="944">944</th><td>        accum_data_v0 = _mm256_add_epi32(results, post_scaling_offset);</td></tr>
+<tr><th id="945">945</th><td>      }</td></tr>
+<tr><th id="946">946</th><td>    }</td></tr>
+<tr><th id="947">947</th><td>    <em>const</em> __m256i clamp_max_v = _mm256_set1_epi32(params.clamp_max);</td></tr>
+<tr><th id="948">948</th><td>    <em>const</em> __m256i clamp_min_v = _mm256_set1_epi32(params.clamp_min);</td></tr>
+<tr><th id="949">949</th><td></td></tr>
+<tr><th id="950">950</th><td>    <b>if</b> (params.dst_type_id == DstTypeId&lt;std::int8_t&gt;::kValue) {</td></tr>
+<tr><th id="951">951</th><td>      std::int8_t* tmp_ptr = <b>static_cast</b>&lt;std::int8_t*&gt;(dst_ptr);</td></tr>
+<tr><th id="952">952</th><td>      __m256i result = accum_data_v0;</td></tr>
+<tr><th id="953">953</th><td>      result = _mm256_min_epi32(result, clamp_max_v);</td></tr>
+<tr><th id="954">954</th><td>      result = _mm256_max_epi32(result, clamp_min_v);</td></tr>
+<tr><th id="955">955</th><td>      intrin_utils::mm256_n_storeu_cvtepi32_epi8&lt;path&gt;(tmp_ptr, residual_rows,</td></tr>
+<tr><th id="956">956</th><td>                                                       result);</td></tr>
+<tr><th id="957">957</th><td>      dst_ptr = <b>static_cast</b>&lt;<em>void</em>*&gt;(<b>static_cast</b>&lt;std::int8_t*&gt;(dst_ptr) +</td></tr>
+<tr><th id="958">958</th><td>                                   kAvx8bitBlockSize);</td></tr>
+<tr><th id="959">959</th><td>    } <b>else</b> <b>if</b> (params.dst_type_id == DstTypeId&lt;std::uint8_t&gt;::kValue) {</td></tr>
+<tr><th id="960">960</th><td>      std::uint8_t* tmp_ptr = <b>static_cast</b>&lt;std::uint8_t*&gt;(dst_ptr);</td></tr>
+<tr><th id="961">961</th><td>      __m256i result = accum_data_v0;</td></tr>
+<tr><th id="962">962</th><td>      result = _mm256_min_epi32(result, clamp_max_v);</td></tr>
+<tr><th id="963">963</th><td>      result = _mm256_max_epi32(result, clamp_min_v);</td></tr>
+<tr><th id="964">964</th><td>      intrin_utils::mm256_n_storeu_cvtepi32_epi8&lt;path&gt;(tmp_ptr, residual_rows,</td></tr>
+<tr><th id="965">965</th><td>                                                       result);</td></tr>
+<tr><th id="966">966</th><td>      dst_ptr = <b>static_cast</b>&lt;<em>void</em>*&gt;(<b>static_cast</b>&lt;std::uint8_t*&gt;(dst_ptr) +</td></tr>
+<tr><th id="967">967</th><td>                                   kAvx8bitBlockSize);</td></tr>
+<tr><th id="968">968</th><td>    } <b>else</b> <b>if</b> (params.dst_type_id == DstTypeId&lt;std::int16_t&gt;::kValue) {</td></tr>
+<tr><th id="969">969</th><td>      std::int16_t* tmp_ptr = <b>static_cast</b>&lt;std::int16_t*&gt;(dst_ptr);</td></tr>
+<tr><th id="970">970</th><td>      __m256i result = accum_data_v0;</td></tr>
+<tr><th id="971">971</th><td>      result = _mm256_min_epi32(result, clamp_max_v);</td></tr>
+<tr><th id="972">972</th><td>      result = _mm256_max_epi32(result, clamp_min_v);</td></tr>
+<tr><th id="973">973</th><td>      intrin_utils::mm256_n_storeu_cvtepi32_epi16&lt;path&gt;(tmp_ptr, residual_rows,</td></tr>
+<tr><th id="974">974</th><td>                                                        result);</td></tr>
+<tr><th id="975">975</th><td>      dst_ptr = <b>static_cast</b>&lt;<em>void</em>*&gt;(<b>static_cast</b>&lt;std::int16_t*&gt;(dst_ptr) +</td></tr>
+<tr><th id="976">976</th><td>                                   kAvx8bitBlockSize);</td></tr>
+<tr><th id="977">977</th><td>    } <b>else</b> <b>if</b> (params.dst_type_id == DstTypeId&lt;std::int32_t&gt;::kValue) {</td></tr>
+<tr><th id="978">978</th><td>      std::int32_t* dst_block_ptr = <b>static_cast</b>&lt;std::int32_t*&gt;(dst_ptr);</td></tr>
+<tr><th id="979">979</th><td>      intrin_utils::mm256_n_storeu_epi32&lt;path&gt;(dst_block_ptr, residual_rows,</td></tr>
+<tr><th id="980">980</th><td>                                               accum_data_v0);</td></tr>
+<tr><th id="981">981</th><td>      dst_ptr = <b>static_cast</b>&lt;<em>void</em>*&gt;(<b>static_cast</b>&lt;std::int32_t*&gt;(dst_ptr) +</td></tr>
+<tr><th id="982">982</th><td>                                   kAvx8bitBlockSize);</td></tr>
+<tr><th id="983">983</th><td>    } <b>else</b> {</td></tr>
+<tr><th id="984">984</th><td>      RUY_DCHECK(<b>false</b>);</td></tr>
+<tr><th id="985">985</th><td>    }</td></tr>
+<tr><th id="986">986</th><td></td></tr>
+<tr><th id="987">987</th><td>    lhs_col_ptr += kAvx8bitBlockSize * params.lhs_stride;</td></tr>
+<tr><th id="988">988</th><td>  }  <i>// End row-block loop.</i></td></tr>
+<tr><th id="989">989</th><td></td></tr>
+<tr><th id="990">990</th><td>  dst_col_ptr = <b>static_cast</b>&lt;<em>void</em>*&gt;(<b>static_cast</b>&lt;<em>char</em>*&gt;(dst_col_ptr) +</td></tr>
+<tr><th id="991">991</th><td>                                   kAvx8bitBlockSize * params.dst_stride);</td></tr>
+<tr><th id="992">992</th><td>  rhs_col_ptr += kAvx8bitBlockSize * params.rhs_stride;</td></tr>
+<tr><th id="993">993</th><td>}  <i>// NOLINT(readability/fn_size)</i></td></tr>
+<tr><th id="994">994</th><td></td></tr>
+<tr><th id="995">995</th><td><em>void</em> Kernel8bitAvx2SingleCol(<em>const</em> KernelParams8bit&lt;<var>8</var>, <var>8</var>&gt;&amp; params) {</td></tr>
+<tr><th id="996">996</th><td>  Kernel8bitAvx2SingleColImpl&lt;Path::kAvx2Fma&gt;(params);</td></tr>
+<tr><th id="997">997</th><td>}</td></tr>
+<tr><th id="998">998</th><td></td></tr>
+<tr><th id="999">999</th><td><em>void</em> KernelFloatAvx2(<em>const</em> KernelParamsFloat&lt;<var>8</var>, <var>8</var>&gt;&amp; params) {</td></tr>
+<tr><th id="1000">1000</th><td>  profiler::ScopeLabel label(<q>"Kernel kAvx2Fma float"</q>);</td></tr>
+<tr><th id="1001">1001</th><td>  KernelFloatAvxCommon&lt;Path::kAvx2Fma&gt;(params);</td></tr>
+<tr><th id="1002">1002</th><td>}</td></tr>
+<tr><th id="1003">1003</th><td></td></tr>
+<tr><th id="1004">1004</th><td><em>void</em> KernelFloatAvx2SingleCol(<em>const</em> KernelParamsFloat&lt;<var>8</var>, <var>8</var>&gt;&amp; params) {</td></tr>
+<tr><th id="1005">1005</th><td>  profiler::ScopeLabel label(<q>"Kernel kAvx2Fma float GEMV"</q>);</td></tr>
+<tr><th id="1006">1006</th><td>  KernelFloatAvxCommonSingleCol&lt;Path::kAvx2Fma&gt;(params);</td></tr>
+<tr><th id="1007">1007</th><td>}</td></tr>
+<tr><th id="1008">1008</th><td></td></tr>
+<tr><th id="1009">1009</th><td><u>#<span data-ppcond="33">endif</span>  //  RUY_PLATFORM_AVX2_FMA &amp;&amp; RUY_OPT(ASM)</u></td></tr>
+<tr><th id="1010">1010</th><td></td></tr>
+<tr><th id="1011">1011</th><td>}  <i>// namespace ruy</i></td></tr>
+<tr><th id="1012">1012</th><td></td></tr>
+</table><hr/><p id='footer'>
+Generated on <em>2021-Aug-05</em> from project halide revision <em>v12.0.1</em>

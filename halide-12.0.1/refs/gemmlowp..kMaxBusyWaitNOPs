@@ -1,0 +1,23 @@
+<def f='halide/build-apps/gemmlowp/internal/multi_thread_gemm.h' l='51' type='const int'/>
+<use f='halide/build-apps/gemmlowp/internal/multi_thread_gemm.h' l='120' u='r' c='_ZN8gemmlowp21WaitForVariableChangeEPSt6atomicIT_ES1_P14pthread_cond_tP15pthread_mutex_t'/>
+<use f='halide/build-apps/gemmlowp/internal/multi_thread_gemm.h' l='180' u='r' c='_ZN8gemmlowp15BlockingCounter4WaitEv'/>
+<doc f='halide/build-apps/gemmlowp/internal/multi_thread_gemm.h' l='31'>// This value was empirically derived on an end-to-end application benchmark.
+// That this number of cycles means that we may be sleeping substantially longer
+// than a scheduler timeslice&apos;s duration is not necessarily surprising. The
+// idea is to pick up quickly new work after having finished the previous
+// workload. When it&apos;s new work within the same GEMM as the previous work, the
+// time interval that we might be busy-waiting is very small, so for that
+// purpose it would be more than enough to sleep for 1 million cycles.
+// That is all what we would observe on a GEMM benchmark. However, in a real
+// application, after having finished a GEMM, we might do unrelated work for
+// a little while, then start on a new GEMM. Think of a neural network
+// application performing inference, where many but not all layers are
+// implemented by a GEMM. In such cases, our worker threads might be idle for
+// longer periods of time before having work again. If we let them passively
+// wait, on a mobile device, the CPU scheduler might aggressively clock down
+// or even turn off the CPU cores that they were running on. That would result
+// in a long delay the next time these need to be turned back on for the next
+// GEMM. So we need to strike a balance that reflects typical time intervals
+// between consecutive GEMM invokations, not just intra-GEMM considerations.
+// Of course, we need to balance keeping CPUs spinning longer to resume work
+// faster, versus passively waiting to conserve power.</doc>

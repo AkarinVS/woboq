@@ -1,0 +1,114 @@
+<def f='halide/apps/fft/fft.cpp' l='669' ll='882' type='ComplexFunc fft2d_r2c(Halide::Func r, const vector&lt;int&gt; &amp; R0, const vector&lt;int&gt; &amp; R1, const Halide::Target &amp; target, const Fft2dDesc &amp; desc)'/>
+<use f='halide/apps/fft/fft.cpp' l='1114' u='c' c='_Z9fft2d_r2cN6Halide4FuncEiiRKNS_6TargetERK9Fft2dDesc'/>
+<doc f='halide/apps/fft/fft.cpp' l='556'>// The next two functions implement real to complex or complex to real FFTs. To
+// understand the real to complex FFT, we need some background on the properties
+// of FFTs of real data. If X = DFT[x] for a real sequence x of length N, then
+// the following relationship holds:
+//
+//    X_n = (X_(N-n))*                         (1)
+//
+// This means that for N even, N/2 - 1 of the elements of X are redundant with
+// another element of X. This property allows us to store only roughly half of
+// a DFT of a real sequence, because the remaining half is fully determined by
+// the first.
+//
+// Also note that for any DFT (not just real):
+//
+//   Z*_n = sum[ (z_n*) e^(-2*pi*i*n/N) ]
+//        = sum[ z_n (e^(-2*pi*i*n/N))* ]*
+//        = sum[ z_n e^(-2*pi*i*(N - n)/N) ]*
+//   Z*_n = (Z_(N-n))*                         (2)
+//
+// Using these relationships, we can more efficiently compute two real FFTs by
+// using one complex FFT. Let x and y be two real sequences of length N, and
+// let z = x + j*y. We can compute the FFT of x and y using one complex FFT of
+// z; let X + j*Y = Z = DFT[z] = DFT[x + j*y], then by the linearity of the DFT
+// and equations (1) and (2):
+//
+//    x_n = (z_n + (z_n)*)/2
+// -&gt; X_n = (Z_n + Z*_n)/2
+//        = (Z_n + (Z_(N-n))*)/2               (3)
+//
+// and
+//
+//    y_n = (z_n - (z_n)*)/(2*j)
+// -&gt; Y_n = (Z_n - Z*_n)/(2*j)
+//        = (Z_n + (Z_(N-n))*)/(2*j)           (4)
+//
+// This gives 2 real DFTs for the cost of computing 1 complex FFT.
+//
+// As a side note, a consequence of (1) is that Z_0 and Z_(N/2) must be real.
+// Note that Z_N = Z_0 by periodicity of the DFT:
+//
+//   Z_0 = (Z_N)* = (Z_0)*
+//   Z_(N/2) = (Z_(N/2))*
+//
+// The only way z = z* can be true is if im(z) = 0, i.e. z is real.
+//
+// We want an efficient 2D FFT. Applying the above tools to a 2D DFT leads to
+// some interesting results. First, note that the FFT of a 2D sequence x_(m, n)
+// with extents MxN (rows x cols) is a 1D FFT of the rows, followed by a 1D FFT
+// of the columns. Suppose x is real. One way to use the above tools is to
+// combine pairs of columns into a set of half as many complex columns, and
+// compute the FFT of these complex columns. This gives a result laid out like
+// so:
+//
+//       N/2
+//   +---------+
+//   |    a    | m = 0
+//   +---------+
+//   |         |
+//   |    b    |
+//   |         |
+//   +---------+
+//   |    c    | m = M/2
+//   +---------+
+//   |         |
+//   |    d    |
+//   |         |
+//   +---------+
+//
+// When we unzip the columns using (3) and (4) from above, we get data with the
+// following layout.
+//
+//             N
+//   +-------------------+
+//   |         a&apos;        | m = 0
+//   +-------------------+
+//   |                   |
+//   |         b&apos;        |
+//   |                   |
+//   +-------------------+
+//   |         c&apos;        | m = M/2
+//   +-------------------+
+//   |                   |
+//   |         b&apos;*       |
+//   |                   |
+//   +-------------------+
+//
+// Because b&apos;* is redundant with b, we don&apos;t need to compute or store it,
+// leaving M/2 + 1 rows.
+//
+// Now, we want to compute the DFT of the rows of this data. Because there are
+// M/2 + 1 of them, and we are going to compute the FFTs using SIMD
+// instructions, the extra 1 row can be quite expensive. If M is 16, then we
+// have 9 rows. If the SIMD width is 4, we will compute 3 SIMD vectors worth of
+// FFTs instead of 2, 33% more work than necessary. This is even worse if the
+// SIMD width is 8 (AVX).
+//
+// We can fix this by recognizing that a&apos; and c&apos; are both real, and combining
+// them together into one row in the same manner we did for the columns. This
+// gives a block of data that looks like:
+//
+//             N
+//   +-------------------+
+//   |      a&apos; + j c&apos;    |
+//   +-------------------+
+//   |                   |  M/2
+//   |         b&apos;        |
+//   |                   |
+//   +-------------------+
+//
+// This way, we have M/2 rows to compute the FFT of, which is likely to be
+// efficient to compute without wasted SIMD work. The DFTs of the rows a and c
+// can be recovered using (3) and (4) again.</doc>

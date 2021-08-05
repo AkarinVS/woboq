@@ -1,3 +1,6 @@
+<dec f='halide/halide-install/include/Halide.h' l='5085' type='31'/>
+<use f='halide/apps/hist/hist_generator.cpp' l='133' u='r' c='_ZN12_GLOBAL__N_14Hist8generateEv'/>
+<use f='halide/apps/unsharp/unsharp_generator.cpp' l='68' u='r' c='_ZN12_GLOBAL__N_17Unsharp8generateEv'/>
 <dec f='halide/build/include/Halide.h' l='5085' type='31'/>
 <use f='halide/python_bindings/src/PyEnums.cpp' l='115' u='r' c='_ZN6Halide14PythonBindings12define_enumsERN8pybind117module_E'/>
 <dec f='halide/src/Target.h' l='91' type='31'/>

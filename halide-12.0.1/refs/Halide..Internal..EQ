@@ -1,3 +1,24 @@
+<inh f='halide/halide-install/include/Halide.h' l='3903' c='Halide::Internal::ExprNode'/>
+<def f='halide/halide-install/include/Halide.h' l='11995' ll='12001'/>
+<use f='halide/halide-install/include/Halide.h' l='11995'/>
+<use f='halide/halide-install/include/Halide.h' l='12827' c='_ZN6Halide8Internal9IRVisitor5visitEPKNS0_2EQE'/>
+<use f='halide/halide-install/include/Halide.h' l='12897' c='_ZN6Halide8Internal14IRGraphVisitor5visitEPKNS0_2EQE'/>
+<use f='halide/halide-install/include/Halide.h' l='12976' c='_ZN6Halide8Internal15VariadicVisitor13dispatch_exprEPKNS0_12BaseExprNodeEDpOTL0__'/>
+<use f='halide/halide-install/include/Halide.h' l='19093' c='_ZN6Halide8Internal9IRPrinter5visitEPKNS0_2EQE'/>
+<use f='halide/halide-install/include/Halide.h' l='19326' c='_ZN6Halide8Internal9CodeGen_C5visitEPKNS0_2EQE'/>
+<use f='halide/halide-install/include/Halide.h' l='20079' c='_ZN6Halide8Internal12CodeGen_LLVM5visitEPKNS0_2EQE'/>
+<use f='halide/halide-install/include/Halide.h' l='28052' c='_ZN6Halide8Internal9IRMatcherlsERSoRKNS1_5CmpOpINS0_2EQET_T0_EE'/>
+<use f='halide/halide-install/include/Halide.h' l='28369' c='_ZN6Halide8Internal9IRMatchereqEOT_OT0_'/>
+<use f='halide/halide-install/include/Halide.h' l='28379' c='_ZN6Halide8Internal9IRMatcher20constant_fold_cmp_opEll'/>
+<use f='halide/halide-install/include/Halide.h' l='28384' c='_ZN6Halide8Internal9IRMatcher20constant_fold_cmp_opEmm'/>
+<use f='halide/halide-install/include/Halide.h' l='28389' c='_ZN6Halide8Internal9IRMatcher20constant_fold_cmp_opEdd'/>
+<use f='halide/halide-install/include/Halide.h' l='30030' c='_ZN6Halide8Internal9IRMutator5visitEPKNS0_2EQE'/>
+<size>48</size>
+<doc f='halide/halide-install/include/Halide.h' l='11994'>/** Is the first expression equal to the second */</doc>
+<mbr r='Halide::Internal::EQ::a' o='256' t='Halide::Expr'/>
+<mbr r='Halide::Internal::EQ::b' o='320' t='Halide::Expr'/>
+<fun r='_ZN6Halide8Internal2EQ4makeENS_4ExprES2_'/>
+<smbr r='Halide::Internal::EQ::_node_type' t='const Halide::Internal::IRNodeType'/>
 <inh f='halide/build/include/Halide.h' l='3903' c='Halide::Internal::ExprNode'/>
 <def f='halide/build/include/Halide.h' l='11995' ll='12001'/>
 <use f='halide/build/include/Halide.h' l='11995'/>

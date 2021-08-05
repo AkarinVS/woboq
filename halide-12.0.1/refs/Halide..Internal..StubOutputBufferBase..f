@@ -1,3 +1,7 @@
+<dec f='halide/halide-install/include/Halide.h' l='24250' type='Halide::Func'/>
+<use f='halide/halide-install/include/Halide.h' l='24265' u='c' c='_ZN6Halide8Internal20StubOutputBufferBase7realizeEDpOT_'/>
+<use f='halide/halide-install/include/Halide.h' l='24271' u='c' c='_ZN6Halide8Internal20StubOutputBufferBase7realizeET_'/>
+<offset>0</offset>
 <dec f='halide/build/include/Halide.h' l='24250' type='Halide::Func'/>
 <use f='halide/build/include/Halide.h' l='24265' u='c' c='_ZN6Halide8Internal20StubOutputBufferBase7realizeEDpOT_'/>
 <use f='halide/build/include/Halide.h' l='24271' u='c' c='_ZN6Halide8Internal20StubOutputBufferBase7realizeET_'/>

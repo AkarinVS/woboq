@@ -1,3 +1,11 @@
+<dec f='halide/halide-install/include/Halide.h' l='5028' type='enum OS'/>
+<use f='halide/halide-install/include/Halide.h' l='5130' u='w' c='_ZN6Halide6TargetC1ENS0_2OSENS0_4ArchEiRKSt6vectorINS0_7FeatureESaIS4_EE'/>
+<use f='halide/halide-install/include/Halide.h' l='5216' u='r' c='_ZNK6Halide6TargeteqERKS0_'/>
+<use f='halide/halide-install/include/Halide.h' l='5216' u='r' c='_ZNK6Halide6TargeteqERKS0_'/>
+<use f='halide/halide-install/include/Halide.h' l='13578' u='r' c='_ZNK6Halide12ExternalCode17is_for_cpu_targetERKNS_6TargetE'/>
+<use f='halide/halide-install/include/Halide.h' l='13578' u='r' c='_ZNK6Halide12ExternalCode17is_for_cpu_targetERKNS_6TargetE'/>
+<use f='halide/halide-install/include/Halide.h' l='13578' u='r' c='_ZNK6Halide12ExternalCode17is_for_cpu_targetERKNS_6TargetE'/>
+<offset>0</offset>
 <dec f='halide/build/include/Halide.h' l='5028' type='enum OS'/>
 <use f='halide/build/include/Halide.h' l='5130' u='w' c='_ZN6Halide6TargetC1ENS0_2OSENS0_4ArchEiRKSt6vectorINS0_7FeatureESaIS4_EE'/>
 <use f='halide/build/include/Halide.h' l='5216' u='r' c='_ZNK6Halide6TargeteqERKS0_'/>

@@ -1,3 +1,6 @@
+<dec f='halide/halide-install/include/Halide.h' l='13629' type='1'/>
+<doc f='halide/halide-install/include/Halide.h' l='13629'>///&lt; No name mangling</doc>
+<use f='halide/apps/c_backend/pipeline_generator.cpp' l='18' u='r' c='_ZN12_GLOBAL__N_18Pipeline8generateEv'/>
 <dec f='halide/build/include/Halide.h' l='13629' type='1'/>
 <doc f='halide/build/include/Halide.h' l='13629'>///&lt; No name mangling</doc>
 <use f='halide/python_bindings/src/PyEnums.cpp' l='45' u='r' c='_ZN6Halide14PythonBindings12define_enumsERN8pybind117module_E'/>

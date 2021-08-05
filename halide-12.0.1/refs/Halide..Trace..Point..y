@@ -1,3 +1,19 @@
+<dec f='halide/halide-install/share/tools/halide_trace_config.h' l='83' type='int'/>
+<use f='halide/halide-install/share/tools/halide_trace_config.h' l='87' u='w' c='_ZN6Halide5Trace5PointC1Eii'/>
+<use f='halide/halide-install/share/tools/halide_trace_config.h' l='91' u='r' c='_ZN6Halide5TracelsERSoRKNS0_5PointE'/>
+<use f='halide/halide-install/share/tools/halide_trace_config.h' l='96' u='a' c='_ZN6Halide5TracersERSiRNS0_5PointE'/>
+<use f='halide/halide-install/share/tools/halide_trace_config.h' l='223' u='r' c='_ZN6Halide5Trace10FuncConfig10merge_fromERKS1_'/>
+<use f='halide/halide-install/share/tools/halide_trace_config.h' l='224' u='w' c='_ZN6Halide5Trace10FuncConfig10merge_fromERKS1_'/>
+<use f='halide/halide-install/share/tools/halide_trace_config.h' l='224' u='r' c='_ZN6Halide5Trace10FuncConfig10merge_fromERKS1_'/>
+<use f='halide/apps/bilateral_grid/bilateral_grid_generator.cpp' l='160' u='w' c='_ZN12_GLOBAL__N_113BilateralGrid8generateEv'/>
+<use f='halide/apps/bilateral_grid/bilateral_grid_generator.cpp' l='173' u='w' c='_ZN12_GLOBAL__N_113BilateralGrid8generateEv'/>
+<use f='halide/apps/bilateral_grid/bilateral_grid_generator.cpp' l='177' u='w' c='_ZN12_GLOBAL__N_113BilateralGrid8generateEv'/>
+<use f='halide/apps/bilateral_grid/bilateral_grid_generator.cpp' l='181' u='w' c='_ZN12_GLOBAL__N_113BilateralGrid8generateEv'/>
+<use f='halide/apps/bilateral_grid/bilateral_grid_generator.cpp' l='185' u='w' c='_ZN12_GLOBAL__N_113BilateralGrid8generateEv'/>
+<offset>32</offset>
+<use f='halide/apps/camera_pipe/camera_pipe_generator.cpp' l='199' u='w' c='_ZN12_GLOBAL__N_18Demosaic8scheduleEv'/>
+<use f='halide/apps/local_laplacian/local_laplacian_generator.cpp' l='168' u='w' c='_ZN12_GLOBAL__N_114LocalLaplacian8generateEv'/>
+<use f='halide/apps/local_laplacian/local_laplacian_generator.cpp' l='179' u='w' c='_ZN12_GLOBAL__N_114LocalLaplacian8generateEv'/>
 <dec f='halide/tools/halide_trace_config.h' l='83' type='int'/>
 <use f='halide/tools/halide_trace_config.h' l='87' u='w' c='_ZN6Halide5Trace5PointC1Eii'/>
 <use f='halide/tools/halide_trace_config.h' l='91' u='r' c='_ZN6Halide5TracelsERSoRKNS0_5PointE'/>

@@ -1,0 +1,82 @@
+<!doctype html>
+<html>
+<head>
+<meta name="viewport" content="width=device-width, initial-scale=1.0"><title>spinlock_linux.inc source code [halide/build-apps/abseil-cpp/absl/base/internal/spinlock_linux.inc] - Woboq Code Browser</title>
+<link rel="stylesheet" href="../../../../../.././data/qtcreator.css" title="QtCreator"/>
+<link rel="alternate stylesheet" href="../../../../../.././data/kdevelop.css" title="KDevelop"/>
+<script type="text/javascript" src="../../../../../.././data/jquery/jquery.min.js"></script>
+<script type="text/javascript" src="../../../../../.././data/jquery/jquery-ui.min.js"></script>
+<script>var file = 'halide/build-apps/abseil-cpp/absl/base/internal/spinlock_linux.inc'; var root_path = '../../../../../..'; var data_path = '../../../../../.././data'; var ecma_script_api_version = 2;</script>
+<script src='../../../../../.././data/codebrowser.js'></script>
+</head>
+<body><div id='header'><h1 id='breadcrumb'><span>Browse the source code of </span><a href='../../../../..'>halide</a>/<a href='../../../..'>build-apps</a>/<a href='../../..'>abseil-cpp</a>/<a href='../..'>absl</a>/<a href='..'>base</a>/<a href='./'>internal</a>/<a href='spinlock_linux.inc.html'>spinlock_linux.inc</a></h1></div>
+<hr/><div id='content'><table class="code">
+<tr><th id="1">1</th><td><i>// Copyright 2018 The Abseil Authors.</i></td></tr>
+<tr><th id="2">2</th><td><i>//</i></td></tr>
+<tr><th id="3">3</th><td><i>// Licensed under the Apache License, Version 2.0 (the "License");</i></td></tr>
+<tr><th id="4">4</th><td><i>// you may not use this file except in compliance with the License.</i></td></tr>
+<tr><th id="5">5</th><td><i>// You may obtain a copy of the License at</i></td></tr>
+<tr><th id="6">6</th><td><i>//</i></td></tr>
+<tr><th id="7">7</th><td><i>//      <a href="https://www.apache.org/licenses/LICENSE-2.0">https://www.apache.org/licenses/LICENSE-2.0</a></i></td></tr>
+<tr><th id="8">8</th><td><i>//</i></td></tr>
+<tr><th id="9">9</th><td><i>// Unless required by applicable law or agreed to in writing, software</i></td></tr>
+<tr><th id="10">10</th><td><i>// distributed under the License is distributed on an "AS IS" BASIS,</i></td></tr>
+<tr><th id="11">11</th><td><i>// WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.</i></td></tr>
+<tr><th id="12">12</th><td><i>// See the License for the specific language governing permissions and</i></td></tr>
+<tr><th id="13">13</th><td><i>// limitations under the License.</i></td></tr>
+<tr><th id="14">14</th><td><i>//</i></td></tr>
+<tr><th id="15">15</th><td><i>// This file is a Linux-specific part of spinlock_wait.cc</i></td></tr>
+<tr><th id="16">16</th><td></td></tr>
+<tr><th id="17">17</th><td><u>#include <a href="../../../../../../include/linux/futex.h.html">&lt;linux/futex.h&gt;</a></u></td></tr>
+<tr><th id="18">18</th><td><u>#include <a href="../../../../../../include/sys/syscall.h.html">&lt;sys/syscall.h&gt;</a></u></td></tr>
+<tr><th id="19">19</th><td><u>#include <a href="../../../../../../include/unistd.h.html">&lt;unistd.h&gt;</a></u></td></tr>
+<tr><th id="20">20</th><td></td></tr>
+<tr><th id="21">21</th><td><u>#include &lt;atomic&gt;</u></td></tr>
+<tr><th id="22">22</th><td><u>#include &lt;climits&gt;</u></td></tr>
+<tr><th id="23">23</th><td><u>#include &lt;cstdint&gt;</u></td></tr>
+<tr><th id="24">24</th><td><u>#include &lt;ctime&gt;</u></td></tr>
+<tr><th id="25">25</th><td></td></tr>
+<tr><th id="26">26</th><td><u>#include <a href="../attributes.h.html">"absl/base/attributes.h"</a></u></td></tr>
+<tr><th id="27">27</th><td><u>#include <a href="errno_saver.h.html">"absl/base/internal/errno_saver.h"</a></u></td></tr>
+<tr><th id="28">28</th><td></td></tr>
+<tr><th id="29">29</th><td><i>// The SpinLock lockword is `std::atomic&lt;uint32_t&gt;`. Here we assert that</i></td></tr>
+<tr><th id="30">30</th><td><i>// `std::atomic&lt;uint32_t&gt;` is bitwise equivalent of the `int` expected</i></td></tr>
+<tr><th id="31">31</th><td><i>// by SYS_futex. We also assume that reads/writes done to the lockword</i></td></tr>
+<tr><th id="32">32</th><td><i>// by SYS_futex have rational semantics with regard to the</i></td></tr>
+<tr><th id="33">33</th><td><i>// std::atomic&lt;&gt; API. C++ provides no guarantees of these assumptions,</i></td></tr>
+<tr><th id="34">34</th><td><i>// but they are believed to hold in practice.</i></td></tr>
+<tr><th id="35">35</th><td><b>static_assert</b>(<b>sizeof</b>(<span class="namespace">std::</span><span class='type' title='std::atomic' data-ref="std::atomic" data-ref-filename="std..atomic">atomic</span>&lt;<a class="typedef" href="../../../../../../include/bits/stdint-uintn.h.html#uint32_t" title='uint32_t' data-type='__uint32_t' data-ref="uint32_t" data-ref-filename="uint32_t">uint32_t</a>&gt;) == <b>sizeof</b>(<em>int</em>),</td></tr>
+<tr><th id="36">36</th><td>              <q>"SpinLock lockword has the wrong size for a futex"</q>);</td></tr>
+<tr><th id="37">37</th><td></td></tr>
+<tr><th id="38">38</th><td><i>// Some Android headers are missing these definitions even though they</i></td></tr>
+<tr><th id="39">39</th><td><i>// support these futex operations.</i></td></tr>
+<tr><th id="40">40</th><td><u>#<span data-ppcond="40">ifdef</span> <span class="macro" data-ref="_M/__BIONIC__">__BIONIC__</span></u></td></tr>
+<tr><th id="41">41</th><td><u>#ifndef SYS_futex</u></td></tr>
+<tr><th id="42">42</th><td><u>#define SYS_futex __NR_futex</u></td></tr>
+<tr><th id="43">43</th><td><u>#endif</u></td></tr>
+<tr><th id="44">44</th><td><u>#ifndef FUTEX_PRIVATE_FLAG</u></td></tr>
+<tr><th id="45">45</th><td><u>#define FUTEX_PRIVATE_FLAG 128</u></td></tr>
+<tr><th id="46">46</th><td><u>#endif</u></td></tr>
+<tr><th id="47">47</th><td><u>#<span data-ppcond="40">endif</span></u></td></tr>
+<tr><th id="48">48</th><td></td></tr>
+<tr><th id="49">49</th><td><b>extern</b> <q>"C"</q> {</td></tr>
+<tr><th id="50">50</th><td></td></tr>
+<tr><th id="51">51</th><td><a class="macro" href="../attributes.h.html#167" title="__attribute__((weak))" data-ref="_M/ABSL_ATTRIBUTE_WEAK">ABSL_ATTRIBUTE_WEAK</a> <em>void</em> <dfn class="decl def fn" id="AbslInternalSpinLockDelay" title='AbslInternalSpinLockDelay' data-ref="AbslInternalSpinLockDelay" data-ref-filename="AbslInternalSpinLockDelay">AbslInternalSpinLockDelay</dfn>(</td></tr>
+<tr><th id="52">52</th><td>    <span class="namespace">std::</span><span class='type' title='std::atomic' data-ref="std::atomic" data-ref-filename="std..atomic">atomic</span>&lt;<a class="typedef" href="../../../../../../include/bits/stdint-uintn.h.html#uint32_t" title='uint32_t' data-type='__uint32_t' data-ref="uint32_t" data-ref-filename="uint32_t">uint32_t</a>&gt; *<dfn class="local col1 decl" id="1w" title='w' data-type='std::atomic&lt;uint32_t&gt; *' data-ref="1w" data-ref-filename="1w">w</dfn>, <a class="typedef" href="../../../../../../include/bits/stdint-uintn.h.html#uint32_t" title='uint32_t' data-type='__uint32_t' data-ref="uint32_t" data-ref-filename="uint32_t">uint32_t</a> <dfn class="local col2 decl" id="2value" title='value' data-type='uint32_t' data-ref="2value" data-ref-filename="2value">value</dfn>, <em>int</em> <dfn class="local col3 decl" id="3loop" title='loop' data-type='int' data-ref="3loop" data-ref-filename="3loop">loop</dfn>,</td></tr>
+<tr><th id="53">53</th><td>    <span class="namespace">absl::base_internal::</span><a class="type" href="scheduling_mode.h.html#absl::lts_2020_02_25::base_internal::SchedulingMode" title='absl::lts_2020_02_25::base_internal::SchedulingMode' data-ref="absl::lts_2020_02_25::base_internal::SchedulingMode" data-ref-filename="absl..lts_2020_02_25..base_internal..SchedulingMode">SchedulingMode</a>) {</td></tr>
+<tr><th id="54">54</th><td>  <span class="namespace">absl::base_internal::</span><a class="type" href="errno_saver.h.html#absl::lts_2020_02_25::base_internal::ErrnoSaver" title='absl::lts_2020_02_25::base_internal::ErrnoSaver' data-ref="absl::lts_2020_02_25::base_internal::ErrnoSaver" data-ref-filename="absl..lts_2020_02_25..base_internal..ErrnoSaver">ErrnoSaver</a> <a class="ref fn fake" href="errno_saver.h.html#_ZN4absl14lts_2020_02_2513base_internal10ErrnoSaverC1Ev" title='absl::lts_2020_02_25::base_internal::ErrnoSaver::ErrnoSaver' data-ref="_ZN4absl14lts_2020_02_2513base_internal10ErrnoSaverC1Ev" data-ref-filename="_ZN4absl14lts_2020_02_2513base_internal10ErrnoSaverC1Ev"></a><dfn class="local col4 decl" id="4errno_saver" title='errno_saver' data-type='absl::base_internal::ErrnoSaver' data-ref="4errno_saver" data-ref-filename="4errno_saver">errno_saver</dfn>;</td></tr>
+<tr><th id="55">55</th><td>  <b>struct</b> <a class="type" href="../../../../../../include/bits/types/struct_timespec.h.html#timespec" title='timespec' data-ref="timespec" data-ref-filename="timespec">timespec</a> <a class="ref fn fake" href="../../../../../../include/bits/types/struct_timespec.h.html#10" title='timespec::timespec' data-ref="_ZN8timespecC1Ev" data-ref-filename="_ZN8timespecC1Ev"></a><dfn class="local col5 decl" id="5tm" title='tm' data-type='struct timespec' data-ref="5tm" data-ref-filename="5tm">tm</dfn>;</td></tr>
+<tr><th id="56">56</th><td>  <a class="local col5 ref" href="#5tm" title='tm' data-ref="5tm" data-ref-filename="5tm">tm</a>.<a class="ref field" href="../../../../../../include/bits/types/struct_timespec.h.html#timespec::tv_sec" title='timespec::tv_sec' data-ref="timespec::tv_sec" data-ref-filename="timespec..tv_sec">tv_sec</a> = <var>0</var>;</td></tr>
+<tr><th id="57">57</th><td>  <a class="local col5 ref" href="#5tm" title='tm' data-ref="5tm" data-ref-filename="5tm">tm</a>.<a class="ref field" href="../../../../../../include/bits/types/struct_timespec.h.html#timespec::tv_nsec" title='timespec::tv_nsec' data-ref="timespec::tv_nsec" data-ref-filename="timespec..tv_nsec">tv_nsec</a> = <span class="namespace">absl::base_internal::</span><a class="ref fn" href="spinlock_wait.cc.html#_ZN4absl14lts_2020_02_2513base_internal24SpinLockSuggestedDelayNSEi" title='absl::lts_2020_02_25::base_internal::SpinLockSuggestedDelayNS' data-ref="_ZN4absl14lts_2020_02_2513base_internal24SpinLockSuggestedDelayNSEi" data-ref-filename="_ZN4absl14lts_2020_02_2513base_internal24SpinLockSuggestedDelayNSEi">SpinLockSuggestedDelayNS</a>(<a class="local col3 ref" href="#3loop" title='loop' data-ref="3loop" data-ref-filename="3loop">loop</a>);</td></tr>
+<tr><th id="58">58</th><td>  <a class="ref fn" href="../../../../../../include/unistd.h.html#syscall" title='syscall' data-ref="syscall" data-ref-filename="syscall">syscall</a>(<a class="macro" href="../../../../../../include/bits/syscall.h.html#467" title="202" data-ref="_M/SYS_futex">SYS_futex</a>, <a class="local col1 ref" href="#1w" title='w' data-ref="1w" data-ref-filename="1w">w</a>, <a class="macro" href="../../../../../../include/linux/futex.h.html#11" title="0" data-ref="_M/FUTEX_WAIT">FUTEX_WAIT</a> | <a class="macro" href="../../../../../../include/linux/futex.h.html#25" title="128" data-ref="_M/FUTEX_PRIVATE_FLAG">FUTEX_PRIVATE_FLAG</a>, <a class="local col2 ref" href="#2value" title='value' data-ref="2value" data-ref-filename="2value">value</a>, &amp;<a class="local col5 ref" href="#5tm" title='tm' data-ref="5tm" data-ref-filename="5tm">tm</a>);</td></tr>
+<tr><th id="59">59</th><td>}</td></tr>
+<tr><th id="60">60</th><td></td></tr>
+<tr><th id="61">61</th><td><a class="macro" href="../attributes.h.html#167" title="__attribute__((weak))" data-ref="_M/ABSL_ATTRIBUTE_WEAK">ABSL_ATTRIBUTE_WEAK</a> <em>void</em> <dfn class="decl def fn" id="AbslInternalSpinLockWake" title='AbslInternalSpinLockWake' data-ref="AbslInternalSpinLockWake" data-ref-filename="AbslInternalSpinLockWake">AbslInternalSpinLockWake</dfn>(<span class="namespace">std::</span><span class='type' title='std::atomic' data-ref="std::atomic" data-ref-filename="std..atomic">atomic</span>&lt;<a class="typedef" href="../../../../../../include/bits/stdint-uintn.h.html#uint32_t" title='uint32_t' data-type='__uint32_t' data-ref="uint32_t" data-ref-filename="uint32_t">uint32_t</a>&gt; *<dfn class="local col6 decl" id="6w" title='w' data-type='std::atomic&lt;uint32_t&gt; *' data-ref="6w" data-ref-filename="6w">w</dfn>,</td></tr>
+<tr><th id="62">62</th><td>                                                  <em>bool</em> <dfn class="local col7 decl" id="7all" title='all' data-type='bool' data-ref="7all" data-ref-filename="7all">all</dfn>) {</td></tr>
+<tr><th id="63">63</th><td>  <a class="ref fn" href="../../../../../../include/unistd.h.html#syscall" title='syscall' data-ref="syscall" data-ref-filename="syscall">syscall</a>(<a class="macro" href="../../../../../../include/bits/syscall.h.html#467" title="202" data-ref="_M/SYS_futex">SYS_futex</a>, <a class="local col6 ref" href="#6w" title='w' data-ref="6w" data-ref-filename="6w">w</a>, <a class="macro" href="../../../../../../include/linux/futex.h.html#12" title="1" data-ref="_M/FUTEX_WAKE">FUTEX_WAKE</a> | <a class="macro" href="../../../../../../include/linux/futex.h.html#25" title="128" data-ref="_M/FUTEX_PRIVATE_FLAG">FUTEX_PRIVATE_FLAG</a>, <a class="local col7 ref" href="#7all" title='all' data-ref="7all" data-ref-filename="7all">all</a> ? <span class="macro" title="2147483647" data-ref="_M/INT_MAX">INT_MAX</span> : <var>1</var>, <var>0</var>);</td></tr>
+<tr><th id="64">64</th><td>}</td></tr>
+<tr><th id="65">65</th><td></td></tr>
+<tr><th id="66">66</th><td>}  <i>// extern "C"</i></td></tr>
+<tr><th id="67">67</th><td></td></tr>
+</table><hr/><p id='footer'>
+Generated while processing <a href='spinlock_wait.cc.html'>halide/build-apps/abseil-cpp/absl/base/internal/spinlock_wait.cc</a><br/>Generated on <em>2021-Aug-05</em> from project halide revision <em>v12.0.1</em>

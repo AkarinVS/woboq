@@ -1,0 +1,304 @@
+<!doctype html>
+<html>
+<head>
+<meta name="viewport" content="width=device-width, initial-scale=1.0"><title>c_api.h source code [halide/build-apps/_deps/tflite-src/tensorflow/lite/c/c_api.h] - Woboq Code Browser</title>
+<link rel="stylesheet" href="../../../../../../.././data/qtcreator.css" title="QtCreator"/>
+<link rel="alternate stylesheet" href="../../../../../../.././data/kdevelop.css" title="KDevelop"/>
+<script type="text/javascript" src="../../../../../../.././data/jquery/jquery.min.js"></script>
+<script type="text/javascript" src="../../../../../../.././data/jquery/jquery-ui.min.js"></script>
+<script>var file = 'halide/build-apps/_deps/tflite-src/tensorflow/lite/c/c_api.h'; var root_path = '../../../../../../..'; var data_path = '../../../../../../.././data'; var ecma_script_api_version = 2;</script>
+<script src='../../../../../../.././data/codebrowser.js'></script>
+</head>
+<body><div id='header'><h1 id='breadcrumb'><span>Browse the source code of </span><a href='../../../../../..'>halide</a>/<a href='../../../../..'>build-apps</a>/<a href='../../../..'>_deps</a>/<a href='../../..'>tflite-src</a>/<a href='../..'>tensorflow</a>/<a href='..'>lite</a>/<a href='./'>c</a>/<a href='c_api.h.html'>c_api.h</a></h1></div>
+<hr/><div id='content'><table class="code">
+<tr><th id="1">1</th><td><i>/* Copyright 2018 The TensorFlow Authors. All Rights Reserved.</i></td></tr>
+<tr><th id="2">2</th><td><i></i></td></tr>
+<tr><th id="3">3</th><td><i>Licensed under the Apache License, Version 2.0 (the "License");</i></td></tr>
+<tr><th id="4">4</th><td><i>you may not use this file except in compliance with the License.</i></td></tr>
+<tr><th id="5">5</th><td><i>You may obtain a copy of the License at</i></td></tr>
+<tr><th id="6">6</th><td><i></i></td></tr>
+<tr><th id="7">7</th><td><i>    <a href="http://www.apache.org/licenses/LICENSE-2.0">http://www.apache.org/licenses/LICENSE-2.0</a></i></td></tr>
+<tr><th id="8">8</th><td><i></i></td></tr>
+<tr><th id="9">9</th><td><i>Unless required by applicable law or agreed to in writing, software</i></td></tr>
+<tr><th id="10">10</th><td><i>distributed under the License is distributed on an "AS IS" BASIS,</i></td></tr>
+<tr><th id="11">11</th><td><i>WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.</i></td></tr>
+<tr><th id="12">12</th><td><i>See the License for the specific language governing permissions and</i></td></tr>
+<tr><th id="13">13</th><td><i>limitations under the License.</i></td></tr>
+<tr><th id="14">14</th><td><i>==============================================================================*/</i></td></tr>
+<tr><th id="15">15</th><td><u>#<span data-ppcond="15">ifndef</span> <span class="macro" data-ref="_M/TENSORFLOW_LITE_C_C_API_H_">TENSORFLOW_LITE_C_C_API_H_</span></u></td></tr>
+<tr><th id="16">16</th><td><u>#define <dfn class="macro" id="_M/TENSORFLOW_LITE_C_C_API_H_" data-ref="_M/TENSORFLOW_LITE_C_C_API_H_">TENSORFLOW_LITE_C_C_API_H_</dfn></u></td></tr>
+<tr><th id="17">17</th><td></td></tr>
+<tr><th id="18">18</th><td><u>#include &lt;stdarg.h&gt;</u></td></tr>
+<tr><th id="19">19</th><td><u>#include &lt;stdint.h&gt;</u></td></tr>
+<tr><th id="20">20</th><td><u>#include &lt;stdlib.h&gt;</u></td></tr>
+<tr><th id="21">21</th><td></td></tr>
+<tr><th id="22">22</th><td><u>#include <a href="c_api_types.h.html">"tensorflow/lite/c/c_api_types.h"</a>  // IWYU pragma: export</u></td></tr>
+<tr><th id="23">23</th><td></td></tr>
+<tr><th id="24">24</th><td><i>// --------------------------------------------------------------------------</i></td></tr>
+<tr><th id="25">25</th><td><i>/// C API for TensorFlow Lite.</i></td></tr>
+<tr><th id="26">26</th><td><i>///</i></td></tr>
+<tr><th id="27">27</th><td><i>/// The API leans towards simplicity and uniformity instead of convenience, as</i></td></tr>
+<tr><th id="28">28</th><td><i>/// most usage will be by language-specific wrappers. It provides largely the</i></td></tr>
+<tr><th id="29">29</th><td><i>/// same set of functionality as that of the C++ TensorFlow Lite `Interpreter`</i></td></tr>
+<tr><th id="30">30</th><td><i>/// API, but is useful for shared libraries where having a stable ABI boundary</i></td></tr>
+<tr><th id="31">31</th><td><i>/// is important.</i></td></tr>
+<tr><th id="32">32</th><td><i>///</i></td></tr>
+<tr><th id="33">33</th><td><i>/// Conventions:</i></td></tr>
+<tr><th id="34">34</th><td><i>/// * We use the prefix TfLite for everything in the API.</i></td></tr>
+<tr><th id="35">35</th><td><i>/// * size_t is used to represent byte sizes of objects that are</i></td></tr>
+<tr><th id="36">36</th><td><i>///   materialized in the address space of the calling process.</i></td></tr>
+<tr><th id="37">37</th><td><i>/// * int is used as an index into arrays.</i></td></tr>
+<tr><th id="38">38</th><td><i>///</i></td></tr>
+<tr><th id="39">39</th><td><i>/// Usage:</i></td></tr>
+<tr><th id="40">40</th><td><i>/// &lt;pre&gt;&lt;code&gt;</i></td></tr>
+<tr><th id="41">41</th><td><i>/// // Create the model and interpreter options.</i></td></tr>
+<tr><th id="42">42</th><td><i>/// TfLiteModel* model = TfLiteModelCreateFromFile("/path/to/model.tflite");</i></td></tr>
+<tr><th id="43">43</th><td><i>/// TfLiteInterpreterOptions* options = TfLiteInterpreterOptionsCreate();</i></td></tr>
+<tr><th id="44">44</th><td><i>/// TfLiteInterpreterOptionsSetNumThreads(options, 2);</i></td></tr>
+<tr><th id="45">45</th><td><i>///</i></td></tr>
+<tr><th id="46">46</th><td><i>/// // Create the interpreter.</i></td></tr>
+<tr><th id="47">47</th><td><i>/// TfLiteInterpreter* interpreter = TfLiteInterpreterCreate(model, options);</i></td></tr>
+<tr><th id="48">48</th><td><i>///</i></td></tr>
+<tr><th id="49">49</th><td><i>/// // Allocate tensors and populate the input tensor data.</i></td></tr>
+<tr><th id="50">50</th><td><i>/// TfLiteInterpreterAllocateTensors(interpreter);</i></td></tr>
+<tr><th id="51">51</th><td><i>/// TfLiteTensor* input_tensor =</i></td></tr>
+<tr><th id="52">52</th><td><i>///     TfLiteInterpreterGetInputTensor(interpreter, 0);</i></td></tr>
+<tr><th id="53">53</th><td><i>/// TfLiteTensorCopyFromBuffer(input_tensor, input.data(),</i></td></tr>
+<tr><th id="54">54</th><td><i>///                            input.size() * sizeof(float));</i></td></tr>
+<tr><th id="55">55</th><td><i>///</i></td></tr>
+<tr><th id="56">56</th><td><i>/// // Execute inference.</i></td></tr>
+<tr><th id="57">57</th><td><i>/// TfLiteInterpreterInvoke(interpreter);</i></td></tr>
+<tr><th id="58">58</th><td><i>///</i></td></tr>
+<tr><th id="59">59</th><td><i>/// // Extract the output tensor data.</i></td></tr>
+<tr><th id="60">60</th><td><i>/// const TfLiteTensor* output_tensor =</i></td></tr>
+<tr><th id="61">61</th><td><i>//      TfLiteInterpreterGetOutputTensor(interpreter, 0);</i></td></tr>
+<tr><th id="62">62</th><td><i>/// TfLiteTensorCopyToBuffer(output_tensor, output.data(),</i></td></tr>
+<tr><th id="63">63</th><td><i>///                          output.size() * sizeof(float));</i></td></tr>
+<tr><th id="64">64</th><td><i>///</i></td></tr>
+<tr><th id="65">65</th><td><i>/// // Dispose of the model and interpreter objects.</i></td></tr>
+<tr><th id="66">66</th><td><i>/// TfLiteInterpreterDelete(interpreter);</i></td></tr>
+<tr><th id="67">67</th><td><i>/// TfLiteInterpreterOptionsDelete(options);</i></td></tr>
+<tr><th id="68">68</th><td><i>/// TfLiteModelDelete(model);</i></td></tr>
+<tr><th id="69">69</th><td></td></tr>
+<tr><th id="70">70</th><td><u>#<span data-ppcond="70">ifdef</span> <span class="macro" data-ref="_M/__cplusplus">__cplusplus</span></u></td></tr>
+<tr><th id="71">71</th><td><b>extern</b> <q>"C"</q> {</td></tr>
+<tr><th id="72">72</th><td><u>#<span data-ppcond="70">endif</span>  // __cplusplus</u></td></tr>
+<tr><th id="73">73</th><td></td></tr>
+<tr><th id="74">74</th><td><i>// --------------------------------------------------------------------------</i></td></tr>
+<tr><th id="75">75</th><td><i>// Opaque types used by the C API.</i></td></tr>
+<tr><th id="76">76</th><td><i></i></td></tr>
+<tr><th id="77">77</th><td><i>// TfLiteModel wraps a loaded TensorFlow Lite model.</i></td></tr>
+<tr><th id="78">78</th><td><b>typedef</b> <b>struct</b> <dfn class="type" id="TfLiteModel" title='TfLiteModel' data-ref="TfLiteModel" data-ref-filename="TfLiteModel"><a class="type" href="#TfLiteModel" title='TfLiteModel' data-ref="TfLiteModel" data-ref-filename="TfLiteModel">TfLiteModel</a></dfn> <dfn class="typedef" id="TfLiteModel" title='TfLiteModel' data-type='struct TfLiteModel' data-ref="TfLiteModel" data-ref-filename="TfLiteModel">TfLiteModel</dfn>;</td></tr>
+<tr><th id="79">79</th><td></td></tr>
+<tr><th id="80">80</th><td><i>// TfLiteInterpreterOptions allows customized interpreter configuration.</i></td></tr>
+<tr><th id="81">81</th><td><b>typedef</b> <b>struct</b> <dfn class="type" id="TfLiteInterpreterOptions" title='TfLiteInterpreterOptions' data-ref="TfLiteInterpreterOptions" data-ref-filename="TfLiteInterpreterOptions"><a class="type" href="#TfLiteInterpreterOptions" title='TfLiteInterpreterOptions' data-ref="TfLiteInterpreterOptions" data-ref-filename="TfLiteInterpreterOptions">TfLiteInterpreterOptions</a></dfn> <dfn class="typedef" id="TfLiteInterpreterOptions" title='TfLiteInterpreterOptions' data-type='struct TfLiteInterpreterOptions' data-ref="TfLiteInterpreterOptions" data-ref-filename="TfLiteInterpreterOptions">TfLiteInterpreterOptions</dfn>;</td></tr>
+<tr><th id="82">82</th><td></td></tr>
+<tr><th id="83">83</th><td><i>// Allows delegation of nodes to alternative backends.</i></td></tr>
+<tr><th id="84">84</th><td><b>typedef</b> <b>struct</b> <a class="type" href="common.h.html#TfLiteDelegate" title='TfLiteDelegate' data-ref="TfLiteDelegate" data-ref-filename="TfLiteDelegate" id="TfLiteDelegate"><a class="type" href="common.h.html#TfLiteDelegate" title='TfLiteDelegate' data-ref="TfLiteDelegate" data-ref-filename="TfLiteDelegate">TfLiteDelegate</a></a> <dfn class="typedef" id="TfLiteDelegate" title='TfLiteDelegate' data-type='struct TfLiteDelegate' data-ref="TfLiteDelegate" data-ref-filename="TfLiteDelegate">TfLiteDelegate</dfn>;</td></tr>
+<tr><th id="85">85</th><td></td></tr>
+<tr><th id="86">86</th><td><i>// TfLiteInterpreter provides inference from a provided model.</i></td></tr>
+<tr><th id="87">87</th><td><b>typedef</b> <b>struct</b> <dfn class="type" id="TfLiteInterpreter" title='TfLiteInterpreter' data-ref="TfLiteInterpreter" data-ref-filename="TfLiteInterpreter"><a class="type" href="#TfLiteInterpreter" title='TfLiteInterpreter' data-ref="TfLiteInterpreter" data-ref-filename="TfLiteInterpreter">TfLiteInterpreter</a></dfn> <dfn class="typedef" id="TfLiteInterpreter" title='TfLiteInterpreter' data-type='struct TfLiteInterpreter' data-ref="TfLiteInterpreter" data-ref-filename="TfLiteInterpreter">TfLiteInterpreter</dfn>;</td></tr>
+<tr><th id="88">88</th><td></td></tr>
+<tr><th id="89">89</th><td><i>// A tensor in the interpreter system which is a wrapper around a buffer of</i></td></tr>
+<tr><th id="90">90</th><td><i>// data including a dimensionality (or NULL if not currently defined).</i></td></tr>
+<tr><th id="91">91</th><td><b>typedef</b> <b>struct</b> <a class="type" href="common.h.html#TfLiteTensor" title='TfLiteTensor' data-ref="TfLiteTensor" data-ref-filename="TfLiteTensor" id="TfLiteTensor"><a class="type" href="common.h.html#TfLiteTensor" title='TfLiteTensor' data-ref="TfLiteTensor" data-ref-filename="TfLiteTensor">TfLiteTensor</a></a> <dfn class="typedef" id="TfLiteTensor" title='TfLiteTensor' data-type='struct TfLiteTensor' data-ref="TfLiteTensor" data-ref-filename="TfLiteTensor">TfLiteTensor</dfn>;</td></tr>
+<tr><th id="92">92</th><td></td></tr>
+<tr><th id="93">93</th><td><i>// --------------------------------------------------------------------------</i></td></tr>
+<tr><th id="94">94</th><td><i>// TfLiteVersion returns a string describing version information of the</i></td></tr>
+<tr><th id="95">95</th><td><i>// TensorFlow Lite library. TensorFlow Lite uses semantic versioning.</i></td></tr>
+<tr><th id="96">96</th><td><a class="macro" href="c_api_types.h.html#40" title="__attribute__((visibility(&quot;default&quot;)))" data-ref="_M/TFL_CAPI_EXPORT">TFL_CAPI_EXPORT</a> <b>extern</b> <em>const</em> <em>char</em>* <dfn class="decl fn" id="TfLiteVersion" title='TfLiteVersion' data-ref="TfLiteVersion" data-ref-filename="TfLiteVersion">TfLiteVersion</dfn>(<em>void</em>);</td></tr>
+<tr><th id="97">97</th><td></td></tr>
+<tr><th id="98">98</th><td><i>// Returns a model from the provided buffer, or null on failure.</i></td></tr>
+<tr><th id="99">99</th><td><a class="macro" href="c_api_types.h.html#40" title="__attribute__((visibility(&quot;default&quot;)))" data-ref="_M/TFL_CAPI_EXPORT">TFL_CAPI_EXPORT</a> <b>extern</b> <a class="typedef" href="#TfLiteModel" title='TfLiteModel' data-type='struct TfLiteModel' data-ref="TfLiteModel" data-ref-filename="TfLiteModel">TfLiteModel</a>* <dfn class="decl fn" id="TfLiteModelCreate" title='TfLiteModelCreate' data-ref="TfLiteModelCreate" data-ref-filename="TfLiteModelCreate">TfLiteModelCreate</dfn>(<em>const</em> <em>void</em>* <dfn class="local col1 decl" id="1model_data" title='model_data' data-type='const void *' data-ref="1model_data" data-ref-filename="1model_data">model_data</dfn>,</td></tr>
+<tr><th id="100">100</th><td>                                                      <span class='typedef' title='size_t' data-type='unsigned long' data-ref="size_t" data-ref-filename="size_t">size_t</span> <dfn class="local col2 decl" id="2model_size" title='model_size' data-type='size_t' data-ref="2model_size" data-ref-filename="2model_size">model_size</dfn>);</td></tr>
+<tr><th id="101">101</th><td></td></tr>
+<tr><th id="102">102</th><td><i>// Returns a model from the provided file, or null on failure.</i></td></tr>
+<tr><th id="103">103</th><td><a class="macro" href="c_api_types.h.html#40" title="__attribute__((visibility(&quot;default&quot;)))" data-ref="_M/TFL_CAPI_EXPORT">TFL_CAPI_EXPORT</a> <b>extern</b> <a class="typedef" href="#TfLiteModel" title='TfLiteModel' data-type='struct TfLiteModel' data-ref="TfLiteModel" data-ref-filename="TfLiteModel">TfLiteModel</a>* <dfn class="decl fn" id="TfLiteModelCreateFromFile" title='TfLiteModelCreateFromFile' data-ref="TfLiteModelCreateFromFile" data-ref-filename="TfLiteModelCreateFromFile">TfLiteModelCreateFromFile</dfn>(</td></tr>
+<tr><th id="104">104</th><td>    <em>const</em> <em>char</em>* <dfn class="local col3 decl" id="3model_path" title='model_path' data-type='const char *' data-ref="3model_path" data-ref-filename="3model_path">model_path</dfn>);</td></tr>
+<tr><th id="105">105</th><td></td></tr>
+<tr><th id="106">106</th><td><i>// Destroys the model instance.</i></td></tr>
+<tr><th id="107">107</th><td><a class="macro" href="c_api_types.h.html#40" title="__attribute__((visibility(&quot;default&quot;)))" data-ref="_M/TFL_CAPI_EXPORT">TFL_CAPI_EXPORT</a> <b>extern</b> <em>void</em> <dfn class="decl fn" id="TfLiteModelDelete" title='TfLiteModelDelete' data-ref="TfLiteModelDelete" data-ref-filename="TfLiteModelDelete">TfLiteModelDelete</dfn>(<a class="typedef" href="#TfLiteModel" title='TfLiteModel' data-type='struct TfLiteModel' data-ref="TfLiteModel" data-ref-filename="TfLiteModel">TfLiteModel</a>* <dfn class="local col4 decl" id="4model" title='model' data-type='TfLiteModel *' data-ref="4model" data-ref-filename="4model">model</dfn>);</td></tr>
+<tr><th id="108">108</th><td></td></tr>
+<tr><th id="109">109</th><td><i>// Returns a new interpreter options instances.</i></td></tr>
+<tr><th id="110">110</th><td><a class="macro" href="c_api_types.h.html#40" title="__attribute__((visibility(&quot;default&quot;)))" data-ref="_M/TFL_CAPI_EXPORT">TFL_CAPI_EXPORT</a> <b>extern</b> <a class="typedef" href="#TfLiteInterpreterOptions" title='TfLiteInterpreterOptions' data-type='struct TfLiteInterpreterOptions' data-ref="TfLiteInterpreterOptions" data-ref-filename="TfLiteInterpreterOptions">TfLiteInterpreterOptions</a>*</td></tr>
+<tr><th id="111">111</th><td><dfn class="decl fn" id="TfLiteInterpreterOptionsCreate" title='TfLiteInterpreterOptionsCreate' data-ref="TfLiteInterpreterOptionsCreate" data-ref-filename="TfLiteInterpreterOptionsCreate">TfLiteInterpreterOptionsCreate</dfn>();</td></tr>
+<tr><th id="112">112</th><td></td></tr>
+<tr><th id="113">113</th><td><i>// Destroys the interpreter options instance.</i></td></tr>
+<tr><th id="114">114</th><td><a class="macro" href="c_api_types.h.html#40" title="__attribute__((visibility(&quot;default&quot;)))" data-ref="_M/TFL_CAPI_EXPORT">TFL_CAPI_EXPORT</a> <b>extern</b> <em>void</em> <dfn class="decl fn" id="TfLiteInterpreterOptionsDelete" title='TfLiteInterpreterOptionsDelete' data-ref="TfLiteInterpreterOptionsDelete" data-ref-filename="TfLiteInterpreterOptionsDelete">TfLiteInterpreterOptionsDelete</dfn>(</td></tr>
+<tr><th id="115">115</th><td>    <a class="typedef" href="#TfLiteInterpreterOptions" title='TfLiteInterpreterOptions' data-type='struct TfLiteInterpreterOptions' data-ref="TfLiteInterpreterOptions" data-ref-filename="TfLiteInterpreterOptions">TfLiteInterpreterOptions</a>* <dfn class="local col5 decl" id="5options" title='options' data-type='TfLiteInterpreterOptions *' data-ref="5options" data-ref-filename="5options">options</dfn>);</td></tr>
+<tr><th id="116">116</th><td></td></tr>
+<tr><th id="117">117</th><td><i>// Sets the number of CPU threads to use for the interpreter.</i></td></tr>
+<tr><th id="118">118</th><td><a class="macro" href="c_api_types.h.html#40" title="__attribute__((visibility(&quot;default&quot;)))" data-ref="_M/TFL_CAPI_EXPORT">TFL_CAPI_EXPORT</a> <b>extern</b> <em>void</em> <dfn class="decl fn" id="TfLiteInterpreterOptionsSetNumThreads" title='TfLiteInterpreterOptionsSetNumThreads' data-ref="TfLiteInterpreterOptionsSetNumThreads" data-ref-filename="TfLiteInterpreterOptionsSetNumThreads">TfLiteInterpreterOptionsSetNumThreads</dfn>(</td></tr>
+<tr><th id="119">119</th><td>    <a class="typedef" href="#TfLiteInterpreterOptions" title='TfLiteInterpreterOptions' data-type='struct TfLiteInterpreterOptions' data-ref="TfLiteInterpreterOptions" data-ref-filename="TfLiteInterpreterOptions">TfLiteInterpreterOptions</a>* <dfn class="local col6 decl" id="6options" title='options' data-type='TfLiteInterpreterOptions *' data-ref="6options" data-ref-filename="6options">options</dfn>, <a class="typedef" href="../../../../../../../include/bits/stdint-intn.h.html#int32_t" title='int32_t' data-type='__int32_t' data-ref="int32_t" data-ref-filename="int32_t">int32_t</a> <dfn class="local col7 decl" id="7num_threads" title='num_threads' data-type='int32_t' data-ref="7num_threads" data-ref-filename="7num_threads">num_threads</dfn>);</td></tr>
+<tr><th id="120">120</th><td></td></tr>
+<tr><th id="121">121</th><td><i>// Adds a delegate to be applied during `TfLiteInterpreter` creation.</i></td></tr>
+<tr><th id="122">122</th><td><i>//</i></td></tr>
+<tr><th id="123">123</th><td><i>// If delegate application fails, interpreter creation will also fail with an</i></td></tr>
+<tr><th id="124">124</th><td><i>// associated error logged.</i></td></tr>
+<tr><th id="125">125</th><td><i>//</i></td></tr>
+<tr><th id="126">126</th><td><i>// NOTE: The caller retains ownership of the delegate and should ensure that it</i></td></tr>
+<tr><th id="127">127</th><td><i>// remains valid for the duration of any created interpreter's lifetime.</i></td></tr>
+<tr><th id="128">128</th><td><a class="macro" href="c_api_types.h.html#40" title="__attribute__((visibility(&quot;default&quot;)))" data-ref="_M/TFL_CAPI_EXPORT">TFL_CAPI_EXPORT</a> <b>extern</b> <em>void</em> <dfn class="decl fn" id="TfLiteInterpreterOptionsAddDelegate" title='TfLiteInterpreterOptionsAddDelegate' data-ref="TfLiteInterpreterOptionsAddDelegate" data-ref-filename="TfLiteInterpreterOptionsAddDelegate">TfLiteInterpreterOptionsAddDelegate</dfn>(</td></tr>
+<tr><th id="129">129</th><td>    <a class="typedef" href="#TfLiteInterpreterOptions" title='TfLiteInterpreterOptions' data-type='struct TfLiteInterpreterOptions' data-ref="TfLiteInterpreterOptions" data-ref-filename="TfLiteInterpreterOptions">TfLiteInterpreterOptions</a>* <dfn class="local col8 decl" id="8options" title='options' data-type='TfLiteInterpreterOptions *' data-ref="8options" data-ref-filename="8options">options</dfn>, <a class="typedef" href="#TfLiteDelegate" title='TfLiteDelegate' data-type='struct TfLiteDelegate' data-ref="TfLiteDelegate" data-ref-filename="TfLiteDelegate">TfLiteDelegate</a>* <dfn class="local col9 decl" id="9delegate" title='delegate' data-type='TfLiteDelegate *' data-ref="9delegate" data-ref-filename="9delegate">delegate</dfn>);</td></tr>
+<tr><th id="130">130</th><td></td></tr>
+<tr><th id="131">131</th><td><i>// Sets a custom error reporter for interpreter execution.</i></td></tr>
+<tr><th id="132">132</th><td><i>//</i></td></tr>
+<tr><th id="133">133</th><td><i>// * `reporter` takes the provided `user_data` object, as well as a C-style</i></td></tr>
+<tr><th id="134">134</th><td><i>//   format string and arg list (see also vprintf).</i></td></tr>
+<tr><th id="135">135</th><td><i>// * `user_data` is optional. If provided, it is owned by the client and must</i></td></tr>
+<tr><th id="136">136</th><td><i>//   remain valid for the duration of the interpreter lifetime.</i></td></tr>
+<tr><th id="137">137</th><td><a class="macro" href="c_api_types.h.html#40" title="__attribute__((visibility(&quot;default&quot;)))" data-ref="_M/TFL_CAPI_EXPORT">TFL_CAPI_EXPORT</a> <b>extern</b> <em>void</em> <dfn class="decl fn" id="TfLiteInterpreterOptionsSetErrorReporter" title='TfLiteInterpreterOptionsSetErrorReporter' data-ref="TfLiteInterpreterOptionsSetErrorReporter" data-ref-filename="TfLiteInterpreterOptionsSetErrorReporter">TfLiteInterpreterOptionsSetErrorReporter</dfn>(</td></tr>
+<tr><th id="138">138</th><td>    <a class="typedef" href="#TfLiteInterpreterOptions" title='TfLiteInterpreterOptions' data-type='struct TfLiteInterpreterOptions' data-ref="TfLiteInterpreterOptions" data-ref-filename="TfLiteInterpreterOptions">TfLiteInterpreterOptions</a>* <dfn class="local col0 decl" id="10options" title='options' data-type='TfLiteInterpreterOptions *' data-ref="10options" data-ref-filename="10options">options</dfn>,</td></tr>
+<tr><th id="139">139</th><td>    <em>void</em> (*<dfn class="local col1 decl" id="11reporter" title='reporter' data-type='void (*)(void *, const char *, __va_list_tag *)' data-ref="11reporter" data-ref-filename="11reporter">reporter</dfn>)(<em>void</em>* <dfn class="local col2 decl" id="12user_data" title='user_data' data-type='void *' data-ref="12user_data" data-ref-filename="12user_data">user_data</dfn>, <em>const</em> <em>char</em>* <dfn class="local col3 decl" id="13format" title='format' data-type='const char *' data-ref="13format" data-ref-filename="13format">format</dfn>, <span class='typedef' title='va_list' data-type='__builtin_va_list' data-ref="va_list" data-ref-filename="va_list">va_list</span> <dfn class="local col4 decl" id="14args" title='args' data-type='__va_list_tag *' data-ref="14args" data-ref-filename="14args">args</dfn>),</td></tr>
+<tr><th id="140">140</th><td>    <em>void</em>* <dfn class="local col5 decl" id="15user_data" title='user_data' data-type='void *' data-ref="15user_data" data-ref-filename="15user_data">user_data</dfn>);</td></tr>
+<tr><th id="141">141</th><td></td></tr>
+<tr><th id="142">142</th><td><i>// Returns a new interpreter using the provided model and options, or null on</i></td></tr>
+<tr><th id="143">143</th><td><i>// failure.</i></td></tr>
+<tr><th id="144">144</th><td><i>//</i></td></tr>
+<tr><th id="145">145</th><td><i>// * `model` must be a valid model instance. The caller retains ownership of the</i></td></tr>
+<tr><th id="146">146</th><td><i>//   object, and can destroy it immediately after creating the interpreter; the</i></td></tr>
+<tr><th id="147">147</th><td><i>//   interpreter will maintain its own reference to the underlying model data.</i></td></tr>
+<tr><th id="148">148</th><td><i>// * `optional_options` may be null. The caller retains ownership of the object,</i></td></tr>
+<tr><th id="149">149</th><td><i>//   and can safely destroy it immediately after creating the interpreter.</i></td></tr>
+<tr><th id="150">150</th><td><i>//</i></td></tr>
+<tr><th id="151">151</th><td><i>// NOTE: The client *must* explicitly allocate tensors before attempting to</i></td></tr>
+<tr><th id="152">152</th><td><i>// access input tensor data or invoke the interpreter.</i></td></tr>
+<tr><th id="153">153</th><td><a class="macro" href="c_api_types.h.html#40" title="__attribute__((visibility(&quot;default&quot;)))" data-ref="_M/TFL_CAPI_EXPORT">TFL_CAPI_EXPORT</a> <b>extern</b> <a class="typedef" href="#TfLiteInterpreter" title='TfLiteInterpreter' data-type='struct TfLiteInterpreter' data-ref="TfLiteInterpreter" data-ref-filename="TfLiteInterpreter">TfLiteInterpreter</a>* <dfn class="decl fn" id="TfLiteInterpreterCreate" title='TfLiteInterpreterCreate' data-ref="TfLiteInterpreterCreate" data-ref-filename="TfLiteInterpreterCreate">TfLiteInterpreterCreate</dfn>(</td></tr>
+<tr><th id="154">154</th><td>    <em>const</em> <a class="typedef" href="#TfLiteModel" title='TfLiteModel' data-type='struct TfLiteModel' data-ref="TfLiteModel" data-ref-filename="TfLiteModel">TfLiteModel</a>* <dfn class="local col6 decl" id="16model" title='model' data-type='const TfLiteModel *' data-ref="16model" data-ref-filename="16model">model</dfn>, <em>const</em> <a class="typedef" href="#TfLiteInterpreterOptions" title='TfLiteInterpreterOptions' data-type='struct TfLiteInterpreterOptions' data-ref="TfLiteInterpreterOptions" data-ref-filename="TfLiteInterpreterOptions">TfLiteInterpreterOptions</a>* <dfn class="local col7 decl" id="17optional_options" title='optional_options' data-type='const TfLiteInterpreterOptions *' data-ref="17optional_options" data-ref-filename="17optional_options">optional_options</dfn>);</td></tr>
+<tr><th id="155">155</th><td></td></tr>
+<tr><th id="156">156</th><td><i>// Destroys the interpreter.</i></td></tr>
+<tr><th id="157">157</th><td><a class="macro" href="c_api_types.h.html#40" title="__attribute__((visibility(&quot;default&quot;)))" data-ref="_M/TFL_CAPI_EXPORT">TFL_CAPI_EXPORT</a> <b>extern</b> <em>void</em> <dfn class="decl fn" id="TfLiteInterpreterDelete" title='TfLiteInterpreterDelete' data-ref="TfLiteInterpreterDelete" data-ref-filename="TfLiteInterpreterDelete">TfLiteInterpreterDelete</dfn>(</td></tr>
+<tr><th id="158">158</th><td>    <a class="typedef" href="#TfLiteInterpreter" title='TfLiteInterpreter' data-type='struct TfLiteInterpreter' data-ref="TfLiteInterpreter" data-ref-filename="TfLiteInterpreter">TfLiteInterpreter</a>* <dfn class="local col8 decl" id="18interpreter" title='interpreter' data-type='TfLiteInterpreter *' data-ref="18interpreter" data-ref-filename="18interpreter">interpreter</dfn>);</td></tr>
+<tr><th id="159">159</th><td></td></tr>
+<tr><th id="160">160</th><td><i>// Returns the number of input tensors associated with the model.</i></td></tr>
+<tr><th id="161">161</th><td><a class="macro" href="c_api_types.h.html#40" title="__attribute__((visibility(&quot;default&quot;)))" data-ref="_M/TFL_CAPI_EXPORT">TFL_CAPI_EXPORT</a> <b>extern</b> <a class="typedef" href="../../../../../../../include/bits/stdint-intn.h.html#int32_t" title='int32_t' data-type='__int32_t' data-ref="int32_t" data-ref-filename="int32_t">int32_t</a> <dfn class="decl fn" id="TfLiteInterpreterGetInputTensorCount" title='TfLiteInterpreterGetInputTensorCount' data-ref="TfLiteInterpreterGetInputTensorCount" data-ref-filename="TfLiteInterpreterGetInputTensorCount">TfLiteInterpreterGetInputTensorCount</dfn>(</td></tr>
+<tr><th id="162">162</th><td>    <em>const</em> <a class="typedef" href="#TfLiteInterpreter" title='TfLiteInterpreter' data-type='struct TfLiteInterpreter' data-ref="TfLiteInterpreter" data-ref-filename="TfLiteInterpreter">TfLiteInterpreter</a>* <dfn class="local col9 decl" id="19interpreter" title='interpreter' data-type='const TfLiteInterpreter *' data-ref="19interpreter" data-ref-filename="19interpreter">interpreter</dfn>);</td></tr>
+<tr><th id="163">163</th><td></td></tr>
+<tr><th id="164">164</th><td><i>// Returns the tensor associated with the input index.</i></td></tr>
+<tr><th id="165">165</th><td><i>// REQUIRES: 0 &lt;= input_index &lt; TfLiteInterpreterGetInputTensorCount(tensor)</i></td></tr>
+<tr><th id="166">166</th><td><a class="macro" href="c_api_types.h.html#40" title="__attribute__((visibility(&quot;default&quot;)))" data-ref="_M/TFL_CAPI_EXPORT">TFL_CAPI_EXPORT</a> <b>extern</b> <a class="typedef" href="#TfLiteTensor" title='TfLiteTensor' data-type='struct TfLiteTensor' data-ref="TfLiteTensor" data-ref-filename="TfLiteTensor">TfLiteTensor</a>* <dfn class="decl fn" id="TfLiteInterpreterGetInputTensor" title='TfLiteInterpreterGetInputTensor' data-ref="TfLiteInterpreterGetInputTensor" data-ref-filename="TfLiteInterpreterGetInputTensor">TfLiteInterpreterGetInputTensor</dfn>(</td></tr>
+<tr><th id="167">167</th><td>    <em>const</em> <a class="typedef" href="#TfLiteInterpreter" title='TfLiteInterpreter' data-type='struct TfLiteInterpreter' data-ref="TfLiteInterpreter" data-ref-filename="TfLiteInterpreter">TfLiteInterpreter</a>* <dfn class="local col0 decl" id="20interpreter" title='interpreter' data-type='const TfLiteInterpreter *' data-ref="20interpreter" data-ref-filename="20interpreter">interpreter</dfn>, <a class="typedef" href="../../../../../../../include/bits/stdint-intn.h.html#int32_t" title='int32_t' data-type='__int32_t' data-ref="int32_t" data-ref-filename="int32_t">int32_t</a> <dfn class="local col1 decl" id="21input_index" title='input_index' data-type='int32_t' data-ref="21input_index" data-ref-filename="21input_index">input_index</dfn>);</td></tr>
+<tr><th id="168">168</th><td></td></tr>
+<tr><th id="169">169</th><td><i>// Resizes the specified input tensor.</i></td></tr>
+<tr><th id="170">170</th><td><i>//</i></td></tr>
+<tr><th id="171">171</th><td><i>// NOTE: After a resize, the client *must* explicitly allocate tensors before</i></td></tr>
+<tr><th id="172">172</th><td><i>// attempting to access the resized tensor data or invoke the interpreter.</i></td></tr>
+<tr><th id="173">173</th><td><i>// REQUIRES: 0 &lt;= input_index &lt; TfLiteInterpreterGetInputTensorCount(tensor)</i></td></tr>
+<tr><th id="174">174</th><td><a class="macro" href="c_api_types.h.html#40" title="__attribute__((visibility(&quot;default&quot;)))" data-ref="_M/TFL_CAPI_EXPORT">TFL_CAPI_EXPORT</a> <b>extern</b> <a class="typedef" href="c_api_types.h.html#TfLiteStatus" title='TfLiteStatus' data-type='enum TfLiteStatus' data-ref="TfLiteStatus" data-ref-filename="TfLiteStatus">TfLiteStatus</a> <dfn class="decl fn" id="TfLiteInterpreterResizeInputTensor" title='TfLiteInterpreterResizeInputTensor' data-ref="TfLiteInterpreterResizeInputTensor" data-ref-filename="TfLiteInterpreterResizeInputTensor">TfLiteInterpreterResizeInputTensor</dfn>(</td></tr>
+<tr><th id="175">175</th><td>    <a class="typedef" href="#TfLiteInterpreter" title='TfLiteInterpreter' data-type='struct TfLiteInterpreter' data-ref="TfLiteInterpreter" data-ref-filename="TfLiteInterpreter">TfLiteInterpreter</a>* <dfn class="local col2 decl" id="22interpreter" title='interpreter' data-type='TfLiteInterpreter *' data-ref="22interpreter" data-ref-filename="22interpreter">interpreter</dfn>, <a class="typedef" href="../../../../../../../include/bits/stdint-intn.h.html#int32_t" title='int32_t' data-type='__int32_t' data-ref="int32_t" data-ref-filename="int32_t">int32_t</a> <dfn class="local col3 decl" id="23input_index" title='input_index' data-type='int32_t' data-ref="23input_index" data-ref-filename="23input_index">input_index</dfn>, <em>const</em> <em>int</em>* <dfn class="local col4 decl" id="24input_dims" title='input_dims' data-type='const int *' data-ref="24input_dims" data-ref-filename="24input_dims">input_dims</dfn>,</td></tr>
+<tr><th id="176">176</th><td>    <a class="typedef" href="../../../../../../../include/bits/stdint-intn.h.html#int32_t" title='int32_t' data-type='__int32_t' data-ref="int32_t" data-ref-filename="int32_t">int32_t</a> <dfn class="local col5 decl" id="25input_dims_size" title='input_dims_size' data-type='int32_t' data-ref="25input_dims_size" data-ref-filename="25input_dims_size">input_dims_size</dfn>);</td></tr>
+<tr><th id="177">177</th><td></td></tr>
+<tr><th id="178">178</th><td><i>// Updates allocations for all tensors, resizing dependent tensors using the</i></td></tr>
+<tr><th id="179">179</th><td><i>// specified input tensor dimensionality.</i></td></tr>
+<tr><th id="180">180</th><td><i>//</i></td></tr>
+<tr><th id="181">181</th><td><i>// This is a relatively expensive operation, and need only be called after</i></td></tr>
+<tr><th id="182">182</th><td><i>// creating the graph and/or resizing any inputs.</i></td></tr>
+<tr><th id="183">183</th><td><a class="macro" href="c_api_types.h.html#40" title="__attribute__((visibility(&quot;default&quot;)))" data-ref="_M/TFL_CAPI_EXPORT">TFL_CAPI_EXPORT</a> <b>extern</b> <a class="typedef" href="c_api_types.h.html#TfLiteStatus" title='TfLiteStatus' data-type='enum TfLiteStatus' data-ref="TfLiteStatus" data-ref-filename="TfLiteStatus">TfLiteStatus</a> <dfn class="decl fn" id="TfLiteInterpreterAllocateTensors" title='TfLiteInterpreterAllocateTensors' data-ref="TfLiteInterpreterAllocateTensors" data-ref-filename="TfLiteInterpreterAllocateTensors">TfLiteInterpreterAllocateTensors</dfn>(</td></tr>
+<tr><th id="184">184</th><td>    <a class="typedef" href="#TfLiteInterpreter" title='TfLiteInterpreter' data-type='struct TfLiteInterpreter' data-ref="TfLiteInterpreter" data-ref-filename="TfLiteInterpreter">TfLiteInterpreter</a>* <dfn class="local col6 decl" id="26interpreter" title='interpreter' data-type='TfLiteInterpreter *' data-ref="26interpreter" data-ref-filename="26interpreter">interpreter</dfn>);</td></tr>
+<tr><th id="185">185</th><td></td></tr>
+<tr><th id="186">186</th><td><i>// Runs inference for the loaded graph.</i></td></tr>
+<tr><th id="187">187</th><td><i>//</i></td></tr>
+<tr><th id="188">188</th><td><i>// Before calling this function, the caller should first invoke</i></td></tr>
+<tr><th id="189">189</th><td><i>// TfLiteInterpreterAllocateTensors() and should also set the values for the</i></td></tr>
+<tr><th id="190">190</th><td><i>// input tensors.  After successfully calling this function, the values for the</i></td></tr>
+<tr><th id="191">191</th><td><i>// output tensors will be set.</i></td></tr>
+<tr><th id="192">192</th><td><i>//</i></td></tr>
+<tr><th id="193">193</th><td><i>// NOTE: It is possible that the interpreter is not in a ready state to</i></td></tr>
+<tr><th id="194">194</th><td><i>// evaluate (e.g., if AllocateTensors() hasn't been called, or if a</i></td></tr>
+<tr><th id="195">195</th><td><i>// ResizeInputTensor() has been performed without a subsequent call to</i></td></tr>
+<tr><th id="196">196</th><td><i>// AllocateTensors()).</i></td></tr>
+<tr><th id="197">197</th><td><i>//</i></td></tr>
+<tr><th id="198">198</th><td><i>//   If the (experimental!) delegate fallback option was enabled in the</i></td></tr>
+<tr><th id="199">199</th><td><i>//   interpreter options, then the interpreter will automatically fall back to</i></td></tr>
+<tr><th id="200">200</th><td><i>//   not using any delegates if execution with delegates fails. For details, see</i></td></tr>
+<tr><th id="201">201</th><td><i>//   TfLiteInterpreterOptionsSetEnableDelegateFallback in c_api_experimental.h.</i></td></tr>
+<tr><th id="202">202</th><td><i>//</i></td></tr>
+<tr><th id="203">203</th><td><i>// Returns one of the following status codes:</i></td></tr>
+<tr><th id="204">204</th><td><i>//  - kTfLiteOk: Success. Output is valid.</i></td></tr>
+<tr><th id="205">205</th><td><i>//  - kTfLiteDelegateError: Execution with delegates failed, due to a problem</i></td></tr>
+<tr><th id="206">206</th><td><i>//    with the delegate(s). If fallback was not enabled, output is invalid.</i></td></tr>
+<tr><th id="207">207</th><td><i>//    If fallback was enabled, this return value indicates that fallback</i></td></tr>
+<tr><th id="208">208</th><td><i>//    succeeded, the output is valid, and all delegates previously applied to</i></td></tr>
+<tr><th id="209">209</th><td><i>//    the interpreter have been undone.</i></td></tr>
+<tr><th id="210">210</th><td><i>//  - kTfLiteApplicationError: Same as for kTfLiteDelegateError, except that</i></td></tr>
+<tr><th id="211">211</th><td><i>//    the problem was not with the delegate itself, but rather was</i></td></tr>
+<tr><th id="212">212</th><td><i>//    due to an incompatibility between the delegate(s) and the</i></td></tr>
+<tr><th id="213">213</th><td><i>//    interpreter or model.</i></td></tr>
+<tr><th id="214">214</th><td><i>//  - kTfLiteError: Unexpected/runtime failure. Output is invalid.</i></td></tr>
+<tr><th id="215">215</th><td></td></tr>
+<tr><th id="216">216</th><td><a class="macro" href="c_api_types.h.html#40" title="__attribute__((visibility(&quot;default&quot;)))" data-ref="_M/TFL_CAPI_EXPORT">TFL_CAPI_EXPORT</a> <b>extern</b> <a class="typedef" href="c_api_types.h.html#TfLiteStatus" title='TfLiteStatus' data-type='enum TfLiteStatus' data-ref="TfLiteStatus" data-ref-filename="TfLiteStatus">TfLiteStatus</a> <dfn class="decl fn" id="TfLiteInterpreterInvoke" title='TfLiteInterpreterInvoke' data-ref="TfLiteInterpreterInvoke" data-ref-filename="TfLiteInterpreterInvoke">TfLiteInterpreterInvoke</dfn>(</td></tr>
+<tr><th id="217">217</th><td>    <a class="typedef" href="#TfLiteInterpreter" title='TfLiteInterpreter' data-type='struct TfLiteInterpreter' data-ref="TfLiteInterpreter" data-ref-filename="TfLiteInterpreter">TfLiteInterpreter</a>* <dfn class="local col7 decl" id="27interpreter" title='interpreter' data-type='TfLiteInterpreter *' data-ref="27interpreter" data-ref-filename="27interpreter">interpreter</dfn>);</td></tr>
+<tr><th id="218">218</th><td></td></tr>
+<tr><th id="219">219</th><td><i>// Returns the number of output tensors associated with the model.</i></td></tr>
+<tr><th id="220">220</th><td><a class="macro" href="c_api_types.h.html#40" title="__attribute__((visibility(&quot;default&quot;)))" data-ref="_M/TFL_CAPI_EXPORT">TFL_CAPI_EXPORT</a> <b>extern</b> <a class="typedef" href="../../../../../../../include/bits/stdint-intn.h.html#int32_t" title='int32_t' data-type='__int32_t' data-ref="int32_t" data-ref-filename="int32_t">int32_t</a> <dfn class="decl fn" id="TfLiteInterpreterGetOutputTensorCount" title='TfLiteInterpreterGetOutputTensorCount' data-ref="TfLiteInterpreterGetOutputTensorCount" data-ref-filename="TfLiteInterpreterGetOutputTensorCount">TfLiteInterpreterGetOutputTensorCount</dfn>(</td></tr>
+<tr><th id="221">221</th><td>    <em>const</em> <a class="typedef" href="#TfLiteInterpreter" title='TfLiteInterpreter' data-type='struct TfLiteInterpreter' data-ref="TfLiteInterpreter" data-ref-filename="TfLiteInterpreter">TfLiteInterpreter</a>* <dfn class="local col8 decl" id="28interpreter" title='interpreter' data-type='const TfLiteInterpreter *' data-ref="28interpreter" data-ref-filename="28interpreter">interpreter</dfn>);</td></tr>
+<tr><th id="222">222</th><td></td></tr>
+<tr><th id="223">223</th><td><i>// Returns the tensor associated with the output index.</i></td></tr>
+<tr><th id="224">224</th><td><i>// REQUIRES: 0 &lt;= output_index &lt; TfLiteInterpreterGetOutputTensorCount(tensor)</i></td></tr>
+<tr><th id="225">225</th><td><i>//</i></td></tr>
+<tr><th id="226">226</th><td><i>// NOTE: The shape and underlying data buffer for output tensors may be not</i></td></tr>
+<tr><th id="227">227</th><td><i>// be available until after the output tensor has been both sized and allocated.</i></td></tr>
+<tr><th id="228">228</th><td><i>// In general, best practice is to interact with the output tensor *after*</i></td></tr>
+<tr><th id="229">229</th><td><i>// calling TfLiteInterpreterInvoke().</i></td></tr>
+<tr><th id="230">230</th><td><a class="macro" href="c_api_types.h.html#40" title="__attribute__((visibility(&quot;default&quot;)))" data-ref="_M/TFL_CAPI_EXPORT">TFL_CAPI_EXPORT</a> <b>extern</b> <em>const</em> <a class="typedef" href="#TfLiteTensor" title='TfLiteTensor' data-type='struct TfLiteTensor' data-ref="TfLiteTensor" data-ref-filename="TfLiteTensor">TfLiteTensor</a>* <dfn class="decl fn" id="TfLiteInterpreterGetOutputTensor" title='TfLiteInterpreterGetOutputTensor' data-ref="TfLiteInterpreterGetOutputTensor" data-ref-filename="TfLiteInterpreterGetOutputTensor">TfLiteInterpreterGetOutputTensor</dfn>(</td></tr>
+<tr><th id="231">231</th><td>    <em>const</em> <a class="typedef" href="#TfLiteInterpreter" title='TfLiteInterpreter' data-type='struct TfLiteInterpreter' data-ref="TfLiteInterpreter" data-ref-filename="TfLiteInterpreter">TfLiteInterpreter</a>* <dfn class="local col9 decl" id="29interpreter" title='interpreter' data-type='const TfLiteInterpreter *' data-ref="29interpreter" data-ref-filename="29interpreter">interpreter</dfn>, <a class="typedef" href="../../../../../../../include/bits/stdint-intn.h.html#int32_t" title='int32_t' data-type='__int32_t' data-ref="int32_t" data-ref-filename="int32_t">int32_t</a> <dfn class="local col0 decl" id="30output_index" title='output_index' data-type='int32_t' data-ref="30output_index" data-ref-filename="30output_index">output_index</dfn>);</td></tr>
+<tr><th id="232">232</th><td></td></tr>
+<tr><th id="233">233</th><td><i>// --------------------------------------------------------------------------</i></td></tr>
+<tr><th id="234">234</th><td><i>// TfLiteTensor wraps data associated with a graph tensor.</i></td></tr>
+<tr><th id="235">235</th><td><i>//</i></td></tr>
+<tr><th id="236">236</th><td><i>// Note that, while the TfLiteTensor struct is not currently opaque, and its</i></td></tr>
+<tr><th id="237">237</th><td><i>// fields can be accessed directly, these methods are still convenient for</i></td></tr>
+<tr><th id="238">238</th><td><i>// language bindings. In the future the tensor struct will likely be made opaque</i></td></tr>
+<tr><th id="239">239</th><td><i>// in the public API.</i></td></tr>
+<tr><th id="240">240</th><td><i></i></td></tr>
+<tr><th id="241">241</th><td><i>// Returns the type of a tensor element.</i></td></tr>
+<tr><th id="242">242</th><td><a class="macro" href="c_api_types.h.html#40" title="__attribute__((visibility(&quot;default&quot;)))" data-ref="_M/TFL_CAPI_EXPORT">TFL_CAPI_EXPORT</a> <b>extern</b> <a class="typedef" href="c_api_types.h.html#TfLiteType" title='TfLiteType' data-type='enum TfLiteType' data-ref="TfLiteType" data-ref-filename="TfLiteType">TfLiteType</a> <dfn class="decl fn" id="TfLiteTensorType" title='TfLiteTensorType' data-ref="TfLiteTensorType" data-ref-filename="TfLiteTensorType">TfLiteTensorType</dfn>(<em>const</em> <a class="typedef" href="#TfLiteTensor" title='TfLiteTensor' data-type='struct TfLiteTensor' data-ref="TfLiteTensor" data-ref-filename="TfLiteTensor">TfLiteTensor</a>* <dfn class="local col1 decl" id="31tensor" title='tensor' data-type='const TfLiteTensor *' data-ref="31tensor" data-ref-filename="31tensor">tensor</dfn>);</td></tr>
+<tr><th id="243">243</th><td></td></tr>
+<tr><th id="244">244</th><td><i>// Returns the number of dimensions that the tensor has.</i></td></tr>
+<tr><th id="245">245</th><td><a class="macro" href="c_api_types.h.html#40" title="__attribute__((visibility(&quot;default&quot;)))" data-ref="_M/TFL_CAPI_EXPORT">TFL_CAPI_EXPORT</a> <b>extern</b> <a class="typedef" href="../../../../../../../include/bits/stdint-intn.h.html#int32_t" title='int32_t' data-type='__int32_t' data-ref="int32_t" data-ref-filename="int32_t">int32_t</a> <dfn class="decl fn" id="TfLiteTensorNumDims" title='TfLiteTensorNumDims' data-ref="TfLiteTensorNumDims" data-ref-filename="TfLiteTensorNumDims">TfLiteTensorNumDims</dfn>(<em>const</em> <a class="typedef" href="#TfLiteTensor" title='TfLiteTensor' data-type='struct TfLiteTensor' data-ref="TfLiteTensor" data-ref-filename="TfLiteTensor">TfLiteTensor</a>* <dfn class="local col2 decl" id="32tensor" title='tensor' data-type='const TfLiteTensor *' data-ref="32tensor" data-ref-filename="32tensor">tensor</dfn>);</td></tr>
+<tr><th id="246">246</th><td></td></tr>
+<tr><th id="247">247</th><td><i>// Returns the length of the tensor in the "dim_index" dimension.</i></td></tr>
+<tr><th id="248">248</th><td><i>// REQUIRES: 0 &lt;= dim_index &lt; TFLiteTensorNumDims(tensor)</i></td></tr>
+<tr><th id="249">249</th><td><a class="macro" href="c_api_types.h.html#40" title="__attribute__((visibility(&quot;default&quot;)))" data-ref="_M/TFL_CAPI_EXPORT">TFL_CAPI_EXPORT</a> <b>extern</b> <a class="typedef" href="../../../../../../../include/bits/stdint-intn.h.html#int32_t" title='int32_t' data-type='__int32_t' data-ref="int32_t" data-ref-filename="int32_t">int32_t</a> <dfn class="decl fn" id="TfLiteTensorDim" title='TfLiteTensorDim' data-ref="TfLiteTensorDim" data-ref-filename="TfLiteTensorDim">TfLiteTensorDim</dfn>(<em>const</em> <a class="typedef" href="#TfLiteTensor" title='TfLiteTensor' data-type='struct TfLiteTensor' data-ref="TfLiteTensor" data-ref-filename="TfLiteTensor">TfLiteTensor</a>* <dfn class="local col3 decl" id="33tensor" title='tensor' data-type='const TfLiteTensor *' data-ref="33tensor" data-ref-filename="33tensor">tensor</dfn>,</td></tr>
+<tr><th id="250">250</th><td>                                               <a class="typedef" href="../../../../../../../include/bits/stdint-intn.h.html#int32_t" title='int32_t' data-type='__int32_t' data-ref="int32_t" data-ref-filename="int32_t">int32_t</a> <dfn class="local col4 decl" id="34dim_index" title='dim_index' data-type='int32_t' data-ref="34dim_index" data-ref-filename="34dim_index">dim_index</dfn>);</td></tr>
+<tr><th id="251">251</th><td></td></tr>
+<tr><th id="252">252</th><td><i>// Returns the size of the underlying data in bytes.</i></td></tr>
+<tr><th id="253">253</th><td><a class="macro" href="c_api_types.h.html#40" title="__attribute__((visibility(&quot;default&quot;)))" data-ref="_M/TFL_CAPI_EXPORT">TFL_CAPI_EXPORT</a> <b>extern</b> <span class='typedef' title='size_t' data-type='unsigned long' data-ref="size_t" data-ref-filename="size_t">size_t</span> <dfn class="decl fn" id="TfLiteTensorByteSize" title='TfLiteTensorByteSize' data-ref="TfLiteTensorByteSize" data-ref-filename="TfLiteTensorByteSize">TfLiteTensorByteSize</dfn>(<em>const</em> <a class="typedef" href="#TfLiteTensor" title='TfLiteTensor' data-type='struct TfLiteTensor' data-ref="TfLiteTensor" data-ref-filename="TfLiteTensor">TfLiteTensor</a>* <dfn class="local col5 decl" id="35tensor" title='tensor' data-type='const TfLiteTensor *' data-ref="35tensor" data-ref-filename="35tensor">tensor</dfn>);</td></tr>
+<tr><th id="254">254</th><td></td></tr>
+<tr><th id="255">255</th><td><i>// Returns a pointer to the underlying data buffer.</i></td></tr>
+<tr><th id="256">256</th><td><i>//</i></td></tr>
+<tr><th id="257">257</th><td><i>// NOTE: The result may be null if tensors have not yet been allocated, e.g.,</i></td></tr>
+<tr><th id="258">258</th><td><i>// if the Tensor has just been created or resized and `TfLiteAllocateTensors()`</i></td></tr>
+<tr><th id="259">259</th><td><i>// has yet to be called, or if the output tensor is dynamically sized and the</i></td></tr>
+<tr><th id="260">260</th><td><i>// interpreter hasn't been invoked.</i></td></tr>
+<tr><th id="261">261</th><td><a class="macro" href="c_api_types.h.html#40" title="__attribute__((visibility(&quot;default&quot;)))" data-ref="_M/TFL_CAPI_EXPORT">TFL_CAPI_EXPORT</a> <b>extern</b> <em>void</em>* <dfn class="decl fn" id="TfLiteTensorData" title='TfLiteTensorData' data-ref="TfLiteTensorData" data-ref-filename="TfLiteTensorData">TfLiteTensorData</dfn>(<em>const</em> <a class="typedef" href="#TfLiteTensor" title='TfLiteTensor' data-type='struct TfLiteTensor' data-ref="TfLiteTensor" data-ref-filename="TfLiteTensor">TfLiteTensor</a>* <dfn class="local col6 decl" id="36tensor" title='tensor' data-type='const TfLiteTensor *' data-ref="36tensor" data-ref-filename="36tensor">tensor</dfn>);</td></tr>
+<tr><th id="262">262</th><td></td></tr>
+<tr><th id="263">263</th><td><i>// Returns the (null-terminated) name of the tensor.</i></td></tr>
+<tr><th id="264">264</th><td><a class="macro" href="c_api_types.h.html#40" title="__attribute__((visibility(&quot;default&quot;)))" data-ref="_M/TFL_CAPI_EXPORT">TFL_CAPI_EXPORT</a> <b>extern</b> <em>const</em> <em>char</em>* <dfn class="decl fn" id="TfLiteTensorName" title='TfLiteTensorName' data-ref="TfLiteTensorName" data-ref-filename="TfLiteTensorName">TfLiteTensorName</dfn>(<em>const</em> <a class="typedef" href="#TfLiteTensor" title='TfLiteTensor' data-type='struct TfLiteTensor' data-ref="TfLiteTensor" data-ref-filename="TfLiteTensor">TfLiteTensor</a>* <dfn class="local col7 decl" id="37tensor" title='tensor' data-type='const TfLiteTensor *' data-ref="37tensor" data-ref-filename="37tensor">tensor</dfn>);</td></tr>
+<tr><th id="265">265</th><td></td></tr>
+<tr><th id="266">266</th><td><i>// Returns the parameters for asymmetric quantization. The quantization</i></td></tr>
+<tr><th id="267">267</th><td><i>// parameters are only valid when the tensor type is `kTfLiteUInt8` and the</i></td></tr>
+<tr><th id="268">268</th><td><i>// `scale != 0`. Quantized values can be converted back to float using:</i></td></tr>
+<tr><th id="269">269</th><td><i>//    real_value = scale * (quantized_value - zero_point);</i></td></tr>
+<tr><th id="270">270</th><td><a class="macro" href="c_api_types.h.html#40" title="__attribute__((visibility(&quot;default&quot;)))" data-ref="_M/TFL_CAPI_EXPORT">TFL_CAPI_EXPORT</a> <b>extern</b> <a class="typedef" href="c_api_types.h.html#TfLiteQuantizationParams" title='TfLiteQuantizationParams' data-type='struct TfLiteQuantizationParams' data-ref="TfLiteQuantizationParams" data-ref-filename="TfLiteQuantizationParams">TfLiteQuantizationParams</a> <dfn class="decl fn" id="TfLiteTensorQuantizationParams" title='TfLiteTensorQuantizationParams' data-ref="TfLiteTensorQuantizationParams" data-ref-filename="TfLiteTensorQuantizationParams">TfLiteTensorQuantizationParams</dfn>(</td></tr>
+<tr><th id="271">271</th><td>    <em>const</em> <a class="typedef" href="#TfLiteTensor" title='TfLiteTensor' data-type='struct TfLiteTensor' data-ref="TfLiteTensor" data-ref-filename="TfLiteTensor">TfLiteTensor</a>* <dfn class="local col8 decl" id="38tensor" title='tensor' data-type='const TfLiteTensor *' data-ref="38tensor" data-ref-filename="38tensor">tensor</dfn>);</td></tr>
+<tr><th id="272">272</th><td></td></tr>
+<tr><th id="273">273</th><td><i>// Copies from the provided input buffer into the tensor's buffer.</i></td></tr>
+<tr><th id="274">274</th><td><i>// REQUIRES: input_data_size == TfLiteTensorByteSize(tensor)</i></td></tr>
+<tr><th id="275">275</th><td><a class="macro" href="c_api_types.h.html#40" title="__attribute__((visibility(&quot;default&quot;)))" data-ref="_M/TFL_CAPI_EXPORT">TFL_CAPI_EXPORT</a> <b>extern</b> <a class="typedef" href="c_api_types.h.html#TfLiteStatus" title='TfLiteStatus' data-type='enum TfLiteStatus' data-ref="TfLiteStatus" data-ref-filename="TfLiteStatus">TfLiteStatus</a> <dfn class="decl fn" id="TfLiteTensorCopyFromBuffer" title='TfLiteTensorCopyFromBuffer' data-ref="TfLiteTensorCopyFromBuffer" data-ref-filename="TfLiteTensorCopyFromBuffer">TfLiteTensorCopyFromBuffer</dfn>(</td></tr>
+<tr><th id="276">276</th><td>    <a class="typedef" href="#TfLiteTensor" title='TfLiteTensor' data-type='struct TfLiteTensor' data-ref="TfLiteTensor" data-ref-filename="TfLiteTensor">TfLiteTensor</a>* <dfn class="local col9 decl" id="39tensor" title='tensor' data-type='TfLiteTensor *' data-ref="39tensor" data-ref-filename="39tensor">tensor</dfn>, <em>const</em> <em>void</em>* <dfn class="local col0 decl" id="40input_data" title='input_data' data-type='const void *' data-ref="40input_data" data-ref-filename="40input_data">input_data</dfn>, <span class='typedef' title='size_t' data-type='unsigned long' data-ref="size_t" data-ref-filename="size_t">size_t</span> <dfn class="local col1 decl" id="41input_data_size" title='input_data_size' data-type='size_t' data-ref="41input_data_size" data-ref-filename="41input_data_size">input_data_size</dfn>);</td></tr>
+<tr><th id="277">277</th><td></td></tr>
+<tr><th id="278">278</th><td><i>// Copies to the provided output buffer from the tensor's buffer.</i></td></tr>
+<tr><th id="279">279</th><td><i>// REQUIRES: output_data_size == TfLiteTensorByteSize(tensor)</i></td></tr>
+<tr><th id="280">280</th><td><a class="macro" href="c_api_types.h.html#40" title="__attribute__((visibility(&quot;default&quot;)))" data-ref="_M/TFL_CAPI_EXPORT">TFL_CAPI_EXPORT</a> <b>extern</b> <a class="typedef" href="c_api_types.h.html#TfLiteStatus" title='TfLiteStatus' data-type='enum TfLiteStatus' data-ref="TfLiteStatus" data-ref-filename="TfLiteStatus">TfLiteStatus</a> <dfn class="decl fn" id="TfLiteTensorCopyToBuffer" title='TfLiteTensorCopyToBuffer' data-ref="TfLiteTensorCopyToBuffer" data-ref-filename="TfLiteTensorCopyToBuffer">TfLiteTensorCopyToBuffer</dfn>(</td></tr>
+<tr><th id="281">281</th><td>    <em>const</em> <a class="typedef" href="#TfLiteTensor" title='TfLiteTensor' data-type='struct TfLiteTensor' data-ref="TfLiteTensor" data-ref-filename="TfLiteTensor">TfLiteTensor</a>* <dfn class="local col2 decl" id="42output_tensor" title='output_tensor' data-type='const TfLiteTensor *' data-ref="42output_tensor" data-ref-filename="42output_tensor">output_tensor</dfn>, <em>void</em>* <dfn class="local col3 decl" id="43output_data" title='output_data' data-type='void *' data-ref="43output_data" data-ref-filename="43output_data">output_data</dfn>,</td></tr>
+<tr><th id="282">282</th><td>    <span class='typedef' title='size_t' data-type='unsigned long' data-ref="size_t" data-ref-filename="size_t">size_t</span> <dfn class="local col4 decl" id="44output_data_size" title='output_data_size' data-type='size_t' data-ref="44output_data_size" data-ref-filename="44output_data_size">output_data_size</dfn>);</td></tr>
+<tr><th id="283">283</th><td></td></tr>
+<tr><th id="284">284</th><td><u>#<span data-ppcond="284">ifdef</span> <span class="macro" data-ref="_M/__cplusplus">__cplusplus</span></u></td></tr>
+<tr><th id="285">285</th><td>}  <i>// extern "C"</i></td></tr>
+<tr><th id="286">286</th><td><u>#<span data-ppcond="284">endif</span>  // __cplusplus</u></td></tr>
+<tr><th id="287">287</th><td></td></tr>
+<tr><th id="288">288</th><td><u>#<span data-ppcond="15">endif</span>  // TENSORFLOW_LITE_C_C_API_H_</u></td></tr>
+<tr><th id="289">289</th><td></td></tr>
+</table><hr/><p id='footer'>
+Generated while processing <a href='../../../../../../apps/hannk/delegate/hannk_delegate.cpp.html'>halide/apps/hannk/delegate/hannk_delegate.cpp</a><br/>Generated on <em>2021-Aug-05</em> from project halide revision <em>v12.0.1</em>

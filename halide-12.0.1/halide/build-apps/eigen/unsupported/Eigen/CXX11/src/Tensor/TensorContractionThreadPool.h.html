@@ -1,0 +1,1695 @@
+<!doctype html>
+<html>
+<head>
+<meta name="viewport" content="width=device-width, initial-scale=1.0"><title>TensorContractionThreadPool.h source code [halide/build-apps/eigen/unsupported/Eigen/CXX11/src/Tensor/TensorContractionThreadPool.h] - Woboq Code Browser</title>
+<link rel="stylesheet" href="../../../../../../../.././data/qtcreator.css" title="QtCreator"/>
+<link rel="alternate stylesheet" href="../../../../../../../.././data/kdevelop.css" title="KDevelop"/>
+<script type="text/javascript" src="../../../../../../../.././data/jquery/jquery.min.js"></script>
+<script type="text/javascript" src="../../../../../../../.././data/jquery/jquery-ui.min.js"></script>
+<script>var file = 'halide/build-apps/eigen/unsupported/Eigen/CXX11/src/Tensor/TensorContractionThreadPool.h'; var root_path = '../../../../../../../..'; var data_path = '../../../../../../../.././data'; var ecma_script_api_version = 2;</script>
+<script src='../../../../../../../.././data/codebrowser.js'></script>
+</head>
+<body><div id='header'><h1 id='breadcrumb'><span>Browse the source code of </span><a href='../../../../../../..'>halide</a>/<a href='../../../../../..'>build-apps</a>/<a href='../../../../..'>eigen</a>/<a href='../../../..'>unsupported</a>/<a href='../../..'>Eigen</a>/<a href='../..'>CXX11</a>/<a href='..'>src</a>/<a href='./'>Tensor</a>/<a href='TensorContractionThreadPool.h.html'>TensorContractionThreadPool.h</a></h1></div>
+<hr/><div id='content'><table class="code">
+<tr><th id="1">1</th><td><i>// This file is part of Eigen, a lightweight C++ template library</i></td></tr>
+<tr><th id="2">2</th><td><i>// for linear algebra.</i></td></tr>
+<tr><th id="3">3</th><td><i>//</i></td></tr>
+<tr><th id="4">4</th><td><i>// Copyright (C) 2014 Benoit Steiner &lt;benoit.steiner.goog@gmail.com&gt;</i></td></tr>
+<tr><th id="5">5</th><td><i>//</i></td></tr>
+<tr><th id="6">6</th><td><i>// This Source Code Form is subject to the terms of the Mozilla</i></td></tr>
+<tr><th id="7">7</th><td><i>// Public License v. 2.0. If a copy of the MPL was not distributed</i></td></tr>
+<tr><th id="8">8</th><td><i>// with this file, You can obtain one at <a href="http://mozilla.org/MPL/2.0/">http://mozilla.org/MPL/2.0/</a>.</i></td></tr>
+<tr><th id="9">9</th><td></td></tr>
+<tr><th id="10">10</th><td><u>#<span data-ppcond="10">ifndef</span> <span class="macro" data-ref="_M/EIGEN_CXX11_TENSOR_TENSOR_CONTRACTION_THREAD_POOL_H">EIGEN_CXX11_TENSOR_TENSOR_CONTRACTION_THREAD_POOL_H</span></u></td></tr>
+<tr><th id="11">11</th><td><u>#define <dfn class="macro" id="_M/EIGEN_CXX11_TENSOR_TENSOR_CONTRACTION_THREAD_POOL_H" data-ref="_M/EIGEN_CXX11_TENSOR_TENSOR_CONTRACTION_THREAD_POOL_H">EIGEN_CXX11_TENSOR_TENSOR_CONTRACTION_THREAD_POOL_H</dfn></u></td></tr>
+<tr><th id="12">12</th><td></td></tr>
+<tr><th id="13">13</th><td><i>// evaluator for thread pool device</i></td></tr>
+<tr><th id="14">14</th><td><u>#<span data-ppcond="14">ifdef</span> <span class="macro" data-ref="_M/EIGEN_USE_THREADS">EIGEN_USE_THREADS</span></u></td></tr>
+<tr><th id="15">15</th><td></td></tr>
+<tr><th id="16">16</th><td><b>namespace</b> Eigen {</td></tr>
+<tr><th id="17">17</th><td></td></tr>
+<tr><th id="18">18</th><td><b>template</b>&lt;<b>typename</b> Indices, <b>typename</b> LeftArgType, <b>typename</b> RightArgType, <b>typename</b> OutputKernelType&gt;</td></tr>
+<tr><th id="19">19</th><td><b>struct</b> TensorEvaluator&lt;<em>const</em> TensorContractionOp&lt;Indices, LeftArgType, RightArgType, OutputKernelType&gt;, ThreadPoolDevice&gt; :</td></tr>
+<tr><th id="20">20</th><td>    <b>public</b> TensorContractionEvaluatorBase&lt;TensorEvaluator&lt;<em>const</em> TensorContractionOp&lt;Indices, LeftArgType, RightArgType, OutputKernelType&gt;, ThreadPoolDevice&gt; &gt; {</td></tr>
+<tr><th id="21">21</th><td></td></tr>
+<tr><th id="22">22</th><td>  <b>typedef</b> ThreadPoolDevice Device;</td></tr>
+<tr><th id="23">23</th><td></td></tr>
+<tr><th id="24">24</th><td>  <b>typedef</b> TensorEvaluator&lt;<em>const</em> TensorContractionOp&lt;Indices, LeftArgType, RightArgType, OutputKernelType&gt;, Device&gt; Self;</td></tr>
+<tr><th id="25">25</th><td>  <b>typedef</b> TensorContractionEvaluatorBase&lt;Self&gt; Base;</td></tr>
+<tr><th id="26">26</th><td></td></tr>
+<tr><th id="27">27</th><td>  <b>typedef</b> TensorContractionOp&lt;Indices, LeftArgType, RightArgType, OutputKernelType&gt; XprType;</td></tr>
+<tr><th id="28">28</th><td>  <b>typedef</b> <b>typename</b> internal::remove_const&lt;<b>typename</b> XprType::Scalar&gt;::type Scalar;</td></tr>
+<tr><th id="29">29</th><td>  <b>typedef</b> <b>typename</b> XprType::Index Index;</td></tr>
+<tr><th id="30">30</th><td>  <b>typedef</b> <b>typename</b> XprType::CoeffReturnType CoeffReturnType;</td></tr>
+<tr><th id="31">31</th><td>  <b>typedef</b> <b>typename</b> PacketType&lt;CoeffReturnType, Device&gt;::type PacketReturnType;</td></tr>
+<tr><th id="32">32</th><td></td></tr>
+<tr><th id="33">33</th><td>  <b>enum</b> {</td></tr>
+<tr><th id="34">34</th><td>    Layout = TensorEvaluator&lt;LeftArgType, Device&gt;::Layout,</td></tr>
+<tr><th id="35">35</th><td>  };</td></tr>
+<tr><th id="36">36</th><td></td></tr>
+<tr><th id="37">37</th><td>  <i>// Most of the code is assuming that both input tensors are ColMajor. If the</i></td></tr>
+<tr><th id="38">38</th><td><i>  // inputs are RowMajor, we will "cheat" by swapping the LHS and RHS:</i></td></tr>
+<tr><th id="39">39</th><td><i>  // If we want to compute A * B = C, where A is LHS and B is RHS, the code</i></td></tr>
+<tr><th id="40">40</th><td><i>  // will pretend B is LHS and A is RHS.</i></td></tr>
+<tr><th id="41">41</th><td>  <b>typedef</b> <b>typename</b> internal::conditional&lt;</td></tr>
+<tr><th id="42">42</th><td>    <b>static_cast</b>&lt;<em>int</em>&gt;(Layout) == <b>static_cast</b>&lt;<em>int</em>&gt;(ColMajor), LeftArgType, RightArgType&gt;::type EvalLeftArgType;</td></tr>
+<tr><th id="43">43</th><td>  <b>typedef</b> <b>typename</b> internal::conditional&lt;</td></tr>
+<tr><th id="44">44</th><td>    <b>static_cast</b>&lt;<em>int</em>&gt;(Layout) == <b>static_cast</b>&lt;<em>int</em>&gt;(ColMajor), RightArgType, LeftArgType&gt;::type EvalRightArgType;</td></tr>
+<tr><th id="45">45</th><td></td></tr>
+<tr><th id="46">46</th><td>  <em>static</em> <em>const</em> <em>int</em> LDims =</td></tr>
+<tr><th id="47">47</th><td>      internal::array_size&lt;<b>typename</b> TensorEvaluator&lt;EvalLeftArgType, Device&gt;::Dimensions&gt;::value;</td></tr>
+<tr><th id="48">48</th><td>  <em>static</em> <em>const</em> <em>int</em> RDims =</td></tr>
+<tr><th id="49">49</th><td>      internal::array_size&lt;<b>typename</b> TensorEvaluator&lt;EvalRightArgType, Device&gt;::Dimensions&gt;::value;</td></tr>
+<tr><th id="50">50</th><td>  <em>static</em> <em>const</em> <em>int</em> ContractDims = internal::array_size&lt;Indices&gt;::value;</td></tr>
+<tr><th id="51">51</th><td></td></tr>
+<tr><th id="52">52</th><td>  <b>typedef</b> array&lt;Index, LDims&gt; left_dim_mapper_t;</td></tr>
+<tr><th id="53">53</th><td>  <b>typedef</b> array&lt;Index, RDims&gt; right_dim_mapper_t;</td></tr>
+<tr><th id="54">54</th><td></td></tr>
+<tr><th id="55">55</th><td>  <b>typedef</b> array&lt;Index, ContractDims&gt; contract_t;</td></tr>
+<tr><th id="56">56</th><td>  <b>typedef</b> array&lt;Index, LDims - ContractDims&gt; left_nocontract_t;</td></tr>
+<tr><th id="57">57</th><td>  <b>typedef</b> array&lt;Index, RDims - ContractDims&gt; right_nocontract_t;</td></tr>
+<tr><th id="58">58</th><td></td></tr>
+<tr><th id="59">59</th><td>  <em>static</em> <em>const</em> <em>int</em> NumDims = LDims + RDims - <var>2</var> * ContractDims;</td></tr>
+<tr><th id="60">60</th><td></td></tr>
+<tr><th id="61">61</th><td>  <b>typedef</b> DSizes&lt;Index, NumDims&gt; Dimensions;</td></tr>
+<tr><th id="62">62</th><td></td></tr>
+<tr><th id="63">63</th><td>  <i>// typedefs needed in evalTo</i></td></tr>
+<tr><th id="64">64</th><td>  <b>typedef</b> <b>typename</b> internal::remove_const&lt;<b>typename</b> EvalLeftArgType::Scalar&gt;::type LhsScalar;</td></tr>
+<tr><th id="65">65</th><td>  <b>typedef</b> <b>typename</b> internal::remove_const&lt;<b>typename</b> EvalRightArgType::Scalar&gt;::type RhsScalar;</td></tr>
+<tr><th id="66">66</th><td>  <b>typedef</b> <b>typename</b> internal::gebp_traits&lt;LhsScalar, RhsScalar&gt; Traits;</td></tr>
+<tr><th id="67">67</th><td></td></tr>
+<tr><th id="68">68</th><td>  <b>typedef</b> TensorEvaluator&lt;EvalLeftArgType, Device&gt; LeftEvaluator;</td></tr>
+<tr><th id="69">69</th><td>  <b>typedef</b> TensorEvaluator&lt;EvalRightArgType, Device&gt; RightEvaluator;</td></tr>
+<tr><th id="70">70</th><td></td></tr>
+<tr><th id="71">71</th><td>  TensorEvaluator(<em>const</em> XprType&amp; op, <em>const</em> Device&amp; device) :</td></tr>
+<tr><th id="72">72</th><td>      Base(op, device) {}</td></tr>
+<tr><th id="73">73</th><td></td></tr>
+<tr><th id="74">74</th><td>  <b>template</b> &lt;<em>int</em> Alignment&gt;</td></tr>
+<tr><th id="75">75</th><td>  <em>void</em> evalProduct(Scalar* buffer) <em>const</em> {</td></tr>
+<tr><th id="76">76</th><td>    evalProductImpl&lt;NoCallback, Alignment&gt;(buffer, NoCallback());</td></tr>
+<tr><th id="77">77</th><td>  }</td></tr>
+<tr><th id="78">78</th><td></td></tr>
+<tr><th id="79">79</th><td>  <b>template</b> &lt;<b>typename</b> EvalToCallback, <em>int</em> Alignment&gt;</td></tr>
+<tr><th id="80">80</th><td>  <em>void</em> evalProductAsync(Scalar* buffer, EvalToCallback done) <em>const</em> {</td></tr>
+<tr><th id="81">81</th><td>    evalProductImpl&lt;EvalToCallback, Alignment&gt;(buffer, std::move(done));</td></tr>
+<tr><th id="82">82</th><td>  }</td></tr>
+<tr><th id="83">83</th><td></td></tr>
+<tr><th id="84">84</th><td>  <b>template</b> &lt;<b>typename</b> DoneCallback, <em>int</em> Alignment&gt;</td></tr>
+<tr><th id="85">85</th><td>  <em>void</em> evalProductImpl(Scalar* buffer, DoneCallback done) <em>const</em> {</td></tr>
+<tr><th id="86">86</th><td>    <i>// This function computes a lot of heuristics in multiple steps, and it</i></td></tr>
+<tr><th id="87">87</th><td><i>    // also has multiple exit points. To keep it sane, readable and all in one</i></td></tr>
+<tr><th id="88">88</th><td><i>    // place, sync/async execution decision is made at runtime at the very end.</i></td></tr>
+<tr><th id="89">89</th><td><i>    //</i></td></tr>
+<tr><th id="90">90</th><td><i>    // (1) In sync mode we allocate Context on the stack, submit computations</i></td></tr>
+<tr><th id="91">91</th><td><i>    //     to the device thread pool, and block on a barrier until it is</i></td></tr>
+<tr><th id="92">92</th><td><i>    //     completed.</i></td></tr>
+<tr><th id="93">93</th><td><i>    //</i></td></tr>
+<tr><th id="94">94</th><td><i>    // (2) In async mode we allocate Context on the heap, and after all tasks</i></td></tr>
+<tr><th id="95">95</th><td><i>    //     are finished, we call provided the done callback, and delete a</i></td></tr>
+<tr><th id="96">96</th><td><i>    //     context from the heap.</i></td></tr>
+<tr><th id="97">97</th><td><i>    //</i></td></tr>
+<tr><th id="98">98</th><td><i>    // (*) EvalParallelContext &amp; EvalShardedByInnerDimContext owns all the state</i></td></tr>
+<tr><th id="99">99</th><td><i>    // and temporary buffers, requried for executing the tensor contraction.</i></td></tr>
+<tr><th id="100">100</th><td><i>    // They are responsible for cleaning it up after contraction is done.</i></td></tr>
+<tr><th id="101">101</th><td>    <em>static</em> <em>const</em> <em>bool</em> IsEvalInSyncMode =</td></tr>
+<tr><th id="102">102</th><td>        std::is_same&lt;DoneCallback, NoCallback&gt;::value;</td></tr>
+<tr><th id="103">103</th><td></td></tr>
+<tr><th id="104">104</th><td>    <em>const</em> Index m = <b>this</b>-&gt;m_i_size;</td></tr>
+<tr><th id="105">105</th><td>    <em>const</em> Index n = <b>this</b>-&gt;m_j_size;</td></tr>
+<tr><th id="106">106</th><td>    <em>const</em> Index k = <b>this</b>-&gt;m_k_size;</td></tr>
+<tr><th id="107">107</th><td>    <b>if</b> (m == <var>0</var> || n == <var>0</var> || k == <var>0</var>) <b>return</b>;</td></tr>
+<tr><th id="108">108</th><td></td></tr>
+<tr><th id="109">109</th><td>    <i>// Compute a set of algorithm parameters:</i></td></tr>
+<tr><th id="110">110</th><td><i>    // - kernel block sizes (bm, bn, bk)</i></td></tr>
+<tr><th id="111">111</th><td><i>    // - task grain sizes (number of kernels executed per task: gm, gn)</i></td></tr>
+<tr><th id="112">112</th><td><i>    // - number of threads</i></td></tr>
+<tr><th id="113">113</th><td><i>    // - sharding by row/column</i></td></tr>
+<tr><th id="114">114</th><td><i>    // - parallel packing or first lhs then rhs</i></td></tr>
+<tr><th id="115">115</th><td><i>    // and some derived parameters:</i></td></tr>
+<tr><th id="116">116</th><td><i>    // - number of tasks (nm, nn, nk)</i></td></tr>
+<tr><th id="117">117</th><td><i>    // - number of kernels (nm0, nn0)</i></td></tr>
+<tr><th id="118">118</th><td><i>    // Unfortunately, all these parameters are tightly interdependent.</i></td></tr>
+<tr><th id="119">119</th><td><i>    // So in some cases we first compute approximate values, then compute other</i></td></tr>
+<tr><th id="120">120</th><td><i>    // values based on these approximations and then refine the approximations.</i></td></tr>
+<tr><th id="121">121</th><td><i></i></td></tr>
+<tr><th id="122">122</th><td><i>    // There are lots of heuristics here. There is some reasoning behind them,</i></td></tr>
+<tr><th id="123">123</th><td><i>    // but ultimately they are just tuned on contraction benchmarks for</i></td></tr>
+<tr><th id="124">124</th><td><i>    // different input configurations, thread counts and instruction sets.</i></td></tr>
+<tr><th id="125">125</th><td><i>    // So feel free to question any of them.</i></td></tr>
+<tr><th id="126">126</th><td><i></i></td></tr>
+<tr><th id="127">127</th><td><i>    // Compute whether we want to shard by row or by column.</i></td></tr>
+<tr><th id="128">128</th><td><i>    // This is a first approximation, it will be refined later. Since we don't</i></td></tr>
+<tr><th id="129">129</th><td><i>    // know number of threads yet we use 2, because what's we are most</i></td></tr>
+<tr><th id="130">130</th><td><i>    // interested in at this point is whether it makes sense to use</i></td></tr>
+<tr><th id="131">131</th><td><i>    // parallelization at all or not.</i></td></tr>
+<tr><th id="132">132</th><td>    <em>bool</em> shard_by_col = shardByCol(m, n, <var>2</var>);</td></tr>
+<tr><th id="133">133</th><td></td></tr>
+<tr><th id="134">134</th><td>    <i>// First approximation of kernel blocking sizes.</i></td></tr>
+<tr><th id="135">135</th><td><i>    // Again, we don't know number of threads yet, so we use 2.</i></td></tr>
+<tr><th id="136">136</th><td>    Index bm, bn, bk;</td></tr>
+<tr><th id="137">137</th><td>    <b>if</b> (shard_by_col) {</td></tr>
+<tr><th id="138">138</th><td>      internal::TensorContractionBlocking&lt;Scalar, LhsScalar, RhsScalar, Index,</td></tr>
+<tr><th id="139">139</th><td>                                          internal::ShardByCol&gt;</td></tr>
+<tr><th id="140">140</th><td>          blocking(k, m, n, <var>2</var>);</td></tr>
+<tr><th id="141">141</th><td>      bm = blocking.mc();</td></tr>
+<tr><th id="142">142</th><td>      bn = blocking.nc();</td></tr>
+<tr><th id="143">143</th><td>      bk = blocking.kc();</td></tr>
+<tr><th id="144">144</th><td>    } <b>else</b> {</td></tr>
+<tr><th id="145">145</th><td>      internal::TensorContractionBlocking&lt;Scalar, LhsScalar, RhsScalar, Index,</td></tr>
+<tr><th id="146">146</th><td>                                          internal::ShardByRow&gt;</td></tr>
+<tr><th id="147">147</th><td>          blocking(k, m, n, <var>2</var>);</td></tr>
+<tr><th id="148">148</th><td>      bm = blocking.mc();</td></tr>
+<tr><th id="149">149</th><td>      bn = blocking.nc();</td></tr>
+<tr><th id="150">150</th><td>      bk = blocking.kc();</td></tr>
+<tr><th id="151">151</th><td>    }</td></tr>
+<tr><th id="152">152</th><td></td></tr>
+<tr><th id="153">153</th><td>    <i>// Compute optimal number of threads.</i></td></tr>
+<tr><th id="154">154</th><td><i>    // Note: we use bk instead of k here because we are interested in amount of</i></td></tr>
+<tr><th id="155">155</th><td><i>    // _parallelizable_ computations, and computations are not parallelizable</i></td></tr>
+<tr><th id="156">156</th><td><i>    // across k dimension.</i></td></tr>
+<tr><th id="157">157</th><td>    <em>const</em> TensorOpCost cost =</td></tr>
+<tr><th id="158">158</th><td>        contractionCost(m, n, bm, bn, bk, shard_by_col, <b>false</b>);</td></tr>
+<tr><th id="159">159</th><td>    <em>int</em> num_threads = TensorCostModel&lt;ThreadPoolDevice&gt;::numThreads(</td></tr>
+<tr><th id="160">160</th><td>        <b>static_cast</b>&lt;<em>double</em>&gt;(n) * m, cost, <b>this</b>-&gt;m_device.numThreads());</td></tr>
+<tr><th id="161">161</th><td>    <em>int</em> num_threads_by_k = numThreadsInnerDim(m, n, k);</td></tr>
+<tr><th id="162">162</th><td>    <b>if</b> (shardByInnerDim(m, n, k, num_threads, num_threads_by_k)) {</td></tr>
+<tr><th id="163">163</th><td>      <i>// We are in the scenario where it is more effective to shard by the</i></td></tr>
+<tr><th id="164">164</th><td><i>      // inner dimension.</i></td></tr>
+<tr><th id="165">165</th><td>      <b>if</b> (IsEvalInSyncMode) {</td></tr>
+<tr><th id="166">166</th><td>        EvalShardedByInnerDimContext&lt;DoneCallback&gt; ctx(</td></tr>
+<tr><th id="167">167</th><td>            <b>this</b>, num_threads_by_k, buffer, m, n, k, std::move(done));</td></tr>
+<tr><th id="168">168</th><td>        ctx.<b>template</b> run&lt;Alignment&gt;();</td></tr>
+<tr><th id="169">169</th><td>      } <b>else</b> {</td></tr>
+<tr><th id="170">170</th><td>        <em>auto</em>* ctx = <b>new</b> EvalShardedByInnerDimContext&lt;DoneCallback&gt;(</td></tr>
+<tr><th id="171">171</th><td>            <b>this</b>, num_threads_by_k, buffer, m, n, k, std::move(done));</td></tr>
+<tr><th id="172">172</th><td>        ctx-&gt;<b>template</b> runAsync&lt;Alignment&gt;();</td></tr>
+<tr><th id="173">173</th><td>      }</td></tr>
+<tr><th id="174">174</th><td></td></tr>
+<tr><th id="175">175</th><td>      <b>return</b>;</td></tr>
+<tr><th id="176">176</th><td>    }</td></tr>
+<tr><th id="177">177</th><td></td></tr>
+<tr><th id="178">178</th><td>    <i>// TODO(dvyukov): this is a stop-gap to prevent regressions while the cost</i></td></tr>
+<tr><th id="179">179</th><td><i>    // model is not tuned. Remove this when the cost model is tuned.</i></td></tr>
+<tr><th id="180">180</th><td>    <b>if</b> (n == <var>1</var>) num_threads = <var>1</var>;</td></tr>
+<tr><th id="181">181</th><td></td></tr>
+<tr><th id="182">182</th><td>    <b>if</b> (num_threads == <var>1</var>) {</td></tr>
+<tr><th id="183">183</th><td>      TENSOR_CONTRACTION_DISPATCH(<b>this</b>-&gt;<b>template</b> evalProductSequential,</td></tr>
+<tr><th id="184">184</th><td>                                  Unaligned, (buffer));</td></tr>
+<tr><th id="185">185</th><td>      <b>if</b> (!IsEvalInSyncMode) done();</td></tr>
+<tr><th id="186">186</th><td>      <b>return</b>;</td></tr>
+<tr><th id="187">187</th><td>    }</td></tr>
+<tr><th id="188">188</th><td></td></tr>
+<tr><th id="189">189</th><td>    <i>// Now that we know number of threads, recalculate sharding and blocking.</i></td></tr>
+<tr><th id="190">190</th><td>    shard_by_col = shardByCol(m, n, num_threads);</td></tr>
+<tr><th id="191">191</th><td>    <b>if</b> (shard_by_col) {</td></tr>
+<tr><th id="192">192</th><td>      internal::TensorContractionBlocking&lt;Scalar, LhsScalar, RhsScalar, Index,</td></tr>
+<tr><th id="193">193</th><td>                                          internal::ShardByCol&gt;</td></tr>
+<tr><th id="194">194</th><td>          blocking(k, m, n, num_threads);</td></tr>
+<tr><th id="195">195</th><td>      bm = blocking.mc();</td></tr>
+<tr><th id="196">196</th><td>      bn = blocking.nc();</td></tr>
+<tr><th id="197">197</th><td>      bk = blocking.kc();</td></tr>
+<tr><th id="198">198</th><td>    } <b>else</b> {</td></tr>
+<tr><th id="199">199</th><td>      internal::TensorContractionBlocking&lt;Scalar, LhsScalar, RhsScalar, Index,</td></tr>
+<tr><th id="200">200</th><td>                                          internal::ShardByRow&gt;</td></tr>
+<tr><th id="201">201</th><td>          blocking(k, m, n, num_threads);</td></tr>
+<tr><th id="202">202</th><td>      bm = blocking.mc();</td></tr>
+<tr><th id="203">203</th><td>      bn = blocking.nc();</td></tr>
+<tr><th id="204">204</th><td>      bk = blocking.kc();</td></tr>
+<tr><th id="205">205</th><td>    }</td></tr>
+<tr><th id="206">206</th><td></td></tr>
+<tr><th id="207">207</th><td>    <i>// Number of kernels for each dimension.</i></td></tr>
+<tr><th id="208">208</th><td>    Index nm0 = divup(m, bm);</td></tr>
+<tr><th id="209">209</th><td>    Index nn0 = divup(n, bn);</td></tr>
+<tr><th id="210">210</th><td>    Index nk = divup(k, bk);</td></tr>
+<tr><th id="211">211</th><td></td></tr>
+<tr><th id="212">212</th><td>    <i>// Calculate task grain size (number of kernels executed per task).</i></td></tr>
+<tr><th id="213">213</th><td><i>    // This task size coarsening serves two purposes:</i></td></tr>
+<tr><th id="214">214</th><td><i>    // 1. It reduces per-task overheads including synchronization overheads.</i></td></tr>
+<tr><th id="215">215</th><td><i>    // 2. It allows to use caches better (reuse the same packed rhs in several</i></td></tr>
+<tr><th id="216">216</th><td><i>    // consecutive kernels).</i></td></tr>
+<tr><th id="217">217</th><td>    Index gm = <var>1</var>;</td></tr>
+<tr><th id="218">218</th><td>    Index gn = <var>1</var>;</td></tr>
+<tr><th id="219">219</th><td>    <i>// If we are sharding by column, then we prefer to reduce rows first.</i></td></tr>
+<tr><th id="220">220</th><td>    <b>if</b> (shard_by_col) {</td></tr>
+<tr><th id="221">221</th><td>      gm = coarsenM(m, n, bm, bn, bk, gn, num_threads, shard_by_col);</td></tr>
+<tr><th id="222">222</th><td>      gn = coarsenN(m, n, bm, bn, bk, gm, num_threads, shard_by_col);</td></tr>
+<tr><th id="223">223</th><td>    } <b>else</b> {</td></tr>
+<tr><th id="224">224</th><td>      gn = coarsenN(m, n, bm, bn, bk, gm, num_threads, shard_by_col);</td></tr>
+<tr><th id="225">225</th><td>      gm = coarsenM(m, n, bm, bn, bk, gn, num_threads, shard_by_col);</td></tr>
+<tr><th id="226">226</th><td>    }</td></tr>
+<tr><th id="227">227</th><td>    <i>// Number of tasks in each dimension.</i></td></tr>
+<tr><th id="228">228</th><td>    Index nm = divup(nm0, gm);</td></tr>
+<tr><th id="229">229</th><td>    Index nn = divup(nn0, gn);</td></tr>
+<tr><th id="230">230</th><td></td></tr>
+<tr><th id="231">231</th><td>    <i>// If there is enough concurrency in the sharding dimension, we choose not</i></td></tr>
+<tr><th id="232">232</th><td><i>    // to paralellize by the other dimension, and execute all kernels in sync</i></td></tr>
+<tr><th id="233">233</th><td><i>    // mode. This reduces parallelism from the nm x nn down to nn</i></td></tr>
+<tr><th id="234">234</th><td><i>    // (shard_by_col==true) or nm (shard_by_col==false).</i></td></tr>
+<tr><th id="235">235</th><td>    <em>const</em> Index sharding_dim_tasks = shard_by_col ? nn : nm;</td></tr>
+<tr><th id="236">236</th><td>    <em>const</em> <em>int</em> num_worker_threads = <b>this</b>-&gt;m_device.numThreadsInPool();</td></tr>
+<tr><th id="237">237</th><td></td></tr>
+<tr><th id="238">238</th><td>    <i>// With small number of threads we want to make sure that we do not reduce</i></td></tr>
+<tr><th id="239">239</th><td><i>    // parallelism too much. With large number of threads we trade maximum</i></td></tr>
+<tr><th id="240">240</th><td><i>    // parallelism for better memory locality.</i></td></tr>
+<tr><th id="241">241</th><td>    <em>const</em> <em>float</em> oversharding_factor =</td></tr>
+<tr><th id="242">242</th><td>        num_worker_threads &lt;= <var>4</var>  ? <var>8.0</var> :</td></tr>
+<tr><th id="243">243</th><td>        num_worker_threads &lt;= <var>8</var>  ? <var>4.0</var> :</td></tr>
+<tr><th id="244">244</th><td>        num_worker_threads &lt;= <var>16</var> ? <var>2.0</var> :</td></tr>
+<tr><th id="245">245</th><td>        num_worker_threads &lt;= <var>32</var> ? <var>1.0</var> :</td></tr>
+<tr><th id="246">246</th><td>        num_worker_threads &lt;= <var>64</var> ? <var>0.8</var> : <i>/* num_worker_threads &gt; 64 */</i> <var>0.6</var>;</td></tr>
+<tr><th id="247">247</th><td></td></tr>
+<tr><th id="248">248</th><td>    <em>const</em> <em>bool</em> parallelize_by_sharding_dim_only =</td></tr>
+<tr><th id="249">249</th><td>        sharding_dim_tasks &gt;= oversharding_factor * num_worker_threads;</td></tr>
+<tr><th id="250">250</th><td></td></tr>
+<tr><th id="251">251</th><td>    <i>// Last by not least, decide whether we want to issue both lhs and rhs</i></td></tr>
+<tr><th id="252">252</th><td><i>    // packing in parallel; or issue lhs packing first, and then issue rhs</i></td></tr>
+<tr><th id="253">253</th><td><i>    // packing when lhs packing completes (for !shard_by_col lhs and rhs are</i></td></tr>
+<tr><th id="254">254</th><td><i>    // swapped). Parallel packing allows more parallelism (for both packing and</i></td></tr>
+<tr><th id="255">255</th><td><i>    // kernels), while sequential packing provides better locality (once</i></td></tr>
+<tr><th id="256">256</th><td><i>    // a thread finishes rhs packing it proceed to kernels with that rhs).</i></td></tr>
+<tr><th id="257">257</th><td><i>    // First, we are interested in parallel packing if there are few tasks.</i></td></tr>
+<tr><th id="258">258</th><td>    <em>bool</em> parallel_pack = num_threads &gt;= nm * nn;</td></tr>
+<tr><th id="259">259</th><td>    <i>// Also do parallel packing if all data fits into L2$.</i></td></tr>
+<tr><th id="260">260</th><td>    <b>if</b> (m * bk * Index(<b>sizeof</b>(LhsScalar)) + n * bk * Index(<b>sizeof</b>(RhsScalar)) &lt;=</td></tr>
+<tr><th id="261">261</th><td>        l2CacheSize() * num_threads)</td></tr>
+<tr><th id="262">262</th><td>      parallel_pack = <b>true</b>;</td></tr>
+<tr><th id="263">263</th><td>    <i>// But don't do it if we will use each rhs only once. Locality seems to be</i></td></tr>
+<tr><th id="264">264</th><td><i>    // more important in this case.</i></td></tr>
+<tr><th id="265">265</th><td>    <b>if</b> ((shard_by_col ? nm : nn) == <var>1</var>) parallel_pack = <b>false</b>;</td></tr>
+<tr><th id="266">266</th><td>    <i>// Also don't get in the way of parallelize_by_sharding_dim_only</i></td></tr>
+<tr><th id="267">267</th><td><i>    // optimization.</i></td></tr>
+<tr><th id="268">268</th><td>    <b>if</b> (parallelize_by_sharding_dim_only) parallel_pack = <b>false</b>;</td></tr>
+<tr><th id="269">269</th><td></td></tr>
+<tr><th id="270">270</th><td>    <i>// TODO(ezhulnev): With if contexpr we don't need SyncEvalParallelContext.</i></td></tr>
+<tr><th id="271">271</th><td>    <b>if</b> (IsEvalInSyncMode) {</td></tr>
+<tr><th id="272">272</th><td><u>#define CONTEXT_ARGS                                                        \</u></td></tr>
+<tr><th id="273">273</th><td><u>  (this, num_threads, buffer, m, n, k, bm, bn, bk, nm, nn, nk, gm, gn, nm0, \</u></td></tr>
+<tr><th id="274">274</th><td><u>   nn0, shard_by_col, parallel_pack, parallelize_by_sharding_dim_only,      \</u></td></tr>
+<tr><th id="275">275</th><td><u>   NoCallback())                                                            \</u></td></tr>
+<tr><th id="276">276</th><td><u>      .run()</u></td></tr>
+<tr><th id="277">277</th><td>      TENSOR_CONTRACTION_DISPATCH(SyncEvalParallelContext, Alignment,</td></tr>
+<tr><th id="278">278</th><td>                                  CONTEXT_ARGS);</td></tr>
+<tr><th id="279">279</th><td><u>#undef CONTEXT_ARGS</u></td></tr>
+<tr><th id="280">280</th><td></td></tr>
+<tr><th id="281">281</th><td>    } <b>else</b> {</td></tr>
+<tr><th id="282">282</th><td><u>#define CONTEXT_ARGS                                                        \</u></td></tr>
+<tr><th id="283">283</th><td><u>  (this, num_threads, buffer, m, n, k, bm, bn, bk, nm, nn, nk, gm, gn, nm0, \</u></td></tr>
+<tr><th id="284">284</th><td><u>   nn0, shard_by_col, parallel_pack, parallelize_by_sharding_dim_only,      \</u></td></tr>
+<tr><th id="285">285</th><td><u>   std::move(done))</u></td></tr>
+<tr><th id="286">286</th><td>      TENSOR_CONTRACTION_ASYNC_DISPATCH(EvalParallelContext, DoneCallback,</td></tr>
+<tr><th id="287">287</th><td>                                        Alignment, CONTEXT_ARGS, run());</td></tr>
+<tr><th id="288">288</th><td><u>#undef CONTEXT_ARGS</u></td></tr>
+<tr><th id="289">289</th><td>    }</td></tr>
+<tr><th id="290">290</th><td>  }</td></tr>
+<tr><th id="291">291</th><td></td></tr>
+<tr><th id="292">292</th><td>  <i>// ------------------------------------------------------------------------ //</i></td></tr>
+<tr><th id="293">293</th><td><i></i></td></tr>
+<tr><th id="294">294</th><td><i>  // Dummy struct to represent an empty DoneCallback.</i></td></tr>
+<tr><th id="295">295</th><td></td></tr>
+<tr><th id="296">296</th><td>  <b>struct</b> NoCallback {</td></tr>
+<tr><th id="297">297</th><td>    <em>void</em> <b>operator</b>()() {</td></tr>
+<tr><th id="298">298</th><td>      eigen_assert(<b>false</b> &amp;&amp; <q>"NoCallback should never be called"</q>);</td></tr>
+<tr><th id="299">299</th><td>    }</td></tr>
+<tr><th id="300">300</th><td>  };</td></tr>
+<tr><th id="301">301</th><td></td></tr>
+<tr><th id="302">302</th><td>  <i>// ------------------------------------------------------------------------ //</i></td></tr>
+<tr><th id="303">303</th><td></td></tr>
+<tr><th id="304">304</th><td>  <b>template</b> &lt;<b>typename</b> DoneCallback, <b>typename</b> Context&gt;</td></tr>
+<tr><th id="305">305</th><td>  <b>class</b> EvalParallelNotification;</td></tr>
+<tr><th id="306">306</th><td></td></tr>
+<tr><th id="307">307</th><td>  <i>// Synchronous evaluation notification that blocks caller thread in Wait().</i></td></tr>
+<tr><th id="308">308</th><td>  <b>template</b> &lt;<b>typename</b> Context&gt;</td></tr>
+<tr><th id="309">309</th><td>  <b>class</b> EvalParallelNotification&lt;NoCallback, Context&gt; {</td></tr>
+<tr><th id="310">310</th><td>   <b>public</b>:</td></tr>
+<tr><th id="311">311</th><td>    EvalParallelNotification(Context*, NoCallback) {}</td></tr>
+<tr><th id="312">312</th><td>    <em>void</em> Notify() { done_.Notify(); }</td></tr>
+<tr><th id="313">313</th><td>    <em>void</em> Wait() { done_.Wait(); }</td></tr>
+<tr><th id="314">314</th><td>   <b>private</b>:</td></tr>
+<tr><th id="315">315</th><td>    Eigen::Notification done_;</td></tr>
+<tr><th id="316">316</th><td>  };</td></tr>
+<tr><th id="317">317</th><td></td></tr>
+<tr><th id="318">318</th><td>  <i>// Asynchronous evaluation notification that does not block in Wait().</i></td></tr>
+<tr><th id="319">319</th><td>  <b>template</b> &lt;<b>typename</b> DoneCallback, <b>typename</b> Context&gt;</td></tr>
+<tr><th id="320">320</th><td>  <b>class</b> EvalParallelNotification {</td></tr>
+<tr><th id="321">321</th><td>   <b>public</b>:</td></tr>
+<tr><th id="322">322</th><td>    EvalParallelNotification(Context* ctx, DoneCallback done)</td></tr>
+<tr><th id="323">323</th><td>        : ctx_(ctx), done_(std::move(done)) {}</td></tr>
+<tr><th id="324">324</th><td></td></tr>
+<tr><th id="325">325</th><td>    <em>void</em> Notify() {</td></tr>
+<tr><th id="326">326</th><td>      <i>// Make a copy of done callback, because it will be destructed when we</i></td></tr>
+<tr><th id="327">327</th><td><i>      // will delete context in the next line (EvalParallelNotification is a</i></td></tr>
+<tr><th id="328">328</th><td><i>      // data member of EvalParallelContext class).</i></td></tr>
+<tr><th id="329">329</th><td>      DoneCallback done_copy = std::move(done_);</td></tr>
+<tr><th id="330">330</th><td></td></tr>
+<tr><th id="331">331</th><td>      <i>// Delete parallel evaluation context.</i></td></tr>
+<tr><th id="332">332</th><td>      <b>delete</b> ctx_;</td></tr>
+<tr><th id="333">333</th><td></td></tr>
+<tr><th id="334">334</th><td>      <i>// Now safely call the done callback.</i></td></tr>
+<tr><th id="335">335</th><td>      done_copy();</td></tr>
+<tr><th id="336">336</th><td>    }</td></tr>
+<tr><th id="337">337</th><td></td></tr>
+<tr><th id="338">338</th><td>    <em>void</em> Wait() {}</td></tr>
+<tr><th id="339">339</th><td></td></tr>
+<tr><th id="340">340</th><td>   <b>private</b>:</td></tr>
+<tr><th id="341">341</th><td>    Context* ctx_;</td></tr>
+<tr><th id="342">342</th><td>    DoneCallback done_;</td></tr>
+<tr><th id="343">343</th><td>  };</td></tr>
+<tr><th id="344">344</th><td></td></tr>
+<tr><th id="345">345</th><td>  <i>// Context orchestrates sync/async parallel contraction evaluation. When it is</i></td></tr>
+<tr><th id="346">346</th><td><i>  // executed in asynchronous mode, it owns all the shared state that might be</i></td></tr>
+<tr><th id="347">347</th><td><i>  // accessible by block packing and kernel tasks.</i></td></tr>
+<tr><th id="348">348</th><td></td></tr>
+<tr><th id="349">349</th><td>  <b>template</b> &lt;<b>typename</b> DoneCallback, <em>bool</em> lhs_inner_dim_contiguous,</td></tr>
+<tr><th id="350">350</th><td>            <em>bool</em> rhs_inner_dim_contiguous, <em>bool</em> rhs_inner_dim_reordered,</td></tr>
+<tr><th id="351">351</th><td>            <em>int</em> Alignment&gt;</td></tr>
+<tr><th id="352">352</th><td>  <b>class</b> EvalParallelContext {</td></tr>
+<tr><th id="353">353</th><td>   <b>public</b>:</td></tr>
+<tr><th id="354">354</th><td>    <b>typedef</b> internal::TensorContractionInputMapper&lt;</td></tr>
+<tr><th id="355">355</th><td>        LhsScalar, Index, internal::Lhs, LeftEvaluator, left_nocontract_t,</td></tr>
+<tr><th id="356">356</th><td>        contract_t, internal::packet_traits&lt;LhsScalar&gt;::size,</td></tr>
+<tr><th id="357">357</th><td>        lhs_inner_dim_contiguous, <b>false</b>, Unaligned&gt;</td></tr>
+<tr><th id="358">358</th><td>        LhsMapper;</td></tr>
+<tr><th id="359">359</th><td>    <b>typedef</b> internal::TensorContractionInputMapper&lt;</td></tr>
+<tr><th id="360">360</th><td>        RhsScalar, Index, internal::Rhs, RightEvaluator, right_nocontract_t,</td></tr>
+<tr><th id="361">361</th><td>        contract_t, internal::packet_traits&lt;RhsScalar&gt;::size,</td></tr>
+<tr><th id="362">362</th><td>        rhs_inner_dim_contiguous, rhs_inner_dim_reordered, Unaligned&gt;</td></tr>
+<tr><th id="363">363</th><td>        RhsMapper;</td></tr>
+<tr><th id="364">364</th><td></td></tr>
+<tr><th id="365">365</th><td>    <b>typedef</b> internal::blas_data_mapper&lt;Scalar, Index, ColMajor&gt; OutputMapper;</td></tr>
+<tr><th id="366">366</th><td></td></tr>
+<tr><th id="367">367</th><td>    <b>typedef</b> internal::TensorContractionKernel&lt;</td></tr>
+<tr><th id="368">368</th><td>        Scalar, LhsScalar, RhsScalar, Index, OutputMapper, LhsMapper, RhsMapper&gt;</td></tr>
+<tr><th id="369">369</th><td>        TensorContractionKernel;</td></tr>
+<tr><th id="370">370</th><td></td></tr>
+<tr><th id="371">371</th><td>    <b>typedef</b> <b>typename</b> TensorContractionKernel::LhsBlock LhsBlock;</td></tr>
+<tr><th id="372">372</th><td>    <b>typedef</b> <b>typename</b> TensorContractionKernel::RhsBlock RhsBlock;</td></tr>
+<tr><th id="373">373</th><td>    <b>typedef</b> <b>typename</b> TensorContractionKernel::BlockMemHandle BlockMemHandle;</td></tr>
+<tr><th id="374">374</th><td></td></tr>
+<tr><th id="375">375</th><td>    EvalParallelContext(<em>const</em> Self* self, <em>int</em> num_threads, Scalar* buffer,</td></tr>
+<tr><th id="376">376</th><td>                        Index tm, Index tn, Index tk, Index bm, Index bn,</td></tr>
+<tr><th id="377">377</th><td>                        Index bk, Index nm, Index nn, Index nk, Index gm,</td></tr>
+<tr><th id="378">378</th><td>                        Index gn, Index nm0, Index nn0, <em>bool</em> shard_by_col,</td></tr>
+<tr><th id="379">379</th><td>                        <em>bool</em> parallel_pack,</td></tr>
+<tr><th id="380">380</th><td>                        <em>bool</em> parallelize_by_sharding_dim_only,</td></tr>
+<tr><th id="381">381</th><td>                        DoneCallback done)</td></tr>
+<tr><th id="382">382</th><td>        : created_by_thread_id_(std::this_thread::get_id()),</td></tr>
+<tr><th id="383">383</th><td>          done_(<b>this</b>, std::move(done)),</td></tr>
+<tr><th id="384">384</th><td>          device_(self-&gt;m_device),</td></tr>
+<tr><th id="385">385</th><td>          lhs_(self-&gt;m_leftImpl, self-&gt;m_left_nocontract_strides,</td></tr>
+<tr><th id="386">386</th><td>               self-&gt;m_i_strides, self-&gt;m_left_contracting_strides,</td></tr>
+<tr><th id="387">387</th><td>               self-&gt;m_k_strides),</td></tr>
+<tr><th id="388">388</th><td>          rhs_(self-&gt;m_rightImpl, self-&gt;m_right_nocontract_strides,</td></tr>
+<tr><th id="389">389</th><td>               self-&gt;m_j_strides, self-&gt;m_right_contracting_strides,</td></tr>
+<tr><th id="390">390</th><td>               self-&gt;m_k_strides),</td></tr>
+<tr><th id="391">391</th><td>          buffer_(buffer),</td></tr>
+<tr><th id="392">392</th><td>          output_(buffer, tm),</td></tr>
+<tr><th id="393">393</th><td>          output_kernel_(self-&gt;m_output_kernel),</td></tr>
+<tr><th id="394">394</th><td>          tensor_contraction_params_(self-&gt;m_tensor_contraction_params),</td></tr>
+<tr><th id="395">395</th><td>          num_threads_(num_threads),</td></tr>
+<tr><th id="396">396</th><td>          shard_by_col_(shard_by_col),</td></tr>
+<tr><th id="397">397</th><td>          parallel_pack_(parallel_pack),</td></tr>
+<tr><th id="398">398</th><td>          parallelize_by_sharding_dim_only_(parallelize_by_sharding_dim_only),</td></tr>
+<tr><th id="399">399</th><td>          m_(tm),</td></tr>
+<tr><th id="400">400</th><td>          n_(tn),</td></tr>
+<tr><th id="401">401</th><td>          k_(tk),</td></tr>
+<tr><th id="402">402</th><td>          bm_(bm),</td></tr>
+<tr><th id="403">403</th><td>          bn_(bn),</td></tr>
+<tr><th id="404">404</th><td>          bk_(bk),</td></tr>
+<tr><th id="405">405</th><td>          nm_(nm),</td></tr>
+<tr><th id="406">406</th><td>          nn_(nn),</td></tr>
+<tr><th id="407">407</th><td>          nk_(nk),</td></tr>
+<tr><th id="408">408</th><td>          gm_(gm),</td></tr>
+<tr><th id="409">409</th><td>          gn_(gn),</td></tr>
+<tr><th id="410">410</th><td>          nm0_(nm0),</td></tr>
+<tr><th id="411">411</th><td>          nn0_(nn0),</td></tr>
+<tr><th id="412">412</th><td>          kernel_(m_, k_, n_, bm_, bk_, bn_),</td></tr>
+<tr><th id="413">413</th><td>          num_thread_local_allocations_(<var>0</var>),</td></tr>
+<tr><th id="414">414</th><td>          <i>// We reserve 2X more capacity for a thread local values, than the</i></td></tr>
+<tr><th id="415">415</th><td><i>          // number of threads in the pool to efficiently handle task stealing</i></td></tr>
+<tr><th id="416">416</th><td><i>          // by threads that are not managed by the pool.</i></td></tr>
+<tr><th id="417">417</th><td>          thread_local_capacity(<var>2</var> * (parallelize_by_sharding_dim_only_</td></tr>
+<tr><th id="418">418</th><td>                                         ? device_.numThreadsInPool()</td></tr>
+<tr><th id="419">419</th><td>                                         : <var>0</var>)),</td></tr>
+<tr><th id="420">420</th><td>          <i>// We will use only one of the Lhs/Rhs thread local storage depending</i></td></tr>
+<tr><th id="421">421</th><td><i>          // on the shard_by_col value and we parallelize by sharding dim ONLY.</i></td></tr>
+<tr><th id="422">422</th><td>          lhs_thread_local_blocks_(shard_by_col_ ? <var>0</var> : thread_local_capacity,</td></tr>
+<tr><th id="423">423</th><td>                                   {*<b>this</b>}, {*<b>this</b>}),</td></tr>
+<tr><th id="424">424</th><td>          rhs_thread_local_blocks_(shard_by_col_ ? thread_local_capacity : <var>0</var>,</td></tr>
+<tr><th id="425">425</th><td>                                   {*<b>this</b>}, {*<b>this</b>}) {</td></tr>
+<tr><th id="426">426</th><td>      <i>// These two options are mutually exclusive.</i></td></tr>
+<tr><th id="427">427</th><td>      eigen_assert(!(parallel_pack &amp;&amp; parallelize_by_sharding_dim_only));</td></tr>
+<tr><th id="428">428</th><td></td></tr>
+<tr><th id="429">429</th><td>      <b>for</b> (Index x = <var>0</var>; x &lt; P; x++) {</td></tr>
+<tr><th id="430">430</th><td>        <i>// Normal number of notifications for k slice switch is</i></td></tr>
+<tr><th id="431">431</th><td><i>        // nm_ + nn_ + nm_ * nn_. However, first P - 1 slices will receive only</i></td></tr>
+<tr><th id="432">432</th><td><i>        // nm_ + nn_ notifications, because they will not receive notifications</i></td></tr>
+<tr><th id="433">433</th><td><i>        // from preceding kernels.</i></td></tr>
+<tr><th id="434">434</th><td>        state_switch_[x] =</td></tr>
+<tr><th id="435">435</th><td>            x == <var>0</var></td></tr>
+<tr><th id="436">436</th><td>                ? <var>1</var></td></tr>
+<tr><th id="437">437</th><td>                : (parallel_pack_ ? nn_ + nm_ : (shard_by_col_ ? nn_ : nm_)) +</td></tr>
+<tr><th id="438">438</th><td>                      (x == P - <var>1</var> ? nm_ * nn_ : <var>0</var>);</td></tr>
+<tr><th id="439">439</th><td>        state_packing_ready_[x] =</td></tr>
+<tr><th id="440">440</th><td>            parallel_pack_ ? <var>0</var> : (shard_by_col_ ? nm_ : nn_);</td></tr>
+<tr><th id="441">441</th><td>        state_kernel_[x] = <b>new</b> std::atomic&lt;uint8_t&gt;*[nm_];</td></tr>
+<tr><th id="442">442</th><td>        <b>for</b> (Index m = <var>0</var>; m &lt; nm_; m++) {</td></tr>
+<tr><th id="443">443</th><td>          state_kernel_[x][m] = <b>new</b> std::atomic&lt;uint8_t&gt;[nn_];</td></tr>
+<tr><th id="444">444</th><td>          <i>// Kernels generally receive 3 notifications (previous kernel + 2</i></td></tr>
+<tr><th id="445">445</th><td><i>          // packing), but the first slice won't get notifications from previous</i></td></tr>
+<tr><th id="446">446</th><td><i>          // kernels.</i></td></tr>
+<tr><th id="447">447</th><td>          <b>for</b> (Index n = <var>0</var>; n &lt; nn_; n++)</td></tr>
+<tr><th id="448">448</th><td>            state_kernel_[x][m][n].store(</td></tr>
+<tr><th id="449">449</th><td>                (x == <var>0</var> ? <var>0</var> : <var>1</var>) + (parallel_pack_ ? <var>2</var> : <var>1</var>),</td></tr>
+<tr><th id="450">450</th><td>                std::memory_order_relaxed);</td></tr>
+<tr><th id="451">451</th><td>        }</td></tr>
+<tr><th id="452">452</th><td>      }</td></tr>
+<tr><th id="453">453</th><td></td></tr>
+<tr><th id="454">454</th><td>      <i>// Allocate memory for packed rhs/lhs matrices.</i></td></tr>
+<tr><th id="455">455</th><td>      packed_mem_ = kernel_.allocateSlices(            <i>//</i></td></tr>
+<tr><th id="456">456</th><td>          device_,                                     <i>//</i></td></tr>
+<tr><th id="457">457</th><td>          <i>/*num_lhs=*/</i>nm0_,                            <i>//</i></td></tr>
+<tr><th id="458">458</th><td>          <i>/*num_rhs=*/</i>nn0_,                            <i>//</i></td></tr>
+<tr><th id="459">459</th><td>          <i>/*num_slices=*/</i>std::min&lt;Index&gt;(nk_, P - <var>1</var>),  <i>//</i></td></tr>
+<tr><th id="460">460</th><td>          packed_lhs_, packed_rhs_);</td></tr>
+<tr><th id="461">461</th><td></td></tr>
+<tr><th id="462">462</th><td>      <b>if</b> (parallelize_by_sharding_dim_only_) {</td></tr>
+<tr><th id="463">463</th><td>        <em>const</em> <em>int</em> num_worker_threads = device_.numThreadsInPool();</td></tr>
+<tr><th id="464">464</th><td></td></tr>
+<tr><th id="465">465</th><td>        <b>if</b> (shard_by_col) {</td></tr>
+<tr><th id="466">466</th><td>          can_use_thread_local_packed_ = <b>new</b> std::atomic&lt;<em>bool</em>&gt;[nn_];</td></tr>
+<tr><th id="467">467</th><td>          <b>for</b> (<em>int</em> i = <var>0</var>; i &lt; nn_; ++i)</td></tr>
+<tr><th id="468">468</th><td>            can_use_thread_local_packed_[i].store(<b>true</b>,</td></tr>
+<tr><th id="469">469</th><td>                                                  std::memory_order_relaxed);</td></tr>
+<tr><th id="470">470</th><td></td></tr>
+<tr><th id="471">471</th><td>          Index num_blocks = num_worker_threads * gn_;</td></tr>
+<tr><th id="472">472</th><td>          thread_local_pre_alocated_mem_ = kernel_.allocateSlices(  <i>//</i></td></tr>
+<tr><th id="473">473</th><td>              device_,                                              <i>//</i></td></tr>
+<tr><th id="474">474</th><td>              <i>/*num_lhs=*/</i><var>0</var>,                                        <i>//</i></td></tr>
+<tr><th id="475">475</th><td>              <i>/*num_rhs=*/</i>num_blocks,                               <i>//</i></td></tr>
+<tr><th id="476">476</th><td>              <i>/*num_slices=*/</i><var>1</var>,                                     <i>//</i></td></tr>
+<tr><th id="477">477</th><td>              <i>/*lhs_blocks=*/</i><b>nullptr</b>, &amp;rhs_thread_local_pre_allocated_);</td></tr>
+<tr><th id="478">478</th><td></td></tr>
+<tr><th id="479">479</th><td>        } <b>else</b> {</td></tr>
+<tr><th id="480">480</th><td>          can_use_thread_local_packed_ = <b>new</b> std::atomic&lt;<em>bool</em>&gt;[nm_];</td></tr>
+<tr><th id="481">481</th><td>          <b>for</b> (<em>int</em> i = <var>0</var>; i &lt; nm_; ++i)</td></tr>
+<tr><th id="482">482</th><td>            can_use_thread_local_packed_[i].store(<b>true</b>,</td></tr>
+<tr><th id="483">483</th><td>                                                  std::memory_order_relaxed);</td></tr>
+<tr><th id="484">484</th><td></td></tr>
+<tr><th id="485">485</th><td>          Index num_blocks = num_worker_threads * gm_;</td></tr>
+<tr><th id="486">486</th><td>          thread_local_pre_alocated_mem_ = kernel_.allocateSlices(  <i>//</i></td></tr>
+<tr><th id="487">487</th><td>              device_,                                              <i>//</i></td></tr>
+<tr><th id="488">488</th><td>              <i>/*num_lhs=*/</i>num_blocks,                               <i>//</i></td></tr>
+<tr><th id="489">489</th><td>              <i>/*num_rhs=*/</i><var>0</var>,                                        <i>//</i></td></tr>
+<tr><th id="490">490</th><td>              <i>/*num_slices=*/</i><var>1</var>, &amp;lhs_thread_local_pre_allocated_,   <i>//</i></td></tr>
+<tr><th id="491">491</th><td>              <i>/*rhs_blocks=*/</i><b>nullptr</b>);</td></tr>
+<tr><th id="492">492</th><td>        }</td></tr>
+<tr><th id="493">493</th><td>      }</td></tr>
+<tr><th id="494">494</th><td>    }</td></tr>
+<tr><th id="495">495</th><td></td></tr>
+<tr><th id="496">496</th><td>    ~EvalParallelContext() {</td></tr>
+<tr><th id="497">497</th><td>      <b>for</b> (Index x = <var>0</var>; x &lt; P; x++) {</td></tr>
+<tr><th id="498">498</th><td>        <b>for</b> (Index m = <var>0</var>; m &lt; nm_; m++) <b>delete</b>[] state_kernel_[x][m];</td></tr>
+<tr><th id="499">499</th><td>        <b>delete</b>[] state_kernel_[x];</td></tr>
+<tr><th id="500">500</th><td>      }</td></tr>
+<tr><th id="501">501</th><td>      kernel_.deallocate(device_, packed_mem_);</td></tr>
+<tr><th id="502">502</th><td>      <b>if</b> (parallelize_by_sharding_dim_only_) {</td></tr>
+<tr><th id="503">503</th><td>        kernel_.deallocate(device_, thread_local_pre_alocated_mem_);</td></tr>
+<tr><th id="504">504</th><td>        <b>delete</b>[] can_use_thread_local_packed_;</td></tr>
+<tr><th id="505">505</th><td>      }</td></tr>
+<tr><th id="506">506</th><td>    }</td></tr>
+<tr><th id="507">507</th><td></td></tr>
+<tr><th id="508">508</th><td>    <em>void</em> run() {</td></tr>
+<tr><th id="509">509</th><td>      <i>// Kick off packing of the first slice.</i></td></tr>
+<tr><th id="510">510</th><td>      signal_switch(<var>0</var>, <var>1</var>);</td></tr>
+<tr><th id="511">511</th><td></td></tr>
+<tr><th id="512">512</th><td>      <i>// Wait for overall completion.</i></td></tr>
+<tr><th id="513">513</th><td><i>      //</i></td></tr>
+<tr><th id="514">514</th><td><i>      // If parallel evaluation is executed in async mode, this is a no-op, and</i></td></tr>
+<tr><th id="515">515</th><td><i>      // Wait() will return immediately. In synchronous mode it will block the</i></td></tr>
+<tr><th id="516">516</th><td><i>      // caller thread until it will receive notification from last task.</i></td></tr>
+<tr><th id="517">517</th><td><i>      //</i></td></tr>
+<tr><th id="518">518</th><td><i>      // In async mode, last task when completed will call done callback from</i></td></tr>
+<tr><th id="519">519</th><td><i>      // the same thread, and will delete this context.</i></td></tr>
+<tr><th id="520">520</th><td><i>      //</i></td></tr>
+<tr><th id="521">521</th><td><i>      // TODO(dvyukov): This wait can lead to deadlock if contraction is</i></td></tr>
+<tr><th id="522">522</th><td><i>      // evaluated in synchronous mode. If nthreads contractions are</i></td></tr>
+<tr><th id="523">523</th><td><i>      // concurrently submitted from worker threads, this wait will block all</i></td></tr>
+<tr><th id="524">524</th><td><i>      // worker threads and the system will deadlock.</i></td></tr>
+<tr><th id="525">525</th><td>      done_.Wait();</td></tr>
+<tr><th id="526">526</th><td>    }</td></tr>
+<tr><th id="527">527</th><td></td></tr>
+<tr><th id="528">528</th><td>   <b>private</b>:</td></tr>
+<tr><th id="529">529</th><td>    std::thread::id created_by_thread_id_;</td></tr>
+<tr><th id="530">530</th><td></td></tr>
+<tr><th id="531">531</th><td>    <i>// This notification is specialized on the type of DoneCallback and can be</i></td></tr>
+<tr><th id="532">532</th><td><i>    // blocking or non-blocking.</i></td></tr>
+<tr><th id="533">533</th><td>    EvalParallelNotification&lt;DoneCallback, EvalParallelContext&gt; done_;</td></tr>
+<tr><th id="534">534</th><td></td></tr>
+<tr><th id="535">535</th><td>    <em>const</em> Device&amp; device_;</td></tr>
+<tr><th id="536">536</th><td>    LhsMapper lhs_;</td></tr>
+<tr><th id="537">537</th><td>    RhsMapper rhs_;</td></tr>
+<tr><th id="538">538</th><td>    Scalar* <em>const</em> buffer_;</td></tr>
+<tr><th id="539">539</th><td>    OutputMapper output_;</td></tr>
+<tr><th id="540">540</th><td>    OutputKernelType output_kernel_;</td></tr>
+<tr><th id="541">541</th><td>    TensorContractionParams tensor_contraction_params_;</td></tr>
+<tr><th id="542">542</th><td>    <em>const</em> <em>int</em> num_threads_;</td></tr>
+<tr><th id="543">543</th><td>    <em>const</em> <em>bool</em> shard_by_col_;</td></tr>
+<tr><th id="544">544</th><td>    <em>const</em> <em>bool</em> parallel_pack_;</td></tr>
+<tr><th id="545">545</th><td>    <em>const</em> <em>bool</em> parallelize_by_sharding_dim_only_;</td></tr>
+<tr><th id="546">546</th><td>    <i>// Matrix sizes.</i></td></tr>
+<tr><th id="547">547</th><td>    <em>const</em> Index m_;</td></tr>
+<tr><th id="548">548</th><td>    <em>const</em> Index n_;</td></tr>
+<tr><th id="549">549</th><td>    <em>const</em> Index k_;</td></tr>
+<tr><th id="550">550</th><td>    <i>// Block sizes.</i></td></tr>
+<tr><th id="551">551</th><td>    <em>const</em> Index bm_;</td></tr>
+<tr><th id="552">552</th><td>    <em>const</em> Index bn_;</td></tr>
+<tr><th id="553">553</th><td>    <em>const</em> Index bk_;</td></tr>
+<tr><th id="554">554</th><td>    <i>// Number of tasks.</i></td></tr>
+<tr><th id="555">555</th><td>    <em>const</em> Index nm_;</td></tr>
+<tr><th id="556">556</th><td>    <em>const</em> Index nn_;</td></tr>
+<tr><th id="557">557</th><td>    <em>const</em> Index nk_;</td></tr>
+<tr><th id="558">558</th><td>    <i>// Task grain sizes (number of kernels executed per task).</i></td></tr>
+<tr><th id="559">559</th><td>    <em>const</em> Index gm_;</td></tr>
+<tr><th id="560">560</th><td>    <em>const</em> Index gn_;</td></tr>
+<tr><th id="561">561</th><td>    <i>// Number of blocks (this is different from ni_/nn_ because of task size</i></td></tr>
+<tr><th id="562">562</th><td><i>    // coarsening).</i></td></tr>
+<tr><th id="563">563</th><td>    <em>const</em> Index nm0_;</td></tr>
+<tr><th id="564">564</th><td>    <em>const</em> Index nn0_;</td></tr>
+<tr><th id="565">565</th><td>    <i>// Tensor contraction kernel.</i></td></tr>
+<tr><th id="566">566</th><td>    TensorContractionKernel kernel_;</td></tr>
+<tr><th id="567">567</th><td></td></tr>
+<tr><th id="568">568</th><td>    <i>// Parallelization strategy.</i></td></tr>
+<tr><th id="569">569</th><td><i>    //</i></td></tr>
+<tr><th id="570">570</th><td><i>    // Blocks related to the same k block can run in parallel because they write</i></td></tr>
+<tr><th id="571">571</th><td><i>    // to different output blocks. So we parallelize within k slices, this</i></td></tr>
+<tr><th id="572">572</th><td><i>    // gives us parallelism level of m x n. Before we can start any kernels</i></td></tr>
+<tr><th id="573">573</th><td><i>    // related to k-th slice, we need to issue m lhs packing tasks and n rhs</i></td></tr>
+<tr><th id="574">574</th><td><i>    // packing tasks.</i></td></tr>
+<tr><th id="575">575</th><td><i>    //</i></td></tr>
+<tr><th id="576">576</th><td><i>    // However, there is a bottleneck when we are finishing kernels for k-th</i></td></tr>
+<tr><th id="577">577</th><td><i>    // slice (at the very end there is only 1 runnable kernel). To mitigate this</i></td></tr>
+<tr><th id="578">578</th><td><i>    // bottleneck we allow kernels from k-th and k+1-th slices to run in</i></td></tr>
+<tr><th id="579">579</th><td><i>    // parallel. Note that (m, n, k) and (m, n, k+1) kernels write to the same</i></td></tr>
+<tr><th id="580">580</th><td><i>    // output block, so they must not run in parallel.</i></td></tr>
+<tr><th id="581">581</th><td><i>    //</i></td></tr>
+<tr><th id="582">582</th><td><i>    // This gives us the following dependency graph.</i></td></tr>
+<tr><th id="583">583</th><td><i>    // On each k slice we have m x n kernel tasks, m lhs paking tasks and n rhs</i></td></tr>
+<tr><th id="584">584</th><td><i>    // packing tasks.</i></td></tr>
+<tr><th id="585">585</th><td><i>    // Kernel (m, n, k) can start when:</i></td></tr>
+<tr><th id="586">586</th><td><i>    //  - kernel (m, n, k-1) has finished</i></td></tr>
+<tr><th id="587">587</th><td><i>    //  - lhs packing (m, k) has finished</i></td></tr>
+<tr><th id="588">588</th><td><i>    //  - rhs packing (n, k) has finished</i></td></tr>
+<tr><th id="589">589</th><td><i>    // Lhs/rhs packing can start when:</i></td></tr>
+<tr><th id="590">590</th><td><i>    //  - all k-1 packing has finished (artificially imposed to limit amount of</i></td></tr>
+<tr><th id="591">591</th><td><i>    //  parallel packing)</i></td></tr>
+<tr><th id="592">592</th><td><i>    //</i></td></tr>
+<tr><th id="593">593</th><td><i>    // On top of that we limit runnable tasks to two consecutive k slices.</i></td></tr>
+<tr><th id="594">594</th><td><i>    // This is done to limit amount of memory we need for packed lhs/rhs</i></td></tr>
+<tr><th id="595">595</th><td><i>    // (for each k slice we need m*bk + n*bk memory in packed_lhs_/packed_rhs_).</i></td></tr>
+<tr><th id="596">596</th><td><i>    //</i></td></tr>
+<tr><th id="597">597</th><td><i>    // state_switch_ tracks when we are ready to switch to the next k slice.</i></td></tr>
+<tr><th id="598">598</th><td><i>    // state_kernel_[m][n] tracks when we are ready to kick off kernel (m, n).</i></td></tr>
+<tr><th id="599">599</th><td><i>    // These variable are rolling over 3 consecutive k slices: first two we are</i></td></tr>
+<tr><th id="600">600</th><td><i>    // actively executing + one to track completion of kernels in the second</i></td></tr>
+<tr><th id="601">601</th><td><i>    // slice.</i></td></tr>
+<tr><th id="602">602</th><td>    <em>static</em> <em>const</em> Index P = <var>3</var>;</td></tr>
+<tr><th id="603">603</th><td></td></tr>
+<tr><th id="604">604</th><td>    <i>// Handle to the allocated temporary storage for Lhs/Rhs blocks.</i></td></tr>
+<tr><th id="605">605</th><td>    BlockMemHandle packed_mem_;</td></tr>
+<tr><th id="606">606</th><td>    std::vector&lt;LhsBlock&gt; packed_lhs_[P - <var>1</var>];</td></tr>
+<tr><th id="607">607</th><td>    std::vector&lt;RhsBlock&gt; packed_rhs_[P - <var>1</var>];</td></tr>
+<tr><th id="608">608</th><td></td></tr>
+<tr><th id="609">609</th><td>    <i>// If we choose to parallelize only by the sharding dimension, each thread</i></td></tr>
+<tr><th id="610">610</th><td><i>    // will have it's own "thead local" (not a c++ thread local storage) memory</i></td></tr>
+<tr><th id="611">611</th><td><i>    // for packed_lhs or packed_rhs (shard_by_col = false of true). This memory</i></td></tr>
+<tr><th id="612">612</th><td><i>    // can't be passed to a kernel that might execute on a different thread.</i></td></tr>
+<tr><th id="613">613</th><td><i>    //</i></td></tr>
+<tr><th id="614">614</th><td><i>    // In practice when we are ready to pack memory for the sharding dimension</i></td></tr>
+<tr><th id="615">615</th><td><i>    // (rhs if shard_by_col==true) of the K-th slice, all kernels for K-1 slice</i></td></tr>
+<tr><th id="616">616</th><td><i>    // already computed (99% of the time), and we can pack data into the thread</i></td></tr>
+<tr><th id="617">617</th><td><i>    // local storage, and guarantee that all the kernels will be executed</i></td></tr>
+<tr><th id="618">618</th><td><i>    // immediately in the same thread. This significantly increases L1 cache hit</i></td></tr>
+<tr><th id="619">619</th><td><i>    // ratio and reduces pressure on the memory bus.</i></td></tr>
+<tr><th id="620">620</th><td><i>    //</i></td></tr>
+<tr><th id="621">621</th><td><i>    // It's still possible that kernel for the K-th slice will be ready before</i></td></tr>
+<tr><th id="622">622</th><td><i>    // completion of the K-1 kernel, so we have to allocate "global" packed_lhs_</i></td></tr>
+<tr><th id="623">623</th><td><i>    // and packed_rhs_ to allow kernels to be executed later on a thread</i></td></tr>
+<tr><th id="624">624</th><td><i>    // different from the thread that was used for packing.</i></td></tr>
+<tr><th id="625">625</th><td><i></i></td></tr>
+<tr><th id="626">626</th><td><i>    // Handle for pre-allocated thread local memory buffers.</i></td></tr>
+<tr><th id="627">627</th><td>    BlockMemHandle thread_local_pre_alocated_mem_;</td></tr>
+<tr><th id="628">628</th><td></td></tr>
+<tr><th id="629">629</th><td>    <i>// Only one of these will be initialized depending on shard_by_col value</i></td></tr>
+<tr><th id="630">630</th><td><i>    // (the size will be `num_worker_threads * num_grains_in_the_sharding_dim`).</i></td></tr>
+<tr><th id="631">631</th><td>    std::vector&lt;LhsBlock&gt; lhs_thread_local_pre_allocated_;</td></tr>
+<tr><th id="632">632</th><td>    std::vector&lt;RhsBlock&gt; rhs_thread_local_pre_allocated_;</td></tr>
+<tr><th id="633">633</th><td></td></tr>
+<tr><th id="634">634</th><td>    <i>// How many thread local blocks were already allocated.</i></td></tr>
+<tr><th id="635">635</th><td>    std::atomic&lt;<em>int</em>&gt; num_thread_local_allocations_;</td></tr>
+<tr><th id="636">636</th><td>    <em>const</em> <em>int</em> thread_local_capacity;</td></tr>
+<tr><th id="637">637</th><td></td></tr>
+<tr><th id="638">638</th><td>    <i>// We will use pre-allocated Lhs/Rhs blocks defined above, if the number of</i></td></tr>
+<tr><th id="639">639</th><td><i>    // unique threads in a system is below or equal to the number of threads in</i></td></tr>
+<tr><th id="640">640</th><td><i>    // a thread pool. We will fallback on dynamic memory allocation after that.</i></td></tr>
+<tr><th id="641">641</th><td><i></i></td></tr>
+<tr><th id="642">642</th><td><i>    // ThreadLocalBlocks is a container for Lhs or Rhs thread local buffers. Its</i></td></tr>
+<tr><th id="643">643</th><td><i>    // size is equal to the grain size in Lhs/Rhs sharding dimension.</i></td></tr>
+<tr><th id="644">644</th><td>    <b>template</b> &lt;<b>typename</b> BlockType&gt;</td></tr>
+<tr><th id="645">645</th><td>    <b>class</b> ThreadLocalBlocks {</td></tr>
+<tr><th id="646">646</th><td>     <b>public</b>:</td></tr>
+<tr><th id="647">647</th><td>      ThreadLocalBlocks() = <b>default</b>;</td></tr>
+<tr><th id="648">648</th><td></td></tr>
+<tr><th id="649">649</th><td>      ThreadLocalBlocks(BlockType* base, size_t grain_size)</td></tr>
+<tr><th id="650">650</th><td>          : is_pre_allocated_(<b>true</b>),</td></tr>
+<tr><th id="651">651</th><td>            thread_local_pre_allocated_base_(base),</td></tr>
+<tr><th id="652">652</th><td>            grain_size_(grain_size) {}</td></tr>
+<tr><th id="653">653</th><td></td></tr>
+<tr><th id="654">654</th><td>      ThreadLocalBlocks(BlockMemHandle mem_handle,</td></tr>
+<tr><th id="655">655</th><td>                        std::vector&lt;BlockType&gt; blocks)</td></tr>
+<tr><th id="656">656</th><td>          : is_pre_allocated_(<b>false</b>),</td></tr>
+<tr><th id="657">657</th><td>            mem_handle_(std::move(mem_handle)),</td></tr>
+<tr><th id="658">658</th><td>            blocks_(std::move(blocks)) {}</td></tr>
+<tr><th id="659">659</th><td></td></tr>
+<tr><th id="660">660</th><td>      BlockType&amp; block(<em>int</em> grain_index) {</td></tr>
+<tr><th id="661">661</th><td>        eigen_assert(grain_index &gt;= <var>0</var>);</td></tr>
+<tr><th id="662">662</th><td>        eigen_assert(<b>static_cast</b>&lt;size_t&gt;(grain_index) &lt; size());</td></tr>
+<tr><th id="663">663</th><td>        <b>return</b> is_pre_allocated_ ? thread_local_pre_allocated_base_[grain_index]</td></tr>
+<tr><th id="664">664</th><td>                                 : blocks_[grain_index];</td></tr>
+<tr><th id="665">665</th><td>      }</td></tr>
+<tr><th id="666">666</th><td></td></tr>
+<tr><th id="667">667</th><td>      <em>void</em> Release(EvalParallelContext&amp; ctx) <em>const</em> {</td></tr>
+<tr><th id="668">668</th><td>        <b>if</b> (!is_pre_allocated_) {</td></tr>
+<tr><th id="669">669</th><td>          ctx.kernel_.deallocate(ctx.device_, mem_handle_);</td></tr>
+<tr><th id="670">670</th><td>        }</td></tr>
+<tr><th id="671">671</th><td>      }</td></tr>
+<tr><th id="672">672</th><td></td></tr>
+<tr><th id="673">673</th><td>      size_t size() <em>const</em> {</td></tr>
+<tr><th id="674">674</th><td>        <b>return</b> is_pre_allocated_ ? grain_size_ : blocks_.size();</td></tr>
+<tr><th id="675">675</th><td>      }</td></tr>
+<tr><th id="676">676</th><td></td></tr>
+<tr><th id="677">677</th><td>     <b>private</b>:</td></tr>
+<tr><th id="678">678</th><td>      <em>bool</em> is_pre_allocated_;</td></tr>
+<tr><th id="679">679</th><td></td></tr>
+<tr><th id="680">680</th><td>      <i>// Reuse pre-allocated thread local buffers.</i></td></tr>
+<tr><th id="681">681</th><td>      BlockType* thread_local_pre_allocated_base_ = <b>nullptr</b>;</td></tr>
+<tr><th id="682">682</th><td>      size_t grain_size_ = <var>0</var>;</td></tr>
+<tr><th id="683">683</th><td></td></tr>
+<tr><th id="684">684</th><td>      <i>// These will be initialized only if `is_pre_allocated == false`.</i></td></tr>
+<tr><th id="685">685</th><td>      BlockMemHandle mem_handle_{};</td></tr>
+<tr><th id="686">686</th><td>      std::vector&lt;BlockType&gt; blocks_;</td></tr>
+<tr><th id="687">687</th><td>    };</td></tr>
+<tr><th id="688">688</th><td></td></tr>
+<tr><th id="689">689</th><td>    <i>// ThreadLocalBlocksInitialize callable does custom thread local blocks</i></td></tr>
+<tr><th id="690">690</th><td><i>    // initialization, and will reuse pre-allocated buffers if possible, or will</i></td></tr>
+<tr><th id="691">691</th><td><i>    // dynamically allocate new memory.</i></td></tr>
+<tr><th id="692">692</th><td><i>    //</i></td></tr>
+<tr><th id="693">693</th><td><i>    // Lhs/Rhs blocks might be of the same type, so we have to pass explicitly</i></td></tr>
+<tr><th id="694">694</th><td><i>    // for what side do we plan to do block allocation.</i></td></tr>
+<tr><th id="695">695</th><td>    <b>template</b> &lt;<b>typename</b> BlockType, <em>bool</em> is_rhs&gt;</td></tr>
+<tr><th id="696">696</th><td>    <b>class</b> ThreadLocalBlocksInitialize {</td></tr>
+<tr><th id="697">697</th><td>      <em>static</em> <b>constexpr</b> <em>bool</em> kIsLhs =</td></tr>
+<tr><th id="698">698</th><td>          !is_rhs &amp;&amp; std::is_same&lt;BlockType, LhsBlock&gt;::value;</td></tr>
+<tr><th id="699">699</th><td>      <em>static</em> <em>const</em> <em>bool</em> kIsRhs =</td></tr>
+<tr><th id="700">700</th><td>          is_rhs &amp;&amp; std::is_same&lt;BlockType, RhsBlock&gt;::value;</td></tr>
+<tr><th id="701">701</th><td>      <b>static_assert</b>(kIsLhs || kIsRhs, <q>"Unkown block type"</q>);</td></tr>
+<tr><th id="702">702</th><td></td></tr>
+<tr><th id="703">703</th><td>      <b>using</b> Blocks = ThreadLocalBlocks&lt;BlockType&gt;;</td></tr>
+<tr><th id="704">704</th><td></td></tr>
+<tr><th id="705">705</th><td>     <b>public</b>:</td></tr>
+<tr><th id="706">706</th><td>      ThreadLocalBlocksInitialize(EvalParallelContext&amp; ctx)</td></tr>
+<tr><th id="707">707</th><td>          : ctx_(ctx),</td></tr>
+<tr><th id="708">708</th><td>            num_worker_threads_(ctx_.device_.numThreadsInPool()) {}</td></tr>
+<tr><th id="709">709</th><td></td></tr>
+<tr><th id="710">710</th><td>      <em>void</em> <b>operator</b>()(Blocks&amp; blocks) {</td></tr>
+<tr><th id="711">711</th><td>        <em>const</em> <em>int</em> n = ctx_.num_thread_local_allocations_.fetch_add(</td></tr>
+<tr><th id="712">712</th><td>            <var>1</var>, std::memory_order_relaxed);</td></tr>
+<tr><th id="713">713</th><td></td></tr>
+<tr><th id="714">714</th><td>        <b>if</b> (n &gt;= num_worker_threads_) {</td></tr>
+<tr><th id="715">715</th><td>          ThreadLocalBlocksAllocator&lt;is_rhs&gt;::allocate(ctx_, blocks);</td></tr>
+<tr><th id="716">716</th><td>        } <b>else</b> {</td></tr>
+<tr><th id="717">717</th><td>          ThreadLocalBlocksAllocator&lt;is_rhs&gt;::reuse(ctx_, n, blocks);</td></tr>
+<tr><th id="718">718</th><td>        }</td></tr>
+<tr><th id="719">719</th><td>      }</td></tr>
+<tr><th id="720">720</th><td></td></tr>
+<tr><th id="721">721</th><td>     <b>private</b>:</td></tr>
+<tr><th id="722">722</th><td>      <i>// NOTE(ezhulenev): Without 'if constexpr' we have to put calls to</i></td></tr>
+<tr><th id="723">723</th><td><i>      // TensorContractionKernel::allocateSlices into template specializations.</i></td></tr>
+<tr><th id="724">724</th><td><i>      // Also explicit specializations are not allowed at class scope in C++03,</i></td></tr>
+<tr><th id="725">725</th><td><i>      // EvalCtx type parameter is just a workaround for that limitation.</i></td></tr>
+<tr><th id="726">726</th><td>      <b>template</b> &lt;<em>bool</em> pack_rhs, <b>typename</b> EvalCtx = EvalParallelContext&gt;</td></tr>
+<tr><th id="727">727</th><td>      <b>struct</b> ThreadLocalBlocksAllocator;</td></tr>
+<tr><th id="728">728</th><td></td></tr>
+<tr><th id="729">729</th><td>      <b>template</b> &lt;<b>typename</b> EvalCtx&gt;</td></tr>
+<tr><th id="730">730</th><td>      <b>struct</b> ThreadLocalBlocksAllocator&lt;<i>/*pack_rhs=*/</i><b>true</b>, EvalCtx&gt; {</td></tr>
+<tr><th id="731">731</th><td>        <em>static</em> <em>void</em> allocate(EvalCtx&amp; ctx, Blocks&amp; blocks) {</td></tr>
+<tr><th id="732">732</th><td>          std::vector&lt;RhsBlock&gt; rhs_blocks;</td></tr>
+<tr><th id="733">733</th><td>          BlockMemHandle mem_handle = ctx.kernel_.allocateSlices(</td></tr>
+<tr><th id="734">734</th><td>              ctx.device_,</td></tr>
+<tr><th id="735">735</th><td>              <i>/*num_lhs=*/</i><var>0</var>,</td></tr>
+<tr><th id="736">736</th><td>              <i>/*num_rhs=*/</i>ctx.gn_,</td></tr>
+<tr><th id="737">737</th><td>              <i>/*num_slices=*/</i><var>1</var>,</td></tr>
+<tr><th id="738">738</th><td>              <i>/*lhs_blocks=*/</i><b>nullptr</b>, <i>/*rhs_blocks=*/</i>&amp;rhs_blocks);</td></tr>
+<tr><th id="739">739</th><td></td></tr>
+<tr><th id="740">740</th><td>          blocks = ThreadLocalBlocks&lt;RhsBlock&gt;(std::move(mem_handle),</td></tr>
+<tr><th id="741">741</th><td>                                               std::move(rhs_blocks));</td></tr>
+<tr><th id="742">742</th><td>        }</td></tr>
+<tr><th id="743">743</th><td></td></tr>
+<tr><th id="744">744</th><td>        <em>static</em> <em>void</em> reuse(EvalCtx&amp; ctx, <em>int</em> index, Blocks&amp; blocks) {</td></tr>
+<tr><th id="745">745</th><td>          RhsBlock* ptr = &amp;ctx.rhs_thread_local_pre_allocated_[ctx.gn_ * index];</td></tr>
+<tr><th id="746">746</th><td>          blocks = ThreadLocalBlocks&lt;RhsBlock&gt;(ptr, ctx.gn_);</td></tr>
+<tr><th id="747">747</th><td>        }</td></tr>
+<tr><th id="748">748</th><td>      };</td></tr>
+<tr><th id="749">749</th><td></td></tr>
+<tr><th id="750">750</th><td>      <b>template</b> &lt;<b>typename</b> EvalCtx&gt;</td></tr>
+<tr><th id="751">751</th><td>      <b>struct</b> ThreadLocalBlocksAllocator&lt;<i>/*pack_rhs=*/</i><b>false</b>, EvalCtx&gt; {</td></tr>
+<tr><th id="752">752</th><td>        <em>static</em> <em>void</em> allocate(EvalCtx&amp; ctx, Blocks&amp; blocks) {</td></tr>
+<tr><th id="753">753</th><td>          std::vector&lt;LhsBlock&gt; lhs_blocks;</td></tr>
+<tr><th id="754">754</th><td>          BlockMemHandle mem_handle = ctx.kernel_.allocateSlices(</td></tr>
+<tr><th id="755">755</th><td>              ctx.device_,</td></tr>
+<tr><th id="756">756</th><td>              <i>/*num_lhs=*/</i>ctx.gm_,</td></tr>
+<tr><th id="757">757</th><td>              <i>/*num_rhs=*/</i><var>0</var>,</td></tr>
+<tr><th id="758">758</th><td>              <i>/*num_slices=*/</i><var>1</var>,</td></tr>
+<tr><th id="759">759</th><td>              <i>/*lhs_blocks=*/</i>&amp;lhs_blocks, <i>/*rhs_blocks=*/</i><b>nullptr</b>);</td></tr>
+<tr><th id="760">760</th><td></td></tr>
+<tr><th id="761">761</th><td>          blocks = ThreadLocalBlocks&lt;LhsBlock&gt;(std::move(mem_handle),</td></tr>
+<tr><th id="762">762</th><td>                                               std::move(lhs_blocks));</td></tr>
+<tr><th id="763">763</th><td>        }</td></tr>
+<tr><th id="764">764</th><td></td></tr>
+<tr><th id="765">765</th><td>        <em>static</em> <em>void</em> reuse(EvalCtx&amp; ctx, <em>int</em> index, Blocks&amp; blocks) {</td></tr>
+<tr><th id="766">766</th><td>          LhsBlock* ptr = &amp;ctx.lhs_thread_local_pre_allocated_[ctx.gm_ * index];</td></tr>
+<tr><th id="767">767</th><td>          blocks = ThreadLocalBlocks&lt;LhsBlock&gt;(ptr, ctx.gm_);</td></tr>
+<tr><th id="768">768</th><td>        }</td></tr>
+<tr><th id="769">769</th><td>      };</td></tr>
+<tr><th id="770">770</th><td></td></tr>
+<tr><th id="771">771</th><td>      EvalParallelContext&amp; ctx_;</td></tr>
+<tr><th id="772">772</th><td>      <em>const</em> <em>int</em> num_worker_threads_;</td></tr>
+<tr><th id="773">773</th><td>    };</td></tr>
+<tr><th id="774">774</th><td></td></tr>
+<tr><th id="775">775</th><td>    <b>template</b> &lt;<b>typename</b> BlockType&gt;</td></tr>
+<tr><th id="776">776</th><td>    <b>class</b> ThreadLocalBlocksRelease {</td></tr>
+<tr><th id="777">777</th><td>     <b>public</b>:</td></tr>
+<tr><th id="778">778</th><td>      <b>using</b> Blocks = ThreadLocalBlocks&lt;BlockType&gt;;</td></tr>
+<tr><th id="779">779</th><td>      ThreadLocalBlocksRelease(EvalParallelContext&amp; ctx) : ctx_(ctx) {}</td></tr>
+<tr><th id="780">780</th><td>      <em>void</em> <b>operator</b>()(Blocks&amp; blocks) { blocks.Release(ctx_); }</td></tr>
+<tr><th id="781">781</th><td></td></tr>
+<tr><th id="782">782</th><td>     <b>private</b>:</td></tr>
+<tr><th id="783">783</th><td>      EvalParallelContext&amp; ctx_;</td></tr>
+<tr><th id="784">784</th><td>    };</td></tr>
+<tr><th id="785">785</th><td></td></tr>
+<tr><th id="786">786</th><td>    <i>// ThreadLocalBlocks initialization callables.</i></td></tr>
+<tr><th id="787">787</th><td>    <b>using</b> ThreadLocalLhsInit =</td></tr>
+<tr><th id="788">788</th><td>        ThreadLocalBlocksInitialize&lt;LhsBlock, <i>/*is_rhs=*/</i><b>false</b>&gt;;</td></tr>
+<tr><th id="789">789</th><td>    <b>using</b> ThreadLocalRhsInit =</td></tr>
+<tr><th id="790">790</th><td>        ThreadLocalBlocksInitialize&lt;RhsBlock, <i>/*is_rhs=*/</i><b>true</b>&gt;;</td></tr>
+<tr><th id="791">791</th><td></td></tr>
+<tr><th id="792">792</th><td>    <i>// ThreadLocalBlocks release callables.</i></td></tr>
+<tr><th id="793">793</th><td>    <b>using</b> ThreadLocalLhsRelease = ThreadLocalBlocksRelease&lt;LhsBlock&gt;;</td></tr>
+<tr><th id="794">794</th><td>    <b>using</b> ThreadLocalRhsRelease = ThreadLocalBlocksRelease&lt;RhsBlock&gt;;</td></tr>
+<tr><th id="795">795</th><td></td></tr>
+<tr><th id="796">796</th><td>    <i>// Thread local containers for Lhs/Rhs block packs. In practice only one of</i></td></tr>
+<tr><th id="797">797</th><td><i>    // them will be used, depending on the shard_by_col value.</i></td></tr>
+<tr><th id="798">798</th><td>    Eigen::ThreadLocal&lt;ThreadLocalBlocks&lt;LhsBlock&gt;, ThreadLocalLhsInit,</td></tr>
+<tr><th id="799">799</th><td>                       ThreadLocalLhsRelease&gt;</td></tr>
+<tr><th id="800">800</th><td>        lhs_thread_local_blocks_;</td></tr>
+<tr><th id="801">801</th><td>    Eigen::ThreadLocal&lt;ThreadLocalBlocks&lt;RhsBlock&gt;, ThreadLocalRhsInit,</td></tr>
+<tr><th id="802">802</th><td>                       ThreadLocalRhsRelease&gt;</td></tr>
+<tr><th id="803">803</th><td>        rhs_thread_local_blocks_;</td></tr>
+<tr><th id="804">804</th><td></td></tr>
+<tr><th id="805">805</th><td>    <i>// After a particular shard for Kth slice missed thread local execution</i></td></tr>
+<tr><th id="806">806</th><td><i>    // opportunity (K-1 slice didn't complete kernels execution), we can no</i></td></tr>
+<tr><th id="807">807</th><td><i>    // longer schedule K+1 and following slices in thread local mode, because</i></td></tr>
+<tr><th id="808">808</th><td><i>    // there is no more guarantee that previous kernels were executed</i></td></tr>
+<tr><th id="809">809</th><td><i>    // sequentially in the same thread (size is nn_ or nm_).</i></td></tr>
+<tr><th id="810">810</th><td>    std::atomic&lt;<em>bool</em>&gt;* can_use_thread_local_packed_;</td></tr>
+<tr><th id="811">811</th><td></td></tr>
+<tr><th id="812">812</th><td>    std::atomic&lt;uint8_t&gt;** state_kernel_[P];</td></tr>
+<tr><th id="813">813</th><td>    <i>// state_switch_ is frequently modified by worker threads, while other</i></td></tr>
+<tr><th id="814">814</th><td><i>    // fields are read-only after constructor. Let's move it to a separate cache</i></td></tr>
+<tr><th id="815">815</th><td><i>    // line to reduce cache-coherency traffic.</i></td></tr>
+<tr><th id="816">816</th><td>    <em>char</em> pad_[<var>128</var>];</td></tr>
+<tr><th id="817">817</th><td>    std::atomic&lt;Index&gt; state_packing_ready_[P];</td></tr>
+<tr><th id="818">818</th><td>    std::atomic&lt;Index&gt; state_switch_[P];</td></tr>
+<tr><th id="819">819</th><td></td></tr>
+<tr><th id="820">820</th><td>    LhsBlock&amp; packed_lhs(Index m, Index k, Index m1, <em>bool</em> use_thread_local) {</td></tr>
+<tr><th id="821">821</th><td>      <b>if</b> (use_thread_local) {</td></tr>
+<tr><th id="822">822</th><td>        eigen_assert(!shard_by_col_);</td></tr>
+<tr><th id="823">823</th><td>        ThreadLocalBlocks&lt;LhsBlock&gt;&amp; blocks = lhs_thread_local_blocks_.local();</td></tr>
+<tr><th id="824">824</th><td></td></tr>
+<tr><th id="825">825</th><td>        Index grain_index = m1 - m * gm_;</td></tr>
+<tr><th id="826">826</th><td>        <b>return</b> blocks.block(internal::convert_index&lt;<em>int</em>&gt;(grain_index)); <i>// FIXME better make ThreadLocalBlocks use Eigen::Index?</i></td></tr>
+<tr><th id="827">827</th><td>      } <b>else</b> {</td></tr>
+<tr><th id="828">828</th><td>        <b>return</b> packed_lhs_[k % (P - <var>1</var>)][m1];</td></tr>
+<tr><th id="829">829</th><td>      }</td></tr>
+<tr><th id="830">830</th><td>    }</td></tr>
+<tr><th id="831">831</th><td></td></tr>
+<tr><th id="832">832</th><td>    RhsBlock&amp; packed_rhs(Index n, Index k, Index n1, <em>bool</em> use_thread_local) {</td></tr>
+<tr><th id="833">833</th><td>      <b>if</b> (use_thread_local) {</td></tr>
+<tr><th id="834">834</th><td>        eigen_assert(shard_by_col_);</td></tr>
+<tr><th id="835">835</th><td>        ThreadLocalBlocks&lt;RhsBlock&gt;&amp; blocks = rhs_thread_local_blocks_.local();</td></tr>
+<tr><th id="836">836</th><td></td></tr>
+<tr><th id="837">837</th><td>        Index grain_index = n1 - n * gn_;</td></tr>
+<tr><th id="838">838</th><td>        <b>return</b> blocks.block(internal::convert_index&lt;<em>int</em>&gt;(grain_index)); <i>// FIXME better make ThreadLocalBlocks use Eigen::Index?</i></td></tr>
+<tr><th id="839">839</th><td>      } <b>else</b> {</td></tr>
+<tr><th id="840">840</th><td>        <b>return</b> packed_rhs_[k % (P - <var>1</var>)][n1];</td></tr>
+<tr><th id="841">841</th><td>      }</td></tr>
+<tr><th id="842">842</th><td>    }</td></tr>
+<tr><th id="843">843</th><td></td></tr>
+<tr><th id="844">844</th><td>    <i>// In following two methods (pack_lhs and pack_rhs), if we know for sure</i></td></tr>
+<tr><th id="845">845</th><td><i>    // that we'll be able to immediately call a kernel with packed data, and do</i></td></tr>
+<tr><th id="846">846</th><td><i>    // not submit it to the thread pool, we can use thread local memory for</i></td></tr>
+<tr><th id="847">847</th><td><i>    // packed data.</i></td></tr>
+<tr><th id="848">848</th><td><i>    //</i></td></tr>
+<tr><th id="849">849</th><td><i>    // We can only reliably check it if we are running all kernels in sync mode</i></td></tr>
+<tr><th id="850">850</th><td><i>    // (parallelize only by sharding dim). If kernel for m==0 (n==0) is ready to</i></td></tr>
+<tr><th id="851">851</th><td><i>    // run, it's guaranteed that all kernels with larger values of m (n) are</i></td></tr>
+<tr><th id="852">852</th><td><i>    // also ready, because we execute them in the same order for all K slices.</i></td></tr>
+<tr><th id="853">853</th><td></td></tr>
+<tr><th id="854">854</th><td>    <em>void</em> pack_lhs(Index m, Index k) {</td></tr>
+<tr><th id="855">855</th><td>      <em>bool</em> use_thread_local = <b>false</b>;</td></tr>
+<tr><th id="856">856</th><td></td></tr>
+<tr><th id="857">857</th><td>      <b>if</b> (parallelize_by_sharding_dim_only_ &amp;&amp; !shard_by_col_ &amp;&amp;</td></tr>
+<tr><th id="858">858</th><td>          can_use_thread_local_packed_[m].load(std::memory_order_relaxed)) {</td></tr>
+<tr><th id="859">859</th><td>        <b>if</b> (state_kernel_[k % P][m][<var>0</var>].load(std::memory_order_relaxed) == <var>1</var>) {</td></tr>
+<tr><th id="860">860</th><td>          use_thread_local = <b>true</b>;</td></tr>
+<tr><th id="861">861</th><td>        } <b>else</b> {</td></tr>
+<tr><th id="862">862</th><td>          <i>// If we can't guarantee that all kernels in `k` slice will be</i></td></tr>
+<tr><th id="863">863</th><td><i>          // executed sequentially in current thread, it's no longer safe to use</i></td></tr>
+<tr><th id="864">864</th><td><i>          // thread local memory in following slices along the k dimensions.</i></td></tr>
+<tr><th id="865">865</th><td>          eigen_assert(k &gt; <var>0</var>);</td></tr>
+<tr><th id="866">866</th><td>          can_use_thread_local_packed_[m].store(<b>false</b>,</td></tr>
+<tr><th id="867">867</th><td>                                                std::memory_order_relaxed);</td></tr>
+<tr><th id="868">868</th><td>        }</td></tr>
+<tr><th id="869">869</th><td>      }</td></tr>
+<tr><th id="870">870</th><td></td></tr>
+<tr><th id="871">871</th><td>      <em>const</em> Index mend = m * gm_ + gm(m);</td></tr>
+<tr><th id="872">872</th><td>      <b>for</b> (Index m1 = m * gm_; m1 &lt; mend; m1++)</td></tr>
+<tr><th id="873">873</th><td>        kernel_.packLhs(&amp;packed_lhs(m, k, m1, use_thread_local),</td></tr>
+<tr><th id="874">874</th><td>                        lhs_.getSubMapper(m1 * bm_, k * bk_), bk(k), bm(m1));</td></tr>
+<tr><th id="875">875</th><td></td></tr>
+<tr><th id="876">876</th><td>      <b>if</b> (!parallel_pack_ &amp;&amp; shard_by_col_) {</td></tr>
+<tr><th id="877">877</th><td>        assert(!use_thread_local);</td></tr>
+<tr><th id="878">878</th><td>        signal_packing(k);</td></tr>
+<tr><th id="879">879</th><td>      } <b>else</b> {</td></tr>
+<tr><th id="880">880</th><td>        signal_switch(k + <var>1</var>);</td></tr>
+<tr><th id="881">881</th><td>        <b>for</b> (Index n = nn_ - <var>1</var>; n &gt;= <var>0</var>; n--) {</td></tr>
+<tr><th id="882">882</th><td>          <em>bool</em> sync = parallelize_by_sharding_dim_only_ || n == <var>0</var>;</td></tr>
+<tr><th id="883">883</th><td>          signal_kernel(m, n, k, sync, use_thread_local);</td></tr>
+<tr><th id="884">884</th><td>        }</td></tr>
+<tr><th id="885">885</th><td>      }</td></tr>
+<tr><th id="886">886</th><td>    }</td></tr>
+<tr><th id="887">887</th><td></td></tr>
+<tr><th id="888">888</th><td>    <em>void</em> pack_rhs(Index n, Index k) {</td></tr>
+<tr><th id="889">889</th><td>      <em>bool</em> use_thread_local = <b>false</b>;</td></tr>
+<tr><th id="890">890</th><td></td></tr>
+<tr><th id="891">891</th><td>      <b>if</b> (parallelize_by_sharding_dim_only_ &amp;&amp; shard_by_col_ &amp;&amp;</td></tr>
+<tr><th id="892">892</th><td>          can_use_thread_local_packed_[n].load(std::memory_order_relaxed)) {</td></tr>
+<tr><th id="893">893</th><td>        <b>if</b> (state_kernel_[k % P][<var>0</var>][n].load(std::memory_order_relaxed) == <var>1</var>) {</td></tr>
+<tr><th id="894">894</th><td>          use_thread_local = <b>true</b>;</td></tr>
+<tr><th id="895">895</th><td>        } <b>else</b> {</td></tr>
+<tr><th id="896">896</th><td>          <i>// If we can't guarantee that all kernels in `k` slice will be</i></td></tr>
+<tr><th id="897">897</th><td><i>          // executed sequentially in current thread, it's no longer safe to use</i></td></tr>
+<tr><th id="898">898</th><td><i>          // thread local memory in followig slices along the k dimensions.</i></td></tr>
+<tr><th id="899">899</th><td>          eigen_assert(k &gt; <var>0</var>);</td></tr>
+<tr><th id="900">900</th><td>          can_use_thread_local_packed_[n].store(<b>false</b>,</td></tr>
+<tr><th id="901">901</th><td>                                                std::memory_order_relaxed);</td></tr>
+<tr><th id="902">902</th><td>        }</td></tr>
+<tr><th id="903">903</th><td>      }</td></tr>
+<tr><th id="904">904</th><td></td></tr>
+<tr><th id="905">905</th><td>      <em>const</em> Index nend = n * gn_ + gn(n);</td></tr>
+<tr><th id="906">906</th><td>      <b>for</b> (Index n1 = n * gn_; n1 &lt; nend; n1++) {</td></tr>
+<tr><th id="907">907</th><td>        <b>if</b> (!TensorContractionKernel::HasBeta &amp;&amp; k == <var>0</var>) {</td></tr>
+<tr><th id="908">908</th><td>          <i>// Zero the output memory in parallel, only if contraction kernel does</i></td></tr>
+<tr><th id="909">909</th><td><i>          // not support `beta`. Otherwise we will pass beta 0.0 to the first</i></td></tr>
+<tr><th id="910">910</th><td><i>          // call to the `TensorContractionKernel::invoke()`.</i></td></tr>
+<tr><th id="911">911</th><td><i>          //</i></td></tr>
+<tr><th id="912">912</th><td><i>          // On 10000x2x10000 mm zeroing can easily take half of time. Zero (bn</i></td></tr>
+<tr><th id="913">913</th><td><i>          // x m) row. Safe to do here because all kernels that will write to</i></td></tr>
+<tr><th id="914">914</th><td><i>          // this memory depend on completion of this task. Note: don't call</i></td></tr>
+<tr><th id="915">915</th><td><i>          // device_.memset() here. device_.memset() blocks on thread pool</i></td></tr>
+<tr><th id="916">916</th><td><i>          // worker thread, which can lead to underutilization and deadlocks.</i></td></tr>
+<tr><th id="917">917</th><td>          memset(buffer_ + n1 * bn_ * m_, <var>0</var>, bn(n1) * m_ * <b>sizeof</b>(Scalar));</td></tr>
+<tr><th id="918">918</th><td>        }</td></tr>
+<tr><th id="919">919</th><td>        kernel_.packRhs(&amp;packed_rhs(n, k, n1, use_thread_local),</td></tr>
+<tr><th id="920">920</th><td>                        rhs_.getSubMapper(k * bk_, n1 * bn_), bk(k), bn(n1));</td></tr>
+<tr><th id="921">921</th><td>      }</td></tr>
+<tr><th id="922">922</th><td></td></tr>
+<tr><th id="923">923</th><td>      <b>if</b> (parallel_pack_ || shard_by_col_) {</td></tr>
+<tr><th id="924">924</th><td>        signal_switch(k + <var>1</var>);</td></tr>
+<tr><th id="925">925</th><td>        <b>for</b> (Index m = nm_ - <var>1</var>; m &gt;= <var>0</var>; m--) {</td></tr>
+<tr><th id="926">926</th><td>          <em>bool</em> sync = parallelize_by_sharding_dim_only_ || m == <var>0</var>;</td></tr>
+<tr><th id="927">927</th><td>          signal_kernel(m, n, k, sync, use_thread_local);</td></tr>
+<tr><th id="928">928</th><td>        }</td></tr>
+<tr><th id="929">929</th><td>      } <b>else</b> {</td></tr>
+<tr><th id="930">930</th><td>        assert(!use_thread_local);</td></tr>
+<tr><th id="931">931</th><td>        signal_packing(k);</td></tr>
+<tr><th id="932">932</th><td>      }</td></tr>
+<tr><th id="933">933</th><td>    }</td></tr>
+<tr><th id="934">934</th><td></td></tr>
+<tr><th id="935">935</th><td>    <em>void</em> kernel(Index m, Index n, Index k, <em>bool</em> use_thread_local) {</td></tr>
+<tr><th id="936">936</th><td>      <i>// Note: order of iteration matters here. Iteration over m is innermost</i></td></tr>
+<tr><th id="937">937</th><td><i>      // because we want to reuse the same packed rhs in consecutive tasks</i></td></tr>
+<tr><th id="938">938</th><td><i>      // (rhs fits into L2$ while lhs only into L3$).</i></td></tr>
+<tr><th id="939">939</th><td>      <em>const</em> Index nend = n * gn_ + gn(n);</td></tr>
+<tr><th id="940">940</th><td>      <em>const</em> Index mend = m * gm_ + gm(m);</td></tr>
+<tr><th id="941">941</th><td></td></tr>
+<tr><th id="942">942</th><td>      <i>// NOTE: output = alpha * LHS * RHS + beta * output.</i></td></tr>
+<tr><th id="943">943</th><td>      <em>const</em> Scalar alpha = Scalar(<var>1</var>);</td></tr>
+<tr><th id="944">944</th><td>      <em>const</em> Scalar beta =</td></tr>
+<tr><th id="945">945</th><td>          (TensorContractionKernel::HasBeta &amp;&amp; k == <var>0</var>) ? Scalar(<var>0</var>) : Scalar(<var>1</var>);</td></tr>
+<tr><th id="946">946</th><td></td></tr>
+<tr><th id="947">947</th><td>      <b>if</b> (shard_by_col_) {</td></tr>
+<tr><th id="948">948</th><td>        <b>for</b> (Index n1 = n * gn_; n1 &lt; nend; n1++) {</td></tr>
+<tr><th id="949">949</th><td>          <b>for</b> (Index m1 = m * gm_; m1 &lt; mend; m1++) {</td></tr>
+<tr><th id="950">950</th><td>            <em>const</em> <em>auto</em> output_mapper = output_.getSubMapper(m1 * bm_, n1 * bn_);</td></tr>
+<tr><th id="951">951</th><td>            kernel_.invoke(</td></tr>
+<tr><th id="952">952</th><td>                output_mapper,</td></tr>
+<tr><th id="953">953</th><td>                packed_lhs(m, k, m1, !shard_by_col_ &amp;&amp; use_thread_local),</td></tr>
+<tr><th id="954">954</th><td>                packed_rhs(n, k, n1, shard_by_col_ &amp;&amp; use_thread_local), bm(m1),</td></tr>
+<tr><th id="955">955</th><td>                bk(k), bn(n1), alpha, beta);</td></tr>
+<tr><th id="956">956</th><td></td></tr>
+<tr><th id="957">957</th><td>            <i>// We are done with the last task for the [m1, n1] block.</i></td></tr>
+<tr><th id="958">958</th><td>            <b>if</b> (k + <var>1</var> == nk_) {</td></tr>
+<tr><th id="959">959</th><td>              output_kernel_(output_mapper, tensor_contraction_params_,</td></tr>
+<tr><th id="960">960</th><td>                             m1 * bm_, n1 * bn_, bm(m1), bn(n1));</td></tr>
+<tr><th id="961">961</th><td>            }</td></tr>
+<tr><th id="962">962</th><td>          }</td></tr>
+<tr><th id="963">963</th><td>        }</td></tr>
+<tr><th id="964">964</th><td>      } <b>else</b> {</td></tr>
+<tr><th id="965">965</th><td>        <b>for</b> (Index m1 = m * gm_; m1 &lt; mend; m1++)</td></tr>
+<tr><th id="966">966</th><td>          <b>for</b> (Index n1 = n * gn_; n1 &lt; nend; n1++) {</td></tr>
+<tr><th id="967">967</th><td>            <em>const</em> <em>auto</em> output_mapper = output_.getSubMapper(m1 * bm_, n1 * bn_);</td></tr>
+<tr><th id="968">968</th><td>            kernel_.invoke(</td></tr>
+<tr><th id="969">969</th><td>                output_mapper,</td></tr>
+<tr><th id="970">970</th><td>                packed_lhs(m, k, m1, !shard_by_col_ &amp;&amp; use_thread_local),</td></tr>
+<tr><th id="971">971</th><td>                packed_rhs(n, k, n1, shard_by_col_ &amp;&amp; use_thread_local), bm(m1),</td></tr>
+<tr><th id="972">972</th><td>                bk(k), bn(n1), alpha, beta);</td></tr>
+<tr><th id="973">973</th><td></td></tr>
+<tr><th id="974">974</th><td>            <i>// We are done with the last task for the [m1, n1] block.</i></td></tr>
+<tr><th id="975">975</th><td>            <b>if</b> (k + <var>1</var> == nk_) {</td></tr>
+<tr><th id="976">976</th><td>              output_kernel_(output_mapper, tensor_contraction_params_,</td></tr>
+<tr><th id="977">977</th><td>                             m1 * bm_, n1 * bn_, bm(m1), bn(n1));</td></tr>
+<tr><th id="978">978</th><td>            }</td></tr>
+<tr><th id="979">979</th><td>          }</td></tr>
+<tr><th id="980">980</th><td>      }</td></tr>
+<tr><th id="981">981</th><td>      signal_kernel(m, n, k + <var>1</var>, <i>/*sync=*/</i><b>false</b>, <i>/*use_thread_local=*/</i><b>false</b>);</td></tr>
+<tr><th id="982">982</th><td>      signal_switch(k + <var>2</var>);</td></tr>
+<tr><th id="983">983</th><td>    }</td></tr>
+<tr><th id="984">984</th><td></td></tr>
+<tr><th id="985">985</th><td>    <em>void</em> signal_packing(Index k) {</td></tr>
+<tr><th id="986">986</th><td>      eigen_assert(!parallel_pack_);</td></tr>
+<tr><th id="987">987</th><td>      Index s = state_packing_ready_[k % P].fetch_sub(<var>1</var>);</td></tr>
+<tr><th id="988">988</th><td>      eigen_assert(s &gt; <var>0</var>);</td></tr>
+<tr><th id="989">989</th><td>      <b>if</b> (s != <var>1</var>) <b>return</b>;</td></tr>
+<tr><th id="990">990</th><td>      state_packing_ready_[k % P] = shard_by_col_ ? nm_ : nn_;</td></tr>
+<tr><th id="991">991</th><td>      enqueue_packing(k, shard_by_col_);</td></tr>
+<tr><th id="992">992</th><td>    }</td></tr>
+<tr><th id="993">993</th><td></td></tr>
+<tr><th id="994">994</th><td>    <em>void</em> signal_kernel(Index m, Index n, Index k, <em>bool</em> sync,</td></tr>
+<tr><th id="995">995</th><td>                       <em>bool</em> use_thread_local) {</td></tr>
+<tr><th id="996">996</th><td>      std::atomic&lt;uint8_t&gt;* state = &amp;state_kernel_[k % P][m][n];</td></tr>
+<tr><th id="997">997</th><td>      Index s = state-&gt;load();</td></tr>
+<tr><th id="998">998</th><td>      eigen_assert(s &gt; <var>0</var>);</td></tr>
+<tr><th id="999">999</th><td>      <b>if</b> (s != <var>1</var> &amp;&amp; state-&gt;fetch_sub(<var>1</var>) != <var>1</var>) {</td></tr>
+<tr><th id="1000">1000</th><td>        eigen_assert(!use_thread_local);</td></tr>
+<tr><th id="1001">1001</th><td>        <b>return</b>;</td></tr>
+<tr><th id="1002">1002</th><td>      }</td></tr>
+<tr><th id="1003">1003</th><td>      state-&gt;store(parallel_pack_ ? <var>3</var> : <var>2</var>, std::memory_order_relaxed);</td></tr>
+<tr><th id="1004">1004</th><td>      <b>if</b> (sync) {</td></tr>
+<tr><th id="1005">1005</th><td>        kernel(m, n, k, use_thread_local);</td></tr>
+<tr><th id="1006">1006</th><td>      } <b>else</b> {</td></tr>
+<tr><th id="1007">1007</th><td>        eigen_assert(!use_thread_local);</td></tr>
+<tr><th id="1008">1008</th><td>        device_.enqueueNoNotification(</td></tr>
+<tr><th id="1009">1009</th><td>            [=]() { kernel(m, n, k, use_thread_local); });</td></tr>
+<tr><th id="1010">1010</th><td>      }</td></tr>
+<tr><th id="1011">1011</th><td>    }</td></tr>
+<tr><th id="1012">1012</th><td></td></tr>
+<tr><th id="1013">1013</th><td>    <em>void</em> signal_switch(Index k, Index v = <var>1</var>) {</td></tr>
+<tr><th id="1014">1014</th><td>      Index s = state_switch_[k % P].fetch_sub(v);</td></tr>
+<tr><th id="1015">1015</th><td>      eigen_assert(s &gt;= v);</td></tr>
+<tr><th id="1016">1016</th><td>      <b>if</b> (s != v) <b>return</b>;</td></tr>
+<tr><th id="1017">1017</th><td></td></tr>
+<tr><th id="1018">1018</th><td>      <i>// Ready to switch to the next k slice.</i></td></tr>
+<tr><th id="1019">1019</th><td><i>      // Reset counter for the next iteration.</i></td></tr>
+<tr><th id="1020">1020</th><td>      state_switch_[k % P] =</td></tr>
+<tr><th id="1021">1021</th><td>          (parallel_pack_ ? nm_ + nn_ : (shard_by_col_ ? nn_ : nm_)) +</td></tr>
+<tr><th id="1022">1022</th><td>          nm_ * nn_;</td></tr>
+<tr><th id="1023">1023</th><td>      <b>if</b> (k &lt; nk_) {</td></tr>
+<tr><th id="1024">1024</th><td>        <i>// Issue lhs/rhs packing. Their completion will in turn kick off</i></td></tr>
+<tr><th id="1025">1025</th><td><i>        // kernels.</i></td></tr>
+<tr><th id="1026">1026</th><td>        <b>if</b> (parallel_pack_) {</td></tr>
+<tr><th id="1027">1027</th><td>          enqueue_packing(k, !shard_by_col_);</td></tr>
+<tr><th id="1028">1028</th><td>          enqueue_packing(k, shard_by_col_);</td></tr>
+<tr><th id="1029">1029</th><td>        } <b>else</b> <b>if</b> (shard_by_col_) {</td></tr>
+<tr><th id="1030">1030</th><td>          enqueue_packing(k, <b>false</b>);</td></tr>
+<tr><th id="1031">1031</th><td>        } <b>else</b> {</td></tr>
+<tr><th id="1032">1032</th><td>          enqueue_packing(k, <b>true</b>);</td></tr>
+<tr><th id="1033">1033</th><td>        }</td></tr>
+<tr><th id="1034">1034</th><td></td></tr>
+<tr><th id="1035">1035</th><td>        <i>// Termination handling.</i></td></tr>
+<tr><th id="1036">1036</th><td><i>        // Because kernel completion signals k + 2 switch, we need to finish nk</i></td></tr>
+<tr><th id="1037">1037</th><td><i>        // + 2 slices without issuing any tasks on nk + 1 slice. So here we</i></td></tr>
+<tr><th id="1038">1038</th><td><i>        // pretend that all nk + 1 packing tasks just finish instantly; so that</i></td></tr>
+<tr><th id="1039">1039</th><td><i>        // nk + 2 switch only waits for completion of nk kernels.</i></td></tr>
+<tr><th id="1040">1040</th><td>      } <b>else</b> <b>if</b> (k == nk_) {</td></tr>
+<tr><th id="1041">1041</th><td>        signal_switch(k + <var>1</var>,</td></tr>
+<tr><th id="1042">1042</th><td>                      parallel_pack_ ? nm_ + nn_ : (shard_by_col_ ? nn_ : nm_));</td></tr>
+<tr><th id="1043">1043</th><td>      } <b>else</b> {</td></tr>
+<tr><th id="1044">1044</th><td>        done_.Notify();</td></tr>
+<tr><th id="1045">1045</th><td>      }</td></tr>
+<tr><th id="1046">1046</th><td>    }</td></tr>
+<tr><th id="1047">1047</th><td></td></tr>
+<tr><th id="1048">1048</th><td>    <i>// Enqueue all rhs/lhs packing for k-th slice.</i></td></tr>
+<tr><th id="1049">1049</th><td>    <em>void</em> enqueue_packing(Index k, <em>bool</em> rhs) {</td></tr>
+<tr><th id="1050">1050</th><td>      enqueue_packing_helper(<var>0</var>, rhs ? nn_ : nm_, k, rhs);</td></tr>
+<tr><th id="1051">1051</th><td>    }</td></tr>
+<tr><th id="1052">1052</th><td></td></tr>
+<tr><th id="1053">1053</th><td>    <em>void</em> enqueue_packing_helper(Index start, Index end, Index k, <em>bool</em> rhs) {</td></tr>
+<tr><th id="1054">1054</th><td>      <b>if</b> (end - start == <var>1</var>) {</td></tr>
+<tr><th id="1055">1055</th><td>        <b>if</b> (rhs)</td></tr>
+<tr><th id="1056">1056</th><td>          pack_rhs(start, k);</td></tr>
+<tr><th id="1057">1057</th><td>        <b>else</b></td></tr>
+<tr><th id="1058">1058</th><td>          pack_lhs(start, k);</td></tr>
+<tr><th id="1059">1059</th><td>      } <b>else</b> {</td></tr>
+<tr><th id="1060">1060</th><td>        <b>while</b> (end - start &gt; <var>1</var>) {</td></tr>
+<tr><th id="1061">1061</th><td>          Index mid = (start + end) / <var>2</var>;</td></tr>
+<tr><th id="1062">1062</th><td>          device_.enqueueNoNotification(</td></tr>
+<tr><th id="1063">1063</th><td>              [=]() { enqueue_packing_helper(mid, end, k, rhs); });</td></tr>
+<tr><th id="1064">1064</th><td>          end = mid;</td></tr>
+<tr><th id="1065">1065</th><td>        }</td></tr>
+<tr><th id="1066">1066</th><td></td></tr>
+<tr><th id="1067">1067</th><td>        <i>// Decide if we want to run first packing task (start == 0) in</i></td></tr>
+<tr><th id="1068">1068</th><td><i>        // async mode if we parallelize only by sharding dim:</i></td></tr>
+<tr><th id="1069">1069</th><td><i>        // (1) pack_lhs and pack_rhs call signal_switch before completing</i></td></tr>
+<tr><th id="1070">1070</th><td><i>        //     all calls to signal_kernel, which in sync mode might lead</i></td></tr>
+<tr><th id="1071">1071</th><td><i>        //     to the execution of the first kernel of the k+1 slice, before</i></td></tr>
+<tr><th id="1072">1072</th><td><i>        //     completing a call to the last kernel of the k slice.</i></td></tr>
+<tr><th id="1073">1073</th><td><i>        // (2) all pack tasks for sharded dim must be executed in a thread</i></td></tr>
+<tr><th id="1074">1074</th><td><i>        //     pool to get pre-allocated thead local buffers.</i></td></tr>
+<tr><th id="1075">1075</th><td>        <em>bool</em> pack_async =</td></tr>
+<tr><th id="1076">1076</th><td>          (start == <var>0</var>) &amp;&amp;</td></tr>
+<tr><th id="1077">1077</th><td>          (parallelize_by_sharding_dim_only_&amp;&amp; shard_by_col_ == rhs) &amp;&amp;</td></tr>
+<tr><th id="1078">1078</th><td>          (k &gt; <var>0</var> || std::this_thread::get_id() == created_by_thread_id_);</td></tr>
+<tr><th id="1079">1079</th><td></td></tr>
+<tr><th id="1080">1080</th><td>        <b>if</b> (pack_async) {</td></tr>
+<tr><th id="1081">1081</th><td>          device_.enqueueNoNotification(</td></tr>
+<tr><th id="1082">1082</th><td>              [=]() { enqueue_packing_helper(start, end, k, rhs); });</td></tr>
+<tr><th id="1083">1083</th><td>        } <b>else</b> {</td></tr>
+<tr><th id="1084">1084</th><td>          enqueue_packing_helper(start, end, k, rhs);</td></tr>
+<tr><th id="1085">1085</th><td>        }</td></tr>
+<tr><th id="1086">1086</th><td>      }</td></tr>
+<tr><th id="1087">1087</th><td>    }</td></tr>
+<tr><th id="1088">1088</th><td></td></tr>
+<tr><th id="1089">1089</th><td>    <i>// Block sizes with accounting for potentially incomplete last block.</i></td></tr>
+<tr><th id="1090">1090</th><td>    Index bm(Index m) <em>const</em> { <b>return</b> m + <var>1</var> &lt; nm0_ ? bm_ : m_ + bm_ - bm_ * nm0_; }</td></tr>
+<tr><th id="1091">1091</th><td>    Index bn(Index n) <em>const</em> { <b>return</b> n + <var>1</var> &lt; nn0_ ? bn_ : n_ + bn_ - bn_ * nn0_; }</td></tr>
+<tr><th id="1092">1092</th><td>    Index bk(Index k) <em>const</em> { <b>return</b> k + <var>1</var> &lt; nk_ ? bk_ : k_ + bk_ - bk_ * nk_; }</td></tr>
+<tr><th id="1093">1093</th><td>    <i>// Task grain sizes accounting for potentially incomplete last task.</i></td></tr>
+<tr><th id="1094">1094</th><td>    Index gm(Index m) <em>const</em> { <b>return</b> m + <var>1</var> &lt; nm_ ? gm_ : nm0_ + gm_ - gm_ * nm_; }</td></tr>
+<tr><th id="1095">1095</th><td>    Index gn(Index n) <em>const</em> { <b>return</b> n + <var>1</var> &lt; nn_ ? gn_ : nn0_ + gn_ - gn_ * nn_; }</td></tr>
+<tr><th id="1096">1096</th><td></td></tr>
+<tr><th id="1097">1097</th><td>    EvalParallelContext(<em>const</em> EvalParallelContext&amp;) = <b>delete</b>;</td></tr>
+<tr><th id="1098">1098</th><td>    <em>void</em> <b>operator</b>=(<em>const</em> EvalParallelContext&amp;) = <b>delete</b>;</td></tr>
+<tr><th id="1099">1099</th><td>  };</td></tr>
+<tr><th id="1100">1100</th><td></td></tr>
+<tr><th id="1101">1101</th><td>  <b>template</b> &lt;<em>bool</em> lhs_inner_dim_contiguous, <em>bool</em> rhs_inner_dim_contiguous,</td></tr>
+<tr><th id="1102">1102</th><td>            <em>bool</em> rhs_inner_dim_reordered, <em>int</em> Alignment&gt;</td></tr>
+<tr><th id="1103">1103</th><td>  <b>using</b> SyncEvalParallelContext =</td></tr>
+<tr><th id="1104">1104</th><td>      EvalParallelContext&lt;NoCallback, lhs_inner_dim_contiguous,</td></tr>
+<tr><th id="1105">1105</th><td>                          rhs_inner_dim_contiguous, rhs_inner_dim_reordered,</td></tr>
+<tr><th id="1106">1106</th><td>                          Alignment&gt;;</td></tr>
+<tr><th id="1107">1107</th><td></td></tr>
+<tr><th id="1108">1108</th><td>  <i>// ------------------------------------------------------------------------ //</i></td></tr>
+<tr><th id="1109">1109</th><td><i></i></td></tr>
+<tr><th id="1110">1110</th><td><i>  // EvalShardedByInnerDimContext orchestrates sync/async contraction</i></td></tr>
+<tr><th id="1111">1111</th><td><i>  // evaluation, when we shard by inner dimension. When it is executed in</i></td></tr>
+<tr><th id="1112">1112</th><td><i>  // asynchronous mode, it owns all the shared state that might be accessible by</i></td></tr>
+<tr><th id="1113">1113</th><td><i>  // block processing tasks.</i></td></tr>
+<tr><th id="1114">1114</th><td></td></tr>
+<tr><th id="1115">1115</th><td>  <b>template</b> &lt;<b>typename</b> DoneCallback&gt;</td></tr>
+<tr><th id="1116">1116</th><td>  <b>struct</b> EvalShardedByInnerDimContext {</td></tr>
+<tr><th id="1117">1117</th><td>    EvalShardedByInnerDimContext(<em>const</em> Self* self, <em>int</em> num_threads,</td></tr>
+<tr><th id="1118">1118</th><td>                                 Scalar* result_buffer,</td></tr>
+<tr><th id="1119">1119</th><td>                                 Index m_size, Index n_size, Index k_size,</td></tr>
+<tr><th id="1120">1120</th><td>                                 DoneCallback done_callback)</td></tr>
+<tr><th id="1121">1121</th><td>        : evaluator(self),</td></tr>
+<tr><th id="1122">1122</th><td>          m_lhs_inner_dim_contiguous(evaluator-&gt;m_lhs_inner_dim_contiguous),</td></tr>
+<tr><th id="1123">1123</th><td>          m_rhs_inner_dim_contiguous(evaluator-&gt;m_rhs_inner_dim_contiguous),</td></tr>
+<tr><th id="1124">1124</th><td>          m_rhs_inner_dim_reordered(evaluator-&gt;m_rhs_inner_dim_reordered),</td></tr>
+<tr><th id="1125">1125</th><td>          result(result_buffer),</td></tr>
+<tr><th id="1126">1126</th><td>          m(m_size),</td></tr>
+<tr><th id="1127">1127</th><td>          n(n_size),</td></tr>
+<tr><th id="1128">1128</th><td>          k(k_size),</td></tr>
+<tr><th id="1129">1129</th><td>          done(std::move(done_callback)),</td></tr>
+<tr><th id="1130">1130</th><td>          buffer_size_bytes(m * n * <b>sizeof</b>(Scalar)),</td></tr>
+<tr><th id="1131">1131</th><td>          block_size(blockSize(k, num_threads)),</td></tr>
+<tr><th id="1132">1132</th><td>          num_blocks(divup&lt;Index&gt;(k, block_size)),</td></tr>
+<tr><th id="1133">1133</th><td>          num_pending_blocks(internal::convert_index&lt;<em>int</em>&gt;(num_blocks)),</td></tr>
+<tr><th id="1134">1134</th><td>          l0_ranges(divup&lt;Index&gt;(num_blocks, l0_size)),</td></tr>
+<tr><th id="1135">1135</th><td>          l0_state(l0_ranges),</td></tr>
+<tr><th id="1136">1136</th><td>          block_buffers(num_blocks) {</td></tr>
+<tr><th id="1137">1137</th><td>      <i>// Keep count of pending gemm tasks for each l0 range.</i></td></tr>
+<tr><th id="1138">1138</th><td>      <b>for</b> (<em>int</em> i = <var>0</var>; i &lt; l0_ranges; ++i) {</td></tr>
+<tr><th id="1139">1139</th><td>        <em>const</em> Index num_pending_tasks = actualRangeSize(l0_ranges, l0_size, i);</td></tr>
+<tr><th id="1140">1140</th><td>        l0_state.emplace_back(internal::convert_index&lt;<em>int</em>&gt;(num_pending_tasks));</td></tr>
+<tr><th id="1141">1141</th><td>      }</td></tr>
+<tr><th id="1142">1142</th><td></td></tr>
+<tr><th id="1143">1143</th><td>      <i>// Allocate temporary buffers for each block.</i></td></tr>
+<tr><th id="1144">1144</th><td>      <b>for</b> (Index block_idx = <var>0</var>; block_idx &lt; num_blocks; ++block_idx) {</td></tr>
+<tr><th id="1145">1145</th><td>        Scalar* buf = block_idx == <var>0</var></td></tr>
+<tr><th id="1146">1146</th><td>                          ? result</td></tr>
+<tr><th id="1147">1147</th><td>                          : <b>static_cast</b>&lt;Scalar*&gt;(evaluator-&gt;m_device.allocate(</td></tr>
+<tr><th id="1148">1148</th><td>                                buffer_size_bytes));</td></tr>
+<tr><th id="1149">1149</th><td>        block_buffers.emplace_back(buf);</td></tr>
+<tr><th id="1150">1150</th><td>      }</td></tr>
+<tr><th id="1151">1151</th><td>    }</td></tr>
+<tr><th id="1152">1152</th><td></td></tr>
+<tr><th id="1153">1153</th><td>    ~EvalShardedByInnerDimContext() {</td></tr>
+<tr><th id="1154">1154</th><td>      <b>for</b> (Index i = <var>1</var>; i &lt; num_blocks; ++i) {</td></tr>
+<tr><th id="1155">1155</th><td>        evaluator-&gt;m_device.deallocate(block_buffers[i]);</td></tr>
+<tr><th id="1156">1156</th><td>      }</td></tr>
+<tr><th id="1157">1157</th><td>    }</td></tr>
+<tr><th id="1158">1158</th><td></td></tr>
+<tr><th id="1159">1159</th><td>    <b>template</b> &lt;<em>int</em> Alignment&gt;</td></tr>
+<tr><th id="1160">1160</th><td>    <em>void</em> run() {</td></tr>
+<tr><th id="1161">1161</th><td>      Barrier barrier(internal::convert_index&lt;<em>int</em>&gt;(num_blocks));</td></tr>
+<tr><th id="1162">1162</th><td>      eval&lt;Alignment&gt;(barrier, <var>0</var>, num_blocks);</td></tr>
+<tr><th id="1163">1163</th><td>      barrier.Wait();</td></tr>
+<tr><th id="1164">1164</th><td></td></tr>
+<tr><th id="1165">1165</th><td>      <i>// Aggregate partial sums from l0 ranges.</i></td></tr>
+<tr><th id="1166">1166</th><td>      aggregateL0Blocks&lt;Alignment&gt;();</td></tr>
+<tr><th id="1167">1167</th><td></td></tr>
+<tr><th id="1168">1168</th><td>      <i>// Apply output kernel.</i></td></tr>
+<tr><th id="1169">1169</th><td>      applyOutputKernel();</td></tr>
+<tr><th id="1170">1170</th><td>    }</td></tr>
+<tr><th id="1171">1171</th><td></td></tr>
+<tr><th id="1172">1172</th><td>    <b>template</b> &lt;<em>int</em> Alignment&gt;</td></tr>
+<tr><th id="1173">1173</th><td>    <em>void</em> runAsync() {</td></tr>
+<tr><th id="1174">1174</th><td>      evalAsync&lt;Alignment&gt;(<var>0</var>, num_blocks);</td></tr>
+<tr><th id="1175">1175</th><td>    }</td></tr>
+<tr><th id="1176">1176</th><td></td></tr>
+<tr><th id="1177">1177</th><td>   <b>private</b>:</td></tr>
+<tr><th id="1178">1178</th><td>    <i>// The underlying GEMM kernel assumes that k is a multiple of</i></td></tr>
+<tr><th id="1179">1179</th><td><i>    // the packet size and subtle breakage occurs if this is violated.</i></td></tr>
+<tr><th id="1180">1180</th><td>    <em>static</em> <em>const</em> Index packet_size = internal::packet_traits&lt;RhsScalar&gt;::size;</td></tr>
+<tr><th id="1181">1181</th><td></td></tr>
+<tr><th id="1182">1182</th><td>    <em>const</em> Self* evaluator;  <i>// TensorContraction evaluator</i></td></tr>
+<tr><th id="1183">1183</th><td></td></tr>
+<tr><th id="1184">1184</th><td>    <i>// These fields required fromTENSOR_CONTRACTION_DISPATCH macro.</i></td></tr>
+<tr><th id="1185">1185</th><td>    <em>bool</em> m_lhs_inner_dim_contiguous;</td></tr>
+<tr><th id="1186">1186</th><td>    <em>bool</em> m_rhs_inner_dim_contiguous;</td></tr>
+<tr><th id="1187">1187</th><td>    <em>bool</em> m_rhs_inner_dim_reordered;</td></tr>
+<tr><th id="1188">1188</th><td></td></tr>
+<tr><th id="1189">1189</th><td>    Scalar* result;</td></tr>
+<tr><th id="1190">1190</th><td></td></tr>
+<tr><th id="1191">1191</th><td>    Index m;</td></tr>
+<tr><th id="1192">1192</th><td>    Index n;</td></tr>
+<tr><th id="1193">1193</th><td>    Index k;</td></tr>
+<tr><th id="1194">1194</th><td></td></tr>
+<tr><th id="1195">1195</th><td>    DoneCallback done;</td></tr>
+<tr><th id="1196">1196</th><td></td></tr>
+<tr><th id="1197">1197</th><td>    <i>// ----------------------------------------------------------------------//</i></td></tr>
+<tr><th id="1198">1198</th><td><i>    // Algorithm parameters.</i></td></tr>
+<tr><th id="1199">1199</th><td><i></i></td></tr>
+<tr><th id="1200">1200</th><td><i>    // We will compute partial results into the buffers of this size.</i></td></tr>
+<tr><th id="1201">1201</th><td>    Index buffer_size_bytes;</td></tr>
+<tr><th id="1202">1202</th><td></td></tr>
+<tr><th id="1203">1203</th><td>    Index block_size;</td></tr>
+<tr><th id="1204">1204</th><td>    Index num_blocks;</td></tr>
+<tr><th id="1205">1205</th><td></td></tr>
+<tr><th id="1206">1206</th><td>    <i>// Keep track of pending tasks when evaluate in async mode.</i></td></tr>
+<tr><th id="1207">1207</th><td>    std::atomic&lt;<em>int</em>&gt; num_pending_blocks;</td></tr>
+<tr><th id="1208">1208</th><td></td></tr>
+<tr><th id="1209">1209</th><td>    <i>// We compute partial gemm results in parallel, and to get the final result</i></td></tr>
+<tr><th id="1210">1210</th><td><i>    // we need to add them all together. For the large number of threads (&gt;= 48)</i></td></tr>
+<tr><th id="1211">1211</th><td><i>    // this adds a very expensive sequential step at the end.</i></td></tr>
+<tr><th id="1212">1212</th><td><i>    //</i></td></tr>
+<tr><th id="1213">1213</th><td><i>    // We split the [0, num_blocks) into small ranges, and when a task for the</i></td></tr>
+<tr><th id="1214">1214</th><td><i>    // block finishes its partial gemm computation, it checks if it was the last</i></td></tr>
+<tr><th id="1215">1215</th><td><i>    // gemm in the range, and if so, it will add all blocks of the range.</i></td></tr>
+<tr><th id="1216">1216</th><td><i>    //</i></td></tr>
+<tr><th id="1217">1217</th><td><i>    // After all tasks done, we need to add only these pre-aggregated blocks.</i></td></tr>
+<tr><th id="1218">1218</th><td><i></i></td></tr>
+<tr><th id="1219">1219</th><td><i>    // For now we use just a single level of ranges to compute pre-aggregated</i></td></tr>
+<tr><th id="1220">1220</th><td><i>    // partial sums, but in general we can use more layers to compute tree</i></td></tr>
+<tr><th id="1221">1221</th><td><i>    // aggregation in parallel and reduce the size of the sequential step.</i></td></tr>
+<tr><th id="1222">1222</th><td><i>    //</i></td></tr>
+<tr><th id="1223">1223</th><td><i>    // TODO(ezhulenev): Add multilevel tree aggregation? Probably will make</i></td></tr>
+<tr><th id="1224">1224</th><td><i>    // sense only if number of threads &gt;= ~128?</i></td></tr>
+<tr><th id="1225">1225</th><td>    <em>static</em> <em>const</em> Index l0_size = <var>4</var>;</td></tr>
+<tr><th id="1226">1226</th><td>    Index l0_ranges;</td></tr>
+<tr><th id="1227">1227</th><td></td></tr>
+<tr><th id="1228">1228</th><td>    <i>// Keep count of pending gemm tasks for each l0 range.</i></td></tr>
+<tr><th id="1229">1229</th><td>    MaxSizeVector&lt;std::atomic&lt;<em>int</em>&gt;&gt; l0_state;  <i>// [0, l0_ranges)</i></td></tr>
+<tr><th id="1230">1230</th><td></td></tr>
+<tr><th id="1231">1231</th><td>    <i>// Buffers allocated for each temporary block computation.</i></td></tr>
+<tr><th id="1232">1232</th><td>    MaxSizeVector&lt;Scalar*&gt; block_buffers;  <i>// [0, num_blocks)</i></td></tr>
+<tr><th id="1233">1233</th><td></td></tr>
+<tr><th id="1234">1234</th><td>    <b>template</b> &lt;<em>int</em> Alignment&gt;</td></tr>
+<tr><th id="1235">1235</th><td>    <em>void</em> processBlock(Index block_idx, Index begin, Index end) {</td></tr>
+<tr><th id="1236">1236</th><td>      Scalar* buf = block_buffers[block_idx];</td></tr>
+<tr><th id="1237">1237</th><td></td></tr>
+<tr><th id="1238">1238</th><td>      TENSOR_CONTRACTION_DISPATCH(</td></tr>
+<tr><th id="1239">1239</th><td>          evaluator-&gt;<b>template</b> evalGemmPartialWithoutOutputKernel, Alignment,</td></tr>
+<tr><th id="1240">1240</th><td>          (buf, begin, end,</td></tr>
+<tr><th id="1241">1241</th><td>           <i>/*num_threads=*/</i>internal::convert_index&lt;<em>int</em>&gt;(num_blocks)));</td></tr>
+<tr><th id="1242">1242</th><td></td></tr>
+<tr><th id="1243">1243</th><td>      <i>// Check if it was the last task in l0 range.</i></td></tr>
+<tr><th id="1244">1244</th><td>      <em>const</em> Index l0_index = block_idx / l0_size;</td></tr>
+<tr><th id="1245">1245</th><td>      <em>const</em> <em>int</em> v = l0_state[l0_index].fetch_sub(<var>1</var>);</td></tr>
+<tr><th id="1246">1246</th><td>      eigen_assert(v &gt;= <var>1</var>);</td></tr>
+<tr><th id="1247">1247</th><td></td></tr>
+<tr><th id="1248">1248</th><td>      <i>// If we processed the last block of the range, we can aggregate all</i></td></tr>
+<tr><th id="1249">1249</th><td><i>      // partial results into the first block of the range.</i></td></tr>
+<tr><th id="1250">1250</th><td>      <b>if</b> (v == <var>1</var>) {</td></tr>
+<tr><th id="1251">1251</th><td>        <em>const</em> Index rng_size = actualRangeSize(l0_ranges, l0_size, l0_index);</td></tr>
+<tr><th id="1252">1252</th><td>        <em>const</em> Index dst_block_idx = l0_index * l0_size;</td></tr>
+<tr><th id="1253">1253</th><td></td></tr>
+<tr><th id="1254">1254</th><td>        <b>if</b> (rng_size == l0_size) {</td></tr>
+<tr><th id="1255">1255</th><td>          addAllToBuffer&lt;Alignment&gt;(</td></tr>
+<tr><th id="1256">1256</th><td>              m * n,</td></tr>
+<tr><th id="1257">1257</th><td>              <i>/*src_buf0=*/</i>block_buffers[dst_block_idx + <var>1</var>],</td></tr>
+<tr><th id="1258">1258</th><td>              <i>/*src_buf1=*/</i>block_buffers[dst_block_idx + <var>2</var>],</td></tr>
+<tr><th id="1259">1259</th><td>              <i>/*src_buf2=*/</i>block_buffers[dst_block_idx + <var>3</var>],</td></tr>
+<tr><th id="1260">1260</th><td>              <i>/*dst_buf= */</i> block_buffers[dst_block_idx]);</td></tr>
+<tr><th id="1261">1261</th><td>        } <b>else</b> {</td></tr>
+<tr><th id="1262">1262</th><td>          <i>// Aggregate blocks of potentially incomplete last range.</i></td></tr>
+<tr><th id="1263">1263</th><td>          <b>for</b> (<em>int</em> i = <var>1</var>; i &lt; rng_size; ++i) {</td></tr>
+<tr><th id="1264">1264</th><td>            addToBuffer&lt;Alignment&gt;(m * n,</td></tr>
+<tr><th id="1265">1265</th><td>                                   <i>/*src_buf=*/</i>block_buffers[dst_block_idx + i],</td></tr>
+<tr><th id="1266">1266</th><td>                                   <i>/*dst_buf=*/</i>block_buffers[dst_block_idx]);</td></tr>
+<tr><th id="1267">1267</th><td>          }</td></tr>
+<tr><th id="1268">1268</th><td>        }</td></tr>
+<tr><th id="1269">1269</th><td>      }</td></tr>
+<tr><th id="1270">1270</th><td>    }</td></tr>
+<tr><th id="1271">1271</th><td></td></tr>
+<tr><th id="1272">1272</th><td>    <i>// Aggregate partial sums from l0 ranges.</i></td></tr>
+<tr><th id="1273">1273</th><td>    <b>template</b> &lt;<em>int</em> Alignment&gt;</td></tr>
+<tr><th id="1274">1274</th><td>    <em>void</em> aggregateL0Blocks() <em>const</em> {</td></tr>
+<tr><th id="1275">1275</th><td>      Index l0_index = <var>1</var>;</td></tr>
+<tr><th id="1276">1276</th><td></td></tr>
+<tr><th id="1277">1277</th><td>      <b>for</b> (; l0_index + <var>2</var> &lt; l0_ranges; l0_index += <var>3</var>) {</td></tr>
+<tr><th id="1278">1278</th><td>        addAllToBuffer&lt;Alignment&gt;(</td></tr>
+<tr><th id="1279">1279</th><td>            m * n,</td></tr>
+<tr><th id="1280">1280</th><td>            <i>/*src_buf0=*/</i>block_buffers[(l0_index + <var>0</var>) * l0_size],</td></tr>
+<tr><th id="1281">1281</th><td>            <i>/*src_buf1=*/</i>block_buffers[(l0_index + <var>1</var>) * l0_size],</td></tr>
+<tr><th id="1282">1282</th><td>            <i>/*src_buf2=*/</i>block_buffers[(l0_index + <var>2</var>) * l0_size],</td></tr>
+<tr><th id="1283">1283</th><td>            <i>/*dst_buf= */</i> block_buffers[<var>0</var>]);</td></tr>
+<tr><th id="1284">1284</th><td>      }</td></tr>
+<tr><th id="1285">1285</th><td></td></tr>
+<tr><th id="1286">1286</th><td>      <b>for</b> (; l0_index &lt; l0_ranges; ++l0_index) {</td></tr>
+<tr><th id="1287">1287</th><td>        addToBuffer&lt;Alignment&gt;(m * n, block_buffers[l0_index * l0_size],</td></tr>
+<tr><th id="1288">1288</th><td>                               block_buffers[<var>0</var>]);</td></tr>
+<tr><th id="1289">1289</th><td>      }</td></tr>
+<tr><th id="1290">1290</th><td>    }</td></tr>
+<tr><th id="1291">1291</th><td></td></tr>
+<tr><th id="1292">1292</th><td>    <em>void</em> applyOutputKernel() <em>const</em> {</td></tr>
+<tr><th id="1293">1293</th><td>      <b>typedef</b> internal::blas_data_mapper&lt;Scalar, Index, ColMajor&gt; OutputMapper;</td></tr>
+<tr><th id="1294">1294</th><td>      evaluator-&gt;m_output_kernel(</td></tr>
+<tr><th id="1295">1295</th><td>          OutputMapper(result, m), evaluator-&gt;m_tensor_contraction_params,</td></tr>
+<tr><th id="1296">1296</th><td>          <b>static_cast</b>&lt;Eigen::Index&gt;(<var>0</var>), <b>static_cast</b>&lt;Eigen::Index&gt;(<var>0</var>), m, n);</td></tr>
+<tr><th id="1297">1297</th><td>    }</td></tr>
+<tr><th id="1298">1298</th><td></td></tr>
+<tr><th id="1299">1299</th><td>    <i>// Compute block size with accounting for potentially incomplete last block.</i></td></tr>
+<tr><th id="1300">1300</th><td>    Index actualBlockSize(Index block_idx) <em>const</em> {</td></tr>
+<tr><th id="1301">1301</th><td>      <b>return</b> block_idx + <var>1</var> &lt; num_blocks</td></tr>
+<tr><th id="1302">1302</th><td>                 ? block_size</td></tr>
+<tr><th id="1303">1303</th><td>                 : k + block_size - block_size * num_blocks;</td></tr>
+<tr><th id="1304">1304</th><td>    };</td></tr>
+<tr><th id="1305">1305</th><td></td></tr>
+<tr><th id="1306">1306</th><td>    <i>// Compute range size with accounting for potentially incomplete last range.</i></td></tr>
+<tr><th id="1307">1307</th><td>    Index actualRangeSize(Index num_ranges, Index range_size,</td></tr>
+<tr><th id="1308">1308</th><td>                          Index range_idx) <em>const</em> {</td></tr>
+<tr><th id="1309">1309</th><td>      eigen_assert(range_idx &lt; num_ranges);</td></tr>
+<tr><th id="1310">1310</th><td>      <b>return</b> range_idx + <var>1</var> &lt; num_ranges</td></tr>
+<tr><th id="1311">1311</th><td>                 ? range_size</td></tr>
+<tr><th id="1312">1312</th><td>                 : num_blocks + range_size - range_size * num_ranges;</td></tr>
+<tr><th id="1313">1313</th><td>    };</td></tr>
+<tr><th id="1314">1314</th><td></td></tr>
+<tr><th id="1315">1315</th><td>    <b>template</b> &lt;<em>int</em> Alignment&gt;</td></tr>
+<tr><th id="1316">1316</th><td>    EIGEN_STRONG_INLINE <em>static</em> <em>void</em> addToBuffer(size_t n, <em>const</em> Scalar* src_buf,</td></tr>
+<tr><th id="1317">1317</th><td>                                                Scalar* tgt_buf) {</td></tr>
+<tr><th id="1318">1318</th><td>      <em>const</em> <em>int</em> output_packet_size =</td></tr>
+<tr><th id="1319">1319</th><td>          internal::unpacket_traits&lt;PacketReturnType&gt;::size;</td></tr>
+<tr><th id="1320">1320</th><td>      size_t i = <var>0</var>;</td></tr>
+<tr><th id="1321">1321</th><td>      <em>const</em> size_t num_packets = n / output_packet_size;</td></tr>
+<tr><th id="1322">1322</th><td>      <b>for</b> (; i &lt; output_packet_size * num_packets; i += output_packet_size) {</td></tr>
+<tr><th id="1323">1323</th><td>        <em>const</em> PacketReturnType src_val =</td></tr>
+<tr><th id="1324">1324</th><td>            internal::pload&lt;PacketReturnType&gt;(src_buf + i);</td></tr>
+<tr><th id="1325">1325</th><td>        <em>const</em> PacketReturnType tgt_val =</td></tr>
+<tr><th id="1326">1326</th><td>            internal::ploadt&lt;PacketReturnType, Alignment&gt;(tgt_buf + i);</td></tr>
+<tr><th id="1327">1327</th><td>        <em>const</em> PacketReturnType sum = internal::padd(src_val, tgt_val);</td></tr>
+<tr><th id="1328">1328</th><td>        internal::pstoret&lt;Scalar, PacketReturnType, Alignment&gt;(tgt_buf + i,</td></tr>
+<tr><th id="1329">1329</th><td>                                                               sum);</td></tr>
+<tr><th id="1330">1330</th><td>      }</td></tr>
+<tr><th id="1331">1331</th><td>      <b>for</b> (; i &lt; n; ++i) {</td></tr>
+<tr><th id="1332">1332</th><td>        tgt_buf[i] += src_buf[i];</td></tr>
+<tr><th id="1333">1333</th><td>      }</td></tr>
+<tr><th id="1334">1334</th><td>    }</td></tr>
+<tr><th id="1335">1335</th><td></td></tr>
+<tr><th id="1336">1336</th><td>    <b>template</b> &lt;<em>int</em> Alignment&gt;</td></tr>
+<tr><th id="1337">1337</th><td>    EIGEN_STRONG_INLINE <em>static</em> <em>void</em> addAllToBuffer(size_t n,</td></tr>
+<tr><th id="1338">1338</th><td>                                                   <em>const</em> Scalar* src_buf0,</td></tr>
+<tr><th id="1339">1339</th><td>                                                   <em>const</em> Scalar* src_buf1,</td></tr>
+<tr><th id="1340">1340</th><td>                                                   <em>const</em> Scalar* src_buf2,</td></tr>
+<tr><th id="1341">1341</th><td>                                                   Scalar* dst_buf) {</td></tr>
+<tr><th id="1342">1342</th><td>      <b>using</b> ::Eigen::internal::padd;</td></tr>
+<tr><th id="1343">1343</th><td>      <b>using</b> ::Eigen::internal::pload;</td></tr>
+<tr><th id="1344">1344</th><td>      <b>using</b> ::Eigen::internal::ploadt;</td></tr>
+<tr><th id="1345">1345</th><td>      <b>using</b> ::Eigen::internal::pstoret;</td></tr>
+<tr><th id="1346">1346</th><td></td></tr>
+<tr><th id="1347">1347</th><td>      <em>const</em> <em>int</em> output_packet_size =</td></tr>
+<tr><th id="1348">1348</th><td>          internal::unpacket_traits&lt;PacketReturnType&gt;::size;</td></tr>
+<tr><th id="1349">1349</th><td></td></tr>
+<tr><th id="1350">1350</th><td>      size_t i = <var>0</var>;</td></tr>
+<tr><th id="1351">1351</th><td>      <em>const</em> size_t num_packets = n / output_packet_size;</td></tr>
+<tr><th id="1352">1352</th><td>      <b>for</b> (; i &lt; output_packet_size * num_packets; i += output_packet_size) {</td></tr>
+<tr><th id="1353">1353</th><td>        <em>const</em> <em>auto</em> src_val0 = pload&lt;PacketReturnType&gt;(src_buf0 + i);</td></tr>
+<tr><th id="1354">1354</th><td>        <em>const</em> <em>auto</em> src_val1 = pload&lt;PacketReturnType&gt;(src_buf1 + i);</td></tr>
+<tr><th id="1355">1355</th><td>        <em>const</em> <em>auto</em> src_val2 = pload&lt;PacketReturnType&gt;(src_buf2 + i);</td></tr>
+<tr><th id="1356">1356</th><td></td></tr>
+<tr><th id="1357">1357</th><td>        <em>const</em> <em>auto</em> dst_val = ploadt&lt;PacketReturnType, Alignment&gt;(dst_buf + i);</td></tr>
+<tr><th id="1358">1358</th><td>        <em>const</em> <em>auto</em> sum =</td></tr>
+<tr><th id="1359">1359</th><td>            padd(padd(dst_val, src_val0), padd(src_val1, src_val2));</td></tr>
+<tr><th id="1360">1360</th><td></td></tr>
+<tr><th id="1361">1361</th><td>        pstoret&lt;Scalar, PacketReturnType, Alignment&gt;(dst_buf + i, sum);</td></tr>
+<tr><th id="1362">1362</th><td>      }</td></tr>
+<tr><th id="1363">1363</th><td>      <b>for</b> (; i &lt; n; ++i) {</td></tr>
+<tr><th id="1364">1364</th><td>        dst_buf[i] += src_buf0[i] + src_buf1[i] + src_buf2[i];</td></tr>
+<tr><th id="1365">1365</th><td>      }</td></tr>
+<tr><th id="1366">1366</th><td>    }</td></tr>
+<tr><th id="1367">1367</th><td></td></tr>
+<tr><th id="1368">1368</th><td>    <b>template</b> &lt;<em>int</em> Alignment&gt;</td></tr>
+<tr><th id="1369">1369</th><td>    <em>void</em> eval(Barrier&amp; barrier, Index start_block_idx, Index end_block_idx) {</td></tr>
+<tr><th id="1370">1370</th><td>      <b>while</b> (end_block_idx - start_block_idx &gt; <var>1</var>) {</td></tr>
+<tr><th id="1371">1371</th><td>        Index mid_block_idx = (start_block_idx + end_block_idx) / <var>2</var>;</td></tr>
+<tr><th id="1372">1372</th><td>        evaluator-&gt;m_device.enqueueNoNotification(</td></tr>
+<tr><th id="1373">1373</th><td>            [<b>this</b>, &amp;barrier, mid_block_idx, end_block_idx]() {</td></tr>
+<tr><th id="1374">1374</th><td>              eval&lt;Alignment&gt;(barrier, mid_block_idx, end_block_idx);</td></tr>
+<tr><th id="1375">1375</th><td>            });</td></tr>
+<tr><th id="1376">1376</th><td>        end_block_idx = mid_block_idx;</td></tr>
+<tr><th id="1377">1377</th><td>      }</td></tr>
+<tr><th id="1378">1378</th><td></td></tr>
+<tr><th id="1379">1379</th><td>      Index block_idx = start_block_idx;</td></tr>
+<tr><th id="1380">1380</th><td>      Index block_start = block_idx * block_size;</td></tr>
+<tr><th id="1381">1381</th><td>      Index block_end = block_start + actualBlockSize(block_idx);</td></tr>
+<tr><th id="1382">1382</th><td></td></tr>
+<tr><th id="1383">1383</th><td>      processBlock&lt;Alignment&gt;(block_idx, block_start, block_end);</td></tr>
+<tr><th id="1384">1384</th><td>      barrier.Notify();</td></tr>
+<tr><th id="1385">1385</th><td>    }</td></tr>
+<tr><th id="1386">1386</th><td></td></tr>
+<tr><th id="1387">1387</th><td>    <b>template</b> &lt;<em>int</em> Alignment&gt;</td></tr>
+<tr><th id="1388">1388</th><td>    <em>void</em> evalAsync(Index start_block_idx, Index end_block_idx) {</td></tr>
+<tr><th id="1389">1389</th><td>      <b>while</b> (end_block_idx - start_block_idx &gt; <var>1</var>) {</td></tr>
+<tr><th id="1390">1390</th><td>        Index mid_block_idx = (start_block_idx + end_block_idx) / <var>2</var>;</td></tr>
+<tr><th id="1391">1391</th><td>        evaluator-&gt;m_device.enqueueNoNotification(</td></tr>
+<tr><th id="1392">1392</th><td>            [<b>this</b>, mid_block_idx, end_block_idx]() {</td></tr>
+<tr><th id="1393">1393</th><td>              evalAsync&lt;Alignment&gt;(mid_block_idx, end_block_idx);</td></tr>
+<tr><th id="1394">1394</th><td>            });</td></tr>
+<tr><th id="1395">1395</th><td>        end_block_idx = mid_block_idx;</td></tr>
+<tr><th id="1396">1396</th><td>      }</td></tr>
+<tr><th id="1397">1397</th><td></td></tr>
+<tr><th id="1398">1398</th><td>      Index block_idx = start_block_idx;</td></tr>
+<tr><th id="1399">1399</th><td></td></tr>
+<tr><th id="1400">1400</th><td>      Index block_start = block_idx * block_size;</td></tr>
+<tr><th id="1401">1401</th><td>      Index block_end = block_start + actualBlockSize(block_idx);</td></tr>
+<tr><th id="1402">1402</th><td></td></tr>
+<tr><th id="1403">1403</th><td>      processBlock&lt;Alignment&gt;(block_idx, block_start, block_end);</td></tr>
+<tr><th id="1404">1404</th><td></td></tr>
+<tr><th id="1405">1405</th><td>      <em>int</em> v = num_pending_blocks.fetch_sub(<var>1</var>);</td></tr>
+<tr><th id="1406">1406</th><td>      eigen_assert(v &gt;= <var>1</var>);</td></tr>
+<tr><th id="1407">1407</th><td></td></tr>
+<tr><th id="1408">1408</th><td>      <b>if</b> (v == <var>1</var>) {</td></tr>
+<tr><th id="1409">1409</th><td>        <i>// Aggregate partial sums from l0 ranges.</i></td></tr>
+<tr><th id="1410">1410</th><td>        aggregateL0Blocks&lt;Alignment&gt;();</td></tr>
+<tr><th id="1411">1411</th><td></td></tr>
+<tr><th id="1412">1412</th><td>        <i>// Apply output kernel.</i></td></tr>
+<tr><th id="1413">1413</th><td>        applyOutputKernel();</td></tr>
+<tr><th id="1414">1414</th><td></td></tr>
+<tr><th id="1415">1415</th><td>        <i>// NOTE: If we call `done` callback before deleting this (context),</i></td></tr>
+<tr><th id="1416">1416</th><td><i>        // it might deallocate Self* pointer captured by context, and we'll</i></td></tr>
+<tr><th id="1417">1417</th><td><i>        // fail in destructor trying to deallocate temporary buffers.</i></td></tr>
+<tr><th id="1418">1418</th><td><i></i></td></tr>
+<tr><th id="1419">1419</th><td><i>        // Move done call back from context before it will be destructed.</i></td></tr>
+<tr><th id="1420">1420</th><td>        DoneCallback done_copy = std::move(done);</td></tr>
+<tr><th id="1421">1421</th><td></td></tr>
+<tr><th id="1422">1422</th><td>        <i>// We are confident that we are the last one who touches context.</i></td></tr>
+<tr><th id="1423">1423</th><td>        <b>delete</b> <b>this</b>;</td></tr>
+<tr><th id="1424">1424</th><td></td></tr>
+<tr><th id="1425">1425</th><td>        <i>// Now safely call the done callback.</i></td></tr>
+<tr><th id="1426">1426</th><td>        done_copy();</td></tr>
+<tr><th id="1427">1427</th><td>      }</td></tr>
+<tr><th id="1428">1428</th><td>    }</td></tr>
+<tr><th id="1429">1429</th><td></td></tr>
+<tr><th id="1430">1430</th><td>    <i>// Cost model doesn't capture well the cost associated with constructing</i></td></tr>
+<tr><th id="1431">1431</th><td><i>    // tensor contraction mappers and computing loop bounds in gemm_pack_lhs</i></td></tr>
+<tr><th id="1432">1432</th><td><i>    // and gemm_pack_rhs, so we specify minimum desired block size.</i></td></tr>
+<tr><th id="1433">1433</th><td>    <em>static</em> Index blockSize(Index k, <em>int</em> num_threads) {</td></tr>
+<tr><th id="1434">1434</th><td>      <em>const</em> <em>auto</em> round_up = [=](Index index) -&gt; Index {</td></tr>
+<tr><th id="1435">1435</th><td>        <em>const</em> Index kmultiple = packet_size &lt;= <var>8</var> ? <var>8</var> : packet_size;</td></tr>
+<tr><th id="1436">1436</th><td>        <b>return</b> divup&lt;Index&gt;(index, kmultiple) * kmultiple;</td></tr>
+<tr><th id="1437">1437</th><td>      };</td></tr>
+<tr><th id="1438">1438</th><td></td></tr>
+<tr><th id="1439">1439</th><td>      <em>const</em> Index target_block_size = round_up(divup&lt;Index&gt;(k, num_threads));</td></tr>
+<tr><th id="1440">1440</th><td>      <em>const</em> Index desired_min_block_size = <var>12</var> * packet_size;</td></tr>
+<tr><th id="1441">1441</th><td></td></tr>
+<tr><th id="1442">1442</th><td>      <b>return</b> numext::mini&lt;Index&gt;(</td></tr>
+<tr><th id="1443">1443</th><td>          k, numext::maxi&lt;Index&gt;(desired_min_block_size, target_block_size));</td></tr>
+<tr><th id="1444">1444</th><td>    }</td></tr>
+<tr><th id="1445">1445</th><td></td></tr>
+<tr><th id="1446">1446</th><td>    EvalShardedByInnerDimContext(<em>const</em> EvalShardedByInnerDimContext&amp;) = <b>delete</b>;</td></tr>
+<tr><th id="1447">1447</th><td>    <em>void</em> <b>operator</b>=(<em>const</em> EvalShardedByInnerDimContext&amp;) = <b>delete</b>;</td></tr>
+<tr><th id="1448">1448</th><td>  };</td></tr>
+<tr><th id="1449">1449</th><td></td></tr>
+<tr><th id="1450">1450</th><td>  <i>// ------------------------------------------------------------------------ //</i></td></tr>
+<tr><th id="1451">1451</th><td><i></i></td></tr>
+<tr><th id="1452">1452</th><td><i>  // Below are the function used by evalProductImpl heuristics, trying to select</i></td></tr>
+<tr><th id="1453">1453</th><td><i>  // optimcal parameters for parallelization algorithm.</i></td></tr>
+<tr><th id="1454">1454</th><td><i></i></td></tr>
+<tr><th id="1455">1455</th><td><i>  // Decide whether we want to shard m x n contraction by columns or by rows.</i></td></tr>
+<tr><th id="1456">1456</th><td>  <em>static</em> <em>bool</em> shardByCol(Index m, Index n, Index num_threads) {</td></tr>
+<tr><th id="1457">1457</th><td>    <i>// Note: we are comparing both n and m against Traits::nr, it is not</i></td></tr>
+<tr><th id="1458">1458</th><td><i>    // a mistake. We are trying to figure out how both n and m will fit into</i></td></tr>
+<tr><th id="1459">1459</th><td><i>    // the main sharding dimension.</i></td></tr>
+<tr><th id="1460">1460</th><td><i></i></td></tr>
+<tr><th id="1461">1461</th><td><i>    // Sharding by column is the default</i></td></tr>
+<tr><th id="1462">1462</th><td><i>    // ... unless there is enough data for vectorization over rows</i></td></tr>
+<tr><th id="1463">1463</th><td>    <b>if</b> (m / num_threads &gt;= Traits::nr &amp;&amp;</td></tr>
+<tr><th id="1464">1464</th><td>        <i>// and not enough data for vectorization over columns</i></td></tr>
+<tr><th id="1465">1465</th><td>        (n / num_threads &lt; Traits::nr ||</td></tr>
+<tr><th id="1466">1466</th><td>         <i>// ... or barely enough data for vectorization over columns,</i></td></tr>
+<tr><th id="1467">1467</th><td><i>         // but it is not evenly dividable across threads</i></td></tr>
+<tr><th id="1468">1468</th><td>         (n / num_threads &lt; <var>4</var> * Traits::nr &amp;&amp;</td></tr>
+<tr><th id="1469">1469</th><td>          (n % (num_threads * Traits::nr)) != <var>0</var> &amp;&amp;</td></tr>
+<tr><th id="1470">1470</th><td>          <i>// ... and it is evenly dividable across threads for rows</i></td></tr>
+<tr><th id="1471">1471</th><td>          ((m % (num_threads * Traits::nr)) == <var>0</var> ||</td></tr>
+<tr><th id="1472">1472</th><td>           <i>// .. or it is not evenly dividable for both dimensions but</i></td></tr>
+<tr><th id="1473">1473</th><td><i>           // there is much more data over rows so that corner effects are</i></td></tr>
+<tr><th id="1474">1474</th><td><i>           // mitigated.</i></td></tr>
+<tr><th id="1475">1475</th><td>           (m / n &gt;= <var>6</var>)))))</td></tr>
+<tr><th id="1476">1476</th><td>      <b>return</b> <b>false</b>;</td></tr>
+<tr><th id="1477">1477</th><td>    <i>// Wait, or if matrices are just substantially prolonged over the other</i></td></tr>
+<tr><th id="1478">1478</th><td><i>    // dimension.</i></td></tr>
+<tr><th id="1479">1479</th><td>    <b>if</b> (n / num_threads &lt; <var>16</var> * Traits::nr &amp;&amp; m &gt; n * <var>32</var>) <b>return</b> <b>false</b>;</td></tr>
+<tr><th id="1480">1480</th><td>    <b>return</b> <b>true</b>;</td></tr>
+<tr><th id="1481">1481</th><td>  }</td></tr>
+<tr><th id="1482">1482</th><td></td></tr>
+<tr><th id="1483">1483</th><td>  Index coarsenM(Index m, Index n, Index bm, Index bn, Index bk, Index gn,</td></tr>
+<tr><th id="1484">1484</th><td>                 <em>int</em> num_threads, <em>bool</em> shard_by_col) <em>const</em> {</td></tr>
+<tr><th id="1485">1485</th><td>    Index gm = <var>1</var>;</td></tr>
+<tr><th id="1486">1486</th><td>    Index gm1 = <var>1</var>;</td></tr>
+<tr><th id="1487">1487</th><td>    Index nm0 = divup(m, bm);</td></tr>
+<tr><th id="1488">1488</th><td>    Index nm1 = nm0;</td></tr>
+<tr><th id="1489">1489</th><td>    <b>for</b> (;;) {</td></tr>
+<tr><th id="1490">1490</th><td>      <i>// Find the next candidate for m grain size. It needs to result in</i></td></tr>
+<tr><th id="1491">1491</th><td><i>      // different number of blocks. E.g. if we have 10 kernels, we want to try</i></td></tr>
+<tr><th id="1492">1492</th><td><i>      // 5 and 10, but not 6, 7, 8 and 9.</i></td></tr>
+<tr><th id="1493">1493</th><td>      <b>while</b> (gm1 &lt;= nm0 &amp;&amp; nm1 == divup(nm0, gm1)) gm1++;</td></tr>
+<tr><th id="1494">1494</th><td>      <b>if</b> (gm1 &gt; nm0) <b>break</b>;</td></tr>
+<tr><th id="1495">1495</th><td>      <i>// Check the candidate.</i></td></tr>
+<tr><th id="1496">1496</th><td>      <em>int</em> res = checkGrain(m, n, bm, bn, bk, gm1, gn, gm, gn, num_threads,</td></tr>
+<tr><th id="1497">1497</th><td>                           shard_by_col);</td></tr>
+<tr><th id="1498">1498</th><td>      <b>if</b> (res &lt; <var>0</var>) <b>break</b>;</td></tr>
+<tr><th id="1499">1499</th><td>      nm1 = divup(nm0, gm1);</td></tr>
+<tr><th id="1500">1500</th><td>      <b>if</b> (res == <var>0</var>) <b>continue</b>;</td></tr>
+<tr><th id="1501">1501</th><td>      <i>// Commit new grain size.</i></td></tr>
+<tr><th id="1502">1502</th><td>      gm = gm1;</td></tr>
+<tr><th id="1503">1503</th><td>    }</td></tr>
+<tr><th id="1504">1504</th><td>    <b>return</b> gm;</td></tr>
+<tr><th id="1505">1505</th><td>  }</td></tr>
+<tr><th id="1506">1506</th><td></td></tr>
+<tr><th id="1507">1507</th><td>  Index coarsenN(Index m, Index n, Index bm, Index bn, Index bk, Index gm,</td></tr>
+<tr><th id="1508">1508</th><td>                 <em>int</em> num_threads, <em>bool</em> shard_by_col) <em>const</em> {</td></tr>
+<tr><th id="1509">1509</th><td>    Index gn = <var>1</var>;</td></tr>
+<tr><th id="1510">1510</th><td>    Index gn1 = <var>1</var>;</td></tr>
+<tr><th id="1511">1511</th><td>    Index nn0 = divup(n, bn);</td></tr>
+<tr><th id="1512">1512</th><td>    Index nn1 = nn0;</td></tr>
+<tr><th id="1513">1513</th><td>    <b>for</b> (;;) {</td></tr>
+<tr><th id="1514">1514</th><td>      <b>while</b> (gn1 &lt;= nn0 &amp;&amp; nn1 == divup(nn0, gn1)) gn1++;</td></tr>
+<tr><th id="1515">1515</th><td>      <b>if</b> (gn1 &gt; nn0) <b>break</b>;</td></tr>
+<tr><th id="1516">1516</th><td>      <em>int</em> res = checkGrain(m, n, bm, bn, bk, gm, gn1, gm, gn, num_threads,</td></tr>
+<tr><th id="1517">1517</th><td>                           shard_by_col);</td></tr>
+<tr><th id="1518">1518</th><td>      <b>if</b> (res &lt; <var>0</var>) <b>break</b>;</td></tr>
+<tr><th id="1519">1519</th><td>      nn1 = divup(nn0, gn1);</td></tr>
+<tr><th id="1520">1520</th><td>      <b>if</b> (res == <var>0</var>) <b>continue</b>;</td></tr>
+<tr><th id="1521">1521</th><td>      gn = gn1;</td></tr>
+<tr><th id="1522">1522</th><td>    }</td></tr>
+<tr><th id="1523">1523</th><td>    <b>return</b> gn;</td></tr>
+<tr><th id="1524">1524</th><td>  }</td></tr>
+<tr><th id="1525">1525</th><td></td></tr>
+<tr><th id="1526">1526</th><td>  <i>// checkGrain checks whether grain (gm, gn) is suitable and is better than</i></td></tr>
+<tr><th id="1527">1527</th><td><i>  // (oldgm, oldgn).</i></td></tr>
+<tr><th id="1528">1528</th><td>  <em>int</em> checkGrain(Index m, Index n, Index bm, Index bn, Index bk, Index gm,</td></tr>
+<tr><th id="1529">1529</th><td>                 Index gn, Index oldgm, Index oldgn, <em>int</em> num_threads,</td></tr>
+<tr><th id="1530">1530</th><td>                 <em>bool</em> shard_by_col) <em>const</em> {</td></tr>
+<tr><th id="1531">1531</th><td>    <em>const</em> TensorOpCost cost =</td></tr>
+<tr><th id="1532">1532</th><td>        contractionCost(bm * gm, bn * gn, bm, bn, bk, shard_by_col, <b>true</b>);</td></tr>
+<tr><th id="1533">1533</th><td>    <em>double</em> taskSize = TensorCostModel&lt;ThreadPoolDevice&gt;::taskSize(</td></tr>
+<tr><th id="1534">1534</th><td>        <b>static_cast</b>&lt;<em>double</em>&gt;(bm) * gm * bn * gn, cost);</td></tr>
+<tr><th id="1535">1535</th><td>    <i>// If the task is too small, then we agree on it regardless of anything</i></td></tr>
+<tr><th id="1536">1536</th><td><i>    // else. Otherwise synchronization overheads will dominate.</i></td></tr>
+<tr><th id="1537">1537</th><td>    <b>if</b> (taskSize &lt; <var>1</var>) <b>return</b> <var>1</var>;</td></tr>
+<tr><th id="1538">1538</th><td>    <i>// If it is too large, then we reject it and all larger tasks.</i></td></tr>
+<tr><th id="1539">1539</th><td>    <b>if</b> (taskSize &gt; <var>2</var>) <b>return</b> -<var>1</var>;</td></tr>
+<tr><th id="1540">1540</th><td>    <i>// Now we are in presumably good task size range.</i></td></tr>
+<tr><th id="1541">1541</th><td><i>    // The main deciding factor here is parallelism. Consider that we have 12</i></td></tr>
+<tr><th id="1542">1542</th><td><i>    // kernels and 4 threads. Grains of 2, 3 and 4 all yield good task sizes.</i></td></tr>
+<tr><th id="1543">1543</th><td><i>    // But 2/4 yield 6/3 tasks, which gives us parallelism of 0.75 (at most 3/4</i></td></tr>
+<tr><th id="1544">1544</th><td><i>    // of cores will be busy). While grain size 3 gives us 4 tasks, which gives</i></td></tr>
+<tr><th id="1545">1545</th><td><i>    // us parallelism of 1 (we can load all cores).</i></td></tr>
+<tr><th id="1546">1546</th><td>    Index nm0 = divup(m, bm);</td></tr>
+<tr><th id="1547">1547</th><td>    Index nn0 = divup(n, bn);</td></tr>
+<tr><th id="1548">1548</th><td>    Index new_tasks = divup(nm0, gm) * divup(nn0, gn);</td></tr>
+<tr><th id="1549">1549</th><td>    <em>double</em> new_parallelism = <b>static_cast</b>&lt;<em>double</em>&gt;(new_tasks) /</td></tr>
+<tr><th id="1550">1550</th><td>                             (divup&lt;<em>int</em>&gt;(new_tasks, num_threads) * num_threads);</td></tr>
+<tr><th id="1551">1551</th><td>    Index old_tasks = divup(nm0, oldgm) * divup(nn0, oldgn);</td></tr>
+<tr><th id="1552">1552</th><td>    <em>double</em> old_parallelism = <b>static_cast</b>&lt;<em>double</em>&gt;(old_tasks) /</td></tr>
+<tr><th id="1553">1553</th><td>                             (divup&lt;<em>int</em>&gt;(old_tasks, num_threads) * num_threads);</td></tr>
+<tr><th id="1554">1554</th><td>    <b>if</b> (new_parallelism &gt; old_parallelism || new_parallelism == <var>1</var>) <b>return</b> <var>1</var>;</td></tr>
+<tr><th id="1555">1555</th><td>    <b>return</b> <var>0</var>;</td></tr>
+<tr><th id="1556">1556</th><td>  }</td></tr>
+<tr><th id="1557">1557</th><td></td></tr>
+<tr><th id="1558">1558</th><td>  TensorOpCost contractionCost(Index m, Index n, Index bm, Index bn, Index bk,</td></tr>
+<tr><th id="1559">1559</th><td>                               <em>bool</em> shard_by_col, <em>bool</em> prepacked) <em>const</em> {</td></tr>
+<tr><th id="1560">1560</th><td>    <em>const</em> <em>int</em> packed_size = std::min&lt;<em>int</em>&gt;(PacketType&lt;LhsScalar, Device&gt;::size,</td></tr>
+<tr><th id="1561">1561</th><td>                                          PacketType&lt;RhsScalar, Device&gt;::size);</td></tr>
+<tr><th id="1562">1562</th><td>    <em>const</em> <em>int</em> output_packet_size = internal::unpacket_traits&lt;PacketReturnType&gt;::size;</td></tr>
+<tr><th id="1563">1563</th><td>    <em>const</em> <em>double</em> kd = <b>static_cast</b>&lt;<em>double</em>&gt;(bk);</td></tr>
+<tr><th id="1564">1564</th><td>    <em>double</em> compute_bandwidth = computeBandwidth(<b>false</b>, bm, bn, bk);</td></tr>
+<tr><th id="1565">1565</th><td>    <i>// Computations.</i></td></tr>
+<tr><th id="1566">1566</th><td>    TensorOpCost cost = TensorOpCost(<var>0</var>, <var>0</var>, kd * compute_bandwidth, <b>true</b>, packed_size);</td></tr>
+<tr><th id="1567">1567</th><td>    <i>// Output stores.</i></td></tr>
+<tr><th id="1568">1568</th><td>    cost += TensorOpCost(<var>0</var>, <b>sizeof</b>(CoeffReturnType), <var>0</var>, <b>true</b>, output_packet_size);</td></tr>
+<tr><th id="1569">1569</th><td>    <b>if</b> (prepacked) {</td></tr>
+<tr><th id="1570">1570</th><td>      <i>// Packing and kernels are executed in different tasks. When we calculate</i></td></tr>
+<tr><th id="1571">1571</th><td><i>      // task grain size we look only at kernel cost assuming that kernel</i></td></tr>
+<tr><th id="1572">1572</th><td><i>      // is more expensive than packing.</i></td></tr>
+<tr><th id="1573">1573</th><td>      <b>return</b> cost;</td></tr>
+<tr><th id="1574">1574</th><td>    }</td></tr>
+<tr><th id="1575">1575</th><td>    <i>// Lhs/rhs loads + computations.</i></td></tr>
+<tr><th id="1576">1576</th><td>    TensorOpCost lhsCost = <b>this</b>-&gt;m_leftImpl.costPerCoeff(<b>true</b>) * (kd / n);</td></tr>
+<tr><th id="1577">1577</th><td>    TensorOpCost rhsCost = <b>this</b>-&gt;m_rightImpl.costPerCoeff(<b>true</b>) * (kd / m);</td></tr>
+<tr><th id="1578">1578</th><td>    <i>// Lhs packing memory cost does not contribute considerably to overall</i></td></tr>
+<tr><th id="1579">1579</th><td><i>    // execution time because lhs is prefetched early and accessed sequentially.</i></td></tr>
+<tr><th id="1580">1580</th><td>    <b>if</b> (shard_by_col)</td></tr>
+<tr><th id="1581">1581</th><td>      lhsCost.dropMemoryCost();</td></tr>
+<tr><th id="1582">1582</th><td>    <b>else</b></td></tr>
+<tr><th id="1583">1583</th><td>      rhsCost.dropMemoryCost();</td></tr>
+<tr><th id="1584">1584</th><td>    <b>return</b> cost + lhsCost + rhsCost;</td></tr>
+<tr><th id="1585">1585</th><td>  }</td></tr>
+<tr><th id="1586">1586</th><td></td></tr>
+<tr><th id="1587">1587</th><td>  <i>// Decide whether we want to shard m x k x n contraction over the inner</i></td></tr>
+<tr><th id="1588">1588</th><td><i>  // (contraction) dimension (k).</i></td></tr>
+<tr><th id="1589">1589</th><td>  <em>static</em> <em>bool</em> shardByInnerDim(Index m, Index n, Index k, <em>int</em> num_threads,</td></tr>
+<tr><th id="1590">1590</th><td>                              <em>int</em> num_threads_by_k) {</td></tr>
+<tr><th id="1591">1591</th><td>    std::ptrdiff_t bufsize = m * n * <b>sizeof</b>(Scalar);</td></tr>
+<tr><th id="1592">1592</th><td>    <em>bool</em> shard_by_k = <b>false</b>;</td></tr>
+<tr><th id="1593">1593</th><td>    <b>if</b> (n == <var>1</var> ||                <i>// If mat*vec or...</i></td></tr>
+<tr><th id="1594">1594</th><td>        num_threads_by_k &lt; <var>2</var> ||  <i>// running single threaded or...</i></td></tr>
+<tr><th id="1595">1595</th><td>        num_threads_by_k &lt;</td></tr>
+<tr><th id="1596">1596</th><td>            num_threads ||  <i>// sharding by k gives less parallelism or...</i></td></tr>
+<tr><th id="1597">1597</th><td>        bufsize &gt; l3CacheSize() / num_threads_by_k ||  <i>// need more buffer space</i></td></tr>
+<tr><th id="1598">1598</th><td>        <i>// than L3 cache or...</i></td></tr>
+<tr><th id="1599">1599</th><td>        k / num_threads_by_k &lt; <var>2</var> * Traits::nr) {  <i>// k per thread is tiny.</i></td></tr>
+<tr><th id="1600">1600</th><td>      shard_by_k = <b>false</b>;</td></tr>
+<tr><th id="1601">1601</th><td>    } <b>else</b> <b>if</b> (numext::maxi(m, n) / num_threads &lt;</td></tr>
+<tr><th id="1602">1602</th><td>                   Traits::nr ||  <i>// both other dimensions are tiny or...</i></td></tr>
+<tr><th id="1603">1603</th><td>               <i>// k per thread is not small and...</i></td></tr>
+<tr><th id="1604">1604</th><td>               (k / num_threads_by_k &gt; <var>8</var> * Traits::nr &amp;&amp;</td></tr>
+<tr><th id="1605">1605</th><td>                <i>// one of the outer dimensions is tiny or sharding by k offers</i></td></tr>
+<tr><th id="1606">1606</th><td><i>                // more parallelism.</i></td></tr>
+<tr><th id="1607">1607</th><td>                (numext::mini(m, n) &lt; <var>2</var> * Traits::nr ||</td></tr>
+<tr><th id="1608">1608</th><td>                 num_threads_by_k &gt; num_threads))) {</td></tr>
+<tr><th id="1609">1609</th><td>      shard_by_k = <b>true</b>;</td></tr>
+<tr><th id="1610">1610</th><td>    }</td></tr>
+<tr><th id="1611">1611</th><td>    <b>return</b> shard_by_k;</td></tr>
+<tr><th id="1612">1612</th><td>  }</td></tr>
+<tr><th id="1613">1613</th><td></td></tr>
+<tr><th id="1614">1614</th><td>  TensorOpCost contractionCostPerInnerDim(Index m, Index n, Index k) <em>const</em> {</td></tr>
+<tr><th id="1615">1615</th><td>    <i>// Compute cost.</i></td></tr>
+<tr><th id="1616">1616</th><td>    <em>const</em> <em>int</em> output_packet_size = internal::unpacket_traits&lt;PacketReturnType&gt;::size;</td></tr>
+<tr><th id="1617">1617</th><td>    TensorOpCost cost(<var>0</var>, <var>0</var>, (computeBandwidth(<b>true</b>, m, n, k) * m) * n, <b>true</b>, output_packet_size);</td></tr>
+<tr><th id="1618">1618</th><td>    <i>// Output stores.</i></td></tr>
+<tr><th id="1619">1619</th><td>    cost += TensorOpCost(<var>0</var>, <b>sizeof</b>(CoeffReturnType), <var>0</var>, <b>true</b>, output_packet_size);</td></tr>
+<tr><th id="1620">1620</th><td>    TensorOpCost lhsCost = <b>this</b>-&gt;m_leftImpl.costPerCoeff(<b>true</b>) * m;</td></tr>
+<tr><th id="1621">1621</th><td>    TensorOpCost rhsCost = <b>this</b>-&gt;m_rightImpl.costPerCoeff(<b>true</b>) * n;</td></tr>
+<tr><th id="1622">1622</th><td>    <i>// Since the inner gemm kernel is always sharded by column, the lhs</i></td></tr>
+<tr><th id="1623">1623</th><td><i>    // load cost is negligible.</i></td></tr>
+<tr><th id="1624">1624</th><td>    lhsCost.dropMemoryCost();</td></tr>
+<tr><th id="1625">1625</th><td>    <b>return</b> cost + lhsCost + rhsCost;</td></tr>
+<tr><th id="1626">1626</th><td>  }</td></tr>
+<tr><th id="1627">1627</th><td></td></tr>
+<tr><th id="1628">1628</th><td>  <em>int</em> numThreadsInnerDim(Index m, Index n, Index k) <em>const</em> {</td></tr>
+<tr><th id="1629">1629</th><td>    <em>const</em> <em>int</em> output_packet_size = internal::unpacket_traits&lt;PacketReturnType&gt;::size;</td></tr>
+<tr><th id="1630">1630</th><td>    TensorOpCost cost = contractionCostPerInnerDim(m, n, k);</td></tr>
+<tr><th id="1631">1631</th><td>    <em>double</em> total_parallel_cost =</td></tr>
+<tr><th id="1632">1632</th><td>        TensorCostModel&lt;ThreadPoolDevice&gt;::totalCost(k, cost);</td></tr>
+<tr><th id="1633">1633</th><td>    <i>// Cost of reduction step accumulating the m*n per-thread buffers into the</i></td></tr>
+<tr><th id="1634">1634</th><td><i>    // result.</i></td></tr>
+<tr><th id="1635">1635</th><td>    <em>double</em> reduction_cost = TensorCostModel&lt;ThreadPoolDevice&gt;::totalCost(</td></tr>
+<tr><th id="1636">1636</th><td>        m * n, TensorOpCost(<var>2</var>, <var>1</var>, <var>1</var>, <b>true</b>, output_packet_size));</td></tr>
+<tr><th id="1637">1637</th><td>    <em>int</em> num_threads = <var>1</var>;</td></tr>
+<tr><th id="1638">1638</th><td>    <em>double</em> min_cost = total_parallel_cost;</td></tr>
+<tr><th id="1639">1639</th><td>    <em>double</em> kPerThreadOverHead = <var>3000</var>;</td></tr>
+<tr><th id="1640">1640</th><td>    <em>double</em> kFixedOverHead = <var>100000</var>;</td></tr>
+<tr><th id="1641">1641</th><td>    <b>for</b> (<em>int</em> nt = <var>2</var>; nt &lt;= <b>this</b>-&gt;m_device.numThreads(); nt += <var>2</var>) {</td></tr>
+<tr><th id="1642">1642</th><td>      <em>double</em> sequential_cost =</td></tr>
+<tr><th id="1643">1643</th><td>          kFixedOverHead + nt * (reduction_cost + kPerThreadOverHead);</td></tr>
+<tr><th id="1644">1644</th><td>      <em>double</em> parallel_cost = total_parallel_cost / nt + sequential_cost;</td></tr>
+<tr><th id="1645">1645</th><td>      <b>if</b> (parallel_cost &lt; min_cost) {</td></tr>
+<tr><th id="1646">1646</th><td>        num_threads = nt;</td></tr>
+<tr><th id="1647">1647</th><td>        min_cost = parallel_cost;</td></tr>
+<tr><th id="1648">1648</th><td>      }</td></tr>
+<tr><th id="1649">1649</th><td>    }</td></tr>
+<tr><th id="1650">1650</th><td>    <b>return</b> num_threads;</td></tr>
+<tr><th id="1651">1651</th><td>  }</td></tr>
+<tr><th id="1652">1652</th><td></td></tr>
+<tr><th id="1653">1653</th><td>  <em>double</em> computeBandwidth(<em>bool</em> shard_by_col, Index bm, Index bn,</td></tr>
+<tr><th id="1654">1654</th><td>                          Index bk) <em>const</em> {</td></tr>
+<tr><th id="1655">1655</th><td>    <i>// Peak VFMA bandwidth is 0.5. However if we have not enough data for</i></td></tr>
+<tr><th id="1656">1656</th><td><i>    // vectorization bandwidth drops. The 4.0 and 2.0 bandwidth is determined</i></td></tr>
+<tr><th id="1657">1657</th><td><i>    // experimentally.</i></td></tr>
+<tr><th id="1658">1658</th><td>    <em>double</em> computeBandwidth =</td></tr>
+<tr><th id="1659">1659</th><td>        bk == <var>1</var> ? <var>4.0</var></td></tr>
+<tr><th id="1660">1660</th><td>                : (shard_by_col ? bn : bm) &lt; Traits::nr ||</td></tr>
+<tr><th id="1661">1661</th><td>                          (shard_by_col ? bm : bn) &lt; Traits::mr</td></tr>
+<tr><th id="1662">1662</th><td>                      ? <var>2.0</var></td></tr>
+<tr><th id="1663">1663</th><td>                      : <var>0.5</var>;</td></tr>
+<tr><th id="1664">1664</th><td><u>#ifndef EIGEN_VECTORIZE_FMA</u></td></tr>
+<tr><th id="1665">1665</th><td>    <i>// Bandwidth of all of VFMA/MULPS/ADDPS is 0.5 on latest Intel processors.</i></td></tr>
+<tr><th id="1666">1666</th><td><i>    // However for MULPS/ADDPS we have dependent sequence of 2 such</i></td></tr>
+<tr><th id="1667">1667</th><td><i>    // instructions,</i></td></tr>
+<tr><th id="1668">1668</th><td><i>    // so overall bandwidth is 1.0.</i></td></tr>
+<tr><th id="1669">1669</th><td>    <b>if</b> (computeBandwidth == <var>0.5</var>) computeBandwidth = <var>1.0</var>;</td></tr>
+<tr><th id="1670">1670</th><td><u>#endif</u></td></tr>
+<tr><th id="1671">1671</th><td>    <b>return</b> computeBandwidth;</td></tr>
+<tr><th id="1672">1672</th><td>  }</td></tr>
+<tr><th id="1673">1673</th><td></td></tr>
+<tr><th id="1674">1674</th><td>};</td></tr>
+<tr><th id="1675">1675</th><td></td></tr>
+<tr><th id="1676">1676</th><td>} <i>// end namespace Eigen</i></td></tr>
+<tr><th id="1677">1677</th><td></td></tr>
+<tr><th id="1678">1678</th><td><u>#<span data-ppcond="14">endif</span>  // EIGEN_USE_THREADS</u></td></tr>
+<tr><th id="1679">1679</th><td><u>#<span data-ppcond="10">endif</span> // EIGEN_CXX11_TENSOR_TENSOR_CONTRACTION_THREAD_POOL_H</u></td></tr>
+<tr><th id="1680">1680</th><td></td></tr>
+</table><hr/><p id='footer'>
+Generated while processing <a href='../../../../../../_deps/tflite-src/tensorflow/lite/kernels/activations.cc.html'>halide/build-apps/_deps/tflite-src/tensorflow/lite/kernels/activations.cc</a><br/>Generated on <em>2021-Aug-05</em> from project halide revision <em>v12.0.1</em>

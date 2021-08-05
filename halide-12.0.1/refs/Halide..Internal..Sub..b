@@ -1,3 +1,6 @@
+<dec f='halide/halide-install/include/Halide.h' l='11940' type='Halide::Expr'/>
+<use f='halide/halide-install/include/Halide.h' l='29041' u='m' c='_ZNK6Halide8Internal9IRMatcher8NegateOp5matchERKNS0_12BaseExprNodeERNS1_12MatcherStateE'/>
+<offset>320</offset>
 <dec f='halide/build/include/Halide.h' l='11940' type='Halide::Expr'/>
 <use f='halide/build/include/Halide.h' l='29041' u='m' c='_ZNK6Halide8Internal9IRMatcher8NegateOp5matchERKNS0_12BaseExprNodeERNS1_12MatcherStateE'/>
 <offset>320</offset>

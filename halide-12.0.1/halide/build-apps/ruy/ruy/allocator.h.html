@@ -1,0 +1,117 @@
+<!doctype html>
+<html>
+<head>
+<meta name="viewport" content="width=device-width, initial-scale=1.0"><title>allocator.h source code [halide/build-apps/ruy/ruy/allocator.h] - Woboq Code Browser</title>
+<meta name="woboq:interestingDefinitions" content="ruy::Allocator "/>
+<link rel="stylesheet" href="../../../.././data/qtcreator.css" title="QtCreator"/>
+<link rel="alternate stylesheet" href="../../../.././data/kdevelop.css" title="KDevelop"/>
+<script type="text/javascript" src="../../../.././data/jquery/jquery.min.js"></script>
+<script type="text/javascript" src="../../../.././data/jquery/jquery-ui.min.js"></script>
+<script>var file = 'halide/build-apps/ruy/ruy/allocator.h'; var root_path = '../../../..'; var data_path = '../../../.././data'; var ecma_script_api_version = 2;</script>
+<script src='../../../.././data/codebrowser.js'></script>
+</head>
+<body><div id='header'><h1 id='breadcrumb'><span>Browse the source code of </span><a href='../../..'>halide</a>/<a href='../..'>build-apps</a>/<a href='..'>ruy</a>/<a href='./'>ruy</a>/<a href='allocator.h.html'>allocator.h</a></h1></div>
+<hr/><div id='content'><table class="code">
+<tr><th id="1">1</th><td><i>/* Copyright 2019 Google LLC. All Rights Reserved.</i></td></tr>
+<tr><th id="2">2</th><td><i></i></td></tr>
+<tr><th id="3">3</th><td><i>Licensed under the Apache License, Version 2.0 (the "License");</i></td></tr>
+<tr><th id="4">4</th><td><i>you may not use this file except in compliance with the License.</i></td></tr>
+<tr><th id="5">5</th><td><i>You may obtain a copy of the License at</i></td></tr>
+<tr><th id="6">6</th><td><i></i></td></tr>
+<tr><th id="7">7</th><td><i>    <a href="http://www.apache.org/licenses/LICENSE-2.0">http://www.apache.org/licenses/LICENSE-2.0</a></i></td></tr>
+<tr><th id="8">8</th><td><i></i></td></tr>
+<tr><th id="9">9</th><td><i>Unless required by applicable law or agreed to in writing, software</i></td></tr>
+<tr><th id="10">10</th><td><i>distributed under the License is distributed on an "AS IS" BASIS,</i></td></tr>
+<tr><th id="11">11</th><td><i>WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.</i></td></tr>
+<tr><th id="12">12</th><td><i>See the License for the specific language governing permissions and</i></td></tr>
+<tr><th id="13">13</th><td><i>limitations under the License.</i></td></tr>
+<tr><th id="14">14</th><td><i>==============================================================================*/</i></td></tr>
+<tr><th id="15">15</th><td></td></tr>
+<tr><th id="16">16</th><td><u>#<span data-ppcond="16">ifndef</span> <span class="macro" data-ref="_M/RUY_RUY_ALLOCATOR_H_">RUY_RUY_ALLOCATOR_H_</span></u></td></tr>
+<tr><th id="17">17</th><td><u>#define <dfn class="macro" id="_M/RUY_RUY_ALLOCATOR_H_" data-ref="_M/RUY_RUY_ALLOCATOR_H_">RUY_RUY_ALLOCATOR_H_</dfn></u></td></tr>
+<tr><th id="18">18</th><td></td></tr>
+<tr><th id="19">19</th><td><u>#include &lt;cstddef&gt;</u></td></tr>
+<tr><th id="20">20</th><td><u>#include &lt;cstdint&gt;</u></td></tr>
+<tr><th id="21">21</th><td><u>#include &lt;memory&gt;</u></td></tr>
+<tr><th id="22">22</th><td><u>#include &lt;vector&gt;</u></td></tr>
+<tr><th id="23">23</th><td></td></tr>
+<tr><th id="24">24</th><td><b>namespace</b> <span class="namespace">ruy</span> {</td></tr>
+<tr><th id="25">25</th><td></td></tr>
+<tr><th id="26">26</th><td><i>// Specialized allocator designed to converge to a steady-state where all</i></td></tr>
+<tr><th id="27">27</th><td><i>// allocations are bump-ptr allocations from an already-allocated buffer.</i></td></tr>
+<tr><th id="28">28</th><td><i>//</i></td></tr>
+<tr><th id="29">29</th><td><i>// To support these constraints, this allocator only supports two</i></td></tr>
+<tr><th id="30">30</th><td><i>// operations.</i></td></tr>
+<tr><th id="31">31</th><td><i>// - AllocateBytes/Allocate&lt;Pointer&gt;: allocates a pointer to storage of a</i></td></tr>
+<tr><th id="32">32</th><td><i>// specified size, which will be aligned to kMinimumBlockAlignment.</i></td></tr>
+<tr><th id="33">33</th><td><i>// - FreeAll: frees all previous allocations (but retains the internal</i></td></tr>
+<tr><th id="34">34</th><td><i>// buffer to minimize future calls into the system allocator).</i></td></tr>
+<tr><th id="35">35</th><td><i>//</i></td></tr>
+<tr><th id="36">36</th><td><i>// This class is specialized for supporting just those two operations</i></td></tr>
+<tr><th id="37">37</th><td><i>// under this specific steady-state usage pattern. Extending this class</i></td></tr>
+<tr><th id="38">38</th><td><i>// with new allocation interfaces that don't fit that pattern is probably not</i></td></tr>
+<tr><th id="39">39</th><td><i>// the right choice. Instead, build a new class on top of</i></td></tr>
+<tr><th id="40">40</th><td><i>// SystemAlignedAlloc/SystemAlignedFree.</i></td></tr>
+<tr><th id="41">41</th><td><i>//</i></td></tr>
+<tr><th id="42">42</th><td><i>// All operations happen on aligned blocks for simplicity.</i></td></tr>
+<tr><th id="43">43</th><td><i>//</i></td></tr>
+<tr><th id="44">44</th><td><i>// Theory of operation:</i></td></tr>
+<tr><th id="45">45</th><td><i>//</i></td></tr>
+<tr><th id="46">46</th><td><i>// - ptr_, current_, and size_ implement a basic bump-ptr allocator.</i></td></tr>
+<tr><th id="47">47</th><td><i>//</i></td></tr>
+<tr><th id="48">48</th><td><i>// - in AllocateBytes, the fast path is just a bump-ptr</i></td></tr>
+<tr><th id="49">49</th><td><i>// allocation. If our bump-ptr allocator doesn't have enough space for an</i></td></tr>
+<tr><th id="50">50</th><td><i>// allocation, then we allocate a block from the system allocator to</i></td></tr>
+<tr><th id="51">51</th><td><i>// service the allocation request. We save that block in fallback_blocks_</i></td></tr>
+<tr><th id="52">52</th><td><i>// and track the total size of the fallback blocks in</i></td></tr>
+<tr><th id="53">53</th><td><i>// fallback_blocks_total_size_.</i></td></tr>
+<tr><th id="54">54</th><td><i>//</i></td></tr>
+<tr><th id="55">55</th><td><i>// - in FreeAll, the fast path just resets the bump-ptr allocator. If</i></td></tr>
+<tr><th id="56">56</th><td><i>// there are any fallback blocks, we free them and reallocate the</i></td></tr>
+<tr><th id="57">57</th><td><i>// bump-ptr allocator's buffer so that the next sequence of allocations</i></td></tr>
+<tr><th id="58">58</th><td><i>// will hopefully not need any fallback blocks.</i></td></tr>
+<tr><th id="59">59</th><td><b>class</b> <dfn class="type def" id="ruy::Allocator" title='ruy::Allocator' data-ref="ruy::Allocator" data-ref-filename="ruy..Allocator">Allocator</dfn> final {</td></tr>
+<tr><th id="60">60</th><td> <b>public</b>:</td></tr>
+<tr><th id="61">61</th><td>  <dfn class="decl fn" id="_ZN3ruy9AllocatorD1Ev" title='ruy::Allocator::~Allocator' data-ref="_ZN3ruy9AllocatorD1Ev" data-ref-filename="_ZN3ruy9AllocatorD1Ev">~Allocator</dfn>();</td></tr>
+<tr><th id="62">62</th><td></td></tr>
+<tr><th id="63">63</th><td>  <i>// Allocate a buffer.</i></td></tr>
+<tr><th id="64">64</th><td>  <em>void</em>* <dfn class="decl fn" id="_ZN3ruy9Allocator13AllocateBytesEl" title='ruy::Allocator::AllocateBytes' data-ref="_ZN3ruy9Allocator13AllocateBytesEl" data-ref-filename="_ZN3ruy9Allocator13AllocateBytesEl">AllocateBytes</dfn>(<span class="namespace">std::</span><span class='typedef' title='std::ptrdiff_t' data-type='long' data-ref="std::ptrdiff_t" data-ref-filename="std..ptrdiff_t">ptrdiff_t</span> <dfn class="local col5 decl" id="5685num_bytes" title='num_bytes' data-type='std::ptrdiff_t' data-ref="5685num_bytes" data-ref-filename="5685num_bytes">num_bytes</dfn>);</td></tr>
+<tr><th id="65">65</th><td>  <i>// Allocate a buffer, trying to avoid having its address close to aliasing</i></td></tr>
+<tr><th id="66">66</th><td><i>  // the specified `to_avoid` in the L1D cache.</i></td></tr>
+<tr><th id="67">67</th><td>  <em>void</em>* <dfn class="decl fn" id="_ZN3ruy9Allocator33AllocateBytesAvoidingAliasingWithElPKv" title='ruy::Allocator::AllocateBytesAvoidingAliasingWith' data-ref="_ZN3ruy9Allocator33AllocateBytesAvoidingAliasingWithElPKv" data-ref-filename="_ZN3ruy9Allocator33AllocateBytesAvoidingAliasingWithElPKv">AllocateBytesAvoidingAliasingWith</dfn>(<span class="namespace">std::</span><span class='typedef' title='std::ptrdiff_t' data-type='long' data-ref="std::ptrdiff_t" data-ref-filename="std..ptrdiff_t">ptrdiff_t</span> <dfn class="local col6 decl" id="5686num_bytes" title='num_bytes' data-type='std::ptrdiff_t' data-ref="5686num_bytes" data-ref-filename="5686num_bytes">num_bytes</dfn>,</td></tr>
+<tr><th id="68">68</th><td>                                          <em>const</em> <em>void</em>* <dfn class="local col7 decl" id="5687to_avoid" title='to_avoid' data-type='const void *' data-ref="5687to_avoid" data-ref-filename="5687to_avoid">to_avoid</dfn>);</td></tr>
+<tr><th id="69">69</th><td>  <i>// Allocate an array of `count` elements of type T.</i></td></tr>
+<tr><th id="70">70</th><td>  <b>template</b> &lt;<b>typename</b> T&gt;</td></tr>
+<tr><th id="71">71</th><td>  T* <dfn class="decl def fn" id="_ZN3ruy9Allocator8AllocateEl" title='ruy::Allocator::Allocate' data-ref="_ZN3ruy9Allocator8AllocateEl" data-ref-filename="_ZN3ruy9Allocator8AllocateEl">Allocate</dfn>(<span class="namespace">std::</span><span class='typedef' title='std::ptrdiff_t' data-type='long' data-ref="std::ptrdiff_t" data-ref-filename="std..ptrdiff_t">ptrdiff_t</span> <dfn class="local col8 decl" id="5688count" title='count' data-type='std::ptrdiff_t' data-ref="5688count" data-ref-filename="5688count">count</dfn>) {</td></tr>
+<tr><th id="72">72</th><td>    <b>return</b> <b>static_cast</b>&lt;T*&gt;(<a class="member fn" href="#_ZN3ruy9Allocator13AllocateBytesEl" title='ruy::Allocator::AllocateBytes' data-ref="_ZN3ruy9Allocator13AllocateBytesEl" data-ref-filename="_ZN3ruy9Allocator13AllocateBytesEl">AllocateBytes</a>(<a class="local col8 ref" href="#5688count" title='count' data-ref="5688count" data-ref-filename="5688count">count</a> * <b>sizeof</b>(T)));</td></tr>
+<tr><th id="73">73</th><td>  }</td></tr>
+<tr><th id="74">74</th><td>  <i>// Allocate an array of `count` elements of the given `Pointer` type's</i></td></tr>
+<tr><th id="75">75</th><td><i>  // element_type.</i></td></tr>
+<tr><th id="76">76</th><td>  <b>template</b> &lt;<b>typename</b> Pointer&gt;</td></tr>
+<tr><th id="77">77</th><td>  <em>void</em> <dfn class="decl def fn" id="_ZN3ruy9Allocator8AllocateElPT_" title='ruy::Allocator::Allocate' data-ref="_ZN3ruy9Allocator8AllocateElPT_" data-ref-filename="_ZN3ruy9Allocator8AllocateElPT_">Allocate</dfn>(<span class="namespace">std::</span><span class='typedef' title='std::ptrdiff_t' data-type='long' data-ref="std::ptrdiff_t" data-ref-filename="std..ptrdiff_t">ptrdiff_t</span> <dfn class="local col9 decl" id="5689count" title='count' data-type='std::ptrdiff_t' data-ref="5689count" data-ref-filename="5689count">count</dfn>, Pointer* <dfn class="local col0 decl" id="5690out" title='out' data-type='Pointer *' data-ref="5690out" data-ref-filename="5690out">out</dfn>) {</td></tr>
+<tr><th id="78">78</th><td>    <b>using</b> <dfn class="local col1 typedef" id="5691T" title='T' data-type='typename std::pointer_traits&lt;Pointer&gt;::element_type' data-ref="5691T" data-ref-filename="5691T">T</dfn> = <b>typename</b> <span class="namespace">std::</span><span class='type' title='std::pointer_traits' data-ref="std::pointer_traits" data-ref-filename="std..pointer_traits">pointer_traits</span>&lt;Pointer&gt;::element_type;</td></tr>
+<tr><th id="79">79</th><td>    *<a class="local col0 ref" href="#5690out" title='out' data-ref="5690out" data-ref-filename="5690out">out</a> = Allocate&lt;<a class="local col1 typedef" href="#5691T" title='T' data-type='typename std::pointer_traits&lt;Pointer&gt;::element_type' data-ref="5691T" data-ref-filename="5691T">T</a>&gt;(<a class="local col9 ref" href="#5689count" title='count' data-ref="5689count" data-ref-filename="5689count">count</a>);</td></tr>
+<tr><th id="80">80</th><td>  }</td></tr>
+<tr><th id="81">81</th><td></td></tr>
+<tr><th id="82">82</th><td>  <i>// Free all allocated blocks. Internally consolidate allocated buffers as</i></td></tr>
+<tr><th id="83">83</th><td><i>  // explained in the class comment.</i></td></tr>
+<tr><th id="84">84</th><td>  <em>void</em> <dfn class="decl fn" id="_ZN3ruy9Allocator7FreeAllEv" title='ruy::Allocator::FreeAll' data-ref="_ZN3ruy9Allocator7FreeAllEv" data-ref-filename="_ZN3ruy9Allocator7FreeAllEv">FreeAll</dfn>();</td></tr>
+<tr><th id="85">85</th><td></td></tr>
+<tr><th id="86">86</th><td> <b>private</b>:</td></tr>
+<tr><th id="87">87</th><td>  <em>void</em> <dfn class="decl def fn" id="_ZN3ruy9AllocatoraSERKS0_" title='ruy::Allocator::operator=' data-ref="_ZN3ruy9AllocatoraSERKS0_" data-ref-filename="_ZN3ruy9AllocatoraSERKS0_"><b>operator</b>=</dfn>(<em>const</em> <a class="type" href="#ruy::Allocator" title='ruy::Allocator' data-ref="ruy::Allocator" data-ref-filename="ruy..Allocator">Allocator</a>&amp;) = <b>delete</b>;</td></tr>
+<tr><th id="88">88</th><td>  <em>void</em>* <dfn class="decl fn" id="_ZN3ruy9Allocator12AllocateFastEl" title='ruy::Allocator::AllocateFast' data-ref="_ZN3ruy9Allocator12AllocateFastEl" data-ref-filename="_ZN3ruy9Allocator12AllocateFastEl">AllocateFast</dfn>(<span class="namespace">std::</span><span class='typedef' title='std::ptrdiff_t' data-type='long' data-ref="std::ptrdiff_t" data-ref-filename="std..ptrdiff_t">ptrdiff_t</span> <dfn class="local col2 decl" id="5692num_bytes" title='num_bytes' data-type='std::ptrdiff_t' data-ref="5692num_bytes" data-ref-filename="5692num_bytes">num_bytes</dfn>);</td></tr>
+<tr><th id="89">89</th><td>  <em>void</em>* <dfn class="decl fn" id="_ZN3ruy9Allocator12AllocateSlowEl" title='ruy::Allocator::AllocateSlow' data-ref="_ZN3ruy9Allocator12AllocateSlowEl" data-ref-filename="_ZN3ruy9Allocator12AllocateSlowEl">AllocateSlow</dfn>(<span class="namespace">std::</span><span class='typedef' title='std::ptrdiff_t' data-type='long' data-ref="std::ptrdiff_t" data-ref-filename="std..ptrdiff_t">ptrdiff_t</span> <dfn class="local col3 decl" id="5693num_bytes" title='num_bytes' data-type='std::ptrdiff_t' data-ref="5693num_bytes" data-ref-filename="5693num_bytes">num_bytes</dfn>);</td></tr>
+<tr><th id="90">90</th><td></td></tr>
+<tr><th id="91">91</th><td>  <em>void</em>* <dfn class="decl field" id="ruy::Allocator::ptr_" title='ruy::Allocator::ptr_' data-ref="ruy::Allocator::ptr_" data-ref-filename="ruy..Allocator..ptr_">ptr_</dfn> = <b>nullptr</b>;</td></tr>
+<tr><th id="92">92</th><td>  <span class="namespace">std::</span><span class='typedef' title='std::ptrdiff_t' data-type='long' data-ref="std::ptrdiff_t" data-ref-filename="std..ptrdiff_t">ptrdiff_t</span> <dfn class="decl field" id="ruy::Allocator::current_" title='ruy::Allocator::current_' data-ref="ruy::Allocator::current_" data-ref-filename="ruy..Allocator..current_">current_</dfn> = <var>0</var>;</td></tr>
+<tr><th id="93">93</th><td>  <span class="namespace">std::</span><span class='typedef' title='std::ptrdiff_t' data-type='long' data-ref="std::ptrdiff_t" data-ref-filename="std..ptrdiff_t">ptrdiff_t</span> <dfn class="decl field" id="ruy::Allocator::size_" title='ruy::Allocator::size_' data-ref="ruy::Allocator::size_" data-ref-filename="ruy..Allocator..size_">size_</dfn> = <var>0</var>;</td></tr>
+<tr><th id="94">94</th><td>  <span class="namespace">std::</span><span class='type' title='std::vector' data-ref="std::vector" data-ref-filename="std..vector">vector</span>&lt;<em>void</em>*&gt; <dfn class="decl field" id="ruy::Allocator::fallback_blocks_" title='ruy::Allocator::fallback_blocks_' data-ref="ruy::Allocator::fallback_blocks_" data-ref-filename="ruy..Allocator..fallback_blocks_">fallback_blocks_</dfn>;</td></tr>
+<tr><th id="95">95</th><td>  <span class="namespace">std::</span><span class='typedef' title='std::ptrdiff_t' data-type='long' data-ref="std::ptrdiff_t" data-ref-filename="std..ptrdiff_t">ptrdiff_t</span> <dfn class="decl field" id="ruy::Allocator::fallback_blocks_total_size_" title='ruy::Allocator::fallback_blocks_total_size_' data-ref="ruy::Allocator::fallback_blocks_total_size_" data-ref-filename="ruy..Allocator..fallback_blocks_total_size_">fallback_blocks_total_size_</dfn> = <var>0</var>;</td></tr>
+<tr><th id="96">96</th><td>};</td></tr>
+<tr><th id="97">97</th><td></td></tr>
+<tr><th id="98">98</th><td>}  <i>// namespace ruy</i></td></tr>
+<tr><th id="99">99</th><td></td></tr>
+<tr><th id="100">100</th><td><u>#<span data-ppcond="16">endif</span>  // RUY_RUY_ALLOCATOR_H_</u></td></tr>
+<tr><th id="101">101</th><td></td></tr>
+</table><hr/><p id='footer'>
+Generated while processing <a href='../../_deps/tflite-src/tensorflow/lite/kernels/activations.cc.html'>halide/build-apps/_deps/tflite-src/tensorflow/lite/kernels/activations.cc</a><br/>Generated on <em>2021-Aug-05</em> from project halide revision <em>v12.0.1</em>

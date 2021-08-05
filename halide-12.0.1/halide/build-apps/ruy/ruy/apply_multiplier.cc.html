@@ -1,0 +1,85 @@
+<!doctype html>
+<html>
+<head>
+<meta name="viewport" content="width=device-width, initial-scale=1.0"><title>apply_multiplier.cc source code [halide/build-apps/ruy/ruy/apply_multiplier.cc] - Woboq Code Browser</title>
+<link rel="stylesheet" href="../../../.././data/qtcreator.css" title="QtCreator"/>
+<link rel="alternate stylesheet" href="../../../.././data/kdevelop.css" title="KDevelop"/>
+<script type="text/javascript" src="../../../.././data/jquery/jquery.min.js"></script>
+<script type="text/javascript" src="../../../.././data/jquery/jquery-ui.min.js"></script>
+<script>var file = 'halide/build-apps/ruy/ruy/apply_multiplier.cc'; var root_path = '../../../..'; var data_path = '../../../.././data'; var ecma_script_api_version = 2;</script>
+<script src='../../../.././data/codebrowser.js'></script>
+</head>
+<body><div id='header'><h1 id='breadcrumb'><span>Browse the source code of </span><a href='../../..'>halide</a>/<a href='../..'>build-apps</a>/<a href='..'>ruy</a>/<a href='./'>ruy</a>/<a href='apply_multiplier.cc.html'>apply_multiplier.cc</a></h1></div>
+<hr/><div id='content'><table class="code">
+<tr><th id="1">1</th><td><i>/* Copyright 2020 Google LLC. All Rights Reserved.</i></td></tr>
+<tr><th id="2">2</th><td><i></i></td></tr>
+<tr><th id="3">3</th><td><i>Licensed under the Apache License, Version 2.0 (the "License");</i></td></tr>
+<tr><th id="4">4</th><td><i>you may not use this file except in compliance with the License.</i></td></tr>
+<tr><th id="5">5</th><td><i>You may obtain a copy of the License at</i></td></tr>
+<tr><th id="6">6</th><td><i></i></td></tr>
+<tr><th id="7">7</th><td><i>    <a href="http://www.apache.org/licenses/LICENSE-2.0">http://www.apache.org/licenses/LICENSE-2.0</a></i></td></tr>
+<tr><th id="8">8</th><td><i></i></td></tr>
+<tr><th id="9">9</th><td><i>Unless required by applicable law or agreed to in writing, software</i></td></tr>
+<tr><th id="10">10</th><td><i>distributed under the License is distributed on an "AS IS" BASIS,</i></td></tr>
+<tr><th id="11">11</th><td><i>WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.</i></td></tr>
+<tr><th id="12">12</th><td><i>See the License for the specific language governing permissions and</i></td></tr>
+<tr><th id="13">13</th><td><i>limitations under the License.</i></td></tr>
+<tr><th id="14">14</th><td><i>==============================================================================*/</i></td></tr>
+<tr><th id="15">15</th><td></td></tr>
+<tr><th id="16">16</th><td><u>#include <a href="apply_multiplier.h.html">"ruy/apply_multiplier.h"</a></u></td></tr>
+<tr><th id="17">17</th><td></td></tr>
+<tr><th id="18">18</th><td><u>#include &lt;cmath&gt;</u></td></tr>
+<tr><th id="19">19</th><td><u>#include &lt;cstdint&gt;</u></td></tr>
+<tr><th id="20">20</th><td><u>#include &lt;cstdlib&gt;</u></td></tr>
+<tr><th id="21">21</th><td><u>#include &lt;limits&gt;</u></td></tr>
+<tr><th id="22">22</th><td></td></tr>
+<tr><th id="23">23</th><td><b>namespace</b> <span class="namespace">ruy</span> {</td></tr>
+<tr><th id="24">24</th><td><b>namespace</b> <span class="namespace">detail</span> {</td></tr>
+<tr><th id="25">25</th><td></td></tr>
+<tr><th id="26">26</th><td><i>// !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!</i></td></tr>
+<tr><th id="27">27</th><td><i>// Warning: this code is not meant to be bit-exact-normative.</i></td></tr>
+<tr><th id="28">28</th><td><i>// Please refer to the class comment of ruy::MulParams, in mul_params.h.</i></td></tr>
+<tr><th id="29">29</th><td><i>// !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!</i></td></tr>
+<tr><th id="30">30</th><td><i>// Simplified multiplier application function</i></td></tr>
+<tr><th id="31">31</th><td><i>//</i></td></tr>
+<tr><th id="32">32</th><td><i>// Double rounding and symmetric rounding are removed compared to reference.</i></td></tr>
+<tr><th id="33">33</th><td><i>// Double rounding seems unnecessary and can complicate implementations.</i></td></tr>
+<tr><th id="34">34</th><td><i>// Symmetric rounding also adds implementation complexity.</i></td></tr>
+<tr><th id="35">35</th><td><i>//</i></td></tr>
+<tr><th id="36">36</th><td><i>// Composed of a single rounding shift right and can lead to more HW</i></td></tr>
+<tr><th id="37">37</th><td><i>// friendly implementations.</i></td></tr>
+<tr><th id="38">38</th><td><i>//</i></td></tr>
+<tr><th id="39">39</th><td><i>// On NEON this can be translated to a SQDMULH + rounding shift right sequence.</i></td></tr>
+<tr><th id="40">40</th><td><i>// The use of SQDMULH rather than SQRDMULH gives a result that is</i></td></tr>
+<tr><th id="41">41</th><td><i>// equivalent to a single rounded shift since the truncating shift of SQDMULH</i></td></tr>
+<tr><th id="42">42</th><td><i>// can be combined with the rounding right shift via the formula (for k&gt;=1):</i></td></tr>
+<tr><th id="43">43</th><td><i>//  ((x&gt;&gt;31)+(1&lt;&lt;(k-1)))&gt;&gt;k = (x + (1&lt;&lt;(30+k))&gt;&gt;(31+k)</i></td></tr>
+<tr><th id="44">44</th><td><i>//</i></td></tr>
+<tr><th id="45">45</th><td><i>// Preconditions:</i></td></tr>
+<tr><th id="46">46</th><td><i>// - quantized_multiplier &gt;= 0</i></td></tr>
+<tr><th id="47">47</th><td><i>// - shift is -31 to +7 (negative for right shift)</i></td></tr>
+<tr><th id="48">48</th><td><span class="namespace">std::</span><a class="typedef" href="../../../../include/bits/stdint-intn.h.html#int32_t" title='int32_t' data-type='__int32_t' data-ref="int32_t" data-ref-filename="int32_t">int32_t</a> <dfn class="decl def fn" id="_ZN3ruy6detail29MultiplyByQuantizedMultiplierEiii" title='ruy::detail::MultiplyByQuantizedMultiplier' data-ref="_ZN3ruy6detail29MultiplyByQuantizedMultiplierEiii" data-ref-filename="_ZN3ruy6detail29MultiplyByQuantizedMultiplierEiii">MultiplyByQuantizedMultiplier</dfn>(<span class="namespace">std::</span><a class="typedef" href="../../../../include/bits/stdint-intn.h.html#int32_t" title='int32_t' data-type='__int32_t' data-ref="int32_t" data-ref-filename="int32_t">int32_t</a> <dfn class="local col1 decl" id="1x" title='x' data-type='std::int32_t' data-ref="1x" data-ref-filename="1x">x</dfn>,</td></tr>
+<tr><th id="49">49</th><td>                                           <span class="namespace">std::</span><a class="typedef" href="../../../../include/bits/stdint-intn.h.html#int32_t" title='int32_t' data-type='__int32_t' data-ref="int32_t" data-ref-filename="int32_t">int32_t</a> <dfn class="local col2 decl" id="2quantized_multiplier" title='quantized_multiplier' data-type='std::int32_t' data-ref="2quantized_multiplier" data-ref-filename="2quantized_multiplier">quantized_multiplier</dfn>,</td></tr>
+<tr><th id="50">50</th><td>                                           <em>int</em> <dfn class="local col3 decl" id="3shift" title='shift' data-type='int' data-ref="3shift" data-ref-filename="3shift">shift</dfn>) {</td></tr>
+<tr><th id="51">51</th><td>  <a class="macro" href="check_macros.h.html#115" title="ruy::check_macros::CheckImpl&lt;std::greater_equal&gt;( &quot;/fast/tmp/halide.git/build-apps/ruy/ruy/apply_multiplier.cc&quot;, 51, &quot;RUY_CHECK_GE&quot;, &quot;shift&quot;, shift, &quot;&gt;=&quot;, &quot;-31&quot;, -31)" data-ref="_M/RUY_CHECK_GE">RUY_CHECK_GE</a>(<a class="local col3 ref" href="#3shift" title='shift' data-ref="3shift" data-ref-filename="3shift">shift</a>, -<var>31</var>);</td></tr>
+<tr><th id="52">52</th><td></td></tr>
+<tr><th id="53">53</th><td>  <em>int</em> <dfn class="local col4 decl" id="4total_shift" title='total_shift' data-type='int' data-ref="4total_shift" data-ref-filename="4total_shift">total_shift</dfn> = <var>31</var> - <a class="local col3 ref" href="#3shift" title='shift' data-ref="3shift" data-ref-filename="3shift">shift</a>;</td></tr>
+<tr><th id="54">54</th><td></td></tr>
+<tr><th id="55">55</th><td>  <span class="namespace">std::</span><a class="typedef" href="../../../../include/bits/stdint-intn.h.html#int64_t" title='int64_t' data-type='__int64_t' data-ref="int64_t" data-ref-filename="int64_t">int64_t</a> <dfn class="local col5 decl" id="5x_64" title='x_64' data-type='std::int64_t' data-ref="5x_64" data-ref-filename="5x_64">x_64</dfn>(<a class="local col1 ref" href="#1x" title='x' data-ref="1x" data-ref-filename="1x">x</a>);</td></tr>
+<tr><th id="56">56</th><td>  <span class="namespace">std::</span><a class="typedef" href="../../../../include/bits/stdint-intn.h.html#int64_t" title='int64_t' data-type='__int64_t' data-ref="int64_t" data-ref-filename="int64_t">int64_t</a> <dfn class="local col6 decl" id="6quantized_multiplier_64" title='quantized_multiplier_64' data-type='std::int64_t' data-ref="6quantized_multiplier_64" data-ref-filename="6quantized_multiplier_64">quantized_multiplier_64</dfn>(<a class="local col2 ref" href="#2quantized_multiplier" title='quantized_multiplier' data-ref="2quantized_multiplier" data-ref-filename="2quantized_multiplier">quantized_multiplier</a>);</td></tr>
+<tr><th id="57">57</th><td>  <span class="namespace">std::</span><a class="typedef" href="../../../../include/bits/stdint-intn.h.html#int64_t" title='int64_t' data-type='__int64_t' data-ref="int64_t" data-ref-filename="int64_t">int64_t</a> <dfn class="local col7 decl" id="7round" title='round' data-type='std::int64_t' data-ref="7round" data-ref-filename="7round">round</dfn> = (<a class="typedef" href="../../../../include/bits/stdint-intn.h.html#int64_t" title='int64_t' data-type='__int64_t' data-ref="int64_t" data-ref-filename="int64_t">int64_t</a>)<var>1</var> &lt;&lt; (<a class="local col4 ref" href="#4total_shift" title='total_shift' data-ref="4total_shift" data-ref-filename="4total_shift">total_shift</a> - <var>1</var>);</td></tr>
+<tr><th id="58">58</th><td>  <a class="typedef" href="../../../../include/bits/stdint-intn.h.html#int64_t" title='int64_t' data-type='__int64_t' data-ref="int64_t" data-ref-filename="int64_t">int64_t</a> <dfn class="local col8 decl" id="8result" title='result' data-type='int64_t' data-ref="8result" data-ref-filename="8result">result</dfn> = <a class="local col5 ref" href="#5x_64" title='x_64' data-ref="5x_64" data-ref-filename="5x_64">x_64</a> * <a class="local col6 ref" href="#6quantized_multiplier_64" title='quantized_multiplier_64' data-ref="6quantized_multiplier_64" data-ref-filename="6quantized_multiplier_64">quantized_multiplier_64</a> + <a class="local col7 ref" href="#7round" title='round' data-ref="7round" data-ref-filename="7round">round</a>;</td></tr>
+<tr><th id="59">59</th><td>  <a class="local col8 ref" href="#8result" title='result' data-ref="8result" data-ref-filename="8result">result</a> = <a class="local col8 ref" href="#8result" title='result' data-ref="8result" data-ref-filename="8result">result</a> &gt;&gt; <a class="local col4 ref" href="#4total_shift" title='total_shift' data-ref="4total_shift" data-ref-filename="4total_shift">total_shift</a>;</td></tr>
+<tr><th id="60">60</th><td></td></tr>
+<tr><th id="61">61</th><td>  <a class="macro" href="check_macros.h.html#135" title="if (false) ruy::check_macros::CheckImpl&lt;std::greater_equal&gt;( &quot;/fast/tmp/halide.git/build-apps/ruy/ruy/apply_multiplier.cc&quot;, 61, &quot;RUY_CHECK_GE&quot;, &quot;result&quot;, result, &quot;&gt;=&quot;, &quot;std::numeric_limits&lt;std::int32_t&gt;::lowest()&quot;, std::numeric_limits&lt;std::int32_t&gt;::lowest())" data-ref="_M/RUY_DCHECK_GE">RUY_DCHECK_GE</a>(<a class="local col8 ref" href="#8result" title='result' data-ref="8result" data-ref-filename="8result">result</a>, std::<span class='type' title='std::numeric_limits' data-ref="std::numeric_limits" data-ref-filename="std..numeric_limits">numeric_limits</span>&lt;std::<a class="typedef" href="../../../../include/bits/stdint-intn.h.html#int32_t" title='int32_t' data-type='__int32_t' data-ref="int32_t" data-ref-filename="int32_t">int32_t</a>&gt;::<span class='ref fn' title='std::numeric_limits&lt;int&gt;::lowest' data-ref="_ZNSt14numeric_limitsIiE6lowestEv" data-ref-filename="_ZNSt14numeric_limitsIiE6lowestEv">lowest</span>());</td></tr>
+<tr><th id="62">62</th><td>  <a class="macro" href="check_macros.h.html#139" title="if (false) ruy::check_macros::CheckImpl&lt;std::less_equal&gt;( &quot;/fast/tmp/halide.git/build-apps/ruy/ruy/apply_multiplier.cc&quot;, 62, &quot;RUY_CHECK_LE&quot;, &quot;result&quot;, result, &quot;&lt;=&quot;, &quot;std::numeric_limits&lt;std::int32_t&gt;::max()&quot;, std::numeric_limits&lt;std::int32_t&gt;::max())" data-ref="_M/RUY_DCHECK_LE">RUY_DCHECK_LE</a>(<a class="local col8 ref" href="#8result" title='result' data-ref="8result" data-ref-filename="8result">result</a>, std::<span class='type' title='std::numeric_limits' data-ref="std::numeric_limits" data-ref-filename="std..numeric_limits">numeric_limits</span>&lt;std::<a class="typedef" href="../../../../include/bits/stdint-intn.h.html#int32_t" title='int32_t' data-type='__int32_t' data-ref="int32_t" data-ref-filename="int32_t">int32_t</a>&gt;::<span class='ref fn' title='std::numeric_limits&lt;int&gt;::max' data-ref="_ZNSt14numeric_limitsIiE3maxEv" data-ref-filename="_ZNSt14numeric_limitsIiE3maxEv">max</span>());</td></tr>
+<tr><th id="63">63</th><td></td></tr>
+<tr><th id="64">64</th><td>  <b>return</b> <b>static_cast</b>&lt;<span class="namespace">std::</span><a class="typedef" href="../../../../include/bits/stdint-intn.h.html#int32_t" title='int32_t' data-type='__int32_t' data-ref="int32_t" data-ref-filename="int32_t">int32_t</a>&gt;(<a class="local col8 ref" href="#8result" title='result' data-ref="8result" data-ref-filename="8result">result</a>);</td></tr>
+<tr><th id="65">65</th><td>}</td></tr>
+<tr><th id="66">66</th><td></td></tr>
+<tr><th id="67">67</th><td>}  <i>// namespace detail</i></td></tr>
+<tr><th id="68">68</th><td></td></tr>
+<tr><th id="69">69</th><td>}  <i>// namespace ruy</i></td></tr>
+<tr><th id="70">70</th><td></td></tr>
+</table><hr/><p id='footer'>
+Generated on <em>2021-Aug-05</em> from project halide revision <em>v12.0.1</em>

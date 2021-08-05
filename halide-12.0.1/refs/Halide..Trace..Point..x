@@ -1,3 +1,17 @@
+<dec f='halide/halide-install/share/tools/halide_trace_config.h' l='83' type='int'/>
+<use f='halide/halide-install/share/tools/halide_trace_config.h' l='87' u='w' c='_ZN6Halide5Trace5PointC1Eii'/>
+<use f='halide/halide-install/share/tools/halide_trace_config.h' l='91' u='r' c='_ZN6Halide5TracelsERSoRKNS0_5PointE'/>
+<use f='halide/halide-install/share/tools/halide_trace_config.h' l='96' u='a' c='_ZN6Halide5TracersERSiRNS0_5PointE'/>
+<use f='halide/halide-install/share/tools/halide_trace_config.h' l='220' u='r' c='_ZN6Halide5Trace10FuncConfig10merge_fromERKS1_'/>
+<use f='halide/halide-install/share/tools/halide_trace_config.h' l='221' u='w' c='_ZN6Halide5Trace10FuncConfig10merge_fromERKS1_'/>
+<use f='halide/halide-install/share/tools/halide_trace_config.h' l='221' u='r' c='_ZN6Halide5Trace10FuncConfig10merge_fromERKS1_'/>
+<use f='halide/apps/bilateral_grid/bilateral_grid_generator.cpp' l='159' u='w' c='_ZN12_GLOBAL__N_113BilateralGrid8generateEv'/>
+<use f='halide/apps/bilateral_grid/bilateral_grid_generator.cpp' l='163' u='w' c='_ZN12_GLOBAL__N_113BilateralGrid8generateEv'/>
+<use f='halide/apps/bilateral_grid/bilateral_grid_generator.cpp' l='172' u='w' c='_ZN12_GLOBAL__N_113BilateralGrid8generateEv'/>
+<offset>0</offset>
+<use f='halide/apps/local_laplacian/local_laplacian_generator.cpp' l='167' u='w' c='_ZN12_GLOBAL__N_114LocalLaplacian8generateEv'/>
+<use f='halide/apps/local_laplacian/local_laplacian_generator.cpp' l='171' u='w' c='_ZN12_GLOBAL__N_114LocalLaplacian8generateEv'/>
+<use f='halide/apps/local_laplacian/local_laplacian_generator.cpp' l='178' u='w' c='_ZN12_GLOBAL__N_114LocalLaplacian8generateEv'/>
 <dec f='halide/tools/halide_trace_config.h' l='83' type='int'/>
 <use f='halide/tools/halide_trace_config.h' l='87' u='w' c='_ZN6Halide5Trace5PointC1Eii'/>
 <use f='halide/tools/halide_trace_config.h' l='91' u='r' c='_ZN6Halide5TracelsERSoRKNS0_5PointE'/>

@@ -1,0 +1,175 @@
+<!doctype html>
+<html>
+<head>
+<meta name="viewport" content="width=device-width, initial-scale=1.0"><title>vdso_support.h source code [halide/build-apps/abseil-cpp/absl/debugging/internal/vdso_support.h] - Woboq Code Browser</title>
+<meta name="woboq:interestingDefinitions" content="absl::lts_2020_02_25::debugging_internal::VDSOSupport "/>
+<link rel="stylesheet" href="../../../../../.././data/qtcreator.css" title="QtCreator"/>
+<link rel="alternate stylesheet" href="../../../../../.././data/kdevelop.css" title="KDevelop"/>
+<script type="text/javascript" src="../../../../../.././data/jquery/jquery.min.js"></script>
+<script type="text/javascript" src="../../../../../.././data/jquery/jquery-ui.min.js"></script>
+<script>var file = 'halide/build-apps/abseil-cpp/absl/debugging/internal/vdso_support.h'; var root_path = '../../../../../..'; var data_path = '../../../../../.././data'; var ecma_script_api_version = 2;</script>
+<script src='../../../../../.././data/codebrowser.js'></script>
+</head>
+<body><div id='header'><h1 id='breadcrumb'><span>Browse the source code of </span><a href='../../../../..'>halide</a>/<a href='../../../..'>build-apps</a>/<a href='../../..'>abseil-cpp</a>/<a href='../..'>absl</a>/<a href='..'>debugging</a>/<a href='./'>internal</a>/<a href='vdso_support.h.html'>vdso_support.h</a></h1></div>
+<hr/><div id='content'><table class="code">
+<tr><th id="1">1</th><td><i>//</i></td></tr>
+<tr><th id="2">2</th><td><i>// Copyright 2017 The Abseil Authors.</i></td></tr>
+<tr><th id="3">3</th><td><i>//</i></td></tr>
+<tr><th id="4">4</th><td><i>// Licensed under the Apache License, Version 2.0 (the "License");</i></td></tr>
+<tr><th id="5">5</th><td><i>// you may not use this file except in compliance with the License.</i></td></tr>
+<tr><th id="6">6</th><td><i>// You may obtain a copy of the License at</i></td></tr>
+<tr><th id="7">7</th><td><i>//</i></td></tr>
+<tr><th id="8">8</th><td><i>//      <a href="https://www.apache.org/licenses/LICENSE-2.0">https://www.apache.org/licenses/LICENSE-2.0</a></i></td></tr>
+<tr><th id="9">9</th><td><i>//</i></td></tr>
+<tr><th id="10">10</th><td><i>// Unless required by applicable law or agreed to in writing, software</i></td></tr>
+<tr><th id="11">11</th><td><i>// distributed under the License is distributed on an "AS IS" BASIS,</i></td></tr>
+<tr><th id="12">12</th><td><i>// WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.</i></td></tr>
+<tr><th id="13">13</th><td><i>// See the License for the specific language governing permissions and</i></td></tr>
+<tr><th id="14">14</th><td><i>// limitations under the License.</i></td></tr>
+<tr><th id="15">15</th><td><i>//</i></td></tr>
+<tr><th id="16">16</th><td><i></i></td></tr>
+<tr><th id="17">17</th><td><i>// Allow dynamic symbol lookup in the kernel VDSO page.</i></td></tr>
+<tr><th id="18">18</th><td><i>//</i></td></tr>
+<tr><th id="19">19</th><td><i>// VDSO stands for "Virtual Dynamic Shared Object" -- a page of</i></td></tr>
+<tr><th id="20">20</th><td><i>// executable code, which looks like a shared library, but doesn't</i></td></tr>
+<tr><th id="21">21</th><td><i>// necessarily exist anywhere on disk, and which gets mmap()ed into</i></td></tr>
+<tr><th id="22">22</th><td><i>// every process by kernels which support VDSO, such as 2.6.x for 32-bit</i></td></tr>
+<tr><th id="23">23</th><td><i>// executables, and 2.6.24 and above for 64-bit executables.</i></td></tr>
+<tr><th id="24">24</th><td><i>//</i></td></tr>
+<tr><th id="25">25</th><td><i>// More details could be found here:</i></td></tr>
+<tr><th id="26">26</th><td><i>// <a href="http://www.trilithium.com/johan/2005/08/linux-gate/">http://www.trilithium.com/johan/2005/08/linux-gate/</a></i></td></tr>
+<tr><th id="27">27</th><td><i>//</i></td></tr>
+<tr><th id="28">28</th><td><i>// VDSOSupport -- a class representing kernel VDSO (if present).</i></td></tr>
+<tr><th id="29">29</th><td><i>//</i></td></tr>
+<tr><th id="30">30</th><td><i>// Example usage:</i></td></tr>
+<tr><th id="31">31</th><td><i>//  VDSOSupport vdso;</i></td></tr>
+<tr><th id="32">32</th><td><i>//  VDSOSupport::SymbolInfo info;</i></td></tr>
+<tr><th id="33">33</th><td><i>//  typedef (*FN)(unsigned *, void *, void *);</i></td></tr>
+<tr><th id="34">34</th><td><i>//  FN fn = nullptr;</i></td></tr>
+<tr><th id="35">35</th><td><i>//  if (vdso.LookupSymbol("__vdso_getcpu", "LINUX_2.6", STT_FUNC, &amp;info)) {</i></td></tr>
+<tr><th id="36">36</th><td><i>//     fn = reinterpret_cast&lt;FN&gt;(info.address);</i></td></tr>
+<tr><th id="37">37</th><td><i>//  }</i></td></tr>
+<tr><th id="38">38</th><td></td></tr>
+<tr><th id="39">39</th><td><u>#<span data-ppcond="39">ifndef</span> <span class="macro" data-ref="_M/ABSL_DEBUGGING_INTERNAL_VDSO_SUPPORT_H_">ABSL_DEBUGGING_INTERNAL_VDSO_SUPPORT_H_</span></u></td></tr>
+<tr><th id="40">40</th><td><u>#define <dfn class="macro" id="_M/ABSL_DEBUGGING_INTERNAL_VDSO_SUPPORT_H_" data-ref="_M/ABSL_DEBUGGING_INTERNAL_VDSO_SUPPORT_H_">ABSL_DEBUGGING_INTERNAL_VDSO_SUPPORT_H_</dfn></u></td></tr>
+<tr><th id="41">41</th><td></td></tr>
+<tr><th id="42">42</th><td><u>#include &lt;atomic&gt;</u></td></tr>
+<tr><th id="43">43</th><td></td></tr>
+<tr><th id="44">44</th><td><u>#include <a href="../../base/attributes.h.html">"absl/base/attributes.h"</a></u></td></tr>
+<tr><th id="45">45</th><td><u>#include <a href="elf_mem_image.h.html">"absl/debugging/internal/elf_mem_image.h"</a></u></td></tr>
+<tr><th id="46">46</th><td></td></tr>
+<tr><th id="47">47</th><td><u>#<span data-ppcond="47">ifdef</span> <a class="macro" href="elf_mem_image.h.html#36" data-ref="_M/ABSL_HAVE_ELF_MEM_IMAGE">ABSL_HAVE_ELF_MEM_IMAGE</a></u></td></tr>
+<tr><th id="48">48</th><td></td></tr>
+<tr><th id="49">49</th><td><u>#<span data-ppcond="49">ifdef</span> <span class="macro" data-ref="_M/ABSL_HAVE_VDSO_SUPPORT">ABSL_HAVE_VDSO_SUPPORT</span></u></td></tr>
+<tr><th id="50">50</th><td><u>#error ABSL_HAVE_VDSO_SUPPORT cannot be directly set</u></td></tr>
+<tr><th id="51">51</th><td><u>#<span data-ppcond="49">else</span></u></td></tr>
+<tr><th id="52">52</th><td><u>#define <dfn class="macro" id="_M/ABSL_HAVE_VDSO_SUPPORT" data-ref="_M/ABSL_HAVE_VDSO_SUPPORT">ABSL_HAVE_VDSO_SUPPORT</dfn> 1</u></td></tr>
+<tr><th id="53">53</th><td><u>#<span data-ppcond="49">endif</span></u></td></tr>
+<tr><th id="54">54</th><td></td></tr>
+<tr><th id="55">55</th><td><b>namespace</b> <span class="namespace">absl</span> {</td></tr>
+<tr><th id="56">56</th><td><a class="macro" href="../../base/config.h.html#125" title="inline namespace lts_2020_02_25 {" data-ref="_M/ABSL_NAMESPACE_BEGIN">ABSL_NAMESPACE_BEGIN</a></td></tr>
+<tr><th id="57">57</th><td><b>namespace</b> <span class="namespace">debugging_internal</span> {</td></tr>
+<tr><th id="58">58</th><td></td></tr>
+<tr><th id="59">59</th><td><i>// NOTE: this class may be used from within tcmalloc, and can not</i></td></tr>
+<tr><th id="60">60</th><td><i>// use any memory allocation routines.</i></td></tr>
+<tr><th id="61">61</th><td><b>class</b> <dfn class="type def" id="absl::lts_2020_02_25::debugging_internal::VDSOSupport" title='absl::lts_2020_02_25::debugging_internal::VDSOSupport' data-ref="absl::lts_2020_02_25::debugging_internal::VDSOSupport" data-ref-filename="absl..lts_2020_02_25..debugging_internal..VDSOSupport">VDSOSupport</dfn> {</td></tr>
+<tr><th id="62">62</th><td> <b>public</b>:</td></tr>
+<tr><th id="63">63</th><td>  <a class="decl fn" href="vdso_support.cc.html#_ZN4absl14lts_2020_02_2518debugging_internal11VDSOSupportC1Ev" title='absl::lts_2020_02_25::debugging_internal::VDSOSupport::VDSOSupport' data-ref="_ZN4absl14lts_2020_02_2518debugging_internal11VDSOSupportC1Ev" data-ref-filename="_ZN4absl14lts_2020_02_2518debugging_internal11VDSOSupportC1Ev" id="_ZN4absl14lts_2020_02_2518debugging_internal11VDSOSupportC1Ev">VDSOSupport</a>();</td></tr>
+<tr><th id="64">64</th><td></td></tr>
+<tr><th id="65">65</th><td>  <b>typedef</b> <a class="type" href="elf_mem_image.h.html#absl::lts_2020_02_25::debugging_internal::ElfMemImage" title='absl::lts_2020_02_25::debugging_internal::ElfMemImage' data-ref="absl::lts_2020_02_25::debugging_internal::ElfMemImage" data-ref-filename="absl..lts_2020_02_25..debugging_internal..ElfMemImage">ElfMemImage</a>::<a class="type" href="elf_mem_image.h.html#absl::lts_2020_02_25::debugging_internal::ElfMemImage::SymbolInfo" title='absl::lts_2020_02_25::debugging_internal::ElfMemImage::SymbolInfo' data-ref="absl::lts_2020_02_25::debugging_internal::ElfMemImage::SymbolInfo" data-ref-filename="absl..lts_2020_02_25..debugging_internal..ElfMemImage..SymbolInfo">SymbolInfo</a> <dfn class="typedef" id="absl::lts_2020_02_25::debugging_internal::VDSOSupport::SymbolInfo" title='absl::lts_2020_02_25::debugging_internal::VDSOSupport::SymbolInfo' data-type='ElfMemImage::SymbolInfo' data-ref="absl::lts_2020_02_25::debugging_internal::VDSOSupport::SymbolInfo" data-ref-filename="absl..lts_2020_02_25..debugging_internal..VDSOSupport..SymbolInfo">SymbolInfo</dfn>;</td></tr>
+<tr><th id="66">66</th><td>  <b>typedef</b> <a class="type" href="elf_mem_image.h.html#absl::lts_2020_02_25::debugging_internal::ElfMemImage" title='absl::lts_2020_02_25::debugging_internal::ElfMemImage' data-ref="absl::lts_2020_02_25::debugging_internal::ElfMemImage" data-ref-filename="absl..lts_2020_02_25..debugging_internal..ElfMemImage">ElfMemImage</a>::<a class="type" href="elf_mem_image.h.html#absl::lts_2020_02_25::debugging_internal::ElfMemImage::SymbolIterator" title='absl::lts_2020_02_25::debugging_internal::ElfMemImage::SymbolIterator' data-ref="absl::lts_2020_02_25::debugging_internal::ElfMemImage::SymbolIterator" data-ref-filename="absl..lts_2020_02_25..debugging_internal..ElfMemImage..SymbolIterator">SymbolIterator</a> <dfn class="typedef" id="absl::lts_2020_02_25::debugging_internal::VDSOSupport::SymbolIterator" title='absl::lts_2020_02_25::debugging_internal::VDSOSupport::SymbolIterator' data-type='ElfMemImage::SymbolIterator' data-ref="absl::lts_2020_02_25::debugging_internal::VDSOSupport::SymbolIterator" data-ref-filename="absl..lts_2020_02_25..debugging_internal..VDSOSupport..SymbolIterator">SymbolIterator</dfn>;</td></tr>
+<tr><th id="67">67</th><td></td></tr>
+<tr><th id="68">68</th><td>  <i>// On PowerPC64 VDSO symbols can either be of type STT_FUNC or STT_NOTYPE</i></td></tr>
+<tr><th id="69">69</th><td><i>  // depending on how the kernel is built.  The kernel is normally built with</i></td></tr>
+<tr><th id="70">70</th><td><i>  // STT_NOTYPE type VDSO symbols.  Let's make things simpler first by using a</i></td></tr>
+<tr><th id="71">71</th><td><i>  // compile-time constant.</i></td></tr>
+<tr><th id="72">72</th><td><u>#<span data-ppcond="72">ifdef</span> <span class="macro" data-ref="_M/__powerpc64__">__powerpc64__</span></u></td></tr>
+<tr><th id="73">73</th><td>  <b>enum</b> { kVDSOSymbolType = STT_NOTYPE };</td></tr>
+<tr><th id="74">74</th><td><u>#<span data-ppcond="72">else</span></u></td></tr>
+<tr><th id="75">75</th><td>  <b>enum</b> { <dfn class="enum" id="absl::lts_2020_02_25::debugging_internal::VDSOSupport::kVDSOSymbolType" title='absl::lts_2020_02_25::debugging_internal::VDSOSupport::kVDSOSymbolType' data-ref="absl::lts_2020_02_25::debugging_internal::VDSOSupport::kVDSOSymbolType" data-ref-filename="absl..lts_2020_02_25..debugging_internal..VDSOSupport..kVDSOSymbolType">kVDSOSymbolType</dfn> = <a class="macro" href="../../../../../../include/elf.h.html#598" title="2" data-ref="_M/STT_FUNC">STT_FUNC</a> };</td></tr>
+<tr><th id="76">76</th><td><u>#<span data-ppcond="72">endif</span></u></td></tr>
+<tr><th id="77">77</th><td></td></tr>
+<tr><th id="78">78</th><td>  <i>// Answers whether we have a vdso at all.</i></td></tr>
+<tr><th id="79">79</th><td>  <em>bool</em> <dfn class="decl def fn" id="_ZNK4absl14lts_2020_02_2518debugging_internal11VDSOSupport9IsPresentEv" title='absl::lts_2020_02_25::debugging_internal::VDSOSupport::IsPresent' data-ref="_ZNK4absl14lts_2020_02_2518debugging_internal11VDSOSupport9IsPresentEv" data-ref-filename="_ZNK4absl14lts_2020_02_2518debugging_internal11VDSOSupport9IsPresentEv">IsPresent</dfn>() <em>const</em> { <b>return</b> <a class="member field" href="#absl::lts_2020_02_25::debugging_internal::VDSOSupport::image_" title='absl::lts_2020_02_25::debugging_internal::VDSOSupport::image_' data-ref="absl::lts_2020_02_25::debugging_internal::VDSOSupport::image_" data-ref-filename="absl..lts_2020_02_25..debugging_internal..VDSOSupport..image_">image_</a>.<a class="ref fn" href="elf_mem_image.h.html#_ZNK4absl14lts_2020_02_2518debugging_internal11ElfMemImage9IsPresentEv" title='absl::lts_2020_02_25::debugging_internal::ElfMemImage::IsPresent' data-ref="_ZNK4absl14lts_2020_02_2518debugging_internal11ElfMemImage9IsPresentEv" data-ref-filename="_ZNK4absl14lts_2020_02_2518debugging_internal11ElfMemImage9IsPresentEv">IsPresent</a>(); }</td></tr>
+<tr><th id="80">80</th><td></td></tr>
+<tr><th id="81">81</th><td>  <i>// Allow to iterate over all VDSO symbols.</i></td></tr>
+<tr><th id="82">82</th><td>  <a class="typedef" href="#absl::lts_2020_02_25::debugging_internal::VDSOSupport::SymbolIterator" title='absl::lts_2020_02_25::debugging_internal::VDSOSupport::SymbolIterator' data-type='ElfMemImage::SymbolIterator' data-ref="absl::lts_2020_02_25::debugging_internal::VDSOSupport::SymbolIterator" data-ref-filename="absl..lts_2020_02_25..debugging_internal..VDSOSupport..SymbolIterator">SymbolIterator</a> <dfn class="decl def fn" id="_ZNK4absl14lts_2020_02_2518debugging_internal11VDSOSupport5beginEv" title='absl::lts_2020_02_25::debugging_internal::VDSOSupport::begin' data-ref="_ZNK4absl14lts_2020_02_2518debugging_internal11VDSOSupport5beginEv" data-ref-filename="_ZNK4absl14lts_2020_02_2518debugging_internal11VDSOSupport5beginEv">begin</dfn>() <em>const</em> { <b>return</b> <a class="member field" href="#absl::lts_2020_02_25::debugging_internal::VDSOSupport::image_" title='absl::lts_2020_02_25::debugging_internal::VDSOSupport::image_' data-ref="absl::lts_2020_02_25::debugging_internal::VDSOSupport::image_" data-ref-filename="absl..lts_2020_02_25..debugging_internal..VDSOSupport..image_">image_</a>.<a class="ref fn" href="elf_mem_image.h.html#_ZNK4absl14lts_2020_02_2518debugging_internal11ElfMemImage5beginEv" title='absl::lts_2020_02_25::debugging_internal::ElfMemImage::begin' data-ref="_ZNK4absl14lts_2020_02_2518debugging_internal11ElfMemImage5beginEv" data-ref-filename="_ZNK4absl14lts_2020_02_2518debugging_internal11ElfMemImage5beginEv">begin</a>(); }</td></tr>
+<tr><th id="83">83</th><td>  <a class="typedef" href="#absl::lts_2020_02_25::debugging_internal::VDSOSupport::SymbolIterator" title='absl::lts_2020_02_25::debugging_internal::VDSOSupport::SymbolIterator' data-type='ElfMemImage::SymbolIterator' data-ref="absl::lts_2020_02_25::debugging_internal::VDSOSupport::SymbolIterator" data-ref-filename="absl..lts_2020_02_25..debugging_internal..VDSOSupport..SymbolIterator">SymbolIterator</a> <dfn class="decl def fn" id="_ZNK4absl14lts_2020_02_2518debugging_internal11VDSOSupport3endEv" title='absl::lts_2020_02_25::debugging_internal::VDSOSupport::end' data-ref="_ZNK4absl14lts_2020_02_2518debugging_internal11VDSOSupport3endEv" data-ref-filename="_ZNK4absl14lts_2020_02_2518debugging_internal11VDSOSupport3endEv">end</dfn>() <em>const</em> { <b>return</b> <a class="member field" href="#absl::lts_2020_02_25::debugging_internal::VDSOSupport::image_" title='absl::lts_2020_02_25::debugging_internal::VDSOSupport::image_' data-ref="absl::lts_2020_02_25::debugging_internal::VDSOSupport::image_" data-ref-filename="absl..lts_2020_02_25..debugging_internal..VDSOSupport..image_">image_</a>.<a class="ref fn" href="elf_mem_image.h.html#_ZNK4absl14lts_2020_02_2518debugging_internal11ElfMemImage3endEv" title='absl::lts_2020_02_25::debugging_internal::ElfMemImage::end' data-ref="_ZNK4absl14lts_2020_02_2518debugging_internal11ElfMemImage3endEv" data-ref-filename="_ZNK4absl14lts_2020_02_2518debugging_internal11ElfMemImage3endEv">end</a>(); }</td></tr>
+<tr><th id="84">84</th><td></td></tr>
+<tr><th id="85">85</th><td>  <i>// Look up versioned dynamic symbol in the kernel VDSO.</i></td></tr>
+<tr><th id="86">86</th><td><i>  // Returns false if VDSO is not present, or doesn't contain given</i></td></tr>
+<tr><th id="87">87</th><td><i>  // symbol/version/type combination.</i></td></tr>
+<tr><th id="88">88</th><td><i>  // If info_out != nullptr, additional details are filled in.</i></td></tr>
+<tr><th id="89">89</th><td>  <em>bool</em> <a class="decl fn" href="vdso_support.cc.html#_ZNK4absl14lts_2020_02_2518debugging_internal11VDSOSupport12LookupSymbolEPKcS4_iPNS1_11ElfMemImage10SymbolInfoE" title='absl::lts_2020_02_25::debugging_internal::VDSOSupport::LookupSymbol' data-ref="_ZNK4absl14lts_2020_02_2518debugging_internal11VDSOSupport12LookupSymbolEPKcS4_iPNS1_11ElfMemImage10SymbolInfoE" data-ref-filename="_ZNK4absl14lts_2020_02_2518debugging_internal11VDSOSupport12LookupSymbolEPKcS4_iPNS1_11ElfMemImage10SymbolInfoE" id="_ZNK4absl14lts_2020_02_2518debugging_internal11VDSOSupport12LookupSymbolEPKcS4_iPNS1_11ElfMemImage10SymbolInfoE">LookupSymbol</a>(<em>const</em> <em>char</em> *<dfn class="local col1 decl" id="1name" title='name' data-type='const char *' data-ref="1name" data-ref-filename="1name">name</dfn>, <em>const</em> <em>char</em> *<dfn class="local col2 decl" id="2version" title='version' data-type='const char *' data-ref="2version" data-ref-filename="2version">version</dfn>,</td></tr>
+<tr><th id="90">90</th><td>                    <em>int</em> <dfn class="local col3 decl" id="3symbol_type" title='symbol_type' data-type='int' data-ref="3symbol_type" data-ref-filename="3symbol_type">symbol_type</dfn>, <a class="typedef" href="#absl::lts_2020_02_25::debugging_internal::VDSOSupport::SymbolInfo" title='absl::lts_2020_02_25::debugging_internal::VDSOSupport::SymbolInfo' data-type='ElfMemImage::SymbolInfo' data-ref="absl::lts_2020_02_25::debugging_internal::VDSOSupport::SymbolInfo" data-ref-filename="absl..lts_2020_02_25..debugging_internal..VDSOSupport..SymbolInfo">SymbolInfo</a> *<dfn class="local col4 decl" id="4info_out" title='info_out' data-type='absl::lts_2020_02_25::debugging_internal::VDSOSupport::SymbolInfo *' data-ref="4info_out" data-ref-filename="4info_out">info_out</dfn>) <em>const</em>;</td></tr>
+<tr><th id="91">91</th><td></td></tr>
+<tr><th id="92">92</th><td>  <i>// Find info about symbol (if any) which overlaps given address.</i></td></tr>
+<tr><th id="93">93</th><td><i>  // Returns true if symbol was found; false if VDSO isn't present</i></td></tr>
+<tr><th id="94">94</th><td><i>  // or doesn't have a symbol overlapping given address.</i></td></tr>
+<tr><th id="95">95</th><td><i>  // If info_out != nullptr, additional details are filled in.</i></td></tr>
+<tr><th id="96">96</th><td>  <em>bool</em> <a class="decl fn" href="vdso_support.cc.html#_ZNK4absl14lts_2020_02_2518debugging_internal11VDSOSupport21LookupSymbolByAddressEPKvPNS1_11ElfMemImage10SymbolInfoE" title='absl::lts_2020_02_25::debugging_internal::VDSOSupport::LookupSymbolByAddress' data-ref="_ZNK4absl14lts_2020_02_2518debugging_internal11VDSOSupport21LookupSymbolByAddressEPKvPNS1_11ElfMemImage10SymbolInfoE" data-ref-filename="_ZNK4absl14lts_2020_02_2518debugging_internal11VDSOSupport21LookupSymbolByAddressEPKvPNS1_11ElfMemImage10SymbolInfoE" id="_ZNK4absl14lts_2020_02_2518debugging_internal11VDSOSupport21LookupSymbolByAddressEPKvPNS1_11ElfMemImage10SymbolInfoE">LookupSymbolByAddress</a>(<em>const</em> <em>void</em> *<dfn class="local col5 decl" id="5address" title='address' data-type='const void *' data-ref="5address" data-ref-filename="5address">address</dfn>, <a class="typedef" href="#absl::lts_2020_02_25::debugging_internal::VDSOSupport::SymbolInfo" title='absl::lts_2020_02_25::debugging_internal::VDSOSupport::SymbolInfo' data-type='ElfMemImage::SymbolInfo' data-ref="absl::lts_2020_02_25::debugging_internal::VDSOSupport::SymbolInfo" data-ref-filename="absl..lts_2020_02_25..debugging_internal..VDSOSupport..SymbolInfo">SymbolInfo</a> *<dfn class="local col6 decl" id="6info_out" title='info_out' data-type='absl::lts_2020_02_25::debugging_internal::VDSOSupport::SymbolInfo *' data-ref="6info_out" data-ref-filename="6info_out">info_out</dfn>) <em>const</em>;</td></tr>
+<tr><th id="97">97</th><td></td></tr>
+<tr><th id="98">98</th><td>  <i>// Used only for testing. Replace real VDSO base with a mock.</i></td></tr>
+<tr><th id="99">99</th><td><i>  // Returns previous value of vdso_base_. After you are done testing,</i></td></tr>
+<tr><th id="100">100</th><td><i>  // you are expected to call SetBase() with previous value, in order to</i></td></tr>
+<tr><th id="101">101</th><td><i>  // reset state to the way it was.</i></td></tr>
+<tr><th id="102">102</th><td>  <em>const</em> <em>void</em> *<a class="decl fn" href="vdso_support.cc.html#_ZN4absl14lts_2020_02_2518debugging_internal11VDSOSupport7SetBaseEPKv" title='absl::lts_2020_02_25::debugging_internal::VDSOSupport::SetBase' data-ref="_ZN4absl14lts_2020_02_2518debugging_internal11VDSOSupport7SetBaseEPKv" data-ref-filename="_ZN4absl14lts_2020_02_2518debugging_internal11VDSOSupport7SetBaseEPKv" id="_ZN4absl14lts_2020_02_2518debugging_internal11VDSOSupport7SetBaseEPKv">SetBase</a>(<em>const</em> <em>void</em> *<dfn class="local col7 decl" id="7s" title='s' data-type='const void *' data-ref="7s" data-ref-filename="7s">s</dfn>);</td></tr>
+<tr><th id="103">103</th><td></td></tr>
+<tr><th id="104">104</th><td>  <i>// Computes vdso_base_ and returns it. Should be called as early as</i></td></tr>
+<tr><th id="105">105</th><td><i>  // possible; before any thread creation, chroot or setuid.</i></td></tr>
+<tr><th id="106">106</th><td>  <em>static</em> <em>const</em> <em>void</em> *<a class="decl fn" href="vdso_support.cc.html#_ZN4absl14lts_2020_02_2518debugging_internal11VDSOSupport4InitEv" title='absl::lts_2020_02_25::debugging_internal::VDSOSupport::Init' data-ref="_ZN4absl14lts_2020_02_2518debugging_internal11VDSOSupport4InitEv" data-ref-filename="_ZN4absl14lts_2020_02_2518debugging_internal11VDSOSupport4InitEv" id="_ZN4absl14lts_2020_02_2518debugging_internal11VDSOSupport4InitEv">Init</a>();</td></tr>
+<tr><th id="107">107</th><td></td></tr>
+<tr><th id="108">108</th><td> <b>private</b>:</td></tr>
+<tr><th id="109">109</th><td>  <i>// image_ represents VDSO ELF image in memory.</i></td></tr>
+<tr><th id="110">110</th><td><i>  // image_.ehdr_ == nullptr implies there is no VDSO.</i></td></tr>
+<tr><th id="111">111</th><td>  <a class="type" href="elf_mem_image.h.html#absl::lts_2020_02_25::debugging_internal::ElfMemImage" title='absl::lts_2020_02_25::debugging_internal::ElfMemImage' data-ref="absl::lts_2020_02_25::debugging_internal::ElfMemImage" data-ref-filename="absl..lts_2020_02_25..debugging_internal..ElfMemImage">ElfMemImage</a> <dfn class="decl field" id="absl::lts_2020_02_25::debugging_internal::VDSOSupport::image_" title='absl::lts_2020_02_25::debugging_internal::VDSOSupport::image_' data-ref="absl::lts_2020_02_25::debugging_internal::VDSOSupport::image_" data-ref-filename="absl..lts_2020_02_25..debugging_internal..VDSOSupport..image_">image_</dfn>;</td></tr>
+<tr><th id="112">112</th><td></td></tr>
+<tr><th id="113">113</th><td>  <i>// Cached value of auxv AT_SYSINFO_EHDR, computed once.</i></td></tr>
+<tr><th id="114">114</th><td><i>  // This is a tri-state:</i></td></tr>
+<tr><th id="115">115</th><td><i>  //   kInvalidBase   =&gt; value hasn't been determined yet.</i></td></tr>
+<tr><th id="116">116</th><td><i>  //              0   =&gt; there is no VDSO.</i></td></tr>
+<tr><th id="117">117</th><td><i>  //           else   =&gt; vma of VDSO Elf{32,64}_Ehdr.</i></td></tr>
+<tr><th id="118">118</th><td><i>  //</i></td></tr>
+<tr><th id="119">119</th><td><i>  // When testing with mock VDSO, low bit is set.</i></td></tr>
+<tr><th id="120">120</th><td><i>  // The low bit is always available because vdso_base_ is</i></td></tr>
+<tr><th id="121">121</th><td><i>  // page-aligned.</i></td></tr>
+<tr><th id="122">122</th><td>  <em>static</em> <span class="namespace">std::</span><span class='type' title='std::atomic' data-ref="std::atomic" data-ref-filename="std..atomic">atomic</span>&lt;<em>const</em> <em>void</em> *&gt; <dfn class="decl" id="absl::lts_2020_02_25::debugging_internal::VDSOSupport::vdso_base_" title='absl::lts_2020_02_25::debugging_internal::VDSOSupport::vdso_base_' data-ref="absl::lts_2020_02_25::debugging_internal::VDSOSupport::vdso_base_" data-ref-filename="absl..lts_2020_02_25..debugging_internal..VDSOSupport..vdso_base_">vdso_base_</dfn>;</td></tr>
+<tr><th id="123">123</th><td></td></tr>
+<tr><th id="124">124</th><td>  <i>// NOLINT on 'long' because these routines mimic kernel api.</i></td></tr>
+<tr><th id="125">125</th><td><i>  // The 'cache' parameter may be used by some versions of the kernel,</i></td></tr>
+<tr><th id="126">126</th><td><i>  // and should be nullptr or point to a static buffer containing at</i></td></tr>
+<tr><th id="127">127</th><td><i>  // least two 'long's.</i></td></tr>
+<tr><th id="128">128</th><td>  <em>static</em> <em>long</em> <a class="decl fn" href="vdso_support.cc.html#_ZN4absl14lts_2020_02_2518debugging_internal11VDSOSupport13InitAndGetCPUEPjPvS4_" title='absl::lts_2020_02_25::debugging_internal::VDSOSupport::InitAndGetCPU' data-ref="_ZN4absl14lts_2020_02_2518debugging_internal11VDSOSupport13InitAndGetCPUEPjPvS4_" data-ref-filename="_ZN4absl14lts_2020_02_2518debugging_internal11VDSOSupport13InitAndGetCPUEPjPvS4_" id="_ZN4absl14lts_2020_02_2518debugging_internal11VDSOSupport13InitAndGetCPUEPjPvS4_">InitAndGetCPU</a>(<em>unsigned</em> *<dfn class="local col8 decl" id="8cpu" title='cpu' data-type='unsigned int *' data-ref="8cpu" data-ref-filename="8cpu">cpu</dfn>, <em>void</em> *<dfn class="local col9 decl" id="9cache" title='cache' data-type='void *' data-ref="9cache" data-ref-filename="9cache">cache</dfn>,     <i>// NOLINT 'long'.</i></td></tr>
+<tr><th id="129">129</th><td>                            <em>void</em> *<dfn class="local col0 decl" id="10unused" title='unused' data-type='void *' data-ref="10unused" data-ref-filename="10unused">unused</dfn>);</td></tr>
+<tr><th id="130">130</th><td>  <em>static</em> <em>long</em> <a class="decl fn" href="vdso_support.cc.html#_ZN4absl14lts_2020_02_2518debugging_internal11VDSOSupport16GetCPUViaSyscallEPjPvS4_" title='absl::lts_2020_02_25::debugging_internal::VDSOSupport::GetCPUViaSyscall' data-ref="_ZN4absl14lts_2020_02_2518debugging_internal11VDSOSupport16GetCPUViaSyscallEPjPvS4_" data-ref-filename="_ZN4absl14lts_2020_02_2518debugging_internal11VDSOSupport16GetCPUViaSyscallEPjPvS4_" id="_ZN4absl14lts_2020_02_2518debugging_internal11VDSOSupport16GetCPUViaSyscallEPjPvS4_">GetCPUViaSyscall</a>(<em>unsigned</em> *<dfn class="local col1 decl" id="11cpu" title='cpu' data-type='unsigned int *' data-ref="11cpu" data-ref-filename="11cpu">cpu</dfn>, <em>void</em> *<dfn class="local col2 decl" id="12cache" title='cache' data-type='void *' data-ref="12cache" data-ref-filename="12cache">cache</dfn>,  <i>// NOLINT 'long'.</i></td></tr>
+<tr><th id="131">131</th><td>                               <em>void</em> *<dfn class="local col3 decl" id="13unused" title='unused' data-type='void *' data-ref="13unused" data-ref-filename="13unused">unused</dfn>);</td></tr>
+<tr><th id="132">132</th><td>  <b>typedef</b> <em>long</em> (*<dfn class="typedef" id="absl::lts_2020_02_25::debugging_internal::VDSOSupport::GetCpuFn" title='absl::lts_2020_02_25::debugging_internal::VDSOSupport::GetCpuFn' data-type='long (*)(unsigned int *, void *, void *)' data-ref="absl::lts_2020_02_25::debugging_internal::VDSOSupport::GetCpuFn" data-ref-filename="absl..lts_2020_02_25..debugging_internal..VDSOSupport..GetCpuFn">GetCpuFn</dfn>)(<em>unsigned</em> *<dfn class="local col4 decl" id="14cpu" title='cpu' data-type='unsigned int *' data-ref="14cpu" data-ref-filename="14cpu">cpu</dfn>, <em>void</em> *<dfn class="local col5 decl" id="15cache" title='cache' data-type='void *' data-ref="15cache" data-ref-filename="15cache">cache</dfn>,      <i>// NOLINT 'long'.</i></td></tr>
+<tr><th id="133">133</th><td>                           <em>void</em> *<dfn class="local col6 decl" id="16unused" title='unused' data-type='void *' data-ref="16unused" data-ref-filename="16unused">unused</dfn>);</td></tr>
+<tr><th id="134">134</th><td></td></tr>
+<tr><th id="135">135</th><td>  <i>// This function pointer may point to InitAndGetCPU,</i></td></tr>
+<tr><th id="136">136</th><td><i>  // GetCPUViaSyscall, or __vdso_getcpu at different stages of initialization.</i></td></tr>
+<tr><th id="137">137</th><td>  <a class="macro" href="../../base/attributes.h.html#616" title="[[clang::require_constant_initialization]]" data-ref="_M/ABSL_CONST_INIT">ABSL_CONST_INIT</a> <em>static</em> <span class="namespace">std::</span><span class='type' title='std::atomic' data-ref="std::atomic" data-ref-filename="std..atomic">atomic</span>&lt;<a class="typedef" href="#absl::lts_2020_02_25::debugging_internal::VDSOSupport::GetCpuFn" title='absl::lts_2020_02_25::debugging_internal::VDSOSupport::GetCpuFn' data-type='long (*)(unsigned int *, void *, void *)' data-ref="absl::lts_2020_02_25::debugging_internal::VDSOSupport::GetCpuFn" data-ref-filename="absl..lts_2020_02_25..debugging_internal..VDSOSupport..GetCpuFn">GetCpuFn</a>&gt; <dfn class="decl" id="absl::lts_2020_02_25::debugging_internal::VDSOSupport::getcpu_fn_" title='absl::lts_2020_02_25::debugging_internal::VDSOSupport::getcpu_fn_' data-ref="absl::lts_2020_02_25::debugging_internal::VDSOSupport::getcpu_fn_" data-ref-filename="absl..lts_2020_02_25..debugging_internal..VDSOSupport..getcpu_fn_">getcpu_fn_</dfn>;</td></tr>
+<tr><th id="138">138</th><td></td></tr>
+<tr><th id="139">139</th><td>  <b>friend</b> <em>int</em> <a class="decl fn" href="vdso_support.cc.html#_ZN4absl14lts_2020_02_2518debugging_internal6GetCPUEv" title='absl::lts_2020_02_25::debugging_internal::GetCPU' data-ref="_ZN4absl14lts_2020_02_2518debugging_internal6GetCPUEv" data-ref-filename="_ZN4absl14lts_2020_02_2518debugging_internal6GetCPUEv" id="_ZN4absl14lts_2020_02_2518debugging_internal6GetCPUEv">GetCPU</a>(<em>void</em>);  <i>// Needs access to getcpu_fn_.</i></td></tr>
+<tr><th id="140">140</th><td></td></tr>
+<tr><th id="141">141</th><td>  <dfn class="decl def fn" id="_ZN4absl14lts_2020_02_2518debugging_internal11VDSOSupportC1ERKS2_" title='absl::lts_2020_02_25::debugging_internal::VDSOSupport::VDSOSupport' data-ref="_ZN4absl14lts_2020_02_2518debugging_internal11VDSOSupportC1ERKS2_" data-ref-filename="_ZN4absl14lts_2020_02_2518debugging_internal11VDSOSupportC1ERKS2_">VDSOSupport</dfn>(<em>const</em> <a class="type" href="#absl::lts_2020_02_25::debugging_internal::VDSOSupport" title='absl::lts_2020_02_25::debugging_internal::VDSOSupport' data-ref="absl::lts_2020_02_25::debugging_internal::VDSOSupport" data-ref-filename="absl..lts_2020_02_25..debugging_internal..VDSOSupport">VDSOSupport</a>&amp;) = <b>delete</b>;</td></tr>
+<tr><th id="142">142</th><td>  <a class="type" href="#absl::lts_2020_02_25::debugging_internal::VDSOSupport" title='absl::lts_2020_02_25::debugging_internal::VDSOSupport' data-ref="absl::lts_2020_02_25::debugging_internal::VDSOSupport" data-ref-filename="absl..lts_2020_02_25..debugging_internal..VDSOSupport">VDSOSupport</a>&amp; <dfn class="decl def fn" id="_ZN4absl14lts_2020_02_2518debugging_internal11VDSOSupportaSERKS2_" title='absl::lts_2020_02_25::debugging_internal::VDSOSupport::operator=' data-ref="_ZN4absl14lts_2020_02_2518debugging_internal11VDSOSupportaSERKS2_" data-ref-filename="_ZN4absl14lts_2020_02_2518debugging_internal11VDSOSupportaSERKS2_"><b>operator</b>=</dfn>(<em>const</em> <a class="type" href="#absl::lts_2020_02_25::debugging_internal::VDSOSupport" title='absl::lts_2020_02_25::debugging_internal::VDSOSupport' data-ref="absl::lts_2020_02_25::debugging_internal::VDSOSupport" data-ref-filename="absl..lts_2020_02_25..debugging_internal..VDSOSupport">VDSOSupport</a>&amp;) = <b>delete</b>;</td></tr>
+<tr><th id="143">143</th><td>};</td></tr>
+<tr><th id="144">144</th><td></td></tr>
+<tr><th id="145">145</th><td><i>// Same as sched_getcpu() on later glibc versions.</i></td></tr>
+<tr><th id="146">146</th><td><i>// Return current CPU, using (fast) __vdso_getcpu@LINUX_2.6 if present,</i></td></tr>
+<tr><th id="147">147</th><td><i>// otherwise use syscall(SYS_getcpu,...).</i></td></tr>
+<tr><th id="148">148</th><td><i>// May return -1 with errno == ENOSYS if the kernel doesn't</i></td></tr>
+<tr><th id="149">149</th><td><i>// support SYS_getcpu.</i></td></tr>
+<tr><th id="150">150</th><td><em>int</em> <a class="decl fn" href="vdso_support.cc.html#_ZN4absl14lts_2020_02_2518debugging_internal6GetCPUEv" title='absl::lts_2020_02_25::debugging_internal::GetCPU' data-ref="_ZN4absl14lts_2020_02_2518debugging_internal6GetCPUEv" data-ref-filename="_ZN4absl14lts_2020_02_2518debugging_internal6GetCPUEv" id="_ZN4absl14lts_2020_02_2518debugging_internal6GetCPUEv">GetCPU</a>();</td></tr>
+<tr><th id="151">151</th><td></td></tr>
+<tr><th id="152">152</th><td>}  <i>// namespace debugging_internal</i></td></tr>
+<tr><th id="153">153</th><td><a class="macro" href="../../base/config.h.html#127" title="}" data-ref="_M/ABSL_NAMESPACE_END">ABSL_NAMESPACE_END</a></td></tr>
+<tr><th id="154">154</th><td>}  <i>// namespace absl</i></td></tr>
+<tr><th id="155">155</th><td></td></tr>
+<tr><th id="156">156</th><td><u>#<span data-ppcond="47">endif</span>  // ABSL_HAVE_ELF_MEM_IMAGE</u></td></tr>
+<tr><th id="157">157</th><td></td></tr>
+<tr><th id="158">158</th><td><u>#<span data-ppcond="39">endif</span>  // ABSL_DEBUGGING_INTERNAL_VDSO_SUPPORT_H_</u></td></tr>
+<tr><th id="159">159</th><td></td></tr>
+</table><hr/><p id='footer'>
+Generated while processing <a href='vdso_support.cc.html'>halide/build-apps/abseil-cpp/absl/debugging/internal/vdso_support.cc</a><br/>Generated on <em>2021-Aug-05</em> from project halide revision <em>v12.0.1</em>

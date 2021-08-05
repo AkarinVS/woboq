@@ -1,0 +1,216 @@
+<use f='halide/build-apps/abseil-cpp/absl/synchronization/internal/per_thread_sem.h' l='83'/>
+<def f='halide/build-apps/abseil-cpp/absl/synchronization/mutex.h' l='139' ll='515'/>
+<use f='halide/build-apps/abseil-cpp/absl/synchronization/mutex.h' l='478' c='_ZN4absl14lts_2020_02_255Mutex17IncrementSynchSemEPS1_PNS0_13base_internal14PerThreadSynchE'/>
+<use f='halide/build-apps/abseil-cpp/absl/synchronization/mutex.h' l='481' c='_ZN4absl14lts_2020_02_255Mutex17DecrementSynchSemEPS1_PNS0_13base_internal14PerThreadSynchENS0_24synchronization_internal13KernelTimeoutE'/>
+<use f='halide/build-apps/abseil-cpp/absl/synchronization/mutex.h' l='511' c='_ZN4absl14lts_2020_02_255MutexC1EPVKS1_'/>
+<use f='halide/build-apps/abseil-cpp/absl/synchronization/mutex.h' l='513' c='_ZN4absl14lts_2020_02_255MutexC1ERKS1_'/>
+<use f='halide/build-apps/abseil-cpp/absl/synchronization/mutex.h' l='514' c='_ZN4absl14lts_2020_02_255MutexaSERKS1_'/>
+<use f='halide/build-apps/abseil-cpp/absl/synchronization/mutex.h' l='514' c='_ZN4absl14lts_2020_02_255MutexaSERKS1_'/>
+<use f='halide/build-apps/abseil-cpp/absl/synchronization/mutex.h' l='541' c='_ZN4absl14lts_2020_02_259MutexLockC1EPNS0_5MutexE'/>
+<use f='halide/build-apps/abseil-cpp/absl/synchronization/mutex.h' l='553'/>
+<use f='halide/build-apps/abseil-cpp/absl/synchronization/mutex.h' l='562' c='_ZN4absl14lts_2020_02_2515ReaderMutexLockC1EPNS0_5MutexE'/>
+<use f='halide/build-apps/abseil-cpp/absl/synchronization/mutex.h' l='574'/>
+<use f='halide/build-apps/abseil-cpp/absl/synchronization/mutex.h' l='583' c='_ZN4absl14lts_2020_02_2515WriterMutexLockC1EPNS0_5MutexE'/>
+<use f='halide/build-apps/abseil-cpp/absl/synchronization/mutex.h' l='596'/>
+<use f='halide/build-apps/abseil-cpp/absl/synchronization/mutex.h' l='783' c='_ZN4absl14lts_2020_02_257CondVar4WaitEPNS0_5MutexE'/>
+<use f='halide/build-apps/abseil-cpp/absl/synchronization/mutex.h' l='798' c='_ZN4absl14lts_2020_02_257CondVar15WaitWithTimeoutEPNS0_5MutexENS0_8DurationE'/>
+<use f='halide/build-apps/abseil-cpp/absl/synchronization/mutex.h' l='815' c='_ZN4absl14lts_2020_02_257CondVar16WaitWithDeadlineEPNS0_5MutexENS0_4TimeE'/>
+<use f='halide/build-apps/abseil-cpp/absl/synchronization/mutex.h' l='841' c='_ZN4absl14lts_2020_02_257CondVar10WaitCommonEPNS0_5MutexENS0_24synchronization_internal13KernelTimeoutE'/>
+<use f='halide/build-apps/abseil-cpp/absl/synchronization/mutex.h' l='861' c='_ZN4absl14lts_2020_02_2514MutexLockMaybeC1EPNS0_5MutexE'/>
+<use f='halide/build-apps/abseil-cpp/absl/synchronization/mutex.h' l='872'/>
+<use f='halide/build-apps/abseil-cpp/absl/synchronization/mutex.h' l='885' c='_ZN4absl14lts_2020_02_2519ReleasableMutexLockC1EPNS0_5MutexE'/>
+<use f='halide/build-apps/abseil-cpp/absl/synchronization/mutex.h' l='896'/>
+<use f='halide/build-apps/abseil-cpp/absl/container/internal/hashtablez_sampler.h' l='85'/>
+<size>8</size>
+<doc f='halide/build-apps/abseil-cpp/absl/synchronization/mutex.h' l='90'>// -----------------------------------------------------------------------------
+// Mutex
+// -----------------------------------------------------------------------------
+//
+// A `Mutex` is a non-reentrant (aka non-recursive) Mutually Exclusive lock
+// on some resource, typically a variable or data structure with associated
+// invariants. Proper usage of mutexes prevents concurrent access by different
+// threads to the same resource.
+//
+// A `Mutex` has two basic operations: `Mutex::Lock()` and `Mutex::Unlock()`.
+// The `Lock()` operation *acquires* a `Mutex` (in a state known as an
+// *exclusive* -- or write -- lock), while the `Unlock()` operation *releases* a
+// Mutex. During the span of time between the Lock() and Unlock() operations,
+// a mutex is said to be *held*. By design all mutexes support exclusive/write
+// locks, as this is the most common way to use a mutex.
+//
+// The `Mutex` state machine for basic lock/unlock operations is quite simple:
+//
+// |                | Lock()     | Unlock() |
+// |----------------+------------+----------|
+// | Free           | Exclusive  | invalid  |
+// | Exclusive      | blocks     | Free     |
+//
+// Attempts to `Unlock()` must originate from the thread that performed the
+// corresponding `Lock()` operation.
+//
+// An &quot;invalid&quot; operation is disallowed by the API. The `Mutex` implementation
+// is allowed to do anything on an invalid call, including but not limited to
+// crashing with a useful error message, silently succeeding, or corrupting
+// data structures. In debug mode, the implementation attempts to crash with a
+// useful error message.
+//
+// `Mutex` is not guaranteed to be &quot;fair&quot; in prioritizing waiting threads; it
+// is, however, approximately fair over long periods, and starvation-free for
+// threads at the same priority.
+//
+// The lock/unlock primitives are now annotated with lock annotations
+// defined in (base/thread_annotations.h). When writing multi-threaded code,
+// you should use lock annotations whenever possible to document your lock
+// synchronization policy. Besides acting as documentation, these annotations
+// also help compilers or static analysis tools to identify and warn about
+// issues that could potentially result in race conditions and deadlocks.
+//
+// For more information about the lock annotations, please see
+// [Thread Safety Analysis](http://clang.llvm.org/docs/ThreadSafetyAnalysis.html)
+// in the Clang documentation.
+//
+// See also `MutexLock`, below, for scoped `Mutex` acquisition.</doc>
+<fun r='_ZN4absl14lts_2020_02_255MutexC1Ev'/>
+<fun r='_ZN4absl14lts_2020_02_255MutexC1ENS0_13ConstInitTypeE'/>
+<fun r='_ZN4absl14lts_2020_02_255MutexD1Ev'/>
+<fun r='_ZN4absl14lts_2020_02_255Mutex4LockEv'/>
+<fun r='_ZN4absl14lts_2020_02_255Mutex6UnlockEv'/>
+<fun r='_ZN4absl14lts_2020_02_255Mutex7TryLockEv'/>
+<fun r='_ZNK4absl14lts_2020_02_255Mutex10AssertHeldEv'/>
+<fun r='_ZN4absl14lts_2020_02_255Mutex10ReaderLockEv'/>
+<fun r='_ZN4absl14lts_2020_02_255Mutex12ReaderUnlockEv'/>
+<fun r='_ZN4absl14lts_2020_02_255Mutex13ReaderTryLockEv'/>
+<fun r='_ZNK4absl14lts_2020_02_255Mutex16AssertReaderHeldEv'/>
+<fun r='_ZN4absl14lts_2020_02_255Mutex10WriterLockEv'/>
+<fun r='_ZN4absl14lts_2020_02_255Mutex12WriterUnlockEv'/>
+<fun r='_ZN4absl14lts_2020_02_255Mutex13WriterTryLockEv'/>
+<fun r='_ZN4absl14lts_2020_02_255Mutex5AwaitERKNS0_9ConditionE'/>
+<fun r='_ZN4absl14lts_2020_02_255Mutex8LockWhenERKNS0_9ConditionE'/>
+<fun r='_ZN4absl14lts_2020_02_255Mutex14ReaderLockWhenERKNS0_9ConditionE'/>
+<fun r='_ZN4absl14lts_2020_02_255Mutex14WriterLockWhenERKNS0_9ConditionE'/>
+<fun r='_ZN4absl14lts_2020_02_255Mutex16AwaitWithTimeoutERKNS0_9ConditionENS0_8DurationE'/>
+<fun r='_ZN4absl14lts_2020_02_255Mutex17AwaitWithDeadlineERKNS0_9ConditionENS0_4TimeE'/>
+<fun r='_ZN4absl14lts_2020_02_255Mutex19LockWhenWithTimeoutERKNS0_9ConditionENS0_8DurationE'/>
+<fun r='_ZN4absl14lts_2020_02_255Mutex25ReaderLockWhenWithTimeoutERKNS0_9ConditionENS0_8DurationE'/>
+<fun r='_ZN4absl14lts_2020_02_255Mutex25WriterLockWhenWithTimeoutERKNS0_9ConditionENS0_8DurationE'/>
+<fun r='_ZN4absl14lts_2020_02_255Mutex20LockWhenWithDeadlineERKNS0_9ConditionENS0_4TimeE'/>
+<fun r='_ZN4absl14lts_2020_02_255Mutex26ReaderLockWhenWithDeadlineERKNS0_9ConditionENS0_4TimeE'/>
+<fun r='_ZN4absl14lts_2020_02_255Mutex26WriterLockWhenWithDeadlineERKNS0_9ConditionENS0_4TimeE'/>
+<fun r='_ZN4absl14lts_2020_02_255Mutex24EnableInvariantDebuggingEPFvPvES2_'/>
+<fun r='_ZN4absl14lts_2020_02_255Mutex14EnableDebugLogEPKc'/>
+<fun r='_ZN4absl14lts_2020_02_255Mutex18ForgetDeadlockInfoEv'/>
+<fun r='_ZNK4absl14lts_2020_02_255Mutex13AssertNotHeldEv'/>
+<fun r='_ZN4absl14lts_2020_02_255Mutex45InternalAttemptToUseMutexInFatalSignalHandlerEv'/>
+<mbr r='absl::lts_2020_02_25::Mutex::mu_' o='0' t='std::atomic&lt;intptr_t&gt;'/>
+<fun r='_ZN4absl14lts_2020_02_255Mutex17IncrementSynchSemEPS1_PNS0_13base_internal14PerThreadSynchE'/>
+<fun r='_ZN4absl14lts_2020_02_255Mutex17DecrementSynchSemEPS1_PNS0_13base_internal14PerThreadSynchENS0_24synchronization_internal13KernelTimeoutE'/>
+<fun r='_ZN4absl14lts_2020_02_255Mutex12LockSlowLoopEPNS0_15SynchWaitParamsEi'/>
+<fun r='_ZN4absl14lts_2020_02_255Mutex20LockSlowWithDeadlineEPKNS0_6MuHowSEPKNS0_9ConditionENS0_24synchronization_internal13KernelTimeoutEi'/>
+<fun r='_ZN4absl14lts_2020_02_255Mutex8LockSlowEPKNS0_6MuHowSEPKNS0_9ConditionEi'/>
+<fun r='_ZN4absl14lts_2020_02_255Mutex10UnlockSlowEPNS0_15SynchWaitParamsE'/>
+<fun r='_ZN4absl14lts_2020_02_255Mutex11AwaitCommonERKNS0_9ConditionENS0_24synchronization_internal13KernelTimeoutE'/>
+<fun r='_ZN4absl14lts_2020_02_255Mutex9TryRemoveEPNS0_13base_internal14PerThreadSynchE'/>
+<fun r='_ZN4absl14lts_2020_02_255Mutex5BlockEPNS0_13base_internal14PerThreadSynchE'/>
+<fun r='_ZN4absl14lts_2020_02_255Mutex6WakeupEPNS0_13base_internal14PerThreadSynchE'/>
+<fun r='_ZN4absl14lts_2020_02_255Mutex5TransEPKNS0_6MuHowSE'/>
+<fun r='_ZN4absl14lts_2020_02_255Mutex3FerEPNS0_13base_internal14PerThreadSynchE'/>
+<fun r='_ZN4absl14lts_2020_02_255MutexC1EPVKS1_'/>
+<fun r='_ZN4absl14lts_2020_02_255MutexC1ERKS1_'/>
+<fun r='_ZN4absl14lts_2020_02_255MutexaSERKS1_'/>
+<fun r='_ZN4absl14lts_2020_02_255MutexC1Ev'/>
+<fun r='_ZN4absl14lts_2020_02_255MutexC1ENS0_13ConstInitTypeE'/>
+<use f='halide/build-apps/abseil-cpp/absl/flags/internal/flag.h' l='353'/>
+<use f='halide/build-apps/abseil-cpp/absl/flags/internal/flag.h' l='461' c='_ZNK4absl14lts_2020_02_2514flags_internal8FlagImpl9DataGuardEv'/>
+<use f='halide/build-apps/abseil-cpp/absl/flags/internal/flag.h' l='461' c='_ZNK4absl14lts_2020_02_2514flags_internal8FlagImpl9DataGuardEv'/>
+<use f='halide/build-apps/abseil-cpp/absl/flags/internal/flag.h' l='544'/>
+<use f='halide/build-apps/abseil-cpp/absl/flags/internal/flag.h' l='544'/>
+<size>8</size>
+<use f='halide/build-apps/abseil-cpp/absl/flags/internal/flag.cc' l='65' c='_ZN4absl14lts_2020_02_2514flags_internal12_GLOBAL__N_111MutexRelockC1EPNS0_5MutexE'/>
+<use f='halide/build-apps/abseil-cpp/absl/flags/internal/flag.cc' l='72'/>
+<use f='halide/build-apps/abseil-cpp/absl/flags/internal/flag.cc' l='78' c='_ZN4absl14lts_2020_02_2514flags_internal8FlagImpl4InitEv'/>
+<use f='halide/build-apps/abseil-cpp/absl/flags/internal/flag.cc' l='80' c='_ZN4absl14lts_2020_02_2514flags_internal8FlagImpl4InitEv'/>
+<use f='halide/build-apps/abseil-cpp/absl/flags/internal/flag.cc' l='88' c='_ZNK4absl14lts_2020_02_2514flags_internal8FlagImpl9DataGuardEv'/>
+<use f='halide/build-apps/abseil-cpp/absl/flags/internal/flag.cc' l='93' c='_ZNK4absl14lts_2020_02_2514flags_internal8FlagImpl9DataGuardEv'/>
+<size>8</size>
+<use f='halide/build-apps/abseil-cpp/absl/flags/internal/program_name.cc' l='32'/>
+<size>8</size>
+<use f='halide/build-apps/abseil-cpp/absl/flags/internal/registry.cc' l='89'/>
+<size>8</size>
+<use f='halide/build-apps/abseil-cpp/absl/flags/parse.cc' l='60'/>
+<size>8</size>
+<use f='halide/build-apps/abseil-cpp/absl/flags/usage.cc' l='33'/>
+<size>8</size>
+<use f='halide/build-apps/abseil-cpp/absl/flags/usage_config.cc' l='100'/>
+<size>8</size>
+<use f='halide/build-apps/abseil-cpp/absl/synchronization/barrier.h' l='72'/>
+<size>8</size>
+<use f='halide/build-apps/abseil-cpp/absl/synchronization/blocking_counter.h' l='91'/>
+<size>8</size>
+<use f='halide/build-apps/abseil-cpp/absl/synchronization/mutex.cc' l='125' c='_ZN4absl14lts_2020_02_25L22EvalConditionAnnotatedEPKNS0_9ConditionEPNS0_5MutexEbbb'/>
+<use f='halide/build-apps/abseil-cpp/absl/synchronization/mutex.cc' l='440' c='_ZN4absl14lts_2020_02_25L14PostSynchEventEPvi'/>
+<use f='halide/build-apps/abseil-cpp/absl/synchronization/mutex.cc' l='440' c='_ZN4absl14lts_2020_02_25L14PostSynchEventEPvi'/>
+<use f='halide/build-apps/abseil-cpp/absl/synchronization/mutex.cc' l='467' c='_ZN4absl14lts_2020_02_2515SynchWaitParamsC1EPKNS0_6MuHowSEPKNS0_9ConditionENS0_24synchronization_internal13KernelTimeoutEPNS0_5MutexEPNS0_13base_inter806914'/>
+<use f='halide/build-apps/abseil-cpp/absl/synchronization/mutex.cc' l='485'/>
+<use f='halide/build-apps/abseil-cpp/absl/synchronization/mutex.cc' l='500'/>
+<use f='halide/build-apps/abseil-cpp/absl/synchronization/mutex.cc' l='529' c='_ZN4absl14lts_2020_02_25L27Synch_GetPerThreadAnnotatedEPNS0_5MutexE'/>
+<use f='halide/build-apps/abseil-cpp/absl/synchronization/mutex.cc' l='549' c='_ZN4absl14lts_2020_02_255Mutex17IncrementSynchSemEPS1_PNS0_13base_internal14PerThreadSynchE'/>
+<use f='halide/build-apps/abseil-cpp/absl/synchronization/mutex.cc' l='560' c='_ZN4absl14lts_2020_02_255Mutex17DecrementSynchSemEPS1_PNS0_13base_internal14PerThreadSynchENS0_24synchronization_internal13KernelTimeoutE'/>
+<use f='halide/build-apps/abseil-cpp/absl/synchronization/mutex.cc' l='1149' c='_ZN4absl14lts_2020_02_25L16GetGraphIdLockedEPNS0_5MutexE'/>
+<use f='halide/build-apps/abseil-cpp/absl/synchronization/mutex.cc' l='1159' c='_ZN4absl14lts_2020_02_25L10GetGraphIdEPNS0_5MutexE'/>
+<use f='halide/build-apps/abseil-cpp/absl/synchronization/mutex.cc' l='1169' c='_ZN4absl14lts_2020_02_25L9LockEnterEPNS0_5MutexENS0_24synchronization_internal7GraphIdEPNS0_14SynchLocksHeldE'/>
+<use f='halide/build-apps/abseil-cpp/absl/synchronization/mutex.cc' l='1193' c='_ZN4absl14lts_2020_02_25L9LockLeaveEPNS0_5MutexENS0_24synchronization_internal7GraphIdEPNS0_14SynchLocksHeldE'/>
+<use f='halide/build-apps/abseil-cpp/absl/synchronization/mutex.cc' l='1229' c='_ZN4absl14lts_2020_02_25L18DebugOnlyLockEnterEPNS0_5MutexE'/>
+<use f='halide/build-apps/abseil-cpp/absl/synchronization/mutex.cc' l='1239' c='_ZN4absl14lts_2020_02_25L18DebugOnlyLockEnterEPNS0_5MutexENS0_24synchronization_internal7GraphIdE'/>
+<use f='halide/build-apps/abseil-cpp/absl/synchronization/mutex.cc' l='1249' c='_ZN4absl14lts_2020_02_25L18DebugOnlyLockLeaveEPNS0_5MutexE'/>
+<use f='halide/build-apps/abseil-cpp/absl/synchronization/mutex.cc' l='1312' c='_ZN4absl14lts_2020_02_25L13DeadlockCheckEPNS0_5MutexE'/>
+<use f='halide/build-apps/abseil-cpp/absl/synchronization/mutex.cc' l='1340' c='_ZN4absl14lts_2020_02_25L13DeadlockCheckEPNS0_5MutexE'/>
+<use f='halide/build-apps/abseil-cpp/absl/synchronization/mutex.cc' l='1341' c='_ZN4absl14lts_2020_02_25L13DeadlockCheckEPNS0_5MutexE'/>
+<use f='halide/build-apps/abseil-cpp/absl/synchronization/mutex.cc' l='1372' c='_ZN4absl14lts_2020_02_25L13DeadlockCheckEPNS0_5MutexE'/>
+<use f='halide/build-apps/abseil-cpp/absl/synchronization/mutex.cc' l='1372' c='_ZN4absl14lts_2020_02_25L13DeadlockCheckEPNS0_5MutexE'/>
+<use f='halide/build-apps/abseil-cpp/absl/synchronization/mutex.cc' l='1398' c='_ZN4absl14lts_2020_02_25L22DebugOnlyDeadlockCheckEPNS0_5MutexE'/>
+<use f='halide/build-apps/abseil-cpp/absl/synchronization/mutex.cc' l='1425' c='_ZNK4absl14lts_2020_02_255Mutex13AssertNotHeldEv'/>
+<use f='halide/build-apps/abseil-cpp/absl/synchronization/mutex.cc' l='1761' c='_ZN4absl14lts_2020_02_25L22EvalConditionAnnotatedEPKNS0_9ConditionEPNS0_5MutexEbbb'/>
+<use f='halide/build-apps/abseil-cpp/absl/synchronization/mutex.cc' l='1811' c='_ZN4absl14lts_2020_02_25L20EvalConditionIgnoredEPNS0_5MutexEPKNS0_9ConditionE'/>
+<use f='halide/build-apps/abseil-cpp/absl/synchronization/mutex.cc' l='2513' c='_ZN4absl14lts_2020_02_257CondVar10WaitCommonEPNS0_5MutexENS0_24synchronization_internal13KernelTimeoutE'/>
+<use f='halide/build-apps/abseil-cpp/absl/synchronization/mutex.cc' l='2564' c='_ZN4absl14lts_2020_02_257CondVar15WaitWithTimeoutEPNS0_5MutexENS0_8DurationE'/>
+<use f='halide/build-apps/abseil-cpp/absl/synchronization/mutex.cc' l='2568' c='_ZN4absl14lts_2020_02_257CondVar16WaitWithDeadlineEPNS0_5MutexENS0_4TimeE'/>
+<use f='halide/build-apps/abseil-cpp/absl/synchronization/mutex.cc' l='2572' c='_ZN4absl14lts_2020_02_257CondVar4WaitEPNS0_5MutexE'/>
+<use f='halide/build-apps/abseil-cpp/absl/synchronization/mutex.cc' l='2584' c='_ZN4absl14lts_2020_02_257CondVar6WakeupEPNS0_13base_internal14PerThreadSynchE'/>
+<size>8</size>
+<fun r='_ZN4absl14lts_2020_02_255Mutex17IncrementSynchSemEPS1_PNS0_13base_internal14PerThreadSynchE'/>
+<fun r='_ZN4absl14lts_2020_02_255Mutex17DecrementSynchSemEPS1_PNS0_13base_internal14PerThreadSynchENS0_24synchronization_internal13KernelTimeoutE'/>
+<fun r='_ZN4absl14lts_2020_02_255Mutex45InternalAttemptToUseMutexInFatalSignalHandlerEv'/>
+<fun r='_ZN4absl14lts_2020_02_255MutexD1Ev'/>
+<fun r='_ZN4absl14lts_2020_02_255Mutex14EnableDebugLogEPKc'/>
+<fun r='_ZN4absl14lts_2020_02_255Mutex24EnableInvariantDebuggingEPFvPvES2_'/>
+<fun r='_ZN4absl14lts_2020_02_255Mutex9TryRemoveEPNS0_13base_internal14PerThreadSynchE'/>
+<fun r='_ZN4absl14lts_2020_02_255Mutex5BlockEPNS0_13base_internal14PerThreadSynchE'/>
+<fun r='_ZN4absl14lts_2020_02_255Mutex6WakeupEPNS0_13base_internal14PerThreadSynchE'/>
+<fun r='_ZN4absl14lts_2020_02_255Mutex18ForgetDeadlockInfoEv'/>
+<fun r='_ZNK4absl14lts_2020_02_255Mutex13AssertNotHeldEv'/>
+<fun r='_ZN4absl14lts_2020_02_255Mutex4LockEv'/>
+<fun r='_ZN4absl14lts_2020_02_255Mutex10ReaderLockEv'/>
+<fun r='_ZN4absl14lts_2020_02_255Mutex8LockWhenERKNS0_9ConditionE'/>
+<fun r='_ZN4absl14lts_2020_02_255Mutex19LockWhenWithTimeoutERKNS0_9ConditionENS0_8DurationE'/>
+<fun r='_ZN4absl14lts_2020_02_255Mutex20LockWhenWithDeadlineERKNS0_9ConditionENS0_4TimeE'/>
+<fun r='_ZN4absl14lts_2020_02_255Mutex14ReaderLockWhenERKNS0_9ConditionE'/>
+<fun r='_ZN4absl14lts_2020_02_255Mutex25ReaderLockWhenWithTimeoutERKNS0_9ConditionENS0_8DurationE'/>
+<fun r='_ZN4absl14lts_2020_02_255Mutex26ReaderLockWhenWithDeadlineERKNS0_9ConditionENS0_4TimeE'/>
+<fun r='_ZN4absl14lts_2020_02_255Mutex5AwaitERKNS0_9ConditionE'/>
+<fun r='_ZN4absl14lts_2020_02_255Mutex16AwaitWithTimeoutERKNS0_9ConditionENS0_8DurationE'/>
+<fun r='_ZN4absl14lts_2020_02_255Mutex17AwaitWithDeadlineERKNS0_9ConditionENS0_4TimeE'/>
+<fun r='_ZN4absl14lts_2020_02_255Mutex11AwaitCommonERKNS0_9ConditionENS0_24synchronization_internal13KernelTimeoutE'/>
+<fun r='_ZN4absl14lts_2020_02_255Mutex7TryLockEv'/>
+<fun r='_ZN4absl14lts_2020_02_255Mutex13ReaderTryLockEv'/>
+<fun r='_ZN4absl14lts_2020_02_255Mutex6UnlockEv'/>
+<fun r='_ZN4absl14lts_2020_02_255Mutex12ReaderUnlockEv'/>
+<fun r='_ZN4absl14lts_2020_02_255Mutex8LockSlowEPKNS0_6MuHowSEPKNS0_9ConditionEi'/>
+<fun r='_ZN4absl14lts_2020_02_255Mutex20LockSlowWithDeadlineEPKNS0_6MuHowSEPKNS0_9ConditionENS0_24synchronization_internal13KernelTimeoutEi'/>
+<fun r='_ZN4absl14lts_2020_02_255Mutex12LockSlowLoopEPNS0_15SynchWaitParamsEi'/>
+<fun r='_ZN4absl14lts_2020_02_255Mutex10UnlockSlowEPNS0_15SynchWaitParamsE'/>
+<fun r='_ZN4absl14lts_2020_02_255Mutex5TransEPKNS0_6MuHowSE'/>
+<fun r='_ZN4absl14lts_2020_02_255Mutex3FerEPNS0_13base_internal14PerThreadSynchE'/>
+<fun r='_ZNK4absl14lts_2020_02_255Mutex10AssertHeldEv'/>
+<fun r='_ZNK4absl14lts_2020_02_255Mutex16AssertReaderHeldEv'/>
+<use f='halide/build-apps/abseil-cpp/absl/synchronization/notification.h' l='116'/>
+<size>8</size>

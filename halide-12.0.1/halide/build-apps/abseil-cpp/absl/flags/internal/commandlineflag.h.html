@@ -1,0 +1,230 @@
+<!doctype html>
+<html>
+<head>
+<meta name="viewport" content="width=device-width, initial-scale=1.0"><title>commandlineflag.h source code [halide/build-apps/abseil-cpp/absl/flags/internal/commandlineflag.h] - Woboq Code Browser</title>
+<meta name="woboq:interestingDefinitions" content="absl::lts_2020_02_25::flags_internal::CommandLineFlag,absl::lts_2020_02_25::flags_internal::FlagSettingMode,absl::lts_2020_02_25::flags_internal::FlagStateInterface,absl::lts_2020_02_25::flags_internal::ValueSource "/>
+<link rel="stylesheet" href="../../../../../.././data/qtcreator.css" title="QtCreator"/>
+<link rel="alternate stylesheet" href="../../../../../.././data/kdevelop.css" title="KDevelop"/>
+<script type="text/javascript" src="../../../../../.././data/jquery/jquery.min.js"></script>
+<script type="text/javascript" src="../../../../../.././data/jquery/jquery-ui.min.js"></script>
+<script>var file = 'halide/build-apps/abseil-cpp/absl/flags/internal/commandlineflag.h'; var root_path = '../../../../../..'; var data_path = '../../../../../.././data'; var ecma_script_api_version = 2;</script>
+<script src='../../../../../.././data/codebrowser.js'></script>
+</head>
+<body><div id='header'><h1 id='breadcrumb'><span>Browse the source code of </span><a href='../../../../..'>halide</a>/<a href='../../../..'>build-apps</a>/<a href='../../..'>abseil-cpp</a>/<a href='../..'>absl</a>/<a href='..'>flags</a>/<a href='./'>internal</a>/<a href='commandlineflag.h.html'>commandlineflag.h</a></h1></div>
+<hr/><div id='content'><table class="code">
+<tr><th id="1">1</th><td><i>//</i></td></tr>
+<tr><th id="2">2</th><td><i>// Copyright 2019 The Abseil Authors.</i></td></tr>
+<tr><th id="3">3</th><td><i>//</i></td></tr>
+<tr><th id="4">4</th><td><i>// Licensed under the Apache License, Version 2.0 (the "License");</i></td></tr>
+<tr><th id="5">5</th><td><i>// you may not use this file except in compliance with the License.</i></td></tr>
+<tr><th id="6">6</th><td><i>// You may obtain a copy of the License at</i></td></tr>
+<tr><th id="7">7</th><td><i>//</i></td></tr>
+<tr><th id="8">8</th><td><i>//      <a href="https://www.apache.org/licenses/LICENSE-2.0">https://www.apache.org/licenses/LICENSE-2.0</a></i></td></tr>
+<tr><th id="9">9</th><td><i>//</i></td></tr>
+<tr><th id="10">10</th><td><i>// Unless required by applicable law or agreed to in writing, software</i></td></tr>
+<tr><th id="11">11</th><td><i>// distributed under the License is distributed on an "AS IS" BASIS,</i></td></tr>
+<tr><th id="12">12</th><td><i>// WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.</i></td></tr>
+<tr><th id="13">13</th><td><i>// See the License for the specific language governing permissions and</i></td></tr>
+<tr><th id="14">14</th><td><i>// limitations under the License.</i></td></tr>
+<tr><th id="15">15</th><td></td></tr>
+<tr><th id="16">16</th><td><u>#<span data-ppcond="16">ifndef</span> <span class="macro" data-ref="_M/ABSL_FLAGS_INTERNAL_COMMANDLINEFLAG_H_">ABSL_FLAGS_INTERNAL_COMMANDLINEFLAG_H_</span></u></td></tr>
+<tr><th id="17">17</th><td><u>#define <dfn class="macro" id="_M/ABSL_FLAGS_INTERNAL_COMMANDLINEFLAG_H_" data-ref="_M/ABSL_FLAGS_INTERNAL_COMMANDLINEFLAG_H_">ABSL_FLAGS_INTERNAL_COMMANDLINEFLAG_H_</dfn></u></td></tr>
+<tr><th id="18">18</th><td></td></tr>
+<tr><th id="19">19</th><td><u>#include &lt;stddef.h&gt;</u></td></tr>
+<tr><th id="20">20</th><td><u>#include &lt;stdint.h&gt;</u></td></tr>
+<tr><th id="21">21</th><td></td></tr>
+<tr><th id="22">22</th><td><u>#include &lt;memory&gt;</u></td></tr>
+<tr><th id="23">23</th><td><u>#include &lt;string&gt;</u></td></tr>
+<tr><th id="24">24</th><td><u>#include &lt;typeinfo&gt;</u></td></tr>
+<tr><th id="25">25</th><td></td></tr>
+<tr><th id="26">26</th><td><u>#include <a href="../../base/config.h.html">"absl/base/config.h"</a></u></td></tr>
+<tr><th id="27">27</th><td><u>#include <a href="../../base/macros.h.html">"absl/base/macros.h"</a></u></td></tr>
+<tr><th id="28">28</th><td><u>#include <a href="../config.h.html">"absl/flags/config.h"</a></u></td></tr>
+<tr><th id="29">29</th><td><u>#include <a href="../marshalling.h.html">"absl/flags/marshalling.h"</a></u></td></tr>
+<tr><th id="30">30</th><td><u>#include <a href="../../strings/string_view.h.html">"absl/strings/string_view.h"</a></u></td></tr>
+<tr><th id="31">31</th><td><u>#include <a href="../../types/optional.h.html">"absl/types/optional.h"</a></u></td></tr>
+<tr><th id="32">32</th><td></td></tr>
+<tr><th id="33">33</th><td><b>namespace</b> <span class="namespace">absl</span> {</td></tr>
+<tr><th id="34">34</th><td><a class="macro" href="../../base/config.h.html#125" title="inline namespace lts_2020_02_25 {" data-ref="_M/ABSL_NAMESPACE_BEGIN">ABSL_NAMESPACE_BEGIN</a></td></tr>
+<tr><th id="35">35</th><td><b>namespace</b> <span class="namespace">flags_internal</span> {</td></tr>
+<tr><th id="36">36</th><td></td></tr>
+<tr><th id="37">37</th><td><i>// An alias for flag static type id. Values of type identify the flag value type</i></td></tr>
+<tr><th id="38">38</th><td><i>// simialarly to typeid(T), but without relying on RTTI being available. In most</i></td></tr>
+<tr><th id="39">39</th><td><i>// cases this id is enough to uniquely identify the flag's value type. In a few</i></td></tr>
+<tr><th id="40">40</th><td><i>// cases we'll have to resort to using actual RTTI implementation if it is</i></td></tr>
+<tr><th id="41">41</th><td><i>// available.</i></td></tr>
+<tr><th id="42">42</th><td><b>using</b> <dfn class="typedef" id="absl::lts_2020_02_25::flags_internal::FlagStaticTypeId" title='absl::lts_2020_02_25::flags_internal::FlagStaticTypeId' data-type='void *(*)()' data-ref="absl::lts_2020_02_25::flags_internal::FlagStaticTypeId" data-ref-filename="absl..lts_2020_02_25..flags_internal..FlagStaticTypeId">FlagStaticTypeId</dfn> = <em>void</em>* (*)();</td></tr>
+<tr><th id="43">43</th><td></td></tr>
+<tr><th id="44">44</th><td><i>// Address of this function template is used in current implementation as a flag</i></td></tr>
+<tr><th id="45">45</th><td><i>// static type id.</i></td></tr>
+<tr><th id="46">46</th><td><b>template</b> &lt;<b>typename</b> T&gt;</td></tr>
+<tr><th id="47">47</th><td><em>void</em>* <dfn class="decl def fn" id="_ZN4absl14lts_2020_02_2514flags_internal19FlagStaticTypeIdGenEv" title='absl::lts_2020_02_25::flags_internal::FlagStaticTypeIdGen' data-ref="_ZN4absl14lts_2020_02_2514flags_internal19FlagStaticTypeIdGenEv" data-ref-filename="_ZN4absl14lts_2020_02_2514flags_internal19FlagStaticTypeIdGenEv">FlagStaticTypeIdGen</dfn>() {</td></tr>
+<tr><th id="48">48</th><td><u>#<span data-ppcond="48">if</span> defined(<a class="macro" href="../config.h.html#64" data-ref="_M/ABSL_FLAGS_INTERNAL_HAS_RTTI">ABSL_FLAGS_INTERNAL_HAS_RTTI</a>)</u></td></tr>
+<tr><th id="49">49</th><td>  <b>return</b> <b>const_cast</b>&lt;<span class="namespace">std::</span><span class='type' title='std::type_info' data-ref="std::type_info" data-ref-filename="std..type_info">type_info</span>*&gt;(&amp;<b>typeid</b>(T));</td></tr>
+<tr><th id="50">50</th><td><u>#<span data-ppcond="48">else</span></u></td></tr>
+<tr><th id="51">51</th><td>  <b>return</b> <b>nullptr</b>;</td></tr>
+<tr><th id="52">52</th><td><u>#<span data-ppcond="48">endif</span></u></td></tr>
+<tr><th id="53">53</th><td>}</td></tr>
+<tr><th id="54">54</th><td></td></tr>
+<tr><th id="55">55</th><td><i>// Options that control SetCommandLineOptionWithMode.</i></td></tr>
+<tr><th id="56">56</th><td><b>enum</b> <dfn class="type def" id="absl::lts_2020_02_25::flags_internal::FlagSettingMode" title='absl::lts_2020_02_25::flags_internal::FlagSettingMode' data-ref="absl::lts_2020_02_25::flags_internal::FlagSettingMode" data-ref-filename="absl..lts_2020_02_25..flags_internal..FlagSettingMode">FlagSettingMode</dfn> {</td></tr>
+<tr><th id="57">57</th><td>  <i>// update the flag's value unconditionally (can call this multiple times).</i></td></tr>
+<tr><th id="58">58</th><td>  <dfn class="enum" id="absl::lts_2020_02_25::flags_internal::SET_FLAGS_VALUE" title='absl::lts_2020_02_25::flags_internal::SET_FLAGS_VALUE' data-ref="absl::lts_2020_02_25::flags_internal::SET_FLAGS_VALUE" data-ref-filename="absl..lts_2020_02_25..flags_internal..SET_FLAGS_VALUE">SET_FLAGS_VALUE</dfn>,</td></tr>
+<tr><th id="59">59</th><td>  <i>// update the flag's value, but *only if* it has not yet been updated</i></td></tr>
+<tr><th id="60">60</th><td><i>  // with SET_FLAGS_VALUE, SET_FLAG_IF_DEFAULT, or "FLAGS_xxx = nondef".</i></td></tr>
+<tr><th id="61">61</th><td>  <dfn class="enum" id="absl::lts_2020_02_25::flags_internal::SET_FLAG_IF_DEFAULT" title='absl::lts_2020_02_25::flags_internal::SET_FLAG_IF_DEFAULT' data-ref="absl::lts_2020_02_25::flags_internal::SET_FLAG_IF_DEFAULT" data-ref-filename="absl..lts_2020_02_25..flags_internal..SET_FLAG_IF_DEFAULT">SET_FLAG_IF_DEFAULT</dfn>,</td></tr>
+<tr><th id="62">62</th><td>  <i>// set the flag's default value to this.  If the flag has not been updated</i></td></tr>
+<tr><th id="63">63</th><td><i>  // yet (via SET_FLAGS_VALUE, SET_FLAG_IF_DEFAULT, or "FLAGS_xxx = nondef")</i></td></tr>
+<tr><th id="64">64</th><td><i>  // change the flag's current value to the new default value as well.</i></td></tr>
+<tr><th id="65">65</th><td>  <dfn class="enum" id="absl::lts_2020_02_25::flags_internal::SET_FLAGS_DEFAULT" title='absl::lts_2020_02_25::flags_internal::SET_FLAGS_DEFAULT' data-ref="absl::lts_2020_02_25::flags_internal::SET_FLAGS_DEFAULT" data-ref-filename="absl..lts_2020_02_25..flags_internal..SET_FLAGS_DEFAULT">SET_FLAGS_DEFAULT</dfn></td></tr>
+<tr><th id="66">66</th><td>};</td></tr>
+<tr><th id="67">67</th><td></td></tr>
+<tr><th id="68">68</th><td><i>// Options that control SetFromString: Source of a value.</i></td></tr>
+<tr><th id="69">69</th><td><b>enum</b> <dfn class="type def" id="absl::lts_2020_02_25::flags_internal::ValueSource" title='absl::lts_2020_02_25::flags_internal::ValueSource' data-ref="absl::lts_2020_02_25::flags_internal::ValueSource" data-ref-filename="absl..lts_2020_02_25..flags_internal..ValueSource">ValueSource</dfn> {</td></tr>
+<tr><th id="70">70</th><td>  <i>// Flag is being set by value specified on a command line.</i></td></tr>
+<tr><th id="71">71</th><td>  <dfn class="enum" id="absl::lts_2020_02_25::flags_internal::kCommandLine" title='absl::lts_2020_02_25::flags_internal::kCommandLine' data-ref="absl::lts_2020_02_25::flags_internal::kCommandLine" data-ref-filename="absl..lts_2020_02_25..flags_internal..kCommandLine">kCommandLine</dfn>,</td></tr>
+<tr><th id="72">72</th><td>  <i>// Flag is being set by value specified in the code.</i></td></tr>
+<tr><th id="73">73</th><td>  <dfn class="enum" id="absl::lts_2020_02_25::flags_internal::kProgrammaticChange" title='absl::lts_2020_02_25::flags_internal::kProgrammaticChange' data-ref="absl::lts_2020_02_25::flags_internal::kProgrammaticChange" data-ref-filename="absl..lts_2020_02_25..flags_internal..kProgrammaticChange">kProgrammaticChange</dfn>,</td></tr>
+<tr><th id="74">74</th><td>};</td></tr>
+<tr><th id="75">75</th><td></td></tr>
+<tr><th id="76">76</th><td><i>// Handle to FlagState objects. Specific flag state objects will restore state</i></td></tr>
+<tr><th id="77">77</th><td><i>// of a flag produced this flag state from method CommandLineFlag::SaveState().</i></td></tr>
+<tr><th id="78">78</th><td><b>class</b> <dfn class="type def" id="absl::lts_2020_02_25::flags_internal::FlagStateInterface" title='absl::lts_2020_02_25::flags_internal::FlagStateInterface' data-ref="absl::lts_2020_02_25::flags_internal::FlagStateInterface" data-ref-filename="absl..lts_2020_02_25..flags_internal..FlagStateInterface">FlagStateInterface</dfn> {</td></tr>
+<tr><th id="79">79</th><td> <b>public</b>:</td></tr>
+<tr><th id="80">80</th><td>  <b>virtual</b> <dfn class="virtual decl def fn" id="_ZN4absl14lts_2020_02_2514flags_internal18FlagStateInterfaceD1Ev" title='absl::lts_2020_02_25::flags_internal::FlagStateInterface::~FlagStateInterface' data-ref="_ZN4absl14lts_2020_02_2514flags_internal18FlagStateInterfaceD1Ev" data-ref-filename="_ZN4absl14lts_2020_02_2514flags_internal18FlagStateInterfaceD1Ev">~FlagStateInterface</dfn>() {}</td></tr>
+<tr><th id="81">81</th><td></td></tr>
+<tr><th id="82">82</th><td>  <i>// Restores the flag originated this object to the saved state.</i></td></tr>
+<tr><th id="83">83</th><td>  <b>virtual</b> <em>void</em> <dfn class="virtual decl fn" id="_ZNK4absl14lts_2020_02_2514flags_internal18FlagStateInterface7RestoreEv" title='absl::lts_2020_02_25::flags_internal::FlagStateInterface::Restore' data-ref="_ZNK4absl14lts_2020_02_2514flags_internal18FlagStateInterface7RestoreEv" data-ref-filename="_ZNK4absl14lts_2020_02_2514flags_internal18FlagStateInterface7RestoreEv">Restore</dfn>() <em>const</em> = <var>0</var>;</td></tr>
+<tr><th id="84">84</th><td>};</td></tr>
+<tr><th id="85">85</th><td></td></tr>
+<tr><th id="86">86</th><td><i>// Holds all information for a flag.</i></td></tr>
+<tr><th id="87">87</th><td><b>class</b> <dfn class="type def" id="absl::lts_2020_02_25::flags_internal::CommandLineFlag" title='absl::lts_2020_02_25::flags_internal::CommandLineFlag' data-ref="absl::lts_2020_02_25::flags_internal::CommandLineFlag" data-ref-filename="absl..lts_2020_02_25..flags_internal..CommandLineFlag">CommandLineFlag</dfn> {</td></tr>
+<tr><th id="88">88</th><td> <b>public</b>:</td></tr>
+<tr><th id="89">89</th><td>  <b>constexpr</b> <dfn class="decl def fn" id="_ZN4absl14lts_2020_02_2514flags_internal15CommandLineFlagC1Ev" title='absl::lts_2020_02_25::flags_internal::CommandLineFlag::CommandLineFlag' data-ref="_ZN4absl14lts_2020_02_2514flags_internal15CommandLineFlagC1Ev" data-ref-filename="_ZN4absl14lts_2020_02_2514flags_internal15CommandLineFlagC1Ev">CommandLineFlag</dfn>() = <b>default</b>;</td></tr>
+<tr><th id="90">90</th><td></td></tr>
+<tr><th id="91">91</th><td>  <i>// Not copyable/assignable.</i></td></tr>
+<tr><th id="92">92</th><td>  <dfn class="decl def fn" id="_ZN4absl14lts_2020_02_2514flags_internal15CommandLineFlagC1ERKS2_" title='absl::lts_2020_02_25::flags_internal::CommandLineFlag::CommandLineFlag' data-ref="_ZN4absl14lts_2020_02_2514flags_internal15CommandLineFlagC1ERKS2_" data-ref-filename="_ZN4absl14lts_2020_02_2514flags_internal15CommandLineFlagC1ERKS2_">CommandLineFlag</dfn>(<em>const</em> <a class="type" href="#absl::lts_2020_02_25::flags_internal::CommandLineFlag" title='absl::lts_2020_02_25::flags_internal::CommandLineFlag' data-ref="absl::lts_2020_02_25::flags_internal::CommandLineFlag" data-ref-filename="absl..lts_2020_02_25..flags_internal..CommandLineFlag">CommandLineFlag</a>&amp;) = <b>delete</b>;</td></tr>
+<tr><th id="93">93</th><td>  <a class="type" href="#absl::lts_2020_02_25::flags_internal::CommandLineFlag" title='absl::lts_2020_02_25::flags_internal::CommandLineFlag' data-ref="absl::lts_2020_02_25::flags_internal::CommandLineFlag" data-ref-filename="absl..lts_2020_02_25..flags_internal..CommandLineFlag">CommandLineFlag</a>&amp; <dfn class="decl def fn" id="_ZN4absl14lts_2020_02_2514flags_internal15CommandLineFlagaSERKS2_" title='absl::lts_2020_02_25::flags_internal::CommandLineFlag::operator=' data-ref="_ZN4absl14lts_2020_02_2514flags_internal15CommandLineFlagaSERKS2_" data-ref-filename="_ZN4absl14lts_2020_02_2514flags_internal15CommandLineFlagaSERKS2_"><b>operator</b>=</dfn>(<em>const</em> <a class="type" href="#absl::lts_2020_02_25::flags_internal::CommandLineFlag" title='absl::lts_2020_02_25::flags_internal::CommandLineFlag' data-ref="absl::lts_2020_02_25::flags_internal::CommandLineFlag" data-ref-filename="absl..lts_2020_02_25..flags_internal..CommandLineFlag">CommandLineFlag</a>&amp;) = <b>delete</b>;</td></tr>
+<tr><th id="94">94</th><td></td></tr>
+<tr><th id="95">95</th><td>  <i>// Non-polymorphic access methods.</i></td></tr>
+<tr><th id="96">96</th><td><i></i></td></tr>
+<tr><th id="97">97</th><td><i>  // Return true iff flag has type T.</i></td></tr>
+<tr><th id="98">98</th><td>  <b>template</b> &lt;<b>typename</b> T&gt;</td></tr>
+<tr><th id="99">99</th><td>  <b>inline</b> <em>bool</em> <dfn class="decl def fn" id="_ZNK4absl14lts_2020_02_2514flags_internal15CommandLineFlag8IsOfTypeEv" title='absl::lts_2020_02_25::flags_internal::CommandLineFlag::IsOfType' data-ref="_ZNK4absl14lts_2020_02_2514flags_internal15CommandLineFlag8IsOfTypeEv" data-ref-filename="_ZNK4absl14lts_2020_02_2514flags_internal15CommandLineFlag8IsOfTypeEv">IsOfType</dfn>() <em>const</em> {</td></tr>
+<tr><th id="100">100</th><td>    <b>return</b> <a class="virtual member fn" href="#_ZNK4absl14lts_2020_02_2514flags_internal15CommandLineFlag6TypeIdEv" title='absl::lts_2020_02_25::flags_internal::CommandLineFlag::TypeId' data-ref="_ZNK4absl14lts_2020_02_2514flags_internal15CommandLineFlag6TypeIdEv" data-ref-filename="_ZNK4absl14lts_2020_02_2514flags_internal15CommandLineFlag6TypeIdEv">TypeId</a>() == &amp;<span class="namespace">flags_internal::</span>FlagStaticTypeIdGen&lt;T&gt;;</td></tr>
+<tr><th id="101">101</th><td>  }</td></tr>
+<tr><th id="102">102</th><td></td></tr>
+<tr><th id="103">103</th><td>  <i>// Attempts to retrieve the flag value. Returns value on success,</i></td></tr>
+<tr><th id="104">104</th><td><i>  // absl::nullopt otherwise.</i></td></tr>
+<tr><th id="105">105</th><td>  <b>template</b> &lt;<b>typename</b> T&gt;</td></tr>
+<tr><th id="106">106</th><td>  <span class="namespace">absl::</span><a class="type" href="../../types/internal/optional.h.html#absl::lts_2020_02_25::optional" title='absl::lts_2020_02_25::optional' data-ref="absl::lts_2020_02_25::optional" data-ref-filename="absl..lts_2020_02_25..optional">optional</a>&lt;T&gt; <dfn class="decl def fn" id="_ZNK4absl14lts_2020_02_2514flags_internal15CommandLineFlag3GetEv" title='absl::lts_2020_02_25::flags_internal::CommandLineFlag::Get' data-ref="_ZNK4absl14lts_2020_02_2514flags_internal15CommandLineFlag3GetEv" data-ref-filename="_ZNK4absl14lts_2020_02_2514flags_internal15CommandLineFlag3GetEv">Get</dfn>() <em>const</em> {</td></tr>
+<tr><th id="107">107</th><td>    <b>if</b> (<a class="virtual member fn" href="#_ZNK4absl14lts_2020_02_2514flags_internal15CommandLineFlag9IsRetiredEv" title='absl::lts_2020_02_25::flags_internal::CommandLineFlag::IsRetired' data-ref="_ZNK4absl14lts_2020_02_2514flags_internal15CommandLineFlag9IsRetiredEv" data-ref-filename="_ZNK4absl14lts_2020_02_2514flags_internal15CommandLineFlag9IsRetiredEv">IsRetired</a>() || !IsOfType&lt;T&gt;()) {</td></tr>
+<tr><th id="108">108</th><td>      <b>return</b> <span class="namespace">absl::</span><a class="ref" href="../../types/optional.h.html#85" title='absl::lts_2020_02_25::nullopt' data-ref="absl::lts_2020_02_25::nullopt" data-ref-filename="absl..lts_2020_02_25..nullopt">nullopt</a>;</td></tr>
+<tr><th id="109">109</th><td>    }</td></tr>
+<tr><th id="110">110</th><td></td></tr>
+<tr><th id="111">111</th><td>    <i>// Implementation notes:</i></td></tr>
+<tr><th id="112">112</th><td><i>    //</i></td></tr>
+<tr><th id="113">113</th><td><i>    // We are wrapping a union around the value of `T` to serve three purposes:</i></td></tr>
+<tr><th id="114">114</th><td><i>    //</i></td></tr>
+<tr><th id="115">115</th><td><i>    //  1. `U.value` has correct size and alignment for a value of type `T`</i></td></tr>
+<tr><th id="116">116</th><td><i>    //  2. The `U.value` constructor is not invoked since U's constructor does</i></td></tr>
+<tr><th id="117">117</th><td><i>    //     not do it explicitly.</i></td></tr>
+<tr><th id="118">118</th><td><i>    //  3. The `U.value` destructor is invoked since U's destructor does it</i></td></tr>
+<tr><th id="119">119</th><td><i>    //     explicitly. This makes `U` a kind of RAII wrapper around non default</i></td></tr>
+<tr><th id="120">120</th><td><i>    //     constructible value of T, which is destructed when we leave the</i></td></tr>
+<tr><th id="121">121</th><td><i>    //     scope. We do need to destroy U.value, which is constructed by</i></td></tr>
+<tr><th id="122">122</th><td><i>    //     CommandLineFlag::Read even though we left it in a moved-from state</i></td></tr>
+<tr><th id="123">123</th><td><i>    //     after std::move.</i></td></tr>
+<tr><th id="124">124</th><td><i>    //</i></td></tr>
+<tr><th id="125">125</th><td><i>    // All of this serves to avoid requiring `T` being default constructible.</i></td></tr>
+<tr><th id="126">126</th><td>    <b>union</b> <dfn class="local col1 type" id="21U" title='U' data-ref="21U" data-ref-filename="21U">U</dfn> {</td></tr>
+<tr><th id="127">127</th><td>      T <dfn class="local col2 decl field" id="22value" title='value' data-type='T' data-ref="22value" data-ref-filename="22value">value</dfn>;</td></tr>
+<tr><th id="128">128</th><td>      U() {}</td></tr>
+<tr><th id="129">129</th><td>      ~U() { <a class="local col2 member field" href="#22value" title='value' data-ref="22value" data-ref-filename="22value">value</a>.~T(); }</td></tr>
+<tr><th id="130">130</th><td>    };</td></tr>
+<tr><th id="131">131</th><td>    <a class="local col1 type" href="#21U" title='U' data-ref="21U" data-ref-filename="21U">U</a> <dfn class="local col3 decl" id="23u" title='u' data-type='U' data-ref="23u" data-ref-filename="23u">u</dfn>;</td></tr>
+<tr><th id="132">132</th><td></td></tr>
+<tr><th id="133">133</th><td>    <a class="virtual member fn" href="#_ZNK4absl14lts_2020_02_2514flags_internal15CommandLineFlag4ReadEPv" title='absl::lts_2020_02_25::flags_internal::CommandLineFlag::Read' data-ref="_ZNK4absl14lts_2020_02_2514flags_internal15CommandLineFlag4ReadEPv" data-ref-filename="_ZNK4absl14lts_2020_02_2514flags_internal15CommandLineFlag4ReadEPv">Read</a>(&amp;<a class="local col3 ref" href="#23u" title='u' data-ref="23u" data-ref-filename="23u">u</a>.value);</td></tr>
+<tr><th id="134">134</th><td>    <b>return</b> <span class="namespace">std::</span>move(<a class="local col3 ref" href="#23u" title='u' data-ref="23u" data-ref-filename="23u">u</a>.value);</td></tr>
+<tr><th id="135">135</th><td>  }</td></tr>
+<tr><th id="136">136</th><td></td></tr>
+<tr><th id="137">137</th><td>  <i>// Polymorphic access methods</i></td></tr>
+<tr><th id="138">138</th><td><i></i></td></tr>
+<tr><th id="139">139</th><td><i>  // Returns name of this flag.</i></td></tr>
+<tr><th id="140">140</th><td>  <b>virtual</b> <span class="namespace">absl::</span><a class="type" href="../../strings/string_view.h.html#absl::lts_2020_02_25::string_view" title='absl::lts_2020_02_25::string_view' data-ref="absl::lts_2020_02_25::string_view" data-ref-filename="absl..lts_2020_02_25..string_view">string_view</a> <dfn class="virtual decl fn" id="_ZNK4absl14lts_2020_02_2514flags_internal15CommandLineFlag4NameEv" title='absl::lts_2020_02_25::flags_internal::CommandLineFlag::Name' data-ref="_ZNK4absl14lts_2020_02_2514flags_internal15CommandLineFlag4NameEv" data-ref-filename="_ZNK4absl14lts_2020_02_2514flags_internal15CommandLineFlag4NameEv">Name</dfn>() <em>const</em> = <var>0</var>;</td></tr>
+<tr><th id="141">141</th><td>  <i>// Returns name of the file where this flag is defined.</i></td></tr>
+<tr><th id="142">142</th><td>  <b>virtual</b> <span class="namespace">std::</span><span class='typedef' title='std::string' data-type='basic_string&lt;char&gt;' data-ref="std::string" data-ref-filename="std..string">string</span> <dfn class="virtual decl fn" id="_ZNK4absl14lts_2020_02_2514flags_internal15CommandLineFlag8FilenameB5cxx11Ev" title='absl::lts_2020_02_25::flags_internal::CommandLineFlag::Filename' data-ref="_ZNK4absl14lts_2020_02_2514flags_internal15CommandLineFlag8FilenameB5cxx11Ev" data-ref-filename="_ZNK4absl14lts_2020_02_2514flags_internal15CommandLineFlag8FilenameB5cxx11Ev">Filename</dfn>() <em>const</em> = <var>0</var>;</td></tr>
+<tr><th id="143">143</th><td>  <i>// Returns name of the flag's value type for some built-in types or empty</i></td></tr>
+<tr><th id="144">144</th><td><i>  // std::string.</i></td></tr>
+<tr><th id="145">145</th><td>  <b>virtual</b> <span class="namespace">absl::</span><a class="type" href="../../strings/string_view.h.html#absl::lts_2020_02_25::string_view" title='absl::lts_2020_02_25::string_view' data-ref="absl::lts_2020_02_25::string_view" data-ref-filename="absl..lts_2020_02_25..string_view">string_view</a> <dfn class="virtual decl fn" id="_ZNK4absl14lts_2020_02_2514flags_internal15CommandLineFlag8TypenameEv" title='absl::lts_2020_02_25::flags_internal::CommandLineFlag::Typename' data-ref="_ZNK4absl14lts_2020_02_2514flags_internal15CommandLineFlag8TypenameEv" data-ref-filename="_ZNK4absl14lts_2020_02_2514flags_internal15CommandLineFlag8TypenameEv">Typename</dfn>() <em>const</em> = <var>0</var>;</td></tr>
+<tr><th id="146">146</th><td>  <i>// Returns help message associated with this flag.</i></td></tr>
+<tr><th id="147">147</th><td>  <b>virtual</b> <span class="namespace">std::</span><span class='typedef' title='std::string' data-type='basic_string&lt;char&gt;' data-ref="std::string" data-ref-filename="std..string">string</span> <dfn class="virtual decl fn" id="_ZNK4absl14lts_2020_02_2514flags_internal15CommandLineFlag4HelpB5cxx11Ev" title='absl::lts_2020_02_25::flags_internal::CommandLineFlag::Help' data-ref="_ZNK4absl14lts_2020_02_2514flags_internal15CommandLineFlag4HelpB5cxx11Ev" data-ref-filename="_ZNK4absl14lts_2020_02_2514flags_internal15CommandLineFlag4HelpB5cxx11Ev">Help</dfn>() <em>const</em> = <var>0</var>;</td></tr>
+<tr><th id="148">148</th><td>  <i>// Returns true iff this object corresponds to retired flag.</i></td></tr>
+<tr><th id="149">149</th><td>  <b>virtual</b> <em>bool</em> <dfn class="virtual decl def fn" id="_ZNK4absl14lts_2020_02_2514flags_internal15CommandLineFlag9IsRetiredEv" title='absl::lts_2020_02_25::flags_internal::CommandLineFlag::IsRetired' data-ref="_ZNK4absl14lts_2020_02_2514flags_internal15CommandLineFlag9IsRetiredEv" data-ref-filename="_ZNK4absl14lts_2020_02_2514flags_internal15CommandLineFlag9IsRetiredEv">IsRetired</dfn>() <em>const</em> { <b>return</b> <b>false</b>; }</td></tr>
+<tr><th id="150">150</th><td>  <i>// Returns true iff this is a handle to an Abseil Flag.</i></td></tr>
+<tr><th id="151">151</th><td>  <b>virtual</b> <em>bool</em> <dfn class="virtual decl def fn" id="_ZNK4absl14lts_2020_02_2514flags_internal15CommandLineFlag12IsAbseilFlagEv" title='absl::lts_2020_02_25::flags_internal::CommandLineFlag::IsAbseilFlag' data-ref="_ZNK4absl14lts_2020_02_2514flags_internal15CommandLineFlag12IsAbseilFlagEv" data-ref-filename="_ZNK4absl14lts_2020_02_2514flags_internal15CommandLineFlag12IsAbseilFlagEv">IsAbseilFlag</dfn>() <em>const</em> { <b>return</b> <b>true</b>; }</td></tr>
+<tr><th id="152">152</th><td>  <i>// Returns id of the flag's value type.</i></td></tr>
+<tr><th id="153">153</th><td>  <b>virtual</b> <a class="typedef" href="#absl::lts_2020_02_25::flags_internal::FlagStaticTypeId" title='absl::lts_2020_02_25::flags_internal::FlagStaticTypeId' data-type='void *(*)()' data-ref="absl::lts_2020_02_25::flags_internal::FlagStaticTypeId" data-ref-filename="absl..lts_2020_02_25..flags_internal..FlagStaticTypeId">FlagStaticTypeId</a> <dfn class="virtual decl fn" id="_ZNK4absl14lts_2020_02_2514flags_internal15CommandLineFlag6TypeIdEv" title='absl::lts_2020_02_25::flags_internal::CommandLineFlag::TypeId' data-ref="_ZNK4absl14lts_2020_02_2514flags_internal15CommandLineFlag6TypeIdEv" data-ref-filename="_ZNK4absl14lts_2020_02_2514flags_internal15CommandLineFlag6TypeIdEv">TypeId</dfn>() <em>const</em> = <var>0</var>;</td></tr>
+<tr><th id="154">154</th><td>  <b>virtual</b> <em>bool</em> <dfn class="virtual decl fn" id="_ZNK4absl14lts_2020_02_2514flags_internal15CommandLineFlag10IsModifiedEv" title='absl::lts_2020_02_25::flags_internal::CommandLineFlag::IsModified' data-ref="_ZNK4absl14lts_2020_02_2514flags_internal15CommandLineFlag10IsModifiedEv" data-ref-filename="_ZNK4absl14lts_2020_02_2514flags_internal15CommandLineFlag10IsModifiedEv">IsModified</dfn>() <em>const</em> = <var>0</var>;</td></tr>
+<tr><th id="155">155</th><td>  <b>virtual</b> <em>bool</em> <dfn class="virtual decl fn" id="_ZNK4absl14lts_2020_02_2514flags_internal15CommandLineFlag24IsSpecifiedOnCommandLineEv" title='absl::lts_2020_02_25::flags_internal::CommandLineFlag::IsSpecifiedOnCommandLine' data-ref="_ZNK4absl14lts_2020_02_2514flags_internal15CommandLineFlag24IsSpecifiedOnCommandLineEv" data-ref-filename="_ZNK4absl14lts_2020_02_2514flags_internal15CommandLineFlag24IsSpecifiedOnCommandLineEv">IsSpecifiedOnCommandLine</dfn>() <em>const</em> = <var>0</var>;</td></tr>
+<tr><th id="156">156</th><td>  <b>virtual</b> <span class="namespace">std::</span><span class='typedef' title='std::string' data-type='basic_string&lt;char&gt;' data-ref="std::string" data-ref-filename="std..string">string</span> <dfn class="virtual decl fn" id="_ZNK4absl14lts_2020_02_2514flags_internal15CommandLineFlag12DefaultValueB5cxx11Ev" title='absl::lts_2020_02_25::flags_internal::CommandLineFlag::DefaultValue' data-ref="_ZNK4absl14lts_2020_02_2514flags_internal15CommandLineFlag12DefaultValueB5cxx11Ev" data-ref-filename="_ZNK4absl14lts_2020_02_2514flags_internal15CommandLineFlag12DefaultValueB5cxx11Ev">DefaultValue</dfn>() <em>const</em> = <var>0</var>;</td></tr>
+<tr><th id="157">157</th><td>  <b>virtual</b> <span class="namespace">std::</span><span class='typedef' title='std::string' data-type='basic_string&lt;char&gt;' data-ref="std::string" data-ref-filename="std..string">string</span> <dfn class="virtual decl fn" id="_ZNK4absl14lts_2020_02_2514flags_internal15CommandLineFlag12CurrentValueB5cxx11Ev" title='absl::lts_2020_02_25::flags_internal::CommandLineFlag::CurrentValue' data-ref="_ZNK4absl14lts_2020_02_2514flags_internal15CommandLineFlag12CurrentValueB5cxx11Ev" data-ref-filename="_ZNK4absl14lts_2020_02_2514flags_internal15CommandLineFlag12CurrentValueB5cxx11Ev">CurrentValue</dfn>() <em>const</em> = <var>0</var>;</td></tr>
+<tr><th id="158">158</th><td></td></tr>
+<tr><th id="159">159</th><td>  <i>// Interfaces to operate on validators.</i></td></tr>
+<tr><th id="160">160</th><td>  <b>virtual</b> <em>bool</em> <dfn class="virtual decl fn" id="_ZNK4absl14lts_2020_02_2514flags_internal15CommandLineFlag18ValidateInputValueENS0_11string_viewE" title='absl::lts_2020_02_25::flags_internal::CommandLineFlag::ValidateInputValue' data-ref="_ZNK4absl14lts_2020_02_2514flags_internal15CommandLineFlag18ValidateInputValueENS0_11string_viewE" data-ref-filename="_ZNK4absl14lts_2020_02_2514flags_internal15CommandLineFlag18ValidateInputValueENS0_11string_viewE">ValidateInputValue</dfn>(<span class="namespace">absl::</span><a class="type" href="../../strings/string_view.h.html#absl::lts_2020_02_25::string_view" title='absl::lts_2020_02_25::string_view' data-ref="absl::lts_2020_02_25::string_view" data-ref-filename="absl..lts_2020_02_25..string_view">string_view</a> <dfn class="local col4 decl" id="24value" title='value' data-type='absl::string_view' data-ref="24value" data-ref-filename="24value">value</dfn>) <em>const</em> = <var>0</var>;</td></tr>
+<tr><th id="161">161</th><td></td></tr>
+<tr><th id="162">162</th><td>  <i>// Interface to save flag to some persistent state. Returns current flag state</i></td></tr>
+<tr><th id="163">163</th><td><i>  // or nullptr if flag does not support saving and restoring a state.</i></td></tr>
+<tr><th id="164">164</th><td>  <b>virtual</b> <span class="namespace">std::</span><span class='type' title='std::unique_ptr' data-ref="std::unique_ptr" data-ref-filename="std..unique_ptr">unique_ptr</span>&lt;<a class="type" href="#absl::lts_2020_02_25::flags_internal::FlagStateInterface" title='absl::lts_2020_02_25::flags_internal::FlagStateInterface' data-ref="absl::lts_2020_02_25::flags_internal::FlagStateInterface" data-ref-filename="absl..lts_2020_02_25..flags_internal..FlagStateInterface">FlagStateInterface</a>&gt; <dfn class="virtual decl fn" id="_ZN4absl14lts_2020_02_2514flags_internal15CommandLineFlag9SaveStateEv" title='absl::lts_2020_02_25::flags_internal::CommandLineFlag::SaveState' data-ref="_ZN4absl14lts_2020_02_2514flags_internal15CommandLineFlag9SaveStateEv" data-ref-filename="_ZN4absl14lts_2020_02_2514flags_internal15CommandLineFlag9SaveStateEv">SaveState</dfn>() = <var>0</var>;</td></tr>
+<tr><th id="165">165</th><td></td></tr>
+<tr><th id="166">166</th><td>  <i>// Sets the value of the flag based on specified std::string `value`. If the flag</i></td></tr>
+<tr><th id="167">167</th><td><i>  // was successfully set to new value, it returns true. Otherwise, sets `error`</i></td></tr>
+<tr><th id="168">168</th><td><i>  // to indicate the error, leaves the flag unchanged, and returns false. There</i></td></tr>
+<tr><th id="169">169</th><td><i>  // are three ways to set the flag's value:</i></td></tr>
+<tr><th id="170">170</th><td><i>  //  * Update the current flag value</i></td></tr>
+<tr><th id="171">171</th><td><i>  //  * Update the flag's default value</i></td></tr>
+<tr><th id="172">172</th><td><i>  //  * Update the current flag value if it was never set before</i></td></tr>
+<tr><th id="173">173</th><td><i>  // The mode is selected based on `set_mode` parameter.</i></td></tr>
+<tr><th id="174">174</th><td>  <b>virtual</b> <em>bool</em> <dfn class="virtual decl fn" id="_ZN4absl14lts_2020_02_2514flags_internal15CommandLineFlag13SetFromStringENS0_11string_viewENS1_15FlagSettingModeENS1_11ValueSourceEPNSt7__cxx1112basic5123736" title='absl::lts_2020_02_25::flags_internal::CommandLineFlag::SetFromString' data-ref="_ZN4absl14lts_2020_02_2514flags_internal15CommandLineFlag13SetFromStringENS0_11string_viewENS1_15FlagSettingModeENS1_11ValueSourceEPNSt7__cxx1112basic5123736" data-ref-filename="_ZN4absl14lts_2020_02_2514flags_internal15CommandLineFlag13SetFromStringENS0_11string_viewENS1_15FlagSettingModeENS1_11ValueSourceEPNSt7__cxx1112basic5123736">SetFromString</dfn>(<span class="namespace">absl::</span><a class="type" href="../../strings/string_view.h.html#absl::lts_2020_02_25::string_view" title='absl::lts_2020_02_25::string_view' data-ref="absl::lts_2020_02_25::string_view" data-ref-filename="absl..lts_2020_02_25..string_view">string_view</a> <dfn class="local col5 decl" id="25value" title='value' data-type='absl::string_view' data-ref="25value" data-ref-filename="25value">value</dfn>,</td></tr>
+<tr><th id="175">175</th><td>                             <span class="namespace">flags_internal::</span><a class="type" href="#absl::lts_2020_02_25::flags_internal::FlagSettingMode" title='absl::lts_2020_02_25::flags_internal::FlagSettingMode' data-ref="absl::lts_2020_02_25::flags_internal::FlagSettingMode" data-ref-filename="absl..lts_2020_02_25..flags_internal..FlagSettingMode">FlagSettingMode</a> <dfn class="local col6 decl" id="26set_mode" title='set_mode' data-type='flags_internal::FlagSettingMode' data-ref="26set_mode" data-ref-filename="26set_mode">set_mode</dfn>,</td></tr>
+<tr><th id="176">176</th><td>                             <span class="namespace">flags_internal::</span><a class="type" href="#absl::lts_2020_02_25::flags_internal::ValueSource" title='absl::lts_2020_02_25::flags_internal::ValueSource' data-ref="absl::lts_2020_02_25::flags_internal::ValueSource" data-ref-filename="absl..lts_2020_02_25..flags_internal..ValueSource">ValueSource</a> <dfn class="local col7 decl" id="27source" title='source' data-type='flags_internal::ValueSource' data-ref="27source" data-ref-filename="27source">source</dfn>,</td></tr>
+<tr><th id="177">177</th><td>                             <span class="namespace">std::</span><span class='typedef' title='std::string' data-type='basic_string&lt;char&gt;' data-ref="std::string" data-ref-filename="std..string">string</span>* <dfn class="local col8 decl" id="28error" title='error' data-type='std::string *' data-ref="28error" data-ref-filename="28error">error</dfn>) = <var>0</var>;</td></tr>
+<tr><th id="178">178</th><td></td></tr>
+<tr><th id="179">179</th><td>  <i>// Checks that flags default value can be converted to std::string and back to the</i></td></tr>
+<tr><th id="180">180</th><td><i>  // flag's value type.</i></td></tr>
+<tr><th id="181">181</th><td>  <b>virtual</b> <em>void</em> <dfn class="virtual decl fn" id="_ZNK4absl14lts_2020_02_2514flags_internal15CommandLineFlag33CheckDefaultValueParsingRoundtripEv" title='absl::lts_2020_02_25::flags_internal::CommandLineFlag::CheckDefaultValueParsingRoundtrip' data-ref="_ZNK4absl14lts_2020_02_2514flags_internal15CommandLineFlag33CheckDefaultValueParsingRoundtripEv" data-ref-filename="_ZNK4absl14lts_2020_02_2514flags_internal15CommandLineFlag33CheckDefaultValueParsingRoundtripEv">CheckDefaultValueParsingRoundtrip</dfn>() <em>const</em> = <var>0</var>;</td></tr>
+<tr><th id="182">182</th><td></td></tr>
+<tr><th id="183">183</th><td> <b>protected</b>:</td></tr>
+<tr><th id="184">184</th><td>  <dfn class="decl def fn" id="_ZN4absl14lts_2020_02_2514flags_internal15CommandLineFlagD1Ev" title='absl::lts_2020_02_25::flags_internal::CommandLineFlag::~CommandLineFlag' data-ref="_ZN4absl14lts_2020_02_2514flags_internal15CommandLineFlagD1Ev" data-ref-filename="_ZN4absl14lts_2020_02_2514flags_internal15CommandLineFlagD1Ev">~CommandLineFlag</dfn>() = <b>default</b>;</td></tr>
+<tr><th id="185">185</th><td></td></tr>
+<tr><th id="186">186</th><td> <b>private</b>:</td></tr>
+<tr><th id="187">187</th><td>  <i>// Copy-construct a new value of the flag's type in a memory referenced by</i></td></tr>
+<tr><th id="188">188</th><td><i>  // the dst based on the current flag's value.</i></td></tr>
+<tr><th id="189">189</th><td>  <b>virtual</b> <em>void</em> <dfn class="virtual decl fn" id="_ZNK4absl14lts_2020_02_2514flags_internal15CommandLineFlag4ReadEPv" title='absl::lts_2020_02_25::flags_internal::CommandLineFlag::Read' data-ref="_ZNK4absl14lts_2020_02_2514flags_internal15CommandLineFlag4ReadEPv" data-ref-filename="_ZNK4absl14lts_2020_02_2514flags_internal15CommandLineFlag4ReadEPv">Read</dfn>(<em>void</em>* <dfn class="local col9 decl" id="29dst" title='dst' data-type='void *' data-ref="29dst" data-ref-filename="29dst">dst</dfn>) <em>const</em> = <var>0</var>;</td></tr>
+<tr><th id="190">190</th><td>};</td></tr>
+<tr><th id="191">191</th><td></td></tr>
+<tr><th id="192">192</th><td><i>// This macro is the "source of truth" for the list of supported flag built-in</i></td></tr>
+<tr><th id="193">193</th><td><i>// types.</i></td></tr>
+<tr><th id="194">194</th><td><u>#define <dfn class="macro" id="_M/ABSL_FLAGS_INTERNAL_BUILTIN_TYPES" data-ref="_M/ABSL_FLAGS_INTERNAL_BUILTIN_TYPES">ABSL_FLAGS_INTERNAL_BUILTIN_TYPES</dfn>(A) \</u></td></tr>
+<tr><th id="195">195</th><td><u>  A(bool)                                    \</u></td></tr>
+<tr><th id="196">196</th><td><u>  A(short)                                   \</u></td></tr>
+<tr><th id="197">197</th><td><u>  A(unsigned short)                          \</u></td></tr>
+<tr><th id="198">198</th><td><u>  A(int)                                     \</u></td></tr>
+<tr><th id="199">199</th><td><u>  A(unsigned int)                            \</u></td></tr>
+<tr><th id="200">200</th><td><u>  A(long)                                    \</u></td></tr>
+<tr><th id="201">201</th><td><u>  A(unsigned long)                           \</u></td></tr>
+<tr><th id="202">202</th><td><u>  A(long long)                               \</u></td></tr>
+<tr><th id="203">203</th><td><u>  A(unsigned long long)                      \</u></td></tr>
+<tr><th id="204">204</th><td><u>  A(double)                                  \</u></td></tr>
+<tr><th id="205">205</th><td><u>  A(float)                                   \</u></td></tr>
+<tr><th id="206">206</th><td><u>  A(std::string)                             \</u></td></tr>
+<tr><th id="207">207</th><td><u>  A(std::vector&lt;std::string&gt;)</u></td></tr>
+<tr><th id="208">208</th><td></td></tr>
+<tr><th id="209">209</th><td>}  <i>// namespace flags_internal</i></td></tr>
+<tr><th id="210">210</th><td><a class="macro" href="../../base/config.h.html#127" title="}" data-ref="_M/ABSL_NAMESPACE_END">ABSL_NAMESPACE_END</a></td></tr>
+<tr><th id="211">211</th><td>}  <i>// namespace absl</i></td></tr>
+<tr><th id="212">212</th><td></td></tr>
+<tr><th id="213">213</th><td><u>#<span data-ppcond="16">endif</span>  // ABSL_FLAGS_INTERNAL_COMMANDLINEFLAG_H_</u></td></tr>
+<tr><th id="214">214</th><td></td></tr>
+</table><hr/><p id='footer'>
+Generated while processing <a href='../flag.cc.html'>halide/build-apps/abseil-cpp/absl/flags/flag.cc</a><br/>Generated on <em>2021-Aug-05</em> from project halide revision <em>v12.0.1</em>

@@ -1,0 +1,115 @@
+<!doctype html>
+<html>
+<head>
+<meta name="viewport" content="width=device-width, initial-scale=1.0"><title>frontend.h source code [halide/build-apps/ruy/ruy/frontend.h] - Woboq Code Browser</title>
+<link rel="stylesheet" href="../../../.././data/qtcreator.css" title="QtCreator"/>
+<link rel="alternate stylesheet" href="../../../.././data/kdevelop.css" title="KDevelop"/>
+<script type="text/javascript" src="../../../.././data/jquery/jquery.min.js"></script>
+<script type="text/javascript" src="../../../.././data/jquery/jquery-ui.min.js"></script>
+<script>var file = 'halide/build-apps/ruy/ruy/frontend.h'; var root_path = '../../../..'; var data_path = '../../../.././data'; var ecma_script_api_version = 2;</script>
+<script src='../../../.././data/codebrowser.js'></script>
+</head>
+<body><div id='header'><h1 id='breadcrumb'><span>Browse the source code of </span><a href='../../..'>halide</a>/<a href='../..'>build-apps</a>/<a href='..'>ruy</a>/<a href='./'>ruy</a>/<a href='frontend.h.html'>frontend.h</a></h1></div>
+<hr/><div id='content'><table class="code">
+<tr><th id="1">1</th><td><i>/* Copyright 2019 Google LLC. All Rights Reserved.</i></td></tr>
+<tr><th id="2">2</th><td><i></i></td></tr>
+<tr><th id="3">3</th><td><i>Licensed under the Apache License, Version 2.0 (the "License");</i></td></tr>
+<tr><th id="4">4</th><td><i>you may not use this file except in compliance with the License.</i></td></tr>
+<tr><th id="5">5</th><td><i>You may obtain a copy of the License at</i></td></tr>
+<tr><th id="6">6</th><td><i></i></td></tr>
+<tr><th id="7">7</th><td><i>    <a href="http://www.apache.org/licenses/LICENSE-2.0">http://www.apache.org/licenses/LICENSE-2.0</a></i></td></tr>
+<tr><th id="8">8</th><td><i></i></td></tr>
+<tr><th id="9">9</th><td><i>Unless required by applicable law or agreed to in writing, software</i></td></tr>
+<tr><th id="10">10</th><td><i>distributed under the License is distributed on an "AS IS" BASIS,</i></td></tr>
+<tr><th id="11">11</th><td><i>WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.</i></td></tr>
+<tr><th id="12">12</th><td><i>See the License for the specific language governing permissions and</i></td></tr>
+<tr><th id="13">13</th><td><i>limitations under the License.</i></td></tr>
+<tr><th id="14">14</th><td><i>==============================================================================*/</i></td></tr>
+<tr><th id="15">15</th><td><i></i></td></tr>
+<tr><th id="16">16</th><td><i>// Implementation of MulFrontEnd, the front-end part of ruy.</i></td></tr>
+<tr><th id="17">17</th><td><i>// This is what the ruy::Mul entry point calls, and this ends in a call to</i></td></tr>
+<tr><th id="18">18</th><td><i>// TrMul, at which point we enter the middle-end.</i></td></tr>
+<tr><th id="19">19</th><td><i>// The front-end work includes parameter validation (Validate), detemplatization</i></td></tr>
+<tr><th id="20">20</th><td><i>// and resolution of the specific code path to take (CreateTrMulParams), and</i></td></tr>
+<tr><th id="21">21</th><td><i>// any additional logic best done upfront before entering the middle-end</i></td></tr>
+<tr><th id="22">22</th><td><i>// (e.g. HandlePrepackedCaching).</i></td></tr>
+<tr><th id="23">23</th><td><i>// The call to CreateTrMulParams is an important watershed in this code's</i></td></tr>
+<tr><th id="24">24</th><td><i>// structure: code before it needs to be templatized like the ruy::Mul entry</i></td></tr>
+<tr><th id="25">25</th><td><i>// point, code after it is un-templatized.</i></td></tr>
+<tr><th id="26">26</th><td></td></tr>
+<tr><th id="27">27</th><td><u>#<span data-ppcond="27">ifndef</span> <span class="macro" data-ref="_M/RUY_RUY_FRONTEND_H_">RUY_RUY_FRONTEND_H_</span></u></td></tr>
+<tr><th id="28">28</th><td><u>#define <dfn class="macro" id="_M/RUY_RUY_FRONTEND_H_" data-ref="_M/RUY_RUY_FRONTEND_H_">RUY_RUY_FRONTEND_H_</dfn></u></td></tr>
+<tr><th id="29">29</th><td></td></tr>
+<tr><th id="30">30</th><td><u>#include <a href="create_trmul_params.h.html">"ruy/create_trmul_params.h"</a></u></td></tr>
+<tr><th id="31">31</th><td><u>#include <a href="ctx.h.html">"ruy/ctx.h"</a></u></td></tr>
+<tr><th id="32">32</th><td><u>#include <a href="profiler/instrumentation.h.html">"ruy/profiler/instrumentation.h"</a></u></td></tr>
+<tr><th id="33">33</th><td><u>#include <a href="trace.h.html">"ruy/trace.h"</a></u></td></tr>
+<tr><th id="34">34</th><td><u>#include <a href="trmul_params.h.html">"ruy/trmul_params.h"</a></u></td></tr>
+<tr><th id="35">35</th><td><u>#include <a href="validate.h.html">"ruy/validate.h"</a></u></td></tr>
+<tr><th id="36">36</th><td></td></tr>
+<tr><th id="37">37</th><td><b>namespace</b> <span class="namespace">ruy</span> {</td></tr>
+<tr><th id="38">38</th><td></td></tr>
+<tr><th id="39">39</th><td><i>// The first half of front-end work, up to the point where we have TrMulParams.</i></td></tr>
+<tr><th id="40">40</th><td><i>// In other words, this is the part of the front-end work that needs to be</i></td></tr>
+<tr><th id="41">41</th><td><i>// templatized like the entry point, and that performs the initial work that</i></td></tr>
+<tr><th id="42">42</th><td><i>// requires this templatization, and the de-templatization. The output of this</i></td></tr>
+<tr><th id="43">43</th><td><i>// function is the TrMulParams, which contain enough information to allow the</i></td></tr>
+<tr><th id="44">44</th><td><i>// un-templatized code to take over from there.</i></td></tr>
+<tr><th id="45">45</th><td><b>template</b> &lt;<a class="type" href="context.h.html#ruy::Path" title='ruy::Path' data-ref="ruy::Path" data-ref-filename="ruy..Path">Path</a> CompiledPaths, <b>typename</b> LhsScalar, <b>typename</b> RhsScalar,</td></tr>
+<tr><th id="46">46</th><td>          <b>typename</b> AccumScalar, <b>typename</b> DstScalar&gt;</td></tr>
+<tr><th id="47">47</th><td><em>void</em> <dfn class="decl def fn" id="_ZN3ruy32MulFrontEndUpToCreateTrMulParamsERKNS_3MatIT0_EERKNS0_IT1_EERKNS0_IT3_EERKNS_9MulParamsIT2_S9_EEPNS_3CtxEPNS_11TrMulParamsE" title='ruy::MulFrontEndUpToCreateTrMulParams' data-ref="_ZN3ruy32MulFrontEndUpToCreateTrMulParamsERKNS_3MatIT0_EERKNS0_IT1_EERKNS0_IT3_EERKNS_9MulParamsIT2_S9_EEPNS_3CtxEPNS_11TrMulParamsE" data-ref-filename="_ZN3ruy32MulFrontEndUpToCreateTrMulParamsERKNS_3MatIT0_EERKNS0_IT1_EERKNS0_IT3_EERKNS_9MulParamsIT2_S9_EEPNS_3CtxEPNS_11TrMulParamsE">MulFrontEndUpToCreateTrMulParams</dfn>(</td></tr>
+<tr><th id="48">48</th><td>    <em>const</em> <a class="type" href="mat.h.html#ruy::Mat" title='ruy::Mat' data-ref="ruy::Mat" data-ref-filename="ruy..Mat">Mat</a>&lt;LhsScalar&gt;&amp; <dfn class="local col1 decl" id="6261lhs" title='lhs' data-type='const Mat&lt;LhsScalar&gt; &amp;' data-ref="6261lhs" data-ref-filename="6261lhs">lhs</dfn>, <em>const</em> <a class="type" href="mat.h.html#ruy::Mat" title='ruy::Mat' data-ref="ruy::Mat" data-ref-filename="ruy..Mat">Mat</a>&lt;RhsScalar&gt;&amp; <dfn class="local col2 decl" id="6262rhs" title='rhs' data-type='const Mat&lt;RhsScalar&gt; &amp;' data-ref="6262rhs" data-ref-filename="6262rhs">rhs</dfn>,</td></tr>
+<tr><th id="49">49</th><td>    <em>const</em> <a class="type" href="mat.h.html#ruy::Mat" title='ruy::Mat' data-ref="ruy::Mat" data-ref-filename="ruy..Mat">Mat</a>&lt;DstScalar&gt;&amp; <dfn class="local col3 decl" id="6263dst" title='dst' data-type='const Mat&lt;DstScalar&gt; &amp;' data-ref="6263dst" data-ref-filename="6263dst">dst</dfn>,</td></tr>
+<tr><th id="50">50</th><td>    <em>const</em> <a class="type" href="mul_params.h.html#ruy::MulParams" title='ruy::MulParams' data-ref="ruy::MulParams" data-ref-filename="ruy..MulParams">MulParams</a>&lt;AccumScalar, DstScalar&gt;&amp; <dfn class="local col4 decl" id="6264mul_params" title='mul_params' data-type='const MulParams&lt;AccumScalar, DstScalar&gt; &amp;' data-ref="6264mul_params" data-ref-filename="6264mul_params">mul_params</dfn>, <a class="type" href="ctx.h.html#ruy::Ctx" title='ruy::Ctx' data-ref="ruy::Ctx" data-ref-filename="ruy..Ctx">Ctx</a>* <dfn class="local col5 decl" id="6265ctx" title='ctx' data-type='ruy::Ctx *' data-ref="6265ctx" data-ref-filename="6265ctx">ctx</dfn>,</td></tr>
+<tr><th id="51">51</th><td>    <a class="type" href="trmul_params.h.html#ruy::TrMulParams" title='ruy::TrMulParams' data-ref="ruy::TrMulParams" data-ref-filename="ruy..TrMulParams">TrMulParams</a>* <dfn class="local col6 decl" id="6266params" title='params' data-type='ruy::TrMulParams *' data-ref="6266params" data-ref-filename="6266params">params</dfn>) {</td></tr>
+<tr><th id="52">52</th><td>  <a class="macro" href="trace.h.html#830" title="" data-ref="_M/RUY_TRACE_SCOPE">RUY_TRACE_SCOPE</a>;</td></tr>
+<tr><th id="53">53</th><td>  <b>static_assert</b>(<a class="tu ref" href="#CompiledPaths" title='CompiledPaths' data-use='r' data-ref="CompiledPaths" data-ref-filename="CompiledPaths">CompiledPaths</a> != <a class="type" href="context.h.html#ruy::Path" title='ruy::Path' data-ref="ruy::Path" data-ref-filename="ruy..Path">Path</a>::<a class="enum" href="path.h.html#ruy::Path::kNone" title='ruy::Path::kNone' data-ref="ruy::Path::kNone" data-ref-filename="ruy..Path..kNone">kNone</a>, <q>"Must compile at least one Path"</q>);</td></tr>
+<tr><th id="54">54</th><td>  <b>static_assert</b>(</td></tr>
+<tr><th id="55">55</th><td>      (<a class="tu ref" href="#CompiledPaths" title='CompiledPaths' data-use='r' data-ref="CompiledPaths" data-ref-filename="CompiledPaths">CompiledPaths</a> <a class="ref fn" href="path.h.html#_ZN3ruyanENS_4PathES0_" title='ruy::operator&amp;' data-ref="_ZN3ruyanENS_4PathES0_" data-ref-filename="_ZN3ruyanENS_4PathES0_">&amp;</a> <a class="ref fn" href="path.h.html#_ZN3ruycoENS_4PathE" title='ruy::operator~' data-ref="_ZN3ruycoENS_4PathE" data-ref-filename="_ZN3ruycoENS_4PathE">~</a><a class="ref" href="path.h.html#ruy::kAllPathsIncludingInternalVariants" title='ruy::kAllPathsIncludingInternalVariants' data-ref="ruy::kAllPathsIncludingInternalVariants" data-ref-filename="ruy..kAllPathsIncludingInternalVariants">kAllPathsIncludingInternalVariants</a>) == <a class="type" href="context.h.html#ruy::Path" title='ruy::Path' data-ref="ruy::Path" data-ref-filename="ruy..Path">Path</a>::<a class="enum" href="path.h.html#ruy::Path::kNone" title='ruy::Path::kNone' data-ref="ruy::Path::kNone" data-ref-filename="ruy..Path..kNone">kNone</a>,</td></tr>
+<tr><th id="56">56</th><td>      <q>"CompiledPaths must be a subset of "</q></td></tr>
+<tr><th id="57">57</th><td>      <q>"ruy::kAllPathsIncludingInternalVariants"</q>);</td></tr>
+<tr><th id="58">58</th><td></td></tr>
+<tr><th id="59">59</th><td>  <i>// Perform validation of parameters early so that failures are easier to map</i></td></tr>
+<tr><th id="60">60</th><td><i>  // to user errors. In particular, perform this validation before the</i></td></tr>
+<tr><th id="61">61</th><td><i>  // transposition.</i></td></tr>
+<tr><th id="62">62</th><td>  Validate(<a class="local col1 ref" href="#6261lhs" title='lhs' data-ref="6261lhs" data-ref-filename="6261lhs">lhs</a>, <a class="local col2 ref" href="#6262rhs" title='rhs' data-ref="6262rhs" data-ref-filename="6262rhs">rhs</a>, <a class="local col3 ref" href="#6263dst" title='dst' data-ref="6263dst" data-ref-filename="6263dst">dst</a>);</td></tr>
+<tr><th id="63">63</th><td></td></tr>
+<tr><th id="64">64</th><td>  <i>// De-templatize this Mul call by creating a TrMulParams structure.</i></td></tr>
+<tr><th id="65">65</th><td><i>  // This is also where the specific kernel and pack code paths corresponding to</i></td></tr>
+<tr><th id="66">66</th><td><i>  // `the_path` are selected, among all the code paths in `CompiledPaths`, and</i></td></tr>
+<tr><th id="67">67</th><td><i>  // recorded as function pointers in the TrMulParams.</i></td></tr>
+<tr><th id="68">68</th><td><i>  // The Transpose(lhs) here is where we switch from 'Mul' to 'TrMul'.</i></td></tr>
+<tr><th id="69">69</th><td>  CreateTrMulParams&lt;<a class="tu ref" href="#CompiledPaths" title='CompiledPaths' data-use='c' data-ref="CompiledPaths" data-ref-filename="CompiledPaths">CompiledPaths</a>&gt;(Transpose(<a class="local col1 ref" href="#6261lhs" title='lhs' data-ref="6261lhs" data-ref-filename="6261lhs">lhs</a>), <a class="local col2 ref" href="#6262rhs" title='rhs' data-ref="6262rhs" data-ref-filename="6262rhs">rhs</a>, <a class="local col3 ref" href="#6263dst" title='dst' data-ref="6263dst" data-ref-filename="6263dst">dst</a>, <a class="local col4 ref" href="#6264mul_params" title='mul_params' data-ref="6264mul_params" data-ref-filename="6264mul_params">mul_params</a>, <a class="local col5 ref" href="#6265ctx" title='ctx' data-ref="6265ctx" data-ref-filename="6265ctx">ctx</a>,</td></tr>
+<tr><th id="70">70</th><td>                                   <a class="local col6 ref" href="#6266params" title='params' data-ref="6266params" data-ref-filename="6266params">params</a>);</td></tr>
+<tr><th id="71">71</th><td>}</td></tr>
+<tr><th id="72">72</th><td></td></tr>
+<tr><th id="73">73</th><td><i>// The second part of the front-end work, starting from where we have freshly</i></td></tr>
+<tr><th id="74">74</th><td><i>// created TrMulParams, performing any remaining front-end work and entering the</i></td></tr>
+<tr><th id="75">75</th><td><i>// middle-end.</i></td></tr>
+<tr><th id="76">76</th><td><em>void</em> <dfn class="decl fn" id="_ZN3ruy26MulFrontEndFromTrMulParamsEPNS_3CtxEPNS_11TrMulParamsE" title='ruy::MulFrontEndFromTrMulParams' data-ref="_ZN3ruy26MulFrontEndFromTrMulParamsEPNS_3CtxEPNS_11TrMulParamsE" data-ref-filename="_ZN3ruy26MulFrontEndFromTrMulParamsEPNS_3CtxEPNS_11TrMulParamsE">MulFrontEndFromTrMulParams</dfn>(<a class="type" href="ctx.h.html#ruy::Ctx" title='ruy::Ctx' data-ref="ruy::Ctx" data-ref-filename="ruy..Ctx">Ctx</a>* <dfn class="local col7 decl" id="6267ctx" title='ctx' data-type='ruy::Ctx *' data-ref="6267ctx" data-ref-filename="6267ctx">ctx</dfn>, <a class="type" href="trmul_params.h.html#ruy::TrMulParams" title='ruy::TrMulParams' data-ref="ruy::TrMulParams" data-ref-filename="ruy..TrMulParams">TrMulParams</a>* <dfn class="local col8 decl" id="6268params" title='params' data-type='ruy::TrMulParams *' data-ref="6268params" data-ref-filename="6268params">params</dfn>);</td></tr>
+<tr><th id="77">77</th><td></td></tr>
+<tr><th id="78">78</th><td><i>// Top-level function orchestrating the two halves of front-end work:</i></td></tr>
+<tr><th id="79">79</th><td><i>// before and after we have detemplatized the call by creating TrMulParams.</i></td></tr>
+<tr><th id="80">80</th><td><b>template</b> &lt;<a class="type" href="context.h.html#ruy::Path" title='ruy::Path' data-ref="ruy::Path" data-ref-filename="ruy..Path">Path</a> CompiledPaths, <b>typename</b> LhsScalar, <b>typename</b> RhsScalar,</td></tr>
+<tr><th id="81">81</th><td>          <b>typename</b> AccumScalar, <b>typename</b> DstScalar&gt;</td></tr>
+<tr><th id="82">82</th><td><em>void</em> <dfn class="decl def fn" id="_ZN3ruy11MulFrontEndERKNS_3MatIT0_EERKNS0_IT1_EERKNS_9MulParamsIT2_T3_EEPNS_3CtxEPNS0_ISB_EE" title='ruy::MulFrontEnd' data-ref="_ZN3ruy11MulFrontEndERKNS_3MatIT0_EERKNS0_IT1_EERKNS_9MulParamsIT2_T3_EEPNS_3CtxEPNS0_ISB_EE" data-ref-filename="_ZN3ruy11MulFrontEndERKNS_3MatIT0_EERKNS0_IT1_EERKNS_9MulParamsIT2_T3_EEPNS_3CtxEPNS0_ISB_EE">MulFrontEnd</dfn>(<em>const</em> <a class="type" href="mat.h.html#ruy::Mat" title='ruy::Mat' data-ref="ruy::Mat" data-ref-filename="ruy..Mat">Mat</a>&lt;LhsScalar&gt;&amp; <dfn class="local col9 decl" id="6269lhs" title='lhs' data-type='const Mat&lt;LhsScalar&gt; &amp;' data-ref="6269lhs" data-ref-filename="6269lhs">lhs</dfn>, <em>const</em> <a class="type" href="mat.h.html#ruy::Mat" title='ruy::Mat' data-ref="ruy::Mat" data-ref-filename="ruy..Mat">Mat</a>&lt;RhsScalar&gt;&amp; <dfn class="local col0 decl" id="6270rhs" title='rhs' data-type='const Mat&lt;RhsScalar&gt; &amp;' data-ref="6270rhs" data-ref-filename="6270rhs">rhs</dfn>,</td></tr>
+<tr><th id="83">83</th><td>                 <em>const</em> <a class="type" href="mul_params.h.html#ruy::MulParams" title='ruy::MulParams' data-ref="ruy::MulParams" data-ref-filename="ruy..MulParams">MulParams</a>&lt;AccumScalar, DstScalar&gt;&amp; <dfn class="local col1 decl" id="6271mul_params" title='mul_params' data-type='const MulParams&lt;AccumScalar, DstScalar&gt; &amp;' data-ref="6271mul_params" data-ref-filename="6271mul_params">mul_params</dfn>, <a class="type" href="ctx.h.html#ruy::Ctx" title='ruy::Ctx' data-ref="ruy::Ctx" data-ref-filename="ruy..Ctx">Ctx</a>* <dfn class="local col2 decl" id="6272ctx" title='ctx' data-type='ruy::Ctx *' data-ref="6272ctx" data-ref-filename="6272ctx">ctx</dfn>,</td></tr>
+<tr><th id="84">84</th><td>                 <a class="type" href="mat.h.html#ruy::Mat" title='ruy::Mat' data-ref="ruy::Mat" data-ref-filename="ruy..Mat">Mat</a>&lt;DstScalar&gt;* <dfn class="local col3 decl" id="6273dst" title='dst' data-type='Mat&lt;DstScalar&gt; *' data-ref="6273dst" data-ref-filename="6273dst">dst</dfn>) {</td></tr>
+<tr><th id="85">85</th><td>  <a class="macro" href="trace.h.html#830" title="" data-ref="_M/RUY_TRACE_SCOPE">RUY_TRACE_SCOPE</a>;</td></tr>
+<tr><th id="86">86</th><td>  <span class="namespace">profiler::</span><a class="type" href="profiler/instrumentation.h.html#ruy::profiler::ScopeLabel" title='ruy::profiler::ScopeLabel' data-ref="ruy::profiler::ScopeLabel" data-ref-filename="ruy..profiler..ScopeLabel">ScopeLabel</a> <dfn class="local col4 decl" id="6274mul_label" title='mul_label' data-type='profiler::ScopeLabel' data-ref="6274mul_label" data-ref-filename="6274mul_label">mul_label</dfn><a class="ref fn" href="profiler/instrumentation.h.html#_ZN3ruy8profiler10ScopeLabelC1EDpT_" title='ruy::profiler::ScopeLabel::ScopeLabel' data-ref="_ZN3ruy8profiler10ScopeLabelC1EDpT_" data-ref-filename="_ZN3ruy8profiler10ScopeLabelC1EDpT_">(</a><q>"Mul"</q>);</td></tr>
+<tr><th id="87">87</th><td>  <span class="namespace">profiler::</span><a class="type" href="profiler/instrumentation.h.html#ruy::profiler::ScopeLabel" title='ruy::profiler::ScopeLabel' data-ref="ruy::profiler::ScopeLabel" data-ref-filename="ruy..profiler..ScopeLabel">ScopeLabel</a> <dfn class="local col5 decl" id="6275shape_specific_label" title='shape_specific_label' data-type='profiler::ScopeLabel' data-ref="6275shape_specific_label" data-ref-filename="6275shape_specific_label">shape_specific_label</dfn>(<q>"matmul shape: %dx%dx%d"</q>,</td></tr>
+<tr><th id="88">88</th><td>                                            <a class="local col9 ref" href="#6269lhs" title='lhs' data-ref="6269lhs" data-ref-filename="6269lhs">lhs</a>.layout.rows, <a class="local col9 ref" href="#6269lhs" title='lhs' data-ref="6269lhs" data-ref-filename="6269lhs">lhs</a>.layout.cols,</td></tr>
+<tr><th id="89">89</th><td>                                            <a class="local col0 ref" href="#6270rhs" title='rhs' data-ref="6270rhs" data-ref-filename="6270rhs">rhs</a>.layout.cols);</td></tr>
+<tr><th id="90">90</th><td>  <a class="local col2 ref" href="#6272ctx" title='ctx' data-ref="6272ctx" data-ref-filename="6272ctx">ctx</a>-&gt;<a class="ref fn" href="ctx.h.html#_ZN3ruy3Ctx28clear_performance_advisoriesEv" title='ruy::Ctx::clear_performance_advisories' data-ref="_ZN3ruy3Ctx28clear_performance_advisoriesEv" data-ref-filename="_ZN3ruy3Ctx28clear_performance_advisoriesEv">clear_performance_advisories</a>();</td></tr>
+<tr><th id="91">91</th><td>  <a class="type" href="trmul_params.h.html#ruy::TrMulParams" title='ruy::TrMulParams' data-ref="ruy::TrMulParams" data-ref-filename="ruy..TrMulParams">TrMulParams</a> <a class="ref fn fake" href="trmul_params.h.html#_ZN3ruy11TrMulParamsC1Ev" title='ruy::TrMulParams::TrMulParams' data-ref="_ZN3ruy11TrMulParamsC1Ev" data-ref-filename="_ZN3ruy11TrMulParamsC1Ev"></a><dfn class="local col6 decl" id="6276params" title='params' data-type='ruy::TrMulParams' data-ref="6276params" data-ref-filename="6276params">params</dfn>;</td></tr>
+<tr><th id="92">92</th><td>  MulFrontEndUpToCreateTrMulParams&lt;<a class="tu ref" href="#CompiledPaths" title='CompiledPaths' data-use='c' data-ref="CompiledPaths" data-ref-filename="CompiledPaths">CompiledPaths</a>&gt;(<a class="local col9 ref" href="#6269lhs" title='lhs' data-ref="6269lhs" data-ref-filename="6269lhs">lhs</a>, <a class="local col0 ref" href="#6270rhs" title='rhs' data-ref="6270rhs" data-ref-filename="6270rhs">rhs</a>, *<a class="local col3 ref" href="#6273dst" title='dst' data-ref="6273dst" data-ref-filename="6273dst">dst</a>, <a class="local col1 ref" href="#6271mul_params" title='mul_params' data-ref="6271mul_params" data-ref-filename="6271mul_params">mul_params</a>,</td></tr>
+<tr><th id="93">93</th><td>                                                  <a class="local col2 ref" href="#6272ctx" title='ctx' data-ref="6272ctx" data-ref-filename="6272ctx">ctx</a>, &amp;<a class="local col6 ref" href="#6276params" title='params' data-ref="6276params" data-ref-filename="6276params">params</a>);</td></tr>
+<tr><th id="94">94</th><td>  <a class="ref fn" href="#_ZN3ruy26MulFrontEndFromTrMulParamsEPNS_3CtxEPNS_11TrMulParamsE" title='ruy::MulFrontEndFromTrMulParams' data-ref="_ZN3ruy26MulFrontEndFromTrMulParamsEPNS_3CtxEPNS_11TrMulParamsE" data-ref-filename="_ZN3ruy26MulFrontEndFromTrMulParamsEPNS_3CtxEPNS_11TrMulParamsE">MulFrontEndFromTrMulParams</a>(<a class="local col2 ref" href="#6272ctx" title='ctx' data-ref="6272ctx" data-ref-filename="6272ctx">ctx</a>, &amp;<a class="local col6 ref" href="#6276params" title='params' data-ref="6276params" data-ref-filename="6276params">params</a>);</td></tr>
+<tr><th id="95">95</th><td>}</td></tr>
+<tr><th id="96">96</th><td></td></tr>
+<tr><th id="97">97</th><td>}  <i>// namespace ruy</i></td></tr>
+<tr><th id="98">98</th><td></td></tr>
+<tr><th id="99">99</th><td><u>#<span data-ppcond="27">endif</span>  // RUY_RUY_FRONTEND_H_</u></td></tr>
+<tr><th id="100">100</th><td></td></tr>
+</table><hr/><p id='footer'>
+Generated while processing <a href='../../_deps/tflite-src/tensorflow/lite/kernels/activations.cc.html'>halide/build-apps/_deps/tflite-src/tensorflow/lite/kernels/activations.cc</a><br/>Generated on <em>2021-Aug-05</em> from project halide revision <em>v12.0.1</em>

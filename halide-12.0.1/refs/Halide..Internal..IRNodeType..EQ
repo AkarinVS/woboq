@@ -1,3 +1,8 @@
+<dec f='halide/halide-install/include/Halide.h' l='3791' type='14'/>
+<use f='halide/halide-install/include/Halide.h' l='12000'/>
+<use f='halide/halide-install/include/Halide.h' l='12975' c='_ZN6Halide8Internal15VariadicVisitor13dispatch_exprEPKNS0_12BaseExprNodeEDpOTL0__'/>
+<use f='halide/halide-install/include/Halide.h' l='13051' c='_ZN6Halide8Internal15VariadicVisitor13dispatch_stmtEPKNS0_12BaseStmtNodeEDpOTL0__'/>
+<use f='halide/halide-install/include/Halide.h' l='27771' u='r' c='_ZN6Halide8Internal9IRMatcher11commutativeENS0_10IRNodeTypeE'/>
 <dec f='halide/build/include/Halide.h' l='3791' type='14'/>
 <use f='halide/build/include/Halide.h' l='12000'/>
 <use f='halide/build/include/Halide.h' l='12975' c='_ZN6Halide8Internal15VariadicVisitor13dispatch_exprEPKNS0_12BaseExprNodeEDpOTL0__'/>

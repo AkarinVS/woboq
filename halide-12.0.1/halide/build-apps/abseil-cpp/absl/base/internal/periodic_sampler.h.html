@@ -1,0 +1,228 @@
+<!doctype html>
+<html>
+<head>
+<meta name="viewport" content="width=device-width, initial-scale=1.0"><title>periodic_sampler.h source code [halide/build-apps/abseil-cpp/absl/base/internal/periodic_sampler.h] - Woboq Code Browser</title>
+<meta name="woboq:interestingDefinitions" content="absl::lts_2020_02_25::base_internal::PeriodicSampler,absl::lts_2020_02_25::base_internal::PeriodicSamplerBase "/>
+<link rel="stylesheet" href="../../../../../.././data/qtcreator.css" title="QtCreator"/>
+<link rel="alternate stylesheet" href="../../../../../.././data/kdevelop.css" title="KDevelop"/>
+<script type="text/javascript" src="../../../../../.././data/jquery/jquery.min.js"></script>
+<script type="text/javascript" src="../../../../../.././data/jquery/jquery-ui.min.js"></script>
+<script>var file = 'halide/build-apps/abseil-cpp/absl/base/internal/periodic_sampler.h'; var root_path = '../../../../../..'; var data_path = '../../../../../.././data'; var ecma_script_api_version = 2;</script>
+<script src='../../../../../.././data/codebrowser.js'></script>
+</head>
+<body><div id='header'><h1 id='breadcrumb'><span>Browse the source code of </span><a href='../../../../..'>halide</a>/<a href='../../../..'>build-apps</a>/<a href='../../..'>abseil-cpp</a>/<a href='../..'>absl</a>/<a href='..'>base</a>/<a href='./'>internal</a>/<a href='periodic_sampler.h.html'>periodic_sampler.h</a></h1></div>
+<hr/><div id='content'><table class="code">
+<tr><th id="1">1</th><td><i>// Copyright 2019 The Abseil Authors.</i></td></tr>
+<tr><th id="2">2</th><td><i>//</i></td></tr>
+<tr><th id="3">3</th><td><i>// Licensed under the Apache License, Version 2.0 (the "License");</i></td></tr>
+<tr><th id="4">4</th><td><i>// you may not use this file except in compliance with the License.</i></td></tr>
+<tr><th id="5">5</th><td><i>// You may obtain a copy of the License at</i></td></tr>
+<tr><th id="6">6</th><td><i>//</i></td></tr>
+<tr><th id="7">7</th><td><i>//      <a href="https://www.apache.org/licenses/LICENSE-2.0">https://www.apache.org/licenses/LICENSE-2.0</a></i></td></tr>
+<tr><th id="8">8</th><td><i>//</i></td></tr>
+<tr><th id="9">9</th><td><i>// Unless required by applicable law or agreed to in writing, software</i></td></tr>
+<tr><th id="10">10</th><td><i>// distributed under the License is distributed on an "AS IS" BASIS,</i></td></tr>
+<tr><th id="11">11</th><td><i>// WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.</i></td></tr>
+<tr><th id="12">12</th><td><i>// See the License for the specific language governing permissions and</i></td></tr>
+<tr><th id="13">13</th><td><i>// limitations under the License.</i></td></tr>
+<tr><th id="14">14</th><td></td></tr>
+<tr><th id="15">15</th><td><u>#<span data-ppcond="15">ifndef</span> <span class="macro" data-ref="_M/ABSL_BASE_INTERNAL_PERIODIC_SAMPLER_H_">ABSL_BASE_INTERNAL_PERIODIC_SAMPLER_H_</span></u></td></tr>
+<tr><th id="16">16</th><td><u>#define <dfn class="macro" id="_M/ABSL_BASE_INTERNAL_PERIODIC_SAMPLER_H_" data-ref="_M/ABSL_BASE_INTERNAL_PERIODIC_SAMPLER_H_">ABSL_BASE_INTERNAL_PERIODIC_SAMPLER_H_</dfn></u></td></tr>
+<tr><th id="17">17</th><td></td></tr>
+<tr><th id="18">18</th><td><u>#include &lt;stdint.h&gt;</u></td></tr>
+<tr><th id="19">19</th><td></td></tr>
+<tr><th id="20">20</th><td><u>#include &lt;atomic&gt;</u></td></tr>
+<tr><th id="21">21</th><td></td></tr>
+<tr><th id="22">22</th><td><u>#include <a href="exponential_biased.h.html">"absl/base/internal/exponential_biased.h"</a></u></td></tr>
+<tr><th id="23">23</th><td><u>#include <a href="../optimization.h.html">"absl/base/optimization.h"</a></u></td></tr>
+<tr><th id="24">24</th><td></td></tr>
+<tr><th id="25">25</th><td><b>namespace</b> <span class="namespace">absl</span> {</td></tr>
+<tr><th id="26">26</th><td><a class="macro" href="../config.h.html#125" title="inline namespace lts_2020_02_25 {" data-ref="_M/ABSL_NAMESPACE_BEGIN">ABSL_NAMESPACE_BEGIN</a></td></tr>
+<tr><th id="27">27</th><td><b>namespace</b> <span class="namespace">base_internal</span> {</td></tr>
+<tr><th id="28">28</th><td></td></tr>
+<tr><th id="29">29</th><td><i>// PeriodicSamplerBase provides the basic period sampler implementation.</i></td></tr>
+<tr><th id="30">30</th><td><i>//</i></td></tr>
+<tr><th id="31">31</th><td><i>// This is the base class for the templated PeriodicSampler class, which holds</i></td></tr>
+<tr><th id="32">32</th><td><i>// a global std::atomic value identified by a user defined tag, such that</i></td></tr>
+<tr><th id="33">33</th><td><i>// each specific PeriodSampler implementation holds its own global period.</i></td></tr>
+<tr><th id="34">34</th><td><i>//</i></td></tr>
+<tr><th id="35">35</th><td><i>// PeriodicSamplerBase is thread-compatible except where stated otherwise.</i></td></tr>
+<tr><th id="36">36</th><td><b>class</b> <dfn class="type def" id="absl::lts_2020_02_25::base_internal::PeriodicSamplerBase" title='absl::lts_2020_02_25::base_internal::PeriodicSamplerBase' data-ref="absl::lts_2020_02_25::base_internal::PeriodicSamplerBase" data-ref-filename="absl..lts_2020_02_25..base_internal..PeriodicSamplerBase">PeriodicSamplerBase</dfn> {</td></tr>
+<tr><th id="37">37</th><td> <b>public</b>:</td></tr>
+<tr><th id="38">38</th><td>  <i>// PeriodicSamplerBase is trivial / copyable / movable / destructible.</i></td></tr>
+<tr><th id="39">39</th><td>  <dfn class="decl def fn" id="_ZN4absl14lts_2020_02_2513base_internal19PeriodicSamplerBaseC1Ev" title='absl::lts_2020_02_25::base_internal::PeriodicSamplerBase::PeriodicSamplerBase' data-ref="_ZN4absl14lts_2020_02_2513base_internal19PeriodicSamplerBaseC1Ev" data-ref-filename="_ZN4absl14lts_2020_02_2513base_internal19PeriodicSamplerBaseC1Ev">PeriodicSamplerBase</dfn>() = <b>default</b>;</td></tr>
+<tr><th id="40">40</th><td>  <dfn class="decl def fn" id="_ZN4absl14lts_2020_02_2513base_internal19PeriodicSamplerBaseC1EOS2_" title='absl::lts_2020_02_25::base_internal::PeriodicSamplerBase::PeriodicSamplerBase' data-ref="_ZN4absl14lts_2020_02_2513base_internal19PeriodicSamplerBaseC1EOS2_" data-ref-filename="_ZN4absl14lts_2020_02_2513base_internal19PeriodicSamplerBaseC1EOS2_">PeriodicSamplerBase</dfn>(<a class="type" href="#absl::lts_2020_02_25::base_internal::PeriodicSamplerBase" title='absl::lts_2020_02_25::base_internal::PeriodicSamplerBase' data-ref="absl::lts_2020_02_25::base_internal::PeriodicSamplerBase" data-ref-filename="absl..lts_2020_02_25..base_internal..PeriodicSamplerBase">PeriodicSamplerBase</a>&amp;&amp;) = <b>default</b>;</td></tr>
+<tr><th id="41">41</th><td>  <dfn class="decl def fn" id="_ZN4absl14lts_2020_02_2513base_internal19PeriodicSamplerBaseC1ERKS2_" title='absl::lts_2020_02_25::base_internal::PeriodicSamplerBase::PeriodicSamplerBase' data-ref="_ZN4absl14lts_2020_02_2513base_internal19PeriodicSamplerBaseC1ERKS2_" data-ref-filename="_ZN4absl14lts_2020_02_2513base_internal19PeriodicSamplerBaseC1ERKS2_">PeriodicSamplerBase</dfn>(<em>const</em> <a class="type" href="#absl::lts_2020_02_25::base_internal::PeriodicSamplerBase" title='absl::lts_2020_02_25::base_internal::PeriodicSamplerBase' data-ref="absl::lts_2020_02_25::base_internal::PeriodicSamplerBase" data-ref-filename="absl..lts_2020_02_25..base_internal..PeriodicSamplerBase">PeriodicSamplerBase</a>&amp;) = <b>default</b>;</td></tr>
+<tr><th id="42">42</th><td></td></tr>
+<tr><th id="43">43</th><td>  <i>// Returns true roughly once every `period` calls. This is established by a</i></td></tr>
+<tr><th id="44">44</th><td><i>  // randomly picked `stride` that is counted down on each call to `Sample`.</i></td></tr>
+<tr><th id="45">45</th><td><i>  // This stride is picked such that the probability of `Sample()` returning</i></td></tr>
+<tr><th id="46">46</th><td><i>  // true is 1 in `period`.</i></td></tr>
+<tr><th id="47">47</th><td>  <b>inline</b> <em>bool</em> <a class="decl fn" href="#_ZN4absl14lts_2020_02_2513base_internal19PeriodicSamplerBase6SampleEv" title='absl::lts_2020_02_25::base_internal::PeriodicSamplerBase::Sample' data-ref="_ZN4absl14lts_2020_02_2513base_internal19PeriodicSamplerBase6SampleEv" data-ref-filename="_ZN4absl14lts_2020_02_2513base_internal19PeriodicSamplerBase6SampleEv">Sample</a>() <b>noexcept</b>;</td></tr>
+<tr><th id="48">48</th><td></td></tr>
+<tr><th id="49">49</th><td>  <i>// The below methods are intended for optimized use cases where the</i></td></tr>
+<tr><th id="50">50</th><td><i>  // size of the inlined fast path code is highly important. Applications</i></td></tr>
+<tr><th id="51">51</th><td><i>  // should use the `Sample()` method unless they have proof that their</i></td></tr>
+<tr><th id="52">52</th><td><i>  // specific use case requires the optimizations offered by these methods.</i></td></tr>
+<tr><th id="53">53</th><td><i>  //</i></td></tr>
+<tr><th id="54">54</th><td><i>  // An example of such a use case is SwissTable sampling. All sampling checks</i></td></tr>
+<tr><th id="55">55</th><td><i>  // are in inlined SwissTable methods, and the number of call sites is huge.</i></td></tr>
+<tr><th id="56">56</th><td><i>  // In this case, the inlined code size added to each translation unit calling</i></td></tr>
+<tr><th id="57">57</th><td><i>  // SwissTable methods is non-trivial.</i></td></tr>
+<tr><th id="58">58</th><td><i>  //</i></td></tr>
+<tr><th id="59">59</th><td><i>  // The `SubtleMaybeSample()` function spuriously returns true even if the</i></td></tr>
+<tr><th id="60">60</th><td><i>  // function should not be sampled, applications MUST match each call to</i></td></tr>
+<tr><th id="61">61</th><td><i>  // 'SubtleMaybeSample()' returning true with a `SubtleConfirmSample()` call,</i></td></tr>
+<tr><th id="62">62</th><td><i>  // and use the result of the latter as the sampling decision.</i></td></tr>
+<tr><th id="63">63</th><td><i>  // In other words: the code should logically be equivalent to:</i></td></tr>
+<tr><th id="64">64</th><td><i>  //</i></td></tr>
+<tr><th id="65">65</th><td><i>  //    if (SubtleMaybeSample() &amp;&amp; SubtleConfirmSample()) {</i></td></tr>
+<tr><th id="66">66</th><td><i>  //      // Sample this call</i></td></tr>
+<tr><th id="67">67</th><td><i>  //    }</i></td></tr>
+<tr><th id="68">68</th><td><i>  //</i></td></tr>
+<tr><th id="69">69</th><td><i>  // In the 'inline-size' optimized case, the `SubtleConfirmSample()` call can</i></td></tr>
+<tr><th id="70">70</th><td><i>  // be placed out of line, for example, the typical use case looks as follows:</i></td></tr>
+<tr><th id="71">71</th><td><i>  //</i></td></tr>
+<tr><th id="72">72</th><td><i>  //   // --- frobber.h -----------</i></td></tr>
+<tr><th id="73">73</th><td><i>  //   void FrobberSampled();</i></td></tr>
+<tr><th id="74">74</th><td><i>  //</i></td></tr>
+<tr><th id="75">75</th><td><i>  //   inline void FrobberImpl() {</i></td></tr>
+<tr><th id="76">76</th><td><i>  //     // ...</i></td></tr>
+<tr><th id="77">77</th><td><i>  //   }</i></td></tr>
+<tr><th id="78">78</th><td><i>  //</i></td></tr>
+<tr><th id="79">79</th><td><i>  //   inline void Frobber() {</i></td></tr>
+<tr><th id="80">80</th><td><i>  //     if (ABSL_PREDICT_FALSE(sampler.SubtleMaybeSample())) {</i></td></tr>
+<tr><th id="81">81</th><td><i>  //       FrobberSampled();</i></td></tr>
+<tr><th id="82">82</th><td><i>  //     } else {</i></td></tr>
+<tr><th id="83">83</th><td><i>  //       FrobberImpl();</i></td></tr>
+<tr><th id="84">84</th><td><i>  //     }</i></td></tr>
+<tr><th id="85">85</th><td><i>  //   }</i></td></tr>
+<tr><th id="86">86</th><td><i>  //</i></td></tr>
+<tr><th id="87">87</th><td><i>  //   // --- frobber.cc -----------</i></td></tr>
+<tr><th id="88">88</th><td><i>  //   void FrobberSampled() {</i></td></tr>
+<tr><th id="89">89</th><td><i>  //     if (!sampler.SubtleConfirmSample())) {</i></td></tr>
+<tr><th id="90">90</th><td><i>  //       // Spurious false positive</i></td></tr>
+<tr><th id="91">91</th><td><i>  //       FrobberImpl();</i></td></tr>
+<tr><th id="92">92</th><td><i>  //       return;</i></td></tr>
+<tr><th id="93">93</th><td><i>  //     }</i></td></tr>
+<tr><th id="94">94</th><td><i>  //</i></td></tr>
+<tr><th id="95">95</th><td><i>  //     // Sampled execution</i></td></tr>
+<tr><th id="96">96</th><td><i>  //     // ...</i></td></tr>
+<tr><th id="97">97</th><td><i>  //   }</i></td></tr>
+<tr><th id="98">98</th><td>  <b>inline</b> <em>bool</em> <a class="decl fn" href="#_ZN4absl14lts_2020_02_2513base_internal19PeriodicSamplerBase17SubtleMaybeSampleEv" title='absl::lts_2020_02_25::base_internal::PeriodicSamplerBase::SubtleMaybeSample' data-ref="_ZN4absl14lts_2020_02_2513base_internal19PeriodicSamplerBase17SubtleMaybeSampleEv" data-ref-filename="_ZN4absl14lts_2020_02_2513base_internal19PeriodicSamplerBase17SubtleMaybeSampleEv">SubtleMaybeSample</a>() <b>noexcept</b>;</td></tr>
+<tr><th id="99">99</th><td>  <em>bool</em> <a class="decl fn" href="periodic_sampler.cc.html#_ZN4absl14lts_2020_02_2513base_internal19PeriodicSamplerBase19SubtleConfirmSampleEv" title='absl::lts_2020_02_25::base_internal::PeriodicSamplerBase::SubtleConfirmSample' data-ref="_ZN4absl14lts_2020_02_2513base_internal19PeriodicSamplerBase19SubtleConfirmSampleEv" data-ref-filename="_ZN4absl14lts_2020_02_2513base_internal19PeriodicSamplerBase19SubtleConfirmSampleEv" id="_ZN4absl14lts_2020_02_2513base_internal19PeriodicSamplerBase19SubtleConfirmSampleEv">SubtleConfirmSample</a>() <b>noexcept</b>;</td></tr>
+<tr><th id="100">100</th><td></td></tr>
+<tr><th id="101">101</th><td> <b>protected</b>:</td></tr>
+<tr><th id="102">102</th><td>  <i>// We explicitly don't use a virtual destructor as this class is never</i></td></tr>
+<tr><th id="103">103</th><td><i>  // virtually destroyed, and it keeps the class trivial, which avoids TLS</i></td></tr>
+<tr><th id="104">104</th><td><i>  // prologue and epilogue code for our TLS instances.</i></td></tr>
+<tr><th id="105">105</th><td>  <dfn class="decl def fn" id="_ZN4absl14lts_2020_02_2513base_internal19PeriodicSamplerBaseD1Ev" title='absl::lts_2020_02_25::base_internal::PeriodicSamplerBase::~PeriodicSamplerBase' data-ref="_ZN4absl14lts_2020_02_2513base_internal19PeriodicSamplerBaseD1Ev" data-ref-filename="_ZN4absl14lts_2020_02_2513base_internal19PeriodicSamplerBaseD1Ev">~PeriodicSamplerBase</dfn>() = <b>default</b>;</td></tr>
+<tr><th id="106">106</th><td></td></tr>
+<tr><th id="107">107</th><td>  <i>// Returns the next stride for our sampler.</i></td></tr>
+<tr><th id="108">108</th><td><i>  // This function is virtual for testing purposes only.</i></td></tr>
+<tr><th id="109">109</th><td>  <b>virtual</b> <a class="typedef" href="../../../../../../include/bits/stdint-intn.h.html#int64_t" title='int64_t' data-type='__int64_t' data-ref="int64_t" data-ref-filename="int64_t">int64_t</a> <a class="virtual decl fn" href="periodic_sampler.cc.html#_ZN4absl14lts_2020_02_2513base_internal19PeriodicSamplerBase20GetExponentialBiasedEi" title='absl::lts_2020_02_25::base_internal::PeriodicSamplerBase::GetExponentialBiased' data-ref="_ZN4absl14lts_2020_02_2513base_internal19PeriodicSamplerBase20GetExponentialBiasedEi" data-ref-filename="_ZN4absl14lts_2020_02_2513base_internal19PeriodicSamplerBase20GetExponentialBiasedEi" id="_ZN4absl14lts_2020_02_2513base_internal19PeriodicSamplerBase20GetExponentialBiasedEi">GetExponentialBiased</a>(<em>int</em> <dfn class="local col1 decl" id="1period" title='period' data-type='int' data-ref="1period" data-ref-filename="1period">period</dfn>) <b>noexcept</b>;</td></tr>
+<tr><th id="110">110</th><td></td></tr>
+<tr><th id="111">111</th><td> <b>private</b>:</td></tr>
+<tr><th id="112">112</th><td>  <i>// Returns the current period of this sampler. Thread-safe.</i></td></tr>
+<tr><th id="113">113</th><td>  <b>virtual</b> <em>int</em> <dfn class="virtual decl fn" id="_ZNK4absl14lts_2020_02_2513base_internal19PeriodicSamplerBase6periodEv" title='absl::lts_2020_02_25::base_internal::PeriodicSamplerBase::period' data-ref="_ZNK4absl14lts_2020_02_2513base_internal19PeriodicSamplerBase6periodEv" data-ref-filename="_ZNK4absl14lts_2020_02_2513base_internal19PeriodicSamplerBase6periodEv">period</dfn>() <em>const</em> <b>noexcept</b> = <var>0</var>;</td></tr>
+<tr><th id="114">114</th><td></td></tr>
+<tr><th id="115">115</th><td>  <i>// Keep and decrement stride_ as an unsigned integer, but compare the value</i></td></tr>
+<tr><th id="116">116</th><td><i>  // to zero casted as a signed int. clang and msvc do not create optimum code</i></td></tr>
+<tr><th id="117">117</th><td><i>  // if we use signed for the combined decrement and sign comparison.</i></td></tr>
+<tr><th id="118">118</th><td><i>  //</i></td></tr>
+<tr><th id="119">119</th><td><i>  // Below 3 alternative options, all compiles generate the best code</i></td></tr>
+<tr><th id="120">120</th><td><i>  // using the unsigned increment &lt;---&gt; signed int comparison option.</i></td></tr>
+<tr><th id="121">121</th><td><i>  //</i></td></tr>
+<tr><th id="122">122</th><td><i>  // Option 1:</i></td></tr>
+<tr><th id="123">123</th><td><i>  //   int64_t stride_;</i></td></tr>
+<tr><th id="124">124</th><td><i>  //   if (ABSL_PREDICT_TRUE(++stride_ &lt; 0)) { ... }</i></td></tr>
+<tr><th id="125">125</th><td><i>  //</i></td></tr>
+<tr><th id="126">126</th><td><i>  //   GCC   x64 (OK) : <a href="https://gcc.godbolt.org/z/R5MzzA">https://gcc.godbolt.org/z/R5MzzA</a></i></td></tr>
+<tr><th id="127">127</th><td><i>  //   GCC   ppc (OK) : <a href="https://gcc.godbolt.org/z/z7NZAt">https://gcc.godbolt.org/z/z7NZAt</a></i></td></tr>
+<tr><th id="128">128</th><td><i>  //   Clang x64 (BAD): <a href="https://gcc.godbolt.org/z/t4gPsd">https://gcc.godbolt.org/z/t4gPsd</a></i></td></tr>
+<tr><th id="129">129</th><td><i>  //   ICC   x64 (OK) : <a href="https://gcc.godbolt.org/z/rE6s8W">https://gcc.godbolt.org/z/rE6s8W</a></i></td></tr>
+<tr><th id="130">130</th><td><i>  //   MSVC  x64 (OK) : <a href="https://gcc.godbolt.org/z/ARMXqS">https://gcc.godbolt.org/z/ARMXqS</a></i></td></tr>
+<tr><th id="131">131</th><td><i>  //</i></td></tr>
+<tr><th id="132">132</th><td><i>  // Option 2:</i></td></tr>
+<tr><th id="133">133</th><td><i>  //   int64_t stride_ = 0;</i></td></tr>
+<tr><th id="134">134</th><td><i>  //   if (ABSL_PREDICT_TRUE(--stride_ &gt;= 0)) { ... }</i></td></tr>
+<tr><th id="135">135</th><td><i>  //</i></td></tr>
+<tr><th id="136">136</th><td><i>  //   GCC   x64 (OK) : <a href="https://gcc.godbolt.org/z/jSQxYK">https://gcc.godbolt.org/z/jSQxYK</a></i></td></tr>
+<tr><th id="137">137</th><td><i>  //   GCC   ppc (OK) : <a href="https://gcc.godbolt.org/z/VJdYaA">https://gcc.godbolt.org/z/VJdYaA</a></i></td></tr>
+<tr><th id="138">138</th><td><i>  //   Clang x64 (BAD): <a href="https://gcc.godbolt.org/z/Xm4NjX">https://gcc.godbolt.org/z/Xm4NjX</a></i></td></tr>
+<tr><th id="139">139</th><td><i>  //   ICC   x64 (OK) : <a href="https://gcc.godbolt.org/z/4snaFd">https://gcc.godbolt.org/z/4snaFd</a></i></td></tr>
+<tr><th id="140">140</th><td><i>  //   MSVC  x64 (BAD): <a href="https://gcc.godbolt.org/z/BgnEKE">https://gcc.godbolt.org/z/BgnEKE</a></i></td></tr>
+<tr><th id="141">141</th><td><i>  //</i></td></tr>
+<tr><th id="142">142</th><td><i>  // Option 3:</i></td></tr>
+<tr><th id="143">143</th><td><i>  //   uint64_t stride_;</i></td></tr>
+<tr><th id="144">144</th><td><i>  //   if (ABSL_PREDICT_TRUE(static_cast&lt;int64_t&gt;(++stride_) &lt; 0)) { ... }</i></td></tr>
+<tr><th id="145">145</th><td><i>  //</i></td></tr>
+<tr><th id="146">146</th><td><i>  //   GCC   x64 (OK) : <a href="https://gcc.godbolt.org/z/bFbfPy">https://gcc.godbolt.org/z/bFbfPy</a></i></td></tr>
+<tr><th id="147">147</th><td><i>  //   GCC   ppc (OK) : <a href="https://gcc.godbolt.org/z/S9KkUE">https://gcc.godbolt.org/z/S9KkUE</a></i></td></tr>
+<tr><th id="148">148</th><td><i>  //   Clang x64 (OK) : <a href="https://gcc.godbolt.org/z/UYzRb4">https://gcc.godbolt.org/z/UYzRb4</a></i></td></tr>
+<tr><th id="149">149</th><td><i>  //   ICC   x64 (OK) : <a href="https://gcc.godbolt.org/z/ptTNfD">https://gcc.godbolt.org/z/ptTNfD</a></i></td></tr>
+<tr><th id="150">150</th><td><i>  //   MSVC  x64 (OK) : <a href="https://gcc.godbolt.org/z/76j4-5">https://gcc.godbolt.org/z/76j4-5</a></i></td></tr>
+<tr><th id="151">151</th><td>  <a class="typedef" href="../../../../../../include/bits/stdint-uintn.h.html#uint64_t" title='uint64_t' data-type='__uint64_t' data-ref="uint64_t" data-ref-filename="uint64_t">uint64_t</a> <dfn class="decl field" id="absl::lts_2020_02_25::base_internal::PeriodicSamplerBase::stride_" title='absl::lts_2020_02_25::base_internal::PeriodicSamplerBase::stride_' data-ref="absl::lts_2020_02_25::base_internal::PeriodicSamplerBase::stride_" data-ref-filename="absl..lts_2020_02_25..base_internal..PeriodicSamplerBase..stride_">stride_</dfn> = <var>0</var>;</td></tr>
+<tr><th id="152">152</th><td>  <a class="type" href="exponential_biased.h.html#absl::lts_2020_02_25::base_internal::ExponentialBiased" title='absl::lts_2020_02_25::base_internal::ExponentialBiased' data-ref="absl::lts_2020_02_25::base_internal::ExponentialBiased" data-ref-filename="absl..lts_2020_02_25..base_internal..ExponentialBiased">ExponentialBiased</a> <dfn class="decl field" id="absl::lts_2020_02_25::base_internal::PeriodicSamplerBase::rng_" title='absl::lts_2020_02_25::base_internal::PeriodicSamplerBase::rng_' data-ref="absl::lts_2020_02_25::base_internal::PeriodicSamplerBase::rng_" data-ref-filename="absl..lts_2020_02_25..base_internal..PeriodicSamplerBase..rng_">rng_</dfn>;</td></tr>
+<tr><th id="153">153</th><td>};</td></tr>
+<tr><th id="154">154</th><td></td></tr>
+<tr><th id="155">155</th><td><b>inline</b> <em>bool</em> <a class="type" href="#absl::lts_2020_02_25::base_internal::PeriodicSamplerBase" title='absl::lts_2020_02_25::base_internal::PeriodicSamplerBase' data-ref="absl::lts_2020_02_25::base_internal::PeriodicSamplerBase" data-ref-filename="absl..lts_2020_02_25..base_internal..PeriodicSamplerBase">PeriodicSamplerBase</a>::<dfn class="decl def fn" id="_ZN4absl14lts_2020_02_2513base_internal19PeriodicSamplerBase17SubtleMaybeSampleEv" title='absl::lts_2020_02_25::base_internal::PeriodicSamplerBase::SubtleMaybeSample' data-ref="_ZN4absl14lts_2020_02_2513base_internal19PeriodicSamplerBase17SubtleMaybeSampleEv" data-ref-filename="_ZN4absl14lts_2020_02_2513base_internal19PeriodicSamplerBase17SubtleMaybeSampleEv">SubtleMaybeSample</dfn>() <b>noexcept</b> {</td></tr>
+<tr><th id="156">156</th><td>  <i>// See comments on `stride_` for the unsigned increment / signed compare.</i></td></tr>
+<tr><th id="157">157</th><td>  <b>if</b> (<a class="macro" href="../optimization.h.html#175" title="(__builtin_expect(false || (static_cast&lt;int64_t&gt;(++stride_) &lt; 0), true))" data-ref="_M/ABSL_PREDICT_TRUE">ABSL_PREDICT_TRUE</a>(<b>static_cast</b>&lt;<a class="typedef" href="../../../../../../include/bits/stdint-intn.h.html#int64_t" title='int64_t' data-type='__int64_t' data-ref="int64_t" data-ref-filename="int64_t">int64_t</a>&gt;(++<a class="member field" href="#absl::lts_2020_02_25::base_internal::PeriodicSamplerBase::stride_" title='absl::lts_2020_02_25::base_internal::PeriodicSamplerBase::stride_' data-ref="absl::lts_2020_02_25::base_internal::PeriodicSamplerBase::stride_" data-ref-filename="absl..lts_2020_02_25..base_internal..PeriodicSamplerBase..stride_">stride_</a>) &lt; <var>0</var>)) {</td></tr>
+<tr><th id="158">158</th><td>    <b>return</b> <b>false</b>;</td></tr>
+<tr><th id="159">159</th><td>  }</td></tr>
+<tr><th id="160">160</th><td>  <b>return</b> <b>true</b>;</td></tr>
+<tr><th id="161">161</th><td>}</td></tr>
+<tr><th id="162">162</th><td></td></tr>
+<tr><th id="163">163</th><td><b>inline</b> <em>bool</em> <a class="type" href="#absl::lts_2020_02_25::base_internal::PeriodicSamplerBase" title='absl::lts_2020_02_25::base_internal::PeriodicSamplerBase' data-ref="absl::lts_2020_02_25::base_internal::PeriodicSamplerBase" data-ref-filename="absl..lts_2020_02_25..base_internal..PeriodicSamplerBase">PeriodicSamplerBase</a>::<dfn class="decl def fn" id="_ZN4absl14lts_2020_02_2513base_internal19PeriodicSamplerBase6SampleEv" title='absl::lts_2020_02_25::base_internal::PeriodicSamplerBase::Sample' data-ref="_ZN4absl14lts_2020_02_2513base_internal19PeriodicSamplerBase6SampleEv" data-ref-filename="_ZN4absl14lts_2020_02_2513base_internal19PeriodicSamplerBase6SampleEv">Sample</dfn>() <b>noexcept</b> {</td></tr>
+<tr><th id="164">164</th><td>  <b>return</b> <a class="macro" href="../optimization.h.html#174" title="(__builtin_expect(SubtleMaybeSample(), 0))" data-ref="_M/ABSL_PREDICT_FALSE">ABSL_PREDICT_FALSE</a>(<a class="member fn" href="#_ZN4absl14lts_2020_02_2513base_internal19PeriodicSamplerBase17SubtleMaybeSampleEv" title='absl::lts_2020_02_25::base_internal::PeriodicSamplerBase::SubtleMaybeSample' data-ref="_ZN4absl14lts_2020_02_2513base_internal19PeriodicSamplerBase17SubtleMaybeSampleEv" data-ref-filename="_ZN4absl14lts_2020_02_2513base_internal19PeriodicSamplerBase17SubtleMaybeSampleEv">SubtleMaybeSample</a>()) ? <a class="member fn" href="periodic_sampler.cc.html#_ZN4absl14lts_2020_02_2513base_internal19PeriodicSamplerBase19SubtleConfirmSampleEv" title='absl::lts_2020_02_25::base_internal::PeriodicSamplerBase::SubtleConfirmSample' data-ref="_ZN4absl14lts_2020_02_2513base_internal19PeriodicSamplerBase19SubtleConfirmSampleEv" data-ref-filename="_ZN4absl14lts_2020_02_2513base_internal19PeriodicSamplerBase19SubtleConfirmSampleEv">SubtleConfirmSample</a>()</td></tr>
+<tr><th id="165">165</th><td>                                                 : <b>false</b>;</td></tr>
+<tr><th id="166">166</th><td>}</td></tr>
+<tr><th id="167">167</th><td></td></tr>
+<tr><th id="168">168</th><td><i>// PeriodicSampler is a concreted periodic sampler implementation.</i></td></tr>
+<tr><th id="169">169</th><td><i>// The user provided Tag identifies the implementation, and is required to</i></td></tr>
+<tr><th id="170">170</th><td><i>// isolate the global state of this instance from other instances.</i></td></tr>
+<tr><th id="171">171</th><td><i>//</i></td></tr>
+<tr><th id="172">172</th><td><i>// Typical use case:</i></td></tr>
+<tr><th id="173">173</th><td><i>//</i></td></tr>
+<tr><th id="174">174</th><td><i>//   struct HashTablezTag {};</i></td></tr>
+<tr><th id="175">175</th><td><i>//   thread_local PeriodicSampler sampler;</i></td></tr>
+<tr><th id="176">176</th><td><i>//</i></td></tr>
+<tr><th id="177">177</th><td><i>//   void HashTableSamplingLogic(...) {</i></td></tr>
+<tr><th id="178">178</th><td><i>//     if (sampler.Sample()) {</i></td></tr>
+<tr><th id="179">179</th><td><i>//       HashTableSlowSamplePath(...);</i></td></tr>
+<tr><th id="180">180</th><td><i>//     }</i></td></tr>
+<tr><th id="181">181</th><td><i>//   }</i></td></tr>
+<tr><th id="182">182</th><td><i>//</i></td></tr>
+<tr><th id="183">183</th><td><b>template</b> &lt;<b>typename</b> Tag, <em>int</em> default_period = <var>0</var>&gt;</td></tr>
+<tr><th id="184">184</th><td><b>class</b> <dfn class="type def" id="absl::lts_2020_02_25::base_internal::PeriodicSampler" title='absl::lts_2020_02_25::base_internal::PeriodicSampler' data-ref="absl::lts_2020_02_25::base_internal::PeriodicSampler" data-ref-filename="absl..lts_2020_02_25..base_internal..PeriodicSampler">PeriodicSampler</dfn> final : <b>public</b> <a class="type" href="#absl::lts_2020_02_25::base_internal::PeriodicSamplerBase" title='absl::lts_2020_02_25::base_internal::PeriodicSamplerBase' data-ref="absl::lts_2020_02_25::base_internal::PeriodicSamplerBase" data-ref-filename="absl..lts_2020_02_25..base_internal..PeriodicSamplerBase">PeriodicSamplerBase</a> {</td></tr>
+<tr><th id="185">185</th><td> <b>public</b>:</td></tr>
+<tr><th id="186">186</th><td>  <dfn class="decl def fn" id="_ZN4absl14lts_2020_02_2513base_internal15PeriodicSamplerD1Ev" title='absl::lts_2020_02_25::base_internal::PeriodicSampler::~PeriodicSampler&lt;Tag, default_period&gt;' data-ref="_ZN4absl14lts_2020_02_2513base_internal15PeriodicSamplerD1Ev" data-ref-filename="_ZN4absl14lts_2020_02_2513base_internal15PeriodicSamplerD1Ev">~PeriodicSampler</dfn>() = <b>default</b>;</td></tr>
+<tr><th id="187">187</th><td></td></tr>
+<tr><th id="188">188</th><td>  <em>int</em> <dfn class="virtual decl def fn" id="_ZNK4absl14lts_2020_02_2513base_internal15PeriodicSampler6periodEv" title='absl::lts_2020_02_25::base_internal::PeriodicSampler::period' data-ref="_ZNK4absl14lts_2020_02_2513base_internal15PeriodicSampler6periodEv" data-ref-filename="_ZNK4absl14lts_2020_02_2513base_internal15PeriodicSampler6periodEv">period</dfn>() <em>const</em> <b>noexcept</b> final {</td></tr>
+<tr><th id="189">189</th><td>    <b>return</b> <a class="member" href="#absl::lts_2020_02_25::base_internal::PeriodicSampler::period_" title='absl::lts_2020_02_25::base_internal::PeriodicSampler::period_' data-ref="absl::lts_2020_02_25::base_internal::PeriodicSampler::period_" data-ref-filename="absl..lts_2020_02_25..base_internal..PeriodicSampler..period_">period_</a>.<span class='ref fn' title='std::__atomic_base::load' data-ref="_ZNKSt13__atomic_base4loadESt12memory_order" data-ref-filename="_ZNKSt13__atomic_base4loadESt12memory_order">load</span>(<span class="namespace">std::</span><span class='enum' title='std::memory_order_relaxed' data-ref="std::memory_order_relaxed" data-ref-filename="std..memory_order_relaxed">memory_order_relaxed</span>);</td></tr>
+<tr><th id="190">190</th><td>  }</td></tr>
+<tr><th id="191">191</th><td></td></tr>
+<tr><th id="192">192</th><td>  <i>// Sets the global period for this sampler. Thread-safe.</i></td></tr>
+<tr><th id="193">193</th><td><i>  // Setting a period of 0 disables the sampler, i.e., every call to Sample()</i></td></tr>
+<tr><th id="194">194</th><td><i>  // will return false. Setting a period of 1 puts the sampler in 'always on'</i></td></tr>
+<tr><th id="195">195</th><td><i>  // mode, i.e., every call to Sample() returns true.</i></td></tr>
+<tr><th id="196">196</th><td>  <em>static</em> <em>void</em> <dfn class="decl def fn" id="_ZN4absl14lts_2020_02_2513base_internal15PeriodicSampler15SetGlobalPeriodEi" title='absl::lts_2020_02_25::base_internal::PeriodicSampler::SetGlobalPeriod' data-ref="_ZN4absl14lts_2020_02_2513base_internal15PeriodicSampler15SetGlobalPeriodEi" data-ref-filename="_ZN4absl14lts_2020_02_2513base_internal15PeriodicSampler15SetGlobalPeriodEi">SetGlobalPeriod</dfn>(<em>int</em> <dfn class="local col2 decl" id="2period" title='period' data-type='int' data-ref="2period" data-ref-filename="2period">period</dfn>) {</td></tr>
+<tr><th id="197">197</th><td>    <a class="member" href="#absl::lts_2020_02_25::base_internal::PeriodicSampler::period_" title='absl::lts_2020_02_25::base_internal::PeriodicSampler::period_' data-ref="absl::lts_2020_02_25::base_internal::PeriodicSampler::period_" data-ref-filename="absl..lts_2020_02_25..base_internal..PeriodicSampler..period_">period_</a>.<span class='ref fn' title='std::__atomic_base::store' data-ref="_ZNSt13__atomic_base5storeET_St12memory_order" data-ref-filename="_ZNSt13__atomic_base5storeET_St12memory_order">store</span>(<a class="local col2 ref" href="#2period" title='period' data-ref="2period" data-ref-filename="2period">period</a>, <span class="namespace">std::</span><span class='enum' title='std::memory_order_relaxed' data-ref="std::memory_order_relaxed" data-ref-filename="std..memory_order_relaxed">memory_order_relaxed</span>);</td></tr>
+<tr><th id="198">198</th><td>  }</td></tr>
+<tr><th id="199">199</th><td></td></tr>
+<tr><th id="200">200</th><td> <b>private</b>:</td></tr>
+<tr><th id="201">201</th><td>  <em>static</em> <span class="namespace">std::</span><span class='type' title='std::atomic' data-ref="std::atomic" data-ref-filename="std..atomic">atomic</span>&lt;<em>int</em>&gt; <dfn class="decl" id="absl::lts_2020_02_25::base_internal::PeriodicSampler::period_" title='absl::lts_2020_02_25::base_internal::PeriodicSampler::period_' data-ref="absl::lts_2020_02_25::base_internal::PeriodicSampler::period_" data-ref-filename="absl..lts_2020_02_25..base_internal..PeriodicSampler..period_">period_</dfn>;</td></tr>
+<tr><th id="202">202</th><td>};</td></tr>
+<tr><th id="203">203</th><td></td></tr>
+<tr><th id="204">204</th><td><b>template</b> &lt;<b>typename</b> Tag, <em>int</em> default_period&gt;</td></tr>
+<tr><th id="205">205</th><td><span class="namespace">std::</span><span class='type' title='std::atomic' data-ref="std::atomic" data-ref-filename="std..atomic">atomic</span>&lt;<em>int</em>&gt; <a class="type" href="#absl::lts_2020_02_25::base_internal::PeriodicSampler" title='absl::lts_2020_02_25::base_internal::PeriodicSampler' data-ref="absl::lts_2020_02_25::base_internal::PeriodicSampler" data-ref-filename="absl..lts_2020_02_25..base_internal..PeriodicSampler">PeriodicSampler</a>&lt;Tag, <a class="tu ref" href="#default_period" title='default_period' data-ref="default_period" data-ref-filename="default_period">default_period</a>&gt;::<dfn class="decl def" id="absl::lts_2020_02_25::base_internal::PeriodicSampler::period_" title='absl::lts_2020_02_25::base_internal::PeriodicSampler::period_' data-ref="absl::lts_2020_02_25::base_internal::PeriodicSampler::period_" data-ref-filename="absl..lts_2020_02_25..base_internal..PeriodicSampler..period_">period_</dfn><span class='ref fn' title='std::atomic&lt;int&gt;::atomic' data-ref="_ZNSt6atomicIiEC1Ei" data-ref-filename="_ZNSt6atomicIiEC1Ei">(</span><a class="tu ref" href="#default_period" title='default_period' data-use='r' data-ref="default_period" data-ref-filename="default_period">default_period</a>);</td></tr>
+<tr><th id="206">206</th><td></td></tr>
+<tr><th id="207">207</th><td>}  <i>// namespace base_internal</i></td></tr>
+<tr><th id="208">208</th><td><a class="macro" href="../config.h.html#127" title="}" data-ref="_M/ABSL_NAMESPACE_END">ABSL_NAMESPACE_END</a></td></tr>
+<tr><th id="209">209</th><td>}  <i>// namespace absl</i></td></tr>
+<tr><th id="210">210</th><td></td></tr>
+<tr><th id="211">211</th><td><u>#<span data-ppcond="15">endif</span>  // ABSL_BASE_INTERNAL_PERIODIC_SAMPLER_H_</u></td></tr>
+<tr><th id="212">212</th><td></td></tr>
+</table><hr/><p id='footer'>
+Generated while processing <a href='periodic_sampler.cc.html'>halide/build-apps/abseil-cpp/absl/base/internal/periodic_sampler.cc</a><br/>Generated on <em>2021-Aug-05</em> from project halide revision <em>v12.0.1</em>

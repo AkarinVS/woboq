@@ -1,0 +1,235 @@
+<!doctype html>
+<html>
+<head>
+<meta name="viewport" content="width=device-width, initial-scale=1.0"><title>seed_material.cc source code [halide/build-apps/abseil-cpp/absl/random/internal/seed_material.cc] - Woboq Code Browser</title>
+<link rel="stylesheet" href="../../../../../.././data/qtcreator.css" title="QtCreator"/>
+<link rel="alternate stylesheet" href="../../../../../.././data/kdevelop.css" title="KDevelop"/>
+<script type="text/javascript" src="../../../../../.././data/jquery/jquery.min.js"></script>
+<script type="text/javascript" src="../../../../../.././data/jquery/jquery-ui.min.js"></script>
+<script>var file = 'halide/build-apps/abseil-cpp/absl/random/internal/seed_material.cc'; var root_path = '../../../../../..'; var data_path = '../../../../../.././data'; var ecma_script_api_version = 2;</script>
+<script src='../../../../../.././data/codebrowser.js'></script>
+</head>
+<body><div id='header'><h1 id='breadcrumb'><span>Browse the source code of </span><a href='../../../../..'>halide</a>/<a href='../../../..'>build-apps</a>/<a href='../../..'>abseil-cpp</a>/<a href='../..'>absl</a>/<a href='..'>random</a>/<a href='./'>internal</a>/<a href='seed_material.cc.html'>seed_material.cc</a></h1></div>
+<hr/><div id='content'><table class="code">
+<tr><th id="1">1</th><td><i>// Copyright 2017 The Abseil Authors.</i></td></tr>
+<tr><th id="2">2</th><td><i>//</i></td></tr>
+<tr><th id="3">3</th><td><i>// Licensed under the Apache License, Version 2.0 (the "License");</i></td></tr>
+<tr><th id="4">4</th><td><i>// you may not use this file except in compliance with the License.</i></td></tr>
+<tr><th id="5">5</th><td><i>// You may obtain a copy of the License at</i></td></tr>
+<tr><th id="6">6</th><td><i>//</i></td></tr>
+<tr><th id="7">7</th><td><i>//      <a href="https://www.apache.org/licenses/LICENSE-2.0">https://www.apache.org/licenses/LICENSE-2.0</a></i></td></tr>
+<tr><th id="8">8</th><td><i>//</i></td></tr>
+<tr><th id="9">9</th><td><i>// Unless required by applicable law or agreed to in writing, software</i></td></tr>
+<tr><th id="10">10</th><td><i>// distributed under the License is distributed on an "AS IS" BASIS,</i></td></tr>
+<tr><th id="11">11</th><td><i>// WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.</i></td></tr>
+<tr><th id="12">12</th><td><i>// See the License for the specific language governing permissions and</i></td></tr>
+<tr><th id="13">13</th><td><i>// limitations under the License.</i></td></tr>
+<tr><th id="14">14</th><td></td></tr>
+<tr><th id="15">15</th><td><u>#include <a href="seed_material.h.html">"absl/random/internal/seed_material.h"</a></u></td></tr>
+<tr><th id="16">16</th><td></td></tr>
+<tr><th id="17">17</th><td><u>#include <a href="../../../../../../include/fcntl.h.html">&lt;fcntl.h&gt;</a></u></td></tr>
+<tr><th id="18">18</th><td></td></tr>
+<tr><th id="19">19</th><td><u>#<span data-ppcond="19">ifndef</span> <span class="macro" data-ref="_M/_WIN32">_WIN32</span></u></td></tr>
+<tr><th id="20">20</th><td><u>#include <a href="../../../../../../include/unistd.h.html">&lt;unistd.h&gt;</a></u></td></tr>
+<tr><th id="21">21</th><td><u>#<span data-ppcond="19">else</span></u></td></tr>
+<tr><th id="22">22</th><td><u>#include &lt;io.h&gt;</u></td></tr>
+<tr><th id="23">23</th><td><u>#<span data-ppcond="19">endif</span></u></td></tr>
+<tr><th id="24">24</th><td></td></tr>
+<tr><th id="25">25</th><td><u>#include &lt;algorithm&gt;</u></td></tr>
+<tr><th id="26">26</th><td><u>#include &lt;cerrno&gt;</u></td></tr>
+<tr><th id="27">27</th><td><u>#include &lt;cstdint&gt;</u></td></tr>
+<tr><th id="28">28</th><td><u>#include &lt;cstdlib&gt;</u></td></tr>
+<tr><th id="29">29</th><td><u>#include &lt;cstring&gt;</u></td></tr>
+<tr><th id="30">30</th><td></td></tr>
+<tr><th id="31">31</th><td><u>#include <a href="../../base/internal/raw_logging.h.html">"absl/base/internal/raw_logging.h"</a></u></td></tr>
+<tr><th id="32">32</th><td><u>#include <a href="../../strings/ascii.h.html">"absl/strings/ascii.h"</a></u></td></tr>
+<tr><th id="33">33</th><td><u>#include <a href="../../strings/escaping.h.html">"absl/strings/escaping.h"</a></u></td></tr>
+<tr><th id="34">34</th><td><u>#include <a href="../../strings/string_view.h.html">"absl/strings/string_view.h"</a></u></td></tr>
+<tr><th id="35">35</th><td><u>#include <a href="../../strings/strip.h.html">"absl/strings/strip.h"</a></u></td></tr>
+<tr><th id="36">36</th><td></td></tr>
+<tr><th id="37">37</th><td><u>#<span data-ppcond="37">if</span> defined(<span class="macro" data-ref="_M/__native_client__">__native_client__</span>)</u></td></tr>
+<tr><th id="38">38</th><td></td></tr>
+<tr><th id="39">39</th><td><u>#include &lt;nacl/nacl_random.h&gt;</u></td></tr>
+<tr><th id="40">40</th><td><u>#define ABSL_RANDOM_USE_NACL_SECURE_RANDOM 1</u></td></tr>
+<tr><th id="41">41</th><td></td></tr>
+<tr><th id="42">42</th><td><u>#<span data-ppcond="37">elif</span> defined(<span class="macro" data-ref="_M/_WIN32">_WIN32</span>)</u></td></tr>
+<tr><th id="43">43</th><td></td></tr>
+<tr><th id="44">44</th><td><u>#include &lt;windows.h&gt;</u></td></tr>
+<tr><th id="45">45</th><td><u>#define ABSL_RANDOM_USE_BCRYPT 1</u></td></tr>
+<tr><th id="46">46</th><td><u>#pragma comment(lib, "bcrypt.lib")</u></td></tr>
+<tr><th id="47">47</th><td></td></tr>
+<tr><th id="48">48</th><td><u>#<span data-ppcond="37">elif</span> defined(<span class="macro" data-ref="_M/__Fuchsia__">__Fuchsia__</span>)</u></td></tr>
+<tr><th id="49">49</th><td><u>#include &lt;zircon/syscalls.h&gt;</u></td></tr>
+<tr><th id="50">50</th><td></td></tr>
+<tr><th id="51">51</th><td><u>#<span data-ppcond="37">endif</span></u></td></tr>
+<tr><th id="52">52</th><td></td></tr>
+<tr><th id="53">53</th><td><u>#<span data-ppcond="53">if</span> defined(<span class="macro" data-ref="_M/ABSL_RANDOM_USE_BCRYPT">ABSL_RANDOM_USE_BCRYPT</span>)</u></td></tr>
+<tr><th id="54">54</th><td><u>#include &lt;bcrypt.h&gt;</u></td></tr>
+<tr><th id="55">55</th><td></td></tr>
+<tr><th id="56">56</th><td><u>#ifndef BCRYPT_SUCCESS</u></td></tr>
+<tr><th id="57">57</th><td><u>#define BCRYPT_SUCCESS(Status) (((NTSTATUS)(Status)) &gt;= 0)</u></td></tr>
+<tr><th id="58">58</th><td><u>#endif</u></td></tr>
+<tr><th id="59">59</th><td><i>// Also link bcrypt; this can be done via linker options or:</i></td></tr>
+<tr><th id="60">60</th><td><i>// #pragma comment(lib, "bcrypt.lib")</i></td></tr>
+<tr><th id="61">61</th><td><u>#<span data-ppcond="53">endif</span></u></td></tr>
+<tr><th id="62">62</th><td></td></tr>
+<tr><th id="63">63</th><td><b>namespace</b> <span class="namespace">absl</span> {</td></tr>
+<tr><th id="64">64</th><td><a class="macro" href="../../base/config.h.html#125" title="inline namespace lts_2020_02_25 {" data-ref="_M/ABSL_NAMESPACE_BEGIN">ABSL_NAMESPACE_BEGIN</a></td></tr>
+<tr><th id="65">65</th><td><b>namespace</b> <span class="namespace">random_internal</span> {</td></tr>
+<tr><th id="66">66</th><td><b>namespace</b> {</td></tr>
+<tr><th id="67">67</th><td></td></tr>
+<tr><th id="68">68</th><td><i>// Read OS Entropy for random number seeds.</i></td></tr>
+<tr><th id="69">69</th><td><i>// TODO(absl-team): Possibly place a cap on how much entropy may be read at a</i></td></tr>
+<tr><th id="70">70</th><td><i>// time.</i></td></tr>
+<tr><th id="71">71</th><td></td></tr>
+<tr><th id="72">72</th><td><u>#<span data-ppcond="72">if</span> defined(<span class="macro" data-ref="_M/ABSL_RANDOM_USE_BCRYPT">ABSL_RANDOM_USE_BCRYPT</span>)</u></td></tr>
+<tr><th id="73">73</th><td></td></tr>
+<tr><th id="74">74</th><td><i>// On Windows potentially use the BCRYPT CNG API to read available entropy.</i></td></tr>
+<tr><th id="75">75</th><td><em>bool</em> ReadSeedMaterialFromOSEntropyImpl(absl::Span&lt;uint32_t&gt; values) {</td></tr>
+<tr><th id="76">76</th><td>  BCRYPT_ALG_HANDLE hProvider;</td></tr>
+<tr><th id="77">77</th><td>  NTSTATUS ret;</td></tr>
+<tr><th id="78">78</th><td>  ret = BCryptOpenAlgorithmProvider(&amp;hProvider, BCRYPT_RNG_ALGORITHM,</td></tr>
+<tr><th id="79">79</th><td>                                    MS_PRIMITIVE_PROVIDER, <var>0</var>);</td></tr>
+<tr><th id="80">80</th><td>  <b>if</b> (!(BCRYPT_SUCCESS(ret))) {</td></tr>
+<tr><th id="81">81</th><td>    ABSL_RAW_LOG(ERROR, <q>"Failed to open crypto provider."</q>);</td></tr>
+<tr><th id="82">82</th><td>    <b>return</b> <b>false</b>;</td></tr>
+<tr><th id="83">83</th><td>  }</td></tr>
+<tr><th id="84">84</th><td>  ret = BCryptGenRandom(</td></tr>
+<tr><th id="85">85</th><td>      hProvider,                                             <i>// provider</i></td></tr>
+<tr><th id="86">86</th><td>      <b>reinterpret_cast</b>&lt;UCHAR*&gt;(values.data()),               <i>// buffer</i></td></tr>
+<tr><th id="87">87</th><td>      <b>static_cast</b>&lt;ULONG&gt;(<b>sizeof</b>(uint32_t) * values.size()),  <i>// bytes</i></td></tr>
+<tr><th id="88">88</th><td>      <var>0</var>);                                                    <i>// flags</i></td></tr>
+<tr><th id="89">89</th><td>  BCryptCloseAlgorithmProvider(hProvider, <var>0</var>);</td></tr>
+<tr><th id="90">90</th><td>  <b>return</b> BCRYPT_SUCCESS(ret);</td></tr>
+<tr><th id="91">91</th><td>}</td></tr>
+<tr><th id="92">92</th><td></td></tr>
+<tr><th id="93">93</th><td><u>#<span data-ppcond="72">elif</span> defined(<span class="macro" data-ref="_M/ABSL_RANDOM_USE_NACL_SECURE_RANDOM">ABSL_RANDOM_USE_NACL_SECURE_RANDOM</span>)</u></td></tr>
+<tr><th id="94">94</th><td></td></tr>
+<tr><th id="95">95</th><td><i>// On NaCL use nacl_secure_random to acquire bytes.</i></td></tr>
+<tr><th id="96">96</th><td><em>bool</em> ReadSeedMaterialFromOSEntropyImpl(absl::Span&lt;uint32_t&gt; values) {</td></tr>
+<tr><th id="97">97</th><td>  <em>auto</em> buffer = <b>reinterpret_cast</b>&lt;uint8_t*&gt;(values.data());</td></tr>
+<tr><th id="98">98</th><td>  size_t buffer_size = <b>sizeof</b>(uint32_t) * values.size();</td></tr>
+<tr><th id="99">99</th><td></td></tr>
+<tr><th id="100">100</th><td>  uint8_t* output_ptr = buffer;</td></tr>
+<tr><th id="101">101</th><td>  <b>while</b> (buffer_size &gt; <var>0</var>) {</td></tr>
+<tr><th id="102">102</th><td>    size_t nread = <var>0</var>;</td></tr>
+<tr><th id="103">103</th><td>    <em>const</em> <em>int</em> error = nacl_secure_random(output_ptr, buffer_size, &amp;nread);</td></tr>
+<tr><th id="104">104</th><td>    <b>if</b> (error != <var>0</var> || nread &gt; buffer_size) {</td></tr>
+<tr><th id="105">105</th><td>      ABSL_RAW_LOG(ERROR, <q>"Failed to read secure_random seed data: %d"</q>, error);</td></tr>
+<tr><th id="106">106</th><td>      <b>return</b> <b>false</b>;</td></tr>
+<tr><th id="107">107</th><td>    }</td></tr>
+<tr><th id="108">108</th><td>    output_ptr += nread;</td></tr>
+<tr><th id="109">109</th><td>    buffer_size -= nread;</td></tr>
+<tr><th id="110">110</th><td>  }</td></tr>
+<tr><th id="111">111</th><td>  <b>return</b> <b>true</b>;</td></tr>
+<tr><th id="112">112</th><td>}</td></tr>
+<tr><th id="113">113</th><td></td></tr>
+<tr><th id="114">114</th><td><u>#<span data-ppcond="72">elif</span> defined(<span class="macro" data-ref="_M/__Fuchsia__">__Fuchsia__</span>)</u></td></tr>
+<tr><th id="115">115</th><td></td></tr>
+<tr><th id="116">116</th><td><em>bool</em> ReadSeedMaterialFromOSEntropyImpl(absl::Span&lt;uint32_t&gt; values) {</td></tr>
+<tr><th id="117">117</th><td>  <em>auto</em> buffer = <b>reinterpret_cast</b>&lt;uint8_t*&gt;(values.data());</td></tr>
+<tr><th id="118">118</th><td>  size_t buffer_size = <b>sizeof</b>(uint32_t) * values.size();</td></tr>
+<tr><th id="119">119</th><td>  zx_cprng_draw(buffer, buffer_size);</td></tr>
+<tr><th id="120">120</th><td>  <b>return</b> <b>true</b>;</td></tr>
+<tr><th id="121">121</th><td>}</td></tr>
+<tr><th id="122">122</th><td></td></tr>
+<tr><th id="123">123</th><td><u>#<span data-ppcond="72">else</span></u></td></tr>
+<tr><th id="124">124</th><td></td></tr>
+<tr><th id="125">125</th><td><i  data-doc="_ZN4absl14lts_2020_02_2515random_internal12_GLOBAL__N_133ReadSeedMaterialFromOSEntropyImplENS0_4SpanIjEE">// On *nix, read entropy from /dev/urandom.</i></td></tr>
+<tr><th id="126">126</th><td><em>bool</em> <dfn class="tu decl def fn" id="_ZN4absl14lts_2020_02_2515random_internal12_GLOBAL__N_133ReadSeedMaterialFromOSEntropyImplENS0_4SpanIjEE" title='absl::lts_2020_02_25::random_internal::(anonymous namespace)::ReadSeedMaterialFromOSEntropyImpl' data-type='bool absl::lts_2020_02_25::random_internal::(anonymous namespace)::ReadSeedMaterialFromOSEntropyImpl(absl::Span&lt;uint32_t&gt; values)' data-ref="_ZN4absl14lts_2020_02_2515random_internal12_GLOBAL__N_133ReadSeedMaterialFromOSEntropyImplENS0_4SpanIjEE" data-ref-filename="_ZN4absl14lts_2020_02_2515random_internal12_GLOBAL__N_133ReadSeedMaterialFromOSEntropyImplENS0_4SpanIjEE">ReadSeedMaterialFromOSEntropyImpl</dfn>(<span class="namespace">absl::</span><a class="type" href="../../types/span.h.html#absl::lts_2020_02_25::Span" title='absl::lts_2020_02_25::Span' data-ref="absl::lts_2020_02_25::Span" data-ref-filename="absl..lts_2020_02_25..Span">Span</a>&lt;<a class="typedef" href="../../../../../../include/bits/stdint-uintn.h.html#uint32_t" title='uint32_t' data-type='__uint32_t' data-ref="uint32_t" data-ref-filename="uint32_t">uint32_t</a>&gt; <dfn class="local col2 decl" id="22values" title='values' data-type='absl::Span&lt;uint32_t&gt;' data-ref="22values" data-ref-filename="22values">values</dfn>) {</td></tr>
+<tr><th id="127">127</th><td>  <em>const</em> <em>char</em> <dfn class="local col3 decl" id="23kEntropyFile" title='kEntropyFile' data-type='const char [13]' data-ref="23kEntropyFile" data-ref-filename="23kEntropyFile">kEntropyFile</dfn>[] = <q>"/dev/urandom"</q>;</td></tr>
+<tr><th id="128">128</th><td></td></tr>
+<tr><th id="129">129</th><td>  <em>auto</em> <dfn class="local col4 decl" id="24buffer" title='buffer' data-type='unsigned char *' data-ref="24buffer" data-ref-filename="24buffer">buffer</dfn> = <b>reinterpret_cast</b>&lt;<a class="typedef" href="../../../../../../include/bits/stdint-uintn.h.html#uint8_t" title='uint8_t' data-type='__uint8_t' data-ref="uint8_t" data-ref-filename="uint8_t">uint8_t</a>*&gt;(<a class="local col2 ref" href="#22values" title='values' data-ref="22values" data-ref-filename="22values">values</a>.<a class="ref fn" href="../../types/span.h.html#_ZNK4absl14lts_2020_02_254Span4dataEv" title='absl::lts_2020_02_25::Span::data' data-ref="_ZNK4absl14lts_2020_02_254Span4dataEv" data-ref-filename="_ZNK4absl14lts_2020_02_254Span4dataEv">data</a>());</td></tr>
+<tr><th id="130">130</th><td>  <span class='typedef' title='size_t' data-type='unsigned long' data-ref="size_t" data-ref-filename="size_t">size_t</span> <dfn class="local col5 decl" id="25buffer_size" title='buffer_size' data-type='size_t' data-ref="25buffer_size" data-ref-filename="25buffer_size">buffer_size</dfn> = <b>sizeof</b>(<a class="typedef" href="../../../../../../include/bits/stdint-uintn.h.html#uint32_t" title='uint32_t' data-type='__uint32_t' data-ref="uint32_t" data-ref-filename="uint32_t">uint32_t</a>) * <a class="local col2 ref" href="#22values" title='values' data-ref="22values" data-ref-filename="22values">values</a>.<a class="ref fn" href="../../types/span.h.html#_ZNK4absl14lts_2020_02_254Span4sizeEv" title='absl::lts_2020_02_25::Span::size' data-ref="_ZNK4absl14lts_2020_02_254Span4sizeEv" data-ref-filename="_ZNK4absl14lts_2020_02_254Span4sizeEv">size</a>();</td></tr>
+<tr><th id="131">131</th><td></td></tr>
+<tr><th id="132">132</th><td>  <em>int</em> <dfn class="local col6 decl" id="26dev_urandom" title='dev_urandom' data-type='int' data-ref="26dev_urandom" data-ref-filename="26dev_urandom">dev_urandom</dfn> = <a class="ref fn" href="../../../../../../include/fcntl.h.html#open" title='open' data-ref="open" data-ref-filename="open">open</a>(<a class="local col3 ref" href="#23kEntropyFile" title='kEntropyFile' data-ref="23kEntropyFile" data-ref-filename="23kEntropyFile">kEntropyFile</a>, <a class="macro" href="../../../../../../include/bits/fcntl-linux.h.html#43" title="00" data-ref="_M/O_RDONLY">O_RDONLY</a>);</td></tr>
+<tr><th id="133">133</th><td>  <em>bool</em> <dfn class="local col7 decl" id="27success" title='success' data-type='bool' data-ref="27success" data-ref-filename="27success">success</dfn> = (-<var>1</var> != <a class="local col6 ref" href="#26dev_urandom" title='dev_urandom' data-ref="26dev_urandom" data-ref-filename="26dev_urandom">dev_urandom</a>);</td></tr>
+<tr><th id="134">134</th><td>  <b>if</b> (!<a class="local col7 ref" href="#27success" title='success' data-ref="27success" data-ref-filename="27success">success</a>) {</td></tr>
+<tr><th id="135">135</th><td>    <b>return</b> <b>false</b>;</td></tr>
+<tr><th id="136">136</th><td>  }</td></tr>
+<tr><th id="137">137</th><td></td></tr>
+<tr><th id="138">138</th><td>  <b>while</b> (<a class="local col7 ref" href="#27success" title='success' data-ref="27success" data-ref-filename="27success">success</a> &amp;&amp; <a class="local col5 ref" href="#25buffer_size" title='buffer_size' data-ref="25buffer_size" data-ref-filename="25buffer_size">buffer_size</a> &gt; <var>0</var>) {</td></tr>
+<tr><th id="139">139</th><td>    <em>int</em> <dfn class="local col8 decl" id="28bytes_read" title='bytes_read' data-type='int' data-ref="28bytes_read" data-ref-filename="28bytes_read">bytes_read</dfn> = <a class="ref fn" href="../../../../../../include/unistd.h.html#read" title='read' data-ref="read" data-ref-filename="read">read</a>(<a class="local col6 ref" href="#26dev_urandom" title='dev_urandom' data-ref="26dev_urandom" data-ref-filename="26dev_urandom">dev_urandom</a>, <a class="local col4 ref" href="#24buffer" title='buffer' data-ref="24buffer" data-ref-filename="24buffer">buffer</a>, <a class="local col5 ref" href="#25buffer_size" title='buffer_size' data-ref="25buffer_size" data-ref-filename="25buffer_size">buffer_size</a>);</td></tr>
+<tr><th id="140">140</th><td>    <em>int</em> <dfn class="local col9 decl" id="29read_error" title='read_error' data-type='int' data-ref="29read_error" data-ref-filename="29read_error">read_error</dfn> = <a class="macro" href="../../../../../../include/errno.h.html#38" title="(*__errno_location ())" data-ref="_M/errno">errno</a>;</td></tr>
+<tr><th id="141">141</th><td>    <a class="local col7 ref" href="#27success" title='success' data-ref="27success" data-ref-filename="27success">success</a> = (<a class="local col8 ref" href="#28bytes_read" title='bytes_read' data-ref="28bytes_read" data-ref-filename="28bytes_read">bytes_read</a> &gt; <var>0</var>);</td></tr>
+<tr><th id="142">142</th><td>    <b>if</b> (<a class="local col7 ref" href="#27success" title='success' data-ref="27success" data-ref-filename="27success">success</a>) {</td></tr>
+<tr><th id="143">143</th><td>      <a class="local col4 ref" href="#24buffer" title='buffer' data-ref="24buffer" data-ref-filename="24buffer">buffer</a> += <a class="local col8 ref" href="#28bytes_read" title='bytes_read' data-ref="28bytes_read" data-ref-filename="28bytes_read">bytes_read</a>;</td></tr>
+<tr><th id="144">144</th><td>      <a class="local col5 ref" href="#25buffer_size" title='buffer_size' data-ref="25buffer_size" data-ref-filename="25buffer_size">buffer_size</a> -= <a class="local col8 ref" href="#28bytes_read" title='bytes_read' data-ref="28bytes_read" data-ref-filename="28bytes_read">bytes_read</a>;</td></tr>
+<tr><th id="145">145</th><td>    } <b>else</b> <b>if</b> (<a class="local col8 ref" href="#28bytes_read" title='bytes_read' data-ref="28bytes_read" data-ref-filename="28bytes_read">bytes_read</a> == -<var>1</var> &amp;&amp; <a class="local col9 ref" href="#29read_error" title='read_error' data-ref="29read_error" data-ref-filename="29read_error">read_error</a> == <a class="macro" href="../../../../../../include/asm-generic/errno-base.h.html#8" title="4" data-ref="_M/EINTR">EINTR</a>) {</td></tr>
+<tr><th id="146">146</th><td>      <a class="local col7 ref" href="#27success" title='success' data-ref="27success" data-ref-filename="27success">success</a> = <b>true</b>;  <i>// Need to try again.</i></td></tr>
+<tr><th id="147">147</th><td>    }</td></tr>
+<tr><th id="148">148</th><td>  }</td></tr>
+<tr><th id="149">149</th><td>  <a class="ref fn" href="../../../../../../include/unistd.h.html#close" title='close' data-ref="close" data-ref-filename="close">close</a>(<a class="local col6 ref" href="#26dev_urandom" title='dev_urandom' data-ref="26dev_urandom" data-ref-filename="26dev_urandom">dev_urandom</a>);</td></tr>
+<tr><th id="150">150</th><td>  <b>return</b> <a class="local col7 ref" href="#27success" title='success' data-ref="27success" data-ref-filename="27success">success</a>;</td></tr>
+<tr><th id="151">151</th><td>}</td></tr>
+<tr><th id="152">152</th><td></td></tr>
+<tr><th id="153">153</th><td><u>#<span data-ppcond="72">endif</span></u></td></tr>
+<tr><th id="154">154</th><td></td></tr>
+<tr><th id="155">155</th><td>}  <i>// namespace</i></td></tr>
+<tr><th id="156">156</th><td></td></tr>
+<tr><th id="157">157</th><td><em>bool</em> <dfn class="decl def fn" id="_ZN4absl14lts_2020_02_2515random_internal29ReadSeedMaterialFromOSEntropyENS0_4SpanIjEE" title='absl::lts_2020_02_25::random_internal::ReadSeedMaterialFromOSEntropy' data-ref="_ZN4absl14lts_2020_02_2515random_internal29ReadSeedMaterialFromOSEntropyENS0_4SpanIjEE" data-ref-filename="_ZN4absl14lts_2020_02_2515random_internal29ReadSeedMaterialFromOSEntropyENS0_4SpanIjEE">ReadSeedMaterialFromOSEntropy</dfn>(<span class="namespace">absl::</span><a class="type" href="../../types/span.h.html#absl::lts_2020_02_25::Span" title='absl::lts_2020_02_25::Span' data-ref="absl::lts_2020_02_25::Span" data-ref-filename="absl..lts_2020_02_25..Span">Span</a>&lt;<a class="typedef" href="../../../../../../include/bits/stdint-uintn.h.html#uint32_t" title='uint32_t' data-type='__uint32_t' data-ref="uint32_t" data-ref-filename="uint32_t">uint32_t</a>&gt; <dfn class="local col0 decl" id="30values" title='values' data-type='absl::Span&lt;uint32_t&gt;' data-ref="30values" data-ref-filename="30values">values</dfn>) {</td></tr>
+<tr><th id="158">158</th><td>  <a class="macro" href="../../../../../../include/assert.h.html#50" title="(static_cast&lt;void&gt; (0))" data-ref="_M/assert">assert</a>(values.data() != <b>nullptr</b>);</td></tr>
+<tr><th id="159">159</th><td>  <b>if</b> (<a class="local col0 ref" href="#30values" title='values' data-ref="30values" data-ref-filename="30values">values</a>.<a class="ref fn" href="../../types/span.h.html#_ZNK4absl14lts_2020_02_254Span4dataEv" title='absl::lts_2020_02_25::Span::data' data-ref="_ZNK4absl14lts_2020_02_254Span4dataEv" data-ref-filename="_ZNK4absl14lts_2020_02_254Span4dataEv">data</a>() == <b>nullptr</b>) {</td></tr>
+<tr><th id="160">160</th><td>    <b>return</b> <b>false</b>;</td></tr>
+<tr><th id="161">161</th><td>  }</td></tr>
+<tr><th id="162">162</th><td>  <b>if</b> (<a class="local col0 ref" href="#30values" title='values' data-ref="30values" data-ref-filename="30values">values</a>.<a class="ref fn" href="../../types/span.h.html#_ZNK4absl14lts_2020_02_254Span5emptyEv" title='absl::lts_2020_02_25::Span::empty' data-ref="_ZNK4absl14lts_2020_02_254Span5emptyEv" data-ref-filename="_ZNK4absl14lts_2020_02_254Span5emptyEv">empty</a>()) {</td></tr>
+<tr><th id="163">163</th><td>    <b>return</b> <b>true</b>;</td></tr>
+<tr><th id="164">164</th><td>  }</td></tr>
+<tr><th id="165">165</th><td>  <b>return</b> <a class="tu ref fn" href="#_ZN4absl14lts_2020_02_2515random_internal12_GLOBAL__N_133ReadSeedMaterialFromOSEntropyImplENS0_4SpanIjEE" title='absl::lts_2020_02_25::random_internal::(anonymous namespace)::ReadSeedMaterialFromOSEntropyImpl' data-use='c' data-ref="_ZN4absl14lts_2020_02_2515random_internal12_GLOBAL__N_133ReadSeedMaterialFromOSEntropyImplENS0_4SpanIjEE" data-ref-filename="_ZN4absl14lts_2020_02_2515random_internal12_GLOBAL__N_133ReadSeedMaterialFromOSEntropyImplENS0_4SpanIjEE">ReadSeedMaterialFromOSEntropyImpl</a>(<a class="ref fn fake" href="../../types/span.h.html#154" title='absl::lts_2020_02_25::Span&lt;unsigned int&gt;::Span' data-ref="_ZN4absl14lts_2020_02_254SpanIjEC1ERKS2_" data-ref-filename="_ZN4absl14lts_2020_02_254SpanIjEC1ERKS2_"></a><a class="local col0 ref" href="#30values" title='values' data-ref="30values" data-ref-filename="30values">values</a>);</td></tr>
+<tr><th id="166">166</th><td>}</td></tr>
+<tr><th id="167">167</th><td></td></tr>
+<tr><th id="168">168</th><td><em>void</em> <dfn class="decl def fn" id="_ZN4absl14lts_2020_02_2515random_internal19MixIntoSeedMaterialENS0_4SpanIKjEENS2_IjEE" title='absl::lts_2020_02_25::random_internal::MixIntoSeedMaterial' data-ref="_ZN4absl14lts_2020_02_2515random_internal19MixIntoSeedMaterialENS0_4SpanIKjEENS2_IjEE" data-ref-filename="_ZN4absl14lts_2020_02_2515random_internal19MixIntoSeedMaterialENS0_4SpanIKjEENS2_IjEE">MixIntoSeedMaterial</dfn>(<span class="namespace">absl::</span><a class="type" href="../../types/span.h.html#absl::lts_2020_02_25::Span" title='absl::lts_2020_02_25::Span' data-ref="absl::lts_2020_02_25::Span" data-ref-filename="absl..lts_2020_02_25..Span">Span</a>&lt;<em>const</em> <a class="typedef" href="../../../../../../include/bits/stdint-uintn.h.html#uint32_t" title='uint32_t' data-type='__uint32_t' data-ref="uint32_t" data-ref-filename="uint32_t">uint32_t</a>&gt; <dfn class="local col1 decl" id="31sequence" title='sequence' data-type='absl::Span&lt;const uint32_t&gt;' data-ref="31sequence" data-ref-filename="31sequence">sequence</dfn>,</td></tr>
+<tr><th id="169">169</th><td>                         <span class="namespace">absl::</span><a class="type" href="../../types/span.h.html#absl::lts_2020_02_25::Span" title='absl::lts_2020_02_25::Span' data-ref="absl::lts_2020_02_25::Span" data-ref-filename="absl..lts_2020_02_25..Span">Span</a>&lt;<a class="typedef" href="../../../../../../include/bits/stdint-uintn.h.html#uint32_t" title='uint32_t' data-type='__uint32_t' data-ref="uint32_t" data-ref-filename="uint32_t">uint32_t</a>&gt; <dfn class="local col2 decl" id="32seed_material" title='seed_material' data-type='absl::Span&lt;uint32_t&gt;' data-ref="32seed_material" data-ref-filename="32seed_material">seed_material</dfn>) {</td></tr>
+<tr><th id="170">170</th><td>  <i>// Algorithm is based on code available at</i></td></tr>
+<tr><th id="171">171</th><td><i>  // <a href="https://gist.github.com/imneme/540829265469e673d045">https://gist.github.com/imneme/540829265469e673d045</a></i></td></tr>
+<tr><th id="172">172</th><td>  <b>constexpr</b> <a class="typedef" href="../../../../../../include/bits/stdint-uintn.h.html#uint32_t" title='uint32_t' data-type='__uint32_t' data-ref="uint32_t" data-ref-filename="uint32_t">uint32_t</a> <dfn class="local col3 decl" id="33kInitVal" title='kInitVal' data-type='const uint32_t' data-ref="33kInitVal" data-ref-filename="33kInitVal">kInitVal</dfn> = <var>0x43b0d7e5</var>;</td></tr>
+<tr><th id="173">173</th><td>  <b>constexpr</b> <a class="typedef" href="../../../../../../include/bits/stdint-uintn.h.html#uint32_t" title='uint32_t' data-type='__uint32_t' data-ref="uint32_t" data-ref-filename="uint32_t">uint32_t</a> <dfn class="local col4 decl" id="34kHashMul" title='kHashMul' data-type='const uint32_t' data-ref="34kHashMul" data-ref-filename="34kHashMul">kHashMul</dfn> = <var>0x931e8875</var>;</td></tr>
+<tr><th id="174">174</th><td>  <b>constexpr</b> <a class="typedef" href="../../../../../../include/bits/stdint-uintn.h.html#uint32_t" title='uint32_t' data-type='__uint32_t' data-ref="uint32_t" data-ref-filename="uint32_t">uint32_t</a> <dfn class="local col5 decl" id="35kMixMulL" title='kMixMulL' data-type='const uint32_t' data-ref="35kMixMulL" data-ref-filename="35kMixMulL">kMixMulL</dfn> = <var>0xca01f9dd</var>;</td></tr>
+<tr><th id="175">175</th><td>  <b>constexpr</b> <a class="typedef" href="../../../../../../include/bits/stdint-uintn.h.html#uint32_t" title='uint32_t' data-type='__uint32_t' data-ref="uint32_t" data-ref-filename="uint32_t">uint32_t</a> <dfn class="local col6 decl" id="36kMixMulR" title='kMixMulR' data-type='const uint32_t' data-ref="36kMixMulR" data-ref-filename="36kMixMulR">kMixMulR</dfn> = <var>0x4973f715</var>;</td></tr>
+<tr><th id="176">176</th><td>  <b>constexpr</b> <a class="typedef" href="../../../../../../include/bits/stdint-uintn.h.html#uint32_t" title='uint32_t' data-type='__uint32_t' data-ref="uint32_t" data-ref-filename="uint32_t">uint32_t</a> <dfn class="local col7 decl" id="37kShiftSize" title='kShiftSize' data-type='const uint32_t' data-ref="37kShiftSize" data-ref-filename="37kShiftSize">kShiftSize</dfn> = <b>sizeof</b>(<a class="typedef" href="../../../../../../include/bits/stdint-uintn.h.html#uint32_t" title='uint32_t' data-type='__uint32_t' data-ref="uint32_t" data-ref-filename="uint32_t">uint32_t</a>) * <var>8</var> / <var>2</var>;</td></tr>
+<tr><th id="177">177</th><td></td></tr>
+<tr><th id="178">178</th><td>  <a class="typedef" href="../../../../../../include/bits/stdint-uintn.h.html#uint32_t" title='uint32_t' data-type='__uint32_t' data-ref="uint32_t" data-ref-filename="uint32_t">uint32_t</a> <dfn class="local col8 decl" id="38hash_const" title='hash_const' data-type='uint32_t' data-ref="38hash_const" data-ref-filename="38hash_const">hash_const</dfn> = <a class="local col3 ref" href="#33kInitVal" title='kInitVal' data-ref="33kInitVal" data-ref-filename="33kInitVal">kInitVal</a>;</td></tr>
+<tr><th id="179">179</th><td>  <em>auto</em> <dfn class="local col9 decl" id="39hash" title='hash' data-type='(lambda at /fast/tmp/halide.git/build-apps/abseil-cpp/absl/random/internal/seed_material.cc:179:15)' data-ref="39hash" data-ref-filename="39hash">hash</dfn> = [&amp;](<a class="typedef" href="../../../../../../include/bits/stdint-uintn.h.html#uint32_t" title='uint32_t' data-type='__uint32_t' data-ref="uint32_t" data-ref-filename="uint32_t">uint32_t</a> <dfn class="local col0 decl" id="40value" title='value' data-type='uint32_t' data-ref="40value" data-ref-filename="40value">value</dfn>) {</td></tr>
+<tr><th id="180">180</th><td>    <a class="local col0 ref" href="#40value" title='value' data-ref="40value" data-ref-filename="40value">value</a> ^= <a class="local col8 ref" href="#38hash_const" title='hash_const' data-ref="38hash_const" data-ref-filename="38hash_const">hash_const</a>;</td></tr>
+<tr><th id="181">181</th><td>    <a class="local col8 ref" href="#38hash_const" title='hash_const' data-ref="38hash_const" data-ref-filename="38hash_const">hash_const</a> *= <a class="local col4 ref" href="#34kHashMul" title='kHashMul' data-ref="34kHashMul" data-ref-filename="34kHashMul">kHashMul</a>;</td></tr>
+<tr><th id="182">182</th><td>    <a class="local col0 ref" href="#40value" title='value' data-ref="40value" data-ref-filename="40value">value</a> *= <a class="local col8 ref" href="#38hash_const" title='hash_const' data-ref="38hash_const" data-ref-filename="38hash_const">hash_const</a>;</td></tr>
+<tr><th id="183">183</th><td>    <a class="local col0 ref" href="#40value" title='value' data-ref="40value" data-ref-filename="40value">value</a> ^= <a class="local col0 ref" href="#40value" title='value' data-ref="40value" data-ref-filename="40value">value</a> &gt;&gt; <a class="local col7 ref" href="#37kShiftSize" title='kShiftSize' data-ref="37kShiftSize" data-ref-filename="37kShiftSize">kShiftSize</a>;</td></tr>
+<tr><th id="184">184</th><td>    <b>return</b> <a class="local col0 ref" href="#40value" title='value' data-ref="40value" data-ref-filename="40value">value</a>;</td></tr>
+<tr><th id="185">185</th><td>  };</td></tr>
+<tr><th id="186">186</th><td></td></tr>
+<tr><th id="187">187</th><td>  <em>auto</em> <dfn class="local col1 decl" id="41mix" title='mix' data-type='(lambda at /fast/tmp/halide.git/build-apps/abseil-cpp/absl/random/internal/seed_material.cc:187:14)' data-ref="41mix" data-ref-filename="41mix">mix</dfn> = [&amp;](<a class="typedef" href="../../../../../../include/bits/stdint-uintn.h.html#uint32_t" title='uint32_t' data-type='__uint32_t' data-ref="uint32_t" data-ref-filename="uint32_t">uint32_t</a> <dfn class="local col2 decl" id="42x" title='x' data-type='uint32_t' data-ref="42x" data-ref-filename="42x">x</dfn>, <a class="typedef" href="../../../../../../include/bits/stdint-uintn.h.html#uint32_t" title='uint32_t' data-type='__uint32_t' data-ref="uint32_t" data-ref-filename="uint32_t">uint32_t</a> <dfn class="local col3 decl" id="43y" title='y' data-type='uint32_t' data-ref="43y" data-ref-filename="43y">y</dfn>) {</td></tr>
+<tr><th id="188">188</th><td>    <a class="typedef" href="../../../../../../include/bits/stdint-uintn.h.html#uint32_t" title='uint32_t' data-type='__uint32_t' data-ref="uint32_t" data-ref-filename="uint32_t">uint32_t</a> <dfn class="local col4 decl" id="44result" title='result' data-type='uint32_t' data-ref="44result" data-ref-filename="44result">result</dfn> = <a class="local col5 ref" href="#35kMixMulL" title='kMixMulL' data-ref="35kMixMulL" data-ref-filename="35kMixMulL">kMixMulL</a> * <a class="local col2 ref" href="#42x" title='x' data-ref="42x" data-ref-filename="42x">x</a> - <a class="local col6 ref" href="#36kMixMulR" title='kMixMulR' data-ref="36kMixMulR" data-ref-filename="36kMixMulR">kMixMulR</a> * <a class="local col3 ref" href="#43y" title='y' data-ref="43y" data-ref-filename="43y">y</a>;</td></tr>
+<tr><th id="189">189</th><td>    <a class="local col4 ref" href="#44result" title='result' data-ref="44result" data-ref-filename="44result">result</a> ^= <a class="local col4 ref" href="#44result" title='result' data-ref="44result" data-ref-filename="44result">result</a> &gt;&gt; <a class="local col7 ref" href="#37kShiftSize" title='kShiftSize' data-ref="37kShiftSize" data-ref-filename="37kShiftSize">kShiftSize</a>;</td></tr>
+<tr><th id="190">190</th><td>    <b>return</b> <a class="local col4 ref" href="#44result" title='result' data-ref="44result" data-ref-filename="44result">result</a>;</td></tr>
+<tr><th id="191">191</th><td>  };</td></tr>
+<tr><th id="192">192</th><td></td></tr>
+<tr><th id="193">193</th><td>  <b>for</b> (<em>const</em> <em>auto</em>&amp; <dfn class="local col5 decl" id="45seq_val" title='seq_val' data-type='const unsigned int &amp;' data-ref="45seq_val" data-ref-filename="45seq_val">seq_val</dfn> : <a class="local col1 ref" href="#31sequence" title='sequence' data-ref="31sequence" data-ref-filename="31sequence">sequence</a>) {</td></tr>
+<tr><th id="194">194</th><td>    <b>for</b> (<em>auto</em>&amp; <dfn class="local col6 decl" id="46elem" title='elem' data-type='unsigned int &amp;' data-ref="46elem" data-ref-filename="46elem">elem</dfn> : <a class="local col2 ref" href="#32seed_material" title='seed_material' data-ref="32seed_material" data-ref-filename="32seed_material">seed_material</a>) {</td></tr>
+<tr><th id="195">195</th><td>      <a class="local col6 ref" href="#46elem" title='elem' data-ref="46elem" data-ref-filename="46elem">elem</a> = <a class="local col1 ref" href="#41mix" title='mix' data-ref="41mix" data-ref-filename="41mix">mix</a><a class="tu ref fn" href="#_ZZN4absl14lts_2020_02_2515random_internal19MixIntoSeedMaterialENS0_4SpanIKjEENS2_IjEEENK3$_0clEjj" title='absl::lts_2020_02_25::random_internal::MixIntoSeedMaterial(absl::Span&lt;const uint32_t&gt;, absl::Span&lt;uint32_t&gt;)::(anonymous class)::operator()' data-use='c' data-ref="_ZZN4absl14lts_2020_02_2515random_internal19MixIntoSeedMaterialENS0_4SpanIKjEENS2_IjEEENK3$_0clEjj" data-ref-filename="_ZZN4absl14lts_2020_02_2515random_internal19MixIntoSeedMaterialENS0_4SpanIKjEENS2_IjEEENK3$_0clEjj">(<a class="local col6 ref" href="#46elem" title='elem' data-ref="46elem" data-ref-filename="46elem">elem</a>, <a class="local col9 ref" href="#39hash" title='hash' data-ref="39hash" data-ref-filename="39hash">hash</a><a class="tu ref fn" href="#_ZZN4absl14lts_2020_02_2515random_internal19MixIntoSeedMaterialENS0_4SpanIKjEENS2_IjEEENK3$_1clEj" title='absl::lts_2020_02_25::random_internal::MixIntoSeedMaterial(absl::Span&lt;const uint32_t&gt;, absl::Span&lt;uint32_t&gt;)::(anonymous class)::operator()' data-use='c' data-ref="_ZZN4absl14lts_2020_02_2515random_internal19MixIntoSeedMaterialENS0_4SpanIKjEENS2_IjEEENK3$_1clEj" data-ref-filename="_ZZN4absl14lts_2020_02_2515random_internal19MixIntoSeedMaterialENS0_4SpanIKjEENS2_IjEEENK3$_1clEj">(<a class="local col5 ref" href="#45seq_val" title='seq_val' data-ref="45seq_val" data-ref-filename="45seq_val">seq_val</a>)</a>)</a>;</td></tr>
+<tr><th id="196">196</th><td>    }</td></tr>
+<tr><th id="197">197</th><td>  }</td></tr>
+<tr><th id="198">198</th><td>}</td></tr>
+<tr><th id="199">199</th><td></td></tr>
+<tr><th id="200">200</th><td><span class="namespace">absl::</span><a class="type" href="../../types/internal/optional.h.html#absl::lts_2020_02_25::optional" title='absl::lts_2020_02_25::optional' data-ref="absl::lts_2020_02_25::optional" data-ref-filename="absl..lts_2020_02_25..optional">optional</a>&lt;<a class="typedef" href="../../../../../../include/bits/stdint-uintn.h.html#uint32_t" title='uint32_t' data-type='__uint32_t' data-ref="uint32_t" data-ref-filename="uint32_t">uint32_t</a>&gt; <dfn class="decl def fn" id="_ZN4absl14lts_2020_02_2515random_internal15GetSaltMaterialEv" title='absl::lts_2020_02_25::random_internal::GetSaltMaterial' data-ref="_ZN4absl14lts_2020_02_2515random_internal15GetSaltMaterialEv" data-ref-filename="_ZN4absl14lts_2020_02_2515random_internal15GetSaltMaterialEv">GetSaltMaterial</dfn>() {</td></tr>
+<tr><th id="201">201</th><td>  <i>// Salt must be common for all generators within the same process so read it</i></td></tr>
+<tr><th id="202">202</th><td><i>  // only once and store in static variable.</i></td></tr>
+<tr><th id="203">203</th><td>  <em>static</em> <em>const</em> <em>auto</em> <dfn class="local col7 decl" id="47salt_material" title='salt_material' data-type='const absl::lts_2020_02_25::optional&lt;unsigned int&gt;' data-ref="47salt_material" data-ref-filename="47salt_material">salt_material</dfn> = []() -&gt; <span class="namespace">absl::</span><a class="type" href="../../types/internal/optional.h.html#absl::lts_2020_02_25::optional" title='absl::lts_2020_02_25::optional' data-ref="absl::lts_2020_02_25::optional" data-ref-filename="absl..lts_2020_02_25..optional">optional</a>&lt;<a class="typedef" href="../../../../../../include/bits/stdint-uintn.h.html#uint32_t" title='uint32_t' data-type='__uint32_t' data-ref="uint32_t" data-ref-filename="uint32_t">uint32_t</a>&gt; {</td></tr>
+<tr><th id="204">204</th><td>    <a class="typedef" href="../../../../../../include/bits/stdint-uintn.h.html#uint32_t" title='uint32_t' data-type='__uint32_t' data-ref="uint32_t" data-ref-filename="uint32_t">uint32_t</a> <dfn class="local col8 decl" id="48salt_value" title='salt_value' data-type='uint32_t' data-ref="48salt_value" data-ref-filename="48salt_value">salt_value</dfn> = <var>0</var>;</td></tr>
+<tr><th id="205">205</th><td></td></tr>
+<tr><th id="206">206</th><td>    <b>if</b> (<span class="namespace">random_internal::</span><a class="ref fn" href="#_ZN4absl14lts_2020_02_2515random_internal29ReadSeedMaterialFromOSEntropyENS0_4SpanIjEE" title='absl::lts_2020_02_25::random_internal::ReadSeedMaterialFromOSEntropy' data-ref="_ZN4absl14lts_2020_02_2515random_internal29ReadSeedMaterialFromOSEntropyENS0_4SpanIjEE" data-ref-filename="_ZN4absl14lts_2020_02_2515random_internal29ReadSeedMaterialFromOSEntropyENS0_4SpanIjEE">ReadSeedMaterialFromOSEntropy</a>(</td></tr>
+<tr><th id="207">207</th><td>            <a class="ref fn" href="../../types/span.h.html#_ZN4absl14lts_2020_02_258MakeSpanEPT0_m" title='absl::lts_2020_02_25::MakeSpan' data-ref="_ZN4absl14lts_2020_02_258MakeSpanEPT0_m" data-ref-filename="_ZN4absl14lts_2020_02_258MakeSpanEPT0_m">MakeSpan</a>(&amp;<a class="local col8 ref" href="#48salt_value" title='salt_value' data-ref="48salt_value" data-ref-filename="48salt_value">salt_value</a>, <var>1</var>))) {</td></tr>
+<tr><th id="208">208</th><td>      <b>return</b> <a class="ref fn fake" href="../../types/optional.h.html#_ZN4absl14lts_2020_02_258optionalC1EOTL0__" title='absl::lts_2020_02_25::optional::optional&lt;T&gt;' data-ref="_ZN4absl14lts_2020_02_258optionalC1EOTL0__" data-ref-filename="_ZN4absl14lts_2020_02_258optionalC1EOTL0__"></a><a class="local col8 ref" href="#48salt_value" title='salt_value' data-ref="48salt_value" data-ref-filename="48salt_value">salt_value</a>;</td></tr>
+<tr><th id="209">209</th><td>    }</td></tr>
+<tr><th id="210">210</th><td></td></tr>
+<tr><th id="211">211</th><td>    <b>return</b> <a class="ref fn fake" href="../../types/optional.h.html#76" title='absl::lts_2020_02_25::nullopt_t::nullopt_t' data-ref="_ZN4absl14lts_2020_02_259nullopt_tC1ERKS1_" data-ref-filename="_ZN4absl14lts_2020_02_259nullopt_tC1ERKS1_"></a><a class="ref fn fake" href="../../types/optional.h.html#_ZN4absl14lts_2020_02_258optionalC1ENS0_9nullopt_tE" title='absl::lts_2020_02_25::optional::optional&lt;T&gt;' data-ref="_ZN4absl14lts_2020_02_258optionalC1ENS0_9nullopt_tE" data-ref-filename="_ZN4absl14lts_2020_02_258optionalC1ENS0_9nullopt_tE"></a><span class="namespace">absl::</span><a class="ref" href="../../types/optional.h.html#85" title='absl::lts_2020_02_25::nullopt' data-ref="absl::lts_2020_02_25::nullopt" data-ref-filename="absl..lts_2020_02_25..nullopt">nullopt</a>;</td></tr>
+<tr><th id="212">212</th><td>  }<a class="tu ref fn" href="#_ZZN4absl14lts_2020_02_2515random_internal15GetSaltMaterialEvENK3$_2clEv" title='absl::lts_2020_02_25::random_internal::GetSaltMaterial()::(anonymous class)::operator()' data-use='c' data-ref="_ZZN4absl14lts_2020_02_2515random_internal15GetSaltMaterialEvENK3$_2clEv" data-ref-filename="_ZZN4absl14lts_2020_02_2515random_internal15GetSaltMaterialEvENK3$_2clEv">()</a>;</td></tr>
+<tr><th id="213">213</th><td></td></tr>
+<tr><th id="214">214</th><td>  <b>return</b> <a class="ref fn fake" href="../../types/optional.h.html#_ZN4absl14lts_2020_02_258optionalC1ERKNS0_8optionalIT_EE" title='absl::lts_2020_02_25::optional::optional&lt;T&gt;' data-ref="_ZN4absl14lts_2020_02_258optionalC1ERKNS0_8optionalIT_EE" data-ref-filename="_ZN4absl14lts_2020_02_258optionalC1ERKNS0_8optionalIT_EE"></a><a class="local col7 ref" href="#47salt_material" title='salt_material' data-ref="47salt_material" data-ref-filename="47salt_material">salt_material</a>;</td></tr>
+<tr><th id="215">215</th><td>}</td></tr>
+<tr><th id="216">216</th><td></td></tr>
+<tr><th id="217">217</th><td>}  <i>// namespace random_internal</i></td></tr>
+<tr><th id="218">218</th><td><a class="macro" href="../../base/config.h.html#127" title="}" data-ref="_M/ABSL_NAMESPACE_END">ABSL_NAMESPACE_END</a></td></tr>
+<tr><th id="219">219</th><td>}  <i>// namespace absl</i></td></tr>
+<tr><th id="220">220</th><td></td></tr>
+</table><hr/><p id='footer'>
+Generated on <em>2021-Aug-05</em> from project halide revision <em>v12.0.1</em>

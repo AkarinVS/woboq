@@ -1,3 +1,7 @@
+<dec f='halide/halide-install/include/Halide.h' l='8506' type='std::vector&lt;Replacement&gt;'/>
+<use f='halide/halide-install/include/Halide.h' l='8512' u='w' c='_ZN6Halide8Internal13AssociativeOpC1Em'/>
+<use f='halide/halide-install/include/Halide.h' l='8516' u='w' c='_ZN6Halide8Internal13AssociativeOpC1ERKNS0_18AssociativePatternERKSt6vectorINS1_11ReplacementESaIS6_EESA_b'/>
+<offset>448</offset>
 <dec f='halide/build/include/Halide.h' l='8506' type='std::vector&lt;Replacement&gt;'/>
 <use f='halide/build/include/Halide.h' l='8512' u='w' c='_ZN6Halide8Internal13AssociativeOpC1Em'/>
 <use f='halide/build/include/Halide.h' l='8516' u='w' c='_ZN6Halide8Internal13AssociativeOpC1ERKNS0_18AssociativePatternERKSt6vectorINS1_11ReplacementESaIS6_EESA_b'/>

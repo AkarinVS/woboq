@@ -1,3 +1,94 @@
+<dec f='halide/halide-install/include/Halide.h' l='17286' type='Halide::Func Halide::Func::in(const Halide::Func &amp; f)'/>
+<use f='halide/halide-install/include/Halide.h' l='24670' u='c' c='_ZN6Halide8Internal21GeneratorInput_Buffer2inERKNS_4FuncE'/>
+<use f='halide/halide-install/include/Halide.h' l='24830' u='c' c='_ZN6Halide8Internal19GeneratorInput_Func2inERKNS_4FuncE'/>
+<doc f='halide/halide-install/include/Halide.h' l='17199'>/** Creates and returns a new identity Func that wraps this Func. During
+     * compilation, Halide replaces all calls to this Func done by &apos;f&apos;
+     * with calls to the wrapper. If this Func is already wrapped for
+     * use in &apos;f&apos;, will return the existing wrapper.
+     *
+     * For example, g.in(f) would rewrite a pipeline like this:
+     \code
+     g(x, y) = ...
+     f(x, y) = ... g(x, y) ...
+     \endcode
+     * into a pipeline like this:
+     \code
+     g(x, y) = ...
+     g_wrap(x, y) = g(x, y)
+     f(x, y) = ... g_wrap(x, y)
+     \endcode
+     *
+     * This has a variety of uses. You can use it to schedule this
+     * Func differently in the different places it is used:
+     \code
+     g(x, y) = ...
+     f1(x, y) = ... g(x, y) ...
+     f2(x, y) = ... g(x, y) ...
+     g.in(f1).compute_at(f1, y).vectorize(x, 8);
+     g.in(f2).compute_at(f2, x).unroll(x);
+     \endcode
+     *
+     * You can also use it to stage loads from this Func via some
+     * intermediate buffer (perhaps on the stack as in
+     * test/performance/block_transpose.cpp, or in shared GPU memory
+     * as in test/performance/wrap.cpp). In this we compute the
+     * wrapper at tiles of the consuming Funcs like so:
+     \code
+     g.compute_root()...
+     g.in(f).compute_at(f, tiles)...
+     \endcode
+     *
+     * Func::in() can also be used to compute pieces of a Func into a
+     * smaller scratch buffer (perhaps on the GPU) and then copy them
+     * into a larger output buffer one tile at a time. See
+     * apps/interpolate/interpolate.cpp for an example of this. In
+     * this case we compute the Func at tiles of its own wrapper:
+     \code
+     f.in(g).compute_root().gpu_tile(...)...
+     f.compute_at(f.in(g), tiles)...
+     \endcode
+     *
+     * A similar use of Func::in() wrapping Funcs with multiple update
+     * stages in a pure wrapper. The following code:
+     \code
+     f(x, y) = x + y;
+     f(x, y) += 5;
+     g(x, y) = f(x, y);
+     f.compute_root();
+     \endcode
+     *
+     * Is equivalent to:
+     \code
+     for y:
+       for x:
+         f(x, y) = x + y;
+     for y:
+       for x:
+         f(x, y) += 5
+     for y:
+       for x:
+         g(x, y) = f(x, y)
+     \endcode
+     * using Func::in(), we can write:
+     \code
+     f(x, y) = x + y;
+     f(x, y) += 5;
+     g(x, y) = f(x, y);
+     f.in(g).compute_root();
+     \endcode
+     * which instead produces:
+     \code
+     for y:
+       for x:
+         f(x, y) = x + y;
+         f(x, y) += 5
+         f_wrap(x, y) = f(x, y)
+     for y:
+       for x:
+         g(x, y) = f_wrap(x, y)
+     \endcode
+     */</doc>
+<use f='halide/apps/hannk/halide/conv_generator.cpp' l='270' u='c' c='_ZN5hannk4Conv8generateEv'/>
 <dec f='halide/build/include/Halide.h' l='17286' type='Halide::Func Halide::Func::in(const Halide::Func &amp; f)'/>
 <use f='halide/build/include/Halide.h' l='24670' u='c' c='_ZN6Halide8Internal21GeneratorInput_Buffer2inERKNS_4FuncE'/>
 <use f='halide/build/include/Halide.h' l='24830' u='c' c='_ZN6Halide8Internal19GeneratorInput_Func2inERKNS_4FuncE'/>

@@ -1,0 +1,35 @@
+<def f='halide/build-apps/_deps/tflite-src/tensorflow/lite/kernels/internal/optimized/optimized_ops.h' l='3835' ll='3850' type='void tflite::optimized_ops::PopulateSoftmaxUInt8LookupTable(tflite::SoftmaxParams * data, float input_scale, float beta)'/>
+<doc f='halide/build-apps/_deps/tflite-src/tensorflow/lite/kernels/internal/optimized/optimized_ops.h' l='3801'>// Here&apos;s the softmax LUT optimization strategy:
+// For softmax, we can do some mathmetically equivalent transformation:
+//
+// softmax(x) = e^x / sum(e^x, 0...n)  ===&gt; equals to
+// softmax(x) = e^(x - CONST) / sum(e^(x - CONST), 0...n)
+//
+// For quantization, `x` in our case is (input_q - input_zp) * input_s
+// For uint8 case (int8 can be handled similarly), the range is [0, 255]
+//
+// so if we let
+// CONST = (255 - input_zp) * input_s
+// then we will have:
+// softmax(x) = e^((input_q - 255) * input_s) --------- (1)
+//         /
+// sum(e^(input_q - 255) * input_s, 0...n)   -------- (2)
+//
+// the good thing about (1) is it&apos;s within the range of (0, 1), so we can
+// approximate its result with uint16.
+//  (1) = uint8_out * 1 / 2^16.
+//
+// so (1) is lookup_uint8_table(input_zp) * 1 / 2^16.
+// then (2) is essentially the following:
+// sum(lookup_uint8_table(input_zp), 0...n) / 2^16.
+//
+// since (output_q - output_zp) * output_s = softmax(x)
+// output_q = lookup_uint8_table(input_zp)
+//            /
+// (sum(lookup_uint8_table(input_zp), 0...n) * output_s)
+//             +
+//   output_zp
+//
+// We can actually further improve the performance by using uint8 instead of
+// uint16. But that we may lose some accuracy, so we need to pay attention
+// to that.</doc>

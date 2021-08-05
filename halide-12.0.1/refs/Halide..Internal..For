@@ -1,3 +1,38 @@
+<inh f='halide/halide-install/include/Halide.h' l='3913' c='Halide::Internal::StmtNode'/>
+<def f='halide/halide-install/include/Halide.h' l='12622' ll='12639'/>
+<use f='halide/halide-install/include/Halide.h' l='12622'/>
+<use f='halide/halide-install/include/Halide.h' l='12845' c='_ZN6Halide8Internal9IRVisitor5visitEPKNS0_3ForE'/>
+<use f='halide/halide-install/include/Halide.h' l='12915' c='_ZN6Halide8Internal14IRGraphVisitor5visitEPKNS0_3ForE'/>
+<use f='halide/halide-install/include/Halide.h' l='13076' c='_ZN6Halide8Internal15VariadicVisitor13dispatch_stmtEPKNS0_12BaseStmtNodeEDpOTL0__'/>
+<use f='halide/halide-install/include/Halide.h' l='18869' c='_ZN6Halide8Internal7Closure5visitEPKNS0_3ForE'/>
+<use f='halide/halide-install/include/Halide.h' l='19111' c='_ZN6Halide8Internal9IRPrinter5visitEPKNS0_3ForE'/>
+<use f='halide/halide-install/include/Halide.h' l='19343' c='_ZN6Halide8Internal9CodeGen_C5visitEPKNS0_3ForE'/>
+<use f='halide/halide-install/include/Halide.h' l='19526' c='_ZN6Halide8Internal11HostClosure5visitEPKNS0_3ForE'/>
+<use f='halide/halide-install/include/Halide.h' l='20097' c='_ZN6Halide8Internal12CodeGen_LLVM5visitEPKNS0_3ForE'/>
+<use f='halide/halide-install/include/Halide.h' l='30051' c='_ZN6Halide8Internal9IRMutator5visitEPKNS0_3ForE'/>
+<size>80</size>
+<doc f='halide/halide-install/include/Halide.h' l='12610'>/** A for loop. Execute the &apos;body&apos; statement for all values of the
+ * variable &apos;name&apos; from &apos;min&apos; to &apos;min + extent&apos;. There are four
+ * types of For nodes. A &apos;Serial&apos; for loop is a conventional
+ * one. In a &apos;Parallel&apos; for loop, each iteration of the loop
+ * happens in parallel or in some unspecified order. In a
+ * &apos;Vectorized&apos; for loop, each iteration maps to one SIMD lane,
+ * and the whole loop is executed in one shot. For this case,
+ * &apos;extent&apos; must be some small integer constant (probably 4, 8, or
+ * 16). An &apos;Unrolled&apos; for loop compiles to a completely unrolled
+ * version of the loop. Each iteration becomes its own
+ * statement. Again in this case, &apos;extent&apos; should be a small
+ * integer constant. */</doc>
+<mbr r='Halide::Internal::For::name' o='128' t='std::string'/>
+<mbr r='Halide::Internal::For::min' o='384' t='Halide::Expr'/>
+<mbr r='Halide::Internal::For::extent' o='448' t='Halide::Expr'/>
+<mbr r='Halide::Internal::For::for_type' o='512' t='Halide::Internal::ForType'/>
+<mbr r='Halide::Internal::For::device_api' o='544' t='Halide::DeviceAPI'/>
+<mbr r='Halide::Internal::For::body' o='576' t='Halide::Internal::Stmt'/>
+<fun r='_ZN6Halide8Internal3For4makeERKNSt7__cxx1112basic_stringIcSt11char_traitsIcESaIcEEENS_4ExprESA_NS0_7ForTypeENS_9DeviceAPIENS0_4StmtE'/>
+<fun r='_ZNK6Halide8Internal3For21is_unordered_parallelEv'/>
+<fun r='_ZNK6Halide8Internal3For11is_parallelEv'/>
+<smbr r='Halide::Internal::For::_node_type' t='const Halide::Internal::IRNodeType'/>
 <inh f='halide/build/include/Halide.h' l='3913' c='Halide::Internal::StmtNode'/>
 <def f='halide/build/include/Halide.h' l='12622' ll='12639'/>
 <use f='halide/build/include/Halide.h' l='12622'/>

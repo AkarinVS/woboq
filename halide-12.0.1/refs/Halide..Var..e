@@ -1,3 +1,11 @@
+<dec f='halide/halide-install/include/Halide.h' l='15710' type='Halide::Expr'/>
+<use f='halide/halide-install/include/Halide.h' l='15844' u='a' c='_ZNK6Halide3VarcvRKNS_4ExprEEv'/>
+<offset>0</offset>
+<doc f='halide/halide-install/include/Halide.h' l='15705'>/* The expression representing the Var. Guaranteed to be an
+     * Internal::Variable of type Int(32). Created once on
+     * construction of the Var to avoid making a fresh Expr every time
+     * the Var is used in a context in which is will be converted to
+     * one. */</doc>
 <dec f='halide/build/include/Halide.h' l='15710' type='Halide::Expr'/>
 <use f='halide/build/include/Halide.h' l='15844' u='a' c='_ZNK6Halide3VarcvRKNS_4ExprEEv'/>
 <offset>0</offset>

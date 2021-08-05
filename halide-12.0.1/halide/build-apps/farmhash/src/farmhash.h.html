@@ -1,0 +1,344 @@
+<!doctype html>
+<html>
+<head>
+<meta name="viewport" content="width=device-width, initial-scale=1.0"><title>farmhash.h source code [halide/build-apps/farmhash/src/farmhash.h] - Woboq Code Browser</title>
+<link rel="stylesheet" href="../../../.././data/qtcreator.css" title="QtCreator"/>
+<link rel="alternate stylesheet" href="../../../.././data/kdevelop.css" title="KDevelop"/>
+<script type="text/javascript" src="../../../.././data/jquery/jquery.min.js"></script>
+<script type="text/javascript" src="../../../.././data/jquery/jquery-ui.min.js"></script>
+<script>var file = 'halide/build-apps/farmhash/src/farmhash.h'; var root_path = '../../../..'; var data_path = '../../../.././data'; var ecma_script_api_version = 2;</script>
+<script src='../../../.././data/codebrowser.js'></script>
+</head>
+<body><div id='header'><h1 id='breadcrumb'><span>Browse the source code of </span><a href='../../..'>halide</a>/<a href='../..'>build-apps</a>/<a href='..'>farmhash</a>/<a href='./'>src</a>/<a href='farmhash.h.html'>farmhash.h</a></h1></div>
+<hr/><div id='content'><table class="code">
+<tr><th id="1">1</th><td><i>// Copyright (c) 2014 Google, Inc.</i></td></tr>
+<tr><th id="2">2</th><td><i>//</i></td></tr>
+<tr><th id="3">3</th><td><i>// Permission is hereby granted, free of charge, to any person obtaining a copy</i></td></tr>
+<tr><th id="4">4</th><td><i>// of this software and associated documentation files (the "Software"), to deal</i></td></tr>
+<tr><th id="5">5</th><td><i>// in the Software without restriction, including without limitation the rights</i></td></tr>
+<tr><th id="6">6</th><td><i>// to use, copy, modify, merge, publish, distribute, sublicense, and/or sell</i></td></tr>
+<tr><th id="7">7</th><td><i>// copies of the Software, and to permit persons to whom the Software is</i></td></tr>
+<tr><th id="8">8</th><td><i>// furnished to do so, subject to the following conditions:</i></td></tr>
+<tr><th id="9">9</th><td><i>//</i></td></tr>
+<tr><th id="10">10</th><td><i>// The above copyright notice and this permission notice shall be included in</i></td></tr>
+<tr><th id="11">11</th><td><i>// all copies or substantial portions of the Software.</i></td></tr>
+<tr><th id="12">12</th><td><i>//</i></td></tr>
+<tr><th id="13">13</th><td><i>// THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR</i></td></tr>
+<tr><th id="14">14</th><td><i>// IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY,</i></td></tr>
+<tr><th id="15">15</th><td><i>// FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT. IN NO EVENT SHALL THE</i></td></tr>
+<tr><th id="16">16</th><td><i>// AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER</i></td></tr>
+<tr><th id="17">17</th><td><i>// LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM,</i></td></tr>
+<tr><th id="18">18</th><td><i>// OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN</i></td></tr>
+<tr><th id="19">19</th><td><i>// THE SOFTWARE.</i></td></tr>
+<tr><th id="20">20</th><td><i>//</i></td></tr>
+<tr><th id="21">21</th><td><i>// FarmHash, by Geoff Pike</i></td></tr>
+<tr><th id="22">22</th><td><i></i></td></tr>
+<tr><th id="23">23</th><td><i>//</i></td></tr>
+<tr><th id="24">24</th><td><i>// <a href="http://code.google.com/p/farmhash/">http://code.google.com/p/farmhash/</a></i></td></tr>
+<tr><th id="25">25</th><td><i>//</i></td></tr>
+<tr><th id="26">26</th><td><i>// This file provides a few functions for hashing strings and other</i></td></tr>
+<tr><th id="27">27</th><td><i>// data.  All of them are high-quality functions in the sense that</i></td></tr>
+<tr><th id="28">28</th><td><i>// they do well on standard tests such as Austin Appleby's SMHasher.</i></td></tr>
+<tr><th id="29">29</th><td><i>// They're also fast.  FarmHash is the successor to CityHash.</i></td></tr>
+<tr><th id="30">30</th><td><i>//</i></td></tr>
+<tr><th id="31">31</th><td><i>// Functions in the FarmHash family are not suitable for cryptography.</i></td></tr>
+<tr><th id="32">32</th><td><i>//</i></td></tr>
+<tr><th id="33">33</th><td><i>// WARNING: This code has been only lightly tested on big-endian platforms!</i></td></tr>
+<tr><th id="34">34</th><td><i>// It is known to work well on little-endian platforms that have a small penalty</i></td></tr>
+<tr><th id="35">35</th><td><i>// for unaligned reads, such as current Intel and AMD moderate-to-high-end CPUs.</i></td></tr>
+<tr><th id="36">36</th><td><i>// It should work on all 32-bit and 64-bit platforms that allow unaligned reads;</i></td></tr>
+<tr><th id="37">37</th><td><i>// bug reports are welcome.</i></td></tr>
+<tr><th id="38">38</th><td><i>//</i></td></tr>
+<tr><th id="39">39</th><td><i>// By the way, for some hash functions, given strings a and b, the hash</i></td></tr>
+<tr><th id="40">40</th><td><i>// of a+b is easily derived from the hashes of a and b.  This property</i></td></tr>
+<tr><th id="41">41</th><td><i>// doesn't hold for any hash functions in this file.</i></td></tr>
+<tr><th id="42">42</th><td></td></tr>
+<tr><th id="43">43</th><td><u>#<span data-ppcond="43">ifndef</span> <span class="macro" data-ref="_M/FARM_HASH_H_">FARM_HASH_H_</span></u></td></tr>
+<tr><th id="44">44</th><td><u>#define <dfn class="macro" id="_M/FARM_HASH_H_" data-ref="_M/FARM_HASH_H_">FARM_HASH_H_</dfn></u></td></tr>
+<tr><th id="45">45</th><td></td></tr>
+<tr><th id="46">46</th><td><u>#include <a href="../../../../include/assert.h.html">&lt;assert.h&gt;</a></u></td></tr>
+<tr><th id="47">47</th><td><u>#include &lt;stdint.h&gt;</u></td></tr>
+<tr><th id="48">48</th><td><u>#include &lt;stdlib.h&gt;</u></td></tr>
+<tr><th id="49">49</th><td><u>#include <a href="../../../../include/string.h.html">&lt;string.h&gt;</a>   // for memcpy and memset</u></td></tr>
+<tr><th id="50">50</th><td><u>#include &lt;utility&gt;</u></td></tr>
+<tr><th id="51">51</th><td></td></tr>
+<tr><th id="52">52</th><td><u>#<span data-ppcond="52">ifndef</span> <span class="macro" data-ref="_M/NAMESPACE_FOR_HASH_FUNCTIONS">NAMESPACE_FOR_HASH_FUNCTIONS</span></u></td></tr>
+<tr><th id="53">53</th><td><u>#define <dfn class="macro" id="_M/NAMESPACE_FOR_HASH_FUNCTIONS" data-ref="_M/NAMESPACE_FOR_HASH_FUNCTIONS">NAMESPACE_FOR_HASH_FUNCTIONS</dfn> <span class="namespace">util</span></u></td></tr>
+<tr><th id="54">54</th><td><u>#<span data-ppcond="52">endif</span></u></td></tr>
+<tr><th id="55">55</th><td></td></tr>
+<tr><th id="56">56</th><td><b>namespace</b> <a class="macro" href="#53" title="util" data-ref="_M/NAMESPACE_FOR_HASH_FUNCTIONS">NAMESPACE_FOR_HASH_FUNCTIONS</a> {</td></tr>
+<tr><th id="57">57</th><td></td></tr>
+<tr><th id="58">58</th><td><u>#<span data-ppcond="58">if</span> defined(<span class="macro" data-ref="_M/FARMHASH_UINT128_T_DEFINED">FARMHASH_UINT128_T_DEFINED</span>)</u></td></tr>
+<tr><th id="59">59</th><td><u>#if defined(__clang__)</u></td></tr>
+<tr><th id="60">60</th><td><u>#if !defined(uint128_t)</u></td></tr>
+<tr><th id="61">61</th><td><u>#define uint128_t __uint128_t</u></td></tr>
+<tr><th id="62">62</th><td><u>#endif</u></td></tr>
+<tr><th id="63">63</th><td><u>#endif</u></td></tr>
+<tr><th id="64">64</th><td><b>inline</b> uint64_t Uint128Low64(<em>const</em> uint128_t x) {</td></tr>
+<tr><th id="65">65</th><td>  <b>return</b> <b>static_cast</b>&lt;uint64_t&gt;(x);</td></tr>
+<tr><th id="66">66</th><td>}</td></tr>
+<tr><th id="67">67</th><td><b>inline</b> uint64_t Uint128High64(<em>const</em> uint128_t x) {</td></tr>
+<tr><th id="68">68</th><td>  <b>return</b> <b>static_cast</b>&lt;uint64_t&gt;(x &gt;&gt; <var>64</var>);</td></tr>
+<tr><th id="69">69</th><td>}</td></tr>
+<tr><th id="70">70</th><td><b>inline</b> uint128_t Uint128(uint64_t lo, uint64_t hi) {</td></tr>
+<tr><th id="71">71</th><td>  <b>return</b> lo + (((uint128_t)hi) &lt;&lt; <var>64</var>);</td></tr>
+<tr><th id="72">72</th><td>}</td></tr>
+<tr><th id="73">73</th><td><u>#<span data-ppcond="58">else</span></u></td></tr>
+<tr><th id="74">74</th><td><b>typedef</b> <span class="namespace">std::</span><span class='type' title='std::pair' data-ref="std::pair" data-ref-filename="std..pair">pair</span>&lt;<a class="typedef" href="../../../../include/bits/stdint-uintn.h.html#uint64_t" title='uint64_t' data-type='__uint64_t' data-ref="uint64_t" data-ref-filename="uint64_t">uint64_t</a>, <a class="typedef" href="../../../../include/bits/stdint-uintn.h.html#uint64_t" title='uint64_t' data-type='__uint64_t' data-ref="uint64_t" data-ref-filename="uint64_t">uint64_t</a>&gt; <dfn class="typedef" id="util::uint128_t" title='util::uint128_t' data-type='std::pair&lt;uint64_t, uint64_t&gt;' data-ref="util::uint128_t" data-ref-filename="util..uint128_t">uint128_t</dfn>;</td></tr>
+<tr><th id="75">75</th><td><b>inline</b> <a class="typedef" href="../../../../include/bits/stdint-uintn.h.html#uint64_t" title='uint64_t' data-type='__uint64_t' data-ref="uint64_t" data-ref-filename="uint64_t">uint64_t</a> <dfn class="decl def fn" id="_ZN4util12Uint128Low64ESt4pairImmE" title='util::Uint128Low64' data-ref="_ZN4util12Uint128Low64ESt4pairImmE" data-ref-filename="_ZN4util12Uint128Low64ESt4pairImmE">Uint128Low64</dfn>(<em>const</em> <a class="typedef" href="#util::uint128_t" title='util::uint128_t' data-type='std::pair&lt;uint64_t, uint64_t&gt;' data-ref="util::uint128_t" data-ref-filename="util..uint128_t">uint128_t</a> <dfn class="local col1 decl" id="1x" title='x' data-type='const util::uint128_t' data-ref="1x" data-ref-filename="1x">x</dfn>) { <b>return</b> <a class="local col1 ref" href="#1x" title='x' data-ref="1x" data-ref-filename="1x">x</a>.<span class='ref field' title='std::pair&lt;unsigned long, unsigned long&gt;::first' data-ref="std::pair::first" data-ref-filename="std..pair..first">first</span>; }</td></tr>
+<tr><th id="76">76</th><td><b>inline</b> <a class="typedef" href="../../../../include/bits/stdint-uintn.h.html#uint64_t" title='uint64_t' data-type='__uint64_t' data-ref="uint64_t" data-ref-filename="uint64_t">uint64_t</a> <dfn class="decl def fn" id="_ZN4util13Uint128High64ESt4pairImmE" title='util::Uint128High64' data-ref="_ZN4util13Uint128High64ESt4pairImmE" data-ref-filename="_ZN4util13Uint128High64ESt4pairImmE">Uint128High64</dfn>(<em>const</em> <a class="typedef" href="#util::uint128_t" title='util::uint128_t' data-type='std::pair&lt;uint64_t, uint64_t&gt;' data-ref="util::uint128_t" data-ref-filename="util..uint128_t">uint128_t</a> <dfn class="local col2 decl" id="2x" title='x' data-type='const util::uint128_t' data-ref="2x" data-ref-filename="2x">x</dfn>) { <b>return</b> <a class="local col2 ref" href="#2x" title='x' data-ref="2x" data-ref-filename="2x">x</a>.<span class='ref field' title='std::pair&lt;unsigned long, unsigned long&gt;::second' data-ref="std::pair::second" data-ref-filename="std..pair..second">second</span>; }</td></tr>
+<tr><th id="77">77</th><td><b>inline</b> <a class="typedef" href="#util::uint128_t" title='util::uint128_t' data-type='std::pair&lt;uint64_t, uint64_t&gt;' data-ref="util::uint128_t" data-ref-filename="util..uint128_t">uint128_t</a> <dfn class="decl def fn" id="_ZN4util7Uint128Emm" title='util::Uint128' data-ref="_ZN4util7Uint128Emm" data-ref-filename="_ZN4util7Uint128Emm">Uint128</dfn>(<a class="typedef" href="../../../../include/bits/stdint-uintn.h.html#uint64_t" title='uint64_t' data-type='__uint64_t' data-ref="uint64_t" data-ref-filename="uint64_t">uint64_t</a> <dfn class="local col3 decl" id="3lo" title='lo' data-type='uint64_t' data-ref="3lo" data-ref-filename="3lo">lo</dfn>, <a class="typedef" href="../../../../include/bits/stdint-uintn.h.html#uint64_t" title='uint64_t' data-type='__uint64_t' data-ref="uint64_t" data-ref-filename="uint64_t">uint64_t</a> <dfn class="local col4 decl" id="4hi" title='hi' data-type='uint64_t' data-ref="4hi" data-ref-filename="4hi">hi</dfn>) { <b>return</b> <a class="typedef" href="#util::uint128_t" title='util::uint128_t' data-type='std::pair&lt;uint64_t, uint64_t&gt;' data-ref="util::uint128_t" data-ref-filename="util..uint128_t">uint128_t</a><span class='ref fn' title='std::pair::pair&lt;_T1, _T2&gt;' data-ref="_ZNSt4pairC1EOTL0__OTL0_0_" data-ref-filename="_ZNSt4pairC1EOTL0__OTL0_0_">(</span><a class="local col3 ref" href="#3lo" title='lo' data-ref="3lo" data-ref-filename="3lo">lo</a>, <a class="local col4 ref" href="#4hi" title='hi' data-ref="4hi" data-ref-filename="4hi">hi</a>); }</td></tr>
+<tr><th id="78">78</th><td><u>#<span data-ppcond="58">endif</span></u></td></tr>
+<tr><th id="79">79</th><td></td></tr>
+<tr><th id="80">80</th><td></td></tr>
+<tr><th id="81">81</th><td><i>// BASIC STRING HASHING</i></td></tr>
+<tr><th id="82">82</th><td><i></i></td></tr>
+<tr><th id="83">83</th><td><i>// Hash function for a byte array.</i></td></tr>
+<tr><th id="84">84</th><td><i>// May change from time to time, may differ on different platforms, may differ</i></td></tr>
+<tr><th id="85">85</th><td><i>// depending on NDEBUG.</i></td></tr>
+<tr><th id="86">86</th><td><span class='typedef' title='size_t' data-type='unsigned long' data-ref="size_t" data-ref-filename="size_t">size_t</span> <dfn class="decl fn" id="_ZN4util4HashEPKcm" title='util::Hash' data-ref="_ZN4util4HashEPKcm" data-ref-filename="_ZN4util4HashEPKcm">Hash</dfn>(<em>const</em> <em>char</em>* <dfn class="local col5 decl" id="5s" title='s' data-type='const char *' data-ref="5s" data-ref-filename="5s">s</dfn>, <span class='typedef' title='size_t' data-type='unsigned long' data-ref="size_t" data-ref-filename="size_t">size_t</span> <dfn class="local col6 decl" id="6len" title='len' data-type='size_t' data-ref="6len" data-ref-filename="6len">len</dfn>);</td></tr>
+<tr><th id="87">87</th><td></td></tr>
+<tr><th id="88">88</th><td><i>// Hash function for a byte array.  Most useful in 32-bit binaries.</i></td></tr>
+<tr><th id="89">89</th><td><i>// May change from time to time, may differ on different platforms, may differ</i></td></tr>
+<tr><th id="90">90</th><td><i>// depending on NDEBUG.</i></td></tr>
+<tr><th id="91">91</th><td><a class="typedef" href="../../../../include/bits/stdint-uintn.h.html#uint32_t" title='uint32_t' data-type='__uint32_t' data-ref="uint32_t" data-ref-filename="uint32_t">uint32_t</a> <dfn class="decl fn" id="_ZN4util6Hash32EPKcm" title='util::Hash32' data-ref="_ZN4util6Hash32EPKcm" data-ref-filename="_ZN4util6Hash32EPKcm">Hash32</dfn>(<em>const</em> <em>char</em>* <dfn class="local col7 decl" id="7s" title='s' data-type='const char *' data-ref="7s" data-ref-filename="7s">s</dfn>, <span class='typedef' title='size_t' data-type='unsigned long' data-ref="size_t" data-ref-filename="size_t">size_t</span> <dfn class="local col8 decl" id="8len" title='len' data-type='size_t' data-ref="8len" data-ref-filename="8len">len</dfn>);</td></tr>
+<tr><th id="92">92</th><td></td></tr>
+<tr><th id="93">93</th><td><i>// Hash function for a byte array.  For convenience, a 32-bit seed is also</i></td></tr>
+<tr><th id="94">94</th><td><i>// hashed into the result.</i></td></tr>
+<tr><th id="95">95</th><td><i>// May change from time to time, may differ on different platforms, may differ</i></td></tr>
+<tr><th id="96">96</th><td><i>// depending on NDEBUG.</i></td></tr>
+<tr><th id="97">97</th><td><a class="typedef" href="../../../../include/bits/stdint-uintn.h.html#uint32_t" title='uint32_t' data-type='__uint32_t' data-ref="uint32_t" data-ref-filename="uint32_t">uint32_t</a> <dfn class="decl fn" id="_ZN4util14Hash32WithSeedEPKcmj" title='util::Hash32WithSeed' data-ref="_ZN4util14Hash32WithSeedEPKcmj" data-ref-filename="_ZN4util14Hash32WithSeedEPKcmj">Hash32WithSeed</dfn>(<em>const</em> <em>char</em>* <dfn class="local col9 decl" id="9s" title='s' data-type='const char *' data-ref="9s" data-ref-filename="9s">s</dfn>, <span class='typedef' title='size_t' data-type='unsigned long' data-ref="size_t" data-ref-filename="size_t">size_t</span> <dfn class="local col0 decl" id="10len" title='len' data-type='size_t' data-ref="10len" data-ref-filename="10len">len</dfn>, <a class="typedef" href="../../../../include/bits/stdint-uintn.h.html#uint32_t" title='uint32_t' data-type='__uint32_t' data-ref="uint32_t" data-ref-filename="uint32_t">uint32_t</a> <dfn class="local col1 decl" id="11seed" title='seed' data-type='uint32_t' data-ref="11seed" data-ref-filename="11seed">seed</dfn>);</td></tr>
+<tr><th id="98">98</th><td></td></tr>
+<tr><th id="99">99</th><td><i>// Hash function for a byte array.</i></td></tr>
+<tr><th id="100">100</th><td><i>// May change from time to time, may differ on different platforms, may differ</i></td></tr>
+<tr><th id="101">101</th><td><i>// depending on NDEBUG.</i></td></tr>
+<tr><th id="102">102</th><td><a class="typedef" href="../../../../include/bits/stdint-uintn.h.html#uint64_t" title='uint64_t' data-type='__uint64_t' data-ref="uint64_t" data-ref-filename="uint64_t">uint64_t</a> <dfn class="decl fn" id="_ZN4util6Hash64EPKcm" title='util::Hash64' data-ref="_ZN4util6Hash64EPKcm" data-ref-filename="_ZN4util6Hash64EPKcm">Hash64</dfn>(<em>const</em> <em>char</em>* <dfn class="local col2 decl" id="12s" title='s' data-type='const char *' data-ref="12s" data-ref-filename="12s">s</dfn>, <span class='typedef' title='size_t' data-type='unsigned long' data-ref="size_t" data-ref-filename="size_t">size_t</span> <dfn class="local col3 decl" id="13len" title='len' data-type='size_t' data-ref="13len" data-ref-filename="13len">len</dfn>);</td></tr>
+<tr><th id="103">103</th><td></td></tr>
+<tr><th id="104">104</th><td><i>// Hash function for a byte array.  For convenience, a 64-bit seed is also</i></td></tr>
+<tr><th id="105">105</th><td><i>// hashed into the result.</i></td></tr>
+<tr><th id="106">106</th><td><i>// May change from time to time, may differ on different platforms, may differ</i></td></tr>
+<tr><th id="107">107</th><td><i>// depending on NDEBUG.</i></td></tr>
+<tr><th id="108">108</th><td><a class="typedef" href="../../../../include/bits/stdint-uintn.h.html#uint64_t" title='uint64_t' data-type='__uint64_t' data-ref="uint64_t" data-ref-filename="uint64_t">uint64_t</a> <dfn class="decl fn" id="_ZN4util14Hash64WithSeedEPKcmm" title='util::Hash64WithSeed' data-ref="_ZN4util14Hash64WithSeedEPKcmm" data-ref-filename="_ZN4util14Hash64WithSeedEPKcmm">Hash64WithSeed</dfn>(<em>const</em> <em>char</em>* <dfn class="local col4 decl" id="14s" title='s' data-type='const char *' data-ref="14s" data-ref-filename="14s">s</dfn>, <span class='typedef' title='size_t' data-type='unsigned long' data-ref="size_t" data-ref-filename="size_t">size_t</span> <dfn class="local col5 decl" id="15len" title='len' data-type='size_t' data-ref="15len" data-ref-filename="15len">len</dfn>, <a class="typedef" href="../../../../include/bits/stdint-uintn.h.html#uint64_t" title='uint64_t' data-type='__uint64_t' data-ref="uint64_t" data-ref-filename="uint64_t">uint64_t</a> <dfn class="local col6 decl" id="16seed" title='seed' data-type='uint64_t' data-ref="16seed" data-ref-filename="16seed">seed</dfn>);</td></tr>
+<tr><th id="109">109</th><td></td></tr>
+<tr><th id="110">110</th><td><i>// Hash function for a byte array.  For convenience, two seeds are also</i></td></tr>
+<tr><th id="111">111</th><td><i>// hashed into the result.</i></td></tr>
+<tr><th id="112">112</th><td><i>// May change from time to time, may differ on different platforms, may differ</i></td></tr>
+<tr><th id="113">113</th><td><i>// depending on NDEBUG.</i></td></tr>
+<tr><th id="114">114</th><td><a class="typedef" href="../../../../include/bits/stdint-uintn.h.html#uint64_t" title='uint64_t' data-type='__uint64_t' data-ref="uint64_t" data-ref-filename="uint64_t">uint64_t</a> <dfn class="decl fn" id="_ZN4util15Hash64WithSeedsEPKcmmm" title='util::Hash64WithSeeds' data-ref="_ZN4util15Hash64WithSeedsEPKcmmm" data-ref-filename="_ZN4util15Hash64WithSeedsEPKcmmm">Hash64WithSeeds</dfn>(<em>const</em> <em>char</em>* <dfn class="local col7 decl" id="17s" title='s' data-type='const char *' data-ref="17s" data-ref-filename="17s">s</dfn>, <span class='typedef' title='size_t' data-type='unsigned long' data-ref="size_t" data-ref-filename="size_t">size_t</span> <dfn class="local col8 decl" id="18len" title='len' data-type='size_t' data-ref="18len" data-ref-filename="18len">len</dfn>,</td></tr>
+<tr><th id="115">115</th><td>                       <a class="typedef" href="../../../../include/bits/stdint-uintn.h.html#uint64_t" title='uint64_t' data-type='__uint64_t' data-ref="uint64_t" data-ref-filename="uint64_t">uint64_t</a> <dfn class="local col9 decl" id="19seed0" title='seed0' data-type='uint64_t' data-ref="19seed0" data-ref-filename="19seed0">seed0</dfn>, <a class="typedef" href="../../../../include/bits/stdint-uintn.h.html#uint64_t" title='uint64_t' data-type='__uint64_t' data-ref="uint64_t" data-ref-filename="uint64_t">uint64_t</a> <dfn class="local col0 decl" id="20seed1" title='seed1' data-type='uint64_t' data-ref="20seed1" data-ref-filename="20seed1">seed1</dfn>);</td></tr>
+<tr><th id="116">116</th><td></td></tr>
+<tr><th id="117">117</th><td><i>// Hash function for a byte array.</i></td></tr>
+<tr><th id="118">118</th><td><i>// May change from time to time, may differ on different platforms, may differ</i></td></tr>
+<tr><th id="119">119</th><td><i>// depending on NDEBUG.</i></td></tr>
+<tr><th id="120">120</th><td><a class="typedef" href="#util::uint128_t" title='util::uint128_t' data-type='std::pair&lt;uint64_t, uint64_t&gt;' data-ref="util::uint128_t" data-ref-filename="util..uint128_t">uint128_t</a> <dfn class="decl fn" id="_ZN4util7Hash128EPKcm" title='util::Hash128' data-ref="_ZN4util7Hash128EPKcm" data-ref-filename="_ZN4util7Hash128EPKcm">Hash128</dfn>(<em>const</em> <em>char</em>* <dfn class="local col1 decl" id="21s" title='s' data-type='const char *' data-ref="21s" data-ref-filename="21s">s</dfn>, <span class='typedef' title='size_t' data-type='unsigned long' data-ref="size_t" data-ref-filename="size_t">size_t</span> <dfn class="local col2 decl" id="22len" title='len' data-type='size_t' data-ref="22len" data-ref-filename="22len">len</dfn>);</td></tr>
+<tr><th id="121">121</th><td></td></tr>
+<tr><th id="122">122</th><td><i>// Hash function for a byte array.  For convenience, a 128-bit seed is also</i></td></tr>
+<tr><th id="123">123</th><td><i>// hashed into the result.</i></td></tr>
+<tr><th id="124">124</th><td><i>// May change from time to time, may differ on different platforms, may differ</i></td></tr>
+<tr><th id="125">125</th><td><i>// depending on NDEBUG.</i></td></tr>
+<tr><th id="126">126</th><td><a class="typedef" href="#util::uint128_t" title='util::uint128_t' data-type='std::pair&lt;uint64_t, uint64_t&gt;' data-ref="util::uint128_t" data-ref-filename="util..uint128_t">uint128_t</a> <dfn class="decl fn" id="_ZN4util15Hash128WithSeedEPKcmSt4pairImmE" title='util::Hash128WithSeed' data-ref="_ZN4util15Hash128WithSeedEPKcmSt4pairImmE" data-ref-filename="_ZN4util15Hash128WithSeedEPKcmSt4pairImmE">Hash128WithSeed</dfn>(<em>const</em> <em>char</em>* <dfn class="local col3 decl" id="23s" title='s' data-type='const char *' data-ref="23s" data-ref-filename="23s">s</dfn>, <span class='typedef' title='size_t' data-type='unsigned long' data-ref="size_t" data-ref-filename="size_t">size_t</span> <dfn class="local col4 decl" id="24len" title='len' data-type='size_t' data-ref="24len" data-ref-filename="24len">len</dfn>, <a class="typedef" href="#util::uint128_t" title='util::uint128_t' data-type='std::pair&lt;uint64_t, uint64_t&gt;' data-ref="util::uint128_t" data-ref-filename="util..uint128_t">uint128_t</a> <dfn class="local col5 decl" id="25seed" title='seed' data-type='util::uint128_t' data-ref="25seed" data-ref-filename="25seed">seed</dfn>);</td></tr>
+<tr><th id="127">127</th><td></td></tr>
+<tr><th id="128">128</th><td><i>// BASIC NON-STRING HASHING</i></td></tr>
+<tr><th id="129">129</th><td><i></i></td></tr>
+<tr><th id="130">130</th><td><i>// Hash 128 input bits down to 64 bits of output.</i></td></tr>
+<tr><th id="131">131</th><td><i>// This is intended to be a reasonably good hash function.</i></td></tr>
+<tr><th id="132">132</th><td><i>// May change from time to time, may differ on different platforms, may differ</i></td></tr>
+<tr><th id="133">133</th><td><i>// depending on NDEBUG.</i></td></tr>
+<tr><th id="134">134</th><td><b>inline</b> <a class="typedef" href="../../../../include/bits/stdint-uintn.h.html#uint64_t" title='uint64_t' data-type='__uint64_t' data-ref="uint64_t" data-ref-filename="uint64_t">uint64_t</a> <dfn class="decl def fn" id="_ZN4util11Hash128to64ESt4pairImmE" title='util::Hash128to64' data-ref="_ZN4util11Hash128to64ESt4pairImmE" data-ref-filename="_ZN4util11Hash128to64ESt4pairImmE">Hash128to64</dfn>(<a class="typedef" href="#util::uint128_t" title='util::uint128_t' data-type='std::pair&lt;uint64_t, uint64_t&gt;' data-ref="util::uint128_t" data-ref-filename="util..uint128_t">uint128_t</a> <dfn class="local col6 decl" id="26x" title='x' data-type='util::uint128_t' data-ref="26x" data-ref-filename="26x">x</dfn>) {</td></tr>
+<tr><th id="135">135</th><td>  <i>// Murmur-inspired hashing.</i></td></tr>
+<tr><th id="136">136</th><td>  <em>const</em> <a class="typedef" href="../../../../include/bits/stdint-uintn.h.html#uint64_t" title='uint64_t' data-type='__uint64_t' data-ref="uint64_t" data-ref-filename="uint64_t">uint64_t</a> <dfn class="local col7 decl" id="27kMul" title='kMul' data-type='const uint64_t' data-ref="27kMul" data-ref-filename="27kMul">kMul</dfn> = <var>0x9ddfea08eb382d69ULL</var>;</td></tr>
+<tr><th id="137">137</th><td>  <a class="typedef" href="../../../../include/bits/stdint-uintn.h.html#uint64_t" title='uint64_t' data-type='__uint64_t' data-ref="uint64_t" data-ref-filename="uint64_t">uint64_t</a> <dfn class="local col8 decl" id="28a" title='a' data-type='uint64_t' data-ref="28a" data-ref-filename="28a">a</dfn> = (<a class="ref fn" href="#_ZN4util12Uint128Low64ESt4pairImmE" title='util::Uint128Low64' data-ref="_ZN4util12Uint128Low64ESt4pairImmE" data-ref-filename="_ZN4util12Uint128Low64ESt4pairImmE">Uint128Low64</a>(<span class='ref fn fake' title='std::pair::pair&lt;_T1, _T2&gt;' data-ref="_ZNSt4pairC1ERKSt4pairIT_T0_E" data-ref-filename="_ZNSt4pairC1ERKSt4pairIT_T0_E"></span><a class="local col6 ref" href="#26x" title='x' data-ref="26x" data-ref-filename="26x">x</a>) ^ <a class="ref fn" href="#_ZN4util13Uint128High64ESt4pairImmE" title='util::Uint128High64' data-ref="_ZN4util13Uint128High64ESt4pairImmE" data-ref-filename="_ZN4util13Uint128High64ESt4pairImmE">Uint128High64</a>(<span class='ref fn fake' title='std::pair::pair&lt;_T1, _T2&gt;' data-ref="_ZNSt4pairC1ERKSt4pairIT_T0_E" data-ref-filename="_ZNSt4pairC1ERKSt4pairIT_T0_E"></span><a class="local col6 ref" href="#26x" title='x' data-ref="26x" data-ref-filename="26x">x</a>)) * <a class="local col7 ref" href="#27kMul" title='kMul' data-ref="27kMul" data-ref-filename="27kMul">kMul</a>;</td></tr>
+<tr><th id="138">138</th><td>  <a class="local col8 ref" href="#28a" title='a' data-ref="28a" data-ref-filename="28a">a</a> ^= (<a class="local col8 ref" href="#28a" title='a' data-ref="28a" data-ref-filename="28a">a</a> &gt;&gt; <var>47</var>);</td></tr>
+<tr><th id="139">139</th><td>  <a class="typedef" href="../../../../include/bits/stdint-uintn.h.html#uint64_t" title='uint64_t' data-type='__uint64_t' data-ref="uint64_t" data-ref-filename="uint64_t">uint64_t</a> <dfn class="local col9 decl" id="29b" title='b' data-type='uint64_t' data-ref="29b" data-ref-filename="29b">b</dfn> = (<a class="ref fn" href="#_ZN4util13Uint128High64ESt4pairImmE" title='util::Uint128High64' data-ref="_ZN4util13Uint128High64ESt4pairImmE" data-ref-filename="_ZN4util13Uint128High64ESt4pairImmE">Uint128High64</a>(<span class='ref fn fake' title='std::pair::pair&lt;_T1, _T2&gt;' data-ref="_ZNSt4pairC1ERKSt4pairIT_T0_E" data-ref-filename="_ZNSt4pairC1ERKSt4pairIT_T0_E"></span><a class="local col6 ref" href="#26x" title='x' data-ref="26x" data-ref-filename="26x">x</a>) ^ <a class="local col8 ref" href="#28a" title='a' data-ref="28a" data-ref-filename="28a">a</a>) * <a class="local col7 ref" href="#27kMul" title='kMul' data-ref="27kMul" data-ref-filename="27kMul">kMul</a>;</td></tr>
+<tr><th id="140">140</th><td>  <a class="local col9 ref" href="#29b" title='b' data-ref="29b" data-ref-filename="29b">b</a> ^= (<a class="local col9 ref" href="#29b" title='b' data-ref="29b" data-ref-filename="29b">b</a> &gt;&gt; <var>47</var>);</td></tr>
+<tr><th id="141">141</th><td>  <a class="local col9 ref" href="#29b" title='b' data-ref="29b" data-ref-filename="29b">b</a> *= <a class="local col7 ref" href="#27kMul" title='kMul' data-ref="27kMul" data-ref-filename="27kMul">kMul</a>;</td></tr>
+<tr><th id="142">142</th><td>  <b>return</b> <a class="local col9 ref" href="#29b" title='b' data-ref="29b" data-ref-filename="29b">b</a>;</td></tr>
+<tr><th id="143">143</th><td>}</td></tr>
+<tr><th id="144">144</th><td></td></tr>
+<tr><th id="145">145</th><td><i>// FINGERPRINTING (i.e., good, portable, forever-fixed hash functions)</i></td></tr>
+<tr><th id="146">146</th><td><i></i></td></tr>
+<tr><th id="147">147</th><td><i>// Fingerprint function for a byte array.  Most useful in 32-bit binaries.</i></td></tr>
+<tr><th id="148">148</th><td><a class="typedef" href="../../../../include/bits/stdint-uintn.h.html#uint32_t" title='uint32_t' data-type='__uint32_t' data-ref="uint32_t" data-ref-filename="uint32_t">uint32_t</a> <dfn class="decl fn" id="_ZN4util13Fingerprint32EPKcm" title='util::Fingerprint32' data-ref="_ZN4util13Fingerprint32EPKcm" data-ref-filename="_ZN4util13Fingerprint32EPKcm">Fingerprint32</dfn>(<em>const</em> <em>char</em>* <dfn class="local col0 decl" id="30s" title='s' data-type='const char *' data-ref="30s" data-ref-filename="30s">s</dfn>, <span class='typedef' title='size_t' data-type='unsigned long' data-ref="size_t" data-ref-filename="size_t">size_t</span> <dfn class="local col1 decl" id="31len" title='len' data-type='size_t' data-ref="31len" data-ref-filename="31len">len</dfn>);</td></tr>
+<tr><th id="149">149</th><td></td></tr>
+<tr><th id="150">150</th><td><i>// Fingerprint function for a byte array.</i></td></tr>
+<tr><th id="151">151</th><td><a class="typedef" href="../../../../include/bits/stdint-uintn.h.html#uint64_t" title='uint64_t' data-type='__uint64_t' data-ref="uint64_t" data-ref-filename="uint64_t">uint64_t</a> <dfn class="decl fn" id="_ZN4util13Fingerprint64EPKcm" title='util::Fingerprint64' data-ref="_ZN4util13Fingerprint64EPKcm" data-ref-filename="_ZN4util13Fingerprint64EPKcm">Fingerprint64</dfn>(<em>const</em> <em>char</em>* <dfn class="local col2 decl" id="32s" title='s' data-type='const char *' data-ref="32s" data-ref-filename="32s">s</dfn>, <span class='typedef' title='size_t' data-type='unsigned long' data-ref="size_t" data-ref-filename="size_t">size_t</span> <dfn class="local col3 decl" id="33len" title='len' data-type='size_t' data-ref="33len" data-ref-filename="33len">len</dfn>);</td></tr>
+<tr><th id="152">152</th><td></td></tr>
+<tr><th id="153">153</th><td><i>// Fingerprint function for a byte array.</i></td></tr>
+<tr><th id="154">154</th><td><a class="typedef" href="#util::uint128_t" title='util::uint128_t' data-type='std::pair&lt;uint64_t, uint64_t&gt;' data-ref="util::uint128_t" data-ref-filename="util..uint128_t">uint128_t</a> <dfn class="decl fn" id="_ZN4util14Fingerprint128EPKcm" title='util::Fingerprint128' data-ref="_ZN4util14Fingerprint128EPKcm" data-ref-filename="_ZN4util14Fingerprint128EPKcm">Fingerprint128</dfn>(<em>const</em> <em>char</em>* <dfn class="local col4 decl" id="34s" title='s' data-type='const char *' data-ref="34s" data-ref-filename="34s">s</dfn>, <span class='typedef' title='size_t' data-type='unsigned long' data-ref="size_t" data-ref-filename="size_t">size_t</span> <dfn class="local col5 decl" id="35len" title='len' data-type='size_t' data-ref="35len" data-ref-filename="35len">len</dfn>);</td></tr>
+<tr><th id="155">155</th><td></td></tr>
+<tr><th id="156">156</th><td><i>// This is intended to be a good fingerprinting primitive.</i></td></tr>
+<tr><th id="157">157</th><td><i>// See below for more overloads.</i></td></tr>
+<tr><th id="158">158</th><td><b>inline</b> <a class="typedef" href="../../../../include/bits/stdint-uintn.h.html#uint64_t" title='uint64_t' data-type='__uint64_t' data-ref="uint64_t" data-ref-filename="uint64_t">uint64_t</a> <dfn class="decl def fn" id="_ZN4util11FingerprintESt4pairImmE" title='util::Fingerprint' data-ref="_ZN4util11FingerprintESt4pairImmE" data-ref-filename="_ZN4util11FingerprintESt4pairImmE">Fingerprint</dfn>(<a class="typedef" href="#util::uint128_t" title='util::uint128_t' data-type='std::pair&lt;uint64_t, uint64_t&gt;' data-ref="util::uint128_t" data-ref-filename="util..uint128_t">uint128_t</a> <dfn class="local col6 decl" id="36x" title='x' data-type='util::uint128_t' data-ref="36x" data-ref-filename="36x">x</dfn>) {</td></tr>
+<tr><th id="159">159</th><td>  <i>// Murmur-inspired hashing.</i></td></tr>
+<tr><th id="160">160</th><td>  <em>const</em> <a class="typedef" href="../../../../include/bits/stdint-uintn.h.html#uint64_t" title='uint64_t' data-type='__uint64_t' data-ref="uint64_t" data-ref-filename="uint64_t">uint64_t</a> <dfn class="local col7 decl" id="37kMul" title='kMul' data-type='const uint64_t' data-ref="37kMul" data-ref-filename="37kMul">kMul</dfn> = <var>0x9ddfea08eb382d69ULL</var>;</td></tr>
+<tr><th id="161">161</th><td>  <a class="typedef" href="../../../../include/bits/stdint-uintn.h.html#uint64_t" title='uint64_t' data-type='__uint64_t' data-ref="uint64_t" data-ref-filename="uint64_t">uint64_t</a> <dfn class="local col8 decl" id="38a" title='a' data-type='uint64_t' data-ref="38a" data-ref-filename="38a">a</dfn> = (<a class="ref fn" href="#_ZN4util12Uint128Low64ESt4pairImmE" title='util::Uint128Low64' data-ref="_ZN4util12Uint128Low64ESt4pairImmE" data-ref-filename="_ZN4util12Uint128Low64ESt4pairImmE">Uint128Low64</a>(<span class='ref fn fake' title='std::pair::pair&lt;_T1, _T2&gt;' data-ref="_ZNSt4pairC1ERKSt4pairIT_T0_E" data-ref-filename="_ZNSt4pairC1ERKSt4pairIT_T0_E"></span><a class="local col6 ref" href="#36x" title='x' data-ref="36x" data-ref-filename="36x">x</a>) ^ <a class="ref fn" href="#_ZN4util13Uint128High64ESt4pairImmE" title='util::Uint128High64' data-ref="_ZN4util13Uint128High64ESt4pairImmE" data-ref-filename="_ZN4util13Uint128High64ESt4pairImmE">Uint128High64</a>(<span class='ref fn fake' title='std::pair::pair&lt;_T1, _T2&gt;' data-ref="_ZNSt4pairC1ERKSt4pairIT_T0_E" data-ref-filename="_ZNSt4pairC1ERKSt4pairIT_T0_E"></span><a class="local col6 ref" href="#36x" title='x' data-ref="36x" data-ref-filename="36x">x</a>)) * <a class="local col7 ref" href="#37kMul" title='kMul' data-ref="37kMul" data-ref-filename="37kMul">kMul</a>;</td></tr>
+<tr><th id="162">162</th><td>  <a class="local col8 ref" href="#38a" title='a' data-ref="38a" data-ref-filename="38a">a</a> ^= (<a class="local col8 ref" href="#38a" title='a' data-ref="38a" data-ref-filename="38a">a</a> &gt;&gt; <var>47</var>);</td></tr>
+<tr><th id="163">163</th><td>  <a class="typedef" href="../../../../include/bits/stdint-uintn.h.html#uint64_t" title='uint64_t' data-type='__uint64_t' data-ref="uint64_t" data-ref-filename="uint64_t">uint64_t</a> <dfn class="local col9 decl" id="39b" title='b' data-type='uint64_t' data-ref="39b" data-ref-filename="39b">b</dfn> = (<a class="ref fn" href="#_ZN4util13Uint128High64ESt4pairImmE" title='util::Uint128High64' data-ref="_ZN4util13Uint128High64ESt4pairImmE" data-ref-filename="_ZN4util13Uint128High64ESt4pairImmE">Uint128High64</a>(<span class='ref fn fake' title='std::pair::pair&lt;_T1, _T2&gt;' data-ref="_ZNSt4pairC1ERKSt4pairIT_T0_E" data-ref-filename="_ZNSt4pairC1ERKSt4pairIT_T0_E"></span><a class="local col6 ref" href="#36x" title='x' data-ref="36x" data-ref-filename="36x">x</a>) ^ <a class="local col8 ref" href="#38a" title='a' data-ref="38a" data-ref-filename="38a">a</a>) * <a class="local col7 ref" href="#37kMul" title='kMul' data-ref="37kMul" data-ref-filename="37kMul">kMul</a>;</td></tr>
+<tr><th id="164">164</th><td>  <a class="local col9 ref" href="#39b" title='b' data-ref="39b" data-ref-filename="39b">b</a> ^= (<a class="local col9 ref" href="#39b" title='b' data-ref="39b" data-ref-filename="39b">b</a> &gt;&gt; <var>44</var>);</td></tr>
+<tr><th id="165">165</th><td>  <a class="local col9 ref" href="#39b" title='b' data-ref="39b" data-ref-filename="39b">b</a> *= <a class="local col7 ref" href="#37kMul" title='kMul' data-ref="37kMul" data-ref-filename="37kMul">kMul</a>;</td></tr>
+<tr><th id="166">166</th><td>  <a class="local col9 ref" href="#39b" title='b' data-ref="39b" data-ref-filename="39b">b</a> ^= (<a class="local col9 ref" href="#39b" title='b' data-ref="39b" data-ref-filename="39b">b</a> &gt;&gt; <var>41</var>);</td></tr>
+<tr><th id="167">167</th><td>  <a class="local col9 ref" href="#39b" title='b' data-ref="39b" data-ref-filename="39b">b</a> *= <a class="local col7 ref" href="#37kMul" title='kMul' data-ref="37kMul" data-ref-filename="37kMul">kMul</a>;</td></tr>
+<tr><th id="168">168</th><td>  <b>return</b> <a class="local col9 ref" href="#39b" title='b' data-ref="39b" data-ref-filename="39b">b</a>;</td></tr>
+<tr><th id="169">169</th><td>}</td></tr>
+<tr><th id="170">170</th><td></td></tr>
+<tr><th id="171">171</th><td><i>// This is intended to be a good fingerprinting primitive.</i></td></tr>
+<tr><th id="172">172</th><td><b>inline</b> <a class="typedef" href="../../../../include/bits/stdint-uintn.h.html#uint64_t" title='uint64_t' data-type='__uint64_t' data-ref="uint64_t" data-ref-filename="uint64_t">uint64_t</a> <dfn class="decl def fn" id="_ZN4util11FingerprintEm" title='util::Fingerprint' data-ref="_ZN4util11FingerprintEm" data-ref-filename="_ZN4util11FingerprintEm">Fingerprint</dfn>(<a class="typedef" href="../../../../include/bits/stdint-uintn.h.html#uint64_t" title='uint64_t' data-type='__uint64_t' data-ref="uint64_t" data-ref-filename="uint64_t">uint64_t</a> <dfn class="local col0 decl" id="40x" title='x' data-type='uint64_t' data-ref="40x" data-ref-filename="40x">x</dfn>) {</td></tr>
+<tr><th id="173">173</th><td>  <i>// Murmur-inspired hashing.</i></td></tr>
+<tr><th id="174">174</th><td>  <em>const</em> <a class="typedef" href="../../../../include/bits/stdint-uintn.h.html#uint64_t" title='uint64_t' data-type='__uint64_t' data-ref="uint64_t" data-ref-filename="uint64_t">uint64_t</a> <dfn class="local col1 decl" id="41kMul" title='kMul' data-type='const uint64_t' data-ref="41kMul" data-ref-filename="41kMul">kMul</dfn> = <var>0x9ddfea08eb382d69ULL</var>;</td></tr>
+<tr><th id="175">175</th><td>  <a class="typedef" href="../../../../include/bits/stdint-uintn.h.html#uint64_t" title='uint64_t' data-type='__uint64_t' data-ref="uint64_t" data-ref-filename="uint64_t">uint64_t</a> <dfn class="local col2 decl" id="42b" title='b' data-type='uint64_t' data-ref="42b" data-ref-filename="42b">b</dfn> = <a class="local col0 ref" href="#40x" title='x' data-ref="40x" data-ref-filename="40x">x</a> * <a class="local col1 ref" href="#41kMul" title='kMul' data-ref="41kMul" data-ref-filename="41kMul">kMul</a>;</td></tr>
+<tr><th id="176">176</th><td>  <a class="local col2 ref" href="#42b" title='b' data-ref="42b" data-ref-filename="42b">b</a> ^= (<a class="local col2 ref" href="#42b" title='b' data-ref="42b" data-ref-filename="42b">b</a> &gt;&gt; <var>44</var>);</td></tr>
+<tr><th id="177">177</th><td>  <a class="local col2 ref" href="#42b" title='b' data-ref="42b" data-ref-filename="42b">b</a> *= <a class="local col1 ref" href="#41kMul" title='kMul' data-ref="41kMul" data-ref-filename="41kMul">kMul</a>;</td></tr>
+<tr><th id="178">178</th><td>  <a class="local col2 ref" href="#42b" title='b' data-ref="42b" data-ref-filename="42b">b</a> ^= (<a class="local col2 ref" href="#42b" title='b' data-ref="42b" data-ref-filename="42b">b</a> &gt;&gt; <var>41</var>);</td></tr>
+<tr><th id="179">179</th><td>  <a class="local col2 ref" href="#42b" title='b' data-ref="42b" data-ref-filename="42b">b</a> *= <a class="local col1 ref" href="#41kMul" title='kMul' data-ref="41kMul" data-ref-filename="41kMul">kMul</a>;</td></tr>
+<tr><th id="180">180</th><td>  <b>return</b> <a class="local col2 ref" href="#42b" title='b' data-ref="42b" data-ref-filename="42b">b</a>;</td></tr>
+<tr><th id="181">181</th><td>}</td></tr>
+<tr><th id="182">182</th><td></td></tr>
+<tr><th id="183">183</th><td><u>#<span data-ppcond="183">ifndef</span> <span class="macro" data-ref="_M/FARMHASH_NO_CXX_STRING">FARMHASH_NO_CXX_STRING</span></u></td></tr>
+<tr><th id="184">184</th><td></td></tr>
+<tr><th id="185">185</th><td><i>// Convenience functions to hash or fingerprint C++ strings.</i></td></tr>
+<tr><th id="186">186</th><td><i>// These require that Str::data() return a pointer to the first char</i></td></tr>
+<tr><th id="187">187</th><td><i>// (as a const char*) and that Str::length() return the string's length;</i></td></tr>
+<tr><th id="188">188</th><td><i>// they work with std::string, for example.</i></td></tr>
+<tr><th id="189">189</th><td><i></i></td></tr>
+<tr><th id="190">190</th><td><i>// Hash function for a byte array.</i></td></tr>
+<tr><th id="191">191</th><td><i>// May change from time to time, may differ on different platforms, may differ</i></td></tr>
+<tr><th id="192">192</th><td><i>// depending on NDEBUG.</i></td></tr>
+<tr><th id="193">193</th><td><b>template</b> &lt;<b>typename</b> Str&gt;</td></tr>
+<tr><th id="194">194</th><td><b>inline</b> <span class='typedef' title='size_t' data-type='unsigned long' data-ref="size_t" data-ref-filename="size_t">size_t</span> <dfn class="decl def fn" id="_ZN4util4HashERKT_" title='util::Hash' data-ref="_ZN4util4HashERKT_" data-ref-filename="_ZN4util4HashERKT_">Hash</dfn>(<em>const</em> Str&amp; <dfn class="local col3 decl" id="43s" title='s' data-type='const Str &amp;' data-ref="43s" data-ref-filename="43s">s</dfn>) {</td></tr>
+<tr><th id="195">195</th><td>  <a class="macro" href="../../../../include/assert.h.html#50" title="(static_cast&lt;void&gt; (0))" data-ref="_M/assert">assert</a>(<b>sizeof</b>(s[<var>0</var>]) == <var>1</var>);</td></tr>
+<tr><th id="196">196</th><td>  <b>return</b> Hash(<a class="local col3 ref" href="#43s" title='s' data-ref="43s" data-ref-filename="43s">s</a>.data(), <a class="local col3 ref" href="#43s" title='s' data-ref="43s" data-ref-filename="43s">s</a>.length());</td></tr>
+<tr><th id="197">197</th><td>}</td></tr>
+<tr><th id="198">198</th><td></td></tr>
+<tr><th id="199">199</th><td><i>// Hash function for a byte array.  Most useful in 32-bit binaries.</i></td></tr>
+<tr><th id="200">200</th><td><i>// May change from time to time, may differ on different platforms, may differ</i></td></tr>
+<tr><th id="201">201</th><td><i>// depending on NDEBUG.</i></td></tr>
+<tr><th id="202">202</th><td><b>template</b> &lt;<b>typename</b> Str&gt;</td></tr>
+<tr><th id="203">203</th><td><b>inline</b> <a class="typedef" href="../../../../include/bits/stdint-uintn.h.html#uint32_t" title='uint32_t' data-type='__uint32_t' data-ref="uint32_t" data-ref-filename="uint32_t">uint32_t</a> <dfn class="decl def fn" id="_ZN4util6Hash32ERKT_" title='util::Hash32' data-ref="_ZN4util6Hash32ERKT_" data-ref-filename="_ZN4util6Hash32ERKT_">Hash32</dfn>(<em>const</em> Str&amp; <dfn class="local col4 decl" id="44s" title='s' data-type='const Str &amp;' data-ref="44s" data-ref-filename="44s">s</dfn>) {</td></tr>
+<tr><th id="204">204</th><td>  <a class="macro" href="../../../../include/assert.h.html#50" title="(static_cast&lt;void&gt; (0))" data-ref="_M/assert">assert</a>(<b>sizeof</b>(s[<var>0</var>]) == <var>1</var>);</td></tr>
+<tr><th id="205">205</th><td>  <b>return</b> Hash32(<a class="local col4 ref" href="#44s" title='s' data-ref="44s" data-ref-filename="44s">s</a>.data(), <a class="local col4 ref" href="#44s" title='s' data-ref="44s" data-ref-filename="44s">s</a>.length());</td></tr>
+<tr><th id="206">206</th><td>}</td></tr>
+<tr><th id="207">207</th><td></td></tr>
+<tr><th id="208">208</th><td><i>// Hash function for a byte array.  For convenience, a 32-bit seed is also</i></td></tr>
+<tr><th id="209">209</th><td><i>// hashed into the result.</i></td></tr>
+<tr><th id="210">210</th><td><i>// May change from time to time, may differ on different platforms, may differ</i></td></tr>
+<tr><th id="211">211</th><td><i>// depending on NDEBUG.</i></td></tr>
+<tr><th id="212">212</th><td><b>template</b> &lt;<b>typename</b> Str&gt;</td></tr>
+<tr><th id="213">213</th><td><b>inline</b> <a class="typedef" href="../../../../include/bits/stdint-uintn.h.html#uint32_t" title='uint32_t' data-type='__uint32_t' data-ref="uint32_t" data-ref-filename="uint32_t">uint32_t</a> <dfn class="decl def fn" id="_ZN4util14Hash32WithSeedERKT_j" title='util::Hash32WithSeed' data-ref="_ZN4util14Hash32WithSeedERKT_j" data-ref-filename="_ZN4util14Hash32WithSeedERKT_j">Hash32WithSeed</dfn>(<em>const</em> Str&amp; <dfn class="local col5 decl" id="45s" title='s' data-type='const Str &amp;' data-ref="45s" data-ref-filename="45s">s</dfn>, <a class="typedef" href="../../../../include/bits/stdint-uintn.h.html#uint32_t" title='uint32_t' data-type='__uint32_t' data-ref="uint32_t" data-ref-filename="uint32_t">uint32_t</a> <dfn class="local col6 decl" id="46seed" title='seed' data-type='uint32_t' data-ref="46seed" data-ref-filename="46seed">seed</dfn>) {</td></tr>
+<tr><th id="214">214</th><td>  <a class="macro" href="../../../../include/assert.h.html#50" title="(static_cast&lt;void&gt; (0))" data-ref="_M/assert">assert</a>(<b>sizeof</b>(s[<var>0</var>]) == <var>1</var>);</td></tr>
+<tr><th id="215">215</th><td>  <b>return</b> Hash32WithSeed(<a class="local col5 ref" href="#45s" title='s' data-ref="45s" data-ref-filename="45s">s</a>.data(), <a class="local col5 ref" href="#45s" title='s' data-ref="45s" data-ref-filename="45s">s</a>.length(), <a class="local col6 ref" href="#46seed" title='seed' data-ref="46seed" data-ref-filename="46seed">seed</a>);</td></tr>
+<tr><th id="216">216</th><td>}</td></tr>
+<tr><th id="217">217</th><td></td></tr>
+<tr><th id="218">218</th><td><i>// Hash 128 input bits down to 64 bits of output.</i></td></tr>
+<tr><th id="219">219</th><td><i>// Hash function for a byte array.</i></td></tr>
+<tr><th id="220">220</th><td><i>// May change from time to time, may differ on different platforms, may differ</i></td></tr>
+<tr><th id="221">221</th><td><i>// depending on NDEBUG.</i></td></tr>
+<tr><th id="222">222</th><td><b>template</b> &lt;<b>typename</b> Str&gt;</td></tr>
+<tr><th id="223">223</th><td><b>inline</b> <a class="typedef" href="../../../../include/bits/stdint-uintn.h.html#uint64_t" title='uint64_t' data-type='__uint64_t' data-ref="uint64_t" data-ref-filename="uint64_t">uint64_t</a> <dfn class="decl def fn" id="_ZN4util6Hash64ERKT_" title='util::Hash64' data-ref="_ZN4util6Hash64ERKT_" data-ref-filename="_ZN4util6Hash64ERKT_">Hash64</dfn>(<em>const</em> Str&amp; <dfn class="local col7 decl" id="47s" title='s' data-type='const Str &amp;' data-ref="47s" data-ref-filename="47s">s</dfn>) {</td></tr>
+<tr><th id="224">224</th><td>  <a class="macro" href="../../../../include/assert.h.html#50" title="(static_cast&lt;void&gt; (0))" data-ref="_M/assert">assert</a>(<b>sizeof</b>(s[<var>0</var>]) == <var>1</var>);</td></tr>
+<tr><th id="225">225</th><td>  <b>return</b> Hash64(<a class="local col7 ref" href="#47s" title='s' data-ref="47s" data-ref-filename="47s">s</a>.data(), <a class="local col7 ref" href="#47s" title='s' data-ref="47s" data-ref-filename="47s">s</a>.length());</td></tr>
+<tr><th id="226">226</th><td>}</td></tr>
+<tr><th id="227">227</th><td></td></tr>
+<tr><th id="228">228</th><td><i>// Hash function for a byte array.  For convenience, a 64-bit seed is also</i></td></tr>
+<tr><th id="229">229</th><td><i>// hashed into the result.</i></td></tr>
+<tr><th id="230">230</th><td><i>// May change from time to time, may differ on different platforms, may differ</i></td></tr>
+<tr><th id="231">231</th><td><i>// depending on NDEBUG.</i></td></tr>
+<tr><th id="232">232</th><td><b>template</b> &lt;<b>typename</b> Str&gt;</td></tr>
+<tr><th id="233">233</th><td><b>inline</b> <a class="typedef" href="../../../../include/bits/stdint-uintn.h.html#uint64_t" title='uint64_t' data-type='__uint64_t' data-ref="uint64_t" data-ref-filename="uint64_t">uint64_t</a> <dfn class="decl def fn" id="_ZN4util14Hash64WithSeedERKT_m" title='util::Hash64WithSeed' data-ref="_ZN4util14Hash64WithSeedERKT_m" data-ref-filename="_ZN4util14Hash64WithSeedERKT_m">Hash64WithSeed</dfn>(<em>const</em> Str&amp; <dfn class="local col8 decl" id="48s" title='s' data-type='const Str &amp;' data-ref="48s" data-ref-filename="48s">s</dfn>, <a class="typedef" href="../../../../include/bits/stdint-uintn.h.html#uint64_t" title='uint64_t' data-type='__uint64_t' data-ref="uint64_t" data-ref-filename="uint64_t">uint64_t</a> <dfn class="local col9 decl" id="49seed" title='seed' data-type='uint64_t' data-ref="49seed" data-ref-filename="49seed">seed</dfn>) {</td></tr>
+<tr><th id="234">234</th><td>  <a class="macro" href="../../../../include/assert.h.html#50" title="(static_cast&lt;void&gt; (0))" data-ref="_M/assert">assert</a>(<b>sizeof</b>(s[<var>0</var>]) == <var>1</var>);</td></tr>
+<tr><th id="235">235</th><td>  <b>return</b> Hash64WithSeed(<a class="local col8 ref" href="#48s" title='s' data-ref="48s" data-ref-filename="48s">s</a>.data(), <a class="local col8 ref" href="#48s" title='s' data-ref="48s" data-ref-filename="48s">s</a>.length(), <a class="local col9 ref" href="#49seed" title='seed' data-ref="49seed" data-ref-filename="49seed">seed</a>);</td></tr>
+<tr><th id="236">236</th><td>}</td></tr>
+<tr><th id="237">237</th><td></td></tr>
+<tr><th id="238">238</th><td><i>// Hash function for a byte array.  For convenience, two seeds are also</i></td></tr>
+<tr><th id="239">239</th><td><i>// hashed into the result.</i></td></tr>
+<tr><th id="240">240</th><td><i>// May change from time to time, may differ on different platforms, may differ</i></td></tr>
+<tr><th id="241">241</th><td><i>// depending on NDEBUG.</i></td></tr>
+<tr><th id="242">242</th><td><b>template</b> &lt;<b>typename</b> Str&gt;</td></tr>
+<tr><th id="243">243</th><td><b>inline</b> <a class="typedef" href="../../../../include/bits/stdint-uintn.h.html#uint64_t" title='uint64_t' data-type='__uint64_t' data-ref="uint64_t" data-ref-filename="uint64_t">uint64_t</a> <dfn class="decl def fn" id="_ZN4util15Hash64WithSeedsERKT_mm" title='util::Hash64WithSeeds' data-ref="_ZN4util15Hash64WithSeedsERKT_mm" data-ref-filename="_ZN4util15Hash64WithSeedsERKT_mm">Hash64WithSeeds</dfn>(<em>const</em> Str&amp; <dfn class="local col0 decl" id="50s" title='s' data-type='const Str &amp;' data-ref="50s" data-ref-filename="50s">s</dfn>, <a class="typedef" href="../../../../include/bits/stdint-uintn.h.html#uint64_t" title='uint64_t' data-type='__uint64_t' data-ref="uint64_t" data-ref-filename="uint64_t">uint64_t</a> <dfn class="local col1 decl" id="51seed0" title='seed0' data-type='uint64_t' data-ref="51seed0" data-ref-filename="51seed0">seed0</dfn>, <a class="typedef" href="../../../../include/bits/stdint-uintn.h.html#uint64_t" title='uint64_t' data-type='__uint64_t' data-ref="uint64_t" data-ref-filename="uint64_t">uint64_t</a> <dfn class="local col2 decl" id="52seed1" title='seed1' data-type='uint64_t' data-ref="52seed1" data-ref-filename="52seed1">seed1</dfn>) {</td></tr>
+<tr><th id="244">244</th><td>  <a class="macro" href="../../../../include/assert.h.html#50" title="(static_cast&lt;void&gt; (0))" data-ref="_M/assert">assert</a>(<b>sizeof</b>(s[<var>0</var>]) == <var>1</var>);</td></tr>
+<tr><th id="245">245</th><td>  <b>return</b> Hash64WithSeeds(<a class="local col0 ref" href="#50s" title='s' data-ref="50s" data-ref-filename="50s">s</a>.data(), <a class="local col0 ref" href="#50s" title='s' data-ref="50s" data-ref-filename="50s">s</a>.length(), <a class="local col1 ref" href="#51seed0" title='seed0' data-ref="51seed0" data-ref-filename="51seed0">seed0</a>, <a class="local col2 ref" href="#52seed1" title='seed1' data-ref="52seed1" data-ref-filename="52seed1">seed1</a>);</td></tr>
+<tr><th id="246">246</th><td>}</td></tr>
+<tr><th id="247">247</th><td></td></tr>
+<tr><th id="248">248</th><td><i>// Hash function for a byte array.</i></td></tr>
+<tr><th id="249">249</th><td><i>// May change from time to time, may differ on different platforms, may differ</i></td></tr>
+<tr><th id="250">250</th><td><i>// depending on NDEBUG.</i></td></tr>
+<tr><th id="251">251</th><td><b>template</b> &lt;<b>typename</b> Str&gt;</td></tr>
+<tr><th id="252">252</th><td><b>inline</b> <a class="typedef" href="#util::uint128_t" title='util::uint128_t' data-type='std::pair&lt;uint64_t, uint64_t&gt;' data-ref="util::uint128_t" data-ref-filename="util..uint128_t">uint128_t</a> <dfn class="decl def fn" id="_ZN4util7Hash128ERKT_" title='util::Hash128' data-ref="_ZN4util7Hash128ERKT_" data-ref-filename="_ZN4util7Hash128ERKT_">Hash128</dfn>(<em>const</em> Str&amp; <dfn class="local col3 decl" id="53s" title='s' data-type='const Str &amp;' data-ref="53s" data-ref-filename="53s">s</dfn>) {</td></tr>
+<tr><th id="253">253</th><td>  <a class="macro" href="../../../../include/assert.h.html#50" title="(static_cast&lt;void&gt; (0))" data-ref="_M/assert">assert</a>(<b>sizeof</b>(s[<var>0</var>]) == <var>1</var>);</td></tr>
+<tr><th id="254">254</th><td>  <b>return</b> Hash128(<a class="local col3 ref" href="#53s" title='s' data-ref="53s" data-ref-filename="53s">s</a>.data(), <a class="local col3 ref" href="#53s" title='s' data-ref="53s" data-ref-filename="53s">s</a>.length());</td></tr>
+<tr><th id="255">255</th><td>}</td></tr>
+<tr><th id="256">256</th><td></td></tr>
+<tr><th id="257">257</th><td><i>// Hash function for a byte array.  For convenience, a 128-bit seed is also</i></td></tr>
+<tr><th id="258">258</th><td><i>// hashed into the result.</i></td></tr>
+<tr><th id="259">259</th><td><i>// May change from time to time, may differ on different platforms, may differ</i></td></tr>
+<tr><th id="260">260</th><td><i>// depending on NDEBUG.</i></td></tr>
+<tr><th id="261">261</th><td><b>template</b> &lt;<b>typename</b> Str&gt;</td></tr>
+<tr><th id="262">262</th><td><b>inline</b> <a class="typedef" href="#util::uint128_t" title='util::uint128_t' data-type='std::pair&lt;uint64_t, uint64_t&gt;' data-ref="util::uint128_t" data-ref-filename="util..uint128_t">uint128_t</a> <dfn class="decl def fn" id="_ZN4util15Hash128WithSeedERKT_St4pairImmE" title='util::Hash128WithSeed' data-ref="_ZN4util15Hash128WithSeedERKT_St4pairImmE" data-ref-filename="_ZN4util15Hash128WithSeedERKT_St4pairImmE">Hash128WithSeed</dfn>(<em>const</em> Str&amp; <dfn class="local col4 decl" id="54s" title='s' data-type='const Str &amp;' data-ref="54s" data-ref-filename="54s">s</dfn>, <a class="typedef" href="#util::uint128_t" title='util::uint128_t' data-type='std::pair&lt;uint64_t, uint64_t&gt;' data-ref="util::uint128_t" data-ref-filename="util..uint128_t">uint128_t</a> <dfn class="local col5 decl" id="55seed" title='seed' data-type='util::uint128_t' data-ref="55seed" data-ref-filename="55seed">seed</dfn>) {</td></tr>
+<tr><th id="263">263</th><td>  <a class="macro" href="../../../../include/assert.h.html#50" title="(static_cast&lt;void&gt; (0))" data-ref="_M/assert">assert</a>(<b>sizeof</b>(s[<var>0</var>]) == <var>1</var>);</td></tr>
+<tr><th id="264">264</th><td>  <b>return</b> Hash128(<a class="local col4 ref" href="#54s" title='s' data-ref="54s" data-ref-filename="54s">s</a>.data(), <a class="local col4 ref" href="#54s" title='s' data-ref="54s" data-ref-filename="54s">s</a>.length(), <a class="local col5 ref" href="#55seed" title='seed' data-ref="55seed" data-ref-filename="55seed">seed</a>);</td></tr>
+<tr><th id="265">265</th><td>}</td></tr>
+<tr><th id="266">266</th><td></td></tr>
+<tr><th id="267">267</th><td><i>// FINGERPRINTING (i.e., good, portable, forever-fixed hash functions)</i></td></tr>
+<tr><th id="268">268</th><td><i></i></td></tr>
+<tr><th id="269">269</th><td><i>// Fingerprint function for a byte array.  Most useful in 32-bit binaries.</i></td></tr>
+<tr><th id="270">270</th><td><b>template</b> &lt;<b>typename</b> Str&gt;</td></tr>
+<tr><th id="271">271</th><td><b>inline</b> <a class="typedef" href="../../../../include/bits/stdint-uintn.h.html#uint32_t" title='uint32_t' data-type='__uint32_t' data-ref="uint32_t" data-ref-filename="uint32_t">uint32_t</a> <dfn class="decl def fn" id="_ZN4util13Fingerprint32ERKT_" title='util::Fingerprint32' data-ref="_ZN4util13Fingerprint32ERKT_" data-ref-filename="_ZN4util13Fingerprint32ERKT_">Fingerprint32</dfn>(<em>const</em> Str&amp; <dfn class="local col6 decl" id="56s" title='s' data-type='const Str &amp;' data-ref="56s" data-ref-filename="56s">s</dfn>) {</td></tr>
+<tr><th id="272">272</th><td>  <a class="macro" href="../../../../include/assert.h.html#50" title="(static_cast&lt;void&gt; (0))" data-ref="_M/assert">assert</a>(<b>sizeof</b>(s[<var>0</var>]) == <var>1</var>);</td></tr>
+<tr><th id="273">273</th><td>  <b>return</b> Fingerprint32(<a class="local col6 ref" href="#56s" title='s' data-ref="56s" data-ref-filename="56s">s</a>.data(), <a class="local col6 ref" href="#56s" title='s' data-ref="56s" data-ref-filename="56s">s</a>.length());</td></tr>
+<tr><th id="274">274</th><td>}</td></tr>
+<tr><th id="275">275</th><td></td></tr>
+<tr><th id="276">276</th><td><i>// Fingerprint 128 input bits down to 64 bits of output.</i></td></tr>
+<tr><th id="277">277</th><td><i>// Fingerprint function for a byte array.</i></td></tr>
+<tr><th id="278">278</th><td><b>template</b> &lt;<b>typename</b> Str&gt;</td></tr>
+<tr><th id="279">279</th><td><b>inline</b> <a class="typedef" href="../../../../include/bits/stdint-uintn.h.html#uint64_t" title='uint64_t' data-type='__uint64_t' data-ref="uint64_t" data-ref-filename="uint64_t">uint64_t</a> <dfn class="decl def fn" id="_ZN4util13Fingerprint64ERKT_" title='util::Fingerprint64' data-ref="_ZN4util13Fingerprint64ERKT_" data-ref-filename="_ZN4util13Fingerprint64ERKT_">Fingerprint64</dfn>(<em>const</em> Str&amp; <dfn class="local col7 decl" id="57s" title='s' data-type='const Str &amp;' data-ref="57s" data-ref-filename="57s">s</dfn>) {</td></tr>
+<tr><th id="280">280</th><td>  <a class="macro" href="../../../../include/assert.h.html#50" title="(static_cast&lt;void&gt; (0))" data-ref="_M/assert">assert</a>(<b>sizeof</b>(s[<var>0</var>]) == <var>1</var>);</td></tr>
+<tr><th id="281">281</th><td>  <b>return</b> Fingerprint64(<a class="local col7 ref" href="#57s" title='s' data-ref="57s" data-ref-filename="57s">s</a>.data(), <a class="local col7 ref" href="#57s" title='s' data-ref="57s" data-ref-filename="57s">s</a>.length());</td></tr>
+<tr><th id="282">282</th><td>}</td></tr>
+<tr><th id="283">283</th><td></td></tr>
+<tr><th id="284">284</th><td><i>// Fingerprint function for a byte array.</i></td></tr>
+<tr><th id="285">285</th><td><b>template</b> &lt;<b>typename</b> Str&gt;</td></tr>
+<tr><th id="286">286</th><td><b>inline</b> <a class="typedef" href="#util::uint128_t" title='util::uint128_t' data-type='std::pair&lt;uint64_t, uint64_t&gt;' data-ref="util::uint128_t" data-ref-filename="util..uint128_t">uint128_t</a> <dfn class="decl def fn" id="_ZN4util14Fingerprint128ERKT_" title='util::Fingerprint128' data-ref="_ZN4util14Fingerprint128ERKT_" data-ref-filename="_ZN4util14Fingerprint128ERKT_">Fingerprint128</dfn>(<em>const</em> Str&amp; <dfn class="local col8 decl" id="58s" title='s' data-type='const Str &amp;' data-ref="58s" data-ref-filename="58s">s</dfn>) {</td></tr>
+<tr><th id="287">287</th><td>  <a class="macro" href="../../../../include/assert.h.html#50" title="(static_cast&lt;void&gt; (0))" data-ref="_M/assert">assert</a>(<b>sizeof</b>(s[<var>0</var>]) == <var>1</var>);</td></tr>
+<tr><th id="288">288</th><td>  <b>return</b> Fingerprint128(<a class="local col8 ref" href="#58s" title='s' data-ref="58s" data-ref-filename="58s">s</a>.data(), <a class="local col8 ref" href="#58s" title='s' data-ref="58s" data-ref-filename="58s">s</a>.length());</td></tr>
+<tr><th id="289">289</th><td>}</td></tr>
+<tr><th id="290">290</th><td></td></tr>
+<tr><th id="291">291</th><td><u>#<span data-ppcond="183">endif</span></u></td></tr>
+<tr><th id="292">292</th><td></td></tr>
+<tr><th id="293">293</th><td>}  <i>// namespace NAMESPACE_FOR_HASH_FUNCTIONS</i></td></tr>
+<tr><th id="294">294</th><td></td></tr>
+<tr><th id="295">295</th><td><i>/* gently define FARMHASH_BIG_ENDIAN when detected big-endian machine */</i></td></tr>
+<tr><th id="296">296</th><td><u>#<span data-ppcond="296">if</span> defined(<span class="macro" data-ref="_M/__BIG_ENDIAN__">__BIG_ENDIAN__</span>)</u></td></tr>
+<tr><th id="297">297</th><td>  <u>#if !defined(FARMHASH_BIG_ENDIAN)</u></td></tr>
+<tr><th id="298">298</th><td>    <u>#define FARMHASH_BIG_ENDIAN</u></td></tr>
+<tr><th id="299">299</th><td>  <u>#endif</u></td></tr>
+<tr><th id="300">300</th><td><u>#<span data-ppcond="296">elif</span> defined(<span class="macro" data-ref="_M/__LITTLE_ENDIAN__">__LITTLE_ENDIAN__</span>)</u></td></tr>
+<tr><th id="301">301</th><td>  <i>// nothing for little-endian</i></td></tr>
+<tr><th id="302">302</th><td><u>#<span data-ppcond="296">elif</span> defined(__BYTE_ORDER__) &amp;&amp; defined(__ORDER_LITTLE_ENDIAN__) &amp;&amp; (__BYTE_ORDER == __ORDER_LITTLE_ENDIAN__)</u></td></tr>
+<tr><th id="303">303</th><td>  <i>// nothing for little-endian</i></td></tr>
+<tr><th id="304">304</th><td><u>#elif defined(__BYTE_ORDER__) &amp;&amp; defined(__ORDER_BIG_ENDIAN__) &amp;&amp; (__BYTE_ORDER == __ORDER_BIG_ENDIAN__)</u></td></tr>
+<tr><th id="305">305</th><td>  <u>#if !defined(FARMHASH_BIG_ENDIAN)</u></td></tr>
+<tr><th id="306">306</th><td>    <u>#define FARMHASH_BIG_ENDIAN</u></td></tr>
+<tr><th id="307">307</th><td>  <u>#endif</u></td></tr>
+<tr><th id="308">308</th><td><u>#elif defined(__linux__) || defined(__CYGWIN__) || defined( __GNUC__ ) || defined( __GNU_LIBRARY__ )</u></td></tr>
+<tr><th id="309">309</th><td>  <u>#include &lt;endian.h&gt; // libc6-dev, GLIBC</u></td></tr>
+<tr><th id="310">310</th><td>  <u>#if BYTE_ORDER == BIG_ENDIAN</u></td></tr>
+<tr><th id="311">311</th><td>    <u>#if !defined(FARMHASH_BIG_ENDIAN)</u></td></tr>
+<tr><th id="312">312</th><td>      <u>#define FARMHASH_BIG_ENDIAN</u></td></tr>
+<tr><th id="313">313</th><td>    <u>#endif</u></td></tr>
+<tr><th id="314">314</th><td>  <u>#endif</u></td></tr>
+<tr><th id="315">315</th><td><u>#elif defined(__OpenBSD__) || defined(__NetBSD__) || defined(__FreeBSD__) || defined(__DragonFly__) || defined(__s390x__)</u></td></tr>
+<tr><th id="316">316</th><td>  <u>#include &lt;sys/endian.h&gt;</u></td></tr>
+<tr><th id="317">317</th><td>  <u>#if BYTE_ORDER == BIG_ENDIAN</u></td></tr>
+<tr><th id="318">318</th><td>    <u>#if !defined(FARMHASH_BIG_ENDIAN)</u></td></tr>
+<tr><th id="319">319</th><td>      <u>#define FARMHASH_BIG_ENDIAN</u></td></tr>
+<tr><th id="320">320</th><td>    <u>#endif</u></td></tr>
+<tr><th id="321">321</th><td>  <u>#endif</u></td></tr>
+<tr><th id="322">322</th><td><u>#elif defined(_WIN32)</u></td></tr>
+<tr><th id="323">323</th><td>  <i>// Windows is (currently) little-endian</i></td></tr>
+<tr><th id="324">324</th><td><u>#else</u></td></tr>
+<tr><th id="325">325</th><td>  <u>#error "Unable to determine endianness!"</u></td></tr>
+<tr><th id="326">326</th><td><u>#<span data-ppcond="296">endif</span> /* __BIG_ENDIAN__ */</u></td></tr>
+<tr><th id="327">327</th><td></td></tr>
+<tr><th id="328">328</th><td><u>#<span data-ppcond="43">endif</span>  // FARM_HASH_H_</u></td></tr>
+<tr><th id="329">329</th><td></td></tr>
+</table><hr/><p id='footer'>
+Generated while processing <a href='../../_deps/tflite-src/tensorflow/lite/kernels/lsh_projection.cc.html'>halide/build-apps/_deps/tflite-src/tensorflow/lite/kernels/lsh_projection.cc</a><br/>Generated on <em>2021-Aug-05</em> from project halide revision <em>v12.0.1</em>

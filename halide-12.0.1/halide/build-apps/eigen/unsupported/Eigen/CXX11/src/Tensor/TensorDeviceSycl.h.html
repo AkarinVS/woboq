@@ -1,0 +1,1064 @@
+<!doctype html>
+<html>
+<head>
+<meta name="viewport" content="width=device-width, initial-scale=1.0"><title>TensorDeviceSycl.h source code [halide/build-apps/eigen/unsupported/Eigen/CXX11/src/Tensor/TensorDeviceSycl.h] - Woboq Code Browser</title>
+<link rel="stylesheet" href="../../../../../../../.././data/qtcreator.css" title="QtCreator"/>
+<link rel="alternate stylesheet" href="../../../../../../../.././data/kdevelop.css" title="KDevelop"/>
+<script type="text/javascript" src="../../../../../../../.././data/jquery/jquery.min.js"></script>
+<script type="text/javascript" src="../../../../../../../.././data/jquery/jquery-ui.min.js"></script>
+<script>var file = 'halide/build-apps/eigen/unsupported/Eigen/CXX11/src/Tensor/TensorDeviceSycl.h'; var root_path = '../../../../../../../..'; var data_path = '../../../../../../../.././data'; var ecma_script_api_version = 2;</script>
+<script src='../../../../../../../.././data/codebrowser.js'></script>
+</head>
+<body><div id='header'><h1 id='breadcrumb'><span>Browse the source code of </span><a href='../../../../../../..'>halide</a>/<a href='../../../../../..'>build-apps</a>/<a href='../../../../..'>eigen</a>/<a href='../../../..'>unsupported</a>/<a href='../../..'>Eigen</a>/<a href='../..'>CXX11</a>/<a href='..'>src</a>/<a href='./'>Tensor</a>/<a href='TensorDeviceSycl.h.html'>TensorDeviceSycl.h</a></h1></div>
+<hr/><div id='content'><table class="code">
+<tr><th id="1">1</th><td><i>// This file is part of Eigen, a lightweight C++ template library</i></td></tr>
+<tr><th id="2">2</th><td><i>// for linear algebra.</i></td></tr>
+<tr><th id="3">3</th><td><i>//</i></td></tr>
+<tr><th id="4">4</th><td><i>// Mehdi Goli    Codeplay Software Ltd.</i></td></tr>
+<tr><th id="5">5</th><td><i>// Ralph Potter  Codeplay Software Ltd.</i></td></tr>
+<tr><th id="6">6</th><td><i>// Luke Iwanski  Codeplay Software Ltd.</i></td></tr>
+<tr><th id="7">7</th><td><i>// Contact: &lt;eigen@codeplay.com&gt;</i></td></tr>
+<tr><th id="8">8</th><td><i>// Copyright (C) 2016 Benoit Steiner &lt;benoit.steiner.goog@gmail.com&gt;</i></td></tr>
+<tr><th id="9">9</th><td><i></i></td></tr>
+<tr><th id="10">10</th><td><i>//</i></td></tr>
+<tr><th id="11">11</th><td><i>// This Source Code Form is subject to the terms of the Mozilla</i></td></tr>
+<tr><th id="12">12</th><td><i>// Public License v. 2.0. If a copy of the MPL was not distributed</i></td></tr>
+<tr><th id="13">13</th><td><i>// with this file, You can obtain one at <a href="http://mozilla.org/MPL/2.0/">http://mozilla.org/MPL/2.0/</a>.</i></td></tr>
+<tr><th id="14">14</th><td></td></tr>
+<tr><th id="15">15</th><td><u>#<span data-ppcond="15">if</span> defined(<span class="macro" data-ref="_M/EIGEN_USE_SYCL">EIGEN_USE_SYCL</span>) &amp;&amp; !defined(<span class="macro" data-ref="_M/EIGEN_CXX11_TENSOR_TENSOR_DEVICE_SYCL_H">EIGEN_CXX11_TENSOR_TENSOR_DEVICE_SYCL_H</span>)</u></td></tr>
+<tr><th id="16">16</th><td><u>#define EIGEN_CXX11_TENSOR_TENSOR_DEVICE_SYCL_H</u></td></tr>
+<tr><th id="17">17</th><td><u>#include &lt;unordered_set&gt;</u></td></tr>
+<tr><th id="18">18</th><td></td></tr>
+<tr><th id="19">19</th><td><b>namespace</b> Eigen {</td></tr>
+<tr><th id="20">20</th><td></td></tr>
+<tr><th id="21">21</th><td><b>namespace</b> TensorSycl {</td></tr>
+<tr><th id="22">22</th><td><b>namespace</b> internal {</td></tr>
+<tr><th id="23">23</th><td></td></tr>
+<tr><th id="24">24</th><td><i class="doc">/// Cache all the device information needed</i></td></tr>
+<tr><th id="25">25</th><td><b>struct</b> SyclDeviceInfo {</td></tr>
+<tr><th id="26">26</th><td>  SyclDeviceInfo(cl::sycl::queue queue)</td></tr>
+<tr><th id="27">27</th><td>      : local_mem_type(</td></tr>
+<tr><th id="28">28</th><td>            queue.get_device()</td></tr>
+<tr><th id="29">29</th><td>                .<b>template</b> get_info&lt;cl::sycl::info::device::local_mem_type&gt;()),</td></tr>
+<tr><th id="30">30</th><td>        max_work_item_sizes(</td></tr>
+<tr><th id="31">31</th><td>            queue.get_device()</td></tr>
+<tr><th id="32">32</th><td>                .<b>template</b> get_info&lt;</td></tr>
+<tr><th id="33">33</th><td>                    cl::sycl::info::device::max_work_item_sizes&gt;()),</td></tr>
+<tr><th id="34">34</th><td>        max_mem_alloc_size(</td></tr>
+<tr><th id="35">35</th><td>            queue.get_device()</td></tr>
+<tr><th id="36">36</th><td>                .<b>template</b> get_info&lt;</td></tr>
+<tr><th id="37">37</th><td>                    cl::sycl::info::device::max_mem_alloc_size&gt;()),</td></tr>
+<tr><th id="38">38</th><td>        max_compute_units(queue.get_device()</td></tr>
+<tr><th id="39">39</th><td>                              .<b>template</b> get_info&lt;</td></tr>
+<tr><th id="40">40</th><td>                                  cl::sycl::info::device::max_compute_units&gt;()),</td></tr>
+<tr><th id="41">41</th><td>        max_work_group_size(</td></tr>
+<tr><th id="42">42</th><td>            queue.get_device()</td></tr>
+<tr><th id="43">43</th><td>                .<b>template</b> get_info&lt;</td></tr>
+<tr><th id="44">44</th><td>                    cl::sycl::info::device::max_work_group_size&gt;()),</td></tr>
+<tr><th id="45">45</th><td>        local_mem_size(</td></tr>
+<tr><th id="46">46</th><td>            queue.get_device()</td></tr>
+<tr><th id="47">47</th><td>                .<b>template</b> get_info&lt;cl::sycl::info::device::local_mem_size&gt;()),</td></tr>
+<tr><th id="48">48</th><td>        platform_name(queue.get_device()</td></tr>
+<tr><th id="49">49</th><td>                          .get_platform()</td></tr>
+<tr><th id="50">50</th><td>                          .<b>template</b> get_info&lt;cl::sycl::info::platform::name&gt;()),</td></tr>
+<tr><th id="51">51</th><td>        device_name(queue.get_device()</td></tr>
+<tr><th id="52">52</th><td>                        .<b>template</b> get_info&lt;cl::sycl::info::device::name&gt;()),</td></tr>
+<tr><th id="53">53</th><td>        device_vendor(</td></tr>
+<tr><th id="54">54</th><td>            queue.get_device()</td></tr>
+<tr><th id="55">55</th><td>                .<b>template</b> get_info&lt;cl::sycl::info::device::vendor&gt;()) {}</td></tr>
+<tr><th id="56">56</th><td></td></tr>
+<tr><th id="57">57</th><td>  cl::sycl::info::local_mem_type local_mem_type;</td></tr>
+<tr><th id="58">58</th><td>  cl::sycl::id&lt;<var>3</var>&gt; max_work_item_sizes;</td></tr>
+<tr><th id="59">59</th><td>  <em>unsigned</em> <em>long</em> max_mem_alloc_size;</td></tr>
+<tr><th id="60">60</th><td>  <em>unsigned</em> <em>long</em> max_compute_units;</td></tr>
+<tr><th id="61">61</th><td>  <em>unsigned</em> <em>long</em> max_work_group_size;</td></tr>
+<tr><th id="62">62</th><td>  size_t local_mem_size;</td></tr>
+<tr><th id="63">63</th><td>  std::string platform_name;</td></tr>
+<tr><th id="64">64</th><td>  std::string device_name;</td></tr>
+<tr><th id="65">65</th><td>  std::string device_vendor;</td></tr>
+<tr><th id="66">66</th><td>};</td></tr>
+<tr><th id="67">67</th><td></td></tr>
+<tr><th id="68">68</th><td>}  <i>// end namespace internal</i></td></tr>
+<tr><th id="69">69</th><td>}  <i>// end namespace TensorSycl</i></td></tr>
+<tr><th id="70">70</th><td></td></tr>
+<tr><th id="71">71</th><td><b>typedef</b> TensorSycl::internal::buffer_data_type_t buffer_scalar_t;</td></tr>
+<tr><th id="72">72</th><td><i>// All devices (even AMD CPU with intel OpenCL runtime) that support OpenCL and</i></td></tr>
+<tr><th id="73">73</th><td><i>// can consume SPIR or SPIRV can use the Eigen SYCL backend and consequently</i></td></tr>
+<tr><th id="74">74</th><td><i>// TensorFlow via the Eigen SYCL Backend.</i></td></tr>
+<tr><th id="75">75</th><td>EIGEN_STRONG_INLINE <em>auto</em> get_sycl_supported_devices()</td></tr>
+<tr><th id="76">76</th><td>    -&gt; <b>decltype</b>(cl::sycl::device::get_devices()) {</td></tr>
+<tr><th id="77">77</th><td><u>#ifdef EIGEN_SYCL_USE_DEFAULT_SELECTOR</u></td></tr>
+<tr><th id="78">78</th><td>  <b>return</b> {cl::sycl::device(cl::sycl::default_selector())};</td></tr>
+<tr><th id="79">79</th><td><u>#else</u></td></tr>
+<tr><th id="80">80</th><td>  std::vector&lt;cl::sycl::device&gt; supported_devices;</td></tr>
+<tr><th id="81">81</th><td>  <em>auto</em> platform_list = cl::sycl::platform::get_platforms();</td></tr>
+<tr><th id="82">82</th><td>  <b>for</b> (<em>const</em> <em>auto</em> &amp;platform : platform_list) {</td></tr>
+<tr><th id="83">83</th><td>    <em>auto</em> device_list = platform.get_devices();</td></tr>
+<tr><th id="84">84</th><td>    <em>auto</em> platform_name =</td></tr>
+<tr><th id="85">85</th><td>        platform.<b>template</b> get_info&lt;cl::sycl::info::platform::name&gt;();</td></tr>
+<tr><th id="86">86</th><td>    std::transform(platform_name.begin(), platform_name.end(),</td></tr>
+<tr><th id="87">87</th><td>                   platform_name.begin(), ::tolower);</td></tr>
+<tr><th id="88">88</th><td>    <b>for</b> (<em>const</em> <em>auto</em> &amp;device : device_list) {</td></tr>
+<tr><th id="89">89</th><td>      <em>auto</em> vendor = device.<b>template</b> get_info&lt;cl::sycl::info::device::vendor&gt;();</td></tr>
+<tr><th id="90">90</th><td>      std::transform(vendor.begin(), vendor.end(), vendor.begin(), ::tolower);</td></tr>
+<tr><th id="91">91</th><td>      <em>bool</em> unsupported_condition =</td></tr>
+<tr><th id="92">92</th><td>          (device.is_cpu() &amp;&amp; platform_name.find(<q>"amd"</q>) != std::string::npos &amp;&amp;</td></tr>
+<tr><th id="93">93</th><td>           vendor.find(<q>"apu"</q>) == std::string::npos) ||</td></tr>
+<tr><th id="94">94</th><td>          (platform_name.find(<q>"experimental"</q>) != std::string::npos) ||</td></tr>
+<tr><th id="95">95</th><td>          device.is_host();</td></tr>
+<tr><th id="96">96</th><td>      <b>if</b> (!unsupported_condition) {</td></tr>
+<tr><th id="97">97</th><td>        supported_devices.push_back(device);</td></tr>
+<tr><th id="98">98</th><td>      }</td></tr>
+<tr><th id="99">99</th><td>    }</td></tr>
+<tr><th id="100">100</th><td>  }</td></tr>
+<tr><th id="101">101</th><td>  <b>return</b> supported_devices;</td></tr>
+<tr><th id="102">102</th><td><u>#endif</u></td></tr>
+<tr><th id="103">103</th><td>}</td></tr>
+<tr><th id="104">104</th><td></td></tr>
+<tr><th id="105">105</th><td><b>class</b> QueueInterface {</td></tr>
+<tr><th id="106">106</th><td> <b>public</b>:</td></tr>
+<tr><th id="107">107</th><td>  <i class="doc">/// Creating device by using cl::sycl::selector or cl::sycl::device.</i></td></tr>
+<tr><th id="108">108</th><td>  <b>template</b> &lt;<b>typename</b> DeviceOrSelector&gt;</td></tr>
+<tr><th id="109">109</th><td>  <b>explicit</b> QueueInterface(</td></tr>
+<tr><th id="110">110</th><td>      <em>const</em> DeviceOrSelector &amp;dev_or_sel, cl::sycl::async_handler handler,</td></tr>
+<tr><th id="111">111</th><td>      <em>unsigned</em> num_threads = std::thread::hardware_concurrency())</td></tr>
+<tr><th id="112">112</th><td>      : m_queue(dev_or_sel, handler),</td></tr>
+<tr><th id="113">113</th><td><u>#ifdef EIGEN_SYCL_USE_PROGRAM_CLASS</u></td></tr>
+<tr><th id="114">114</th><td>        m_prog(m_queue.get_context(), get_sycl_supported_devices()),</td></tr>
+<tr><th id="115">115</th><td><u>#endif</u></td></tr>
+<tr><th id="116">116</th><td>        m_thread_pool(num_threads),</td></tr>
+<tr><th id="117">117</th><td>        m_device_info(m_queue) {</td></tr>
+<tr><th id="118">118</th><td><u>#ifdef EIGEN_SYCL_USE_PROGRAM_CLASS</u></td></tr>
+<tr><th id="119">119</th><td>    m_prog.build_with_kernel_type&lt;DeviceOrSelector&gt;();</td></tr>
+<tr><th id="120">120</th><td>    <em>auto</em> f = [&amp;](cl::sycl::handler &amp;cgh) {</td></tr>
+<tr><th id="121">121</th><td>      cgh.single_task&lt;DeviceOrSelector&gt;(m_prog.get_kernel&lt;DeviceOrSelector&gt;(),</td></tr>
+<tr><th id="122">122</th><td>                                        [=]() {})</td></tr>
+<tr><th id="123">123</th><td>    };</td></tr>
+<tr><th id="124">124</th><td>    EIGEN_SYCL_TRY_CATCH(m_queue.submit(f));</td></tr>
+<tr><th id="125">125</th><td><u>#endif</u></td></tr>
+<tr><th id="126">126</th><td>  }</td></tr>
+<tr><th id="127">127</th><td></td></tr>
+<tr><th id="128">128</th><td>  <b>template</b> &lt;<b>typename</b> DeviceOrSelector&gt;</td></tr>
+<tr><th id="129">129</th><td>  <b>explicit</b> QueueInterface(</td></tr>
+<tr><th id="130">130</th><td>      <em>const</em> DeviceOrSelector &amp;dev_or_sel,</td></tr>
+<tr><th id="131">131</th><td>      <em>unsigned</em> num_threads = std::thread::hardware_concurrency())</td></tr>
+<tr><th id="132">132</th><td>      : QueueInterface(dev_or_sel,</td></tr>
+<tr><th id="133">133</th><td>                       [<b>this</b>](cl::sycl::exception_list l) {</td></tr>
+<tr><th id="134">134</th><td>                         <b>this</b>-&gt;exception_caught_ = <b>this</b>-&gt;sycl_async_handler(l);</td></tr>
+<tr><th id="135">135</th><td>                       },</td></tr>
+<tr><th id="136">136</th><td>                       num_threads) {}</td></tr>
+<tr><th id="137">137</th><td></td></tr>
+<tr><th id="138">138</th><td><u>#ifdef EIGEN_SYCL_USE_PROGRAM_CLASS</u></td></tr>
+<tr><th id="139">139</th><td>  EIGEN_STRONG_INLINE cl::sycl::program &amp;program() <em>const</em> { <b>return</b> m_prog; }</td></tr>
+<tr><th id="140">140</th><td><u>#endif</u></td></tr>
+<tr><th id="141">141</th><td></td></tr>
+<tr><th id="142">142</th><td>  <i class="doc">/// Attach an existing buffer to the pointer map, Eigen will not reuse it</i></td></tr>
+<tr><th id="143">143</th><td>  EIGEN_STRONG_INLINE <em>void</em> *attach_buffer(</td></tr>
+<tr><th id="144">144</th><td>      cl::sycl::buffer&lt;buffer_scalar_t, <var>1</var>&gt; &amp;buf) <em>const</em> {</td></tr>
+<tr><th id="145">145</th><td>    std::lock_guard&lt;std::mutex&gt; lock(pmapper_mutex_);</td></tr>
+<tr><th id="146">146</th><td>    <b>return</b> <b>static_cast</b>&lt;<em>void</em> *&gt;(pMapper.add_pointer(buf));</td></tr>
+<tr><th id="147">147</th><td>  }</td></tr>
+<tr><th id="148">148</th><td></td></tr>
+<tr><th id="149">149</th><td>  <i class="doc">/// Detach previously attached buffer</i></td></tr>
+<tr><th id="150">150</th><td>  EIGEN_STRONG_INLINE <em>void</em> detach_buffer(<em>void</em> *p) <em>const</em> {</td></tr>
+<tr><th id="151">151</th><td>    std::lock_guard&lt;std::mutex&gt; lock(pmapper_mutex_);</td></tr>
+<tr><th id="152">152</th><td>    TensorSycl::internal::SYCLfree&lt;<b>false</b>&gt;(p, pMapper);</td></tr>
+<tr><th id="153">153</th><td>  }</td></tr>
+<tr><th id="154">154</th><td></td></tr>
+<tr><th id="155">155</th><td>  <i class="doc">/// Allocating device pointer. This pointer is actually an 8 bytes host</i></td></tr>
+<tr><th id="156">156</th><td><i class="doc">  /// pointer used as key to access the sycl device buffer. The reason is that</i></td></tr>
+<tr><th id="157">157</th><td><i class="doc">  /// we cannot use device buffer as a pointer as a m_data in Eigen leafNode</i></td></tr>
+<tr><th id="158">158</th><td><i class="doc">  /// expressions. So we create a key pointer to be used in Eigen expression</i></td></tr>
+<tr><th id="159">159</th><td><i class="doc">  /// construction. When we convert the Eigen construction into the sycl</i></td></tr>
+<tr><th id="160">160</th><td><i class="doc">  /// construction we use this pointer as a key in our buffer_map and we make</i></td></tr>
+<tr><th id="161">161</th><td><i class="doc">  /// sure that we dedicate only one buffer only for this pointer. The device</i></td></tr>
+<tr><th id="162">162</th><td><i class="doc">  /// pointer would be deleted by calling deallocate function.</i></td></tr>
+<tr><th id="163">163</th><td>  EIGEN_STRONG_INLINE <em>void</em> *allocate(size_t num_bytes) <em>const</em> {</td></tr>
+<tr><th id="164">164</th><td><u>#if EIGEN_MAX_ALIGN_BYTES &gt; 0</u></td></tr>
+<tr><th id="165">165</th><td>    size_t align = num_bytes % EIGEN_MAX_ALIGN_BYTES;</td></tr>
+<tr><th id="166">166</th><td>    <b>if</b> (align &gt; <var>0</var>) {</td></tr>
+<tr><th id="167">167</th><td>      num_bytes += EIGEN_MAX_ALIGN_BYTES - align;</td></tr>
+<tr><th id="168">168</th><td>    }</td></tr>
+<tr><th id="169">169</th><td><u>#endif</u></td></tr>
+<tr><th id="170">170</th><td>    std::lock_guard&lt;std::mutex&gt; lock(pmapper_mutex_);</td></tr>
+<tr><th id="171">171</th><td>    <b>return</b> TensorSycl::internal::SYCLmalloc(num_bytes, pMapper);</td></tr>
+<tr><th id="172">172</th><td>  }</td></tr>
+<tr><th id="173">173</th><td></td></tr>
+<tr><th id="174">174</th><td>  EIGEN_STRONG_INLINE <em>void</em> *allocate_temp(size_t num_bytes) <em>const</em> {</td></tr>
+<tr><th id="175">175</th><td><u>#if EIGEN_MAX_ALIGN_BYTES &gt; 0</u></td></tr>
+<tr><th id="176">176</th><td>    size_t align = num_bytes % EIGEN_MAX_ALIGN_BYTES;</td></tr>
+<tr><th id="177">177</th><td>    <b>if</b> (align &gt; <var>0</var>) {</td></tr>
+<tr><th id="178">178</th><td>      num_bytes += EIGEN_MAX_ALIGN_BYTES - align;</td></tr>
+<tr><th id="179">179</th><td>    }</td></tr>
+<tr><th id="180">180</th><td><u>#endif</u></td></tr>
+<tr><th id="181">181</th><td>    std::lock_guard&lt;std::mutex&gt; lock(pmapper_mutex_);</td></tr>
+<tr><th id="182">182</th><td><u>#ifndef EIGEN_SYCL_NO_REUSE_BUFFERS</u></td></tr>
+<tr><th id="183">183</th><td>    <b>if</b> (scratch_buffers.empty()) {</td></tr>
+<tr><th id="184">184</th><td>      <b>return</b> TensorSycl::internal::SYCLmalloc(num_bytes, pMapper);</td></tr>
+<tr><th id="185">185</th><td>      ;</td></tr>
+<tr><th id="186">186</th><td>    } <b>else</b> {</td></tr>
+<tr><th id="187">187</th><td>      <b>for</b> (<em>auto</em> it = scratch_buffers.begin(); it != scratch_buffers.end();) {</td></tr>
+<tr><th id="188">188</th><td>        <em>auto</em> buff = pMapper.get_buffer(*it);</td></tr>
+<tr><th id="189">189</th><td>        <b>if</b> (buff.get_size() &gt;= num_bytes) {</td></tr>
+<tr><th id="190">190</th><td>          <em>auto</em> ptr = *it;</td></tr>
+<tr><th id="191">191</th><td>          scratch_buffers.erase(it);</td></tr>
+<tr><th id="192">192</th><td>          <b>return</b> ptr;</td></tr>
+<tr><th id="193">193</th><td>        } <b>else</b> {</td></tr>
+<tr><th id="194">194</th><td>          ++it;</td></tr>
+<tr><th id="195">195</th><td>        }</td></tr>
+<tr><th id="196">196</th><td>      }</td></tr>
+<tr><th id="197">197</th><td>      <b>return</b> TensorSycl::internal::SYCLmalloc(num_bytes, pMapper);</td></tr>
+<tr><th id="198">198</th><td>    }</td></tr>
+<tr><th id="199">199</th><td><u>#else</u></td></tr>
+<tr><th id="200">200</th><td>    <b>return</b> TensorSycl::internal::SYCLmalloc(num_bytes, pMapper);</td></tr>
+<tr><th id="201">201</th><td><u>#endif</u></td></tr>
+<tr><th id="202">202</th><td>  }</td></tr>
+<tr><th id="203">203</th><td>  <b>template</b> &lt;<b>typename</b> data_t&gt;</td></tr>
+<tr><th id="204">204</th><td>  EIGEN_DEVICE_FUNC EIGEN_STRONG_INLINE TensorSycl::internal::RangeAccess&lt;</td></tr>
+<tr><th id="205">205</th><td>      cl::sycl::access::mode::read_write, data_t&gt;</td></tr>
+<tr><th id="206">206</th><td>  get(data_t *data) <em>const</em> {</td></tr>
+<tr><th id="207">207</th><td>    <b>return</b> get_range_accessor&lt;cl::sycl::access::mode::read_write, data_t&gt;(data);</td></tr>
+<tr><th id="208">208</th><td>  }</td></tr>
+<tr><th id="209">209</th><td>  <b>template</b> &lt;<b>typename</b> data_t&gt;</td></tr>
+<tr><th id="210">210</th><td>  EIGEN_DEVICE_FUNC EIGEN_STRONG_INLINE data_t *get(</td></tr>
+<tr><th id="211">211</th><td>      TensorSycl::internal::RangeAccess&lt;cl::sycl::access::mode::read_write,</td></tr>
+<tr><th id="212">212</th><td>                                        data_t&gt;</td></tr>
+<tr><th id="213">213</th><td>          data) <em>const</em> {</td></tr>
+<tr><th id="214">214</th><td>    <b>return</b> <b>static_cast</b>&lt;data_t *&gt;(data.get_virtual_pointer());</td></tr>
+<tr><th id="215">215</th><td>  }</td></tr>
+<tr><th id="216">216</th><td></td></tr>
+<tr><th id="217">217</th><td>  EIGEN_STRONG_INLINE <em>void</em> deallocate_temp(<em>void</em> *p) <em>const</em> {</td></tr>
+<tr><th id="218">218</th><td>    std::lock_guard&lt;std::mutex&gt; lock(pmapper_mutex_);</td></tr>
+<tr><th id="219">219</th><td><u>#ifndef EIGEN_SYCL_NO_REUSE_BUFFERS</u></td></tr>
+<tr><th id="220">220</th><td>    scratch_buffers.insert(p);</td></tr>
+<tr><th id="221">221</th><td><u>#else</u></td></tr>
+<tr><th id="222">222</th><td>    TensorSycl::internal::SYCLfree(p, pMapper);</td></tr>
+<tr><th id="223">223</th><td><u>#endif</u></td></tr>
+<tr><th id="224">224</th><td>  }</td></tr>
+<tr><th id="225">225</th><td>  <b>template</b> &lt;cl::sycl::access::mode AcMd, <b>typename</b> T&gt;</td></tr>
+<tr><th id="226">226</th><td>  EIGEN_STRONG_INLINE <em>void</em> deallocate_temp(</td></tr>
+<tr><th id="227">227</th><td>      <em>const</em> TensorSycl::internal::RangeAccess&lt;AcMd, T&gt; &amp;p) <em>const</em> {</td></tr>
+<tr><th id="228">228</th><td>    deallocate_temp(p.get_virtual_pointer());</td></tr>
+<tr><th id="229">229</th><td>  }</td></tr>
+<tr><th id="230">230</th><td></td></tr>
+<tr><th id="231">231</th><td>  <i class="doc">/// This is used to deallocate the device pointer. p is used as a key inside</i></td></tr>
+<tr><th id="232">232</th><td><i class="doc">  /// the map to find the device buffer and delete it.</i></td></tr>
+<tr><th id="233">233</th><td>  EIGEN_STRONG_INLINE <em>void</em> deallocate(<em>void</em> *p) <em>const</em> {</td></tr>
+<tr><th id="234">234</th><td>    std::lock_guard&lt;std::mutex&gt; lock(pmapper_mutex_);</td></tr>
+<tr><th id="235">235</th><td>    TensorSycl::internal::SYCLfree(p, pMapper);</td></tr>
+<tr><th id="236">236</th><td>  }</td></tr>
+<tr><th id="237">237</th><td></td></tr>
+<tr><th id="238">238</th><td>  EIGEN_STRONG_INLINE <em>void</em> deallocate_all() <em>const</em> {</td></tr>
+<tr><th id="239">239</th><td>    std::lock_guard&lt;std::mutex&gt; lock(pmapper_mutex_);</td></tr>
+<tr><th id="240">240</th><td>    TensorSycl::internal::SYCLfreeAll(pMapper);</td></tr>
+<tr><th id="241">241</th><td><u>#ifndef EIGEN_SYCL_NO_REUSE_BUFFERS</u></td></tr>
+<tr><th id="242">242</th><td>    scratch_buffers.clear();</td></tr>
+<tr><th id="243">243</th><td><u>#endif</u></td></tr>
+<tr><th id="244">244</th><td>  }</td></tr>
+<tr><th id="245">245</th><td></td></tr>
+<tr><th id="246">246</th><td>  <i class="doc">/// The memcpyHostToDevice is used to copy the data from host to device</i></td></tr>
+<tr><th id="247">247</th><td><i class="doc">  /// The destination pointer could be deleted before the copy happend which is</i></td></tr>
+<tr><th id="248">248</th><td><i class="doc">  /// why a callback function is needed. By default if none is provided, the</i></td></tr>
+<tr><th id="249">249</th><td><i class="doc">  /// function is blocking.</i></td></tr>
+<tr><th id="250">250</th><td>  EIGEN_STRONG_INLINE <em>void</em> memcpyHostToDevice(</td></tr>
+<tr><th id="251">251</th><td>      <em>void</em> *dst, <em>const</em> <em>void</em> *src, size_t n,</td></tr>
+<tr><th id="252">252</th><td>      std::function&lt;<em>void</em>()&gt; callback) <em>const</em> {</td></tr>
+<tr><th id="253">253</th><td>    <em>static</em> <em>const</em> <em>auto</em> write_mode = cl::sycl::access::mode::discard_write;</td></tr>
+<tr><th id="254">254</th><td>    <em>static</em> <em>const</em> <em>auto</em> global_access = cl::sycl::access::target::global_buffer;</td></tr>
+<tr><th id="255">255</th><td>    <b>typedef</b> cl::sycl::accessor&lt;buffer_scalar_t, <var>1</var>, write_mode, global_access&gt;</td></tr>
+<tr><th id="256">256</th><td>        write_accessor;</td></tr>
+<tr><th id="257">257</th><td>    <b>if</b> (n == <var>0</var>) {</td></tr>
+<tr><th id="258">258</th><td>      <b>if</b> (callback) callback();</td></tr>
+<tr><th id="259">259</th><td>      <b>return</b>;</td></tr>
+<tr><th id="260">260</th><td>    }</td></tr>
+<tr><th id="261">261</th><td>    n /= <b>sizeof</b>(buffer_scalar_t);</td></tr>
+<tr><th id="262">262</th><td>    <em>auto</em> f = [&amp;](cl::sycl::handler &amp;cgh) {</td></tr>
+<tr><th id="263">263</th><td>      write_accessor dst_acc = get_range_accessor&lt;write_mode&gt;(cgh, dst, n);</td></tr>
+<tr><th id="264">264</th><td>      buffer_scalar_t <em>const</em> *ptr = <b>static_cast</b>&lt;buffer_scalar_t <em>const</em> *&gt;(src);</td></tr>
+<tr><th id="265">265</th><td>      <em>auto</em> non_deleter = [](buffer_scalar_t <em>const</em> *) {};</td></tr>
+<tr><th id="266">266</th><td>      std::shared_ptr&lt;<em>const</em> buffer_scalar_t&gt; s_ptr(ptr, non_deleter);</td></tr>
+<tr><th id="267">267</th><td>      cgh.copy(s_ptr, dst_acc);</td></tr>
+<tr><th id="268">268</th><td>    };</td></tr>
+<tr><th id="269">269</th><td>    cl::sycl::event e;</td></tr>
+<tr><th id="270">270</th><td>    EIGEN_SYCL_TRY_CATCH(e = m_queue.submit(f));</td></tr>
+<tr><th id="271">271</th><td>    synchronize_and_callback(e, callback);</td></tr>
+<tr><th id="272">272</th><td>  }</td></tr>
+<tr><th id="273">273</th><td></td></tr>
+<tr><th id="274">274</th><td>  <i class="doc">/// The memcpyDeviceToHost is used to copy the data from device to host.</i></td></tr>
+<tr><th id="275">275</th><td><i class="doc">  /// The source pointer could be deleted before the copy happend which is</i></td></tr>
+<tr><th id="276">276</th><td><i class="doc">  /// why a callback function is needed. By default if none is provided, the</i></td></tr>
+<tr><th id="277">277</th><td><i class="doc">  /// function is blocking.</i></td></tr>
+<tr><th id="278">278</th><td>  EIGEN_STRONG_INLINE <em>void</em> memcpyDeviceToHost(</td></tr>
+<tr><th id="279">279</th><td>      <em>void</em> *dst, <em>const</em> <em>void</em> *src, size_t n,</td></tr>
+<tr><th id="280">280</th><td>      std::function&lt;<em>void</em>()&gt; callback) <em>const</em> {</td></tr>
+<tr><th id="281">281</th><td>    <em>static</em> <em>const</em> <em>auto</em> read_mode = cl::sycl::access::mode::read;</td></tr>
+<tr><th id="282">282</th><td>    <em>static</em> <em>const</em> <em>auto</em> global_access = cl::sycl::access::target::global_buffer;</td></tr>
+<tr><th id="283">283</th><td>    <b>typedef</b> cl::sycl::accessor&lt;buffer_scalar_t, <var>1</var>, read_mode, global_access&gt;</td></tr>
+<tr><th id="284">284</th><td>        read_accessor;</td></tr>
+<tr><th id="285">285</th><td>    <b>if</b> (n == <var>0</var>) {</td></tr>
+<tr><th id="286">286</th><td>      <b>if</b> (callback) callback();</td></tr>
+<tr><th id="287">287</th><td>      <b>return</b>;</td></tr>
+<tr><th id="288">288</th><td>    }</td></tr>
+<tr><th id="289">289</th><td>    n /= <b>sizeof</b>(buffer_scalar_t);</td></tr>
+<tr><th id="290">290</th><td>    <em>auto</em> f = [&amp;](cl::sycl::handler &amp;cgh) {</td></tr>
+<tr><th id="291">291</th><td>      read_accessor src_acc = get_range_accessor&lt;read_mode&gt;(cgh, src, n);</td></tr>
+<tr><th id="292">292</th><td>      buffer_scalar_t *ptr = <b>static_cast</b>&lt;buffer_scalar_t *&gt;(dst);</td></tr>
+<tr><th id="293">293</th><td>      <em>auto</em> non_deleter = [](buffer_scalar_t *) {};</td></tr>
+<tr><th id="294">294</th><td>      std::shared_ptr&lt;buffer_scalar_t&gt; s_ptr(ptr, non_deleter);</td></tr>
+<tr><th id="295">295</th><td>      cgh.copy(src_acc, s_ptr);</td></tr>
+<tr><th id="296">296</th><td>    };</td></tr>
+<tr><th id="297">297</th><td>    cl::sycl::event e;</td></tr>
+<tr><th id="298">298</th><td>    EIGEN_SYCL_TRY_CATCH(e = m_queue.submit(f));</td></tr>
+<tr><th id="299">299</th><td>    synchronize_and_callback(e, callback);</td></tr>
+<tr><th id="300">300</th><td>  }</td></tr>
+<tr><th id="301">301</th><td></td></tr>
+<tr><th id="302">302</th><td>  <i class="doc">/// The memcpy function.</i></td></tr>
+<tr><th id="303">303</th><td><i class="doc">  /// No callback is required here as both arguments are on the device</i></td></tr>
+<tr><th id="304">304</th><td><i class="doc">  /// and SYCL can handle the dependency.</i></td></tr>
+<tr><th id="305">305</th><td>  EIGEN_STRONG_INLINE <em>void</em> memcpy(<em>void</em> *dst, <em>const</em> <em>void</em> *src, size_t n) <em>const</em> {</td></tr>
+<tr><th id="306">306</th><td>    <em>static</em> <em>const</em> <em>auto</em> read_mode = cl::sycl::access::mode::read;</td></tr>
+<tr><th id="307">307</th><td>    <em>static</em> <em>const</em> <em>auto</em> write_mode = cl::sycl::access::mode::discard_write;</td></tr>
+<tr><th id="308">308</th><td>    <b>if</b> (n == <var>0</var>) {</td></tr>
+<tr><th id="309">309</th><td>      <b>return</b>;</td></tr>
+<tr><th id="310">310</th><td>    }</td></tr>
+<tr><th id="311">311</th><td>    n /= <b>sizeof</b>(buffer_scalar_t);</td></tr>
+<tr><th id="312">312</th><td>    <em>auto</em> f = [&amp;](cl::sycl::handler &amp;cgh) {</td></tr>
+<tr><th id="313">313</th><td>      <em>auto</em> src_acc = get_range_accessor&lt;read_mode&gt;(cgh, src, n);</td></tr>
+<tr><th id="314">314</th><td>      <em>auto</em> dst_acc = get_range_accessor&lt;write_mode&gt;(cgh, dst, n);</td></tr>
+<tr><th id="315">315</th><td>      cgh.copy(src_acc, dst_acc);</td></tr>
+<tr><th id="316">316</th><td>    };</td></tr>
+<tr><th id="317">317</th><td>    cl::sycl::event e;</td></tr>
+<tr><th id="318">318</th><td>    EIGEN_SYCL_TRY_CATCH(e = m_queue.submit(f));</td></tr>
+<tr><th id="319">319</th><td>    async_synchronize(e);</td></tr>
+<tr><th id="320">320</th><td>  }</td></tr>
+<tr><th id="321">321</th><td></td></tr>
+<tr><th id="322">322</th><td>  <i class="doc">/// the memset function.</i></td></tr>
+<tr><th id="323">323</th><td><i class="doc">  /// No callback is required here as both arguments are on the device</i></td></tr>
+<tr><th id="324">324</th><td><i class="doc">  /// and SYCL can handle the dependency.</i></td></tr>
+<tr><th id="325">325</th><td>  EIGEN_STRONG_INLINE <em>void</em> memset(<em>void</em> *data, <em>int</em> c, size_t n) <em>const</em> {</td></tr>
+<tr><th id="326">326</th><td>    <em>static</em> <em>const</em> <em>auto</em> write_mode = cl::sycl::access::mode::discard_write;</td></tr>
+<tr><th id="327">327</th><td>    <b>if</b> (n == <var>0</var>) {</td></tr>
+<tr><th id="328">328</th><td>      <b>return</b>;</td></tr>
+<tr><th id="329">329</th><td>    }</td></tr>
+<tr><th id="330">330</th><td>    n /= <b>sizeof</b>(buffer_scalar_t);</td></tr>
+<tr><th id="331">331</th><td>    <em>auto</em> f = [&amp;](cl::sycl::handler &amp;cgh) {</td></tr>
+<tr><th id="332">332</th><td>      <em>auto</em> dst_acc = get_range_accessor&lt;write_mode&gt;(cgh, data, n);</td></tr>
+<tr><th id="333">333</th><td>      <i>// The cast to uint8_t is here to match the behaviour of the standard</i></td></tr>
+<tr><th id="334">334</th><td><i>      // memset. The cast to buffer_scalar_t is needed to match the type of the</i></td></tr>
+<tr><th id="335">335</th><td><i>      // accessor (in case buffer_scalar_t is not uint8_t)</i></td></tr>
+<tr><th id="336">336</th><td>      cgh.fill(dst_acc, <b>static_cast</b>&lt;buffer_scalar_t&gt;(<b>static_cast</b>&lt;uint8_t&gt;(c)));</td></tr>
+<tr><th id="337">337</th><td>    };</td></tr>
+<tr><th id="338">338</th><td>    cl::sycl::event e;</td></tr>
+<tr><th id="339">339</th><td>    EIGEN_SYCL_TRY_CATCH(e = m_queue.submit(f));</td></tr>
+<tr><th id="340">340</th><td>    async_synchronize(e);</td></tr>
+<tr><th id="341">341</th><td>  }</td></tr>
+<tr><th id="342">342</th><td></td></tr>
+<tr><th id="343">343</th><td>  <i class="doc">/// Get a range accessor to the virtual pointer's device memory. This range</i></td></tr>
+<tr><th id="344">344</th><td><i class="doc">  /// accessor will allow access to the memory from the pointer to the end of</i></td></tr>
+<tr><th id="345">345</th><td><i class="doc">  /// the buffer.</i></td></tr>
+<tr><th id="346">346</th><td><i class="doc">  ///</i></td></tr>
+<tr><th id="347">347</th><td><i class="doc">  /// NOTE: Inside a kernel the range accessor will always be indexed from the</i></td></tr>
+<tr><th id="348">348</th><td><i class="doc">  /// start of the buffer, so the offset in the accessor is only used by</i></td></tr>
+<tr><th id="349">349</th><td><i class="doc">  /// methods like handler::copy and will not be available inside a kernel.</i></td></tr>
+<tr><th id="350">350</th><td>  <b>template</b> &lt;cl::sycl::access::mode AcMd, <b>typename</b> T&gt;</td></tr>
+<tr><th id="351">351</th><td>  EIGEN_STRONG_INLINE TensorSycl::internal::RangeAccess&lt;AcMd, T&gt;</td></tr>
+<tr><th id="352">352</th><td>  get_range_accessor(<em>const</em> <em>void</em> *ptr) <em>const</em> {</td></tr>
+<tr><th id="353">353</th><td>    <em>static</em> <em>const</em> <em>auto</em> global_access = cl::sycl::access::target::global_buffer;</td></tr>
+<tr><th id="354">354</th><td>    <em>static</em> <em>const</em> <em>auto</em> is_place_holder = cl::sycl::access::placeholder::true_t;</td></tr>
+<tr><th id="355">355</th><td>    <b>typedef</b> TensorSycl::internal::RangeAccess&lt;AcMd, T&gt; ret_type;</td></tr>
+<tr><th id="356">356</th><td>    <b>typedef</b> <em>const</em> TensorSycl::internal::buffer_data_type_t *internal_ptr_t;</td></tr>
+<tr><th id="357">357</th><td></td></tr>
+<tr><th id="358">358</th><td>    std::lock_guard&lt;std::mutex&gt; lock(pmapper_mutex_);</td></tr>
+<tr><th id="359">359</th><td></td></tr>
+<tr><th id="360">360</th><td>    <em>auto</em> original_buffer = pMapper.get_buffer(ptr);</td></tr>
+<tr><th id="361">361</th><td>    <em>const</em> ptrdiff_t offset = pMapper.get_offset(ptr);</td></tr>
+<tr><th id="362">362</th><td>    <em>const</em> ptrdiff_t typed_offset = offset / <b>sizeof</b>(T);</td></tr>
+<tr><th id="363">363</th><td>    eigen_assert(typed_offset &gt;= <var>0</var>);</td></tr>
+<tr><th id="364">364</th><td>    <em>const</em> <em>auto</em> typed_size = original_buffer.get_size() / <b>sizeof</b>(T);</td></tr>
+<tr><th id="365">365</th><td>    <em>auto</em> buffer = original_buffer.<b>template</b> reinterpret&lt;</td></tr>
+<tr><th id="366">366</th><td>        <b>typename</b> Eigen::internal::remove_const&lt;T&gt;::type&gt;(</td></tr>
+<tr><th id="367">367</th><td>        cl::sycl::range&lt;<var>1</var>&gt;(typed_size));</td></tr>
+<tr><th id="368">368</th><td>    <em>const</em> ptrdiff_t size = buffer.get_count() - typed_offset;</td></tr>
+<tr><th id="369">369</th><td>    eigen_assert(size &gt;= <var>0</var>);</td></tr>
+<tr><th id="370">370</th><td>    <b>typedef</b> cl::sycl::accessor&lt;<b>typename</b> Eigen::internal::remove_const&lt;T&gt;::type,</td></tr>
+<tr><th id="371">371</th><td>                               <var>1</var>, AcMd, global_access, is_place_holder&gt;</td></tr>
+<tr><th id="372">372</th><td>        placeholder_accessor_t;</td></tr>
+<tr><th id="373">373</th><td>    <em>const</em> <em>auto</em> start_ptr = <b>static_cast</b>&lt;internal_ptr_t&gt;(ptr) - offset;</td></tr>
+<tr><th id="374">374</th><td>    <b>return</b> ret_type(placeholder_accessor_t(buffer, cl::sycl::range&lt;<var>1</var>&gt;(size),</td></tr>
+<tr><th id="375">375</th><td>                                           cl::sycl::id&lt;<var>1</var>&gt;(typed_offset)),</td></tr>
+<tr><th id="376">376</th><td>                    <b>static_cast</b>&lt;size_t&gt;(typed_offset),</td></tr>
+<tr><th id="377">377</th><td>                    <b>reinterpret_cast</b>&lt;std::intptr_t&gt;(start_ptr));</td></tr>
+<tr><th id="378">378</th><td>  }</td></tr>
+<tr><th id="379">379</th><td></td></tr>
+<tr><th id="380">380</th><td>  <i class="doc">/// Get a range accessor to the virtual pointer's device memory with a</i></td></tr>
+<tr><th id="381">381</th><td><i class="doc">  /// specified size.</i></td></tr>
+<tr><th id="382">382</th><td>  <b>template</b> &lt;cl::sycl::access::mode AcMd, <b>typename</b> Index&gt;</td></tr>
+<tr><th id="383">383</th><td>  EIGEN_STRONG_INLINE cl::sycl::accessor&lt;</td></tr>
+<tr><th id="384">384</th><td>      buffer_scalar_t, <var>1</var>, AcMd, cl::sycl::access::target::global_buffer&gt;</td></tr>
+<tr><th id="385">385</th><td>  get_range_accessor(cl::sycl::handler &amp;cgh, <em>const</em> <em>void</em> *ptr,</td></tr>
+<tr><th id="386">386</th><td>                     <em>const</em> Index n_bytes) <em>const</em> {</td></tr>
+<tr><th id="387">387</th><td>    <em>static</em> <em>const</em> <em>auto</em> global_access = cl::sycl::access::target::global_buffer;</td></tr>
+<tr><th id="388">388</th><td>    eigen_assert(n_bytes &gt;= <var>0</var>);</td></tr>
+<tr><th id="389">389</th><td>    std::lock_guard&lt;std::mutex&gt; lock(pmapper_mutex_);</td></tr>
+<tr><th id="390">390</th><td>    <em>auto</em> buffer = pMapper.get_buffer(ptr);</td></tr>
+<tr><th id="391">391</th><td>    <em>const</em> ptrdiff_t offset = pMapper.get_offset(ptr);</td></tr>
+<tr><th id="392">392</th><td>    eigen_assert(offset &gt;= <var>0</var>);</td></tr>
+<tr><th id="393">393</th><td>    eigen_assert(offset + n_bytes &lt;= buffer.get_size());</td></tr>
+<tr><th id="394">394</th><td>    <b>return</b> buffer.<b>template</b> get_access&lt;AcMd, global_access&gt;(</td></tr>
+<tr><th id="395">395</th><td>        cgh, cl::sycl::range&lt;<var>1</var>&gt;(n_bytes), cl::sycl::id&lt;<var>1</var>&gt;(offset));</td></tr>
+<tr><th id="396">396</th><td>  }</td></tr>
+<tr><th id="397">397</th><td></td></tr>
+<tr><th id="398">398</th><td>  <i class="doc">/// Creation of sycl accessor for a buffer. This function first tries to find</i></td></tr>
+<tr><th id="399">399</th><td><i class="doc">  /// the buffer in the buffer_map. If found it gets the accessor from it, if</i></td></tr>
+<tr><th id="400">400</th><td><i class="doc">  /// not, the function then adds an entry by creating a sycl buffer for that</i></td></tr>
+<tr><th id="401">401</th><td><i class="doc">  /// particular pointer.</i></td></tr>
+<tr><th id="402">402</th><td>  <b>template</b> &lt;cl::sycl::access::mode AcMd&gt;</td></tr>
+<tr><th id="403">403</th><td>  EIGEN_STRONG_INLINE cl::sycl::accessor&lt;</td></tr>
+<tr><th id="404">404</th><td>      buffer_scalar_t, <var>1</var>, AcMd, cl::sycl::access::target::global_buffer&gt;</td></tr>
+<tr><th id="405">405</th><td>  get_sycl_accessor(cl::sycl::handler &amp;cgh, <em>const</em> <em>void</em> *ptr) <em>const</em> {</td></tr>
+<tr><th id="406">406</th><td>    std::lock_guard&lt;std::mutex&gt; lock(pmapper_mutex_);</td></tr>
+<tr><th id="407">407</th><td>    <b>return</b> pMapper.get_buffer(ptr)</td></tr>
+<tr><th id="408">408</th><td>        .<b>template</b> get_access&lt;AcMd, cl::sycl::access::target::global_buffer&gt;(</td></tr>
+<tr><th id="409">409</th><td>            cgh);</td></tr>
+<tr><th id="410">410</th><td>  }</td></tr>
+<tr><th id="411">411</th><td></td></tr>
+<tr><th id="412">412</th><td>  EIGEN_STRONG_INLINE cl::sycl::buffer&lt;buffer_scalar_t, <var>1</var>&gt; get_sycl_buffer(</td></tr>
+<tr><th id="413">413</th><td>      <em>const</em> <em>void</em> *ptr) <em>const</em> {</td></tr>
+<tr><th id="414">414</th><td>    std::lock_guard&lt;std::mutex&gt; lock(pmapper_mutex_);</td></tr>
+<tr><th id="415">415</th><td>    <b>return</b> pMapper.get_buffer(ptr);</td></tr>
+<tr><th id="416">416</th><td>  }</td></tr>
+<tr><th id="417">417</th><td></td></tr>
+<tr><th id="418">418</th><td>  EIGEN_STRONG_INLINE ptrdiff_t get_offset(<em>const</em> <em>void</em> *ptr) <em>const</em> {</td></tr>
+<tr><th id="419">419</th><td>    std::lock_guard&lt;std::mutex&gt; lock(pmapper_mutex_);</td></tr>
+<tr><th id="420">420</th><td>    <b>return</b> pMapper.get_offset(ptr);</td></tr>
+<tr><th id="421">421</th><td>  }</td></tr>
+<tr><th id="422">422</th><td></td></tr>
+<tr><th id="423">423</th><td>  <b>template</b> &lt;<b>typename</b> OutScalar, <b>typename</b> sycl_kernel, <b>typename</b> Lhs,</td></tr>
+<tr><th id="424">424</th><td>            <b>typename</b> Rhs, <b>typename</b> OutPtr, <b>typename</b> Range, <b>typename</b> Index,</td></tr>
+<tr><th id="425">425</th><td>            <b>typename</b>... T&gt;</td></tr>
+<tr><th id="426">426</th><td>  EIGEN_ALWAYS_INLINE <em>void</em> binary_kernel_launcher(<em>const</em> Lhs &amp;lhs,</td></tr>
+<tr><th id="427">427</th><td>                                                  <em>const</em> Rhs &amp;rhs, OutPtr outptr,</td></tr>
+<tr><th id="428">428</th><td>                                                  Range thread_range,</td></tr>
+<tr><th id="429">429</th><td>                                                  Index scratchSize,</td></tr>
+<tr><th id="430">430</th><td>                                                  T... var) <em>const</em> {</td></tr>
+<tr><th id="431">431</th><td>    <em>auto</em> kernel_functor = [=](cl::sycl::handler &amp;cgh) {</td></tr>
+<tr><th id="432">432</th><td>      <i>// binding the placeholder accessors to a commandgroup handler</i></td></tr>
+<tr><th id="433">433</th><td>      lhs.bind(cgh);</td></tr>
+<tr><th id="434">434</th><td>      rhs.bind(cgh);</td></tr>
+<tr><th id="435">435</th><td>      outptr.bind(cgh);</td></tr>
+<tr><th id="436">436</th><td>      <b>typedef</b> cl::sycl::accessor&lt;OutScalar, <var>1</var>,</td></tr>
+<tr><th id="437">437</th><td>                                 cl::sycl::access::mode::read_write,</td></tr>
+<tr><th id="438">438</th><td>                                 cl::sycl::access::target::local&gt;</td></tr>
+<tr><th id="439">439</th><td>          LocalAccessor;</td></tr>
+<tr><th id="440">440</th><td></td></tr>
+<tr><th id="441">441</th><td>      LocalAccessor scratch(cl::sycl::range&lt;<var>1</var>&gt;(scratchSize), cgh);</td></tr>
+<tr><th id="442">442</th><td>      cgh.parallel_for(</td></tr>
+<tr><th id="443">443</th><td><u>#ifdef EIGEN_SYCL_USE_PROGRAM_CLASS</u></td></tr>
+<tr><th id="444">444</th><td>          program().<b>template</b> get_kernel&lt;sycl_kernel&gt;(),</td></tr>
+<tr><th id="445">445</th><td><u>#endif</u></td></tr>
+<tr><th id="446">446</th><td>          thread_range, sycl_kernel(scratch, lhs, rhs, outptr, var...));</td></tr>
+<tr><th id="447">447</th><td>    };</td></tr>
+<tr><th id="448">448</th><td>    cl::sycl::event e;</td></tr>
+<tr><th id="449">449</th><td>    EIGEN_SYCL_TRY_CATCH(e = m_queue.submit(kernel_functor));</td></tr>
+<tr><th id="450">450</th><td>    async_synchronize(e);</td></tr>
+<tr><th id="451">451</th><td>  }</td></tr>
+<tr><th id="452">452</th><td></td></tr>
+<tr><th id="453">453</th><td>  <b>template</b> &lt;<b>typename</b> OutScalar, <b>typename</b> sycl_kernel, <b>typename</b> InPtr,</td></tr>
+<tr><th id="454">454</th><td>            <b>typename</b> OutPtr, <b>typename</b> Range, <b>typename</b> Index, <b>typename</b>... T&gt;</td></tr>
+<tr><th id="455">455</th><td>  EIGEN_ALWAYS_INLINE <em>void</em> unary_kernel_launcher(<em>const</em> InPtr &amp;inptr,</td></tr>
+<tr><th id="456">456</th><td>                                                 OutPtr &amp;outptr,</td></tr>
+<tr><th id="457">457</th><td>                                                 Range thread_range,</td></tr>
+<tr><th id="458">458</th><td>                                                 Index scratchSize,</td></tr>
+<tr><th id="459">459</th><td>                                                 T... var) <em>const</em> {</td></tr>
+<tr><th id="460">460</th><td>    <em>auto</em> kernel_functor = [=](cl::sycl::handler &amp;cgh) {</td></tr>
+<tr><th id="461">461</th><td>      <i>// binding the placeholder accessors to a commandgroup handler</i></td></tr>
+<tr><th id="462">462</th><td>      inptr.bind(cgh);</td></tr>
+<tr><th id="463">463</th><td>      outptr.bind(cgh);</td></tr>
+<tr><th id="464">464</th><td>      <b>typedef</b> cl::sycl::accessor&lt;OutScalar, <var>1</var>,</td></tr>
+<tr><th id="465">465</th><td>                                 cl::sycl::access::mode::read_write,</td></tr>
+<tr><th id="466">466</th><td>                                 cl::sycl::access::target::local&gt;</td></tr>
+<tr><th id="467">467</th><td>          LocalAccessor;</td></tr>
+<tr><th id="468">468</th><td></td></tr>
+<tr><th id="469">469</th><td>      LocalAccessor scratch(cl::sycl::range&lt;<var>1</var>&gt;(scratchSize), cgh);</td></tr>
+<tr><th id="470">470</th><td>      cgh.parallel_for(</td></tr>
+<tr><th id="471">471</th><td><u>#ifdef EIGEN_SYCL_USE_PROGRAM_CLASS</u></td></tr>
+<tr><th id="472">472</th><td>          program().<b>template</b> get_kernel&lt;sycl_kernel&gt;(),</td></tr>
+<tr><th id="473">473</th><td><u>#endif</u></td></tr>
+<tr><th id="474">474</th><td>          thread_range, sycl_kernel(scratch, inptr, outptr, var...));</td></tr>
+<tr><th id="475">475</th><td>    };</td></tr>
+<tr><th id="476">476</th><td>    cl::sycl::event e;</td></tr>
+<tr><th id="477">477</th><td>    EIGEN_SYCL_TRY_CATCH(e = m_queue.submit(kernel_functor));</td></tr>
+<tr><th id="478">478</th><td>    async_synchronize(e);</td></tr>
+<tr><th id="479">479</th><td>  }</td></tr>
+<tr><th id="480">480</th><td></td></tr>
+<tr><th id="481">481</th><td>    <b>template</b> &lt;<b>typename</b> OutScalar, <b>typename</b> sycl_kernel, <b>typename</b> InPtr,</td></tr>
+<tr><th id="482">482</th><td>           <b>typename</b> Range, <b>typename</b> Index, <b>typename</b>... T&gt;</td></tr>
+<tr><th id="483">483</th><td>  EIGEN_ALWAYS_INLINE <em>void</em> nullary_kernel_launcher(<em>const</em> InPtr &amp;inptr,</td></tr>
+<tr><th id="484">484</th><td>                                                 Range thread_range,</td></tr>
+<tr><th id="485">485</th><td>                                                 Index scratchSize,</td></tr>
+<tr><th id="486">486</th><td>                                                 T... var) <em>const</em> {</td></tr>
+<tr><th id="487">487</th><td>    <em>auto</em> kernel_functor = [=](cl::sycl::handler &amp;cgh) {</td></tr>
+<tr><th id="488">488</th><td>      <i>// binding the placeholder accessors to a commandgroup handler</i></td></tr>
+<tr><th id="489">489</th><td>      inptr.bind(cgh);</td></tr>
+<tr><th id="490">490</th><td>      <b>typedef</b> cl::sycl::accessor&lt;OutScalar, <var>1</var>,</td></tr>
+<tr><th id="491">491</th><td>                                 cl::sycl::access::mode::read_write,</td></tr>
+<tr><th id="492">492</th><td>                                 cl::sycl::access::target::local&gt;</td></tr>
+<tr><th id="493">493</th><td>          LocalAccessor;</td></tr>
+<tr><th id="494">494</th><td></td></tr>
+<tr><th id="495">495</th><td>      LocalAccessor scratch(cl::sycl::range&lt;<var>1</var>&gt;(scratchSize), cgh);</td></tr>
+<tr><th id="496">496</th><td>      cgh.parallel_for(</td></tr>
+<tr><th id="497">497</th><td><u>#ifdef EIGEN_SYCL_USE_PROGRAM_CLASS</u></td></tr>
+<tr><th id="498">498</th><td>          program().<b>template</b> get_kernel&lt;sycl_kernel&gt;(),</td></tr>
+<tr><th id="499">499</th><td><u>#endif</u></td></tr>
+<tr><th id="500">500</th><td>          thread_range, sycl_kernel(scratch, inptr, var...));</td></tr>
+<tr><th id="501">501</th><td>    };</td></tr>
+<tr><th id="502">502</th><td>    cl::sycl::event e;</td></tr>
+<tr><th id="503">503</th><td>    EIGEN_SYCL_TRY_CATCH(e = m_queue.submit(kernel_functor));</td></tr>
+<tr><th id="504">504</th><td>    async_synchronize(e);</td></tr>
+<tr><th id="505">505</th><td>  }</td></tr>
+<tr><th id="506">506</th><td></td></tr>
+<tr><th id="507">507</th><td></td></tr>
+<tr><th id="508">508</th><td>  EIGEN_STRONG_INLINE <em>void</em> synchronize() <em>const</em> {</td></tr>
+<tr><th id="509">509</th><td><u>#ifdef EIGEN_EXCEPTIONS</u></td></tr>
+<tr><th id="510">510</th><td>    m_queue.wait_and_throw();</td></tr>
+<tr><th id="511">511</th><td><u>#else</u></td></tr>
+<tr><th id="512">512</th><td>    m_queue.wait();</td></tr>
+<tr><th id="513">513</th><td><u>#endif</u></td></tr>
+<tr><th id="514">514</th><td>  }</td></tr>
+<tr><th id="515">515</th><td></td></tr>
+<tr><th id="516">516</th><td></td></tr>
+<tr><th id="517">517</th><td>  EIGEN_STRONG_INLINE <em>void</em> async_synchronize(cl::sycl::event e) <em>const</em> {</td></tr>
+<tr><th id="518">518</th><td>    set_latest_event(e);</td></tr>
+<tr><th id="519">519</th><td><u>#ifndef EIGEN_SYCL_ASYNC_EXECUTION</u></td></tr>
+<tr><th id="520">520</th><td>    synchronize();</td></tr>
+<tr><th id="521">521</th><td><u>#endif</u></td></tr>
+<tr><th id="522">522</th><td>  }</td></tr>
+<tr><th id="523">523</th><td></td></tr>
+<tr><th id="524">524</th><td>  <b>template</b> &lt;<b>typename</b> Index&gt;</td></tr>
+<tr><th id="525">525</th><td>  EIGEN_STRONG_INLINE <em>void</em> parallel_for_setup(Index n, Index &amp;tileSize,</td></tr>
+<tr><th id="526">526</th><td>                                              Index &amp;rng, Index &amp;GRange) <em>const</em> {</td></tr>
+<tr><th id="527">527</th><td>    tileSize = <b>static_cast</b>&lt;Index&gt;(getNearestPowerOfTwoWorkGroupSize());</td></tr>
+<tr><th id="528">528</th><td>    tileSize = std::min(<b>static_cast</b>&lt;Index&gt;(EIGEN_SYCL_LOCAL_THREAD_DIM0 *</td></tr>
+<tr><th id="529">529</th><td>                                           EIGEN_SYCL_LOCAL_THREAD_DIM1),</td></tr>
+<tr><th id="530">530</th><td>                        <b>static_cast</b>&lt;Index&gt;(tileSize));</td></tr>
+<tr><th id="531">531</th><td>    rng = n;</td></tr>
+<tr><th id="532">532</th><td>    <b>if</b> (rng == <var>0</var>) rng = <b>static_cast</b>&lt;Index&gt;(<var>1</var>);</td></tr>
+<tr><th id="533">533</th><td>    GRange = rng;</td></tr>
+<tr><th id="534">534</th><td>    <b>if</b> (tileSize &gt; GRange)</td></tr>
+<tr><th id="535">535</th><td>      tileSize = GRange;</td></tr>
+<tr><th id="536">536</th><td>    <b>else</b> <b>if</b> (GRange &gt; tileSize) {</td></tr>
+<tr><th id="537">537</th><td>      Index xMode = <b>static_cast</b>&lt;Index&gt;(GRange % tileSize);</td></tr>
+<tr><th id="538">538</th><td>      <b>if</b> (xMode != <var>0</var>) GRange += <b>static_cast</b>&lt;Index&gt;(tileSize - xMode);</td></tr>
+<tr><th id="539">539</th><td>    }</td></tr>
+<tr><th id="540">540</th><td>  }</td></tr>
+<tr><th id="541">541</th><td></td></tr>
+<tr><th id="542">542</th><td>  <i class="doc">/// This is used to prepare the number of threads and also the number of</i></td></tr>
+<tr><th id="543">543</th><td><i class="doc">  /// threads per block for sycl kernels</i></td></tr>
+<tr><th id="544">544</th><td>  <b>template</b> &lt;<b>typename</b> Index&gt;</td></tr>
+<tr><th id="545">545</th><td>  EIGEN_STRONG_INLINE <em>void</em> parallel_for_setup(</td></tr>
+<tr><th id="546">546</th><td>      <em>const</em> std::array&lt;Index, <var>2</var>&gt; &amp;input_dim, cl::sycl::range&lt;<var>2</var>&gt; &amp;global_range,</td></tr>
+<tr><th id="547">547</th><td>      cl::sycl::range&lt;<var>2</var>&gt; &amp;local_range) <em>const</em> {</td></tr>
+<tr><th id="548">548</th><td>    std::array&lt;Index, <var>2</var>&gt; input_range = input_dim;</td></tr>
+<tr><th id="549">549</th><td>    Index max_workgroup_Size =</td></tr>
+<tr><th id="550">550</th><td>        <b>static_cast</b>&lt;Index&gt;(getNearestPowerOfTwoWorkGroupSize());</td></tr>
+<tr><th id="551">551</th><td>    max_workgroup_Size =</td></tr>
+<tr><th id="552">552</th><td>        std::min(<b>static_cast</b>&lt;Index&gt;(EIGEN_SYCL_LOCAL_THREAD_DIM0 *</td></tr>
+<tr><th id="553">553</th><td>                                    EIGEN_SYCL_LOCAL_THREAD_DIM1),</td></tr>
+<tr><th id="554">554</th><td>                 <b>static_cast</b>&lt;Index&gt;(max_workgroup_Size));</td></tr>
+<tr><th id="555">555</th><td>    Index pow_of_2 = <b>static_cast</b>&lt;Index&gt;(std::log2(max_workgroup_Size));</td></tr>
+<tr><th id="556">556</th><td>    local_range[<var>1</var>] =</td></tr>
+<tr><th id="557">557</th><td>        <b>static_cast</b>&lt;Index&gt;(std::pow(<var>2</var>, <b>static_cast</b>&lt;Index&gt;(pow_of_2 / <var>2</var>)));</td></tr>
+<tr><th id="558">558</th><td>    input_range[<var>1</var>] = input_dim[<var>1</var>];</td></tr>
+<tr><th id="559">559</th><td>    <b>if</b> (input_range[<var>1</var>] == <var>0</var>) input_range[<var>1</var>] = <b>static_cast</b>&lt;Index&gt;(<var>1</var>);</td></tr>
+<tr><th id="560">560</th><td>    global_range[<var>1</var>] = input_range[<var>1</var>];</td></tr>
+<tr><th id="561">561</th><td>    <b>if</b> (local_range[<var>1</var>] &gt; global_range[<var>1</var>])</td></tr>
+<tr><th id="562">562</th><td>      local_range[<var>1</var>] = global_range[<var>1</var>];</td></tr>
+<tr><th id="563">563</th><td>    <b>else</b> <b>if</b> (global_range[<var>1</var>] &gt; local_range[<var>1</var>]) {</td></tr>
+<tr><th id="564">564</th><td>      Index xMode = <b>static_cast</b>&lt;Index&gt;(global_range[<var>1</var>] % local_range[<var>1</var>]);</td></tr>
+<tr><th id="565">565</th><td>      <b>if</b> (xMode != <var>0</var>)</td></tr>
+<tr><th id="566">566</th><td>        global_range[<var>1</var>] += <b>static_cast</b>&lt;Index&gt;(local_range[<var>1</var>] - xMode);</td></tr>
+<tr><th id="567">567</th><td>    }</td></tr>
+<tr><th id="568">568</th><td>    local_range[<var>0</var>] = <b>static_cast</b>&lt;Index&gt;(max_workgroup_Size / local_range[<var>1</var>]);</td></tr>
+<tr><th id="569">569</th><td>    input_range[<var>0</var>] = input_dim[<var>0</var>];</td></tr>
+<tr><th id="570">570</th><td>    <b>if</b> (input_range[<var>0</var>] == <var>0</var>) input_range[<var>0</var>] = <b>static_cast</b>&lt;Index&gt;(<var>1</var>);</td></tr>
+<tr><th id="571">571</th><td>    global_range[<var>0</var>] = input_range[<var>0</var>];</td></tr>
+<tr><th id="572">572</th><td>    <b>if</b> (local_range[<var>0</var>] &gt; global_range[<var>0</var>])</td></tr>
+<tr><th id="573">573</th><td>      local_range[<var>0</var>] = global_range[<var>0</var>];</td></tr>
+<tr><th id="574">574</th><td>    <b>else</b> <b>if</b> (global_range[<var>0</var>] &gt; local_range[<var>0</var>]) {</td></tr>
+<tr><th id="575">575</th><td>      Index xMode = <b>static_cast</b>&lt;Index&gt;(global_range[<var>0</var>] % local_range[<var>0</var>]);</td></tr>
+<tr><th id="576">576</th><td>      <b>if</b> (xMode != <var>0</var>)</td></tr>
+<tr><th id="577">577</th><td>        global_range[<var>0</var>] += <b>static_cast</b>&lt;Index&gt;(local_range[<var>0</var>] - xMode);</td></tr>
+<tr><th id="578">578</th><td>    }</td></tr>
+<tr><th id="579">579</th><td>  }</td></tr>
+<tr><th id="580">580</th><td></td></tr>
+<tr><th id="581">581</th><td>  <i class="doc">/// This is used to prepare the number of threads and also the number of</i></td></tr>
+<tr><th id="582">582</th><td><i class="doc">  /// threads per block for sycl kernels</i></td></tr>
+<tr><th id="583">583</th><td>  <b>template</b> &lt;<b>typename</b> Index&gt;</td></tr>
+<tr><th id="584">584</th><td>  EIGEN_STRONG_INLINE <em>void</em> parallel_for_setup(</td></tr>
+<tr><th id="585">585</th><td>      <em>const</em> std::array&lt;Index, <var>3</var>&gt; &amp;input_dim, cl::sycl::range&lt;<var>3</var>&gt; &amp;global_range,</td></tr>
+<tr><th id="586">586</th><td>      cl::sycl::range&lt;<var>3</var>&gt; &amp;local_range) <em>const</em> {</td></tr>
+<tr><th id="587">587</th><td>    std::array&lt;Index, <var>3</var>&gt; input_range = input_dim;</td></tr>
+<tr><th id="588">588</th><td>    Index max_workgroup_Size =</td></tr>
+<tr><th id="589">589</th><td>        <b>static_cast</b>&lt;Index&gt;(getNearestPowerOfTwoWorkGroupSize());</td></tr>
+<tr><th id="590">590</th><td>    max_workgroup_Size =</td></tr>
+<tr><th id="591">591</th><td>        std::min(<b>static_cast</b>&lt;Index&gt;(EIGEN_SYCL_LOCAL_THREAD_DIM0 *</td></tr>
+<tr><th id="592">592</th><td>                                    EIGEN_SYCL_LOCAL_THREAD_DIM1),</td></tr>
+<tr><th id="593">593</th><td>                 <b>static_cast</b>&lt;Index&gt;(max_workgroup_Size));</td></tr>
+<tr><th id="594">594</th><td>    Index pow_of_2 = <b>static_cast</b>&lt;Index&gt;(std::log2(max_workgroup_Size));</td></tr>
+<tr><th id="595">595</th><td>    local_range[<var>2</var>] =</td></tr>
+<tr><th id="596">596</th><td>        <b>static_cast</b>&lt;Index&gt;(std::pow(<var>2</var>, <b>static_cast</b>&lt;Index&gt;(pow_of_2 / <var>3</var>)));</td></tr>
+<tr><th id="597">597</th><td>    input_range[<var>2</var>] = input_dim[<var>2</var>];</td></tr>
+<tr><th id="598">598</th><td>    <b>if</b> (input_range[<var>2</var>] == <var>0</var>) input_range[<var>1</var>] = <b>static_cast</b>&lt;Index&gt;(<var>1</var>);</td></tr>
+<tr><th id="599">599</th><td>    global_range[<var>2</var>] = input_range[<var>2</var>];</td></tr>
+<tr><th id="600">600</th><td>    <b>if</b> (local_range[<var>2</var>] &gt; global_range[<var>2</var>])</td></tr>
+<tr><th id="601">601</th><td>      local_range[<var>2</var>] = global_range[<var>2</var>];</td></tr>
+<tr><th id="602">602</th><td>    <b>else</b> <b>if</b> (global_range[<var>2</var>] &gt; local_range[<var>2</var>]) {</td></tr>
+<tr><th id="603">603</th><td>      Index xMode = <b>static_cast</b>&lt;Index&gt;(global_range[<var>2</var>] % local_range[<var>2</var>]);</td></tr>
+<tr><th id="604">604</th><td>      <b>if</b> (xMode != <var>0</var>)</td></tr>
+<tr><th id="605">605</th><td>        global_range[<var>2</var>] += <b>static_cast</b>&lt;Index&gt;(local_range[<var>2</var>] - xMode);</td></tr>
+<tr><th id="606">606</th><td>    }</td></tr>
+<tr><th id="607">607</th><td>    pow_of_2 = <b>static_cast</b>&lt;Index&gt;(</td></tr>
+<tr><th id="608">608</th><td>        std::log2(<b>static_cast</b>&lt;Index&gt;(max_workgroup_Size / local_range[<var>2</var>])));</td></tr>
+<tr><th id="609">609</th><td>    local_range[<var>1</var>] =</td></tr>
+<tr><th id="610">610</th><td>        <b>static_cast</b>&lt;Index&gt;(std::pow(<var>2</var>, <b>static_cast</b>&lt;Index&gt;(pow_of_2 / <var>2</var>)));</td></tr>
+<tr><th id="611">611</th><td>    input_range[<var>1</var>] = input_dim[<var>1</var>];</td></tr>
+<tr><th id="612">612</th><td>    <b>if</b> (input_range[<var>1</var>] == <var>0</var>) input_range[<var>1</var>] = <b>static_cast</b>&lt;Index&gt;(<var>1</var>);</td></tr>
+<tr><th id="613">613</th><td>    global_range[<var>1</var>] = input_range[<var>1</var>];</td></tr>
+<tr><th id="614">614</th><td>    <b>if</b> (local_range[<var>1</var>] &gt; global_range[<var>1</var>])</td></tr>
+<tr><th id="615">615</th><td>      local_range[<var>1</var>] = global_range[<var>1</var>];</td></tr>
+<tr><th id="616">616</th><td>    <b>else</b> <b>if</b> (global_range[<var>1</var>] &gt; local_range[<var>1</var>]) {</td></tr>
+<tr><th id="617">617</th><td>      Index xMode = <b>static_cast</b>&lt;Index&gt;(global_range[<var>1</var>] % local_range[<var>1</var>]);</td></tr>
+<tr><th id="618">618</th><td>      <b>if</b> (xMode != <var>0</var>)</td></tr>
+<tr><th id="619">619</th><td>        global_range[<var>1</var>] += <b>static_cast</b>&lt;Index&gt;(local_range[<var>1</var>] - xMode);</td></tr>
+<tr><th id="620">620</th><td>    }</td></tr>
+<tr><th id="621">621</th><td>    local_range[<var>0</var>] = <b>static_cast</b>&lt;Index&gt;(max_workgroup_Size /</td></tr>
+<tr><th id="622">622</th><td>                                        (local_range[<var>1</var>] * local_range[<var>2</var>]));</td></tr>
+<tr><th id="623">623</th><td>    input_range[<var>0</var>] = input_dim[<var>0</var>];</td></tr>
+<tr><th id="624">624</th><td>    <b>if</b> (input_range[<var>0</var>] == <var>0</var>) input_range[<var>0</var>] = <b>static_cast</b>&lt;Index&gt;(<var>1</var>);</td></tr>
+<tr><th id="625">625</th><td>    global_range[<var>0</var>] = input_range[<var>0</var>];</td></tr>
+<tr><th id="626">626</th><td>    <b>if</b> (local_range[<var>0</var>] &gt; global_range[<var>0</var>])</td></tr>
+<tr><th id="627">627</th><td>      local_range[<var>0</var>] = global_range[<var>0</var>];</td></tr>
+<tr><th id="628">628</th><td>    <b>else</b> <b>if</b> (global_range[<var>0</var>] &gt; local_range[<var>0</var>]) {</td></tr>
+<tr><th id="629">629</th><td>      Index xMode = <b>static_cast</b>&lt;Index&gt;(global_range[<var>0</var>] % local_range[<var>0</var>]);</td></tr>
+<tr><th id="630">630</th><td>      <b>if</b> (xMode != <var>0</var>)</td></tr>
+<tr><th id="631">631</th><td>        global_range[<var>0</var>] += <b>static_cast</b>&lt;Index&gt;(local_range[<var>0</var>] - xMode);</td></tr>
+<tr><th id="632">632</th><td>    }</td></tr>
+<tr><th id="633">633</th><td>  }</td></tr>
+<tr><th id="634">634</th><td></td></tr>
+<tr><th id="635">635</th><td>  EIGEN_STRONG_INLINE <em>bool</em> has_local_memory() <em>const</em> {</td></tr>
+<tr><th id="636">636</th><td><u>#if !defined(EIGEN_SYCL_LOCAL_MEM) &amp;&amp; defined(EIGEN_SYCL_NO_LOCAL_MEM)</u></td></tr>
+<tr><th id="637">637</th><td>    <b>return</b> <b>false</b>;</td></tr>
+<tr><th id="638">638</th><td><u>#elif defined(EIGEN_SYCL_LOCAL_MEM) &amp;&amp; !defined(EIGEN_SYCL_NO_LOCAL_MEM)</u></td></tr>
+<tr><th id="639">639</th><td>    <b>return</b> <b>true</b>;</td></tr>
+<tr><th id="640">640</th><td><u>#else</u></td></tr>
+<tr><th id="641">641</th><td>    <b>return</b> m_device_info.local_mem_type ==</td></tr>
+<tr><th id="642">642</th><td>           cl::sycl::info::local_mem_type::local;</td></tr>
+<tr><th id="643">643</th><td><u>#endif</u></td></tr>
+<tr><th id="644">644</th><td>  }</td></tr>
+<tr><th id="645">645</th><td></td></tr>
+<tr><th id="646">646</th><td>  EIGEN_STRONG_INLINE <em>unsigned</em> <em>long</em> max_buffer_size() <em>const</em> {</td></tr>
+<tr><th id="647">647</th><td>    <b>return</b> m_device_info.max_mem_alloc_size;</td></tr>
+<tr><th id="648">648</th><td>  }</td></tr>
+<tr><th id="649">649</th><td></td></tr>
+<tr><th id="650">650</th><td>  EIGEN_STRONG_INLINE <em>unsigned</em> <em>long</em> getNumSyclMultiProcessors() <em>const</em> {</td></tr>
+<tr><th id="651">651</th><td>    <b>return</b> m_device_info.max_compute_units;</td></tr>
+<tr><th id="652">652</th><td>  }</td></tr>
+<tr><th id="653">653</th><td></td></tr>
+<tr><th id="654">654</th><td>  EIGEN_STRONG_INLINE <em>unsigned</em> <em>long</em> maxSyclThreadsPerBlock() <em>const</em> {</td></tr>
+<tr><th id="655">655</th><td>    <b>return</b> m_device_info.max_work_group_size;</td></tr>
+<tr><th id="656">656</th><td>  }</td></tr>
+<tr><th id="657">657</th><td></td></tr>
+<tr><th id="658">658</th><td>  EIGEN_STRONG_INLINE cl::sycl::id&lt;<var>3</var>&gt; maxWorkItemSizes() <em>const</em> {</td></tr>
+<tr><th id="659">659</th><td>    <b>return</b> m_device_info.max_work_item_sizes;</td></tr>
+<tr><th id="660">660</th><td>  }</td></tr>
+<tr><th id="661">661</th><td></td></tr>
+<tr><th id="662">662</th><td>  <i class="doc">/// No need for sycl it should act the same as CPU version</i></td></tr>
+<tr><th id="663">663</th><td>  EIGEN_STRONG_INLINE <em>int</em> majorDeviceVersion() <em>const</em> { <b>return</b> <var>1</var>; }</td></tr>
+<tr><th id="664">664</th><td></td></tr>
+<tr><th id="665">665</th><td>  EIGEN_STRONG_INLINE <em>unsigned</em> <em>long</em> maxSyclThreadsPerMultiProcessor() <em>const</em> {</td></tr>
+<tr><th id="666">666</th><td>    <i>// OpenCL doesnot have such concept</i></td></tr>
+<tr><th id="667">667</th><td>    <b>return</b> <var>2</var>;</td></tr>
+<tr><th id="668">668</th><td>  }</td></tr>
+<tr><th id="669">669</th><td></td></tr>
+<tr><th id="670">670</th><td>  EIGEN_STRONG_INLINE size_t sharedMemPerBlock() <em>const</em> {</td></tr>
+<tr><th id="671">671</th><td>    <b>return</b> m_device_info.local_mem_size;</td></tr>
+<tr><th id="672">672</th><td>  }</td></tr>
+<tr><th id="673">673</th><td></td></tr>
+<tr><th id="674">674</th><td>  <i>// This function returns the nearest power of 2 Work-group size which is &lt;=</i></td></tr>
+<tr><th id="675">675</th><td><i>  // maximum device workgroup size.</i></td></tr>
+<tr><th id="676">676</th><td>  EIGEN_STRONG_INLINE size_t getNearestPowerOfTwoWorkGroupSize() <em>const</em> {</td></tr>
+<tr><th id="677">677</th><td>    <b>return</b> getPowerOfTwo(m_device_info.max_work_group_size, <b>false</b>);</td></tr>
+<tr><th id="678">678</th><td>  }</td></tr>
+<tr><th id="679">679</th><td></td></tr>
+<tr><th id="680">680</th><td>  EIGEN_STRONG_INLINE std::string getPlatformName() <em>const</em> {</td></tr>
+<tr><th id="681">681</th><td>    <b>return</b> m_device_info.platform_name;</td></tr>
+<tr><th id="682">682</th><td>  }</td></tr>
+<tr><th id="683">683</th><td></td></tr>
+<tr><th id="684">684</th><td>  EIGEN_STRONG_INLINE std::string getDeviceName() <em>const</em> {</td></tr>
+<tr><th id="685">685</th><td>    <b>return</b> m_device_info.device_name;</td></tr>
+<tr><th id="686">686</th><td>  }</td></tr>
+<tr><th id="687">687</th><td></td></tr>
+<tr><th id="688">688</th><td>  EIGEN_STRONG_INLINE std::string getDeviceVendor() <em>const</em> {</td></tr>
+<tr><th id="689">689</th><td>    <b>return</b> m_device_info.device_vendor;</td></tr>
+<tr><th id="690">690</th><td>  }</td></tr>
+<tr><th id="691">691</th><td></td></tr>
+<tr><th id="692">692</th><td>  <i>// This function returns the nearest power of 2</i></td></tr>
+<tr><th id="693">693</th><td><i>  // if roundup is true returns result&gt;=wgsize</i></td></tr>
+<tr><th id="694">694</th><td><i>  // else it return result &lt;= wgsize</i></td></tr>
+<tr><th id="695">695</th><td>  EIGEN_STRONG_INLINE size_t getPowerOfTwo(size_t wGSize, <em>bool</em> roundUp) <em>const</em> {</td></tr>
+<tr><th id="696">696</th><td>    <b>if</b> (roundUp) --wGSize;</td></tr>
+<tr><th id="697">697</th><td>    wGSize |= (wGSize &gt;&gt; <var>1</var>);</td></tr>
+<tr><th id="698">698</th><td>    wGSize |= (wGSize &gt;&gt; <var>2</var>);</td></tr>
+<tr><th id="699">699</th><td>    wGSize |= (wGSize &gt;&gt; <var>4</var>);</td></tr>
+<tr><th id="700">700</th><td>    wGSize |= (wGSize &gt;&gt; <var>8</var>);</td></tr>
+<tr><th id="701">701</th><td>    wGSize |= (wGSize &gt;&gt; <var>16</var>);</td></tr>
+<tr><th id="702">702</th><td><u>#if EIGEN_ARCH_x86_64 || EIGEN_ARCH_ARM64 || EIGEN_OS_WIN64</u></td></tr>
+<tr><th id="703">703</th><td>    wGSize |= (wGSize &gt;&gt; <var>32</var>);</td></tr>
+<tr><th id="704">704</th><td><u>#endif</u></td></tr>
+<tr><th id="705">705</th><td>    <b>return</b> ((!roundUp) ? (wGSize - (wGSize &gt;&gt; <var>1</var>)) : ++wGSize);</td></tr>
+<tr><th id="706">706</th><td>  }</td></tr>
+<tr><th id="707">707</th><td></td></tr>
+<tr><th id="708">708</th><td>  EIGEN_STRONG_INLINE cl::sycl::queue &amp;sycl_queue() <em>const</em> { <b>return</b> m_queue; }</td></tr>
+<tr><th id="709">709</th><td></td></tr>
+<tr><th id="710">710</th><td>  <i>// This function checks if the runtime recorded an error for the</i></td></tr>
+<tr><th id="711">711</th><td><i>  // underlying stream device.</i></td></tr>
+<tr><th id="712">712</th><td>  EIGEN_STRONG_INLINE <em>bool</em> ok() <em>const</em> {</td></tr>
+<tr><th id="713">713</th><td>    <b>if</b> (!exception_caught_) {</td></tr>
+<tr><th id="714">714</th><td>      synchronize();</td></tr>
+<tr><th id="715">715</th><td>    }</td></tr>
+<tr><th id="716">716</th><td>    <b>return</b> !exception_caught_;</td></tr>
+<tr><th id="717">717</th><td>  }</td></tr>
+<tr><th id="718">718</th><td></td></tr>
+<tr><th id="719">719</th><td>  EIGEN_STRONG_INLINE cl::sycl::event get_latest_event() <em>const</em> {</td></tr>
+<tr><th id="720">720</th><td><u>#ifdef EIGEN_SYCL_STORE_LATEST_EVENT</u></td></tr>
+<tr><th id="721">721</th><td>    std::lock_guard&lt;std::mutex&gt; lock(event_mutex_);</td></tr>
+<tr><th id="722">722</th><td>    <b>return</b> latest_events_[std::this_thread::get_id()];</td></tr>
+<tr><th id="723">723</th><td><u>#else</u></td></tr>
+<tr><th id="724">724</th><td>    eigen_assert(<b>false</b>);</td></tr>
+<tr><th id="725">725</th><td>    <b>return</b> cl::sycl::event();</td></tr>
+<tr><th id="726">726</th><td><u>#endif</u></td></tr>
+<tr><th id="727">727</th><td>  }</td></tr>
+<tr><th id="728">728</th><td></td></tr>
+<tr><th id="729">729</th><td>  <i>// destructor</i></td></tr>
+<tr><th id="730">730</th><td>  ~QueueInterface() {</td></tr>
+<tr><th id="731">731</th><td>    pMapper.clear();</td></tr>
+<tr><th id="732">732</th><td><u>#ifndef EIGEN_SYCL_NO_REUSE_BUFFERS</u></td></tr>
+<tr><th id="733">733</th><td>    scratch_buffers.clear();</td></tr>
+<tr><th id="734">734</th><td><u>#endif</u></td></tr>
+<tr><th id="735">735</th><td>  }</td></tr>
+<tr><th id="736">736</th><td></td></tr>
+<tr><th id="737">737</th><td> <b>protected</b>:</td></tr>
+<tr><th id="738">738</th><td>  EIGEN_STRONG_INLINE <em>void</em> set_latest_event(cl::sycl::event e) <em>const</em> {</td></tr>
+<tr><th id="739">739</th><td><u>#ifdef EIGEN_SYCL_STORE_LATEST_EVENT</u></td></tr>
+<tr><th id="740">740</th><td>    std::lock_guard&lt;std::mutex&gt; lock(event_mutex_);</td></tr>
+<tr><th id="741">741</th><td>    latest_events_[std::this_thread::get_id()] = e;</td></tr>
+<tr><th id="742">742</th><td><u>#else</u></td></tr>
+<tr><th id="743">743</th><td>    EIGEN_UNUSED_VARIABLE(e);</td></tr>
+<tr><th id="744">744</th><td><u>#endif</u></td></tr>
+<tr><th id="745">745</th><td>  }</td></tr>
+<tr><th id="746">746</th><td></td></tr>
+<tr><th id="747">747</th><td>  <em>void</em> synchronize_and_callback(cl::sycl::event e,</td></tr>
+<tr><th id="748">748</th><td>                                <em>const</em> std::function&lt;<em>void</em>()&gt; &amp;callback) <em>const</em> {</td></tr>
+<tr><th id="749">749</th><td>    set_latest_event(e);</td></tr>
+<tr><th id="750">750</th><td>    <b>if</b> (callback) {</td></tr>
+<tr><th id="751">751</th><td>      <em>auto</em> callback_ = [=]() {</td></tr>
+<tr><th id="752">752</th><td><u>#ifdef EIGEN_EXCEPTIONS</u></td></tr>
+<tr><th id="753">753</th><td>        cl::sycl::event(e).wait_and_throw();</td></tr>
+<tr><th id="754">754</th><td><u>#else</u></td></tr>
+<tr><th id="755">755</th><td>        cl::sycl::event(e).wait();</td></tr>
+<tr><th id="756">756</th><td><u>#endif</u></td></tr>
+<tr><th id="757">757</th><td>        callback();</td></tr>
+<tr><th id="758">758</th><td>      };</td></tr>
+<tr><th id="759">759</th><td>      m_thread_pool.Schedule(std::move(callback_));</td></tr>
+<tr><th id="760">760</th><td>    } <b>else</b> {</td></tr>
+<tr><th id="761">761</th><td><u>#ifdef EIGEN_EXCEPTIONS</u></td></tr>
+<tr><th id="762">762</th><td>      m_queue.wait_and_throw();</td></tr>
+<tr><th id="763">763</th><td><u>#else</u></td></tr>
+<tr><th id="764">764</th><td>      m_queue.wait();</td></tr>
+<tr><th id="765">765</th><td><u>#endif</u></td></tr>
+<tr><th id="766">766</th><td>    }</td></tr>
+<tr><th id="767">767</th><td>  }</td></tr>
+<tr><th id="768">768</th><td></td></tr>
+<tr><th id="769">769</th><td>  <em>bool</em> sycl_async_handler(cl::sycl::exception_list exceptions) <em>const</em> {</td></tr>
+<tr><th id="770">770</th><td>    <em>bool</em> exception_caught = <b>false</b>;</td></tr>
+<tr><th id="771">771</th><td>    <b>for</b> (<em>const</em> <em>auto</em> &amp;e : exceptions) {</td></tr>
+<tr><th id="772">772</th><td>      <b>if</b> (e) {</td></tr>
+<tr><th id="773">773</th><td>        exception_caught = <b>true</b>;</td></tr>
+<tr><th id="774">774</th><td>        EIGEN_THROW_X(e);</td></tr>
+<tr><th id="775">775</th><td>      }</td></tr>
+<tr><th id="776">776</th><td>    }</td></tr>
+<tr><th id="777">777</th><td>    <b>return</b> exception_caught;</td></tr>
+<tr><th id="778">778</th><td>  }</td></tr>
+<tr><th id="779">779</th><td></td></tr>
+<tr><th id="780">780</th><td>  <i class="doc">/// class members:</i></td></tr>
+<tr><th id="781">781</th><td>  <em>bool</em> exception_caught_ = <b>false</b>;</td></tr>
+<tr><th id="782">782</th><td></td></tr>
+<tr><th id="783">783</th><td>  <em>mutable</em> std::mutex pmapper_mutex_;</td></tr>
+<tr><th id="784">784</th><td></td></tr>
+<tr><th id="785">785</th><td><u>#ifdef EIGEN_SYCL_STORE_LATEST_EVENT</u></td></tr>
+<tr><th id="786">786</th><td>  <em>mutable</em> std::mutex event_mutex_;</td></tr>
+<tr><th id="787">787</th><td>  <em>mutable</em> std::unordered_map&lt;std::thread::id, cl::sycl::event&gt; latest_events_;</td></tr>
+<tr><th id="788">788</th><td><u>#endif</u></td></tr>
+<tr><th id="789">789</th><td></td></tr>
+<tr><th id="790">790</th><td>  <i class="doc">/// std::map is the container used to make sure that we create only one buffer</i></td></tr>
+<tr><th id="791">791</th><td><i class="doc">  /// per pointer. The lifespan of the buffer now depends on the lifespan of</i></td></tr>
+<tr><th id="792">792</th><td><i class="doc">  /// SyclDevice. If a non-read-only pointer is needed to be accessed on the</i></td></tr>
+<tr><th id="793">793</th><td><i class="doc">  /// host we should manually deallocate it.</i></td></tr>
+<tr><th id="794">794</th><td>  <em>mutable</em> TensorSycl::internal::PointerMapper pMapper;</td></tr>
+<tr><th id="795">795</th><td><u>#ifndef EIGEN_SYCL_NO_REUSE_BUFFERS</u></td></tr>
+<tr><th id="796">796</th><td>  <em>mutable</em> std::unordered_set&lt;<em>void</em> *&gt; scratch_buffers;</td></tr>
+<tr><th id="797">797</th><td><u>#endif</u></td></tr>
+<tr><th id="798">798</th><td>  <i class="doc">/// sycl queue</i></td></tr>
+<tr><th id="799">799</th><td>  <em>mutable</em> cl::sycl::queue m_queue;</td></tr>
+<tr><th id="800">800</th><td><u>#ifdef EIGEN_SYCL_USE_PROGRAM_CLASS</u></td></tr>
+<tr><th id="801">801</th><td>  <em>mutable</em> cl::sycl::program m_prog;</td></tr>
+<tr><th id="802">802</th><td><u>#endif</u></td></tr>
+<tr><th id="803">803</th><td></td></tr>
+<tr><th id="804">804</th><td>  <i class="doc">/// The thread pool is used to wait on events and call callbacks</i></td></tr>
+<tr><th id="805">805</th><td><i class="doc">  /// asynchronously</i></td></tr>
+<tr><th id="806">806</th><td>  <em>mutable</em> Eigen::ThreadPool m_thread_pool;</td></tr>
+<tr><th id="807">807</th><td></td></tr>
+<tr><th id="808">808</th><td>  <em>const</em> TensorSycl::internal::SyclDeviceInfo m_device_info;</td></tr>
+<tr><th id="809">809</th><td>};</td></tr>
+<tr><th id="810">810</th><td></td></tr>
+<tr><th id="811">811</th><td><b>struct</b> SyclDeviceBase {</td></tr>
+<tr><th id="812">812</th><td>  <i class="doc">/// QueueInterface is not owned. it is the caller's responsibility to destroy</i></td></tr>
+<tr><th id="813">813</th><td><i class="doc">  /// it</i></td></tr>
+<tr><th id="814">814</th><td>  <em>const</em> QueueInterface *m_queue_stream;</td></tr>
+<tr><th id="815">815</th><td>  <b>explicit</b> SyclDeviceBase(<em>const</em> QueueInterface *queue_stream)</td></tr>
+<tr><th id="816">816</th><td>      : m_queue_stream(queue_stream) {}</td></tr>
+<tr><th id="817">817</th><td>  EIGEN_STRONG_INLINE <em>const</em> QueueInterface *queue_stream() <em>const</em> {</td></tr>
+<tr><th id="818">818</th><td>    <b>return</b> m_queue_stream;</td></tr>
+<tr><th id="819">819</th><td>  }</td></tr>
+<tr><th id="820">820</th><td>};</td></tr>
+<tr><th id="821">821</th><td></td></tr>
+<tr><th id="822">822</th><td><i>// Here is a sycl device struct which accept the sycl queue interface</i></td></tr>
+<tr><th id="823">823</th><td><i>// as an input</i></td></tr>
+<tr><th id="824">824</th><td><b>struct</b> SyclDevice : <b>public</b> SyclDeviceBase {</td></tr>
+<tr><th id="825">825</th><td>  <b>explicit</b> SyclDevice(<em>const</em> QueueInterface *queue_stream)</td></tr>
+<tr><th id="826">826</th><td>      : SyclDeviceBase(queue_stream) {}</td></tr>
+<tr><th id="827">827</th><td></td></tr>
+<tr><th id="828">828</th><td>  <i>// this is the accessor used to construct the evaluator</i></td></tr>
+<tr><th id="829">829</th><td>  <b>template</b> &lt;cl::sycl::access::mode AcMd, <b>typename</b> T&gt;</td></tr>
+<tr><th id="830">830</th><td>  EIGEN_STRONG_INLINE TensorSycl::internal::RangeAccess&lt;AcMd, T&gt;</td></tr>
+<tr><th id="831">831</th><td>  get_range_accessor(<em>const</em> <em>void</em> *ptr) <em>const</em> {</td></tr>
+<tr><th id="832">832</th><td>    <b>return</b> queue_stream()-&gt;<b>template</b> get_range_accessor&lt;AcMd, T&gt;(ptr);</td></tr>
+<tr><th id="833">833</th><td>  }</td></tr>
+<tr><th id="834">834</th><td></td></tr>
+<tr><th id="835">835</th><td>  <i>// get sycl accessor</i></td></tr>
+<tr><th id="836">836</th><td>  <b>template</b> &lt;cl::sycl::access::mode AcMd&gt;</td></tr>
+<tr><th id="837">837</th><td>  EIGEN_STRONG_INLINE cl::sycl::accessor&lt;</td></tr>
+<tr><th id="838">838</th><td>      buffer_scalar_t, <var>1</var>, AcMd, cl::sycl::access::target::global_buffer&gt;</td></tr>
+<tr><th id="839">839</th><td>  get_sycl_accessor(cl::sycl::handler &amp;cgh, <em>const</em> <em>void</em> *ptr) <em>const</em> {</td></tr>
+<tr><th id="840">840</th><td>    <b>return</b> queue_stream()-&gt;<b>template</b> get_sycl_accessor&lt;AcMd&gt;(cgh, ptr);</td></tr>
+<tr><th id="841">841</th><td>  }</td></tr>
+<tr><th id="842">842</th><td></td></tr>
+<tr><th id="843">843</th><td>  <i class="doc">/// Accessing the created sycl device buffer for the device pointer</i></td></tr>
+<tr><th id="844">844</th><td>  EIGEN_STRONG_INLINE cl::sycl::buffer&lt;buffer_scalar_t, <var>1</var>&gt; get_sycl_buffer(</td></tr>
+<tr><th id="845">845</th><td>      <em>const</em> <em>void</em> *ptr) <em>const</em> {</td></tr>
+<tr><th id="846">846</th><td>    <b>return</b> queue_stream()-&gt;get_sycl_buffer(ptr);</td></tr>
+<tr><th id="847">847</th><td>  }</td></tr>
+<tr><th id="848">848</th><td></td></tr>
+<tr><th id="849">849</th><td>  <i class="doc">/// This is used to prepare the number of threads and also the number of</i></td></tr>
+<tr><th id="850">850</th><td><i class="doc">  /// threads per block for sycl kernels</i></td></tr>
+<tr><th id="851">851</th><td>  <b>template</b> &lt;<b>typename</b> Index&gt;</td></tr>
+<tr><th id="852">852</th><td>  EIGEN_STRONG_INLINE <em>void</em> parallel_for_setup(Index n, Index &amp;tileSize,</td></tr>
+<tr><th id="853">853</th><td>                                              Index &amp;rng, Index &amp;GRange) <em>const</em> {</td></tr>
+<tr><th id="854">854</th><td>    queue_stream()-&gt;parallel_for_setup(n, tileSize, rng, GRange);</td></tr>
+<tr><th id="855">855</th><td>  }</td></tr>
+<tr><th id="856">856</th><td></td></tr>
+<tr><th id="857">857</th><td>  <i class="doc">/// This is used to prepare the number of threads and also the number of</i></td></tr>
+<tr><th id="858">858</th><td><i class="doc">  /// threads per block for sycl kernels</i></td></tr>
+<tr><th id="859">859</th><td>  <b>template</b> &lt;<b>typename</b> Index&gt;</td></tr>
+<tr><th id="860">860</th><td>  EIGEN_STRONG_INLINE <em>void</em> parallel_for_setup(</td></tr>
+<tr><th id="861">861</th><td>      <em>const</em> std::array&lt;Index, <var>2</var>&gt; &amp;input_dim, cl::sycl::range&lt;<var>2</var>&gt; &amp;global_range,</td></tr>
+<tr><th id="862">862</th><td>      cl::sycl::range&lt;<var>2</var>&gt; &amp;local_range) <em>const</em> {</td></tr>
+<tr><th id="863">863</th><td>    queue_stream()-&gt;parallel_for_setup(input_dim, global_range, local_range);</td></tr>
+<tr><th id="864">864</th><td>  }</td></tr>
+<tr><th id="865">865</th><td></td></tr>
+<tr><th id="866">866</th><td>  <i class="doc">/// This is used to prepare the number of threads and also the number of</i></td></tr>
+<tr><th id="867">867</th><td><i class="doc">  /// threads per block for sycl kernels</i></td></tr>
+<tr><th id="868">868</th><td>  <b>template</b> &lt;<b>typename</b> Index&gt;</td></tr>
+<tr><th id="869">869</th><td>  EIGEN_STRONG_INLINE <em>void</em> parallel_for_setup(</td></tr>
+<tr><th id="870">870</th><td>      <em>const</em> std::array&lt;Index, <var>3</var>&gt; &amp;input_dim, cl::sycl::range&lt;<var>3</var>&gt; &amp;global_range,</td></tr>
+<tr><th id="871">871</th><td>      cl::sycl::range&lt;<var>3</var>&gt; &amp;local_range) <em>const</em> {</td></tr>
+<tr><th id="872">872</th><td>    queue_stream()-&gt;parallel_for_setup(input_dim, global_range, local_range);</td></tr>
+<tr><th id="873">873</th><td>  }</td></tr>
+<tr><th id="874">874</th><td></td></tr>
+<tr><th id="875">875</th><td>  <i class="doc">/// allocate device memory</i></td></tr>
+<tr><th id="876">876</th><td>  EIGEN_STRONG_INLINE <em>void</em> *allocate(size_t num_bytes) <em>const</em> {</td></tr>
+<tr><th id="877">877</th><td>    <b>return</b> queue_stream()-&gt;allocate(num_bytes);</td></tr>
+<tr><th id="878">878</th><td>  }</td></tr>
+<tr><th id="879">879</th><td></td></tr>
+<tr><th id="880">880</th><td>  EIGEN_STRONG_INLINE <em>void</em> *allocate_temp(size_t num_bytes) <em>const</em> {</td></tr>
+<tr><th id="881">881</th><td>    <b>return</b> queue_stream()-&gt;allocate_temp(num_bytes);</td></tr>
+<tr><th id="882">882</th><td>  }</td></tr>
+<tr><th id="883">883</th><td></td></tr>
+<tr><th id="884">884</th><td>  <i class="doc">/// deallocate device memory</i></td></tr>
+<tr><th id="885">885</th><td>  EIGEN_STRONG_INLINE <em>void</em> deallocate(<em>void</em> *p) <em>const</em> {</td></tr>
+<tr><th id="886">886</th><td>    queue_stream()-&gt;deallocate(p);</td></tr>
+<tr><th id="887">887</th><td>  }</td></tr>
+<tr><th id="888">888</th><td></td></tr>
+<tr><th id="889">889</th><td>  EIGEN_STRONG_INLINE <em>void</em> deallocate_temp(<em>void</em> *buffer) <em>const</em> {</td></tr>
+<tr><th id="890">890</th><td>    queue_stream()-&gt;deallocate_temp(buffer);</td></tr>
+<tr><th id="891">891</th><td>  }</td></tr>
+<tr><th id="892">892</th><td>  <b>template</b> &lt;cl::sycl::access::mode AcMd, <b>typename</b> T&gt;</td></tr>
+<tr><th id="893">893</th><td>  EIGEN_STRONG_INLINE <em>void</em> deallocate_temp(</td></tr>
+<tr><th id="894">894</th><td>      <em>const</em> TensorSycl::internal::RangeAccess&lt;AcMd, T&gt; &amp;buffer) <em>const</em> {</td></tr>
+<tr><th id="895">895</th><td>    queue_stream()-&gt;deallocate_temp(buffer);</td></tr>
+<tr><th id="896">896</th><td>  }</td></tr>
+<tr><th id="897">897</th><td>  EIGEN_STRONG_INLINE <em>void</em> deallocate_all() <em>const</em> {</td></tr>
+<tr><th id="898">898</th><td>    queue_stream()-&gt;deallocate_all();</td></tr>
+<tr><th id="899">899</th><td>  }</td></tr>
+<tr><th id="900">900</th><td></td></tr>
+<tr><th id="901">901</th><td>  <b>template</b> &lt;<b>typename</b> data_t&gt;</td></tr>
+<tr><th id="902">902</th><td>  EIGEN_DEVICE_FUNC EIGEN_STRONG_INLINE TensorSycl::internal::RangeAccess&lt;</td></tr>
+<tr><th id="903">903</th><td>      cl::sycl::access::mode::read_write, data_t&gt;</td></tr>
+<tr><th id="904">904</th><td>  get(data_t *data) <em>const</em> {</td></tr>
+<tr><th id="905">905</th><td>    <b>return</b> queue_stream()-&gt;get(data);</td></tr>
+<tr><th id="906">906</th><td>  }</td></tr>
+<tr><th id="907">907</th><td>  <b>template</b> &lt;<b>typename</b> data_t&gt;</td></tr>
+<tr><th id="908">908</th><td>  EIGEN_DEVICE_FUNC EIGEN_STRONG_INLINE data_t *get(</td></tr>
+<tr><th id="909">909</th><td>      TensorSycl::internal::RangeAccess&lt;cl::sycl::access::mode::read_write,</td></tr>
+<tr><th id="910">910</th><td>                                        data_t&gt;</td></tr>
+<tr><th id="911">911</th><td>          data) <em>const</em> {</td></tr>
+<tr><th id="912">912</th><td>    <b>return</b> queue_stream()-&gt;get(data);</td></tr>
+<tr><th id="913">913</th><td>  }</td></tr>
+<tr><th id="914">914</th><td></td></tr>
+<tr><th id="915">915</th><td>  <i class="doc">/// attach existing buffer</i></td></tr>
+<tr><th id="916">916</th><td>  EIGEN_STRONG_INLINE <em>void</em> *attach_buffer(</td></tr>
+<tr><th id="917">917</th><td>      cl::sycl::buffer&lt;buffer_scalar_t, <var>1</var>&gt; &amp;buf) <em>const</em> {</td></tr>
+<tr><th id="918">918</th><td>    <b>return</b> queue_stream()-&gt;attach_buffer(buf);</td></tr>
+<tr><th id="919">919</th><td>  }</td></tr>
+<tr><th id="920">920</th><td>  <i class="doc">/// detach buffer</i></td></tr>
+<tr><th id="921">921</th><td>  EIGEN_STRONG_INLINE <em>void</em> detach_buffer(<em>void</em> *p) <em>const</em> {</td></tr>
+<tr><th id="922">922</th><td>    queue_stream()-&gt;detach_buffer(p);</td></tr>
+<tr><th id="923">923</th><td>  }</td></tr>
+<tr><th id="924">924</th><td>  EIGEN_STRONG_INLINE ptrdiff_t get_offset(<em>const</em> <em>void</em> *ptr) <em>const</em> {</td></tr>
+<tr><th id="925">925</th><td>    <b>return</b> queue_stream()-&gt;get_offset(ptr);</td></tr>
+<tr><th id="926">926</th><td>  }</td></tr>
+<tr><th id="927">927</th><td></td></tr>
+<tr><th id="928">928</th><td>  <i>// some runtime conditions that can be applied here</i></td></tr>
+<tr><th id="929">929</th><td>  EIGEN_STRONG_INLINE <em>bool</em> isDeviceSuitable() <em>const</em> { <b>return</b> <b>true</b>; }</td></tr>
+<tr><th id="930">930</th><td></td></tr>
+<tr><th id="931">931</th><td>  <i class="doc">/// memcpyHostToDevice</i></td></tr>
+<tr><th id="932">932</th><td>  <b>template</b> &lt;<b>typename</b> Index&gt;</td></tr>
+<tr><th id="933">933</th><td>  EIGEN_STRONG_INLINE <em>void</em> memcpyHostToDevice(</td></tr>
+<tr><th id="934">934</th><td>      Index *dst, <em>const</em> Index *src, size_t n,</td></tr>
+<tr><th id="935">935</th><td>      std::function&lt;<em>void</em>()&gt; callback = {}) <em>const</em> {</td></tr>
+<tr><th id="936">936</th><td>    queue_stream()-&gt;memcpyHostToDevice(dst, src, n, callback);</td></tr>
+<tr><th id="937">937</th><td>  }</td></tr>
+<tr><th id="938">938</th><td>  <i class="doc">/// memcpyDeviceToHost</i></td></tr>
+<tr><th id="939">939</th><td>  <b>template</b> &lt;<b>typename</b> Index&gt;</td></tr>
+<tr><th id="940">940</th><td>  EIGEN_STRONG_INLINE <em>void</em> memcpyDeviceToHost(</td></tr>
+<tr><th id="941">941</th><td>      <em>void</em> *dst, <em>const</em> Index *src, size_t n,</td></tr>
+<tr><th id="942">942</th><td>      std::function&lt;<em>void</em>()&gt; callback = {}) <em>const</em> {</td></tr>
+<tr><th id="943">943</th><td>    queue_stream()-&gt;memcpyDeviceToHost(dst, src, n, callback);</td></tr>
+<tr><th id="944">944</th><td>  }</td></tr>
+<tr><th id="945">945</th><td>  <i class="doc">/// the memcpy function</i></td></tr>
+<tr><th id="946">946</th><td>  <b>template</b> &lt;<b>typename</b> Index&gt;</td></tr>
+<tr><th id="947">947</th><td>  EIGEN_STRONG_INLINE <em>void</em> memcpy(<em>void</em> *dst, <em>const</em> Index *src, size_t n) <em>const</em> {</td></tr>
+<tr><th id="948">948</th><td>    queue_stream()-&gt;memcpy(dst, src, n);</td></tr>
+<tr><th id="949">949</th><td>  }</td></tr>
+<tr><th id="950">950</th><td>  <i class="doc">/// the memset function</i></td></tr>
+<tr><th id="951">951</th><td>  EIGEN_STRONG_INLINE <em>void</em> memset(<em>void</em> *data, <em>int</em> c, size_t n) <em>const</em> {</td></tr>
+<tr><th id="952">952</th><td>    queue_stream()-&gt;memset(data, c, n);</td></tr>
+<tr><th id="953">953</th><td>  }</td></tr>
+<tr><th id="954">954</th><td>  <i class="doc">/// returning the sycl queue</i></td></tr>
+<tr><th id="955">955</th><td>  EIGEN_STRONG_INLINE cl::sycl::queue &amp;sycl_queue() <em>const</em> {</td></tr>
+<tr><th id="956">956</th><td>    <b>return</b> queue_stream()-&gt;sycl_queue();</td></tr>
+<tr><th id="957">957</th><td>  }</td></tr>
+<tr><th id="958">958</th><td><u>#ifdef EIGEN_SYCL_USE_PROGRAM_CLASS</u></td></tr>
+<tr><th id="959">959</th><td>  EIGEN_STRONG_INLINE cl::sycl::program &amp;program() <em>const</em> {</td></tr>
+<tr><th id="960">960</th><td>    <b>return</b> queue_stream()-&gt;program();</td></tr>
+<tr><th id="961">961</th><td>  }</td></tr>
+<tr><th id="962">962</th><td><u>#endif</u></td></tr>
+<tr><th id="963">963</th><td></td></tr>
+<tr><th id="964">964</th><td>  EIGEN_STRONG_INLINE size_t firstLevelCacheSize() <em>const</em> { <b>return</b> <var>48</var> * <var>1024</var>; }</td></tr>
+<tr><th id="965">965</th><td></td></tr>
+<tr><th id="966">966</th><td>  EIGEN_STRONG_INLINE size_t lastLevelCacheSize() <em>const</em> {</td></tr>
+<tr><th id="967">967</th><td>    <i>// We won't try to take advantage of the l2 cache for the time being, and</i></td></tr>
+<tr><th id="968">968</th><td><i>    // there is no l3 cache on sycl devices.</i></td></tr>
+<tr><th id="969">969</th><td>    <b>return</b> firstLevelCacheSize();</td></tr>
+<tr><th id="970">970</th><td>  }</td></tr>
+<tr><th id="971">971</th><td>  EIGEN_STRONG_INLINE <em>unsigned</em> <em>long</em> getNumSyclMultiProcessors() <em>const</em> {</td></tr>
+<tr><th id="972">972</th><td>    <b>return</b> queue_stream()-&gt;getNumSyclMultiProcessors();</td></tr>
+<tr><th id="973">973</th><td>  }</td></tr>
+<tr><th id="974">974</th><td>  EIGEN_STRONG_INLINE <em>unsigned</em> <em>long</em> maxSyclThreadsPerBlock() <em>const</em> {</td></tr>
+<tr><th id="975">975</th><td>    <b>return</b> queue_stream()-&gt;maxSyclThreadsPerBlock();</td></tr>
+<tr><th id="976">976</th><td>  }</td></tr>
+<tr><th id="977">977</th><td>  EIGEN_STRONG_INLINE cl::sycl::id&lt;<var>3</var>&gt; maxWorkItemSizes() <em>const</em> {</td></tr>
+<tr><th id="978">978</th><td>    <b>return</b> queue_stream()-&gt;maxWorkItemSizes();</td></tr>
+<tr><th id="979">979</th><td>  }</td></tr>
+<tr><th id="980">980</th><td>  EIGEN_STRONG_INLINE <em>unsigned</em> <em>long</em> maxSyclThreadsPerMultiProcessor() <em>const</em> {</td></tr>
+<tr><th id="981">981</th><td>    <i>// OpenCL doesnot have such concept</i></td></tr>
+<tr><th id="982">982</th><td>    <b>return</b> queue_stream()-&gt;maxSyclThreadsPerMultiProcessor();</td></tr>
+<tr><th id="983">983</th><td>  }</td></tr>
+<tr><th id="984">984</th><td>  EIGEN_STRONG_INLINE size_t sharedMemPerBlock() <em>const</em> {</td></tr>
+<tr><th id="985">985</th><td>    <b>return</b> queue_stream()-&gt;sharedMemPerBlock();</td></tr>
+<tr><th id="986">986</th><td>  }</td></tr>
+<tr><th id="987">987</th><td>  EIGEN_STRONG_INLINE size_t getNearestPowerOfTwoWorkGroupSize() <em>const</em> {</td></tr>
+<tr><th id="988">988</th><td>    <b>return</b> queue_stream()-&gt;getNearestPowerOfTwoWorkGroupSize();</td></tr>
+<tr><th id="989">989</th><td>  }</td></tr>
+<tr><th id="990">990</th><td></td></tr>
+<tr><th id="991">991</th><td>  EIGEN_STRONG_INLINE size_t getPowerOfTwo(size_t val, <em>bool</em> roundUp) <em>const</em> {</td></tr>
+<tr><th id="992">992</th><td>    <b>return</b> queue_stream()-&gt;getPowerOfTwo(val, roundUp);</td></tr>
+<tr><th id="993">993</th><td>  }</td></tr>
+<tr><th id="994">994</th><td>  <i class="doc">/// No need for sycl it should act the same as CPU version</i></td></tr>
+<tr><th id="995">995</th><td>  EIGEN_STRONG_INLINE <em>int</em> majorDeviceVersion() <em>const</em> {</td></tr>
+<tr><th id="996">996</th><td>    <b>return</b> queue_stream()-&gt;majorDeviceVersion();</td></tr>
+<tr><th id="997">997</th><td>  }</td></tr>
+<tr><th id="998">998</th><td></td></tr>
+<tr><th id="999">999</th><td>  EIGEN_STRONG_INLINE <em>void</em> synchronize() <em>const</em> {</td></tr>
+<tr><th id="1000">1000</th><td>    queue_stream()-&gt;synchronize();</td></tr>
+<tr><th id="1001">1001</th><td>  }</td></tr>
+<tr><th id="1002">1002</th><td>  EIGEN_STRONG_INLINE <em>void</em> async_synchronize(</td></tr>
+<tr><th id="1003">1003</th><td>      cl::sycl::event e = cl::sycl::event()) <em>const</em> {</td></tr>
+<tr><th id="1004">1004</th><td>    queue_stream()-&gt;async_synchronize(e);</td></tr>
+<tr><th id="1005">1005</th><td>  }</td></tr>
+<tr><th id="1006">1006</th><td>  EIGEN_STRONG_INLINE cl::sycl::event get_latest_event() <em>const</em> {</td></tr>
+<tr><th id="1007">1007</th><td>    <b>return</b> queue_stream()-&gt;get_latest_event();</td></tr>
+<tr><th id="1008">1008</th><td>  }</td></tr>
+<tr><th id="1009">1009</th><td></td></tr>
+<tr><th id="1010">1010</th><td>  <i>// This function checks if the runtime recorded an error for the</i></td></tr>
+<tr><th id="1011">1011</th><td><i>  // underlying stream device.</i></td></tr>
+<tr><th id="1012">1012</th><td>  EIGEN_STRONG_INLINE <em>bool</em> ok() <em>const</em> { <b>return</b> queue_stream()-&gt;ok(); }</td></tr>
+<tr><th id="1013">1013</th><td></td></tr>
+<tr><th id="1014">1014</th><td>  EIGEN_STRONG_INLINE <em>bool</em> has_local_memory() <em>const</em> {</td></tr>
+<tr><th id="1015">1015</th><td>    <b>return</b> queue_stream()-&gt;has_local_memory();</td></tr>
+<tr><th id="1016">1016</th><td>  }</td></tr>
+<tr><th id="1017">1017</th><td>  EIGEN_STRONG_INLINE <em>long</em> max_buffer_size() <em>const</em> {</td></tr>
+<tr><th id="1018">1018</th><td>    <b>return</b> queue_stream()-&gt;max_buffer_size();</td></tr>
+<tr><th id="1019">1019</th><td>  }</td></tr>
+<tr><th id="1020">1020</th><td>  EIGEN_STRONG_INLINE std::string getPlatformName() <em>const</em> {</td></tr>
+<tr><th id="1021">1021</th><td>    <b>return</b> queue_stream()-&gt;getPlatformName();</td></tr>
+<tr><th id="1022">1022</th><td>  }</td></tr>
+<tr><th id="1023">1023</th><td>  EIGEN_STRONG_INLINE std::string getDeviceName() <em>const</em> {</td></tr>
+<tr><th id="1024">1024</th><td>    <b>return</b> queue_stream()-&gt;getDeviceName();</td></tr>
+<tr><th id="1025">1025</th><td>  }</td></tr>
+<tr><th id="1026">1026</th><td>  EIGEN_STRONG_INLINE std::string getDeviceVendor() <em>const</em> {</td></tr>
+<tr><th id="1027">1027</th><td>    <b>return</b> queue_stream()-&gt;getDeviceVendor();</td></tr>
+<tr><th id="1028">1028</th><td>  }</td></tr>
+<tr><th id="1029">1029</th><td>  <b>template</b> &lt;<b>typename</b> OutScalar, <b>typename</b> KernelType, <b>typename</b>... T&gt;</td></tr>
+<tr><th id="1030">1030</th><td>  EIGEN_ALWAYS_INLINE <em>void</em> binary_kernel_launcher(T... var) <em>const</em> {</td></tr>
+<tr><th id="1031">1031</th><td>    queue_stream()-&gt;<b>template</b> binary_kernel_launcher&lt;OutScalar, KernelType&gt;(</td></tr>
+<tr><th id="1032">1032</th><td>        var...);</td></tr>
+<tr><th id="1033">1033</th><td>  }</td></tr>
+<tr><th id="1034">1034</th><td>  <b>template</b> &lt;<b>typename</b> OutScalar, <b>typename</b> KernelType, <b>typename</b>... T&gt;</td></tr>
+<tr><th id="1035">1035</th><td>  EIGEN_ALWAYS_INLINE <em>void</em> unary_kernel_launcher(T... var) <em>const</em> {</td></tr>
+<tr><th id="1036">1036</th><td>    queue_stream()-&gt;<b>template</b> unary_kernel_launcher&lt;OutScalar, KernelType&gt;(</td></tr>
+<tr><th id="1037">1037</th><td>        var...);</td></tr>
+<tr><th id="1038">1038</th><td>  }</td></tr>
+<tr><th id="1039">1039</th><td></td></tr>
+<tr><th id="1040">1040</th><td>  <b>template</b> &lt;<b>typename</b> OutScalar, <b>typename</b> KernelType, <b>typename</b>... T&gt;</td></tr>
+<tr><th id="1041">1041</th><td>  EIGEN_ALWAYS_INLINE <em>void</em> nullary_kernel_launcher(T... var) <em>const</em> {</td></tr>
+<tr><th id="1042">1042</th><td>    queue_stream()-&gt;<b>template</b> nullary_kernel_launcher&lt;OutScalar, KernelType&gt;(</td></tr>
+<tr><th id="1043">1043</th><td>        var...);</td></tr>
+<tr><th id="1044">1044</th><td>  }</td></tr>
+<tr><th id="1045">1045</th><td>};</td></tr>
+<tr><th id="1046">1046</th><td>}  <i>// end namespace Eigen</i></td></tr>
+<tr><th id="1047">1047</th><td></td></tr>
+<tr><th id="1048">1048</th><td><u>#<span data-ppcond="15">endif</span>  // EIGEN_CXX11_TENSOR_TENSOR_DEVICE_SYCL_H</u></td></tr>
+<tr><th id="1049">1049</th><td></td></tr>
+</table><hr/><p id='footer'>
+Generated while processing <a href='../../../../../../_deps/tflite-src/tensorflow/lite/kernels/activations.cc.html'>halide/build-apps/_deps/tflite-src/tensorflow/lite/kernels/activations.cc</a><br/>Generated on <em>2021-Aug-05</em> from project halide revision <em>v12.0.1</em>

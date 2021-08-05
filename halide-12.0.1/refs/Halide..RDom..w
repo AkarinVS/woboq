@@ -1,3 +1,7 @@
+<dec f='halide/halide-install/include/Halide.h' l='15675' type='Halide::RVar'/>
+<offset>1216</offset>
+<use f='halide/apps/hannk/halide/reductions_generator.cpp' l='34' u='m' c='_ZN5hannk4Mean8generateEv'/>
+<use f='halide/apps/hannk/halide/reductions_generator.cpp' l='47' u='a' c='_ZN5hannk4Mean8generateEv'/>
 <dec f='halide/build/include/Halide.h' l='15675' type='Halide::RVar'/>
 <offset>1216</offset>
 <use f='halide/python_bindings/src/PyRDom.cpp' l='52' u='a' c='_ZN6Halide14PythonBindings11define_rdomERN8pybind117module_E'/>

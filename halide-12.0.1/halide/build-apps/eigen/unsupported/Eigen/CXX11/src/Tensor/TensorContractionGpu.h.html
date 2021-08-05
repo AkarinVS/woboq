@@ -1,0 +1,1429 @@
+<!doctype html>
+<html>
+<head>
+<meta name="viewport" content="width=device-width, initial-scale=1.0"><title>TensorContractionGpu.h source code [halide/build-apps/eigen/unsupported/Eigen/CXX11/src/Tensor/TensorContractionGpu.h] - Woboq Code Browser</title>
+<link rel="stylesheet" href="../../../../../../../.././data/qtcreator.css" title="QtCreator"/>
+<link rel="alternate stylesheet" href="../../../../../../../.././data/kdevelop.css" title="KDevelop"/>
+<script type="text/javascript" src="../../../../../../../.././data/jquery/jquery.min.js"></script>
+<script type="text/javascript" src="../../../../../../../.././data/jquery/jquery-ui.min.js"></script>
+<script>var file = 'halide/build-apps/eigen/unsupported/Eigen/CXX11/src/Tensor/TensorContractionGpu.h'; var root_path = '../../../../../../../..'; var data_path = '../../../../../../../.././data'; var ecma_script_api_version = 2;</script>
+<script src='../../../../../../../.././data/codebrowser.js'></script>
+</head>
+<body><div id='header'><h1 id='breadcrumb'><span>Browse the source code of </span><a href='../../../../../../..'>halide</a>/<a href='../../../../../..'>build-apps</a>/<a href='../../../../..'>eigen</a>/<a href='../../../..'>unsupported</a>/<a href='../../..'>Eigen</a>/<a href='../..'>CXX11</a>/<a href='..'>src</a>/<a href='./'>Tensor</a>/<a href='TensorContractionGpu.h.html'>TensorContractionGpu.h</a></h1></div>
+<hr/><div id='content'><table class="code">
+<tr><th id="1">1</th><td><i>// This file is part of Eigen, a lightweight C++ template library</i></td></tr>
+<tr><th id="2">2</th><td><i>// for linear algebra.</i></td></tr>
+<tr><th id="3">3</th><td><i>//</i></td></tr>
+<tr><th id="4">4</th><td><i>// Copyright (C) 2014-2015 Benoit Steiner &lt;benoit.steiner.goog@gmail.com&gt;</i></td></tr>
+<tr><th id="5">5</th><td><i>// Copyright (C) 2015 Navdeep Jaitly &lt;ndjaitly@google.com&gt;</i></td></tr>
+<tr><th id="6">6</th><td><i>// Copyright (C) 2014 Eric Martin &lt;eric@ericmart.in&gt;</i></td></tr>
+<tr><th id="7">7</th><td><i>//</i></td></tr>
+<tr><th id="8">8</th><td><i>// This Source Code Form is subject to the terms of the Mozilla</i></td></tr>
+<tr><th id="9">9</th><td><i>// Public License v. 2.0. If a copy of the MPL was not distributed</i></td></tr>
+<tr><th id="10">10</th><td><i>// with this file, You can obtain one at <a href="http://mozilla.org/MPL/2.0/">http://mozilla.org/MPL/2.0/</a>.</i></td></tr>
+<tr><th id="11">11</th><td></td></tr>
+<tr><th id="12">12</th><td><u>#<span data-ppcond="12">ifndef</span> <span class="macro" data-ref="_M/EIGEN_CXX11_TENSOR_TENSOR_CONTRACTION_GPU_H">EIGEN_CXX11_TENSOR_TENSOR_CONTRACTION_GPU_H</span></u></td></tr>
+<tr><th id="13">13</th><td><u>#define <dfn class="macro" id="_M/EIGEN_CXX11_TENSOR_TENSOR_CONTRACTION_GPU_H" data-ref="_M/EIGEN_CXX11_TENSOR_TENSOR_CONTRACTION_GPU_H">EIGEN_CXX11_TENSOR_TENSOR_CONTRACTION_GPU_H</dfn></u></td></tr>
+<tr><th id="14">14</th><td></td></tr>
+<tr><th id="15">15</th><td><u>#<span data-ppcond="15">if</span> defined(<span class="macro" data-ref="_M/EIGEN_USE_GPU">EIGEN_USE_GPU</span>) &amp;&amp; defined(<span class="macro" data-ref="_M/EIGEN_GPUCC">EIGEN_GPUCC</span>)</u></td></tr>
+<tr><th id="16">16</th><td></td></tr>
+<tr><th id="17">17</th><td><b>namespace</b> Eigen {</td></tr>
+<tr><th id="18">18</th><td></td></tr>
+<tr><th id="19">19</th><td><b>template</b>&lt;<b>typename</b> Scalar, <b>typename</b> Index, <b>typename</b> LhsMapper,</td></tr>
+<tr><th id="20">20</th><td>         <b>typename</b> RhsMapper, <b>typename</b> OutputMapper, <em>bool</em> needs_edge_check&gt;</td></tr>
+<tr><th id="21">21</th><td>__device__ EIGEN_STRONG_INLINE <em>void</em></td></tr>
+<tr><th id="22">22</th><td>EigenContractionKernelInternal(<em>const</em> LhsMapper lhs, <em>const</em> RhsMapper rhs,</td></tr>
+<tr><th id="23">23</th><td>                               <em>const</em> OutputMapper output, Scalar* lhs_shmem, Scalar* rhs_shmem,</td></tr>
+<tr><th id="24">24</th><td>                       <em>const</em> Index m_size, <em>const</em> Index n_size, <em>const</em> Index k_size) {</td></tr>
+<tr><th id="25">25</th><td></td></tr>
+<tr><th id="26">26</th><td>  <em>const</em> Index m_block_idx = blockIdx.x;</td></tr>
+<tr><th id="27">27</th><td>  <em>const</em> Index n_block_idx = blockIdx.y;</td></tr>
+<tr><th id="28">28</th><td></td></tr>
+<tr><th id="29">29</th><td>  <em>const</em> Index base_m = <var>64</var> * m_block_idx;</td></tr>
+<tr><th id="30">30</th><td>  <em>const</em> Index base_n = <var>64</var> * n_block_idx;</td></tr>
+<tr><th id="31">31</th><td></td></tr>
+<tr><th id="32">32</th><td>  <i>// declare and initialize 64 registers for output 8x8 block</i></td></tr>
+<tr><th id="33">33</th><td><i></i></td></tr>
+<tr><th id="34">34</th><td><i>  // prefetch registers</i></td></tr>
+<tr><th id="35">35</th><td>  Scalar lhs_pf0;</td></tr>
+<tr><th id="36">36</th><td>  Scalar lhs_pf1;</td></tr>
+<tr><th id="37">37</th><td>  Scalar lhs_pf2;</td></tr>
+<tr><th id="38">38</th><td>  Scalar lhs_pf3;</td></tr>
+<tr><th id="39">39</th><td>  Scalar lhs_pf4;</td></tr>
+<tr><th id="40">40</th><td>  Scalar lhs_pf5;</td></tr>
+<tr><th id="41">41</th><td>  Scalar lhs_pf6;</td></tr>
+<tr><th id="42">42</th><td>  Scalar lhs_pf7;</td></tr>
+<tr><th id="43">43</th><td></td></tr>
+<tr><th id="44">44</th><td>  Scalar rhs_pf0;</td></tr>
+<tr><th id="45">45</th><td>  Scalar rhs_pf1;</td></tr>
+<tr><th id="46">46</th><td>  Scalar rhs_pf2;</td></tr>
+<tr><th id="47">47</th><td>  Scalar rhs_pf3;</td></tr>
+<tr><th id="48">48</th><td>  Scalar rhs_pf4;</td></tr>
+<tr><th id="49">49</th><td>  Scalar rhs_pf5;</td></tr>
+<tr><th id="50">50</th><td>  Scalar rhs_pf6;</td></tr>
+<tr><th id="51">51</th><td>  Scalar rhs_pf7;</td></tr>
+<tr><th id="52">52</th><td></td></tr>
+<tr><th id="53">53</th><td>  <i>// shared memory is formatted</i></td></tr>
+<tr><th id="54">54</th><td><i>  // (contract idx in block, nocontract idx in block, block idx)</i></td></tr>
+<tr><th id="55">55</th><td><i>  // where block idx is column major. This transposition limits the number of</i></td></tr>
+<tr><th id="56">56</th><td><i>  // bank conflicts when reading the LHS. The core idea is that since the contracting</i></td></tr>
+<tr><th id="57">57</th><td><i>  // index is shared by both sides, then the contracting index should be in threadIdx.x.</i></td></tr>
+<tr><th id="58">58</th><td><i></i></td></tr>
+<tr><th id="59">59</th><td><i>  // On the LHS, we pad each row inside of each block with an extra element. This makes</i></td></tr>
+<tr><th id="60">60</th><td><i>  // each block 8 rows of 9 elements, which is 72 elements. This gives no bank conflicts</i></td></tr>
+<tr><th id="61">61</th><td><i>  // on writes and very few 2-way conflicts on reads. There is an 8x8 grid of these blocks.</i></td></tr>
+<tr><th id="62">62</th><td><i></i></td></tr>
+<tr><th id="63">63</th><td><i>  // On the RHS we just add 8 padding elements to the end of each block. This gives no bank</i></td></tr>
+<tr><th id="64">64</th><td><i>  // conflicts on writes and also none on reads.</i></td></tr>
+<tr><th id="65">65</th><td><i></i></td></tr>
+<tr><th id="66">66</th><td><i>  // storage indices</i></td></tr>
+<tr><th id="67">67</th><td>  <em>const</em> Index lhs_store_idx_base = threadIdx.y * <var>72</var> + threadIdx.x * <var>9</var> + threadIdx.z;</td></tr>
+<tr><th id="68">68</th><td>  <em>const</em> Index rhs_store_idx_base = threadIdx.y * <var>72</var> + threadIdx.z * <var>8</var> + threadIdx.x;</td></tr>
+<tr><th id="69">69</th><td></td></tr>
+<tr><th id="70">70</th><td>  <em>const</em> Index lhs_store_idx_0 = lhs_store_idx_base + <var>576</var> * <var>0</var>;</td></tr>
+<tr><th id="71">71</th><td>  <em>const</em> Index lhs_store_idx_1 = lhs_store_idx_base + <var>576</var> * <var>1</var>;</td></tr>
+<tr><th id="72">72</th><td>  <em>const</em> Index lhs_store_idx_2 = lhs_store_idx_base + <var>576</var> * <var>2</var>;</td></tr>
+<tr><th id="73">73</th><td>  <em>const</em> Index lhs_store_idx_3 = lhs_store_idx_base + <var>576</var> * <var>3</var>;</td></tr>
+<tr><th id="74">74</th><td>  <em>const</em> Index lhs_store_idx_4 = lhs_store_idx_base + <var>576</var> * <var>4</var>;</td></tr>
+<tr><th id="75">75</th><td>  <em>const</em> Index lhs_store_idx_5 = lhs_store_idx_base + <var>576</var> * <var>5</var>;</td></tr>
+<tr><th id="76">76</th><td>  <em>const</em> Index lhs_store_idx_6 = lhs_store_idx_base + <var>576</var> * <var>6</var>;</td></tr>
+<tr><th id="77">77</th><td>  <em>const</em> Index lhs_store_idx_7 = lhs_store_idx_base + <var>576</var> * <var>7</var>;</td></tr>
+<tr><th id="78">78</th><td></td></tr>
+<tr><th id="79">79</th><td>  <em>const</em> Index rhs_store_idx_0 = rhs_store_idx_base + <var>576</var> * <var>0</var>;</td></tr>
+<tr><th id="80">80</th><td>  <em>const</em> Index rhs_store_idx_1 = rhs_store_idx_base + <var>576</var> * <var>1</var>;</td></tr>
+<tr><th id="81">81</th><td>  <em>const</em> Index rhs_store_idx_2 = rhs_store_idx_base + <var>576</var> * <var>2</var>;</td></tr>
+<tr><th id="82">82</th><td>  <em>const</em> Index rhs_store_idx_3 = rhs_store_idx_base + <var>576</var> * <var>3</var>;</td></tr>
+<tr><th id="83">83</th><td>  <em>const</em> Index rhs_store_idx_4 = rhs_store_idx_base + <var>576</var> * <var>4</var>;</td></tr>
+<tr><th id="84">84</th><td>  <em>const</em> Index rhs_store_idx_5 = rhs_store_idx_base + <var>576</var> * <var>5</var>;</td></tr>
+<tr><th id="85">85</th><td>  <em>const</em> Index rhs_store_idx_6 = rhs_store_idx_base + <var>576</var> * <var>6</var>;</td></tr>
+<tr><th id="86">86</th><td>  <em>const</em> Index rhs_store_idx_7 = rhs_store_idx_base + <var>576</var> * <var>7</var>;</td></tr>
+<tr><th id="87">87</th><td></td></tr>
+<tr><th id="88">88</th><td>  <i>// in the loading code, the following variables are important:</i></td></tr>
+<tr><th id="89">89</th><td><i>  // threadIdx.x: the vertical position in an 8x8 block</i></td></tr>
+<tr><th id="90">90</th><td><i>  // threadIdx.y: the vertical index of the 8x8 block in the grid</i></td></tr>
+<tr><th id="91">91</th><td><i>  // threadIdx.z: the horizontal position in an 8x8 block</i></td></tr>
+<tr><th id="92">92</th><td><i>  // k: the horizontal index of the 8x8 block in the grid</i></td></tr>
+<tr><th id="93">93</th><td><i>  //</i></td></tr>
+<tr><th id="94">94</th><td><i>  // The k parameter is implicit (it was the loop counter for a loop that went</i></td></tr>
+<tr><th id="95">95</th><td><i>  // from 0 to &lt;8, but now that loop is unrolled in the below code.</i></td></tr>
+<tr><th id="96">96</th><td></td></tr>
+<tr><th id="97">97</th><td>  <em>const</em> Index load_idx_vert = threadIdx.x + <var>8</var> * threadIdx.y;</td></tr>
+<tr><th id="98">98</th><td>  <em>const</em> Index lhs_vert = base_m + load_idx_vert;</td></tr>
+<tr><th id="99">99</th><td></td></tr>
+<tr><th id="100">100</th><td><u>#define prefetchIntoRegisters(base_k)                           \</u></td></tr>
+<tr><th id="101">101</th><td><u>  {                                                             \</u></td></tr>
+<tr><th id="102">102</th><td><u>    lhs_pf0 = conv(0);                                          \</u></td></tr>
+<tr><th id="103">103</th><td><u>    lhs_pf1 = conv(0);                                          \</u></td></tr>
+<tr><th id="104">104</th><td><u>    lhs_pf2 = conv(0);                                          \</u></td></tr>
+<tr><th id="105">105</th><td><u>    lhs_pf3 = conv(0);                                          \</u></td></tr>
+<tr><th id="106">106</th><td><u>    lhs_pf4 = conv(0);                                          \</u></td></tr>
+<tr><th id="107">107</th><td><u>    lhs_pf5 = conv(0);                                          \</u></td></tr>
+<tr><th id="108">108</th><td><u>    lhs_pf6 = conv(0);                                          \</u></td></tr>
+<tr><th id="109">109</th><td><u>    lhs_pf7 = conv(0);                                          \</u></td></tr>
+<tr><th id="110">110</th><td><u>                                                                \</u></td></tr>
+<tr><th id="111">111</th><td><u>    rhs_pf0 = conv(0);                                          \</u></td></tr>
+<tr><th id="112">112</th><td><u>    rhs_pf1 = conv(0);                                          \</u></td></tr>
+<tr><th id="113">113</th><td><u>    rhs_pf2 = conv(0);                                          \</u></td></tr>
+<tr><th id="114">114</th><td><u>    rhs_pf3 = conv(0);                                          \</u></td></tr>
+<tr><th id="115">115</th><td><u>    rhs_pf4 = conv(0);                                          \</u></td></tr>
+<tr><th id="116">116</th><td><u>    rhs_pf5 = conv(0);                                          \</u></td></tr>
+<tr><th id="117">117</th><td><u>    rhs_pf6 = conv(0);                                          \</u></td></tr>
+<tr><th id="118">118</th><td><u>    rhs_pf7 = conv(0);                                          \</u></td></tr>
+<tr><th id="119">119</th><td><u>                                                                \</u></td></tr>
+<tr><th id="120">120</th><td><u>    if (!needs_edge_check || lhs_vert &lt; m_size) {               \</u></td></tr>
+<tr><th id="121">121</th><td><u>      const Index lhs_horiz_0 = base_k + threadIdx.z + 0 * 8;   \</u></td></tr>
+<tr><th id="122">122</th><td><u>      const Index lhs_horiz_1 = base_k + threadIdx.z + 1 * 8;   \</u></td></tr>
+<tr><th id="123">123</th><td><u>      const Index lhs_horiz_2 = base_k + threadIdx.z + 2 * 8;   \</u></td></tr>
+<tr><th id="124">124</th><td><u>      const Index lhs_horiz_3 = base_k + threadIdx.z + 3 * 8;   \</u></td></tr>
+<tr><th id="125">125</th><td><u>      const Index lhs_horiz_4 = base_k + threadIdx.z + 4 * 8;   \</u></td></tr>
+<tr><th id="126">126</th><td><u>      const Index lhs_horiz_5 = base_k + threadIdx.z + 5 * 8;   \</u></td></tr>
+<tr><th id="127">127</th><td><u>      const Index lhs_horiz_6 = base_k + threadIdx.z + 6 * 8;   \</u></td></tr>
+<tr><th id="128">128</th><td><u>      const Index lhs_horiz_7 = base_k + threadIdx.z + 7 * 8;   \</u></td></tr>
+<tr><th id="129">129</th><td><u>                                                                \</u></td></tr>
+<tr><th id="130">130</th><td><u>      if (!needs_edge_check || lhs_horiz_7 &lt; k_size) {          \</u></td></tr>
+<tr><th id="131">131</th><td><u>        lhs_pf0 = lhs(lhs_vert, lhs_horiz_0);                   \</u></td></tr>
+<tr><th id="132">132</th><td><u>        lhs_pf1 = lhs(lhs_vert, lhs_horiz_1);                   \</u></td></tr>
+<tr><th id="133">133</th><td><u>        lhs_pf2 = lhs(lhs_vert, lhs_horiz_2);                   \</u></td></tr>
+<tr><th id="134">134</th><td><u>        lhs_pf3 = lhs(lhs_vert, lhs_horiz_3);                   \</u></td></tr>
+<tr><th id="135">135</th><td><u>        lhs_pf4 = lhs(lhs_vert, lhs_horiz_4);                   \</u></td></tr>
+<tr><th id="136">136</th><td><u>        lhs_pf5 = lhs(lhs_vert, lhs_horiz_5);                   \</u></td></tr>
+<tr><th id="137">137</th><td><u>        lhs_pf6 = lhs(lhs_vert, lhs_horiz_6);                   \</u></td></tr>
+<tr><th id="138">138</th><td><u>        lhs_pf7 = lhs(lhs_vert, lhs_horiz_7);                   \</u></td></tr>
+<tr><th id="139">139</th><td><u>      } else if (lhs_horiz_6 &lt; k_size) {                        \</u></td></tr>
+<tr><th id="140">140</th><td><u>        lhs_pf0 = lhs(lhs_vert, lhs_horiz_0);                   \</u></td></tr>
+<tr><th id="141">141</th><td><u>        lhs_pf1 = lhs(lhs_vert, lhs_horiz_1);                   \</u></td></tr>
+<tr><th id="142">142</th><td><u>        lhs_pf2 = lhs(lhs_vert, lhs_horiz_2);                   \</u></td></tr>
+<tr><th id="143">143</th><td><u>        lhs_pf3 = lhs(lhs_vert, lhs_horiz_3);                   \</u></td></tr>
+<tr><th id="144">144</th><td><u>        lhs_pf4 = lhs(lhs_vert, lhs_horiz_4);                   \</u></td></tr>
+<tr><th id="145">145</th><td><u>        lhs_pf5 = lhs(lhs_vert, lhs_horiz_5);                   \</u></td></tr>
+<tr><th id="146">146</th><td><u>        lhs_pf6 = lhs(lhs_vert, lhs_horiz_6);                   \</u></td></tr>
+<tr><th id="147">147</th><td><u>      } else if (lhs_horiz_5 &lt; k_size) {                        \</u></td></tr>
+<tr><th id="148">148</th><td><u>        lhs_pf0 = lhs(lhs_vert, lhs_horiz_0);                   \</u></td></tr>
+<tr><th id="149">149</th><td><u>        lhs_pf1 = lhs(lhs_vert, lhs_horiz_1);                   \</u></td></tr>
+<tr><th id="150">150</th><td><u>        lhs_pf2 = lhs(lhs_vert, lhs_horiz_2);                   \</u></td></tr>
+<tr><th id="151">151</th><td><u>        lhs_pf3 = lhs(lhs_vert, lhs_horiz_3);                   \</u></td></tr>
+<tr><th id="152">152</th><td><u>        lhs_pf4 = lhs(lhs_vert, lhs_horiz_4);                   \</u></td></tr>
+<tr><th id="153">153</th><td><u>        lhs_pf5 = lhs(lhs_vert, lhs_horiz_5);                   \</u></td></tr>
+<tr><th id="154">154</th><td><u>      } else if (lhs_horiz_4 &lt; k_size) {                        \</u></td></tr>
+<tr><th id="155">155</th><td><u>        lhs_pf0 = lhs(lhs_vert, lhs_horiz_0);                   \</u></td></tr>
+<tr><th id="156">156</th><td><u>        lhs_pf1 = lhs(lhs_vert, lhs_horiz_1);                   \</u></td></tr>
+<tr><th id="157">157</th><td><u>        lhs_pf2 = lhs(lhs_vert, lhs_horiz_2);                   \</u></td></tr>
+<tr><th id="158">158</th><td><u>        lhs_pf3 = lhs(lhs_vert, lhs_horiz_3);                   \</u></td></tr>
+<tr><th id="159">159</th><td><u>        lhs_pf4 = lhs(lhs_vert, lhs_horiz_4);                   \</u></td></tr>
+<tr><th id="160">160</th><td><u>      } else if (lhs_horiz_3 &lt; k_size) {                        \</u></td></tr>
+<tr><th id="161">161</th><td><u>        lhs_pf0 = lhs(lhs_vert, lhs_horiz_0);                   \</u></td></tr>
+<tr><th id="162">162</th><td><u>        lhs_pf1 = lhs(lhs_vert, lhs_horiz_1);                   \</u></td></tr>
+<tr><th id="163">163</th><td><u>        lhs_pf2 = lhs(lhs_vert, lhs_horiz_2);                   \</u></td></tr>
+<tr><th id="164">164</th><td><u>        lhs_pf3 = lhs(lhs_vert, lhs_horiz_3);                   \</u></td></tr>
+<tr><th id="165">165</th><td><u>      } else if (lhs_horiz_2 &lt; k_size) {                        \</u></td></tr>
+<tr><th id="166">166</th><td><u>        lhs_pf0 = lhs(lhs_vert, lhs_horiz_0);                   \</u></td></tr>
+<tr><th id="167">167</th><td><u>        lhs_pf1 = lhs(lhs_vert, lhs_horiz_1);                   \</u></td></tr>
+<tr><th id="168">168</th><td><u>        lhs_pf2 = lhs(lhs_vert, lhs_horiz_2);                   \</u></td></tr>
+<tr><th id="169">169</th><td><u>      } else if (lhs_horiz_1 &lt; k_size) {                        \</u></td></tr>
+<tr><th id="170">170</th><td><u>        lhs_pf0 = lhs(lhs_vert, lhs_horiz_0);                   \</u></td></tr>
+<tr><th id="171">171</th><td><u>        lhs_pf1 = lhs(lhs_vert, lhs_horiz_1);                   \</u></td></tr>
+<tr><th id="172">172</th><td><u>      } else if (lhs_horiz_0 &lt; k_size) {                        \</u></td></tr>
+<tr><th id="173">173</th><td><u>        lhs_pf0 = lhs(lhs_vert, lhs_horiz_0);                   \</u></td></tr>
+<tr><th id="174">174</th><td><u>      }                                                         \</u></td></tr>
+<tr><th id="175">175</th><td><u>    }                                                           \</u></td></tr>
+<tr><th id="176">176</th><td><u>                                                                \</u></td></tr>
+<tr><th id="177">177</th><td><u>    const Index rhs_vert = base_k + load_idx_vert;              \</u></td></tr>
+<tr><th id="178">178</th><td><u>    if (!needs_edge_check || rhs_vert &lt; k_size) {               \</u></td></tr>
+<tr><th id="179">179</th><td><u>      const Index rhs_horiz_0 = base_n + threadIdx.z + 0 * 8;   \</u></td></tr>
+<tr><th id="180">180</th><td><u>      const Index rhs_horiz_1 = base_n + threadIdx.z + 1 * 8;   \</u></td></tr>
+<tr><th id="181">181</th><td><u>      const Index rhs_horiz_2 = base_n + threadIdx.z + 2 * 8;   \</u></td></tr>
+<tr><th id="182">182</th><td><u>      const Index rhs_horiz_3 = base_n + threadIdx.z + 3 * 8;   \</u></td></tr>
+<tr><th id="183">183</th><td><u>      const Index rhs_horiz_4 = base_n + threadIdx.z + 4 * 8;   \</u></td></tr>
+<tr><th id="184">184</th><td><u>      const Index rhs_horiz_5 = base_n + threadIdx.z + 5 * 8;   \</u></td></tr>
+<tr><th id="185">185</th><td><u>      const Index rhs_horiz_6 = base_n + threadIdx.z + 6 * 8;   \</u></td></tr>
+<tr><th id="186">186</th><td><u>      const Index rhs_horiz_7 = base_n + threadIdx.z + 7 * 8;   \</u></td></tr>
+<tr><th id="187">187</th><td><u>                                                                \</u></td></tr>
+<tr><th id="188">188</th><td><u>      if (rhs_horiz_7 &lt; n_size) {                               \</u></td></tr>
+<tr><th id="189">189</th><td><u>        rhs_pf0 = rhs(rhs_vert, rhs_horiz_0);                   \</u></td></tr>
+<tr><th id="190">190</th><td><u>        rhs_pf1 = rhs(rhs_vert, rhs_horiz_1);                   \</u></td></tr>
+<tr><th id="191">191</th><td><u>        rhs_pf2 = rhs(rhs_vert, rhs_horiz_2);                   \</u></td></tr>
+<tr><th id="192">192</th><td><u>        rhs_pf3 = rhs(rhs_vert, rhs_horiz_3);                   \</u></td></tr>
+<tr><th id="193">193</th><td><u>        rhs_pf4 = rhs(rhs_vert, rhs_horiz_4);                   \</u></td></tr>
+<tr><th id="194">194</th><td><u>        rhs_pf5 = rhs(rhs_vert, rhs_horiz_5);                   \</u></td></tr>
+<tr><th id="195">195</th><td><u>        rhs_pf6 = rhs(rhs_vert, rhs_horiz_6);                   \</u></td></tr>
+<tr><th id="196">196</th><td><u>        rhs_pf7 = rhs(rhs_vert, rhs_horiz_7);                   \</u></td></tr>
+<tr><th id="197">197</th><td><u>      } else if (rhs_horiz_6 &lt; n_size) {                        \</u></td></tr>
+<tr><th id="198">198</th><td><u>        rhs_pf0 = rhs(rhs_vert, rhs_horiz_0);                   \</u></td></tr>
+<tr><th id="199">199</th><td><u>        rhs_pf1 = rhs(rhs_vert, rhs_horiz_1);                   \</u></td></tr>
+<tr><th id="200">200</th><td><u>        rhs_pf2 = rhs(rhs_vert, rhs_horiz_2);                   \</u></td></tr>
+<tr><th id="201">201</th><td><u>        rhs_pf3 = rhs(rhs_vert, rhs_horiz_3);                   \</u></td></tr>
+<tr><th id="202">202</th><td><u>        rhs_pf4 = rhs(rhs_vert, rhs_horiz_4);                   \</u></td></tr>
+<tr><th id="203">203</th><td><u>        rhs_pf5 = rhs(rhs_vert, rhs_horiz_5);                   \</u></td></tr>
+<tr><th id="204">204</th><td><u>        rhs_pf6 = rhs(rhs_vert, rhs_horiz_6);                   \</u></td></tr>
+<tr><th id="205">205</th><td><u>      } else if (rhs_horiz_5 &lt; n_size) {                        \</u></td></tr>
+<tr><th id="206">206</th><td><u>        rhs_pf0 = rhs(rhs_vert, rhs_horiz_0);                   \</u></td></tr>
+<tr><th id="207">207</th><td><u>        rhs_pf1 = rhs(rhs_vert, rhs_horiz_1);                   \</u></td></tr>
+<tr><th id="208">208</th><td><u>        rhs_pf2 = rhs(rhs_vert, rhs_horiz_2);                   \</u></td></tr>
+<tr><th id="209">209</th><td><u>        rhs_pf3 = rhs(rhs_vert, rhs_horiz_3);                   \</u></td></tr>
+<tr><th id="210">210</th><td><u>        rhs_pf4 = rhs(rhs_vert, rhs_horiz_4);                   \</u></td></tr>
+<tr><th id="211">211</th><td><u>        rhs_pf5 = rhs(rhs_vert, rhs_horiz_5);                   \</u></td></tr>
+<tr><th id="212">212</th><td><u>      } else if (rhs_horiz_4 &lt; n_size) {                        \</u></td></tr>
+<tr><th id="213">213</th><td><u>        rhs_pf0 = rhs(rhs_vert, rhs_horiz_0);                   \</u></td></tr>
+<tr><th id="214">214</th><td><u>        rhs_pf1 = rhs(rhs_vert, rhs_horiz_1);                   \</u></td></tr>
+<tr><th id="215">215</th><td><u>        rhs_pf2 = rhs(rhs_vert, rhs_horiz_2);                   \</u></td></tr>
+<tr><th id="216">216</th><td><u>        rhs_pf3 = rhs(rhs_vert, rhs_horiz_3);                   \</u></td></tr>
+<tr><th id="217">217</th><td><u>        rhs_pf4 = rhs(rhs_vert, rhs_horiz_4);                   \</u></td></tr>
+<tr><th id="218">218</th><td><u>      } else if (rhs_horiz_3 &lt; n_size) {                        \</u></td></tr>
+<tr><th id="219">219</th><td><u>        rhs_pf0 = rhs(rhs_vert, rhs_horiz_0);                   \</u></td></tr>
+<tr><th id="220">220</th><td><u>        rhs_pf1 = rhs(rhs_vert, rhs_horiz_1);                   \</u></td></tr>
+<tr><th id="221">221</th><td><u>        rhs_pf2 = rhs(rhs_vert, rhs_horiz_2);                   \</u></td></tr>
+<tr><th id="222">222</th><td><u>        rhs_pf3 = rhs(rhs_vert, rhs_horiz_3);                   \</u></td></tr>
+<tr><th id="223">223</th><td><u>      } else if (rhs_horiz_2 &lt; n_size) {                        \</u></td></tr>
+<tr><th id="224">224</th><td><u>        rhs_pf0 = rhs(rhs_vert, rhs_horiz_0);                   \</u></td></tr>
+<tr><th id="225">225</th><td><u>        rhs_pf1 = rhs(rhs_vert, rhs_horiz_1);                   \</u></td></tr>
+<tr><th id="226">226</th><td><u>        rhs_pf2 = rhs(rhs_vert, rhs_horiz_2);                   \</u></td></tr>
+<tr><th id="227">227</th><td><u>      } else if (rhs_horiz_1 &lt; n_size) {                        \</u></td></tr>
+<tr><th id="228">228</th><td><u>        rhs_pf0 = rhs(rhs_vert, rhs_horiz_0);                   \</u></td></tr>
+<tr><th id="229">229</th><td><u>        rhs_pf1 = rhs(rhs_vert, rhs_horiz_1);                   \</u></td></tr>
+<tr><th id="230">230</th><td><u>      } else if (rhs_horiz_0 &lt; n_size) {                        \</u></td></tr>
+<tr><th id="231">231</th><td><u>        rhs_pf0 = rhs(rhs_vert, rhs_horiz_0);                   \</u></td></tr>
+<tr><th id="232">232</th><td><u>      }                                                         \</u></td></tr>
+<tr><th id="233">233</th><td><u>    }                                                           \</u></td></tr>
+<tr><th id="234">234</th><td><u>  }</u>                                                             \</td></tr>
+<tr><th id="235">235</th><td></td></tr>
+<tr><th id="236">236</th><td><u>#define writeRegToShmem(_)                      \</u></td></tr>
+<tr><th id="237">237</th><td><u>  lhs_shmem[lhs_store_idx_0] = lhs_pf0;         \</u></td></tr>
+<tr><th id="238">238</th><td><u>  rhs_shmem[rhs_store_idx_0] = rhs_pf0;         \</u></td></tr>
+<tr><th id="239">239</th><td><u>                                                \</u></td></tr>
+<tr><th id="240">240</th><td><u>  lhs_shmem[lhs_store_idx_1] = lhs_pf1;         \</u></td></tr>
+<tr><th id="241">241</th><td><u>  rhs_shmem[rhs_store_idx_1] = rhs_pf1;         \</u></td></tr>
+<tr><th id="242">242</th><td><u>                                                \</u></td></tr>
+<tr><th id="243">243</th><td><u>  lhs_shmem[lhs_store_idx_2] = lhs_pf2;         \</u></td></tr>
+<tr><th id="244">244</th><td><u>  rhs_shmem[rhs_store_idx_2] = rhs_pf2;         \</u></td></tr>
+<tr><th id="245">245</th><td><u>                                                \</u></td></tr>
+<tr><th id="246">246</th><td><u>  lhs_shmem[lhs_store_idx_3] = lhs_pf3;         \</u></td></tr>
+<tr><th id="247">247</th><td><u>  rhs_shmem[rhs_store_idx_3] = rhs_pf3;         \</u></td></tr>
+<tr><th id="248">248</th><td><u>                                                \</u></td></tr>
+<tr><th id="249">249</th><td><u>  lhs_shmem[lhs_store_idx_4] = lhs_pf4;         \</u></td></tr>
+<tr><th id="250">250</th><td><u>  rhs_shmem[rhs_store_idx_4] = rhs_pf4;         \</u></td></tr>
+<tr><th id="251">251</th><td><u>                                                \</u></td></tr>
+<tr><th id="252">252</th><td><u>  lhs_shmem[lhs_store_idx_5] = lhs_pf5;         \</u></td></tr>
+<tr><th id="253">253</th><td><u>  rhs_shmem[rhs_store_idx_5] = rhs_pf5;         \</u></td></tr>
+<tr><th id="254">254</th><td><u>                                                \</u></td></tr>
+<tr><th id="255">255</th><td><u>  lhs_shmem[lhs_store_idx_6] = lhs_pf6;         \</u></td></tr>
+<tr><th id="256">256</th><td><u>  rhs_shmem[rhs_store_idx_6] = rhs_pf6;         \</u></td></tr>
+<tr><th id="257">257</th><td><u>                                                \</u></td></tr>
+<tr><th id="258">258</th><td><u>  lhs_shmem[lhs_store_idx_7] = lhs_pf7;         \</u></td></tr>
+<tr><th id="259">259</th><td><u>  rhs_shmem[rhs_store_idx_7] = rhs_pf7;</u>         \</td></tr>
+<tr><th id="260">260</th><td></td></tr>
+<tr><th id="261">261</th><td>  <i>// declare and initialize result array</i></td></tr>
+<tr><th id="262">262</th><td><u>#define res(i, j) _res_##i##j</u></td></tr>
+<tr><th id="263">263</th><td><u>#define initResultRow(i)                        \</u></td></tr>
+<tr><th id="264">264</th><td><u>  Scalar res(i, 0) = conv(0);                   \</u></td></tr>
+<tr><th id="265">265</th><td><u>  Scalar res(i, 1) = conv(0);                   \</u></td></tr>
+<tr><th id="266">266</th><td><u>  Scalar res(i, 2) = conv(0);                   \</u></td></tr>
+<tr><th id="267">267</th><td><u>  Scalar res(i, 3) = conv(0);                   \</u></td></tr>
+<tr><th id="268">268</th><td><u>  Scalar res(i, 4) = conv(0);                   \</u></td></tr>
+<tr><th id="269">269</th><td><u>  Scalar res(i, 5) = conv(0);                   \</u></td></tr>
+<tr><th id="270">270</th><td><u>  Scalar res(i, 6) = conv(0);                   \</u></td></tr>
+<tr><th id="271">271</th><td><u>  Scalar res(i, 7) = conv(0);</u>                   \</td></tr>
+<tr><th id="272">272</th><td></td></tr>
+<tr><th id="273">273</th><td>  internal::scalar_cast_op&lt;<em>int</em>, Scalar&gt; conv;</td></tr>
+<tr><th id="274">274</th><td>  initResultRow(<var>0</var>);</td></tr>
+<tr><th id="275">275</th><td>  initResultRow(<var>1</var>);</td></tr>
+<tr><th id="276">276</th><td>  initResultRow(<var>2</var>);</td></tr>
+<tr><th id="277">277</th><td>  initResultRow(<var>3</var>);</td></tr>
+<tr><th id="278">278</th><td>  initResultRow(<var>4</var>);</td></tr>
+<tr><th id="279">279</th><td>  initResultRow(<var>5</var>);</td></tr>
+<tr><th id="280">280</th><td>  initResultRow(<var>6</var>);</td></tr>
+<tr><th id="281">281</th><td>  initResultRow(<var>7</var>);</td></tr>
+<tr><th id="282">282</th><td><u>#undef initResultRow</u></td></tr>
+<tr><th id="283">283</th><td></td></tr>
+<tr><th id="284">284</th><td>  <b>for</b> (Index base_k = <var>0</var>; base_k &lt; k_size; base_k += <var>64</var>) {</td></tr>
+<tr><th id="285">285</th><td>    <i>// wait for previous iteration to finish with shmem. Despite common sense,</i></td></tr>
+<tr><th id="286">286</th><td><i>    // the code is a bit faster with this here then at bottom of loop</i></td></tr>
+<tr><th id="287">287</th><td>    __syncthreads();</td></tr>
+<tr><th id="288">288</th><td></td></tr>
+<tr><th id="289">289</th><td>    prefetchIntoRegisters(base_k);</td></tr>
+<tr><th id="290">290</th><td>    writeRegToShmem();</td></tr>
+<tr><th id="291">291</th><td></td></tr>
+<tr><th id="292">292</th><td>    <u>#undef prefetchIntoRegisters</u></td></tr>
+<tr><th id="293">293</th><td>    <u>#undef writeRegToShmem</u></td></tr>
+<tr><th id="294">294</th><td></td></tr>
+<tr><th id="295">295</th><td>    <i>// wait for shared mem packing to be done before starting computation</i></td></tr>
+<tr><th id="296">296</th><td>    __syncthreads();</td></tr>
+<tr><th id="297">297</th><td></td></tr>
+<tr><th id="298">298</th><td>    <i>// compute 8x8 matrix product by outer product. This involves packing one column</i></td></tr>
+<tr><th id="299">299</th><td><i>    // of LHS and one row of RHS into registers (takes 16 registers).</i></td></tr>
+<tr><th id="300">300</th><td></td></tr>
+<tr><th id="301">301</th><td><u>#define lcol(i) _lcol##i</u></td></tr>
+<tr><th id="302">302</th><td>    Scalar lcol(<var>0</var>);</td></tr>
+<tr><th id="303">303</th><td>    Scalar lcol(<var>1</var>);</td></tr>
+<tr><th id="304">304</th><td>    Scalar lcol(<var>2</var>);</td></tr>
+<tr><th id="305">305</th><td>    Scalar lcol(<var>3</var>);</td></tr>
+<tr><th id="306">306</th><td>    Scalar lcol(<var>4</var>);</td></tr>
+<tr><th id="307">307</th><td>    Scalar lcol(<var>5</var>);</td></tr>
+<tr><th id="308">308</th><td>    Scalar lcol(<var>6</var>);</td></tr>
+<tr><th id="309">309</th><td>    Scalar lcol(<var>7</var>);</td></tr>
+<tr><th id="310">310</th><td></td></tr>
+<tr><th id="311">311</th><td><u>#define rrow(j) _rrow##j</u></td></tr>
+<tr><th id="312">312</th><td>    Scalar rrow(<var>0</var>);</td></tr>
+<tr><th id="313">313</th><td>    Scalar rrow(<var>1</var>);</td></tr>
+<tr><th id="314">314</th><td>    Scalar rrow(<var>2</var>);</td></tr>
+<tr><th id="315">315</th><td>    Scalar rrow(<var>3</var>);</td></tr>
+<tr><th id="316">316</th><td>    Scalar rrow(<var>4</var>);</td></tr>
+<tr><th id="317">317</th><td>    Scalar rrow(<var>5</var>);</td></tr>
+<tr><th id="318">318</th><td>    Scalar rrow(<var>6</var>);</td></tr>
+<tr><th id="319">319</th><td>    Scalar rrow(<var>7</var>);</td></tr>
+<tr><th id="320">320</th><td></td></tr>
+<tr><th id="321">321</th><td>    <i>// Now x corresponds to k, y to m, and z to n</i></td></tr>
+<tr><th id="322">322</th><td>    <em>const</em> Scalar* lhs_block = &amp;lhs_shmem[threadIdx.x + <var>9</var> * threadIdx.y];</td></tr>
+<tr><th id="323">323</th><td>    <em>const</em> Scalar* rhs_block = &amp;rhs_shmem[threadIdx.x + <var>8</var> * threadIdx.z];</td></tr>
+<tr><th id="324">324</th><td></td></tr>
+<tr><th id="325">325</th><td><u>#define lhs_element(i, j) lhs_block[72 * ((i) + 8 * (j))]</u></td></tr>
+<tr><th id="326">326</th><td><u>#define rhs_element(i, j) rhs_block[72 * ((i) + 8 * (j))]</u></td></tr>
+<tr><th id="327">327</th><td></td></tr>
+<tr><th id="328">328</th><td><u>#define loadData(i, j)                          \</u></td></tr>
+<tr><th id="329">329</th><td><u>    lcol(0) = lhs_element(0, j);               \</u></td></tr>
+<tr><th id="330">330</th><td><u>    rrow(0) = rhs_element(i, 0);               \</u></td></tr>
+<tr><th id="331">331</th><td><u>    lcol(1) = lhs_element(1, j);               \</u></td></tr>
+<tr><th id="332">332</th><td><u>    rrow(1) = rhs_element(i, 1);               \</u></td></tr>
+<tr><th id="333">333</th><td><u>    lcol(2) = lhs_element(2, j);               \</u></td></tr>
+<tr><th id="334">334</th><td><u>    rrow(2) = rhs_element(i, 2);               \</u></td></tr>
+<tr><th id="335">335</th><td><u>    lcol(3) = lhs_element(3, j);               \</u></td></tr>
+<tr><th id="336">336</th><td><u>    rrow(3) = rhs_element(i, 3);               \</u></td></tr>
+<tr><th id="337">337</th><td><u>    lcol(4) = lhs_element(4, j);               \</u></td></tr>
+<tr><th id="338">338</th><td><u>    rrow(4) = rhs_element(i, 4);               \</u></td></tr>
+<tr><th id="339">339</th><td><u>    lcol(5) = lhs_element(5, j);               \</u></td></tr>
+<tr><th id="340">340</th><td><u>    rrow(5) = rhs_element(i, 5);               \</u></td></tr>
+<tr><th id="341">341</th><td><u>    lcol(6) = lhs_element(6, j);               \</u></td></tr>
+<tr><th id="342">342</th><td><u>    rrow(6) = rhs_element(i, 6);               \</u></td></tr>
+<tr><th id="343">343</th><td><u>    lcol(7) = lhs_element(7, j);               \</u></td></tr>
+<tr><th id="344">344</th><td><u>    rrow(7) = rhs_element(i, 7);</u>               \</td></tr>
+<tr><th id="345">345</th><td></td></tr>
+<tr><th id="346">346</th><td><u>#define computeCol(j)                           \</u></td></tr>
+<tr><th id="347">347</th><td><u>    res(0, j) += lcol(0) * rrow(j);             \</u></td></tr>
+<tr><th id="348">348</th><td><u>    res(1, j) += lcol(1) * rrow(j);             \</u></td></tr>
+<tr><th id="349">349</th><td><u>    res(2, j) += lcol(2) * rrow(j);             \</u></td></tr>
+<tr><th id="350">350</th><td><u>    res(3, j) += lcol(3) * rrow(j);             \</u></td></tr>
+<tr><th id="351">351</th><td><u>    res(4, j) += lcol(4) * rrow(j);             \</u></td></tr>
+<tr><th id="352">352</th><td><u>    res(5, j) += lcol(5) * rrow(j);             \</u></td></tr>
+<tr><th id="353">353</th><td><u>    res(6, j) += lcol(6) * rrow(j);             \</u></td></tr>
+<tr><th id="354">354</th><td><u>    res(7, j) += lcol(7) * rrow(j);</u>             \</td></tr>
+<tr><th id="355">355</th><td></td></tr>
+<tr><th id="356">356</th><td><u>#define computePass(i)                          \</u></td></tr>
+<tr><th id="357">357</th><td><u>    loadData(i, i);                             \</u></td></tr>
+<tr><th id="358">358</th><td><u>                                                \</u></td></tr>
+<tr><th id="359">359</th><td><u>    computeCol(0);                              \</u></td></tr>
+<tr><th id="360">360</th><td><u>    computeCol(1);                              \</u></td></tr>
+<tr><th id="361">361</th><td><u>    computeCol(2);                              \</u></td></tr>
+<tr><th id="362">362</th><td><u>    computeCol(3);                              \</u></td></tr>
+<tr><th id="363">363</th><td><u>    computeCol(4);                              \</u></td></tr>
+<tr><th id="364">364</th><td><u>    computeCol(5);                              \</u></td></tr>
+<tr><th id="365">365</th><td><u>    computeCol(6);                              \</u></td></tr>
+<tr><th id="366">366</th><td><u>    computeCol(7);</u>                              \</td></tr>
+<tr><th id="367">367</th><td></td></tr>
+<tr><th id="368">368</th><td>    computePass(<var>0</var>);</td></tr>
+<tr><th id="369">369</th><td>    computePass(<var>1</var>);</td></tr>
+<tr><th id="370">370</th><td>    computePass(<var>2</var>);</td></tr>
+<tr><th id="371">371</th><td>    computePass(<var>3</var>);</td></tr>
+<tr><th id="372">372</th><td>    computePass(<var>4</var>);</td></tr>
+<tr><th id="373">373</th><td>    computePass(<var>5</var>);</td></tr>
+<tr><th id="374">374</th><td>    computePass(<var>6</var>);</td></tr>
+<tr><th id="375">375</th><td>    computePass(<var>7</var>);</td></tr>
+<tr><th id="376">376</th><td></td></tr>
+<tr><th id="377">377</th><td><u>#undef lcol</u></td></tr>
+<tr><th id="378">378</th><td><u>#undef rrow</u></td></tr>
+<tr><th id="379">379</th><td><u>#undef lhs_element</u></td></tr>
+<tr><th id="380">380</th><td><u>#undef rhs_element</u></td></tr>
+<tr><th id="381">381</th><td><u>#undef loadData</u></td></tr>
+<tr><th id="382">382</th><td><u>#undef computeCol</u></td></tr>
+<tr><th id="383">383</th><td><u>#undef computePass</u></td></tr>
+<tr><th id="384">384</th><td>  } <i>// end loop over k</i></td></tr>
+<tr><th id="385">385</th><td></td></tr>
+<tr><th id="386">386</th><td>  <i>// we've now iterated over all of the large (ie width 64) k blocks and</i></td></tr>
+<tr><th id="387">387</th><td><i>  // accumulated results in registers. At this point thread (x, y, z) contains</i></td></tr>
+<tr><th id="388">388</th><td><i>  // the sum across all big k blocks of the product of little k block of index (x, y)</i></td></tr>
+<tr><th id="389">389</th><td><i>  // with block of index (y, z). To compute the final output, we need to reduce</i></td></tr>
+<tr><th id="390">390</th><td><i>  // the 8 threads over y by summation.</i></td></tr>
+<tr><th id="391">391</th><td><u>#if defined(EIGEN_HIPCC) || (defined(EIGEN_CUDA_SDK_VER) &amp;&amp; EIGEN_CUDA_SDK_VER &lt; 90000)</u></td></tr>
+<tr><th id="392">392</th><td><u>#define shuffleInc(i, j, mask) res(i, j) += __shfl_xor(res(i, j), mask)</u></td></tr>
+<tr><th id="393">393</th><td><u>#else</u></td></tr>
+<tr><th id="394">394</th><td><u>#define shuffleInc(i, j, mask) res(i, j) += __shfl_xor_sync(0xFFFFFFFF, res(i, j), mask)</u></td></tr>
+<tr><th id="395">395</th><td><u>#endif</u></td></tr>
+<tr><th id="396">396</th><td></td></tr>
+<tr><th id="397">397</th><td><u>#define reduceRow(i, mask)                      \</u></td></tr>
+<tr><th id="398">398</th><td><u>  shuffleInc(i, 0, mask);                       \</u></td></tr>
+<tr><th id="399">399</th><td><u>  shuffleInc(i, 1, mask);                       \</u></td></tr>
+<tr><th id="400">400</th><td><u>  shuffleInc(i, 2, mask);                       \</u></td></tr>
+<tr><th id="401">401</th><td><u>  shuffleInc(i, 3, mask);                       \</u></td></tr>
+<tr><th id="402">402</th><td><u>  shuffleInc(i, 4, mask);                       \</u></td></tr>
+<tr><th id="403">403</th><td><u>  shuffleInc(i, 5, mask);                       \</u></td></tr>
+<tr><th id="404">404</th><td><u>  shuffleInc(i, 6, mask);                       \</u></td></tr>
+<tr><th id="405">405</th><td><u>  shuffleInc(i, 7, mask);</u>                       \</td></tr>
+<tr><th id="406">406</th><td></td></tr>
+<tr><th id="407">407</th><td><u>#define reduceMatrix(mask)                      \</u></td></tr>
+<tr><th id="408">408</th><td><u>  reduceRow(0, mask);                           \</u></td></tr>
+<tr><th id="409">409</th><td><u>  reduceRow(1, mask);                           \</u></td></tr>
+<tr><th id="410">410</th><td><u>  reduceRow(2, mask);                           \</u></td></tr>
+<tr><th id="411">411</th><td><u>  reduceRow(3, mask);                           \</u></td></tr>
+<tr><th id="412">412</th><td><u>  reduceRow(4, mask);                           \</u></td></tr>
+<tr><th id="413">413</th><td><u>  reduceRow(5, mask);                           \</u></td></tr>
+<tr><th id="414">414</th><td><u>  reduceRow(6, mask);                           \</u></td></tr>
+<tr><th id="415">415</th><td><u>  reduceRow(7, mask);</u>                           \</td></tr>
+<tr><th id="416">416</th><td></td></tr>
+<tr><th id="417">417</th><td>  <i>// actually perform the reduction, now each thread of index (_, y, z)</i></td></tr>
+<tr><th id="418">418</th><td><i>  // contains the correct values in its registers that belong in the output</i></td></tr>
+<tr><th id="419">419</th><td><i>  // block</i></td></tr>
+<tr><th id="420">420</th><td>  reduceMatrix(<var>1</var>);</td></tr>
+<tr><th id="421">421</th><td>  reduceMatrix(<var>2</var>);</td></tr>
+<tr><th id="422">422</th><td>  reduceMatrix(<var>4</var>);</td></tr>
+<tr><th id="423">423</th><td></td></tr>
+<tr><th id="424">424</th><td><u>#undef shuffleInc</u></td></tr>
+<tr><th id="425">425</th><td><u>#undef reduceRow</u></td></tr>
+<tr><th id="426">426</th><td><u>#undef reduceMatrix</u></td></tr>
+<tr><th id="427">427</th><td></td></tr>
+<tr><th id="428">428</th><td>  <i>// now we need to copy the 64 values into main memory. We can't split work</i></td></tr>
+<tr><th id="429">429</th><td><i>  // among threads because all variables are in registers. There's 2 ways</i></td></tr>
+<tr><th id="430">430</th><td><i>  // to do this:</i></td></tr>
+<tr><th id="431">431</th><td><i>  // (1) have 1 thread do 64 writes from registers into global memory</i></td></tr>
+<tr><th id="432">432</th><td><i>  // (2) have 1 thread do 64 writes into shared memory, and then 8 threads</i></td></tr>
+<tr><th id="433">433</th><td><i>  //     each do 8 writes into global memory. We can just overwrite the shared</i></td></tr>
+<tr><th id="434">434</th><td><i>  //     memory from the problem we just solved.</i></td></tr>
+<tr><th id="435">435</th><td><i>  // (2) is slightly faster than (1) due to less branching and more ILP</i></td></tr>
+<tr><th id="436">436</th><td><i></i></td></tr>
+<tr><th id="437">437</th><td><i>  // TODO: won't yield much gain, but could just use currently unused shared mem</i></td></tr>
+<tr><th id="438">438</th><td><i>  //       and then we won't have to sync</i></td></tr>
+<tr><th id="439">439</th><td><i>  // wait for shared mem to be out of use</i></td></tr>
+<tr><th id="440">440</th><td>  __syncthreads();</td></tr>
+<tr><th id="441">441</th><td></td></tr>
+<tr><th id="442">442</th><td><u>#define writeResultShmem(i, j)                                          \</u></td></tr>
+<tr><th id="443">443</th><td><u>  lhs_shmem[i + 8 * threadIdx.y + 64 * threadIdx.z + 512 * j] = res(i, j);</u> \</td></tr>
+<tr><th id="444">444</th><td></td></tr>
+<tr><th id="445">445</th><td><u>#define writeRow(i)                             \</u></td></tr>
+<tr><th id="446">446</th><td><u>  writeResultShmem(i, 0);                       \</u></td></tr>
+<tr><th id="447">447</th><td><u>  writeResultShmem(i, 1);                       \</u></td></tr>
+<tr><th id="448">448</th><td><u>  writeResultShmem(i, 2);                       \</u></td></tr>
+<tr><th id="449">449</th><td><u>  writeResultShmem(i, 3);                       \</u></td></tr>
+<tr><th id="450">450</th><td><u>  writeResultShmem(i, 4);                       \</u></td></tr>
+<tr><th id="451">451</th><td><u>  writeResultShmem(i, 5);                       \</u></td></tr>
+<tr><th id="452">452</th><td><u>  writeResultShmem(i, 6);                       \</u></td></tr>
+<tr><th id="453">453</th><td><u>  writeResultShmem(i, 7);</u>                       \</td></tr>
+<tr><th id="454">454</th><td></td></tr>
+<tr><th id="455">455</th><td>  <b>if</b> (threadIdx.x == <var>0</var>) {</td></tr>
+<tr><th id="456">456</th><td>    writeRow(<var>0</var>);</td></tr>
+<tr><th id="457">457</th><td>    writeRow(<var>1</var>);</td></tr>
+<tr><th id="458">458</th><td>    writeRow(<var>2</var>);</td></tr>
+<tr><th id="459">459</th><td>    writeRow(<var>3</var>);</td></tr>
+<tr><th id="460">460</th><td>    writeRow(<var>4</var>);</td></tr>
+<tr><th id="461">461</th><td>    writeRow(<var>5</var>);</td></tr>
+<tr><th id="462">462</th><td>    writeRow(<var>6</var>);</td></tr>
+<tr><th id="463">463</th><td>    writeRow(<var>7</var>);</td></tr>
+<tr><th id="464">464</th><td>  }</td></tr>
+<tr><th id="465">465</th><td><u>#undef writeResultShmem</u></td></tr>
+<tr><th id="466">466</th><td><u>#undef writeRow</u></td></tr>
+<tr><th id="467">467</th><td></td></tr>
+<tr><th id="468">468</th><td>  <em>const</em> <em>int</em> max_i_write = numext::mini((<em>int</em>)((m_size - base_m - threadIdx.y + <var>7</var>) / <var>8</var>), <var>8</var>);</td></tr>
+<tr><th id="469">469</th><td>  <em>const</em> <em>int</em> max_j_write = numext::mini((<em>int</em>)((n_size - base_n - threadIdx.z + <var>7</var>) / <var>8</var>), <var>8</var>);</td></tr>
+<tr><th id="470">470</th><td></td></tr>
+<tr><th id="471">471</th><td>  <b>if</b> (threadIdx.x &lt; max_i_write) {</td></tr>
+<tr><th id="472">472</th><td>    <b>if</b> (max_j_write == <var>8</var>) {</td></tr>
+<tr><th id="473">473</th><td>      <i>// TODO: can i trade bank conflicts for coalesced writes?</i></td></tr>
+<tr><th id="474">474</th><td>      Scalar val0 = lhs_shmem[threadIdx.x + <var>8</var> * threadIdx.y + <var>64</var> * threadIdx.z + <var>512</var> * <var>0</var>];</td></tr>
+<tr><th id="475">475</th><td>      Scalar val1 = lhs_shmem[threadIdx.x + <var>8</var> * threadIdx.y + <var>64</var> * threadIdx.z + <var>512</var> * <var>1</var>];</td></tr>
+<tr><th id="476">476</th><td>      Scalar val2 = lhs_shmem[threadIdx.x + <var>8</var> * threadIdx.y + <var>64</var> * threadIdx.z + <var>512</var> * <var>2</var>];</td></tr>
+<tr><th id="477">477</th><td>      Scalar val3 = lhs_shmem[threadIdx.x + <var>8</var> * threadIdx.y + <var>64</var> * threadIdx.z + <var>512</var> * <var>3</var>];</td></tr>
+<tr><th id="478">478</th><td>      Scalar val4 = lhs_shmem[threadIdx.x + <var>8</var> * threadIdx.y + <var>64</var> * threadIdx.z + <var>512</var> * <var>4</var>];</td></tr>
+<tr><th id="479">479</th><td>      Scalar val5 = lhs_shmem[threadIdx.x + <var>8</var> * threadIdx.y + <var>64</var> * threadIdx.z + <var>512</var> * <var>5</var>];</td></tr>
+<tr><th id="480">480</th><td>      Scalar val6 = lhs_shmem[threadIdx.x + <var>8</var> * threadIdx.y + <var>64</var> * threadIdx.z + <var>512</var> * <var>6</var>];</td></tr>
+<tr><th id="481">481</th><td>      Scalar val7 = lhs_shmem[threadIdx.x + <var>8</var> * threadIdx.y + <var>64</var> * threadIdx.z + <var>512</var> * <var>7</var>];</td></tr>
+<tr><th id="482">482</th><td></td></tr>
+<tr><th id="483">483</th><td>      output(base_m + threadIdx.y + <var>8</var> * threadIdx.x, base_n + threadIdx.z + <var>8</var> * <var>0</var>) = val0;</td></tr>
+<tr><th id="484">484</th><td>      output(base_m + threadIdx.y + <var>8</var> * threadIdx.x, base_n + threadIdx.z + <var>8</var> * <var>1</var>) = val1;</td></tr>
+<tr><th id="485">485</th><td>      output(base_m + threadIdx.y + <var>8</var> * threadIdx.x, base_n + threadIdx.z + <var>8</var> * <var>2</var>) = val2;</td></tr>
+<tr><th id="486">486</th><td>      output(base_m + threadIdx.y + <var>8</var> * threadIdx.x, base_n + threadIdx.z + <var>8</var> * <var>3</var>) = val3;</td></tr>
+<tr><th id="487">487</th><td>      output(base_m + threadIdx.y + <var>8</var> * threadIdx.x, base_n + threadIdx.z + <var>8</var> * <var>4</var>) = val4;</td></tr>
+<tr><th id="488">488</th><td>      output(base_m + threadIdx.y + <var>8</var> * threadIdx.x, base_n + threadIdx.z + <var>8</var> * <var>5</var>) = val5;</td></tr>
+<tr><th id="489">489</th><td>      output(base_m + threadIdx.y + <var>8</var> * threadIdx.x, base_n + threadIdx.z + <var>8</var> * <var>6</var>) = val6;</td></tr>
+<tr><th id="490">490</th><td>      output(base_m + threadIdx.y + <var>8</var> * threadIdx.x, base_n + threadIdx.z + <var>8</var> * <var>7</var>) = val7;</td></tr>
+<tr><th id="491">491</th><td>    } <b>else</b> {</td></tr>
+<tr><th id="492">492</th><td><u>#pragma unroll 7</u></td></tr>
+<tr><th id="493">493</th><td>      <b>for</b> (<em>int</em> j = <var>0</var>; j &lt; max_j_write; j++) {</td></tr>
+<tr><th id="494">494</th><td>        Scalar val = lhs_shmem[threadIdx.x + <var>8</var> * threadIdx.y + <var>64</var> * threadIdx.z + <var>512</var> * j];</td></tr>
+<tr><th id="495">495</th><td>        output(base_m + threadIdx.y + <var>8</var> * threadIdx.x, base_n + threadIdx.z + <var>8</var> * j) = val;</td></tr>
+<tr><th id="496">496</th><td>      }</td></tr>
+<tr><th id="497">497</th><td>    }</td></tr>
+<tr><th id="498">498</th><td>  }</td></tr>
+<tr><th id="499">499</th><td><u>#undef res</u></td></tr>
+<tr><th id="500">500</th><td>}</td></tr>
+<tr><th id="501">501</th><td></td></tr>
+<tr><th id="502">502</th><td></td></tr>
+<tr><th id="503">503</th><td><b>template</b>&lt;<b>typename</b> Scalar, <b>typename</b> Index, <b>typename</b> LhsMapper,</td></tr>
+<tr><th id="504">504</th><td>         <b>typename</b> RhsMapper, <b>typename</b> OutputMapper&gt;</td></tr>
+<tr><th id="505">505</th><td>__global__ <em>void</em></td></tr>
+<tr><th id="506">506</th><td><u>#if defined(EIGEN_HIPCC)</u></td></tr>
+<tr><th id="507">507</th><td>__launch_bounds__(<var>512</var>, <var>1</var>)</td></tr>
+<tr><th id="508">508</th><td><u>#else</u></td></tr>
+<tr><th id="509">509</th><td>__launch_bounds__(<var>512</var>)</td></tr>
+<tr><th id="510">510</th><td><u>#endif</u></td></tr>
+<tr><th id="511">511</th><td>EigenContractionKernel(<em>const</em> LhsMapper lhs, <em>const</em> RhsMapper rhs,</td></tr>
+<tr><th id="512">512</th><td>                       <em>const</em> OutputMapper output,</td></tr>
+<tr><th id="513">513</th><td>                       <em>const</em> Index m_size, <em>const</em> Index n_size, <em>const</em> Index k_size) {</td></tr>
+<tr><th id="514">514</th><td>  __shared__ Scalar lhs_shmem[<var>72</var> * <var>64</var>];</td></tr>
+<tr><th id="515">515</th><td>  __shared__ Scalar rhs_shmem[<var>72</var> * <var>64</var>];</td></tr>
+<tr><th id="516">516</th><td></td></tr>
+<tr><th id="517">517</th><td>  <em>const</em> Index m_block_idx = blockIdx.x;</td></tr>
+<tr><th id="518">518</th><td>  <em>const</em> Index n_block_idx = blockIdx.y;</td></tr>
+<tr><th id="519">519</th><td></td></tr>
+<tr><th id="520">520</th><td>  <em>const</em> Index base_m = <var>64</var> * m_block_idx;</td></tr>
+<tr><th id="521">521</th><td>  <em>const</em> Index base_n = <var>64</var> * n_block_idx;</td></tr>
+<tr><th id="522">522</th><td></td></tr>
+<tr><th id="523">523</th><td>  <b>if</b> (base_m + <var>63</var> &lt; m_size &amp;&amp; base_n + <var>63</var> &lt; n_size) {</td></tr>
+<tr><th id="524">524</th><td>    EigenContractionKernelInternal&lt;Scalar, Index, LhsMapper, RhsMapper, OutputMapper, <b>false</b>&gt;(lhs, rhs, output, lhs_shmem, rhs_shmem, m_size, n_size, k_size);</td></tr>
+<tr><th id="525">525</th><td>  } <b>else</b> {</td></tr>
+<tr><th id="526">526</th><td>    EigenContractionKernelInternal&lt;Scalar, Index, LhsMapper, RhsMapper, OutputMapper, <b>true</b>&gt;(lhs, rhs, output, lhs_shmem, rhs_shmem, m_size, n_size, k_size);</td></tr>
+<tr><th id="527">527</th><td>  }</td></tr>
+<tr><th id="528">528</th><td>}</td></tr>
+<tr><th id="529">529</th><td></td></tr>
+<tr><th id="530">530</th><td></td></tr>
+<tr><th id="531">531</th><td><b>template</b>&lt;<b>typename</b> Index, <b>typename</b> LhsMapper,</td></tr>
+<tr><th id="532">532</th><td>         <b>typename</b> RhsMapper, <b>typename</b> OutputMapper, <em>bool</em> CHECK_LHS_BOUNDARY,</td></tr>
+<tr><th id="533">533</th><td>         <em>bool</em> CHECK_RHS_BOUNDARY&gt;</td></tr>
+<tr><th id="534">534</th><td>__device__ __forceinline__ <em>void</em></td></tr>
+<tr><th id="535">535</th><td>EigenFloatContractionKernelInternal16x16(<em>const</em> LhsMapper lhs, <em>const</em> RhsMapper rhs,</td></tr>
+<tr><th id="536">536</th><td>                       <em>const</em> OutputMapper output, float2 lhs_shmem2[][<var>16</var>],</td></tr>
+<tr><th id="537">537</th><td>                       float2 rhs_shmem2[][<var>8</var>], <em>const</em> Index m_size,</td></tr>
+<tr><th id="538">538</th><td>                       <em>const</em> Index n_size, <em>const</em> Index k_size,</td></tr>
+<tr><th id="539">539</th><td>                       <em>const</em> Index base_m, <em>const</em> Index base_n) {</td></tr>
+<tr><th id="540">540</th><td></td></tr>
+<tr><th id="541">541</th><td>  <i>// prefetch registers</i></td></tr>
+<tr><th id="542">542</th><td>  float4 lhs_pf0, rhs_pf0;</td></tr>
+<tr><th id="543">543</th><td></td></tr>
+<tr><th id="544">544</th><td>  float4 results[<var>4</var>];</td></tr>
+<tr><th id="545">545</th><td>  <b>for</b> (<em>int</em> i=<var>0</var>; i &lt; <var>4</var>; i++) {</td></tr>
+<tr><th id="546">546</th><td>    results[i].x = results[i].y = results[i].z = results[i].w = <var>0</var>;</td></tr>
+<tr><th id="547">547</th><td>  }</td></tr>
+<tr><th id="548">548</th><td></td></tr>
+<tr><th id="549">549</th><td><u>#define prefetch_lhs(reg, row, col)                            \</u></td></tr>
+<tr><th id="550">550</th><td><u>    if (!CHECK_LHS_BOUNDARY) {                                 \</u></td></tr>
+<tr><th id="551">551</th><td><u>      if (col &lt; k_size) {                                      \</u></td></tr>
+<tr><th id="552">552</th><td><u>        reg =lhs.template loadPacket&lt;float4,Unaligned&gt;(row, col);     \</u></td></tr>
+<tr><th id="553">553</th><td><u>      }                                                        \</u></td></tr>
+<tr><th id="554">554</th><td><u>    } else {                                                   \</u></td></tr>
+<tr><th id="555">555</th><td><u>      if (col &lt; k_size) {                                      \</u></td></tr>
+<tr><th id="556">556</th><td><u>        if (row + 3 &lt; m_size) {                                \</u></td></tr>
+<tr><th id="557">557</th><td><u>          reg =lhs.template loadPacket&lt;float4,Unaligned&gt;(row, col);   \</u></td></tr>
+<tr><th id="558">558</th><td><u>        } else if (row + 2 &lt; m_size) {                         \</u></td></tr>
+<tr><th id="559">559</th><td><u>          reg.x =lhs(row + 0, col);                            \</u></td></tr>
+<tr><th id="560">560</th><td><u>          reg.y =lhs(row + 1, col);                            \</u></td></tr>
+<tr><th id="561">561</th><td><u>          reg.z =lhs(row + 2, col);                            \</u></td></tr>
+<tr><th id="562">562</th><td><u>        } else if (row + 1 &lt; m_size) {                         \</u></td></tr>
+<tr><th id="563">563</th><td><u>          reg.x =lhs(row + 0, col);                            \</u></td></tr>
+<tr><th id="564">564</th><td><u>          reg.y =lhs(row + 1, col);                            \</u></td></tr>
+<tr><th id="565">565</th><td><u>        } else if (row  &lt; m_size) {                            \</u></td></tr>
+<tr><th id="566">566</th><td><u>          reg.x =lhs(row + 0, col);                            \</u></td></tr>
+<tr><th id="567">567</th><td><u>        }                                                      \</u></td></tr>
+<tr><th id="568">568</th><td><u>      }                                                        \</u></td></tr>
+<tr><th id="569">569</th><td><u>    }</u>							       \</td></tr>
+<tr><th id="570">570</th><td></td></tr>
+<tr><th id="571">571</th><td>  Index lhs_vert = base_m+threadIdx.x*<var>4</var>;</td></tr>
+<tr><th id="572">572</th><td></td></tr>
+<tr><th id="573">573</th><td>  <b>for</b> (Index k = <var>0</var>; k &lt; k_size; k += <var>16</var>) {</td></tr>
+<tr><th id="574">574</th><td></td></tr>
+<tr><th id="575">575</th><td>    lhs_pf0 = internal::pset1&lt;float4&gt;(<var>0</var>);</td></tr>
+<tr><th id="576">576</th><td>    rhs_pf0 = internal::pset1&lt;float4&gt;(<var>0</var>);</td></tr>
+<tr><th id="577">577</th><td></td></tr>
+<tr><th id="578">578</th><td>    Index lhs_horiz = threadIdx.y+k;</td></tr>
+<tr><th id="579">579</th><td>    prefetch_lhs(lhs_pf0, lhs_vert, lhs_horiz)</td></tr>
+<tr><th id="580">580</th><td></td></tr>
+<tr><th id="581">581</th><td>    Index rhs_vert = k+(threadIdx.x%<var>4</var>)*<var>4</var>;</td></tr>
+<tr><th id="582">582</th><td>    Index rhs_horiz0 = (threadIdx.x&gt;&gt;<var>2</var>)+threadIdx.y*<var>4</var>+base_n;</td></tr>
+<tr><th id="583">583</th><td></td></tr>
+<tr><th id="584">584</th><td>    <b>if</b> (!CHECK_RHS_BOUNDARY) {</td></tr>
+<tr><th id="585">585</th><td>      <b>if</b> ((rhs_vert + <var>3</var>) &lt; k_size) {</td></tr>
+<tr><th id="586">586</th><td>        <i>// just CHECK_RHS_BOUNDARY</i></td></tr>
+<tr><th id="587">587</th><td>        rhs_pf0 = rhs.<b>template</b> loadPacket&lt;float4,Unaligned&gt;(rhs_vert, rhs_horiz0);</td></tr>
+<tr><th id="588">588</th><td>      } <b>else</b> <b>if</b> (rhs_vert + <var>2</var> &lt; k_size) {</td></tr>
+<tr><th id="589">589</th><td>        <i>// just CHECK_RHS_BOUNDARY</i></td></tr>
+<tr><th id="590">590</th><td>        rhs_pf0.x = rhs(rhs_vert, rhs_horiz0);</td></tr>
+<tr><th id="591">591</th><td>        rhs_pf0.y = rhs(rhs_vert + <var>1</var>, rhs_horiz0);</td></tr>
+<tr><th id="592">592</th><td>        rhs_pf0.z = rhs(rhs_vert + <var>2</var>, rhs_horiz0);</td></tr>
+<tr><th id="593">593</th><td>      } <b>else</b> <b>if</b> (rhs_vert + <var>1</var> &lt; k_size) {</td></tr>
+<tr><th id="594">594</th><td>        rhs_pf0.x = rhs(rhs_vert, rhs_horiz0);</td></tr>
+<tr><th id="595">595</th><td>        rhs_pf0.y = rhs(rhs_vert + <var>1</var>, rhs_horiz0);</td></tr>
+<tr><th id="596">596</th><td>      } <b>else</b> <b>if</b> (rhs_vert  &lt; k_size) {</td></tr>
+<tr><th id="597">597</th><td>        rhs_pf0.x = rhs(rhs_vert, rhs_horiz0);</td></tr>
+<tr><th id="598">598</th><td>      }</td></tr>
+<tr><th id="599">599</th><td>    } <b>else</b> {</td></tr>
+<tr><th id="600">600</th><td>      <b>if</b> (rhs_horiz0 &lt; n_size) {</td></tr>
+<tr><th id="601">601</th><td>        <b>if</b> ((rhs_vert + <var>3</var>) &lt; k_size) {</td></tr>
+<tr><th id="602">602</th><td>          rhs_pf0 = rhs.<b>template</b> loadPacket&lt;float4,Unaligned&gt;(rhs_vert, rhs_horiz0);</td></tr>
+<tr><th id="603">603</th><td>        } <b>else</b> <b>if</b> ((rhs_vert + <var>2</var>) &lt; k_size) {</td></tr>
+<tr><th id="604">604</th><td>          rhs_pf0.x = rhs(rhs_vert, rhs_horiz0);</td></tr>
+<tr><th id="605">605</th><td>          rhs_pf0.y = rhs(rhs_vert + <var>1</var>, rhs_horiz0);</td></tr>
+<tr><th id="606">606</th><td>          rhs_pf0.z = rhs(rhs_vert + <var>2</var>, rhs_horiz0);</td></tr>
+<tr><th id="607">607</th><td>        } <b>else</b> <b>if</b> ((rhs_vert + <var>1</var>) &lt; k_size) {</td></tr>
+<tr><th id="608">608</th><td>          rhs_pf0.x = rhs(rhs_vert, rhs_horiz0);</td></tr>
+<tr><th id="609">609</th><td>          rhs_pf0.y = rhs(rhs_vert + <var>1</var>, rhs_horiz0);</td></tr>
+<tr><th id="610">610</th><td>        } <b>else</b> <b>if</b> (rhs_vert  &lt; k_size) {</td></tr>
+<tr><th id="611">611</th><td>          rhs_pf0.x = rhs(rhs_vert, rhs_horiz0);</td></tr>
+<tr><th id="612">612</th><td>        }</td></tr>
+<tr><th id="613">613</th><td>      }</td></tr>
+<tr><th id="614">614</th><td>    }</td></tr>
+<tr><th id="615">615</th><td>    <em>float</em> x1, x2 ;</td></tr>
+<tr><th id="616">616</th><td>    <i>// the following can be a bitwise operation..... some day.</i></td></tr>
+<tr><th id="617">617</th><td>    <b>if</b>((threadIdx.x%<var>8</var>) &lt; <var>4</var>) {</td></tr>
+<tr><th id="618">618</th><td>      x1 = rhs_pf0.y;</td></tr>
+<tr><th id="619">619</th><td>      x2 = rhs_pf0.w;</td></tr>
+<tr><th id="620">620</th><td>    } <b>else</b> {</td></tr>
+<tr><th id="621">621</th><td>      x1 = rhs_pf0.x;</td></tr>
+<tr><th id="622">622</th><td>      x2 = rhs_pf0.z;</td></tr>
+<tr><th id="623">623</th><td>    }</td></tr>
+<tr><th id="624">624</th><td>    <u>#if defined(EIGEN_HIPCC) || (defined(EIGEN_CUDA_SDK_VER) &amp;&amp; EIGEN_CUDA_SDK_VER &lt; 90000)</u></td></tr>
+<tr><th id="625">625</th><td>    x1 = __shfl_xor(x1, <var>4</var>);</td></tr>
+<tr><th id="626">626</th><td>    x2 = __shfl_xor(x2, <var>4</var>);</td></tr>
+<tr><th id="627">627</th><td>    <u>#else</u></td></tr>
+<tr><th id="628">628</th><td>    x1 = __shfl_xor_sync(<var>0xFFFFFFFF</var>, x1, <var>4</var>);</td></tr>
+<tr><th id="629">629</th><td>    x2 = __shfl_xor_sync(<var>0xFFFFFFFF</var>, x2, <var>4</var>);</td></tr>
+<tr><th id="630">630</th><td>    <u>#endif</u></td></tr>
+<tr><th id="631">631</th><td>    <b>if</b>((threadIdx.x%<var>8</var>) &lt; <var>4</var>) {</td></tr>
+<tr><th id="632">632</th><td>      rhs_pf0.y = x1;</td></tr>
+<tr><th id="633">633</th><td>      rhs_pf0.w = x2;</td></tr>
+<tr><th id="634">634</th><td>    } <b>else</b> {</td></tr>
+<tr><th id="635">635</th><td>      rhs_pf0.x = x1;</td></tr>
+<tr><th id="636">636</th><td>      rhs_pf0.z = x2;</td></tr>
+<tr><th id="637">637</th><td>    }</td></tr>
+<tr><th id="638">638</th><td></td></tr>
+<tr><th id="639">639</th><td>    <i>// We have 64 features.</i></td></tr>
+<tr><th id="640">640</th><td><i>    // Row 0 -&gt; times (0, 4, 8, 12, 1, 5, 9, 13) for features 0, 1.</i></td></tr>
+<tr><th id="641">641</th><td><i>    // Row 1 -&gt; times (0, 4, 8, 12, 1, 5, 9, 13) for features 2, 3.</i></td></tr>
+<tr><th id="642">642</th><td><i>    // ...</i></td></tr>
+<tr><th id="643">643</th><td><i>    // Row 31 -&gt; times (0, 4, 8, 12, 1, 5, 9, 13) for features 62, 63</i></td></tr>
+<tr><th id="644">644</th><td><i>    // Row 32 -&gt; times (2, 6, 10, 14, 3, 7, 11, 15) for features 0, 1</i></td></tr>
+<tr><th id="645">645</th><td><i>    // ...</i></td></tr>
+<tr><th id="646">646</th><td>    rhs_shmem2[(threadIdx.x&gt;&gt;<var>3</var>)+ threadIdx.y*<var>2</var>][threadIdx.x%<var>8</var>] = make_float2(rhs_pf0.x, rhs_pf0.y);</td></tr>
+<tr><th id="647">647</th><td>    rhs_shmem2[(threadIdx.x&gt;&gt;<var>3</var>)+ threadIdx.y*<var>2</var>+<var>32</var>][threadIdx.x%<var>8</var>] = make_float2(rhs_pf0.z, rhs_pf0.w);</td></tr>
+<tr><th id="648">648</th><td></td></tr>
+<tr><th id="649">649</th><td>    <i>// Row 0 (time 0) -&gt; features (0, 1), (4, 5), .. (28, 29), (32, 33), ..  (60, 61)</i></td></tr>
+<tr><th id="650">650</th><td><i>    // Row 1 (time 1) -&gt; features (0, 1), (4, 5), .. (28, 29), (32, 33), ..  (60, 61)</i></td></tr>
+<tr><th id="651">651</th><td><i>    // ...</i></td></tr>
+<tr><th id="652">652</th><td><i>    // Row 15 (time 15) -&gt; features (0, 1), (4, 5), .. (28, 29), (32, 33), ..  (60, 61)</i></td></tr>
+<tr><th id="653">653</th><td><i>    // Row 16 (time 0) -&gt; features (2, 3), (6, 7), .. (30, 31), (34, 35), ..  (62, 63)</i></td></tr>
+<tr><th id="654">654</th><td><i>    // ...</i></td></tr>
+<tr><th id="655">655</th><td></td></tr>
+<tr><th id="656">656</th><td>    lhs_shmem2[threadIdx.y][threadIdx.x] = make_float2(lhs_pf0.x, lhs_pf0.y);</td></tr>
+<tr><th id="657">657</th><td>    lhs_shmem2[threadIdx.y+<var>16</var>][threadIdx.x] = make_float2(lhs_pf0.z, lhs_pf0.w);</td></tr>
+<tr><th id="658">658</th><td></td></tr>
+<tr><th id="659">659</th><td></td></tr>
+<tr><th id="660">660</th><td><u>#define add_vals(fl1, fl2, fr1, fr2)\</u></td></tr>
+<tr><th id="661">661</th><td><u>    results[0].x += fl1.x * fr1.x;\</u></td></tr>
+<tr><th id="662">662</th><td><u>    results[0].y += fl1.y * fr1.x;\</u></td></tr>
+<tr><th id="663">663</th><td><u>    results[0].z += fl2.x * fr1.x;\</u></td></tr>
+<tr><th id="664">664</th><td><u>    results[0].w += fl2.y * fr1.x;\</u></td></tr>
+<tr><th id="665">665</th><td><u>\</u></td></tr>
+<tr><th id="666">666</th><td><u>    results[1].x += fl1.x * fr1.y;\</u></td></tr>
+<tr><th id="667">667</th><td><u>    results[1].y += fl1.y * fr1.y;\</u></td></tr>
+<tr><th id="668">668</th><td><u>    results[1].z += fl2.x * fr1.y;\</u></td></tr>
+<tr><th id="669">669</th><td><u>    results[1].w += fl2.y * fr1.y;\</u></td></tr>
+<tr><th id="670">670</th><td><u>\</u></td></tr>
+<tr><th id="671">671</th><td><u>    results[2].x += fl1.x * fr2.x;\</u></td></tr>
+<tr><th id="672">672</th><td><u>    results[2].y += fl1.y * fr2.x;\</u></td></tr>
+<tr><th id="673">673</th><td><u>    results[2].z += fl2.x * fr2.x;\</u></td></tr>
+<tr><th id="674">674</th><td><u>    results[2].w += fl2.y * fr2.x;\</u></td></tr>
+<tr><th id="675">675</th><td><u>\</u></td></tr>
+<tr><th id="676">676</th><td><u>    results[3].x += fl1.x * fr2.y;\</u></td></tr>
+<tr><th id="677">677</th><td><u>    results[3].y += fl1.y * fr2.y;\</u></td></tr>
+<tr><th id="678">678</th><td><u>    results[3].z += fl2.x * fr2.y;\</u></td></tr>
+<tr><th id="679">679</th><td><u>    results[3].w += fl2.y * fr2.y;</u>\</td></tr>
+<tr><th id="680">680</th><td></td></tr>
+<tr><th id="681">681</th><td>    __syncthreads();</td></tr>
+<tr><th id="682">682</th><td></td></tr>
+<tr><th id="683">683</th><td>    <i>// Do the multiplies.</i></td></tr>
+<tr><th id="684">684</th><td>    <u>#pragma unroll</u></td></tr>
+<tr><th id="685">685</th><td>    <b>for</b> (<em>int</em> koff = <var>0</var>; koff &lt; <var>16</var>; koff ++) {</td></tr>
+<tr><th id="686">686</th><td>      <i>// 32 x threads.</i></td></tr>
+<tr><th id="687">687</th><td>      float2 fl1 = lhs_shmem2[koff][threadIdx.x];</td></tr>
+<tr><th id="688">688</th><td>      float2 fl2 = lhs_shmem2[koff + <var>16</var>][threadIdx.x];</td></tr>
+<tr><th id="689">689</th><td></td></tr>
+<tr><th id="690">690</th><td>      <em>int</em> start_feature = threadIdx.y * <var>4</var>;</td></tr>
+<tr><th id="691">691</th><td>      float2 fr1 = rhs_shmem2[(start_feature&gt;&gt;<var>1</var>) + <var>32</var>*((koff%<var>4</var>)/<var>2</var>)][koff/<var>4</var> + (koff%<var>2</var>)*<var>4</var>];</td></tr>
+<tr><th id="692">692</th><td>      float2 fr2 = rhs_shmem2[(start_feature&gt;&gt;<var>1</var>) + <var>1</var> + <var>32</var>*((koff%<var>4</var>)/<var>2</var>)][koff/<var>4</var> + (koff%<var>2</var>)*<var>4</var>];</td></tr>
+<tr><th id="693">693</th><td></td></tr>
+<tr><th id="694">694</th><td>      add_vals(fl1, fl2, fr1, fr2)</td></tr>
+<tr><th id="695">695</th><td>    }</td></tr>
+<tr><th id="696">696</th><td>    __syncthreads();</td></tr>
+<tr><th id="697">697</th><td>  }</td></tr>
+<tr><th id="698">698</th><td></td></tr>
+<tr><th id="699">699</th><td><u>#undef prefetch_lhs</u></td></tr>
+<tr><th id="700">700</th><td><u>#undef add_vals</u></td></tr>
+<tr><th id="701">701</th><td></td></tr>
+<tr><th id="702">702</th><td>  Index horiz_base = threadIdx.y*<var>4</var>+base_n;</td></tr>
+<tr><th id="703">703</th><td>  <b>if</b> (!CHECK_LHS_BOUNDARY &amp;&amp; !CHECK_RHS_BOUNDARY) {</td></tr>
+<tr><th id="704">704</th><td>    <b>for</b> (<em>int</em> i = <var>0</var>; i &lt; <var>4</var>; i++) {</td></tr>
+<tr><th id="705">705</th><td>      output(lhs_vert, horiz_base + i) = results[i].x;</td></tr>
+<tr><th id="706">706</th><td>      output(lhs_vert + <var>1</var>, horiz_base + i) = results[i].y;</td></tr>
+<tr><th id="707">707</th><td>      output(lhs_vert + <var>2</var>, horiz_base + i) = results[i].z;</td></tr>
+<tr><th id="708">708</th><td>      output(lhs_vert + <var>3</var>, horiz_base + i) = results[i].w;</td></tr>
+<tr><th id="709">709</th><td>    }</td></tr>
+<tr><th id="710">710</th><td>  } <b>else</b> <b>if</b> (!CHECK_RHS_BOUNDARY) {</td></tr>
+<tr><th id="711">711</th><td>    <i>// CHECK LHS</i></td></tr>
+<tr><th id="712">712</th><td>    <b>if</b> (lhs_vert + <var>3</var> &lt; m_size) {</td></tr>
+<tr><th id="713">713</th><td>      <b>for</b> (<em>int</em> i = <var>0</var>; i &lt; <var>4</var>; i++) {</td></tr>
+<tr><th id="714">714</th><td>        output(lhs_vert, horiz_base + i) = results[i].x;</td></tr>
+<tr><th id="715">715</th><td>        output(lhs_vert + <var>1</var>, horiz_base + i) = results[i].y;</td></tr>
+<tr><th id="716">716</th><td>        output(lhs_vert + <var>2</var>, horiz_base + i) = results[i].z;</td></tr>
+<tr><th id="717">717</th><td>        output(lhs_vert + <var>3</var>, horiz_base + i) = results[i].w;</td></tr>
+<tr><th id="718">718</th><td>      }</td></tr>
+<tr><th id="719">719</th><td>    } <b>else</b> <b>if</b> (lhs_vert + <var>2</var> &lt; m_size) {</td></tr>
+<tr><th id="720">720</th><td>      <b>for</b> (<em>int</em> i = <var>0</var>; i &lt; <var>4</var>; i++) {</td></tr>
+<tr><th id="721">721</th><td>        output(lhs_vert, horiz_base + i) = results[i].x;</td></tr>
+<tr><th id="722">722</th><td>        output(lhs_vert + <var>1</var>, horiz_base + i) = results[i].y;</td></tr>
+<tr><th id="723">723</th><td>        output(lhs_vert + <var>2</var>, horiz_base + i) = results[i].z;</td></tr>
+<tr><th id="724">724</th><td>      }</td></tr>
+<tr><th id="725">725</th><td>    } <b>else</b> <b>if</b> (lhs_vert + <var>1</var> &lt; m_size) {</td></tr>
+<tr><th id="726">726</th><td>      <b>for</b> (<em>int</em> i = <var>0</var>; i &lt; <var>4</var>; i++) {</td></tr>
+<tr><th id="727">727</th><td>        output(lhs_vert, horiz_base + i) = results[i].x;</td></tr>
+<tr><th id="728">728</th><td>        output(lhs_vert + <var>1</var>, horiz_base + i) = results[i].y;</td></tr>
+<tr><th id="729">729</th><td>      }</td></tr>
+<tr><th id="730">730</th><td>    } <b>else</b> <b>if</b> (lhs_vert  &lt; m_size) {</td></tr>
+<tr><th id="731">731</th><td>      <b>for</b> (<em>int</em> i = <var>0</var>; i &lt; <var>4</var>; i++) {</td></tr>
+<tr><th id="732">732</th><td>        output(lhs_vert, horiz_base + i) = results[i].x;</td></tr>
+<tr><th id="733">733</th><td>      }</td></tr>
+<tr><th id="734">734</th><td>    }</td></tr>
+<tr><th id="735">735</th><td>  } <b>else</b> <b>if</b> (!CHECK_LHS_BOUNDARY) {</td></tr>
+<tr><th id="736">736</th><td>    <i>// CHECK RHS</i></td></tr>
+<tr><th id="737">737</th><td>    <i>/*</i></td></tr>
+<tr><th id="738">738</th><td><i>    int ncols_rem = fminf(n_size- horiz_base, 4);</i></td></tr>
+<tr><th id="739">739</th><td><i>    for (int i = 0; i &lt; ncols_rem; i++) {</i></td></tr>
+<tr><th id="740">740</th><td><i>      output(lhs_vert, horiz_base + i) = results[i].x;</i></td></tr>
+<tr><th id="741">741</th><td><i>      output(lhs_vert + 1, horiz_base + i) = results[i].y;</i></td></tr>
+<tr><th id="742">742</th><td><i>      output(lhs_vert + 2, horiz_base + i) = results[i].z;</i></td></tr>
+<tr><th id="743">743</th><td><i>      output(lhs_vert + 3, horiz_base + i) = results[i].w;</i></td></tr>
+<tr><th id="744">744</th><td><i>    }*/</i></td></tr>
+<tr><th id="745">745</th><td>    <b>for</b> (<em>int</em> i = <var>0</var>; i &lt; <var>4</var>; i++) {</td></tr>
+<tr><th id="746">746</th><td>      <b>if</b> (horiz_base+i &lt; n_size) {</td></tr>
+<tr><th id="747">747</th><td>        output(lhs_vert, horiz_base + i) = results[i].x;</td></tr>
+<tr><th id="748">748</th><td>        output(lhs_vert + <var>1</var>, horiz_base + i) = results[i].y;</td></tr>
+<tr><th id="749">749</th><td>        output(lhs_vert + <var>2</var>, horiz_base + i) = results[i].z;</td></tr>
+<tr><th id="750">750</th><td>        output(lhs_vert + <var>3</var>, horiz_base + i) = results[i].w;</td></tr>
+<tr><th id="751">751</th><td>       }</td></tr>
+<tr><th id="752">752</th><td>    }</td></tr>
+<tr><th id="753">753</th><td>  } <b>else</b> {</td></tr>
+<tr><th id="754">754</th><td>    <i>// CHECK both boundaries.</i></td></tr>
+<tr><th id="755">755</th><td>    <b>for</b> (<em>int</em> i = <var>0</var>; i &lt; <var>4</var>; i++) {</td></tr>
+<tr><th id="756">756</th><td>      <b>if</b> (horiz_base+i &lt; n_size) {</td></tr>
+<tr><th id="757">757</th><td>        <b>if</b> (lhs_vert &lt; m_size)</td></tr>
+<tr><th id="758">758</th><td>          output(lhs_vert, horiz_base + i) = results[i].x;</td></tr>
+<tr><th id="759">759</th><td>        <b>if</b> (lhs_vert + <var>1</var> &lt; m_size)</td></tr>
+<tr><th id="760">760</th><td>          output(lhs_vert + <var>1</var>, horiz_base + i) = results[i].y;</td></tr>
+<tr><th id="761">761</th><td>        <b>if</b> (lhs_vert + <var>2</var> &lt; m_size)</td></tr>
+<tr><th id="762">762</th><td>          output(lhs_vert + <var>2</var>, horiz_base + i) = results[i].z;</td></tr>
+<tr><th id="763">763</th><td>        <b>if</b> (lhs_vert + <var>3</var> &lt; m_size)</td></tr>
+<tr><th id="764">764</th><td>          output(lhs_vert + <var>3</var>, horiz_base + i) = results[i].w;</td></tr>
+<tr><th id="765">765</th><td>      }</td></tr>
+<tr><th id="766">766</th><td>    }</td></tr>
+<tr><th id="767">767</th><td>  }</td></tr>
+<tr><th id="768">768</th><td>}</td></tr>
+<tr><th id="769">769</th><td></td></tr>
+<tr><th id="770">770</th><td></td></tr>
+<tr><th id="771">771</th><td><b>template</b>&lt;<b>typename</b> Index, <b>typename</b> LhsMapper,</td></tr>
+<tr><th id="772">772</th><td>         <b>typename</b> RhsMapper, <b>typename</b> OutputMapper, <em>bool</em> CHECK_LHS_BOUNDARY,</td></tr>
+<tr><th id="773">773</th><td>         <em>bool</em> CHECK_RHS_BOUNDARY&gt;</td></tr>
+<tr><th id="774">774</th><td>__device__ __forceinline__ <em>void</em></td></tr>
+<tr><th id="775">775</th><td>EigenFloatContractionKernelInternal(<em>const</em> LhsMapper lhs, <em>const</em> RhsMapper rhs,</td></tr>
+<tr><th id="776">776</th><td>                       <em>const</em> OutputMapper output, float2 lhs_shmem2[][<var>32</var>],</td></tr>
+<tr><th id="777">777</th><td>                       float2 rhs_shmem2[][<var>8</var>], <em>const</em> Index m_size,</td></tr>
+<tr><th id="778">778</th><td>                       <em>const</em> Index n_size, <em>const</em> Index k_size,</td></tr>
+<tr><th id="779">779</th><td>                       <em>const</em> Index base_m, <em>const</em> Index base_n) {</td></tr>
+<tr><th id="780">780</th><td></td></tr>
+<tr><th id="781">781</th><td>  <i>// prefetch registers</i></td></tr>
+<tr><th id="782">782</th><td>  float4 lhs_pf0, lhs_pf1, lhs_pf2, lhs_pf3;</td></tr>
+<tr><th id="783">783</th><td>  float4 rhs_pf0, rhs_pf1;</td></tr>
+<tr><th id="784">784</th><td></td></tr>
+<tr><th id="785">785</th><td>  float4 results[<var>8</var>];</td></tr>
+<tr><th id="786">786</th><td>  <b>for</b> (<em>int</em> i=<var>0</var>; i &lt; <var>8</var>; i++) {</td></tr>
+<tr><th id="787">787</th><td>    results[i].x = results[i].y = results[i].z = results[i].w = <var>0</var>;</td></tr>
+<tr><th id="788">788</th><td>  }</td></tr>
+<tr><th id="789">789</th><td></td></tr>
+<tr><th id="790">790</th><td>  Index lhs_vert = base_m+threadIdx.x*<var>4</var>+(threadIdx.y%<var>4</var>)*<var>32</var>;</td></tr>
+<tr><th id="791">791</th><td>  <b>for</b> (Index k = <var>0</var>; k &lt; k_size; k += <var>32</var>) {</td></tr>
+<tr><th id="792">792</th><td>    lhs_pf0 = internal::pset1&lt;float4&gt;(<var>0</var>);</td></tr>
+<tr><th id="793">793</th><td>    lhs_pf1 = internal::pset1&lt;float4&gt;(<var>0</var>);</td></tr>
+<tr><th id="794">794</th><td>    lhs_pf2 = internal::pset1&lt;float4&gt;(<var>0</var>);</td></tr>
+<tr><th id="795">795</th><td>    lhs_pf3 = internal::pset1&lt;float4&gt;(<var>0</var>);</td></tr>
+<tr><th id="796">796</th><td></td></tr>
+<tr><th id="797">797</th><td>    rhs_pf0 = internal::pset1&lt;float4&gt;(<var>0</var>);</td></tr>
+<tr><th id="798">798</th><td>    rhs_pf1 = internal::pset1&lt;float4&gt;(<var>0</var>);</td></tr>
+<tr><th id="799">799</th><td></td></tr>
+<tr><th id="800">800</th><td>     <b>if</b> (!CHECK_LHS_BOUNDARY) {</td></tr>
+<tr><th id="801">801</th><td>      <b>if</b> ((threadIdx.y/<var>4</var>+k+<var>24</var>) &lt; k_size) {</td></tr>
+<tr><th id="802">802</th><td>        lhs_pf0 =lhs.<b>template</b> loadPacket&lt;float4,Unaligned&gt;(lhs_vert, (threadIdx.y/<var>4</var>+k));</td></tr>
+<tr><th id="803">803</th><td>        lhs_pf1 =lhs.<b>template</b> loadPacket&lt;float4,Unaligned&gt;(lhs_vert, (threadIdx.y/<var>4</var>+k+<var>8</var>));</td></tr>
+<tr><th id="804">804</th><td>        lhs_pf2 =lhs.<b>template</b> loadPacket&lt;float4,Unaligned&gt;(lhs_vert, (threadIdx.y/<var>4</var>+k+<var>16</var>));</td></tr>
+<tr><th id="805">805</th><td>        lhs_pf3 =lhs.<b>template</b> loadPacket&lt;float4,Unaligned&gt;(lhs_vert, (threadIdx.y/<var>4</var>+k+<var>24</var>));</td></tr>
+<tr><th id="806">806</th><td>      } <b>else</b> <b>if</b> ((threadIdx.y/<var>4</var>+k+<var>16</var>) &lt; k_size) {</td></tr>
+<tr><th id="807">807</th><td>        lhs_pf0 =lhs.<b>template</b> loadPacket&lt;float4,Unaligned&gt;(lhs_vert, (threadIdx.y/<var>4</var>+k));</td></tr>
+<tr><th id="808">808</th><td>        lhs_pf1 =lhs.<b>template</b> loadPacket&lt;float4,Unaligned&gt;(lhs_vert, (threadIdx.y/<var>4</var>+k+<var>8</var>));</td></tr>
+<tr><th id="809">809</th><td>        lhs_pf2 =lhs.<b>template</b> loadPacket&lt;float4,Unaligned&gt;(lhs_vert, (threadIdx.y/<var>4</var>+k+<var>16</var>));</td></tr>
+<tr><th id="810">810</th><td>      } <b>else</b> <b>if</b> ((threadIdx.y/<var>4</var>+k+<var>8</var>) &lt; k_size) {</td></tr>
+<tr><th id="811">811</th><td>        lhs_pf0 =lhs.<b>template</b> loadPacket&lt;float4,Unaligned&gt;(lhs_vert, (threadIdx.y/<var>4</var>+k));</td></tr>
+<tr><th id="812">812</th><td>        lhs_pf1 =lhs.<b>template</b> loadPacket&lt;float4,Unaligned&gt;(lhs_vert, (threadIdx.y/<var>4</var>+k+<var>8</var>));</td></tr>
+<tr><th id="813">813</th><td>      } <b>else</b> <b>if</b> ((threadIdx.y/<var>4</var>+k) &lt; k_size) {</td></tr>
+<tr><th id="814">814</th><td>        lhs_pf0 =lhs.<b>template</b> loadPacket&lt;float4,Unaligned&gt;(lhs_vert, (threadIdx.y/<var>4</var>+k));</td></tr>
+<tr><th id="815">815</th><td>      }</td></tr>
+<tr><th id="816">816</th><td>    } <b>else</b> {</td></tr>
+<tr><th id="817">817</th><td>      <i>// just CHECK_LHS_BOUNDARY</i></td></tr>
+<tr><th id="818">818</th><td>      <b>if</b> (lhs_vert + <var>3</var> &lt; m_size) {</td></tr>
+<tr><th id="819">819</th><td>        <b>if</b> ((threadIdx.y/<var>4</var>+k+<var>24</var>) &lt; k_size) {</td></tr>
+<tr><th id="820">820</th><td>          lhs_pf0 =lhs.<b>template</b> loadPacket&lt;float4,Unaligned&gt;(lhs_vert, (threadIdx.y/<var>4</var>+k));</td></tr>
+<tr><th id="821">821</th><td>          lhs_pf1 =lhs.<b>template</b> loadPacket&lt;float4,Unaligned&gt;(lhs_vert, (threadIdx.y/<var>4</var>+k+<var>8</var>));</td></tr>
+<tr><th id="822">822</th><td>          lhs_pf2 =lhs.<b>template</b> loadPacket&lt;float4,Unaligned&gt;(lhs_vert, (threadIdx.y/<var>4</var>+k+<var>16</var>));</td></tr>
+<tr><th id="823">823</th><td>          lhs_pf3 =lhs.<b>template</b> loadPacket&lt;float4,Unaligned&gt;(lhs_vert, (threadIdx.y/<var>4</var>+k+<var>24</var>));</td></tr>
+<tr><th id="824">824</th><td>        } <b>else</b> <b>if</b> ((threadIdx.y/<var>4</var>+k+<var>16</var>) &lt; k_size) {</td></tr>
+<tr><th id="825">825</th><td>          lhs_pf0 =lhs.<b>template</b> loadPacket&lt;float4,Unaligned&gt;(lhs_vert, (threadIdx.y/<var>4</var>+k));</td></tr>
+<tr><th id="826">826</th><td>          lhs_pf1 =lhs.<b>template</b> loadPacket&lt;float4,Unaligned&gt;(lhs_vert, (threadIdx.y/<var>4</var>+k+<var>8</var>));</td></tr>
+<tr><th id="827">827</th><td>          lhs_pf2 =lhs.<b>template</b> loadPacket&lt;float4,Unaligned&gt;(lhs_vert, (threadIdx.y/<var>4</var>+k+<var>16</var>));</td></tr>
+<tr><th id="828">828</th><td>        } <b>else</b> <b>if</b> ((threadIdx.y/<var>4</var>+k+<var>8</var>) &lt; k_size) {</td></tr>
+<tr><th id="829">829</th><td>          lhs_pf0 =lhs.<b>template</b> loadPacket&lt;float4,Unaligned&gt;(lhs_vert, (threadIdx.y/<var>4</var>+k));</td></tr>
+<tr><th id="830">830</th><td>          lhs_pf1 =lhs.<b>template</b> loadPacket&lt;float4,Unaligned&gt;(lhs_vert, (threadIdx.y/<var>4</var>+k+<var>8</var>));</td></tr>
+<tr><th id="831">831</th><td>        } <b>else</b> <b>if</b> ((threadIdx.y/<var>4</var>+k) &lt; k_size) {</td></tr>
+<tr><th id="832">832</th><td>          lhs_pf0 =lhs.<b>template</b> loadPacket&lt;float4,Unaligned&gt;(lhs_vert, (threadIdx.y/<var>4</var>+k));</td></tr>
+<tr><th id="833">833</th><td>        }</td></tr>
+<tr><th id="834">834</th><td>      } <b>else</b> <b>if</b> (lhs_vert + <var>2</var> &lt; m_size) {</td></tr>
+<tr><th id="835">835</th><td>        <b>if</b> ((threadIdx.y/<var>4</var>+k+<var>24</var>) &lt; k_size) {</td></tr>
+<tr><th id="836">836</th><td>          lhs_pf0.x =lhs(lhs_vert + <var>0</var>, (threadIdx.y/<var>4</var>+k));</td></tr>
+<tr><th id="837">837</th><td>          lhs_pf0.y =lhs(lhs_vert + <var>1</var>, (threadIdx.y/<var>4</var>+k));</td></tr>
+<tr><th id="838">838</th><td>          lhs_pf0.z =lhs(lhs_vert + <var>2</var>, (threadIdx.y/<var>4</var>+k));</td></tr>
+<tr><th id="839">839</th><td>          lhs_pf1.x =lhs(lhs_vert + <var>0</var>, (threadIdx.y/<var>4</var>+k+<var>8</var>));</td></tr>
+<tr><th id="840">840</th><td>          lhs_pf1.y =lhs(lhs_vert + <var>1</var>, (threadIdx.y/<var>4</var>+k+<var>8</var>));</td></tr>
+<tr><th id="841">841</th><td>          lhs_pf1.z =lhs(lhs_vert + <var>2</var>, (threadIdx.y/<var>4</var>+k+<var>8</var>));</td></tr>
+<tr><th id="842">842</th><td>          lhs_pf2.x =lhs(lhs_vert + <var>0</var>, (threadIdx.y/<var>4</var>+k+<var>16</var>));</td></tr>
+<tr><th id="843">843</th><td>          lhs_pf2.y =lhs(lhs_vert + <var>1</var>, (threadIdx.y/<var>4</var>+k+<var>16</var>));</td></tr>
+<tr><th id="844">844</th><td>          lhs_pf2.z =lhs(lhs_vert + <var>2</var>, (threadIdx.y/<var>4</var>+k+<var>16</var>));</td></tr>
+<tr><th id="845">845</th><td>          lhs_pf3.x =lhs(lhs_vert + <var>0</var>, (threadIdx.y/<var>4</var>+k+<var>24</var>));</td></tr>
+<tr><th id="846">846</th><td>          lhs_pf3.y =lhs(lhs_vert + <var>1</var>, (threadIdx.y/<var>4</var>+k+<var>24</var>));</td></tr>
+<tr><th id="847">847</th><td>          lhs_pf3.z =lhs(lhs_vert + <var>2</var>, (threadIdx.y/<var>4</var>+k+<var>24</var>));</td></tr>
+<tr><th id="848">848</th><td>        } <b>else</b> <b>if</b> ((threadIdx.y/<var>4</var>+k+<var>16</var>) &lt; k_size) {</td></tr>
+<tr><th id="849">849</th><td>          lhs_pf0.x =lhs(lhs_vert + <var>0</var>, (threadIdx.y/<var>4</var>+k));</td></tr>
+<tr><th id="850">850</th><td>          lhs_pf0.y =lhs(lhs_vert + <var>1</var>, (threadIdx.y/<var>4</var>+k));</td></tr>
+<tr><th id="851">851</th><td>          lhs_pf0.z =lhs(lhs_vert + <var>2</var>, (threadIdx.y/<var>4</var>+k));</td></tr>
+<tr><th id="852">852</th><td>          lhs_pf1.x =lhs(lhs_vert + <var>0</var>, (threadIdx.y/<var>4</var>+k+<var>8</var>));</td></tr>
+<tr><th id="853">853</th><td>          lhs_pf1.y =lhs(lhs_vert + <var>1</var>, (threadIdx.y/<var>4</var>+k+<var>8</var>));</td></tr>
+<tr><th id="854">854</th><td>          lhs_pf1.z =lhs(lhs_vert + <var>2</var>, (threadIdx.y/<var>4</var>+k+<var>8</var>));</td></tr>
+<tr><th id="855">855</th><td>          lhs_pf2.x =lhs(lhs_vert + <var>0</var>, (threadIdx.y/<var>4</var>+k+<var>16</var>));</td></tr>
+<tr><th id="856">856</th><td>          lhs_pf2.y =lhs(lhs_vert + <var>1</var>, (threadIdx.y/<var>4</var>+k+<var>16</var>));</td></tr>
+<tr><th id="857">857</th><td>          lhs_pf2.z =lhs(lhs_vert + <var>2</var>, (threadIdx.y/<var>4</var>+k+<var>16</var>));</td></tr>
+<tr><th id="858">858</th><td>        } <b>else</b> <b>if</b> ((threadIdx.y/<var>4</var>+k+<var>8</var>) &lt; k_size) {</td></tr>
+<tr><th id="859">859</th><td>          lhs_pf0.x =lhs(lhs_vert + <var>0</var>, (threadIdx.y/<var>4</var>+k));</td></tr>
+<tr><th id="860">860</th><td>          lhs_pf0.y =lhs(lhs_vert + <var>1</var>, (threadIdx.y/<var>4</var>+k));</td></tr>
+<tr><th id="861">861</th><td>          lhs_pf0.z =lhs(lhs_vert + <var>2</var>, (threadIdx.y/<var>4</var>+k));</td></tr>
+<tr><th id="862">862</th><td>          lhs_pf1.x =lhs(lhs_vert + <var>0</var>, (threadIdx.y/<var>4</var>+k+<var>8</var>));</td></tr>
+<tr><th id="863">863</th><td>          lhs_pf1.y =lhs(lhs_vert + <var>1</var>, (threadIdx.y/<var>4</var>+k+<var>8</var>));</td></tr>
+<tr><th id="864">864</th><td>          lhs_pf1.z =lhs(lhs_vert + <var>2</var>, (threadIdx.y/<var>4</var>+k+<var>8</var>));</td></tr>
+<tr><th id="865">865</th><td>        } <b>else</b> <b>if</b> ((threadIdx.y/<var>4</var>+k) &lt; k_size) {</td></tr>
+<tr><th id="866">866</th><td>          lhs_pf0.x =lhs(lhs_vert + <var>0</var>, (threadIdx.y/<var>4</var>+k));</td></tr>
+<tr><th id="867">867</th><td>          lhs_pf0.y =lhs(lhs_vert + <var>1</var>, (threadIdx.y/<var>4</var>+k));</td></tr>
+<tr><th id="868">868</th><td>          lhs_pf0.z =lhs(lhs_vert + <var>2</var>, (threadIdx.y/<var>4</var>+k));</td></tr>
+<tr><th id="869">869</th><td>        }</td></tr>
+<tr><th id="870">870</th><td>      } <b>else</b> <b>if</b> (lhs_vert + <var>1</var> &lt; m_size) {</td></tr>
+<tr><th id="871">871</th><td>        <b>if</b> ((threadIdx.y/<var>4</var>+k+<var>24</var>) &lt; k_size) {</td></tr>
+<tr><th id="872">872</th><td>          lhs_pf0.x =lhs(lhs_vert + <var>0</var>, (threadIdx.y/<var>4</var>+k));</td></tr>
+<tr><th id="873">873</th><td>          lhs_pf0.y =lhs(lhs_vert + <var>1</var>, (threadIdx.y/<var>4</var>+k));</td></tr>
+<tr><th id="874">874</th><td>          lhs_pf1.x =lhs(lhs_vert + <var>0</var>, (threadIdx.y/<var>4</var>+k+<var>8</var>));</td></tr>
+<tr><th id="875">875</th><td>          lhs_pf1.y =lhs(lhs_vert + <var>1</var>, (threadIdx.y/<var>4</var>+k+<var>8</var>));</td></tr>
+<tr><th id="876">876</th><td>          lhs_pf2.x =lhs(lhs_vert + <var>0</var>, (threadIdx.y/<var>4</var>+k+<var>16</var>));</td></tr>
+<tr><th id="877">877</th><td>          lhs_pf2.y =lhs(lhs_vert + <var>1</var>, (threadIdx.y/<var>4</var>+k+<var>16</var>));</td></tr>
+<tr><th id="878">878</th><td>          lhs_pf3.x =lhs(lhs_vert + <var>0</var>, (threadIdx.y/<var>4</var>+k+<var>24</var>));</td></tr>
+<tr><th id="879">879</th><td>          lhs_pf3.y =lhs(lhs_vert + <var>1</var>, (threadIdx.y/<var>4</var>+k+<var>24</var>));</td></tr>
+<tr><th id="880">880</th><td>        } <b>else</b> <b>if</b> ((threadIdx.y/<var>4</var>+k+<var>16</var>) &lt; k_size) {</td></tr>
+<tr><th id="881">881</th><td>          lhs_pf0.x =lhs(lhs_vert + <var>0</var>, (threadIdx.y/<var>4</var>+k));</td></tr>
+<tr><th id="882">882</th><td>          lhs_pf0.y =lhs(lhs_vert + <var>1</var>, (threadIdx.y/<var>4</var>+k));</td></tr>
+<tr><th id="883">883</th><td>          lhs_pf1.x =lhs(lhs_vert + <var>0</var>, (threadIdx.y/<var>4</var>+k+<var>8</var>));</td></tr>
+<tr><th id="884">884</th><td>          lhs_pf1.y =lhs(lhs_vert + <var>1</var>, (threadIdx.y/<var>4</var>+k+<var>8</var>));</td></tr>
+<tr><th id="885">885</th><td>          lhs_pf2.x =lhs(lhs_vert + <var>0</var>, (threadIdx.y/<var>4</var>+k+<var>16</var>));</td></tr>
+<tr><th id="886">886</th><td>          lhs_pf2.y =lhs(lhs_vert + <var>1</var>, (threadIdx.y/<var>4</var>+k+<var>16</var>));</td></tr>
+<tr><th id="887">887</th><td>        } <b>else</b> <b>if</b> ((threadIdx.y/<var>4</var>+k+<var>8</var>) &lt; k_size) {</td></tr>
+<tr><th id="888">888</th><td>          lhs_pf0.x =lhs(lhs_vert + <var>0</var>, (threadIdx.y/<var>4</var>+k));</td></tr>
+<tr><th id="889">889</th><td>          lhs_pf0.y =lhs(lhs_vert + <var>1</var>, (threadIdx.y/<var>4</var>+k));</td></tr>
+<tr><th id="890">890</th><td>          lhs_pf1.x =lhs(lhs_vert + <var>0</var>, (threadIdx.y/<var>4</var>+k+<var>8</var>));</td></tr>
+<tr><th id="891">891</th><td>          lhs_pf1.y =lhs(lhs_vert + <var>1</var>, (threadIdx.y/<var>4</var>+k+<var>8</var>));</td></tr>
+<tr><th id="892">892</th><td>        } <b>else</b> <b>if</b> ((threadIdx.y/<var>4</var>+k) &lt; k_size) {</td></tr>
+<tr><th id="893">893</th><td>          lhs_pf0.x =lhs(lhs_vert + <var>0</var>, (threadIdx.y/<var>4</var>+k));</td></tr>
+<tr><th id="894">894</th><td>          lhs_pf0.y =lhs(lhs_vert + <var>1</var>, (threadIdx.y/<var>4</var>+k));</td></tr>
+<tr><th id="895">895</th><td>        }</td></tr>
+<tr><th id="896">896</th><td>      } <b>else</b> <b>if</b> (lhs_vert &lt; m_size) {</td></tr>
+<tr><th id="897">897</th><td>        <b>if</b> ((threadIdx.y/<var>4</var>+k+<var>24</var>) &lt; k_size) {</td></tr>
+<tr><th id="898">898</th><td>          lhs_pf0.x =lhs(lhs_vert + <var>0</var>, (threadIdx.y/<var>4</var>+k));</td></tr>
+<tr><th id="899">899</th><td>          lhs_pf1.x =lhs(lhs_vert + <var>0</var>, (threadIdx.y/<var>4</var>+k+<var>8</var>));</td></tr>
+<tr><th id="900">900</th><td>          lhs_pf2.x =lhs(lhs_vert + <var>0</var>, (threadIdx.y/<var>4</var>+k+<var>16</var>));</td></tr>
+<tr><th id="901">901</th><td>          lhs_pf3.x =lhs(lhs_vert + <var>0</var>, (threadIdx.y/<var>4</var>+k+<var>24</var>));</td></tr>
+<tr><th id="902">902</th><td>        } <b>else</b> <b>if</b> ((threadIdx.y/<var>4</var>+k+<var>16</var>) &lt; k_size) {</td></tr>
+<tr><th id="903">903</th><td>          lhs_pf0.x =lhs(lhs_vert + <var>0</var>, (threadIdx.y/<var>4</var>+k));</td></tr>
+<tr><th id="904">904</th><td>          lhs_pf1.x =lhs(lhs_vert + <var>0</var>, (threadIdx.y/<var>4</var>+k+<var>8</var>));</td></tr>
+<tr><th id="905">905</th><td>          lhs_pf2.x =lhs(lhs_vert + <var>0</var>, (threadIdx.y/<var>4</var>+k+<var>16</var>));</td></tr>
+<tr><th id="906">906</th><td>        } <b>else</b> <b>if</b> ((threadIdx.y/<var>4</var>+k+<var>8</var>) &lt; k_size) {</td></tr>
+<tr><th id="907">907</th><td>          lhs_pf0.x =lhs(lhs_vert + <var>0</var>, (threadIdx.y/<var>4</var>+k));</td></tr>
+<tr><th id="908">908</th><td>          lhs_pf1.x =lhs(lhs_vert + <var>0</var>, (threadIdx.y/<var>4</var>+k+<var>8</var>));</td></tr>
+<tr><th id="909">909</th><td>        } <b>else</b> <b>if</b> ((threadIdx.y/<var>4</var>+k) &lt; k_size) {</td></tr>
+<tr><th id="910">910</th><td>          lhs_pf0.x =lhs(lhs_vert + <var>0</var>, (threadIdx.y/<var>4</var>+k));</td></tr>
+<tr><th id="911">911</th><td>        }</td></tr>
+<tr><th id="912">912</th><td>      }</td></tr>
+<tr><th id="913">913</th><td>    }</td></tr>
+<tr><th id="914">914</th><td>    __syncthreads();</td></tr>
+<tr><th id="915">915</th><td>    Index rhs_vert = k+threadIdx.x*<var>4</var>;</td></tr>
+<tr><th id="916">916</th><td>    Index rhs_horiz0 = threadIdx.y*<var>2</var>+base_n;</td></tr>
+<tr><th id="917">917</th><td>    Index rhs_horiz1 = threadIdx.y*<var>2</var>+<var>1</var>+base_n;</td></tr>
+<tr><th id="918">918</th><td>    <b>if</b> (!CHECK_RHS_BOUNDARY) {</td></tr>
+<tr><th id="919">919</th><td>      <b>if</b> ((rhs_vert + <var>3</var>) &lt; k_size) {</td></tr>
+<tr><th id="920">920</th><td>        <i>// just CHECK_RHS_BOUNDARY</i></td></tr>
+<tr><th id="921">921</th><td>        rhs_pf0 = rhs.<b>template</b> loadPacket&lt;float4,Unaligned&gt;(rhs_vert, rhs_horiz0);</td></tr>
+<tr><th id="922">922</th><td>        rhs_pf1 = rhs.<b>template</b> loadPacket&lt;float4,Unaligned&gt;(rhs_vert, rhs_horiz1);</td></tr>
+<tr><th id="923">923</th><td>      } <b>else</b> <b>if</b> (rhs_vert + <var>2</var> &lt; k_size) {</td></tr>
+<tr><th id="924">924</th><td>        <i>// just CHECK_RHS_BOUNDARY</i></td></tr>
+<tr><th id="925">925</th><td>        rhs_pf0.x = rhs(rhs_vert, rhs_horiz0);</td></tr>
+<tr><th id="926">926</th><td>        rhs_pf0.y = rhs(rhs_vert + <var>1</var>, rhs_horiz0);</td></tr>
+<tr><th id="927">927</th><td>        rhs_pf0.z = rhs(rhs_vert + <var>2</var>, rhs_horiz0);</td></tr>
+<tr><th id="928">928</th><td>        rhs_pf1.x = rhs(rhs_vert, rhs_horiz1);</td></tr>
+<tr><th id="929">929</th><td>        rhs_pf1.y = rhs(rhs_vert + <var>1</var>, rhs_horiz1);</td></tr>
+<tr><th id="930">930</th><td>        rhs_pf1.z = rhs(rhs_vert + <var>2</var>, rhs_horiz1);</td></tr>
+<tr><th id="931">931</th><td>      } <b>else</b> <b>if</b> (rhs_vert + <var>1</var> &lt; k_size) {</td></tr>
+<tr><th id="932">932</th><td>        rhs_pf0.x = rhs(rhs_vert, rhs_horiz0);</td></tr>
+<tr><th id="933">933</th><td>        rhs_pf0.y = rhs(rhs_vert + <var>1</var>, rhs_horiz0);</td></tr>
+<tr><th id="934">934</th><td>        rhs_pf1.x = rhs(rhs_vert, rhs_horiz1);</td></tr>
+<tr><th id="935">935</th><td>        rhs_pf1.y = rhs(rhs_vert + <var>1</var>, rhs_horiz1);</td></tr>
+<tr><th id="936">936</th><td>      } <b>else</b> <b>if</b> (rhs_vert  &lt; k_size) {</td></tr>
+<tr><th id="937">937</th><td>        rhs_pf0.x = rhs(rhs_vert, rhs_horiz0);</td></tr>
+<tr><th id="938">938</th><td>        rhs_pf1.x = rhs(rhs_vert, rhs_horiz1);</td></tr>
+<tr><th id="939">939</th><td>      }</td></tr>
+<tr><th id="940">940</th><td>    } <b>else</b> {</td></tr>
+<tr><th id="941">941</th><td>      <b>if</b> (rhs_horiz1 &lt; n_size) {</td></tr>
+<tr><th id="942">942</th><td>        <b>if</b> ((rhs_vert + <var>3</var>) &lt; k_size) {</td></tr>
+<tr><th id="943">943</th><td>          <i>// just CHECK_RHS_BOUNDARY</i></td></tr>
+<tr><th id="944">944</th><td>          rhs_pf0 = rhs.<b>template</b> loadPacket&lt;float4,Unaligned&gt;(rhs_vert, rhs_horiz0);</td></tr>
+<tr><th id="945">945</th><td>          rhs_pf1 = rhs.<b>template</b> loadPacket&lt;float4,Unaligned&gt;(rhs_vert, rhs_horiz1);</td></tr>
+<tr><th id="946">946</th><td>        } <b>else</b> <b>if</b> (rhs_vert + <var>2</var> &lt; k_size) {</td></tr>
+<tr><th id="947">947</th><td>          <i>// just CHECK_RHS_BOUNDARY</i></td></tr>
+<tr><th id="948">948</th><td>          rhs_pf0.x = rhs(rhs_vert, rhs_horiz0);</td></tr>
+<tr><th id="949">949</th><td>          rhs_pf0.y = rhs(rhs_vert + <var>1</var>, rhs_horiz0);</td></tr>
+<tr><th id="950">950</th><td>          rhs_pf0.z = rhs(rhs_vert + <var>2</var>, rhs_horiz0);</td></tr>
+<tr><th id="951">951</th><td>          rhs_pf1.x = rhs(rhs_vert, rhs_horiz1);</td></tr>
+<tr><th id="952">952</th><td>          rhs_pf1.y = rhs(rhs_vert + <var>1</var>, rhs_horiz1);</td></tr>
+<tr><th id="953">953</th><td>          rhs_pf1.z = rhs(rhs_vert + <var>2</var>, rhs_horiz1);</td></tr>
+<tr><th id="954">954</th><td>        } <b>else</b> <b>if</b> (k+threadIdx.x*<var>4</var> + <var>1</var> &lt; k_size) {</td></tr>
+<tr><th id="955">955</th><td>          rhs_pf0.x = rhs(rhs_vert, rhs_horiz0);</td></tr>
+<tr><th id="956">956</th><td>          rhs_pf0.y = rhs(rhs_vert + <var>1</var>, rhs_horiz0);</td></tr>
+<tr><th id="957">957</th><td>          rhs_pf1.x = rhs(rhs_vert, rhs_horiz1);</td></tr>
+<tr><th id="958">958</th><td>          rhs_pf1.y = rhs(rhs_vert + <var>1</var>, rhs_horiz1);</td></tr>
+<tr><th id="959">959</th><td>        } <b>else</b> <b>if</b> (k+threadIdx.x*<var>4</var>  &lt; k_size) {</td></tr>
+<tr><th id="960">960</th><td>          rhs_pf0.x = rhs(rhs_vert, rhs_horiz0);</td></tr>
+<tr><th id="961">961</th><td>          rhs_pf1.x = rhs(rhs_vert, rhs_horiz1);</td></tr>
+<tr><th id="962">962</th><td>        }</td></tr>
+<tr><th id="963">963</th><td>      } <b>else</b> <b>if</b> (rhs_horiz0 &lt; n_size) {</td></tr>
+<tr><th id="964">964</th><td>        <b>if</b> ((rhs_vert + <var>3</var>) &lt; k_size) {</td></tr>
+<tr><th id="965">965</th><td>          <i>// just CHECK_RHS_BOUNDARY</i></td></tr>
+<tr><th id="966">966</th><td>          rhs_pf0 = rhs.<b>template</b> loadPacket&lt;float4,Unaligned&gt;(rhs_vert, rhs_horiz0);</td></tr>
+<tr><th id="967">967</th><td>        } <b>else</b> <b>if</b> ((rhs_vert + <var>2</var>) &lt; k_size) {</td></tr>
+<tr><th id="968">968</th><td>          <i>// just CHECK_RHS_BOUNDARY</i></td></tr>
+<tr><th id="969">969</th><td>          rhs_pf0.x = rhs(rhs_vert, rhs_horiz0);</td></tr>
+<tr><th id="970">970</th><td>          rhs_pf0.y = rhs(rhs_vert + <var>1</var>, rhs_horiz0);</td></tr>
+<tr><th id="971">971</th><td>          rhs_pf0.z = rhs(rhs_vert + <var>2</var>, rhs_horiz0);</td></tr>
+<tr><th id="972">972</th><td>        } <b>else</b> <b>if</b> ((rhs_vert + <var>1</var>) &lt; k_size) {</td></tr>
+<tr><th id="973">973</th><td>          rhs_pf0.x = rhs(rhs_vert, rhs_horiz0);</td></tr>
+<tr><th id="974">974</th><td>          rhs_pf0.y = rhs(rhs_vert + <var>1</var>, rhs_horiz0);</td></tr>
+<tr><th id="975">975</th><td>        } <b>else</b> <b>if</b> (rhs_vert  &lt; k_size) {</td></tr>
+<tr><th id="976">976</th><td>          rhs_pf0.x = rhs(rhs_vert, rhs_horiz0);</td></tr>
+<tr><th id="977">977</th><td>        }</td></tr>
+<tr><th id="978">978</th><td>      }</td></tr>
+<tr><th id="979">979</th><td>    }</td></tr>
+<tr><th id="980">980</th><td>    __syncthreads();</td></tr>
+<tr><th id="981">981</th><td>    <i>// Loaded. Do computation</i></td></tr>
+<tr><th id="982">982</th><td><i>    // Row 0 -&gt; times (0, 4, 8, .. 28) for features 0, 1.</i></td></tr>
+<tr><th id="983">983</th><td><i>    // Row 1 -&gt; times (0, 4, 8, .. 28) for features 2, 3.</i></td></tr>
+<tr><th id="984">984</th><td><i>    // ..</i></td></tr>
+<tr><th id="985">985</th><td><i>    // Row 31 -&gt; times (0, 4, 8, .. 28) for features 62, 63</i></td></tr>
+<tr><th id="986">986</th><td>    rhs_shmem2[threadIdx.y][threadIdx.x] = make_float2(rhs_pf0.x, rhs_pf1.x);</td></tr>
+<tr><th id="987">987</th><td>    <i>// Row 32 -&gt; times (1, 5, 9, .. 29) for features 0, 1.</i></td></tr>
+<tr><th id="988">988</th><td><i>    // Row 33 -&gt; times (1, 5, 9, .. 29) for features 2, 3.</i></td></tr>
+<tr><th id="989">989</th><td><i>    // ..</i></td></tr>
+<tr><th id="990">990</th><td>    rhs_shmem2[threadIdx.y+<var>32</var>][threadIdx.x] = make_float2(rhs_pf0.y, rhs_pf1.y);</td></tr>
+<tr><th id="991">991</th><td>    <i>// Row 64 -&gt; times (2, 6, 10, .. 30) for features 0, 1.</i></td></tr>
+<tr><th id="992">992</th><td><i>    // Row 65 -&gt; times (2, 6, 10, .. 30) for features 2, 3.</i></td></tr>
+<tr><th id="993">993</th><td>    rhs_shmem2[threadIdx.y+<var>64</var>][threadIdx.x] = make_float2(rhs_pf0.z, rhs_pf1.z);</td></tr>
+<tr><th id="994">994</th><td>    <i>// Row 96 -&gt; times (3, 7, 11, .. 31) for features 0, 1.</i></td></tr>
+<tr><th id="995">995</th><td><i>    // Row 97 -&gt; times (3, 7, 11, .. 31) for features 2, 3.</i></td></tr>
+<tr><th id="996">996</th><td>    rhs_shmem2[threadIdx.y+<var>96</var>][threadIdx.x] = make_float2(rhs_pf0.w, rhs_pf1.w);</td></tr>
+<tr><th id="997">997</th><td></td></tr>
+<tr><th id="998">998</th><td>    <i>// LHS.</i></td></tr>
+<tr><th id="999">999</th><td><i>    // Row 0 (time 0) -&gt; features (0, 1), (4, 5), .. (28, 29), (32, 33), ..  (60, 61) .. (124, 125)</i></td></tr>
+<tr><th id="1000">1000</th><td><i>    // Row 1 (time 1) -&gt; features (0, 1), (4, 5), .. (28, 29), (32, 33), ..  (60, 61) .. (124, 125)</i></td></tr>
+<tr><th id="1001">1001</th><td><i>    // ...</i></td></tr>
+<tr><th id="1002">1002</th><td><i>    // Row 8 (time 0) -&gt; features (2, 3), (6, 7), .. (30, 31), (34, 35), ..  (62, 63) .. (126, 127)</i></td></tr>
+<tr><th id="1003">1003</th><td><i>    // Row 15 (time 7) -&gt; features (2, 3), (6, 7), .. (30, 31), (34, 35), ..  (62, 63) .. (126, 127)</i></td></tr>
+<tr><th id="1004">1004</th><td></td></tr>
+<tr><th id="1005">1005</th><td></td></tr>
+<tr><th id="1006">1006</th><td><u>#define add_vals(a_feat1, a_feat2, f1, f2, f3, f4)\</u></td></tr>
+<tr><th id="1007">1007</th><td><u>      results[0].x += a_feat1.x * f1.x;\</u></td></tr>
+<tr><th id="1008">1008</th><td><u>      results[1].x += a_feat1.x * f1.y;\</u></td></tr>
+<tr><th id="1009">1009</th><td><u>      results[2].x += a_feat1.x * f2.x;\</u></td></tr>
+<tr><th id="1010">1010</th><td><u>      results[3].x += a_feat1.x * f2.y;\</u></td></tr>
+<tr><th id="1011">1011</th><td><u>      results[4].x += a_feat1.x * f3.x;\</u></td></tr>
+<tr><th id="1012">1012</th><td><u>      results[5].x += a_feat1.x * f3.y;\</u></td></tr>
+<tr><th id="1013">1013</th><td><u>      results[6].x += a_feat1.x * f4.x;\</u></td></tr>
+<tr><th id="1014">1014</th><td><u>      results[7].x += a_feat1.x * f4.y;\</u></td></tr>
+<tr><th id="1015">1015</th><td><u>\</u></td></tr>
+<tr><th id="1016">1016</th><td><u>      results[0].y += a_feat1.y * f1.x;\</u></td></tr>
+<tr><th id="1017">1017</th><td><u>      results[1].y += a_feat1.y * f1.y;\</u></td></tr>
+<tr><th id="1018">1018</th><td><u>      results[2].y += a_feat1.y * f2.x;\</u></td></tr>
+<tr><th id="1019">1019</th><td><u>      results[3].y += a_feat1.y * f2.y;\</u></td></tr>
+<tr><th id="1020">1020</th><td><u>      results[4].y += a_feat1.y * f3.x;\</u></td></tr>
+<tr><th id="1021">1021</th><td><u>      results[5].y += a_feat1.y * f3.y;\</u></td></tr>
+<tr><th id="1022">1022</th><td><u>      results[6].y += a_feat1.y * f4.x;\</u></td></tr>
+<tr><th id="1023">1023</th><td><u>      results[7].y += a_feat1.y * f4.y;\</u></td></tr>
+<tr><th id="1024">1024</th><td><u>\</u></td></tr>
+<tr><th id="1025">1025</th><td><u>      results[0].z += a_feat2.x * f1.x;\</u></td></tr>
+<tr><th id="1026">1026</th><td><u>      results[1].z += a_feat2.x * f1.y;\</u></td></tr>
+<tr><th id="1027">1027</th><td><u>      results[2].z += a_feat2.x * f2.x;\</u></td></tr>
+<tr><th id="1028">1028</th><td><u>      results[3].z += a_feat2.x * f2.y;\</u></td></tr>
+<tr><th id="1029">1029</th><td><u>      results[4].z += a_feat2.x * f3.x;\</u></td></tr>
+<tr><th id="1030">1030</th><td><u>      results[5].z += a_feat2.x * f3.y;\</u></td></tr>
+<tr><th id="1031">1031</th><td><u>      results[6].z += a_feat2.x * f4.x;\</u></td></tr>
+<tr><th id="1032">1032</th><td><u>      results[7].z += a_feat2.x * f4.y;\</u></td></tr>
+<tr><th id="1033">1033</th><td><u>\</u></td></tr>
+<tr><th id="1034">1034</th><td><u>      results[0].w += a_feat2.y * f1.x;\</u></td></tr>
+<tr><th id="1035">1035</th><td><u>      results[1].w += a_feat2.y * f1.y;\</u></td></tr>
+<tr><th id="1036">1036</th><td><u>      results[2].w += a_feat2.y * f2.x;\</u></td></tr>
+<tr><th id="1037">1037</th><td><u>      results[3].w += a_feat2.y * f2.y;\</u></td></tr>
+<tr><th id="1038">1038</th><td><u>      results[4].w += a_feat2.y * f3.x;\</u></td></tr>
+<tr><th id="1039">1039</th><td><u>      results[5].w += a_feat2.y * f3.y;\</u></td></tr>
+<tr><th id="1040">1040</th><td><u>      results[6].w += a_feat2.y * f4.x;\</u></td></tr>
+<tr><th id="1041">1041</th><td><u>      results[7].w += a_feat2.y * f4.y;</u>\</td></tr>
+<tr><th id="1042">1042</th><td></td></tr>
+<tr><th id="1043">1043</th><td>    lhs_shmem2[threadIdx.y/<var>4</var>][threadIdx.x+(threadIdx.y%<var>4</var>)*<var>8</var>] = make_float2(lhs_pf0.x, lhs_pf0.y);</td></tr>
+<tr><th id="1044">1044</th><td>    lhs_shmem2[threadIdx.y/<var>4</var>+<var>8</var>][threadIdx.x+(threadIdx.y%<var>4</var>)*<var>8</var>] = make_float2(lhs_pf1.x, lhs_pf1.y);</td></tr>
+<tr><th id="1045">1045</th><td>    lhs_shmem2[threadIdx.y/<var>4</var>+<var>16</var>][threadIdx.x+(threadIdx.y%<var>4</var>)*<var>8</var>] = make_float2(lhs_pf2.x, lhs_pf2.y);</td></tr>
+<tr><th id="1046">1046</th><td>    lhs_shmem2[threadIdx.y/<var>4</var>+<var>24</var>][threadIdx.x+(threadIdx.y%<var>4</var>)*<var>8</var>] = make_float2(lhs_pf3.x, lhs_pf3.y);</td></tr>
+<tr><th id="1047">1047</th><td></td></tr>
+<tr><th id="1048">1048</th><td>    lhs_shmem2[threadIdx.y/<var>4</var> + <var>32</var>][threadIdx.x+(threadIdx.y%<var>4</var>)*<var>8</var>] = make_float2(lhs_pf0.z, lhs_pf0.w);</td></tr>
+<tr><th id="1049">1049</th><td>    lhs_shmem2[threadIdx.y/<var>4</var> + <var>40</var>][threadIdx.x+(threadIdx.y%<var>4</var>)*<var>8</var>] = make_float2(lhs_pf1.z, lhs_pf1.w);</td></tr>
+<tr><th id="1050">1050</th><td>    lhs_shmem2[threadIdx.y/<var>4</var> + <var>48</var>][threadIdx.x+(threadIdx.y%<var>4</var>)*<var>8</var>] = make_float2(lhs_pf2.z, lhs_pf2.w);</td></tr>
+<tr><th id="1051">1051</th><td>    lhs_shmem2[threadIdx.y/<var>4</var> + <var>56</var>][threadIdx.x+(threadIdx.y%<var>4</var>)*<var>8</var>] = make_float2(lhs_pf3.z, lhs_pf3.w);</td></tr>
+<tr><th id="1052">1052</th><td></td></tr>
+<tr><th id="1053">1053</th><td>    __syncthreads();</td></tr>
+<tr><th id="1054">1054</th><td></td></tr>
+<tr><th id="1055">1055</th><td>    <i>// Do the multiplies.</i></td></tr>
+<tr><th id="1056">1056</th><td>    <u>#pragma unroll</u></td></tr>
+<tr><th id="1057">1057</th><td>    <b>for</b> (<em>int</em> koff = <var>0</var>; koff &lt; <var>32</var>; koff ++) {</td></tr>
+<tr><th id="1058">1058</th><td>      float2 a3 = lhs_shmem2[koff][threadIdx.x + (threadIdx.y % <var>4</var>) * <var>8</var>];</td></tr>
+<tr><th id="1059">1059</th><td>      float2 a4 = lhs_shmem2[koff + <var>32</var>][threadIdx.x + (threadIdx.y % <var>4</var>) * <var>8</var>];</td></tr>
+<tr><th id="1060">1060</th><td></td></tr>
+<tr><th id="1061">1061</th><td>      <i>// first feature is at (threadIdx.y/4) * 8 last is at start + 8.</i></td></tr>
+<tr><th id="1062">1062</th><td>      <em>int</em> start_feature = (threadIdx.y / <var>4</var>) * <var>8</var>;</td></tr>
+<tr><th id="1063">1063</th><td></td></tr>
+<tr><th id="1064">1064</th><td>      float2 br1 = rhs_shmem2[start_feature/<var>2</var> +     (koff % <var>4</var>) * <var>32</var>][koff/<var>4</var>];</td></tr>
+<tr><th id="1065">1065</th><td>      float2 br2 = rhs_shmem2[start_feature/<var>2</var> + <var>1</var> + (koff % <var>4</var>) * <var>32</var>][koff/<var>4</var>];</td></tr>
+<tr><th id="1066">1066</th><td>      float2 br3 = rhs_shmem2[start_feature/<var>2</var> + <var>2</var> + (koff % <var>4</var>) * <var>32</var>][koff/<var>4</var>];</td></tr>
+<tr><th id="1067">1067</th><td>      float2 br4 = rhs_shmem2[start_feature/<var>2</var> + <var>3</var> + (koff % <var>4</var>) * <var>32</var>][koff/<var>4</var>];</td></tr>
+<tr><th id="1068">1068</th><td></td></tr>
+<tr><th id="1069">1069</th><td>      add_vals(a3, a4, br1, br2, br3, br4)</td></tr>
+<tr><th id="1070">1070</th><td>    }</td></tr>
+<tr><th id="1071">1071</th><td>    __syncthreads();</td></tr>
+<tr><th id="1072">1072</th><td>  } <i>// end loop over k</i></td></tr>
+<tr><th id="1073">1073</th><td></td></tr>
+<tr><th id="1074">1074</th><td>  __syncthreads();</td></tr>
+<tr><th id="1075">1075</th><td>  Index horiz_base = (threadIdx.y/<var>4</var>)*<var>8</var>+base_n;</td></tr>
+<tr><th id="1076">1076</th><td>  <b>if</b> (!CHECK_LHS_BOUNDARY &amp;&amp; !CHECK_RHS_BOUNDARY) {</td></tr>
+<tr><th id="1077">1077</th><td>    <b>for</b> (<em>int</em> i = <var>0</var>; i &lt; <var>8</var>; i++) {</td></tr>
+<tr><th id="1078">1078</th><td>      output(lhs_vert, horiz_base + i) = results[i].x;</td></tr>
+<tr><th id="1079">1079</th><td>      output(lhs_vert + <var>1</var>, horiz_base + i) = results[i].y;</td></tr>
+<tr><th id="1080">1080</th><td>      output(lhs_vert + <var>2</var>, horiz_base + i) = results[i].z;</td></tr>
+<tr><th id="1081">1081</th><td>      output(lhs_vert + <var>3</var>, horiz_base + i) = results[i].w;</td></tr>
+<tr><th id="1082">1082</th><td>    }</td></tr>
+<tr><th id="1083">1083</th><td>  } <b>else</b> <b>if</b> (!CHECK_RHS_BOUNDARY) {</td></tr>
+<tr><th id="1084">1084</th><td>    <b>if</b> (lhs_vert + <var>3</var> &lt; m_size) {</td></tr>
+<tr><th id="1085">1085</th><td>      <b>for</b> (<em>int</em> i = <var>0</var>; i &lt; <var>8</var>; i++) {</td></tr>
+<tr><th id="1086">1086</th><td>        output(lhs_vert, horiz_base + i) = results[i].x;</td></tr>
+<tr><th id="1087">1087</th><td>        output(lhs_vert + <var>1</var>, horiz_base + i) = results[i].y;</td></tr>
+<tr><th id="1088">1088</th><td>        output(lhs_vert + <var>2</var>, horiz_base + i) = results[i].z;</td></tr>
+<tr><th id="1089">1089</th><td>        output(lhs_vert + <var>3</var>, horiz_base + i) = results[i].w;</td></tr>
+<tr><th id="1090">1090</th><td>      }</td></tr>
+<tr><th id="1091">1091</th><td>    } <b>else</b> <b>if</b> (lhs_vert + <var>2</var> &lt; m_size) {</td></tr>
+<tr><th id="1092">1092</th><td>      <b>for</b> (<em>int</em> i = <var>0</var>; i &lt; <var>8</var>; i++) {</td></tr>
+<tr><th id="1093">1093</th><td>        output(lhs_vert, horiz_base + i) = results[i].x;</td></tr>
+<tr><th id="1094">1094</th><td>        output(lhs_vert + <var>1</var>, horiz_base + i) = results[i].y;</td></tr>
+<tr><th id="1095">1095</th><td>        output(lhs_vert + <var>2</var>, horiz_base + i) = results[i].z;</td></tr>
+<tr><th id="1096">1096</th><td>      }</td></tr>
+<tr><th id="1097">1097</th><td>    } <b>else</b> <b>if</b> (lhs_vert + <var>1</var> &lt; m_size) {</td></tr>
+<tr><th id="1098">1098</th><td>      <b>for</b> (<em>int</em> i = <var>0</var>; i &lt; <var>8</var>; i++) {</td></tr>
+<tr><th id="1099">1099</th><td>        output(lhs_vert, horiz_base + i) = results[i].x;</td></tr>
+<tr><th id="1100">1100</th><td>        output(lhs_vert + <var>1</var>, horiz_base + i) = results[i].y;</td></tr>
+<tr><th id="1101">1101</th><td>      }</td></tr>
+<tr><th id="1102">1102</th><td>    } <b>else</b> <b>if</b> (lhs_vert  &lt; m_size) {</td></tr>
+<tr><th id="1103">1103</th><td>      <b>for</b> (<em>int</em> i = <var>0</var>; i &lt; <var>8</var>; i++) {</td></tr>
+<tr><th id="1104">1104</th><td>        output(lhs_vert, horiz_base + i) = results[i].x;</td></tr>
+<tr><th id="1105">1105</th><td>      }</td></tr>
+<tr><th id="1106">1106</th><td>    }</td></tr>
+<tr><th id="1107">1107</th><td>  } <b>else</b> <b>if</b> (!CHECK_LHS_BOUNDARY) {</td></tr>
+<tr><th id="1108">1108</th><td>    <i>// CHECK BOUNDARY_B</i></td></tr>
+<tr><th id="1109">1109</th><td>    <b>for</b> (<em>int</em> i = <var>0</var>; i &lt; <var>8</var>; i++) {</td></tr>
+<tr><th id="1110">1110</th><td>      <b>if</b> (horiz_base + i &lt; n_size) {</td></tr>
+<tr><th id="1111">1111</th><td>        output(lhs_vert, horiz_base + i) = results[i].x;</td></tr>
+<tr><th id="1112">1112</th><td>        output(lhs_vert + <var>1</var>, horiz_base + i) = results[i].y;</td></tr>
+<tr><th id="1113">1113</th><td>        output(lhs_vert + <var>2</var>, horiz_base + i) = results[i].z;</td></tr>
+<tr><th id="1114">1114</th><td>        output(lhs_vert + <var>3</var>, horiz_base + i) = results[i].w;</td></tr>
+<tr><th id="1115">1115</th><td>      }</td></tr>
+<tr><th id="1116">1116</th><td>    }</td></tr>
+<tr><th id="1117">1117</th><td>  } <b>else</b> {</td></tr>
+<tr><th id="1118">1118</th><td>    <i>// CHECK both boundaries.</i></td></tr>
+<tr><th id="1119">1119</th><td>    <b>for</b> (<em>int</em> i = <var>0</var>; i &lt; <var>8</var>; i++) {</td></tr>
+<tr><th id="1120">1120</th><td>      <b>if</b> (horiz_base + i &lt; n_size) {</td></tr>
+<tr><th id="1121">1121</th><td>        <b>if</b> (lhs_vert &lt; m_size)</td></tr>
+<tr><th id="1122">1122</th><td>          output(lhs_vert, horiz_base + i) = results[i].x;</td></tr>
+<tr><th id="1123">1123</th><td>        <b>if</b> (lhs_vert + <var>1</var> &lt; m_size)</td></tr>
+<tr><th id="1124">1124</th><td>          output(lhs_vert + <var>1</var>, horiz_base + i) = results[i].y;</td></tr>
+<tr><th id="1125">1125</th><td>        <b>if</b> (lhs_vert + <var>2</var> &lt; m_size)</td></tr>
+<tr><th id="1126">1126</th><td>          output(lhs_vert + <var>2</var>, horiz_base + i) = results[i].z;</td></tr>
+<tr><th id="1127">1127</th><td>        <b>if</b> (lhs_vert + <var>3</var> &lt; m_size)</td></tr>
+<tr><th id="1128">1128</th><td>          output(lhs_vert + <var>3</var>, horiz_base + i) = results[i].w;</td></tr>
+<tr><th id="1129">1129</th><td>      }</td></tr>
+<tr><th id="1130">1130</th><td>    }</td></tr>
+<tr><th id="1131">1131</th><td>  }</td></tr>
+<tr><th id="1132">1132</th><td>}</td></tr>
+<tr><th id="1133">1133</th><td></td></tr>
+<tr><th id="1134">1134</th><td></td></tr>
+<tr><th id="1135">1135</th><td><b>template</b>&lt;<b>typename</b> Index, <b>typename</b> LhsMapper,</td></tr>
+<tr><th id="1136">1136</th><td>         <b>typename</b> RhsMapper, <b>typename</b> OutputMapper&gt;</td></tr>
+<tr><th id="1137">1137</th><td>__global__ <em>void</em></td></tr>
+<tr><th id="1138">1138</th><td><u>#if defined(EIGEN_HIPCC)</u></td></tr>
+<tr><th id="1139">1139</th><td>__launch_bounds__(<var>256</var>, <var>1</var>)</td></tr>
+<tr><th id="1140">1140</th><td><u>#else</u></td></tr>
+<tr><th id="1141">1141</th><td>__launch_bounds__(<var>256</var>)</td></tr>
+<tr><th id="1142">1142</th><td><u>#endif</u></td></tr>
+<tr><th id="1143">1143</th><td>EigenFloatContractionKernel(<em>const</em> LhsMapper lhs, <em>const</em> RhsMapper rhs,</td></tr>
+<tr><th id="1144">1144</th><td>                       <em>const</em> OutputMapper output,</td></tr>
+<tr><th id="1145">1145</th><td>                       <em>const</em> Index m_size, <em>const</em> Index n_size, <em>const</em> Index k_size) {</td></tr>
+<tr><th id="1146">1146</th><td>  __shared__ float2 lhs_shmem[<var>64</var>*<var>32</var>];</td></tr>
+<tr><th id="1147">1147</th><td>  __shared__ float2 rhs_shmem[<var>128</var>*<var>8</var>];</td></tr>
+<tr><th id="1148">1148</th><td></td></tr>
+<tr><th id="1149">1149</th><td>  <b>typedef</b> float2 LHS_MEM[<var>64</var>][<var>32</var>];</td></tr>
+<tr><th id="1150">1150</th><td>  <b>typedef</b> float2 RHS_MEM[<var>128</var>][<var>8</var>];</td></tr>
+<tr><th id="1151">1151</th><td></td></tr>
+<tr><th id="1152">1152</th><td>  <em>const</em> Index m_block_idx = blockIdx.x;</td></tr>
+<tr><th id="1153">1153</th><td>  <em>const</em> Index n_block_idx = blockIdx.y;</td></tr>
+<tr><th id="1154">1154</th><td></td></tr>
+<tr><th id="1155">1155</th><td>  <em>const</em> Index base_m = <var>128</var> * m_block_idx;</td></tr>
+<tr><th id="1156">1156</th><td>  <em>const</em> Index base_n = <var>64</var> * n_block_idx;</td></tr>
+<tr><th id="1157">1157</th><td></td></tr>
+<tr><th id="1158">1158</th><td>  <em>bool</em> check_rhs = (base_n + <var>63</var>) &gt;= n_size;</td></tr>
+<tr><th id="1159">1159</th><td>  <em>bool</em> check_lhs128 = (base_m + <var>127</var>) &gt;= m_size;</td></tr>
+<tr><th id="1160">1160</th><td></td></tr>
+<tr><th id="1161">1161</th><td>  <b>if</b> (!check_rhs) {</td></tr>
+<tr><th id="1162">1162</th><td>    <b>if</b> (!check_lhs128) {</td></tr>
+<tr><th id="1163">1163</th><td>      <i>// &gt;= 128 rows left</i></td></tr>
+<tr><th id="1164">1164</th><td>      EigenFloatContractionKernelInternal&lt;Index, LhsMapper, RhsMapper, OutputMapper, <b>false</b>, <b>false</b>&gt;(</td></tr>
+<tr><th id="1165">1165</th><td>                     lhs, rhs, output, *((LHS_MEM *) lhs_shmem), *((RHS_MEM *) rhs_shmem), m_size, n_size, k_size, base_m, base_n);</td></tr>
+<tr><th id="1166">1166</th><td>    } <b>else</b> {</td></tr>
+<tr><th id="1167">1167</th><td>      EigenFloatContractionKernelInternal&lt;Index, LhsMapper, RhsMapper, OutputMapper, <b>true</b>, <b>false</b>&gt;(</td></tr>
+<tr><th id="1168">1168</th><td>                     lhs, rhs, output, *((LHS_MEM *) lhs_shmem), *((RHS_MEM *) rhs_shmem), m_size, n_size, k_size, base_m, base_n);</td></tr>
+<tr><th id="1169">1169</th><td>    }</td></tr>
+<tr><th id="1170">1170</th><td>  } <b>else</b> {</td></tr>
+<tr><th id="1171">1171</th><td>    <b>if</b> (!check_lhs128) {</td></tr>
+<tr><th id="1172">1172</th><td>      <i>// &gt;= 128 rows left</i></td></tr>
+<tr><th id="1173">1173</th><td>      EigenFloatContractionKernelInternal&lt;Index, LhsMapper, RhsMapper, OutputMapper, <b>false</b>, <b>true</b>&gt;(</td></tr>
+<tr><th id="1174">1174</th><td>                     lhs, rhs, output, *((LHS_MEM *) lhs_shmem), *((RHS_MEM *) rhs_shmem), m_size, n_size, k_size, base_m, base_n);</td></tr>
+<tr><th id="1175">1175</th><td>    } <b>else</b> {</td></tr>
+<tr><th id="1176">1176</th><td>      EigenFloatContractionKernelInternal&lt;Index, LhsMapper, RhsMapper, OutputMapper, <b>true</b>, <b>true</b>&gt;(</td></tr>
+<tr><th id="1177">1177</th><td>                     lhs, rhs, output, *((LHS_MEM *) lhs_shmem), *((RHS_MEM *) rhs_shmem), m_size, n_size, k_size, base_m, base_n);</td></tr>
+<tr><th id="1178">1178</th><td>    }</td></tr>
+<tr><th id="1179">1179</th><td>  }</td></tr>
+<tr><th id="1180">1180</th><td>}</td></tr>
+<tr><th id="1181">1181</th><td></td></tr>
+<tr><th id="1182">1182</th><td><b>template</b>&lt;<b>typename</b> Index, <b>typename</b> LhsMapper,</td></tr>
+<tr><th id="1183">1183</th><td>         <b>typename</b> RhsMapper, <b>typename</b> OutputMapper&gt;</td></tr>
+<tr><th id="1184">1184</th><td>__global__ <em>void</em></td></tr>
+<tr><th id="1185">1185</th><td><u>#if defined(EIGEN_HIPCC)</u></td></tr>
+<tr><th id="1186">1186</th><td>__launch_bounds__(<var>256</var>, <var>1</var>)</td></tr>
+<tr><th id="1187">1187</th><td><u>#else</u></td></tr>
+<tr><th id="1188">1188</th><td>__launch_bounds__(<var>256</var>)</td></tr>
+<tr><th id="1189">1189</th><td><u>#endif</u></td></tr>
+<tr><th id="1190">1190</th><td>EigenFloatContractionKernel16x16(<em>const</em> LhsMapper lhs, <em>const</em> RhsMapper rhs,</td></tr>
+<tr><th id="1191">1191</th><td>                       <em>const</em> OutputMapper output,</td></tr>
+<tr><th id="1192">1192</th><td>                       <em>const</em> Index m_size, <em>const</em> Index n_size, <em>const</em> Index k_size) {</td></tr>
+<tr><th id="1193">1193</th><td>  __shared__ float2 lhs_shmem[<var>32</var>][<var>16</var>];</td></tr>
+<tr><th id="1194">1194</th><td>  __shared__ float2 rhs_shmem[<var>64</var>][<var>8</var>];</td></tr>
+<tr><th id="1195">1195</th><td></td></tr>
+<tr><th id="1196">1196</th><td>  <em>const</em> Index m_block_idx = blockIdx.x;</td></tr>
+<tr><th id="1197">1197</th><td>  <em>const</em> Index n_block_idx = blockIdx.y;</td></tr>
+<tr><th id="1198">1198</th><td></td></tr>
+<tr><th id="1199">1199</th><td>  <em>const</em> Index base_m = <var>64</var> * m_block_idx;</td></tr>
+<tr><th id="1200">1200</th><td>  <em>const</em> Index base_n = <var>64</var> * n_block_idx;</td></tr>
+<tr><th id="1201">1201</th><td></td></tr>
+<tr><th id="1202">1202</th><td>  <b>if</b> (base_m + <var>63</var> &lt; m_size) {</td></tr>
+<tr><th id="1203">1203</th><td>    <b>if</b> (base_n + <var>63</var> &lt; n_size) {</td></tr>
+<tr><th id="1204">1204</th><td>      EigenFloatContractionKernelInternal16x16&lt;Index, LhsMapper, RhsMapper, OutputMapper, <b>false</b>, <b>false</b>&gt;(lhs, rhs, output, lhs_shmem, rhs_shmem, m_size, n_size, k_size, base_m, base_n);</td></tr>
+<tr><th id="1205">1205</th><td>    } <b>else</b> {</td></tr>
+<tr><th id="1206">1206</th><td>      EigenFloatContractionKernelInternal16x16&lt;Index, LhsMapper, RhsMapper, OutputMapper, <b>false</b>, <b>true</b>&gt;(lhs, rhs, output, lhs_shmem, rhs_shmem, m_size, n_size, k_size, base_m, base_n);</td></tr>
+<tr><th id="1207">1207</th><td>    }</td></tr>
+<tr><th id="1208">1208</th><td>  } <b>else</b> {</td></tr>
+<tr><th id="1209">1209</th><td>    <b>if</b> (base_n + <var>63</var> &lt; n_size) {</td></tr>
+<tr><th id="1210">1210</th><td>      EigenFloatContractionKernelInternal16x16&lt;Index, LhsMapper, RhsMapper, OutputMapper, <b>true</b>, <b>false</b>&gt;(lhs, rhs, output, lhs_shmem, rhs_shmem, m_size, n_size, k_size, base_m, base_n);</td></tr>
+<tr><th id="1211">1211</th><td>    } <b>else</b> {</td></tr>
+<tr><th id="1212">1212</th><td>      EigenFloatContractionKernelInternal16x16&lt;Index, LhsMapper, RhsMapper, OutputMapper, <b>true</b>, <b>true</b>&gt;(lhs, rhs, output, lhs_shmem, rhs_shmem, m_size, n_size, k_size, base_m, base_n);</td></tr>
+<tr><th id="1213">1213</th><td>    }</td></tr>
+<tr><th id="1214">1214</th><td>  }</td></tr>
+<tr><th id="1215">1215</th><td>}</td></tr>
+<tr><th id="1216">1216</th><td></td></tr>
+<tr><th id="1217">1217</th><td></td></tr>
+<tr><th id="1218">1218</th><td><b>template</b>&lt;<b>typename</b> Indices, <b>typename</b> LeftArgType, <b>typename</b> RightArgType, <b>typename</b> OutputKernelType&gt;</td></tr>
+<tr><th id="1219">1219</th><td><b>struct</b> TensorEvaluator&lt;<em>const</em> TensorContractionOp&lt;Indices, LeftArgType, RightArgType, OutputKernelType&gt;, GpuDevice&gt; :</td></tr>
+<tr><th id="1220">1220</th><td>    <b>public</b> TensorContractionEvaluatorBase&lt;TensorEvaluator&lt;<em>const</em> TensorContractionOp&lt;Indices, LeftArgType, RightArgType, OutputKernelType&gt;, GpuDevice&gt; &gt; {</td></tr>
+<tr><th id="1221">1221</th><td></td></tr>
+<tr><th id="1222">1222</th><td>  <b>typedef</b> GpuDevice Device;</td></tr>
+<tr><th id="1223">1223</th><td></td></tr>
+<tr><th id="1224">1224</th><td>  <b>typedef</b> TensorEvaluator&lt;<em>const</em> TensorContractionOp&lt;Indices, LeftArgType, RightArgType, OutputKernelType&gt;, Device&gt; Self;</td></tr>
+<tr><th id="1225">1225</th><td>  <b>typedef</b> TensorContractionEvaluatorBase&lt;Self&gt; Base;</td></tr>
+<tr><th id="1226">1226</th><td></td></tr>
+<tr><th id="1227">1227</th><td>  <b>typedef</b> TensorContractionOp&lt;Indices, LeftArgType, RightArgType, OutputKernelType&gt; XprType;</td></tr>
+<tr><th id="1228">1228</th><td>  <b>typedef</b> <b>typename</b> internal::remove_const&lt;<b>typename</b> XprType::Scalar&gt;::type Scalar;</td></tr>
+<tr><th id="1229">1229</th><td>  <b>typedef</b> <b>typename</b> XprType::Index Index;</td></tr>
+<tr><th id="1230">1230</th><td>  <b>typedef</b> <b>typename</b> XprType::CoeffReturnType CoeffReturnType;</td></tr>
+<tr><th id="1231">1231</th><td>  <b>typedef</b> <b>typename</b> PacketType&lt;CoeffReturnType, GpuDevice&gt;::type PacketReturnType;</td></tr>
+<tr><th id="1232">1232</th><td></td></tr>
+<tr><th id="1233">1233</th><td>  <b>enum</b> {</td></tr>
+<tr><th id="1234">1234</th><td>    Layout = TensorEvaluator&lt;LeftArgType, Device&gt;::Layout,</td></tr>
+<tr><th id="1235">1235</th><td>  };</td></tr>
+<tr><th id="1236">1236</th><td></td></tr>
+<tr><th id="1237">1237</th><td>  <i>// Most of the code is assuming that both input tensors are ColMajor. If the</i></td></tr>
+<tr><th id="1238">1238</th><td><i>  // inputs are RowMajor, we will "cheat" by swapping the LHS and RHS:</i></td></tr>
+<tr><th id="1239">1239</th><td><i>  // If we want to compute A * B = C, where A is LHS and B is RHS, the code</i></td></tr>
+<tr><th id="1240">1240</th><td><i>  // will pretend B is LHS and A is RHS.</i></td></tr>
+<tr><th id="1241">1241</th><td>  <b>typedef</b> <b>typename</b> internal::conditional&lt;</td></tr>
+<tr><th id="1242">1242</th><td>    <b>static_cast</b>&lt;<em>int</em>&gt;(Layout) == <b>static_cast</b>&lt;<em>int</em>&gt;(ColMajor), LeftArgType, RightArgType&gt;::type EvalLeftArgType;</td></tr>
+<tr><th id="1243">1243</th><td>  <b>typedef</b> <b>typename</b> internal::conditional&lt;</td></tr>
+<tr><th id="1244">1244</th><td>    <b>static_cast</b>&lt;<em>int</em>&gt;(Layout) == <b>static_cast</b>&lt;<em>int</em>&gt;(ColMajor), RightArgType, LeftArgType&gt;::type EvalRightArgType;</td></tr>
+<tr><th id="1245">1245</th><td></td></tr>
+<tr><th id="1246">1246</th><td>  <em>static</em> <em>const</em> <em>int</em> LDims =</td></tr>
+<tr><th id="1247">1247</th><td>      internal::array_size&lt;<b>typename</b> TensorEvaluator&lt;EvalLeftArgType, Device&gt;::Dimensions&gt;::value;</td></tr>
+<tr><th id="1248">1248</th><td>  <em>static</em> <em>const</em> <em>int</em> RDims =</td></tr>
+<tr><th id="1249">1249</th><td>      internal::array_size&lt;<b>typename</b> TensorEvaluator&lt;EvalRightArgType, Device&gt;::Dimensions&gt;::value;</td></tr>
+<tr><th id="1250">1250</th><td>  <em>static</em> <em>const</em> <em>int</em> ContractDims = internal::array_size&lt;Indices&gt;::value;</td></tr>
+<tr><th id="1251">1251</th><td></td></tr>
+<tr><th id="1252">1252</th><td>  <b>typedef</b> array&lt;Index, LDims&gt; left_dim_mapper_t;</td></tr>
+<tr><th id="1253">1253</th><td>  <b>typedef</b> array&lt;Index, RDims&gt; right_dim_mapper_t;</td></tr>
+<tr><th id="1254">1254</th><td></td></tr>
+<tr><th id="1255">1255</th><td>  <b>typedef</b> array&lt;Index, ContractDims&gt; contract_t;</td></tr>
+<tr><th id="1256">1256</th><td>  <b>typedef</b> array&lt;Index, LDims - ContractDims&gt; left_nocontract_t;</td></tr>
+<tr><th id="1257">1257</th><td>  <b>typedef</b> array&lt;Index, RDims - ContractDims&gt; right_nocontract_t;</td></tr>
+<tr><th id="1258">1258</th><td></td></tr>
+<tr><th id="1259">1259</th><td>  <em>static</em> <em>const</em> <em>int</em> NumDims = LDims + RDims - <var>2</var> * ContractDims;</td></tr>
+<tr><th id="1260">1260</th><td></td></tr>
+<tr><th id="1261">1261</th><td>  <b>typedef</b> DSizes&lt;Index, NumDims&gt; Dimensions;</td></tr>
+<tr><th id="1262">1262</th><td></td></tr>
+<tr><th id="1263">1263</th><td>  <i>// typedefs needed in evalTo</i></td></tr>
+<tr><th id="1264">1264</th><td>  <b>typedef</b> <b>typename</b> internal::remove_const&lt;<b>typename</b> EvalLeftArgType::Scalar&gt;::type LhsScalar;</td></tr>
+<tr><th id="1265">1265</th><td>  <b>typedef</b> <b>typename</b> internal::remove_const&lt;<b>typename</b> EvalRightArgType::Scalar&gt;::type RhsScalar;</td></tr>
+<tr><th id="1266">1266</th><td></td></tr>
+<tr><th id="1267">1267</th><td>  <b>typedef</b> TensorEvaluator&lt;EvalLeftArgType, Device&gt; LeftEvaluator;</td></tr>
+<tr><th id="1268">1268</th><td>  <b>typedef</b> TensorEvaluator&lt;EvalRightArgType, Device&gt; RightEvaluator;</td></tr>
+<tr><th id="1269">1269</th><td></td></tr>
+<tr><th id="1270">1270</th><td>  <b>typedef</b> <b>typename</b> LeftEvaluator::Dimensions LeftDimensions;</td></tr>
+<tr><th id="1271">1271</th><td>  <b>typedef</b> <b>typename</b> RightEvaluator::Dimensions RightDimensions;</td></tr>
+<tr><th id="1272">1272</th><td></td></tr>
+<tr><th id="1273">1273</th><td>  EIGEN_DEVICE_FUNC TensorEvaluator(<em>const</em> XprType&amp; op, <em>const</em> Device&amp; device) :</td></tr>
+<tr><th id="1274">1274</th><td>      Base(op, device)</td></tr>
+<tr><th id="1275">1275</th><td>  {</td></tr>
+<tr><th id="1276">1276</th><td>    EIGEN_STATIC_ASSERT( (internal::is_same&lt;OutputKernelType, <em>const</em> NoOpOutputKernel&gt;::value),</td></tr>
+<tr><th id="1277">1277</th><td>                          GPU_TENSOR_CONTRACTION_DOES_NOT_SUPPORT_OUTPUT_KERNELS);</td></tr>
+<tr><th id="1278">1278</th><td>  }</td></tr>
+<tr><th id="1279">1279</th><td></td></tr>
+<tr><th id="1280">1280</th><td>  <i>// We need to redefine this method to make nvcc happy</i></td></tr>
+<tr><th id="1281">1281</th><td>  EIGEN_DEVICE_FUNC EIGEN_STRONG_INLINE <em>bool</em> evalSubExprsIfNeeded(Scalar* data) {</td></tr>
+<tr><th id="1282">1282</th><td>    <b>this</b>-&gt;m_leftImpl.evalSubExprsIfNeeded(NULL);</td></tr>
+<tr><th id="1283">1283</th><td>    <b>this</b>-&gt;m_rightImpl.evalSubExprsIfNeeded(NULL);</td></tr>
+<tr><th id="1284">1284</th><td>    <b>if</b> (data) {</td></tr>
+<tr><th id="1285">1285</th><td>      evalTo(data);</td></tr>
+<tr><th id="1286">1286</th><td>      <b>return</b> <b>false</b>;</td></tr>
+<tr><th id="1287">1287</th><td>    } <b>else</b> {</td></tr>
+<tr><th id="1288">1288</th><td>      <b>this</b>-&gt;m_result = <b>static_cast</b>&lt;Scalar *&gt;(<b>this</b>-&gt;m_device.allocate(<b>this</b>-&gt;dimensions().TotalSize() * <b>sizeof</b>(Scalar)));</td></tr>
+<tr><th id="1289">1289</th><td>      evalTo(<b>this</b>-&gt;m_result);</td></tr>
+<tr><th id="1290">1290</th><td>      <b>return</b> <b>true</b>;</td></tr>
+<tr><th id="1291">1291</th><td>    }</td></tr>
+<tr><th id="1292">1292</th><td>  }</td></tr>
+<tr><th id="1293">1293</th><td></td></tr>
+<tr><th id="1294">1294</th><td>  <em>void</em> evalTo(Scalar* buffer) <em>const</em> {</td></tr>
+<tr><th id="1295">1295</th><td>    <b>if</b> (<b>this</b>-&gt;m_lhs_inner_dim_contiguous) {</td></tr>
+<tr><th id="1296">1296</th><td>      <b>if</b> (<b>this</b>-&gt;m_rhs_inner_dim_contiguous) {</td></tr>
+<tr><th id="1297">1297</th><td>        <b>if</b> (<b>this</b>-&gt;m_rhs_inner_dim_reordered) {</td></tr>
+<tr><th id="1298">1298</th><td>          evalTyped&lt;<b>true</b>, <b>true</b>, <b>true</b>, Unaligned&gt;(buffer);</td></tr>
+<tr><th id="1299">1299</th><td>        }</td></tr>
+<tr><th id="1300">1300</th><td>        <b>else</b> {</td></tr>
+<tr><th id="1301">1301</th><td>          evalTyped&lt;<b>true</b>, <b>true</b>, <b>false</b>, Unaligned&gt;(buffer);</td></tr>
+<tr><th id="1302">1302</th><td>        }</td></tr>
+<tr><th id="1303">1303</th><td>      }</td></tr>
+<tr><th id="1304">1304</th><td>      <b>else</b> {</td></tr>
+<tr><th id="1305">1305</th><td>       <b>if</b> (<b>this</b>-&gt;m_rhs_inner_dim_reordered) {</td></tr>
+<tr><th id="1306">1306</th><td>          evalTyped&lt;<b>true</b>, <b>false</b>, <b>true</b>, Unaligned&gt;(buffer);</td></tr>
+<tr><th id="1307">1307</th><td>        }</td></tr>
+<tr><th id="1308">1308</th><td>        <b>else</b> {</td></tr>
+<tr><th id="1309">1309</th><td>          evalTyped&lt;<b>true</b>, <b>false</b>, <b>false</b>, Unaligned&gt;(buffer);</td></tr>
+<tr><th id="1310">1310</th><td>        }</td></tr>
+<tr><th id="1311">1311</th><td>      }</td></tr>
+<tr><th id="1312">1312</th><td>    }</td></tr>
+<tr><th id="1313">1313</th><td>    <b>else</b> {</td></tr>
+<tr><th id="1314">1314</th><td>      <b>if</b> (<b>this</b>-&gt;m_rhs_inner_dim_contiguous) {</td></tr>
+<tr><th id="1315">1315</th><td>        <b>if</b> (<b>this</b>-&gt;m_rhs_inner_dim_reordered) {</td></tr>
+<tr><th id="1316">1316</th><td>          evalTyped&lt;<b>false</b>, <b>true</b>, <b>true</b>, Unaligned&gt;(buffer);</td></tr>
+<tr><th id="1317">1317</th><td>        }</td></tr>
+<tr><th id="1318">1318</th><td>        <b>else</b> {</td></tr>
+<tr><th id="1319">1319</th><td>          evalTyped&lt;<b>false</b>, <b>true</b>, <b>false</b>, Unaligned&gt;(buffer);</td></tr>
+<tr><th id="1320">1320</th><td>        }</td></tr>
+<tr><th id="1321">1321</th><td>      }</td></tr>
+<tr><th id="1322">1322</th><td>      <b>else</b> {</td></tr>
+<tr><th id="1323">1323</th><td>       <b>if</b> (<b>this</b>-&gt;m_rhs_inner_dim_reordered) {</td></tr>
+<tr><th id="1324">1324</th><td>          evalTyped&lt;<b>false</b>, <b>false</b>, <b>true</b>, Unaligned&gt;(buffer);</td></tr>
+<tr><th id="1325">1325</th><td>        }</td></tr>
+<tr><th id="1326">1326</th><td>        <b>else</b> {</td></tr>
+<tr><th id="1327">1327</th><td>          evalTyped&lt;<b>false</b>, <b>false</b>, <b>false</b>, Unaligned&gt;(buffer);</td></tr>
+<tr><th id="1328">1328</th><td>        }</td></tr>
+<tr><th id="1329">1329</th><td>      }</td></tr>
+<tr><th id="1330">1330</th><td>    }</td></tr>
+<tr><th id="1331">1331</th><td>  }</td></tr>
+<tr><th id="1332">1332</th><td></td></tr>
+<tr><th id="1333">1333</th><td>  <b>template</b> &lt;<b>typename</b> LhsScalar, <b>typename</b> RhsScalar, <b>typename</b> Index, <b>typename</b> LhsMapper, <b>typename</b> RhsMapper, <b>typename</b> OutputMapper&gt; <b>struct</b> LaunchKernels {</td></tr>
+<tr><th id="1334">1334</th><td>    <em>static</em> <em>void</em> Run(<em>const</em> LhsMapper&amp; lhs, <em>const</em> RhsMapper&amp; rhs, <em>const</em> OutputMapper&amp; output, Index m, Index n, Index k, <em>const</em> GpuDevice&amp; device) {</td></tr>
+<tr><th id="1335">1335</th><td>    <em>const</em> Index m_blocks = (m + <var>63</var>) / <var>64</var>;</td></tr>
+<tr><th id="1336">1336</th><td>    <em>const</em> Index n_blocks = (n + <var>63</var>) / <var>64</var>;</td></tr>
+<tr><th id="1337">1337</th><td>    <em>const</em> dim3 num_blocks(m_blocks, n_blocks, <var>1</var>);</td></tr>
+<tr><th id="1338">1338</th><td>    <em>const</em> dim3 block_size(<var>8</var>, <var>8</var>, <var>8</var>);</td></tr>
+<tr><th id="1339">1339</th><td>    LAUNCH_GPU_KERNEL((EigenContractionKernel&lt;Scalar, Index, LhsMapper, RhsMapper, OutputMapper&gt;), num_blocks, block_size, <var>0</var>, device, lhs, rhs, output, m, n, k);</td></tr>
+<tr><th id="1340">1340</th><td>    }</td></tr>
+<tr><th id="1341">1341</th><td>  };</td></tr>
+<tr><th id="1342">1342</th><td></td></tr>
+<tr><th id="1343">1343</th><td>  <b>template</b> &lt;<b>typename</b> Index, <b>typename</b> LhsMapper, <b>typename</b> RhsMapper, <b>typename</b> OutputMapper&gt; <b>struct</b> LaunchKernels&lt;<em>float</em>, <em>float</em>, Index, LhsMapper, RhsMapper, OutputMapper&gt; {</td></tr>
+<tr><th id="1344">1344</th><td>    <em>static</em> <em>void</em> Run(<em>const</em> LhsMapper&amp; lhs, <em>const</em> RhsMapper&amp; rhs, <em>const</em> OutputMapper&amp; output, Index m, Index n, Index k, <em>const</em> GpuDevice&amp; device) {</td></tr>
+<tr><th id="1345">1345</th><td>      <b>if</b> (m &lt; <var>768</var> || n &lt; <var>768</var>) {</td></tr>
+<tr><th id="1346">1346</th><td>        <em>const</em> Index m_blocks = (m + <var>63</var>) / <var>64</var>;</td></tr>
+<tr><th id="1347">1347</th><td>        <em>const</em> Index n_blocks = (n + <var>63</var>) / <var>64</var>;</td></tr>
+<tr><th id="1348">1348</th><td>        <em>const</em> dim3 num_blocks(m_blocks, n_blocks, <var>1</var>);</td></tr>
+<tr><th id="1349">1349</th><td>        <em>const</em> dim3 block_size(<var>16</var>, <var>16</var>, <var>1</var>);</td></tr>
+<tr><th id="1350">1350</th><td>        LAUNCH_GPU_KERNEL((EigenFloatContractionKernel16x16&lt;Index, LhsMapper, RhsMapper, OutputMapper&gt;), num_blocks, block_size, <var>0</var>, device, lhs, rhs, output, m, n, k);</td></tr>
+<tr><th id="1351">1351</th><td>      } <b>else</b> {</td></tr>
+<tr><th id="1352">1352</th><td>        <em>const</em> Index m_blocks = (m + <var>127</var>) / <var>128</var>;</td></tr>
+<tr><th id="1353">1353</th><td>        <em>const</em> Index n_blocks = (n + <var>63</var>) / <var>64</var>;</td></tr>
+<tr><th id="1354">1354</th><td>        <em>const</em> dim3 num_blocks(m_blocks, n_blocks, <var>1</var>);</td></tr>
+<tr><th id="1355">1355</th><td>        <em>const</em> dim3 block_size(<var>8</var>, <var>32</var>, <var>1</var>);</td></tr>
+<tr><th id="1356">1356</th><td>        LAUNCH_GPU_KERNEL((EigenFloatContractionKernel&lt;Index, LhsMapper, RhsMapper, OutputMapper&gt;), num_blocks, block_size, <var>0</var>, device, lhs, rhs, output, m, n, k);</td></tr>
+<tr><th id="1357">1357</th><td>      }</td></tr>
+<tr><th id="1358">1358</th><td>    }</td></tr>
+<tr><th id="1359">1359</th><td>  };</td></tr>
+<tr><th id="1360">1360</th><td></td></tr>
+<tr><th id="1361">1361</th><td>  <b>template</b> &lt;<em>bool</em> lhs_inner_dim_contiguous, <em>bool</em> rhs_inner_dim_contiguous, <em>bool</em> rhs_inner_dim_reordered, <em>int</em> Alignment&gt;</td></tr>
+<tr><th id="1362">1362</th><td>  <em>void</em> evalTyped(Scalar* buffer) <em>const</em> {</td></tr>
+<tr><th id="1363">1363</th><td>    <i>// columns in left side, rows in right side</i></td></tr>
+<tr><th id="1364">1364</th><td>    <em>const</em> Index k = <b>this</b>-&gt;m_k_size;</td></tr>
+<tr><th id="1365">1365</th><td>    EIGEN_UNUSED_VARIABLE(k)</td></tr>
+<tr><th id="1366">1366</th><td></td></tr>
+<tr><th id="1367">1367</th><td>    <i>// rows in left side</i></td></tr>
+<tr><th id="1368">1368</th><td>    <em>const</em> Index m = <b>this</b>-&gt;m_i_size;</td></tr>
+<tr><th id="1369">1369</th><td></td></tr>
+<tr><th id="1370">1370</th><td>    <i>// columns in right side</i></td></tr>
+<tr><th id="1371">1371</th><td>    <em>const</em> Index n = <b>this</b>-&gt;m_j_size;</td></tr>
+<tr><th id="1372">1372</th><td></td></tr>
+<tr><th id="1373">1373</th><td>    <i>// zero out the result buffer (which must be of size at least m * n * sizeof(Scalar)</i></td></tr>
+<tr><th id="1374">1374</th><td>    <b>this</b>-&gt;m_device.memset(buffer, <var>0</var>, m * n * <b>sizeof</b>(Scalar));</td></tr>
+<tr><th id="1375">1375</th><td></td></tr>
+<tr><th id="1376">1376</th><td>    <b>typedef</b> internal::TensorContractionInputMapper&lt;LhsScalar, Index, internal::Lhs,</td></tr>
+<tr><th id="1377">1377</th><td>                                                   LeftEvaluator, left_nocontract_t,</td></tr>
+<tr><th id="1378">1378</th><td>                                                   contract_t, <var>4</var>,</td></tr>
+<tr><th id="1379">1379</th><td>                                                   lhs_inner_dim_contiguous,</td></tr>
+<tr><th id="1380">1380</th><td>                                                   <b>false</b>, Unaligned&gt; LhsMapper;</td></tr>
+<tr><th id="1381">1381</th><td></td></tr>
+<tr><th id="1382">1382</th><td>    <b>typedef</b> internal::TensorContractionInputMapper&lt;RhsScalar, Index, internal::Rhs,</td></tr>
+<tr><th id="1383">1383</th><td>                                                   RightEvaluator, right_nocontract_t,</td></tr>
+<tr><th id="1384">1384</th><td>                                                   contract_t, <var>4</var>,</td></tr>
+<tr><th id="1385">1385</th><td>                                                   rhs_inner_dim_contiguous,</td></tr>
+<tr><th id="1386">1386</th><td>                                                   rhs_inner_dim_reordered, Unaligned&gt; RhsMapper;</td></tr>
+<tr><th id="1387">1387</th><td></td></tr>
+<tr><th id="1388">1388</th><td>    <b>typedef</b> internal::blas_data_mapper&lt;Scalar, Index, ColMajor&gt; OutputMapper;</td></tr>
+<tr><th id="1389">1389</th><td></td></tr>
+<tr><th id="1390">1390</th><td></td></tr>
+<tr><th id="1391">1391</th><td>    <i>// initialize data mappers</i></td></tr>
+<tr><th id="1392">1392</th><td>    LhsMapper lhs(<b>this</b>-&gt;m_leftImpl, <b>this</b>-&gt;m_left_nocontract_strides, <b>this</b>-&gt;m_i_strides,</td></tr>
+<tr><th id="1393">1393</th><td>                  <b>this</b>-&gt;m_left_contracting_strides, <b>this</b>-&gt;m_k_strides);</td></tr>
+<tr><th id="1394">1394</th><td></td></tr>
+<tr><th id="1395">1395</th><td>    RhsMapper rhs(<b>this</b>-&gt;m_rightImpl, <b>this</b>-&gt;m_right_nocontract_strides, <b>this</b>-&gt;m_j_strides,</td></tr>
+<tr><th id="1396">1396</th><td>                  <b>this</b>-&gt;m_right_contracting_strides, <b>this</b>-&gt;m_k_strides);</td></tr>
+<tr><th id="1397">1397</th><td></td></tr>
+<tr><th id="1398">1398</th><td>    OutputMapper output(buffer, m);</td></tr>
+<tr><th id="1399">1399</th><td></td></tr>
+<tr><th id="1400">1400</th><td><u>#if defined(EIGEN_USE_HIP)</u></td></tr>
+<tr><th id="1401">1401</th><td>    setGpuSharedMemConfig(hipSharedMemBankSizeEightByte);</td></tr>
+<tr><th id="1402">1402</th><td><u>#else</u></td></tr>
+<tr><th id="1403">1403</th><td>    setGpuSharedMemConfig(cudaSharedMemBankSizeEightByte);</td></tr>
+<tr><th id="1404">1404</th><td><u>#endif</u></td></tr>
+<tr><th id="1405">1405</th><td></td></tr>
+<tr><th id="1406">1406</th><td>    LaunchKernels&lt;LhsScalar, RhsScalar, Index, LhsMapper, RhsMapper, OutputMapper&gt;::Run(lhs, rhs, output,  m, n, k, <b>this</b>-&gt;m_device);</td></tr>
+<tr><th id="1407">1407</th><td>  }</td></tr>
+<tr><th id="1408">1408</th><td>};</td></tr>
+<tr><th id="1409">1409</th><td></td></tr>
+<tr><th id="1410">1410</th><td>} <i>// end namespace Eigen</i></td></tr>
+<tr><th id="1411">1411</th><td></td></tr>
+<tr><th id="1412">1412</th><td><u>#<span data-ppcond="15">endif</span> // EIGEN_USE_GPU and EIGEN_GPUCC</u></td></tr>
+<tr><th id="1413">1413</th><td><u>#<span data-ppcond="12">endif</span> // EIGEN_CXX11_TENSOR_TENSOR_CONTRACTION_GPU_H</u></td></tr>
+<tr><th id="1414">1414</th><td></td></tr>
+</table><hr/><p id='footer'>
+Generated while processing <a href='../../../../../../_deps/tflite-src/tensorflow/lite/kernels/activations.cc.html'>halide/build-apps/_deps/tflite-src/tensorflow/lite/kernels/activations.cc</a><br/>Generated on <em>2021-Aug-05</em> from project halide revision <em>v12.0.1</em>

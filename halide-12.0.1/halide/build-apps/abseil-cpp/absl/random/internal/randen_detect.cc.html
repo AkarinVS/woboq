@@ -1,0 +1,237 @@
+<!doctype html>
+<html>
+<head>
+<meta name="viewport" content="width=device-width, initial-scale=1.0"><title>randen_detect.cc source code [halide/build-apps/abseil-cpp/absl/random/internal/randen_detect.cc] - Woboq Code Browser</title>
+<link rel="stylesheet" href="../../../../../.././data/qtcreator.css" title="QtCreator"/>
+<link rel="alternate stylesheet" href="../../../../../.././data/kdevelop.css" title="KDevelop"/>
+<script type="text/javascript" src="../../../../../.././data/jquery/jquery.min.js"></script>
+<script type="text/javascript" src="../../../../../.././data/jquery/jquery-ui.min.js"></script>
+<script>var file = 'halide/build-apps/abseil-cpp/absl/random/internal/randen_detect.cc'; var root_path = '../../../../../..'; var data_path = '../../../../../.././data'; var ecma_script_api_version = 2;</script>
+<script src='../../../../../.././data/codebrowser.js'></script>
+</head>
+<body><div id='header'><h1 id='breadcrumb'><span>Browse the source code of </span><a href='../../../../..'>halide</a>/<a href='../../../..'>build-apps</a>/<a href='../../..'>abseil-cpp</a>/<a href='../..'>absl</a>/<a href='..'>random</a>/<a href='./'>internal</a>/<a href='randen_detect.cc.html'>randen_detect.cc</a></h1></div>
+<hr/><div id='content'><table class="code">
+<tr><th id="1">1</th><td><i>// Copyright 2017 The Abseil Authors.</i></td></tr>
+<tr><th id="2">2</th><td><i>//</i></td></tr>
+<tr><th id="3">3</th><td><i>// Licensed under the Apache License, Version 2.0 (the"License");</i></td></tr>
+<tr><th id="4">4</th><td><i>// you may not use this file except in compliance with the License.</i></td></tr>
+<tr><th id="5">5</th><td><i>// You may obtain a copy of the License at</i></td></tr>
+<tr><th id="6">6</th><td><i>//</i></td></tr>
+<tr><th id="7">7</th><td><i>//      <a href="https://www.apache.org/licenses/LICENSE-2.0">https://www.apache.org/licenses/LICENSE-2.0</a></i></td></tr>
+<tr><th id="8">8</th><td><i>//</i></td></tr>
+<tr><th id="9">9</th><td><i>// Unless required by applicable law or agreed to in writing, software</i></td></tr>
+<tr><th id="10">10</th><td><i>// distributed under the License is distributed on an"AS IS" BASIS,</i></td></tr>
+<tr><th id="11">11</th><td><i>// WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.</i></td></tr>
+<tr><th id="12">12</th><td><i>// See the License for the specific language governing permissions and</i></td></tr>
+<tr><th id="13">13</th><td><i>// limitations under the License.</i></td></tr>
+<tr><th id="14">14</th><td><i></i></td></tr>
+<tr><th id="15">15</th><td><i>// HERMETIC NOTE: The randen_hwaes target must not introduce duplicate</i></td></tr>
+<tr><th id="16">16</th><td><i>// symbols from arbitrary system and other headers, since it may be built</i></td></tr>
+<tr><th id="17">17</th><td><i>// with different flags from other targets, using different levels of</i></td></tr>
+<tr><th id="18">18</th><td><i>// optimization, potentially introducing ODR violations.</i></td></tr>
+<tr><th id="19">19</th><td></td></tr>
+<tr><th id="20">20</th><td><u>#include <a href="randen_detect.h.html">"absl/random/internal/randen_detect.h"</a></u></td></tr>
+<tr><th id="21">21</th><td></td></tr>
+<tr><th id="22">22</th><td><u>#include &lt;cstdint&gt;</u></td></tr>
+<tr><th id="23">23</th><td><u>#include &lt;cstring&gt;</u></td></tr>
+<tr><th id="24">24</th><td></td></tr>
+<tr><th id="25">25</th><td><u>#include <a href="platform.h.html">"absl/random/internal/platform.h"</a></u></td></tr>
+<tr><th id="26">26</th><td></td></tr>
+<tr><th id="27">27</th><td><u>#<span data-ppcond="27">if</span> defined(<a class="macro" href="platform.h.html#63" data-ref="_M/ABSL_ARCH_X86_64">ABSL_ARCH_X86_64</a>)</u></td></tr>
+<tr><th id="28">28</th><td><u>#define <dfn class="macro" id="_M/ABSL_INTERNAL_USE_X86_CPUID" data-ref="_M/ABSL_INTERNAL_USE_X86_CPUID">ABSL_INTERNAL_USE_X86_CPUID</dfn></u></td></tr>
+<tr><th id="29">29</th><td><u>#<span data-ppcond="27">elif</span> defined(ABSL_ARCH_PPC) || defined(ABSL_ARCH_ARM) || \</u></td></tr>
+<tr><th id="30">30</th><td><u>    defined(ABSL_ARCH_AARCH64)</u></td></tr>
+<tr><th id="31">31</th><td><u>#if defined(__ANDROID__)</u></td></tr>
+<tr><th id="32">32</th><td><u>#define ABSL_INTERNAL_USE_ANDROID_GETAUXVAL</u></td></tr>
+<tr><th id="33">33</th><td><u>#define ABSL_INTERNAL_USE_GETAUXVAL</u></td></tr>
+<tr><th id="34">34</th><td><u>#elif defined(__linux__)</u></td></tr>
+<tr><th id="35">35</th><td><u>#define ABSL_INTERNAL_USE_LINUX_GETAUXVAL</u></td></tr>
+<tr><th id="36">36</th><td><u>#define ABSL_INTERNAL_USE_GETAUXVAL</u></td></tr>
+<tr><th id="37">37</th><td><u>#endif</u></td></tr>
+<tr><th id="38">38</th><td><u>#<span data-ppcond="27">endif</span></u></td></tr>
+<tr><th id="39">39</th><td></td></tr>
+<tr><th id="40">40</th><td><u>#<span data-ppcond="40">if</span> defined(<a class="macro" href="#28" data-ref="_M/ABSL_INTERNAL_USE_X86_CPUID">ABSL_INTERNAL_USE_X86_CPUID</a>)</u></td></tr>
+<tr><th id="41">41</th><td><u>#<span data-ppcond="41">if</span> defined(<span class="macro" data-ref="_M/_WIN32">_WIN32</span>) || defined(<span class="macro" data-ref="_M/_WIN64">_WIN64</span>)</u></td></tr>
+<tr><th id="42">42</th><td><u>#include &lt;intrin.h&gt;  // NOLINT(build/include_order)</u></td></tr>
+<tr><th id="43">43</th><td><u>#pragma intrinsic(__cpuid)</u></td></tr>
+<tr><th id="44">44</th><td><u>#<span data-ppcond="41">else</span></u></td></tr>
+<tr><th id="45">45</th><td><i  data-doc="__cpuid">// MSVC-equivalent __cpuid intrinsic function.</i></td></tr>
+<tr><th id="46">46</th><td><em>static</em> <em>void</em> <dfn class="tu decl def fn" id="__cpuid" title='__cpuid' data-type='void __cpuid(int * cpu_info, int info_type)' data-ref="__cpuid" data-ref-filename="__cpuid">__cpuid</dfn>(<em>int</em> <dfn class="local col1 decl" id="1cpu_info" title='cpu_info' data-type='int *' data-ref="1cpu_info" data-ref-filename="1cpu_info">cpu_info</dfn>[<var>4</var>], <em>int</em> <dfn class="local col2 decl" id="2info_type" title='info_type' data-type='int' data-ref="2info_type" data-ref-filename="2info_type">info_type</dfn>) {</td></tr>
+<tr><th id="47">47</th><td>  <b>__asm__</b> <em>volatile</em>(<q>"cpuid \n\t"</q></td></tr>
+<tr><th id="48">48</th><td>                   : <q>"=a"</q>(<a class="local col1 ref" href="#1cpu_info" title='cpu_info' data-ref="1cpu_info" data-ref-filename="1cpu_info">cpu_info</a>[<var>0</var>]), <q>"=b"</q>(<a class="local col1 ref" href="#1cpu_info" title='cpu_info' data-ref="1cpu_info" data-ref-filename="1cpu_info">cpu_info</a>[<var>1</var>]), <q>"=c"</q>(<a class="local col1 ref" href="#1cpu_info" title='cpu_info' data-ref="1cpu_info" data-ref-filename="1cpu_info">cpu_info</a>[<var>2</var>]),</td></tr>
+<tr><th id="49">49</th><td>                     <q>"=d"</q>(<a class="local col1 ref" href="#1cpu_info" title='cpu_info' data-ref="1cpu_info" data-ref-filename="1cpu_info">cpu_info</a>[<var>3</var>])</td></tr>
+<tr><th id="50">50</th><td>                   : <q>"a"</q>(<a class="local col2 ref" href="#2info_type" title='info_type' data-ref="2info_type" data-ref-filename="2info_type">info_type</a>), <q>"c"</q>(<var>0</var>));</td></tr>
+<tr><th id="51">51</th><td>}</td></tr>
+<tr><th id="52">52</th><td><u>#<span data-ppcond="41">endif</span></u></td></tr>
+<tr><th id="53">53</th><td><u>#<span data-ppcond="40">endif</span>  // ABSL_INTERNAL_USE_X86_CPUID</u></td></tr>
+<tr><th id="54">54</th><td></td></tr>
+<tr><th id="55">55</th><td><i>// On linux, just use the c-library getauxval call.</i></td></tr>
+<tr><th id="56">56</th><td><u>#<span data-ppcond="56">if</span> defined(<span class="macro" data-ref="_M/ABSL_INTERNAL_USE_LINUX_GETAUXVAL">ABSL_INTERNAL_USE_LINUX_GETAUXVAL</span>)</u></td></tr>
+<tr><th id="57">57</th><td></td></tr>
+<tr><th id="58">58</th><td><b>extern</b> <q>"C"</q> <em>unsigned</em> <em>long</em> getauxval(<em>unsigned</em> <em>long</em> type);  <i>// NOLINT(runtime/int)</i></td></tr>
+<tr><th id="59">59</th><td></td></tr>
+<tr><th id="60">60</th><td><em>static</em> uint32_t GetAuxval(uint32_t hwcap_type) {</td></tr>
+<tr><th id="61">61</th><td>  <b>return</b> <b>static_cast</b>&lt;uint32_t&gt;(getauxval(hwcap_type));</td></tr>
+<tr><th id="62">62</th><td>}</td></tr>
+<tr><th id="63">63</th><td></td></tr>
+<tr><th id="64">64</th><td><u>#<span data-ppcond="56">endif</span></u></td></tr>
+<tr><th id="65">65</th><td></td></tr>
+<tr><th id="66">66</th><td><i>// On android, probe the system's C library for getauxval().</i></td></tr>
+<tr><th id="67">67</th><td><i>// This is the same technique used by the android NDK cpu features library</i></td></tr>
+<tr><th id="68">68</th><td><i>// as well as the google open-source cpu_features library.</i></td></tr>
+<tr><th id="69">69</th><td><i>//</i></td></tr>
+<tr><th id="70">70</th><td><i>// TODO(absl-team): Consider implementing a fallback of directly reading</i></td></tr>
+<tr><th id="71">71</th><td><i>// /proc/self/auxval.</i></td></tr>
+<tr><th id="72">72</th><td><u>#<span data-ppcond="72">if</span> defined(<span class="macro" data-ref="_M/ABSL_INTERNAL_USE_ANDROID_GETAUXVAL">ABSL_INTERNAL_USE_ANDROID_GETAUXVAL</span>)</u></td></tr>
+<tr><th id="73">73</th><td><u>#include &lt;dlfcn.h&gt;</u></td></tr>
+<tr><th id="74">74</th><td></td></tr>
+<tr><th id="75">75</th><td><em>static</em> uint32_t GetAuxval(uint32_t hwcap_type) {</td></tr>
+<tr><th id="76">76</th><td>  <i>// NOLINTNEXTLINE(runtime/int)</i></td></tr>
+<tr><th id="77">77</th><td>  <b>typedef</b> <em>unsigned</em> <em>long</em> (*getauxval_func_t)(<em>unsigned</em> <em>long</em>);</td></tr>
+<tr><th id="78">78</th><td></td></tr>
+<tr><th id="79">79</th><td>  dlerror();  <i>// Cleaning error state before calling dlopen.</i></td></tr>
+<tr><th id="80">80</th><td>  <em>void</em>* libc_handle = dlopen(<q>"libc.so"</q>, RTLD_NOW);</td></tr>
+<tr><th id="81">81</th><td>  <b>if</b> (!libc_handle) {</td></tr>
+<tr><th id="82">82</th><td>    <b>return</b> <var>0</var>;</td></tr>
+<tr><th id="83">83</th><td>  }</td></tr>
+<tr><th id="84">84</th><td>  uint32_t result = <var>0</var>;</td></tr>
+<tr><th id="85">85</th><td>  <em>void</em>* sym = dlsym(libc_handle, <q>"getauxval"</q>);</td></tr>
+<tr><th id="86">86</th><td>  <b>if</b> (sym) {</td></tr>
+<tr><th id="87">87</th><td>    getauxval_func_t func;</td></tr>
+<tr><th id="88">88</th><td>    memcpy(&amp;func, &amp;sym, <b>sizeof</b>(func));</td></tr>
+<tr><th id="89">89</th><td>    result = <b>static_cast</b>&lt;uint32_t&gt;((*func)(hwcap_type));</td></tr>
+<tr><th id="90">90</th><td>  }</td></tr>
+<tr><th id="91">91</th><td>  dlclose(libc_handle);</td></tr>
+<tr><th id="92">92</th><td>  <b>return</b> result;</td></tr>
+<tr><th id="93">93</th><td>}</td></tr>
+<tr><th id="94">94</th><td></td></tr>
+<tr><th id="95">95</th><td><u>#<span data-ppcond="72">endif</span></u></td></tr>
+<tr><th id="96">96</th><td></td></tr>
+<tr><th id="97">97</th><td><b>namespace</b> <span class="namespace">absl</span> {</td></tr>
+<tr><th id="98">98</th><td><a class="macro" href="../../base/config.h.html#125" title="inline namespace lts_2020_02_25 {" data-ref="_M/ABSL_NAMESPACE_BEGIN">ABSL_NAMESPACE_BEGIN</a></td></tr>
+<tr><th id="99">99</th><td><b>namespace</b> <span class="namespace">random_internal</span> {</td></tr>
+<tr><th id="100">100</th><td></td></tr>
+<tr><th id="101">101</th><td><i>// The default return at the end of the function might be unreachable depending</i></td></tr>
+<tr><th id="102">102</th><td><i>// on the configuration. Ignore that warning.</i></td></tr>
+<tr><th id="103">103</th><td><u>#<span data-ppcond="103">if</span> defined(<span class="macro" data-ref="_M/__clang__">__clang__</span>)</u></td></tr>
+<tr><th id="104">104</th><td><u>#pragma clang diagnostic push</u></td></tr>
+<tr><th id="105">105</th><td><u>#pragma clang diagnostic ignored "-Wunreachable-code-return"</u></td></tr>
+<tr><th id="106">106</th><td><u>#<span data-ppcond="103">endif</span></u></td></tr>
+<tr><th id="107">107</th><td></td></tr>
+<tr><th id="108">108</th><td><i>// CPUSupportsRandenHwAes returns whether the CPU is a microarchitecture</i></td></tr>
+<tr><th id="109">109</th><td><i>// which supports the crpyto/aes instructions or extensions necessary to use the</i></td></tr>
+<tr><th id="110">110</th><td><i>// accelerated RandenHwAes implementation.</i></td></tr>
+<tr><th id="111">111</th><td><i>//</i></td></tr>
+<tr><th id="112">112</th><td><i>// 1. For x86 it is sufficient to use the CPUID instruction to detect whether</i></td></tr>
+<tr><th id="113">113</th><td><i>//    the cpu supports AES instructions. Done.</i></td></tr>
+<tr><th id="114">114</th><td><i>//</i></td></tr>
+<tr><th id="115">115</th><td><i>// Fon non-x86 it is much more complicated.</i></td></tr>
+<tr><th id="116">116</th><td><i>//</i></td></tr>
+<tr><th id="117">117</th><td><i>// 2. When ABSL_INTERNAL_USE_GETAUXVAL is defined, use getauxval() (either</i></td></tr>
+<tr><th id="118">118</th><td><i>//    the direct c-library version, or the android probing version which loads</i></td></tr>
+<tr><th id="119">119</th><td><i>//    libc), and read the hardware capability bits.</i></td></tr>
+<tr><th id="120">120</th><td><i>//    This is based on the technique used by boringssl uses to detect</i></td></tr>
+<tr><th id="121">121</th><td><i>//    cpu capabilities, and should allow us to enable crypto in the android</i></td></tr>
+<tr><th id="122">122</th><td><i>//    builds where it is supported.</i></td></tr>
+<tr><th id="123">123</th><td><i>//</i></td></tr>
+<tr><th id="124">124</th><td><i>// 3. Use the default for the compiler architecture.</i></td></tr>
+<tr><th id="125">125</th><td><i>//</i></td></tr>
+<tr><th id="126">126</th><td></td></tr>
+<tr><th id="127">127</th><td><em>bool</em> <dfn class="decl def fn" id="_ZN4absl14lts_2020_02_2515random_internal22CPUSupportsRandenHwAesEv" title='absl::lts_2020_02_25::random_internal::CPUSupportsRandenHwAes' data-ref="_ZN4absl14lts_2020_02_2515random_internal22CPUSupportsRandenHwAesEv" data-ref-filename="_ZN4absl14lts_2020_02_2515random_internal22CPUSupportsRandenHwAesEv">CPUSupportsRandenHwAes</dfn>() {</td></tr>
+<tr><th id="128">128</th><td><u>#<span data-ppcond="128">if</span> defined(<a class="macro" href="#28" data-ref="_M/ABSL_INTERNAL_USE_X86_CPUID">ABSL_INTERNAL_USE_X86_CPUID</a>)</u></td></tr>
+<tr><th id="129">129</th><td>  <i>// 1. For x86: Use CPUID to detect the required AES instruction set.</i></td></tr>
+<tr><th id="130">130</th><td>  <em>int</em> <dfn class="local col3 decl" id="3regs" title='regs' data-type='int [4]' data-ref="3regs" data-ref-filename="3regs">regs</dfn>[<var>4</var>];</td></tr>
+<tr><th id="131">131</th><td>  <a class="tu ref fn" href="#__cpuid" title='__cpuid' data-use='c' data-ref="__cpuid" data-ref-filename="__cpuid">__cpuid</a>(<b>reinterpret_cast</b>&lt;<em>int</em>*&gt;(<a class="local col3 ref" href="#3regs" title='regs' data-ref="3regs" data-ref-filename="3regs">regs</a>), <var>1</var>);</td></tr>
+<tr><th id="132">132</th><td>  <b>return</b> <a class="local col3 ref" href="#3regs" title='regs' data-ref="3regs" data-ref-filename="3regs">regs</a>[<var>2</var>] &amp; (<var>1</var> &lt;&lt; <var>25</var>);  <i>// AES</i></td></tr>
+<tr><th id="133">133</th><td></td></tr>
+<tr><th id="134">134</th><td><u>#<span data-ppcond="128">elif</span> defined(ABSL_INTERNAL_USE_GETAUXVAL)</u></td></tr>
+<tr><th id="135">135</th><td>  <i>// 2. Use getauxval() to read the hardware bits and determine</i></td></tr>
+<tr><th id="136">136</th><td><i>  // cpu capabilities.</i></td></tr>
+<tr><th id="137">137</th><td></td></tr>
+<tr><th id="138">138</th><td><u>#define AT_HWCAP 16</u></td></tr>
+<tr><th id="139">139</th><td><u>#define AT_HWCAP2 26</u></td></tr>
+<tr><th id="140">140</th><td><u>#if defined(ABSL_ARCH_PPC)</u></td></tr>
+<tr><th id="141">141</th><td>  <i>// For Power / PPC: Expect that the cpu supports VCRYPTO</i></td></tr>
+<tr><th id="142">142</th><td><i>  // See <a href="https://members.openpowerfoundation.org/document/dl/576">https://members.openpowerfoundation.org/document/dl/576</a></i></td></tr>
+<tr><th id="143">143</th><td><i>  // VCRYPTO should be present in POWER8 &gt;= 2.07.</i></td></tr>
+<tr><th id="144">144</th><td><i>  // Uses Linux kernel constants from arch/powerpc/include/uapi/asm/cputable.h</i></td></tr>
+<tr><th id="145">145</th><td>  <em>static</em> <em>const</em> uint32_t kVCRYPTO = <var>0x02000000</var>;</td></tr>
+<tr><th id="146">146</th><td>  <em>const</em> uint32_t hwcap = GetAuxval(AT_HWCAP2);</td></tr>
+<tr><th id="147">147</th><td>  <b>return</b> (hwcap &amp; kVCRYPTO) != <var>0</var>;</td></tr>
+<tr><th id="148">148</th><td></td></tr>
+<tr><th id="149">149</th><td><u>#elif defined(ABSL_ARCH_ARM)</u></td></tr>
+<tr><th id="150">150</th><td>  <i>// For ARM: Require crypto+neon</i></td></tr>
+<tr><th id="151">151</th><td><i>  // <a href="http://infocenter.arm.com/help/index.jsp?topic=/com.arm.doc.ddi0500f/CIHBIBBA.html">http://infocenter.arm.com/help/index.jsp?topic=/com.arm.doc.ddi0500f/CIHBIBBA.html</a></i></td></tr>
+<tr><th id="152">152</th><td><i>  // Uses Linux kernel constants from arch/arm64/include/asm/hwcap.h</i></td></tr>
+<tr><th id="153">153</th><td>  <em>static</em> <em>const</em> uint32_t kNEON = <var>1</var> &lt;&lt; <var>12</var>;</td></tr>
+<tr><th id="154">154</th><td>  uint32_t hwcap = GetAuxval(AT_HWCAP);</td></tr>
+<tr><th id="155">155</th><td>  <b>if</b> ((hwcap &amp; kNEON) == <var>0</var>) {</td></tr>
+<tr><th id="156">156</th><td>    <b>return</b> <b>false</b>;</td></tr>
+<tr><th id="157">157</th><td>  }</td></tr>
+<tr><th id="158">158</th><td></td></tr>
+<tr><th id="159">159</th><td>  <i>// And use it again to detect AES.</i></td></tr>
+<tr><th id="160">160</th><td>  <em>static</em> <em>const</em> uint32_t kAES = <var>1</var> &lt;&lt; <var>0</var>;</td></tr>
+<tr><th id="161">161</th><td>  <em>const</em> uint32_t hwcap2 = GetAuxval(AT_HWCAP2);</td></tr>
+<tr><th id="162">162</th><td>  <b>return</b> (hwcap2 &amp; kAES) != <var>0</var>;</td></tr>
+<tr><th id="163">163</th><td></td></tr>
+<tr><th id="164">164</th><td><u>#elif defined(ABSL_ARCH_AARCH64)</u></td></tr>
+<tr><th id="165">165</th><td>  <i>// For AARCH64: Require crypto+neon</i></td></tr>
+<tr><th id="166">166</th><td><i>  // <a href="http://infocenter.arm.com/help/index.jsp?topic=/com.arm.doc.ddi0500f/CIHBIBBA.html">http://infocenter.arm.com/help/index.jsp?topic=/com.arm.doc.ddi0500f/CIHBIBBA.html</a></i></td></tr>
+<tr><th id="167">167</th><td>  <em>static</em> <em>const</em> uint32_t kNEON = <var>1</var> &lt;&lt; <var>1</var>;</td></tr>
+<tr><th id="168">168</th><td>  <em>static</em> <em>const</em> uint32_t kAES = <var>1</var> &lt;&lt; <var>3</var>;</td></tr>
+<tr><th id="169">169</th><td>  <em>const</em> uint32_t hwcap = GetAuxval(AT_HWCAP);</td></tr>
+<tr><th id="170">170</th><td>  <b>return</b> ((hwcap &amp; kNEON) != <var>0</var>) &amp;&amp; ((hwcap &amp; kAES) != <var>0</var>);</td></tr>
+<tr><th id="171">171</th><td><u>#endif</u></td></tr>
+<tr><th id="172">172</th><td></td></tr>
+<tr><th id="173">173</th><td><u>#else  // ABSL_INTERNAL_USE_GETAUXVAL</u></td></tr>
+<tr><th id="174">174</th><td>  <i>// 3. By default, assume that the compiler default.</i></td></tr>
+<tr><th id="175">175</th><td>  <b>return</b> ABSL_HAVE_ACCELERATED_AES ? <b>true</b> : <b>false</b>;</td></tr>
+<tr><th id="176">176</th><td></td></tr>
+<tr><th id="177">177</th><td><u>#<span data-ppcond="128">endif</span></u></td></tr>
+<tr><th id="178">178</th><td>  <i>// NOTE: There are some other techniques that may be worth trying:</i></td></tr>
+<tr><th id="179">179</th><td><i>  //</i></td></tr>
+<tr><th id="180">180</th><td><i>  // * Use an environment variable: ABSL_RANDOM_USE_HWAES</i></td></tr>
+<tr><th id="181">181</th><td><i>  //</i></td></tr>
+<tr><th id="182">182</th><td><i>  // * Rely on compiler-generated target-based dispatch.</i></td></tr>
+<tr><th id="183">183</th><td><i>  // Using x86/gcc it might look something like this:</i></td></tr>
+<tr><th id="184">184</th><td><i>  //</i></td></tr>
+<tr><th id="185">185</th><td><i>  // int __attribute__((target("aes"))) HasAes() { return 1; }</i></td></tr>
+<tr><th id="186">186</th><td><i>  // int __attribute__((target("default"))) HasAes() { return 0; }</i></td></tr>
+<tr><th id="187">187</th><td><i>  //</i></td></tr>
+<tr><th id="188">188</th><td><i>  // This does not work on all architecture/compiler combinations.</i></td></tr>
+<tr><th id="189">189</th><td><i>  //</i></td></tr>
+<tr><th id="190">190</th><td><i>  // * On Linux consider reading /proc/cpuinfo and/or /proc/self/auxv.</i></td></tr>
+<tr><th id="191">191</th><td><i>  // These files have lines which are easy to parse; for ARM/AARCH64 it is quite</i></td></tr>
+<tr><th id="192">192</th><td><i>  // easy to find the Features: line and extract aes / neon. Likewise for</i></td></tr>
+<tr><th id="193">193</th><td><i>  // PPC.</i></td></tr>
+<tr><th id="194">194</th><td><i>  //</i></td></tr>
+<tr><th id="195">195</th><td><i>  // * Fork a process and test for SIGILL:</i></td></tr>
+<tr><th id="196">196</th><td><i>  //</i></td></tr>
+<tr><th id="197">197</th><td><i>  // * Many architectures have instructions to read the ISA. Unfortunately</i></td></tr>
+<tr><th id="198">198</th><td><i>  //   most of those require that the code is running in ring 0 /</i></td></tr>
+<tr><th id="199">199</th><td><i>  //   protected-mode.</i></td></tr>
+<tr><th id="200">200</th><td><i>  //</i></td></tr>
+<tr><th id="201">201</th><td><i>  //   There are several examples. e.g. Valgrind detects PPC ISA 2.07:</i></td></tr>
+<tr><th id="202">202</th><td><i>  //   <a href="https://github.com/lu-zero/valgrind/blob/master/none/tests/ppc64/test_isa_2_07_part1.c">https://github.com/lu-zero/valgrind/blob/master/none/tests/ppc64/test_isa_2_07_part1.c</a></i></td></tr>
+<tr><th id="203">203</th><td><i>  //</i></td></tr>
+<tr><th id="204">204</th><td><i>  //   MRS &lt;Xt&gt;, ID_AA64ISAR0_EL1 ; Read ID_AA64ISAR0_EL1 into Xt</i></td></tr>
+<tr><th id="205">205</th><td><i>  //</i></td></tr>
+<tr><th id="206">206</th><td><i>  //   uint64_t val;</i></td></tr>
+<tr><th id="207">207</th><td><i>  //   __asm __volatile("mrs %0, id_aa64isar0_el1" :"=&amp;r" (val));</i></td></tr>
+<tr><th id="208">208</th><td><i>  //</i></td></tr>
+<tr><th id="209">209</th><td><i>  // * Use a CPUID-style heuristic database.</i></td></tr>
+<tr><th id="210">210</th><td><i>  //</i></td></tr>
+<tr><th id="211">211</th><td><i>  // * On Apple (__APPLE__), AES is available on Arm v8.</i></td></tr>
+<tr><th id="212">212</th><td><i>  //   <a href="https://stackoverflow.com/questions/45637888/how-to-determine-armv8-features-at-runtime-on-ios">https://stackoverflow.com/questions/45637888/how-to-determine-armv8-features-at-runtime-on-ios</a></i></td></tr>
+<tr><th id="213">213</th><td>}</td></tr>
+<tr><th id="214">214</th><td></td></tr>
+<tr><th id="215">215</th><td><u>#<span data-ppcond="215">if</span> defined(<span class="macro" data-ref="_M/__clang__">__clang__</span>)</u></td></tr>
+<tr><th id="216">216</th><td><u>#pragma clang diagnostic pop</u></td></tr>
+<tr><th id="217">217</th><td><u>#<span data-ppcond="215">endif</span></u></td></tr>
+<tr><th id="218">218</th><td></td></tr>
+<tr><th id="219">219</th><td>}  <i>// namespace random_internal</i></td></tr>
+<tr><th id="220">220</th><td><a class="macro" href="../../base/config.h.html#127" title="}" data-ref="_M/ABSL_NAMESPACE_END">ABSL_NAMESPACE_END</a></td></tr>
+<tr><th id="221">221</th><td>}  <i>// namespace absl</i></td></tr>
+<tr><th id="222">222</th><td></td></tr>
+</table><hr/><p id='footer'>
+Generated on <em>2021-Aug-05</em> from project halide revision <em>v12.0.1</em>

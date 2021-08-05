@@ -1,0 +1,151 @@
+<!doctype html>
+<html>
+<head>
+<meta name="viewport" content="width=device-width, initial-scale=1.0"><title>spectrogram.h source code [halide/build-apps/_deps/tflite-src/tensorflow/lite/kernels/internal/spectrogram.h] - Woboq Code Browser</title>
+<meta name="woboq:interestingDefinitions" content="tflite::internal::Spectrogram "/>
+<link rel="stylesheet" href="../../../../../../../.././data/qtcreator.css" title="QtCreator"/>
+<link rel="alternate stylesheet" href="../../../../../../../.././data/kdevelop.css" title="KDevelop"/>
+<script type="text/javascript" src="../../../../../../../.././data/jquery/jquery.min.js"></script>
+<script type="text/javascript" src="../../../../../../../.././data/jquery/jquery-ui.min.js"></script>
+<script>var file = 'halide/build-apps/_deps/tflite-src/tensorflow/lite/kernels/internal/spectrogram.h'; var root_path = '../../../../../../../..'; var data_path = '../../../../../../../.././data'; var ecma_script_api_version = 2;</script>
+<script src='../../../../../../../.././data/codebrowser.js'></script>
+</head>
+<body><div id='header'><h1 id='breadcrumb'><span>Browse the source code of </span><a href='../../../../../../..'>halide</a>/<a href='../../../../../..'>build-apps</a>/<a href='../../../../..'>_deps</a>/<a href='../../../..'>tflite-src</a>/<a href='../../..'>tensorflow</a>/<a href='../..'>lite</a>/<a href='..'>kernels</a>/<a href='./'>internal</a>/<a href='spectrogram.h.html'>spectrogram.h</a></h1></div>
+<hr/><div id='content'><table class="code">
+<tr><th id="1">1</th><td><i>/* Copyright 2018 The TensorFlow Authors. All Rights Reserved.</i></td></tr>
+<tr><th id="2">2</th><td><i></i></td></tr>
+<tr><th id="3">3</th><td><i>Licensed under the Apache License, Version 2.0 (the "License");</i></td></tr>
+<tr><th id="4">4</th><td><i>you may not use this file except in compliance with the License.</i></td></tr>
+<tr><th id="5">5</th><td><i>You may obtain a copy of the License at</i></td></tr>
+<tr><th id="6">6</th><td><i></i></td></tr>
+<tr><th id="7">7</th><td><i>    <a href="http://www.apache.org/licenses/LICENSE-2.0">http://www.apache.org/licenses/LICENSE-2.0</a></i></td></tr>
+<tr><th id="8">8</th><td><i></i></td></tr>
+<tr><th id="9">9</th><td><i>Unless required by applicable law or agreed to in writing, software</i></td></tr>
+<tr><th id="10">10</th><td><i>distributed under the License is distributed on an "AS IS" BASIS,</i></td></tr>
+<tr><th id="11">11</th><td><i>WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.</i></td></tr>
+<tr><th id="12">12</th><td><i>See the License for the specific language governing permissions and</i></td></tr>
+<tr><th id="13">13</th><td><i>limitations under the License.</i></td></tr>
+<tr><th id="14">14</th><td><i>==============================================================================*/</i></td></tr>
+<tr><th id="15">15</th><td><i></i></td></tr>
+<tr><th id="16">16</th><td><i>// Class for generating spectrogram slices from a waveform.</i></td></tr>
+<tr><th id="17">17</th><td><i>// Initialize() should be called before calls to other functions.  Once</i></td></tr>
+<tr><th id="18">18</th><td><i>// Initialize() has been called and returned true, The Compute*() functions can</i></td></tr>
+<tr><th id="19">19</th><td><i>// be called repeatedly with sequential input data (ie. the first element of the</i></td></tr>
+<tr><th id="20">20</th><td><i>// next input vector directly follows the last element of the previous input</i></td></tr>
+<tr><th id="21">21</th><td><i>// vector). Whenever enough audio samples are buffered to produce a</i></td></tr>
+<tr><th id="22">22</th><td><i>// new frame, it will be placed in output. Output is cleared on each</i></td></tr>
+<tr><th id="23">23</th><td><i>// call to Compute*(). This class is thread-unsafe, and should only be</i></td></tr>
+<tr><th id="24">24</th><td><i>// called from one thread at a time.</i></td></tr>
+<tr><th id="25">25</th><td><i>// With the default parameters, the output of this class should be very</i></td></tr>
+<tr><th id="26">26</th><td><i>// close to the results of the following MATLAB code:</i></td></tr>
+<tr><th id="27">27</th><td><i>// overlap_samples = window_length_samples - step_samples;</i></td></tr>
+<tr><th id="28">28</th><td><i>// window = hann(window_length_samples, 'periodic');</i></td></tr>
+<tr><th id="29">29</th><td><i>// S = abs(spectrogram(audio, window, overlap_samples)).^2;</i></td></tr>
+<tr><th id="30">30</th><td></td></tr>
+<tr><th id="31">31</th><td><u>#<span data-ppcond="31">ifndef</span> <span class="macro" data-ref="_M/TENSORFLOW_LITE_KERNELS_INTERNAL_SPECTROGRAM_H_">TENSORFLOW_LITE_KERNELS_INTERNAL_SPECTROGRAM_H_</span></u></td></tr>
+<tr><th id="32">32</th><td><u>#define <dfn class="macro" id="_M/TENSORFLOW_LITE_KERNELS_INTERNAL_SPECTROGRAM_H_" data-ref="_M/TENSORFLOW_LITE_KERNELS_INTERNAL_SPECTROGRAM_H_">TENSORFLOW_LITE_KERNELS_INTERNAL_SPECTROGRAM_H_</dfn></u></td></tr>
+<tr><th id="33">33</th><td></td></tr>
+<tr><th id="34">34</th><td><u>#include &lt;complex&gt;</u></td></tr>
+<tr><th id="35">35</th><td><u>#include &lt;deque&gt;</u></td></tr>
+<tr><th id="36">36</th><td><u>#include &lt;vector&gt;</u></td></tr>
+<tr><th id="37">37</th><td></td></tr>
+<tr><th id="38">38</th><td><u>#include <a href="../../../../third_party/fft2d/fft.h.html">"third_party/fft2d/fft.h"</a></u></td></tr>
+<tr><th id="39">39</th><td></td></tr>
+<tr><th id="40">40</th><td><b>namespace</b> <span class="namespace">tflite</span> {</td></tr>
+<tr><th id="41">41</th><td><b>namespace</b> <span class="namespace">internal</span> {</td></tr>
+<tr><th id="42">42</th><td></td></tr>
+<tr><th id="43">43</th><td><b>class</b> <dfn class="type def" id="tflite::internal::Spectrogram" title='tflite::internal::Spectrogram' data-ref="tflite::internal::Spectrogram" data-ref-filename="tflite..internal..Spectrogram">Spectrogram</dfn> {</td></tr>
+<tr><th id="44">44</th><td> <b>public</b>:</td></tr>
+<tr><th id="45">45</th><td>  <dfn class="decl def fn" id="_ZN6tflite8internal11SpectrogramC1Ev" title='tflite::internal::Spectrogram::Spectrogram' data-ref="_ZN6tflite8internal11SpectrogramC1Ev" data-ref-filename="_ZN6tflite8internal11SpectrogramC1Ev">Spectrogram</dfn>() : <a class="member field" href="#tflite::internal::Spectrogram::initialized_" title='tflite::internal::Spectrogram::initialized_' data-ref="tflite::internal::Spectrogram::initialized_" data-ref-filename="tflite..internal..Spectrogram..initialized_">initialized_</a>(<b>false</b>) {}</td></tr>
+<tr><th id="46">46</th><td>  <dfn class="decl def fn" id="_ZN6tflite8internal11SpectrogramD1Ev" title='tflite::internal::Spectrogram::~Spectrogram' data-ref="_ZN6tflite8internal11SpectrogramD1Ev" data-ref-filename="_ZN6tflite8internal11SpectrogramD1Ev">~Spectrogram</dfn>() {}</td></tr>
+<tr><th id="47">47</th><td></td></tr>
+<tr><th id="48">48</th><td>  <i>// Initializes the class with a given window length and step length</i></td></tr>
+<tr><th id="49">49</th><td><i>  // (both in samples). Internally a Hann window is used as the window</i></td></tr>
+<tr><th id="50">50</th><td><i>  // function. Returns true on success, after which calls to Process()</i></td></tr>
+<tr><th id="51">51</th><td><i>  // are possible. window_length must be greater than 1 and step</i></td></tr>
+<tr><th id="52">52</th><td><i>  // length must be greater than 0.</i></td></tr>
+<tr><th id="53">53</th><td>  <em>bool</em> <dfn class="decl fn" id="_ZN6tflite8internal11Spectrogram10InitializeEii" title='tflite::internal::Spectrogram::Initialize' data-ref="_ZN6tflite8internal11Spectrogram10InitializeEii" data-ref-filename="_ZN6tflite8internal11Spectrogram10InitializeEii">Initialize</dfn>(<em>int</em> <dfn class="local col0 decl" id="510window_length" title='window_length' data-type='int' data-ref="510window_length" data-ref-filename="510window_length">window_length</dfn>, <em>int</em> <dfn class="local col1 decl" id="511step_length" title='step_length' data-type='int' data-ref="511step_length" data-ref-filename="511step_length">step_length</dfn>);</td></tr>
+<tr><th id="54">54</th><td></td></tr>
+<tr><th id="55">55</th><td>  <i>// Initialize with an explicit window instead of a length.</i></td></tr>
+<tr><th id="56">56</th><td>  <em>bool</em> <dfn class="decl fn" id="_ZN6tflite8internal11Spectrogram10InitializeERKSt6vectorIdSaIdEEi" title='tflite::internal::Spectrogram::Initialize' data-ref="_ZN6tflite8internal11Spectrogram10InitializeERKSt6vectorIdSaIdEEi" data-ref-filename="_ZN6tflite8internal11Spectrogram10InitializeERKSt6vectorIdSaIdEEi">Initialize</dfn>(<em>const</em> <span class="namespace">std::</span><span class='type' title='std::vector' data-ref="std::vector" data-ref-filename="std..vector">vector</span>&lt;<em>double</em>&gt;&amp; <dfn class="local col2 decl" id="512window" title='window' data-type='const std::vector&lt;double&gt; &amp;' data-ref="512window" data-ref-filename="512window">window</dfn>, <em>int</em> <dfn class="local col3 decl" id="513step_length" title='step_length' data-type='int' data-ref="513step_length" data-ref-filename="513step_length">step_length</dfn>);</td></tr>
+<tr><th id="57">57</th><td></td></tr>
+<tr><th id="58">58</th><td>  <i>// Processes an arbitrary amount of audio data (contained in input)</i></td></tr>
+<tr><th id="59">59</th><td><i>  // to yield complex spectrogram frames. After a successful call to</i></td></tr>
+<tr><th id="60">60</th><td><i>  // Initialize(), Process() may be called repeatedly with new input data</i></td></tr>
+<tr><th id="61">61</th><td><i>  // each time.  The audio input is buffered internally, and the output</i></td></tr>
+<tr><th id="62">62</th><td><i>  // vector is populated with as many temporally-ordered spectral slices</i></td></tr>
+<tr><th id="63">63</th><td><i>  // as it is possible to generate from the input.  The output is cleared</i></td></tr>
+<tr><th id="64">64</th><td><i>  // on each call before the new frames (if any) are added.</i></td></tr>
+<tr><th id="65">65</th><td><i>  //</i></td></tr>
+<tr><th id="66">66</th><td><i>  // The template parameters can be float or double.</i></td></tr>
+<tr><th id="67">67</th><td>  <b>template</b> &lt;<b>class</b> InputSample, <b>class</b> OutputSample&gt;</td></tr>
+<tr><th id="68">68</th><td>  <em>bool</em> <dfn class="decl fn" id="_ZN6tflite8internal11Spectrogram25ComputeComplexSpectrogramERKSt6vectorIT_SaIS3_EEPS2_IS2_ISt7complexIT0_ESaISA_EESaISC_EE" title='tflite::internal::Spectrogram::ComputeComplexSpectrogram' data-ref="_ZN6tflite8internal11Spectrogram25ComputeComplexSpectrogramERKSt6vectorIT_SaIS3_EEPS2_IS2_ISt7complexIT0_ESaISA_EESaISC_EE" data-ref-filename="_ZN6tflite8internal11Spectrogram25ComputeComplexSpectrogramERKSt6vectorIT_SaIS3_EEPS2_IS2_ISt7complexIT0_ESaISA_EESaISC_EE">ComputeComplexSpectrogram</dfn>(</td></tr>
+<tr><th id="69">69</th><td>      <em>const</em> <span class="namespace">std::</span><span class='type' title='std::vector' data-ref="std::vector" data-ref-filename="std..vector">vector</span>&lt;InputSample&gt;&amp; <dfn class="local col4 decl" id="514input" title='input' data-type='const std::vector&lt;InputSample&gt; &amp;' data-ref="514input" data-ref-filename="514input">input</dfn>,</td></tr>
+<tr><th id="70">70</th><td>      <span class="namespace">std::</span><span class='type' title='std::vector' data-ref="std::vector" data-ref-filename="std..vector">vector</span>&lt;<span class="namespace">std::</span><span class='type' title='std::vector' data-ref="std::vector" data-ref-filename="std..vector">vector</span>&lt;<span class="namespace">std::</span><span class='type' title='std::complex' data-ref="std::complex" data-ref-filename="std..complex">complex</span>&lt;OutputSample&gt;&gt;&gt;* <dfn class="local col5 decl" id="515output" title='output' data-type='std::vector&lt;std::vector&lt;std::complex&lt;OutputSample&gt; &gt; &gt; *' data-ref="515output" data-ref-filename="515output">output</dfn>);</td></tr>
+<tr><th id="71">71</th><td></td></tr>
+<tr><th id="72">72</th><td>  <i>// This function works as the one above, but returns the power</i></td></tr>
+<tr><th id="73">73</th><td><i>  // (the L2 norm, or the squared magnitude) of each complex value.</i></td></tr>
+<tr><th id="74">74</th><td>  <b>template</b> &lt;<b>class</b> InputSample, <b>class</b> OutputSample&gt;</td></tr>
+<tr><th id="75">75</th><td>  <em>bool</em> <dfn class="decl fn" id="_ZN6tflite8internal11Spectrogram34ComputeSquaredMagnitudeSpectrogramERKSt6vectorIT_SaIS3_EEPS2_IS2_IT0_SaIS8_EESaISA_EE" title='tflite::internal::Spectrogram::ComputeSquaredMagnitudeSpectrogram' data-ref="_ZN6tflite8internal11Spectrogram34ComputeSquaredMagnitudeSpectrogramERKSt6vectorIT_SaIS3_EEPS2_IS2_IT0_SaIS8_EESaISA_EE" data-ref-filename="_ZN6tflite8internal11Spectrogram34ComputeSquaredMagnitudeSpectrogramERKSt6vectorIT_SaIS3_EEPS2_IS2_IT0_SaIS8_EESaISA_EE">ComputeSquaredMagnitudeSpectrogram</dfn>(</td></tr>
+<tr><th id="76">76</th><td>      <em>const</em> <span class="namespace">std::</span><span class='type' title='std::vector' data-ref="std::vector" data-ref-filename="std..vector">vector</span>&lt;InputSample&gt;&amp; <dfn class="local col6 decl" id="516input" title='input' data-type='const std::vector&lt;InputSample&gt; &amp;' data-ref="516input" data-ref-filename="516input">input</dfn>,</td></tr>
+<tr><th id="77">77</th><td>      <span class="namespace">std::</span><span class='type' title='std::vector' data-ref="std::vector" data-ref-filename="std..vector">vector</span>&lt;<span class="namespace">std::</span><span class='type' title='std::vector' data-ref="std::vector" data-ref-filename="std..vector">vector</span>&lt;OutputSample&gt;&gt;* <dfn class="local col7 decl" id="517output" title='output' data-type='std::vector&lt;std::vector&lt;OutputSample&gt; &gt; *' data-ref="517output" data-ref-filename="517output">output</dfn>);</td></tr>
+<tr><th id="78">78</th><td></td></tr>
+<tr><th id="79">79</th><td>  <i>// Return reference to the window function used internally.</i></td></tr>
+<tr><th id="80">80</th><td>  <em>const</em> <span class="namespace">std::</span><span class='type' title='std::vector' data-ref="std::vector" data-ref-filename="std..vector">vector</span>&lt;<em>double</em>&gt;&amp; <dfn class="decl def fn" id="_ZNK6tflite8internal11Spectrogram9GetWindowEv" title='tflite::internal::Spectrogram::GetWindow' data-ref="_ZNK6tflite8internal11Spectrogram9GetWindowEv" data-ref-filename="_ZNK6tflite8internal11Spectrogram9GetWindowEv">GetWindow</dfn>() <em>const</em> { <b>return</b> <a class="member field" href="#tflite::internal::Spectrogram::window_" title='tflite::internal::Spectrogram::window_' data-ref="tflite::internal::Spectrogram::window_" data-ref-filename="tflite..internal..Spectrogram..window_">window_</a>; }</td></tr>
+<tr><th id="81">81</th><td></td></tr>
+<tr><th id="82">82</th><td>  <i>// Return the number of frequency channels in the spectrogram.</i></td></tr>
+<tr><th id="83">83</th><td>  <em>int</em> <dfn class="decl def fn" id="_ZNK6tflite8internal11Spectrogram25output_frequency_channelsEv" title='tflite::internal::Spectrogram::output_frequency_channels' data-ref="_ZNK6tflite8internal11Spectrogram25output_frequency_channelsEv" data-ref-filename="_ZNK6tflite8internal11Spectrogram25output_frequency_channelsEv">output_frequency_channels</dfn>() <em>const</em> { <b>return</b> <a class="member field" href="#tflite::internal::Spectrogram::output_frequency_channels_" title='tflite::internal::Spectrogram::output_frequency_channels_' data-ref="tflite::internal::Spectrogram::output_frequency_channels_" data-ref-filename="tflite..internal..Spectrogram..output_frequency_channels_">output_frequency_channels_</a>; }</td></tr>
+<tr><th id="84">84</th><td></td></tr>
+<tr><th id="85">85</th><td> <b>private</b>:</td></tr>
+<tr><th id="86">86</th><td>  <b>template</b> &lt;<b>class</b> InputSample&gt;</td></tr>
+<tr><th id="87">87</th><td>  <em>bool</em> <dfn class="decl fn" id="_ZN6tflite8internal11Spectrogram22GetNextWindowOfSamplesERKSt6vectorIT_SaIS3_EEPi" title='tflite::internal::Spectrogram::GetNextWindowOfSamples' data-ref="_ZN6tflite8internal11Spectrogram22GetNextWindowOfSamplesERKSt6vectorIT_SaIS3_EEPi" data-ref-filename="_ZN6tflite8internal11Spectrogram22GetNextWindowOfSamplesERKSt6vectorIT_SaIS3_EEPi">GetNextWindowOfSamples</dfn>(<em>const</em> <span class="namespace">std::</span><span class='type' title='std::vector' data-ref="std::vector" data-ref-filename="std..vector">vector</span>&lt;InputSample&gt;&amp; <dfn class="local col8 decl" id="518input" title='input' data-type='const std::vector&lt;InputSample&gt; &amp;' data-ref="518input" data-ref-filename="518input">input</dfn>,</td></tr>
+<tr><th id="88">88</th><td>                              <em>int</em>* <dfn class="local col9 decl" id="519input_start" title='input_start' data-type='int *' data-ref="519input_start" data-ref-filename="519input_start">input_start</dfn>);</td></tr>
+<tr><th id="89">89</th><td>  <em>void</em> <dfn class="decl fn" id="_ZN6tflite8internal11Spectrogram14ProcessCoreFFTEv" title='tflite::internal::Spectrogram::ProcessCoreFFT' data-ref="_ZN6tflite8internal11Spectrogram14ProcessCoreFFTEv" data-ref-filename="_ZN6tflite8internal11Spectrogram14ProcessCoreFFTEv">ProcessCoreFFT</dfn>();</td></tr>
+<tr><th id="90">90</th><td></td></tr>
+<tr><th id="91">91</th><td>  <em>int</em> <dfn class="decl field" id="tflite::internal::Spectrogram::fft_length_" title='tflite::internal::Spectrogram::fft_length_' data-ref="tflite::internal::Spectrogram::fft_length_" data-ref-filename="tflite..internal..Spectrogram..fft_length_">fft_length_</dfn>;</td></tr>
+<tr><th id="92">92</th><td>  <em>int</em> <dfn class="decl field" id="tflite::internal::Spectrogram::output_frequency_channels_" title='tflite::internal::Spectrogram::output_frequency_channels_' data-ref="tflite::internal::Spectrogram::output_frequency_channels_" data-ref-filename="tflite..internal..Spectrogram..output_frequency_channels_">output_frequency_channels_</dfn>;</td></tr>
+<tr><th id="93">93</th><td>  <em>int</em> <dfn class="decl field" id="tflite::internal::Spectrogram::window_length_" title='tflite::internal::Spectrogram::window_length_' data-ref="tflite::internal::Spectrogram::window_length_" data-ref-filename="tflite..internal..Spectrogram..window_length_">window_length_</dfn>;</td></tr>
+<tr><th id="94">94</th><td>  <em>int</em> <dfn class="decl field" id="tflite::internal::Spectrogram::step_length_" title='tflite::internal::Spectrogram::step_length_' data-ref="tflite::internal::Spectrogram::step_length_" data-ref-filename="tflite..internal..Spectrogram..step_length_">step_length_</dfn>;</td></tr>
+<tr><th id="95">95</th><td>  <em>bool</em> <dfn class="decl field" id="tflite::internal::Spectrogram::initialized_" title='tflite::internal::Spectrogram::initialized_' data-ref="tflite::internal::Spectrogram::initialized_" data-ref-filename="tflite..internal..Spectrogram..initialized_">initialized_</dfn>;</td></tr>
+<tr><th id="96">96</th><td>  <em>int</em> <dfn class="decl field" id="tflite::internal::Spectrogram::samples_to_next_step_" title='tflite::internal::Spectrogram::samples_to_next_step_' data-ref="tflite::internal::Spectrogram::samples_to_next_step_" data-ref-filename="tflite..internal..Spectrogram..samples_to_next_step_">samples_to_next_step_</dfn>;</td></tr>
+<tr><th id="97">97</th><td></td></tr>
+<tr><th id="98">98</th><td>  <span class="namespace">std::</span><span class='type' title='std::vector' data-ref="std::vector" data-ref-filename="std..vector">vector</span>&lt;<em>double</em>&gt; <dfn class="decl field" id="tflite::internal::Spectrogram::window_" title='tflite::internal::Spectrogram::window_' data-ref="tflite::internal::Spectrogram::window_" data-ref-filename="tflite..internal..Spectrogram..window_">window_</dfn>;</td></tr>
+<tr><th id="99">99</th><td>  <span class="namespace">std::</span><span class='type' title='std::vector' data-ref="std::vector" data-ref-filename="std..vector">vector</span>&lt;<em>double</em>&gt; <dfn class="decl field" id="tflite::internal::Spectrogram::fft_input_output_" title='tflite::internal::Spectrogram::fft_input_output_' data-ref="tflite::internal::Spectrogram::fft_input_output_" data-ref-filename="tflite..internal..Spectrogram..fft_input_output_">fft_input_output_</dfn>;</td></tr>
+<tr><th id="100">100</th><td>  <span class="namespace">std::</span><span class='type' title='std::deque' data-ref="std::deque" data-ref-filename="std..deque">deque</span>&lt;<em>double</em>&gt; <dfn class="decl field" id="tflite::internal::Spectrogram::input_queue_" title='tflite::internal::Spectrogram::input_queue_' data-ref="tflite::internal::Spectrogram::input_queue_" data-ref-filename="tflite..internal..Spectrogram..input_queue_">input_queue_</dfn>;</td></tr>
+<tr><th id="101">101</th><td></td></tr>
+<tr><th id="102">102</th><td>  <i>// Working data areas for the FFT routines.</i></td></tr>
+<tr><th id="103">103</th><td>  <span class="namespace">std::</span><span class='type' title='std::vector' data-ref="std::vector" data-ref-filename="std..vector">vector</span>&lt;<em>int</em>&gt; <dfn class="decl field" id="tflite::internal::Spectrogram::fft_integer_working_area_" title='tflite::internal::Spectrogram::fft_integer_working_area_' data-ref="tflite::internal::Spectrogram::fft_integer_working_area_" data-ref-filename="tflite..internal..Spectrogram..fft_integer_working_area_">fft_integer_working_area_</dfn>;</td></tr>
+<tr><th id="104">104</th><td>  <span class="namespace">std::</span><span class='type' title='std::vector' data-ref="std::vector" data-ref-filename="std..vector">vector</span>&lt;<em>double</em>&gt; <dfn class="decl field" id="tflite::internal::Spectrogram::fft_double_working_area_" title='tflite::internal::Spectrogram::fft_double_working_area_' data-ref="tflite::internal::Spectrogram::fft_double_working_area_" data-ref-filename="tflite..internal..Spectrogram..fft_double_working_area_">fft_double_working_area_</dfn>;</td></tr>
+<tr><th id="105">105</th><td>};</td></tr>
+<tr><th id="106">106</th><td></td></tr>
+<tr><th id="107">107</th><td><i>// Explicit instantiations in spectrogram.cc.</i></td></tr>
+<tr><th id="108">108</th><td></td></tr>
+<tr><th id="109">109</th><td><b>extern</b> <b>template</b> <em>bool</em> Spectrogram::ComputeComplexSpectrogram(</td></tr>
+<tr><th id="110">110</th><td>    <em>const</em> std::vector&lt;<em>float</em>&gt;&amp; input,</td></tr>
+<tr><th id="111">111</th><td>    std::vector&lt;std::vector&lt;std::complex&lt;<em>float</em>&gt;&gt;&gt;*);</td></tr>
+<tr><th id="112">112</th><td><b>extern</b> <b>template</b> <em>bool</em> Spectrogram::ComputeComplexSpectrogram(</td></tr>
+<tr><th id="113">113</th><td>    <em>const</em> std::vector&lt;<em>double</em>&gt;&amp; input,</td></tr>
+<tr><th id="114">114</th><td>    std::vector&lt;std::vector&lt;std::complex&lt;<em>float</em>&gt;&gt;&gt;*);</td></tr>
+<tr><th id="115">115</th><td><b>extern</b> <b>template</b> <em>bool</em> Spectrogram::ComputeComplexSpectrogram(</td></tr>
+<tr><th id="116">116</th><td>    <em>const</em> std::vector&lt;<em>float</em>&gt;&amp; input,</td></tr>
+<tr><th id="117">117</th><td>    std::vector&lt;std::vector&lt;std::complex&lt;<em>double</em>&gt;&gt;&gt;*);</td></tr>
+<tr><th id="118">118</th><td><b>extern</b> <b>template</b> <em>bool</em> Spectrogram::ComputeComplexSpectrogram(</td></tr>
+<tr><th id="119">119</th><td>    <em>const</em> std::vector&lt;<em>double</em>&gt;&amp; input,</td></tr>
+<tr><th id="120">120</th><td>    std::vector&lt;std::vector&lt;std::complex&lt;<em>double</em>&gt;&gt;&gt;*);</td></tr>
+<tr><th id="121">121</th><td></td></tr>
+<tr><th id="122">122</th><td><b>extern</b> <b>template</b> <em>bool</em> Spectrogram::ComputeSquaredMagnitudeSpectrogram(</td></tr>
+<tr><th id="123">123</th><td>    <em>const</em> std::vector&lt;<em>float</em>&gt;&amp; input, std::vector&lt;std::vector&lt;<em>float</em>&gt;&gt;*);</td></tr>
+<tr><th id="124">124</th><td><b>extern</b> <b>template</b> <em>bool</em> Spectrogram::ComputeSquaredMagnitudeSpectrogram(</td></tr>
+<tr><th id="125">125</th><td>    <em>const</em> std::vector&lt;<em>double</em>&gt;&amp; input, std::vector&lt;std::vector&lt;<em>float</em>&gt;&gt;*);</td></tr>
+<tr><th id="126">126</th><td><b>extern</b> <b>template</b> <em>bool</em> Spectrogram::ComputeSquaredMagnitudeSpectrogram(</td></tr>
+<tr><th id="127">127</th><td>    <em>const</em> std::vector&lt;<em>float</em>&gt;&amp; input, std::vector&lt;std::vector&lt;<em>double</em>&gt;&gt;*);</td></tr>
+<tr><th id="128">128</th><td><b>extern</b> <b>template</b> <em>bool</em> Spectrogram::ComputeSquaredMagnitudeSpectrogram(</td></tr>
+<tr><th id="129">129</th><td>    <em>const</em> std::vector&lt;<em>double</em>&gt;&amp; input, std::vector&lt;std::vector&lt;<em>double</em>&gt;&gt;*);</td></tr>
+<tr><th id="130">130</th><td></td></tr>
+<tr><th id="131">131</th><td>}  <i>// namespace internal</i></td></tr>
+<tr><th id="132">132</th><td>}  <i>// namespace tflite</i></td></tr>
+<tr><th id="133">133</th><td></td></tr>
+<tr><th id="134">134</th><td><u>#<span data-ppcond="31">endif</span>  // TENSORFLOW_LITE_KERNELS_INTERNAL_SPECTROGRAM_H_</u></td></tr>
+<tr><th id="135">135</th><td></td></tr>
+</table><hr/><p id='footer'>
+Generated while processing <a href='../audio_spectrogram.cc.html'>halide/build-apps/_deps/tflite-src/tensorflow/lite/kernels/audio_spectrogram.cc</a><br/>Generated on <em>2021-Aug-05</em> from project halide revision <em>v12.0.1</em>

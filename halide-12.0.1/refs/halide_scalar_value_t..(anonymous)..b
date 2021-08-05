@@ -1,3 +1,7 @@
+<dec f='halide/halide-install/include/Halide.h' l='1696' type='bool'/>
+<offset>0</offset>
+<dec f='halide/halide-install/include/HalideRuntime.h' l='1598' type='bool'/>
+<offset>0</offset>
 <dec f='halide/build/include/HalideRuntime.h' l='1598' type='bool'/>
 <offset>0</offset>
 <dec f='halide/build/include/Halide.h' l='1696' type='bool'/>

@@ -1,3 +1,5 @@
+<dec f='halide/halide-install/include/Halide.h' l='4985' type='4'/>
+<use f='halide/halide-install/include/Halide.h' l='4999'/>
 <dec f='halide/build/include/Halide.h' l='4985' type='4'/>
 <use f='halide/build/include/Halide.h' l='4999'/>
 <use f='halide/python_bindings/src/PyEnums.cpp' l='17' u='r' c='_ZN6Halide14PythonBindings12define_enumsERN8pybind117module_E'/>

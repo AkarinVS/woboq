@@ -1,3 +1,5 @@
+<dec f='halide/halide-install/include/Halide.h' l='19883' type='llvm::IRBuilder&lt;llvm::ConstantFolder, llvm::IRBuilderDefaultInserter&gt; *'/>
+<offset>256</offset>
 <dec f='halide/build/include/Halide.h' l='19883' type='llvm::IRBuilder&lt;llvm::ConstantFolder, llvm::IRBuilderDefaultInserter&gt; *'/>
 <offset>256</offset>
 <dec f='halide/src/CodeGen_LLVM.h' l='144' type='llvm::IRBuilder&lt;llvm::ConstantFolder, llvm::IRBuilderDefaultInserter&gt; *'/>

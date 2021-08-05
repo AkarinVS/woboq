@@ -1,3 +1,50 @@
+<dec f='halide/halide-install/include/Halide.h' l='15675' type='Halide::RVar'/>
+<use f='halide/apps/bgu/bgu_generator.cpp' l='305' u='m' c='_ZN12_GLOBAL__N_13BGU8generateEv'/>
+<use f='halide/apps/bgu/bgu_generator.cpp' l='539' u='r' c='_ZN12_GLOBAL__N_13BGU8generateEv'/>
+<use f='halide/apps/bgu/bgu_generator.cpp' l='618' u='r' c='_ZN12_GLOBAL__N_13BGU8generateEv'/>
+<use f='halide/apps/bgu/bgu_generator.cpp' l='626' u='r' c='_ZN12_GLOBAL__N_13BGU8generateEv'/>
+<use f='halide/apps/bgu/bgu_generator.cpp' l='633' u='r' c='_ZN12_GLOBAL__N_13BGU8generateEv'/>
+<use f='halide/apps/bgu/bgu_generator.cpp' l='636' u='r' c='_ZN12_GLOBAL__N_13BGU8generateEv'/>
+<use f='halide/apps/bgu/bgu_generator.cpp' l='639' u='r' c='_ZN12_GLOBAL__N_13BGU8generateEv'/>
+<offset>64</offset>
+<use f='halide/apps/bilateral_grid/bilateral_grid_generator.cpp' l='23' u='m' c='_ZN12_GLOBAL__N_113BilateralGrid8generateEv'/>
+<use f='halide/apps/bilateral_grid/bilateral_grid_generator.cpp' l='103' u='r' c='_ZN12_GLOBAL__N_113BilateralGrid8generateEv'/>
+<use f='halide/apps/bilateral_grid/bilateral_grid_generator.cpp' l='139' u='r' c='_ZN12_GLOBAL__N_113BilateralGrid8generateEv'/>
+<use f='halide/apps/conv_layer/conv_layer_generator.cpp' l='26' u='a' c='_ZN12_GLOBAL__N_116ConvolutionLayer8generateEv'/>
+<use f='halide/apps/conv_layer/conv_layer_generator.cpp' l='26' u='a' c='_ZN12_GLOBAL__N_116ConvolutionLayer8generateEv'/>
+<use f='halide/apps/conv_layer/conv_layer_generator.cpp' l='103' u='r' c='_ZN12_GLOBAL__N_116ConvolutionLayer8generateEv'/>
+<use f='halide/apps/conv_layer/conv_layer_generator.cpp' l='188' u='a' c='_ZN12_GLOBAL__N_116ConvolutionLayer8generateEv'/>
+<use f='halide/apps/conv_layer/conv_layer_generator.cpp' l='193' u='r' c='_ZN12_GLOBAL__N_116ConvolutionLayer8generateEv'/>
+<use f='halide/apps/conv_layer/conv_layer_generator.cpp' l='195' u='r' c='_ZN12_GLOBAL__N_116ConvolutionLayer8generateEv'/>
+<use f='halide/apps/fft/fft.cpp' l='361' u='r' c='_ZN12_GLOBAL__N_18fft_dim1E5FuncTI11ComplexExprERKSt6vectorIiSaIiEEiiN6Halide4ExprEbRKNSt7__cxx1112basic_stringIcSt11char_traitsIcESaIcEEERKNS8_6Targe14237183'/>
+<use f='halide/apps/hannk/halide/conv_generator.cpp' l='105' u='a' c='_ZN5hannk4Conv8generateEv'/>
+<use f='halide/apps/hannk/halide/conv_generator.cpp' l='107' u='m' c='_ZN5hannk4Conv8generateEv'/>
+<use f='halide/apps/hannk/halide/conv_generator.cpp' l='239' u='a' c='_ZN5hannk4Conv8generateEv'/>
+<use f='halide/apps/hannk/halide/conv_generator.cpp' l='286' u='a' c='_ZN5hannk4Conv8generateEv'/>
+<use f='halide/apps/hannk/halide/conv_generator.cpp' l='299' u='a' c='_ZN5hannk4Conv8generateEv'/>
+<use f='halide/apps/hannk/halide/depthwise_conv_generator.cpp' l='67' u='a' c='_ZN5hannk13DepthwiseConv8generateEv'/>
+<use f='halide/apps/hannk/halide/depthwise_conv_generator.cpp' l='91' u='m' c='_ZN5hannk13DepthwiseConv8generateEv'/>
+<use f='halide/apps/hannk/halide/depthwise_conv_generator.cpp' l='180' u='a' c='_ZN5hannk13DepthwiseConv8generateEv'/>
+<use f='halide/apps/hannk/halide/depthwise_conv_generator.cpp' l='186' u='r' c='_ZN5hannk13DepthwiseConv8generateEv'/>
+<use f='halide/apps/hannk/halide/elementwise_generator.cpp' l='161' u='m' c='_ZN5hannk11Elementwise5buildEv'/>
+<use f='halide/apps/hannk/halide/elementwise_generator.cpp' l='162' u='m' c='_ZN5hannk11Elementwise5buildEv'/>
+<use f='halide/apps/hannk/halide/elementwise_generator.cpp' l='207' u='r' c='_ZN5hannk11Elementwise5buildEv'/>
+<use f='halide/apps/hannk/halide/pool_generator.cpp' l='46' u='m' c='_ZN5hannk11AveragePool8generateEv'/>
+<use f='halide/apps/hannk/halide/pool_generator.cpp' l='129' u='m' c='_ZN5hannk7MaxPool8generateEv'/>
+<use f='halide/apps/hannk/halide/reductions_generator.cpp' l='34' u='m' c='_ZN5hannk4Mean8generateEv'/>
+<use f='halide/apps/hannk/halide/reductions_generator.cpp' l='47' u='a' c='_ZN5hannk4Mean8generateEv'/>
+<use f='halide/apps/hist/hist_generator.cpp' l='43' u='m' c='_ZN12_GLOBAL__N_14Hist8generateEv'/>
+<use f='halide/apps/hist/hist_generator.cpp' l='43' u='m' c='_ZN12_GLOBAL__N_14Hist8generateEv'/>
+<use f='halide/apps/hist/hist_generator.cpp' l='43' u='m' c='_ZN12_GLOBAL__N_14Hist8generateEv'/>
+<use f='halide/apps/max_filter/max_filter_generator.cpp' l='30' u='a' c='_ZN12_GLOBAL__N_13Max8generateEv'/>
+<use f='halide/apps/max_filter/max_filter_generator.cpp' l='30' u='a' c='_ZN12_GLOBAL__N_13Max8generateEv'/>
+<use f='halide/apps/max_filter/max_filter_generator.cpp' l='31' u='m' c='_ZN12_GLOBAL__N_13Max8generateEv'/>
+<use f='halide/apps/max_filter/max_filter_generator.cpp' l='85' u='r' c='_ZN12_GLOBAL__N_13Max8generateEv'/>
+<use f='halide/apps/max_filter/max_filter_generator.cpp' l='110' u='r' c='_ZN12_GLOBAL__N_13Max8generateEv'/>
+<use f='halide/apps/nl_means/nl_means_generator.cpp' l='60' u='a' c='_ZN12_GLOBAL__N_113NonLocalMeans8generateEv'/>
+<use f='halide/apps/nl_means/nl_means_generator.cpp' l='60' u='m' c='_ZN12_GLOBAL__N_113NonLocalMeans8generateEv'/>
+<use f='halide/apps/nl_means/nl_means_generator.cpp' l='104' u='r' c='_ZN12_GLOBAL__N_113NonLocalMeans8generateEv'/>
+<use f='halide/apps/nl_means/nl_means_generator.cpp' l='149' u='a' c='_ZN12_GLOBAL__N_113NonLocalMeans8generateEv'/>
 <dec f='halide/build/include/Halide.h' l='15675' type='Halide::RVar'/>
 <offset>64</offset>
 <use f='halide/python_bindings/src/PyRDom.cpp' l='49' u='a' c='_ZN6Halide14PythonBindings11define_rdomERN8pybind117module_E'/>

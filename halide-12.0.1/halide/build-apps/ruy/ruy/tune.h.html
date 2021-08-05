@@ -1,0 +1,140 @@
+<!doctype html>
+<html>
+<head>
+<meta name="viewport" content="width=device-width, initial-scale=1.0"><title>tune.h source code [halide/build-apps/ruy/ruy/tune.h] - Woboq Code Browser</title>
+<meta name="woboq:interestingDefinitions" content="ruy::Tuning,ruy::TuningResolver "/>
+<link rel="stylesheet" href="../../../.././data/qtcreator.css" title="QtCreator"/>
+<link rel="alternate stylesheet" href="../../../.././data/kdevelop.css" title="KDevelop"/>
+<script type="text/javascript" src="../../../.././data/jquery/jquery.min.js"></script>
+<script type="text/javascript" src="../../../.././data/jquery/jquery-ui.min.js"></script>
+<script>var file = 'halide/build-apps/ruy/ruy/tune.h'; var root_path = '../../../..'; var data_path = '../../../.././data'; var ecma_script_api_version = 2;</script>
+<script src='../../../.././data/codebrowser.js'></script>
+</head>
+<body><div id='header'><h1 id='breadcrumb'><span>Browse the source code of </span><a href='../../..'>halide</a>/<a href='../..'>build-apps</a>/<a href='..'>ruy</a>/<a href='./'>ruy</a>/<a href='tune.h.html'>tune.h</a></h1></div>
+<hr/><div id='content'><table class="code">
+<tr><th id="1">1</th><td><i>/* Copyright 2019 Google LLC. All Rights Reserved.</i></td></tr>
+<tr><th id="2">2</th><td><i></i></td></tr>
+<tr><th id="3">3</th><td><i>Licensed under the Apache License, Version 2.0 (the "License");</i></td></tr>
+<tr><th id="4">4</th><td><i>you may not use this file except in compliance with the License.</i></td></tr>
+<tr><th id="5">5</th><td><i>You may obtain a copy of the License at</i></td></tr>
+<tr><th id="6">6</th><td><i></i></td></tr>
+<tr><th id="7">7</th><td><i>    <a href="http://www.apache.org/licenses/LICENSE-2.0">http://www.apache.org/licenses/LICENSE-2.0</a></i></td></tr>
+<tr><th id="8">8</th><td><i></i></td></tr>
+<tr><th id="9">9</th><td><i>Unless required by applicable law or agreed to in writing, software</i></td></tr>
+<tr><th id="10">10</th><td><i>distributed under the License is distributed on an "AS IS" BASIS,</i></td></tr>
+<tr><th id="11">11</th><td><i>WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.</i></td></tr>
+<tr><th id="12">12</th><td><i>See the License for the specific language governing permissions and</i></td></tr>
+<tr><th id="13">13</th><td><i>limitations under the License.</i></td></tr>
+<tr><th id="14">14</th><td><i>==============================================================================*/</i></td></tr>
+<tr><th id="15">15</th><td><i></i></td></tr>
+<tr><th id="16">16</th><td><i>// Library doing minimal CPU detection to decide what to tune asm code for.</i></td></tr>
+<tr><th id="17">17</th><td><i>//</i></td></tr>
+<tr><th id="18">18</th><td><i>// # Tuning vs Path</i></td></tr>
+<tr><th id="19">19</th><td><i>//</i></td></tr>
+<tr><th id="20">20</th><td><i>// Tunings are merely local variations of optimized code paths, that are</i></td></tr>
+<tr><th id="21">21</th><td><i>// drop-in replacements for each other --- the input and output data layouts</i></td></tr>
+<tr><th id="22">22</th><td><i>// are identical.  By contrast, what ruy calls a Path dictates its own</i></td></tr>
+<tr><th id="23">23</th><td><i>// data layouts. For example, Path::kNeonDotprod will use different</i></td></tr>
+<tr><th id="24">24</th><td><i>// layouts compared to Path::kNeon; but within each, different tunings</i></td></tr>
+<tr><th id="25">25</th><td><i>// will share that same layout.</i></td></tr>
+<tr><th id="26">26</th><td><i>//</i></td></tr>
+<tr><th id="27">27</th><td><i>// # Tuning is for now only based on 1 bit: Generic / A55ish</i></td></tr>
+<tr><th id="28">28</th><td><i>//</i></td></tr>
+<tr><th id="29">29</th><td><i>// In practice, each of our asm code paths only needs one bit information to</i></td></tr>
+<tr><th id="30">30</th><td><i>// decide on tuning: whether the CPU is out-of-order or in-order.</i></td></tr>
+<tr><th id="31">31</th><td><i>// That is because out-of-order CPUs are by definition relatively insensitive</i></td></tr>
+<tr><th id="32">32</th><td><i>// to small-scale asm details (which is what "tuning" is about); and for each</i></td></tr>
+<tr><th id="33">33</th><td><i>// asm code path, there tends to be one main in-order CPU architecture that</i></td></tr>
+<tr><th id="34">34</th><td><i>// we focus our tuning effort on. Examples:</i></td></tr>
+<tr><th id="35">35</th><td><i>//  * For Path::kNeon, the main in-order CPU is Cortex-A53/A55 (pre-dotprod)</i></td></tr>
+<tr><th id="36">36</th><td><i>//  * For Path::kNeonDotprod, the main in-order CPU is Cortex-A55r1 (dotprod)</i></td></tr>
+<tr><th id="37">37</th><td><i>//</i></td></tr>
+<tr><th id="38">38</th><td><i>// Because having tuned code paths is a compromise of efficiency gains</i></td></tr>
+<tr><th id="39">39</th><td><i>// versus implementation effort and code size, we are happy to stop at just this</i></td></tr>
+<tr><th id="40">40</th><td><i>// single bit of information, Generic / A55ish, at least in the current CPU</i></td></tr>
+<tr><th id="41">41</th><td><i>// landscape. This could change in the future.</i></td></tr>
+<tr><th id="42">42</th><td><u>#<span data-ppcond="42">ifndef</span> <span class="macro" data-ref="_M/RUY_RUY_TUNE_H_">RUY_RUY_TUNE_H_</span></u></td></tr>
+<tr><th id="43">43</th><td><u>#define <dfn class="macro" id="_M/RUY_RUY_TUNE_H_" data-ref="_M/RUY_RUY_TUNE_H_">RUY_RUY_TUNE_H_</dfn></u></td></tr>
+<tr><th id="44">44</th><td></td></tr>
+<tr><th id="45">45</th><td><u>#include <a href="cpuinfo.h.html">"ruy/cpuinfo.h"</a></u></td></tr>
+<tr><th id="46">46</th><td><u>#include <a href="opt_set.h.html">"ruy/opt_set.h"</a></u></td></tr>
+<tr><th id="47">47</th><td><u>#include <a href="platform.h.html">"ruy/platform.h"</a></u></td></tr>
+<tr><th id="48">48</th><td><u>#include <a href="time.h.html">"ruy/time.h"</a></u></td></tr>
+<tr><th id="49">49</th><td></td></tr>
+<tr><th id="50">50</th><td><b>namespace</b> <span class="namespace">ruy</span> {</td></tr>
+<tr><th id="51">51</th><td></td></tr>
+<tr><th id="52">52</th><td><b>enum</b> <b>class</b> <dfn class="type def" id="ruy::Tuning" title='ruy::Tuning' data-ref="ruy::Tuning" data-ref-filename="ruy..Tuning">Tuning</dfn> {</td></tr>
+<tr><th id="53">53</th><td>  <i>// kAuto means please use auto-detection. It's the default in the</i></td></tr>
+<tr><th id="54">54</th><td><i>  // user-visible parts (see Context). It's meant to be resolved to an</i></td></tr>
+<tr><th id="55">55</th><td><i>  // actual tuning at some point by means of TuningResolver.</i></td></tr>
+<tr><th id="56">56</th><td>  <dfn class="enum" id="ruy::Tuning::kAuto" title='ruy::Tuning::kAuto' data-ref="ruy::Tuning::kAuto" data-ref-filename="ruy..Tuning..kAuto">kAuto</dfn>,</td></tr>
+<tr><th id="57">57</th><td>  <i>// Use code not tuned for any particular CPU, typically performing well</i></td></tr>
+<tr><th id="58">58</th><td><i>  // on out-of-order cores that don't require as much tuning.</i></td></tr>
+<tr><th id="59">59</th><td>  <dfn class="enum" id="ruy::Tuning::kGeneric" title='ruy::Tuning::kGeneric' data-ref="ruy::Tuning::kGeneric" data-ref-filename="ruy..Tuning..kGeneric">kGeneric</dfn>,</td></tr>
+<tr><th id="60">60</th><td>  <i>// Use code tuned for "Cortex-A55-ish" CPUs, by which we mean mostly:</i></td></tr>
+<tr><th id="61">61</th><td><i>  // A53, A55r0 (pre-dotprod), A55r1 (with dotprod). These CPUs have in common</i></td></tr>
+<tr><th id="62">62</th><td><i>  // that they are in-order CPU cores with largely similar requirements of code</i></td></tr>
+<tr><th id="63">63</th><td><i>  // tuning. The most important such requirement is to use only 64-bit loads</i></td></tr>
+<tr><th id="64">64</th><td><i>  // to maximize dual-issuing.</i></td></tr>
+<tr><th id="65">65</th><td><i>  //</i></td></tr>
+<tr><th id="66">66</th><td><i>  // A55r1 differs from A55r0 and A53 in that it dual-issues 64-bit NEON loads</i></td></tr>
+<tr><th id="67">67</th><td><i>  // whereas A55r0 and A53 require using non-NEON ARM 64-bit loads together with</i></td></tr>
+<tr><th id="68">68</th><td><i>  // INS instructions to insert 64bit lanes into NEON registers. However, since</i></td></tr>
+<tr><th id="69">69</th><td><i>  // A55r1 supports dotprod unlike A55r0 and A53, they are not using the same</i></td></tr>
+<tr><th id="70">70</th><td><i>  // kernels in practice anyway, so there was no need to distinguish them with</i></td></tr>
+<tr><th id="71">71</th><td><i>  // separate Tuning values.</i></td></tr>
+<tr><th id="72">72</th><td>  <dfn class="enum" id="ruy::Tuning::kA55ish" title='ruy::Tuning::kA55ish' data-ref="ruy::Tuning::kA55ish" data-ref-filename="ruy..Tuning..kA55ish">kA55ish</dfn>,</td></tr>
+<tr><th id="73">73</th><td>  <i>// Use code tuned for Cortex-X1 CPUs. Currently, the driver to distinguish</i></td></tr>
+<tr><th id="74">74</th><td><i>  // this CPU is the get maximum performance on the dotprod kernels, where we</i></td></tr>
+<tr><th id="75">75</th><td><i>  // attain high performance simply by avoiding any manual loop unrolling. As a</i></td></tr>
+<tr><th id="76">76</th><td><i>  // purely performance oriented microarchitecture, there will likely be</i></td></tr>
+<tr><th id="77">77</th><td><i>  // additional reasons to distinguish the X1 from other CPUs.</i></td></tr>
+<tr><th id="78">78</th><td>  <dfn class="enum" id="ruy::Tuning::kX1" title='ruy::Tuning::kX1' data-ref="ruy::Tuning::kX1" data-ref-filename="ruy..Tuning..kX1">kX1</dfn></td></tr>
+<tr><th id="79">79</th><td>};</td></tr>
+<tr><th id="80">80</th><td></td></tr>
+<tr><th id="81">81</th><td><i>// Why a TuningResolver class?</i></td></tr>
+<tr><th id="82">82</th><td><i>//</i></td></tr>
+<tr><th id="83">83</th><td><i>// Ideally, this Library would offer a single function,</i></td></tr>
+<tr><th id="84">84</th><td><i>//   Tuning GetCurrentCPUTuning();</i></td></tr>
+<tr><th id="85">85</th><td><i>//</i></td></tr>
+<tr><th id="86">86</th><td><i>// However, determining information about the current CPU is not necessarily</i></td></tr>
+<tr><th id="87">87</th><td><i>// cheap, so we currently cache that and only invalidate/reevaluate after</i></td></tr>
+<tr><th id="88">88</th><td><i>// a fixed amount of time. This need to store state is why this library</i></td></tr>
+<tr><th id="89">89</th><td><i>// has to expose a class, TuningResolver, not just a function.</i></td></tr>
+<tr><th id="90">90</th><td><b>class</b> <dfn class="type def" id="ruy::TuningResolver" title='ruy::TuningResolver' data-ref="ruy::TuningResolver" data-ref-filename="ruy..TuningResolver">TuningResolver</dfn> {</td></tr>
+<tr><th id="91">91</th><td> <b>public</b>:</td></tr>
+<tr><th id="92">92</th><td>  <dfn class="decl fn" id="_ZN3ruy14TuningResolverC1Ev" title='ruy::TuningResolver::TuningResolver' data-ref="_ZN3ruy14TuningResolverC1Ev" data-ref-filename="_ZN3ruy14TuningResolverC1Ev">TuningResolver</dfn>();</td></tr>
+<tr><th id="93">93</th><td></td></tr>
+<tr><th id="94">94</th><td>  <i>// Allows the user to specify an explicit Tuning value, bypassing auto</i></td></tr>
+<tr><th id="95">95</th><td><i>  // detection; or to specify Tuning::kAuto, reverting to auto detection.</i></td></tr>
+<tr><th id="96">96</th><td>  <em>void</em> <dfn class="decl def fn" id="_ZN3ruy14TuningResolver9SetTuningENS_6TuningE" title='ruy::TuningResolver::SetTuning' data-ref="_ZN3ruy14TuningResolver9SetTuningENS_6TuningE" data-ref-filename="_ZN3ruy14TuningResolver9SetTuningENS_6TuningE">SetTuning</dfn>(<a class="type" href="context.h.html#ruy::Tuning" title='ruy::Tuning' data-ref="ruy::Tuning" data-ref-filename="ruy..Tuning">Tuning</a> <dfn class="local col4 decl" id="5804tuning" title='tuning' data-type='ruy::Tuning' data-ref="5804tuning" data-ref-filename="5804tuning">tuning</dfn>) { <a class="member field" href="#ruy::TuningResolver::unresolved_tuning_" title='ruy::TuningResolver::unresolved_tuning_' data-ref="ruy::TuningResolver::unresolved_tuning_" data-ref-filename="ruy..TuningResolver..unresolved_tuning_">unresolved_tuning_</a> = <a class="local col4 ref" href="#5804tuning" title='tuning' data-ref="5804tuning" data-ref-filename="5804tuning">tuning</a>; }</td></tr>
+<tr><th id="97">97</th><td></td></tr>
+<tr><th id="98">98</th><td>  <i>// Get an actual tuning --- that is the function that this class wanted to be.</i></td></tr>
+<tr><th id="99">99</th><td>  <a class="type" href="context.h.html#ruy::Tuning" title='ruy::Tuning' data-ref="ruy::Tuning" data-ref-filename="ruy..Tuning">Tuning</a> <dfn class="decl fn" id="_ZN3ruy14TuningResolver7ResolveEPNS_7CpuInfoE" title='ruy::TuningResolver::Resolve' data-ref="_ZN3ruy14TuningResolver7ResolveEPNS_7CpuInfoE" data-ref-filename="_ZN3ruy14TuningResolver7ResolveEPNS_7CpuInfoE">Resolve</dfn>(<a class="type" href="cpuinfo.h.html#ruy::CpuInfo" title='ruy::CpuInfo' data-ref="ruy::CpuInfo" data-ref-filename="ruy..CpuInfo">CpuInfo</a>* <dfn class="local col5 decl" id="5805cpuinfo" title='cpuinfo' data-type='ruy::CpuInfo *' data-ref="5805cpuinfo" data-ref-filename="5805cpuinfo">cpuinfo</dfn>);</td></tr>
+<tr><th id="100">100</th><td></td></tr>
+<tr><th id="101">101</th><td> <b>private</b>:</td></tr>
+<tr><th id="102">102</th><td>  <dfn class="decl def fn" id="_ZN3ruy14TuningResolverC1ERKS0_" title='ruy::TuningResolver::TuningResolver' data-ref="_ZN3ruy14TuningResolverC1ERKS0_" data-ref-filename="_ZN3ruy14TuningResolverC1ERKS0_">TuningResolver</dfn>(<em>const</em> <a class="type" href="#ruy::TuningResolver" title='ruy::TuningResolver' data-ref="ruy::TuningResolver" data-ref-filename="ruy..TuningResolver">TuningResolver</a>&amp;) = <b>delete</b>;</td></tr>
+<tr><th id="103">103</th><td></td></tr>
+<tr><th id="104">104</th><td>  <i>// Perform the tuning resolution now. That may typically use EvalRatio and</i></td></tr>
+<tr><th id="105">105</th><td><i>  // ThresholdRatio, but an implementation may use a different approach instead.</i></td></tr>
+<tr><th id="106">106</th><td>  <a class="type" href="context.h.html#ruy::Tuning" title='ruy::Tuning' data-ref="ruy::Tuning" data-ref-filename="ruy..Tuning">Tuning</a> <dfn class="decl fn" id="_ZN3ruy14TuningResolver10ResolveNowEPNS_7CpuInfoE" title='ruy::TuningResolver::ResolveNow' data-ref="_ZN3ruy14TuningResolver10ResolveNowEPNS_7CpuInfoE" data-ref-filename="_ZN3ruy14TuningResolver10ResolveNowEPNS_7CpuInfoE">ResolveNow</dfn>(<a class="type" href="cpuinfo.h.html#ruy::CpuInfo" title='ruy::CpuInfo' data-ref="ruy::CpuInfo" data-ref-filename="ruy..CpuInfo">CpuInfo</a>* <dfn class="local col6 decl" id="5806cpuinfo" title='cpuinfo' data-type='ruy::CpuInfo *' data-ref="5806cpuinfo" data-ref-filename="5806cpuinfo">cpuinfo</dfn>);</td></tr>
+<tr><th id="107">107</th><td></td></tr>
+<tr><th id="108">108</th><td>  <i>// The tuning as specified by the user, before actual resolution happens</i></td></tr>
+<tr><th id="109">109</th><td><i>  // i.e. before querying any specifics of the current CPU.</i></td></tr>
+<tr><th id="110">110</th><td><i>  // The default value kAuto means try to auto-detect. Other values mean</i></td></tr>
+<tr><th id="111">111</th><td><i>  // bypass auto-detect, use explicit value instead. See SetTuning().</i></td></tr>
+<tr><th id="112">112</th><td>  <a class="type" href="context.h.html#ruy::Tuning" title='ruy::Tuning' data-ref="ruy::Tuning" data-ref-filename="ruy..Tuning">Tuning</a> <dfn class="decl field" id="ruy::TuningResolver::unresolved_tuning_" title='ruy::TuningResolver::unresolved_tuning_' data-ref="ruy::TuningResolver::unresolved_tuning_" data-ref-filename="ruy..TuningResolver..unresolved_tuning_">unresolved_tuning_</dfn> = <a class="type" href="context.h.html#ruy::Tuning" title='ruy::Tuning' data-ref="ruy::Tuning" data-ref-filename="ruy..Tuning">Tuning</a>::<a class="enum" href="#ruy::Tuning::kAuto" title='ruy::Tuning::kAuto' data-ref="ruy::Tuning::kAuto" data-ref-filename="ruy..Tuning..kAuto">kAuto</a>;</td></tr>
+<tr><th id="113">113</th><td>  <i>// Cached last resolved tuning.</i></td></tr>
+<tr><th id="114">114</th><td>  <a class="type" href="context.h.html#ruy::Tuning" title='ruy::Tuning' data-ref="ruy::Tuning" data-ref-filename="ruy..Tuning">Tuning</a> <dfn class="decl field" id="ruy::TuningResolver::last_resolved_tuning_" title='ruy::TuningResolver::last_resolved_tuning_' data-ref="ruy::TuningResolver::last_resolved_tuning_" data-ref-filename="ruy..TuningResolver..last_resolved_tuning_">last_resolved_tuning_</dfn> = <a class="type" href="context.h.html#ruy::Tuning" title='ruy::Tuning' data-ref="ruy::Tuning" data-ref-filename="ruy..Tuning">Tuning</a>::<a class="enum" href="#ruy::Tuning::kAuto" title='ruy::Tuning::kAuto' data-ref="ruy::Tuning::kAuto" data-ref-filename="ruy..Tuning..kAuto">kAuto</a>;</td></tr>
+<tr><th id="115">115</th><td>  <i>// Timepoint of cached last resolved tuning, for invalidation purposes.</i></td></tr>
+<tr><th id="116">116</th><td>  <a class="typedef" href="time.h.html#ruy::TimePoint" title='ruy::TimePoint' data-type='InternalDefaultClock::time_point' data-ref="ruy::TimePoint" data-ref-filename="ruy..TimePoint">TimePoint</a> <dfn class="decl field" id="ruy::TuningResolver::last_resolved_timepoint_" title='ruy::TuningResolver::last_resolved_timepoint_' data-ref="ruy::TuningResolver::last_resolved_timepoint_" data-ref-filename="ruy..TuningResolver..last_resolved_timepoint_">last_resolved_timepoint_</dfn>;</td></tr>
+<tr><th id="117">117</th><td>  <i>// Cached last resolved tunings that are older than this age are invalid.</i></td></tr>
+<tr><th id="118">118</th><td>  <em>const</em> <a class="typedef" href="time.h.html#ruy::Duration" title='ruy::Duration' data-type='InternalDefaultClock::duration' data-ref="ruy::Duration" data-ref-filename="ruy..Duration">Duration</a> <dfn class="decl field" id="ruy::TuningResolver::expiry_duration_" title='ruy::TuningResolver::expiry_duration_' data-ref="ruy::TuningResolver::expiry_duration_" data-ref-filename="ruy..TuningResolver..expiry_duration_">expiry_duration_</dfn>;</td></tr>
+<tr><th id="119">119</th><td>};</td></tr>
+<tr><th id="120">120</th><td></td></tr>
+<tr><th id="121">121</th><td>}  <i>// namespace ruy</i></td></tr>
+<tr><th id="122">122</th><td></td></tr>
+<tr><th id="123">123</th><td><u>#<span data-ppcond="42">endif</span>  // RUY_RUY_TUNE_H_</u></td></tr>
+<tr><th id="124">124</th><td></td></tr>
+</table><hr/><p id='footer'>
+Generated while processing <a href='../../_deps/tflite-src/tensorflow/lite/kernels/activations.cc.html'>halide/build-apps/_deps/tflite-src/tensorflow/lite/kernels/activations.cc</a><br/>Generated on <em>2021-Aug-05</em> from project halide revision <em>v12.0.1</em>

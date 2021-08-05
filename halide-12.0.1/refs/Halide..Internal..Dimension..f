@@ -1,3 +1,5 @@
+<dec f='halide/halide-install/include/Halide.h' l='21277' type='Halide::Func'/>
+<offset>128</offset>
 <dec f='halide/build/include/Halide.h' l='21277' type='Halide::Func'/>
 <offset>128</offset>
 <dec f='halide/src/Dimension.h' l='93' type='Halide::Func'/>

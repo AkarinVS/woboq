@@ -1,0 +1,143 @@
+<!doctype html>
+<html>
+<head>
+<meta name="viewport" content="width=device-width, initial-scale=1.0"><title>low_level_alloc.h source code [halide/build-apps/abseil-cpp/absl/base/internal/low_level_alloc.h] - Woboq Code Browser</title>
+<meta name="woboq:interestingDefinitions" content="absl::lts_2020_02_25::base_internal::LowLevelAlloc "/>
+<link rel="stylesheet" href="../../../../../.././data/qtcreator.css" title="QtCreator"/>
+<link rel="alternate stylesheet" href="../../../../../.././data/kdevelop.css" title="KDevelop"/>
+<script type="text/javascript" src="../../../../../.././data/jquery/jquery.min.js"></script>
+<script type="text/javascript" src="../../../../../.././data/jquery/jquery-ui.min.js"></script>
+<script>var file = 'halide/build-apps/abseil-cpp/absl/base/internal/low_level_alloc.h'; var root_path = '../../../../../..'; var data_path = '../../../../../.././data'; var ecma_script_api_version = 2;</script>
+<script src='../../../../../.././data/codebrowser.js'></script>
+</head>
+<body><div id='header'><h1 id='breadcrumb'><span>Browse the source code of </span><a href='../../../../..'>halide</a>/<a href='../../../..'>build-apps</a>/<a href='../../..'>abseil-cpp</a>/<a href='../..'>absl</a>/<a href='..'>base</a>/<a href='./'>internal</a>/<a href='low_level_alloc.h.html'>low_level_alloc.h</a></h1></div>
+<hr/><div id='content'><table class="code">
+<tr><th id="1">1</th><td><i>// Copyright 2017 The Abseil Authors.</i></td></tr>
+<tr><th id="2">2</th><td><i>//</i></td></tr>
+<tr><th id="3">3</th><td><i>// Licensed under the Apache License, Version 2.0 (the "License");</i></td></tr>
+<tr><th id="4">4</th><td><i>// you may not use this file except in compliance with the License.</i></td></tr>
+<tr><th id="5">5</th><td><i>// You may obtain a copy of the License at</i></td></tr>
+<tr><th id="6">6</th><td><i>//</i></td></tr>
+<tr><th id="7">7</th><td><i>//      <a href="https://www.apache.org/licenses/LICENSE-2.0">https://www.apache.org/licenses/LICENSE-2.0</a></i></td></tr>
+<tr><th id="8">8</th><td><i>//</i></td></tr>
+<tr><th id="9">9</th><td><i>// Unless required by applicable law or agreed to in writing, software</i></td></tr>
+<tr><th id="10">10</th><td><i>// distributed under the License is distributed on an "AS IS" BASIS,</i></td></tr>
+<tr><th id="11">11</th><td><i>// WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.</i></td></tr>
+<tr><th id="12">12</th><td><i>// See the License for the specific language governing permissions and</i></td></tr>
+<tr><th id="13">13</th><td><i>// limitations under the License.</i></td></tr>
+<tr><th id="14">14</th><td><i>//</i></td></tr>
+<tr><th id="15">15</th><td></td></tr>
+<tr><th id="16">16</th><td><u>#<span data-ppcond="16">ifndef</span> <span class="macro" data-ref="_M/ABSL_BASE_INTERNAL_LOW_LEVEL_ALLOC_H_">ABSL_BASE_INTERNAL_LOW_LEVEL_ALLOC_H_</span></u></td></tr>
+<tr><th id="17">17</th><td><u>#define <dfn class="macro" id="_M/ABSL_BASE_INTERNAL_LOW_LEVEL_ALLOC_H_" data-ref="_M/ABSL_BASE_INTERNAL_LOW_LEVEL_ALLOC_H_">ABSL_BASE_INTERNAL_LOW_LEVEL_ALLOC_H_</dfn></u></td></tr>
+<tr><th id="18">18</th><td></td></tr>
+<tr><th id="19">19</th><td><i>// A simple thread-safe memory allocator that does not depend on</i></td></tr>
+<tr><th id="20">20</th><td><i>// mutexes or thread-specific data.  It is intended to be used</i></td></tr>
+<tr><th id="21">21</th><td><i>// sparingly, and only when malloc() would introduce an unwanted</i></td></tr>
+<tr><th id="22">22</th><td><i>// dependency, such as inside the heap-checker, or the Mutex</i></td></tr>
+<tr><th id="23">23</th><td><i>// implementation.</i></td></tr>
+<tr><th id="24">24</th><td><i></i></td></tr>
+<tr><th id="25">25</th><td><i>// IWYU pragma: private, include "base/low_level_alloc.h"</i></td></tr>
+<tr><th id="26">26</th><td></td></tr>
+<tr><th id="27">27</th><td><u>#include <a href="../../../../../../include/sys/types.h.html">&lt;sys/types.h&gt;</a></u></td></tr>
+<tr><th id="28">28</th><td></td></tr>
+<tr><th id="29">29</th><td><u>#include &lt;cstdint&gt;</u></td></tr>
+<tr><th id="30">30</th><td></td></tr>
+<tr><th id="31">31</th><td><u>#include <a href="../attributes.h.html">"absl/base/attributes.h"</a></u></td></tr>
+<tr><th id="32">32</th><td><u>#include <a href="../config.h.html">"absl/base/config.h"</a></u></td></tr>
+<tr><th id="33">33</th><td></td></tr>
+<tr><th id="34">34</th><td><i>// LowLevelAlloc requires that the platform support low-level</i></td></tr>
+<tr><th id="35">35</th><td><i>// allocation of virtual memory. Platforms lacking this cannot use</i></td></tr>
+<tr><th id="36">36</th><td><i>// LowLevelAlloc.</i></td></tr>
+<tr><th id="37">37</th><td><u>#<span data-ppcond="37">ifdef</span> <span class="macro" data-ref="_M/ABSL_LOW_LEVEL_ALLOC_MISSING">ABSL_LOW_LEVEL_ALLOC_MISSING</span></u></td></tr>
+<tr><th id="38">38</th><td><u>#error ABSL_LOW_LEVEL_ALLOC_MISSING cannot be directly set</u></td></tr>
+<tr><th id="39">39</th><td><u>#<span data-ppcond="37">elif</span> !defined(<a class="macro" href="../config.h.html#371" data-ref="_M/ABSL_HAVE_MMAP">ABSL_HAVE_MMAP</a>) &amp;&amp; !defined(<span class="macro" data-ref="_M/_WIN32">_WIN32</span>)</u></td></tr>
+<tr><th id="40">40</th><td><u>#define ABSL_LOW_LEVEL_ALLOC_MISSING 1</u></td></tr>
+<tr><th id="41">41</th><td><u>#<span data-ppcond="37">endif</span></u></td></tr>
+<tr><th id="42">42</th><td></td></tr>
+<tr><th id="43">43</th><td><i>// Using LowLevelAlloc with kAsyncSignalSafe isn't supported on Windows or</i></td></tr>
+<tr><th id="44">44</th><td><i>// asm.js / WebAssembly.</i></td></tr>
+<tr><th id="45">45</th><td><i>// See <a href="https://kripken.github.io/emscripten-site/docs/porting/pthreads.html">https://kripken.github.io/emscripten-site/docs/porting/pthreads.html</a></i></td></tr>
+<tr><th id="46">46</th><td><i>// for more information.</i></td></tr>
+<tr><th id="47">47</th><td><u>#<span data-ppcond="47">ifdef</span> <span class="macro" data-ref="_M/ABSL_LOW_LEVEL_ALLOC_ASYNC_SIGNAL_SAFE_MISSING">ABSL_LOW_LEVEL_ALLOC_ASYNC_SIGNAL_SAFE_MISSING</span></u></td></tr>
+<tr><th id="48">48</th><td><u>#error ABSL_LOW_LEVEL_ALLOC_ASYNC_SIGNAL_SAFE_MISSING cannot be directly set</u></td></tr>
+<tr><th id="49">49</th><td><u>#<span data-ppcond="47">elif</span> defined(<span class="macro" data-ref="_M/_WIN32">_WIN32</span>) || defined(<span class="macro" data-ref="_M/__asmjs__">__asmjs__</span>) || defined(<span class="macro" data-ref="_M/__wasm__">__wasm__</span>)</u></td></tr>
+<tr><th id="50">50</th><td><u>#define ABSL_LOW_LEVEL_ALLOC_ASYNC_SIGNAL_SAFE_MISSING 1</u></td></tr>
+<tr><th id="51">51</th><td><u>#<span data-ppcond="47">endif</span></u></td></tr>
+<tr><th id="52">52</th><td></td></tr>
+<tr><th id="53">53</th><td><u>#include &lt;cstddef&gt;</u></td></tr>
+<tr><th id="54">54</th><td></td></tr>
+<tr><th id="55">55</th><td><u>#include <a href="../port.h.html">"absl/base/port.h"</a></u></td></tr>
+<tr><th id="56">56</th><td></td></tr>
+<tr><th id="57">57</th><td><b>namespace</b> <span class="namespace">absl</span> {</td></tr>
+<tr><th id="58">58</th><td><a class="macro" href="../config.h.html#125" title="inline namespace lts_2020_02_25 {" data-ref="_M/ABSL_NAMESPACE_BEGIN">ABSL_NAMESPACE_BEGIN</a></td></tr>
+<tr><th id="59">59</th><td><b>namespace</b> <span class="namespace">base_internal</span> {</td></tr>
+<tr><th id="60">60</th><td></td></tr>
+<tr><th id="61">61</th><td><b>class</b> <dfn class="type def" id="absl::lts_2020_02_25::base_internal::LowLevelAlloc" title='absl::lts_2020_02_25::base_internal::LowLevelAlloc' data-ref="absl::lts_2020_02_25::base_internal::LowLevelAlloc" data-ref-filename="absl..lts_2020_02_25..base_internal..LowLevelAlloc">LowLevelAlloc</dfn> {</td></tr>
+<tr><th id="62">62</th><td> <b>public</b>:</td></tr>
+<tr><th id="63">63</th><td>  <b>struct</b> <a class="type" href="low_level_alloc.cc.html#absl::lts_2020_02_25::base_internal::LowLevelAlloc::Arena" title='absl::lts_2020_02_25::base_internal::LowLevelAlloc::Arena' data-ref="absl::lts_2020_02_25::base_internal::LowLevelAlloc::Arena" data-ref-filename="absl..lts_2020_02_25..base_internal..LowLevelAlloc..Arena" id="absl::lts_2020_02_25::base_internal::LowLevelAlloc::Arena">Arena</a>;       <i>// an arena from which memory may be allocated</i></td></tr>
+<tr><th id="64">64</th><td></td></tr>
+<tr><th id="65">65</th><td>  <i>// Returns a pointer to a block of at least "request" bytes</i></td></tr>
+<tr><th id="66">66</th><td><i>  // that have been newly allocated from the specific arena.</i></td></tr>
+<tr><th id="67">67</th><td><i>  // for Alloc() call the DefaultArena() is used.</i></td></tr>
+<tr><th id="68">68</th><td><i>  // Returns 0 if passed request==0.</i></td></tr>
+<tr><th id="69">69</th><td><i>  // Does not return 0 under other circumstances; it crashes if memory</i></td></tr>
+<tr><th id="70">70</th><td><i>  // is not available.</i></td></tr>
+<tr><th id="71">71</th><td>  <em>static</em> <em>void</em> *<a class="decl fn" href="low_level_alloc.cc.html#_ZN4absl14lts_2020_02_2513base_internal13LowLevelAlloc5AllocEm" title='absl::lts_2020_02_25::base_internal::LowLevelAlloc::Alloc' data-ref="_ZN4absl14lts_2020_02_2513base_internal13LowLevelAlloc5AllocEm" data-ref-filename="_ZN4absl14lts_2020_02_2513base_internal13LowLevelAlloc5AllocEm" id="_ZN4absl14lts_2020_02_2513base_internal13LowLevelAlloc5AllocEm">Alloc</a>(<span class='typedef' title='size_t' data-type='unsigned long' data-ref="size_t" data-ref-filename="size_t">size_t</span> <dfn class="local col1 decl" id="1request" title='request' data-type='size_t' data-ref="1request" data-ref-filename="1request">request</dfn>) <a class="macro" href="../attributes.h.html#335" title="__attribute__((section(&quot;malloc_hook&quot;))) __attribute__((noinline))" data-ref="_M/ABSL_ATTRIBUTE_SECTION">ABSL_ATTRIBUTE_SECTION</a>(malloc_hook);</td></tr>
+<tr><th id="72">72</th><td>  <em>static</em> <em>void</em> *<a class="decl fn" href="low_level_alloc.cc.html#_ZN4absl14lts_2020_02_2513base_internal13LowLevelAlloc14AllocWithArenaEmPNS2_5ArenaE" title='absl::lts_2020_02_25::base_internal::LowLevelAlloc::AllocWithArena' data-ref="_ZN4absl14lts_2020_02_2513base_internal13LowLevelAlloc14AllocWithArenaEmPNS2_5ArenaE" data-ref-filename="_ZN4absl14lts_2020_02_2513base_internal13LowLevelAlloc14AllocWithArenaEmPNS2_5ArenaE" id="_ZN4absl14lts_2020_02_2513base_internal13LowLevelAlloc14AllocWithArenaEmPNS2_5ArenaE">AllocWithArena</a>(<span class='typedef' title='size_t' data-type='unsigned long' data-ref="size_t" data-ref-filename="size_t">size_t</span> <dfn class="local col2 decl" id="2request" title='request' data-type='size_t' data-ref="2request" data-ref-filename="2request">request</dfn>, <a class="type" href="low_level_alloc.cc.html#absl::lts_2020_02_25::base_internal::LowLevelAlloc::Arena" title='absl::lts_2020_02_25::base_internal::LowLevelAlloc::Arena' data-ref="absl::lts_2020_02_25::base_internal::LowLevelAlloc::Arena" data-ref-filename="absl..lts_2020_02_25..base_internal..LowLevelAlloc..Arena">Arena</a> *<dfn class="local col3 decl" id="3arena" title='arena' data-type='absl::lts_2020_02_25::base_internal::LowLevelAlloc::Arena *' data-ref="3arena" data-ref-filename="3arena">arena</dfn>)</td></tr>
+<tr><th id="73">73</th><td>      <a class="macro" href="../attributes.h.html#335" title="__attribute__((section(&quot;malloc_hook&quot;))) __attribute__((noinline))" data-ref="_M/ABSL_ATTRIBUTE_SECTION">ABSL_ATTRIBUTE_SECTION</a>(malloc_hook);</td></tr>
+<tr><th id="74">74</th><td></td></tr>
+<tr><th id="75">75</th><td>  <i>// Deallocates a region of memory that was previously allocated with</i></td></tr>
+<tr><th id="76">76</th><td><i>  // Alloc().   Does nothing if passed 0.   "s" must be either 0,</i></td></tr>
+<tr><th id="77">77</th><td><i>  // or must have been returned from a call to Alloc() and not yet passed to</i></td></tr>
+<tr><th id="78">78</th><td><i>  // Free() since that call to Alloc().  The space is returned to the arena</i></td></tr>
+<tr><th id="79">79</th><td><i>  // from which it was allocated.</i></td></tr>
+<tr><th id="80">80</th><td>  <em>static</em> <em>void</em> <a class="decl fn" href="low_level_alloc.cc.html#_ZN4absl14lts_2020_02_2513base_internal13LowLevelAlloc4FreeEPv" title='absl::lts_2020_02_25::base_internal::LowLevelAlloc::Free' data-ref="_ZN4absl14lts_2020_02_2513base_internal13LowLevelAlloc4FreeEPv" data-ref-filename="_ZN4absl14lts_2020_02_2513base_internal13LowLevelAlloc4FreeEPv" id="_ZN4absl14lts_2020_02_2513base_internal13LowLevelAlloc4FreeEPv">Free</a>(<em>void</em> *<dfn class="local col4 decl" id="4s" title='s' data-type='void *' data-ref="4s" data-ref-filename="4s">s</dfn>) <a class="macro" href="../attributes.h.html#335" title="__attribute__((section(&quot;malloc_hook&quot;))) __attribute__((noinline))" data-ref="_M/ABSL_ATTRIBUTE_SECTION">ABSL_ATTRIBUTE_SECTION</a>(malloc_hook);</td></tr>
+<tr><th id="81">81</th><td></td></tr>
+<tr><th id="82">82</th><td>  <i>// ABSL_ATTRIBUTE_SECTION(malloc_hook) for Alloc* and Free</i></td></tr>
+<tr><th id="83">83</th><td><i>  // are to put all callers of MallocHook::Invoke* in this module</i></td></tr>
+<tr><th id="84">84</th><td><i>  // into special section,</i></td></tr>
+<tr><th id="85">85</th><td><i>  // so that MallocHook::GetCallerStackTrace can function accurately.</i></td></tr>
+<tr><th id="86">86</th><td><i></i></td></tr>
+<tr><th id="87">87</th><td><i>  // Create a new arena.</i></td></tr>
+<tr><th id="88">88</th><td><i>  // The root metadata for the new arena is allocated in the</i></td></tr>
+<tr><th id="89">89</th><td><i>  // meta_data_arena; the DefaultArena() can be passed for meta_data_arena.</i></td></tr>
+<tr><th id="90">90</th><td><i>  // These values may be ored into flags:</i></td></tr>
+<tr><th id="91">91</th><td>  <b>enum</b> {</td></tr>
+<tr><th id="92">92</th><td>    <i>// Report calls to Alloc() and Free() via the MallocHook interface.</i></td></tr>
+<tr><th id="93">93</th><td><i>    // Set in the DefaultArena.</i></td></tr>
+<tr><th id="94">94</th><td>    <dfn class="enum" id="absl::lts_2020_02_25::base_internal::LowLevelAlloc::kCallMallocHook" title='absl::lts_2020_02_25::base_internal::LowLevelAlloc::kCallMallocHook' data-ref="absl::lts_2020_02_25::base_internal::LowLevelAlloc::kCallMallocHook" data-ref-filename="absl..lts_2020_02_25..base_internal..LowLevelAlloc..kCallMallocHook">kCallMallocHook</dfn> = <var>0x0001</var>,</td></tr>
+<tr><th id="95">95</th><td></td></tr>
+<tr><th id="96">96</th><td><u>#<span data-ppcond="96">ifndef</span> <span class="macro" data-ref="_M/ABSL_LOW_LEVEL_ALLOC_ASYNC_SIGNAL_SAFE_MISSING">ABSL_LOW_LEVEL_ALLOC_ASYNC_SIGNAL_SAFE_MISSING</span></u></td></tr>
+<tr><th id="97">97</th><td>    <i>// Make calls to Alloc(), Free() be async-signal-safe. Not set in</i></td></tr>
+<tr><th id="98">98</th><td><i>    // DefaultArena(). Not supported on all platforms.</i></td></tr>
+<tr><th id="99">99</th><td>    <dfn class="enum" id="absl::lts_2020_02_25::base_internal::LowLevelAlloc::kAsyncSignalSafe" title='absl::lts_2020_02_25::base_internal::LowLevelAlloc::kAsyncSignalSafe' data-ref="absl::lts_2020_02_25::base_internal::LowLevelAlloc::kAsyncSignalSafe" data-ref-filename="absl..lts_2020_02_25..base_internal..LowLevelAlloc..kAsyncSignalSafe">kAsyncSignalSafe</dfn> = <var>0x0002</var>,</td></tr>
+<tr><th id="100">100</th><td><u>#<span data-ppcond="96">endif</span></u></td></tr>
+<tr><th id="101">101</th><td>  };</td></tr>
+<tr><th id="102">102</th><td>  <i>// Construct a new arena.  The allocation of the underlying metadata honors</i></td></tr>
+<tr><th id="103">103</th><td><i>  // the provided flags.  For example, the call NewArena(kAsyncSignalSafe)</i></td></tr>
+<tr><th id="104">104</th><td><i>  // is itself async-signal-safe, as well as generatating an arena that provides</i></td></tr>
+<tr><th id="105">105</th><td><i>  // async-signal-safe Alloc/Free.</i></td></tr>
+<tr><th id="106">106</th><td>  <em>static</em> <a class="type" href="low_level_alloc.cc.html#absl::lts_2020_02_25::base_internal::LowLevelAlloc::Arena" title='absl::lts_2020_02_25::base_internal::LowLevelAlloc::Arena' data-ref="absl::lts_2020_02_25::base_internal::LowLevelAlloc::Arena" data-ref-filename="absl..lts_2020_02_25..base_internal..LowLevelAlloc..Arena">Arena</a> *<a class="decl fn" href="low_level_alloc.cc.html#_ZN4absl14lts_2020_02_2513base_internal13LowLevelAlloc8NewArenaEi" title='absl::lts_2020_02_25::base_internal::LowLevelAlloc::NewArena' data-ref="_ZN4absl14lts_2020_02_2513base_internal13LowLevelAlloc8NewArenaEi" data-ref-filename="_ZN4absl14lts_2020_02_2513base_internal13LowLevelAlloc8NewArenaEi" id="_ZN4absl14lts_2020_02_2513base_internal13LowLevelAlloc8NewArenaEi">NewArena</a>(<a class="typedef" href="../../../../../../include/bits/stdint-intn.h.html#int32_t" title='int32_t' data-type='__int32_t' data-ref="int32_t" data-ref-filename="int32_t">int32_t</a> <dfn class="local col5 decl" id="5flags" title='flags' data-type='int32_t' data-ref="5flags" data-ref-filename="5flags">flags</dfn>);</td></tr>
+<tr><th id="107">107</th><td></td></tr>
+<tr><th id="108">108</th><td>  <i>// Destroys an arena allocated by NewArena and returns true,</i></td></tr>
+<tr><th id="109">109</th><td><i>  // provided no allocated blocks remain in the arena.</i></td></tr>
+<tr><th id="110">110</th><td><i>  // If allocated blocks remain in the arena, does nothing and</i></td></tr>
+<tr><th id="111">111</th><td><i>  // returns false.</i></td></tr>
+<tr><th id="112">112</th><td><i>  // It is illegal to attempt to destroy the DefaultArena().</i></td></tr>
+<tr><th id="113">113</th><td>  <em>static</em> <em>bool</em> <a class="decl fn" href="low_level_alloc.cc.html#_ZN4absl14lts_2020_02_2513base_internal13LowLevelAlloc11DeleteArenaEPNS2_5ArenaE" title='absl::lts_2020_02_25::base_internal::LowLevelAlloc::DeleteArena' data-ref="_ZN4absl14lts_2020_02_2513base_internal13LowLevelAlloc11DeleteArenaEPNS2_5ArenaE" data-ref-filename="_ZN4absl14lts_2020_02_2513base_internal13LowLevelAlloc11DeleteArenaEPNS2_5ArenaE" id="_ZN4absl14lts_2020_02_2513base_internal13LowLevelAlloc11DeleteArenaEPNS2_5ArenaE">DeleteArena</a>(<a class="type" href="low_level_alloc.cc.html#absl::lts_2020_02_25::base_internal::LowLevelAlloc::Arena" title='absl::lts_2020_02_25::base_internal::LowLevelAlloc::Arena' data-ref="absl::lts_2020_02_25::base_internal::LowLevelAlloc::Arena" data-ref-filename="absl..lts_2020_02_25..base_internal..LowLevelAlloc..Arena">Arena</a> *<dfn class="local col6 decl" id="6arena" title='arena' data-type='absl::lts_2020_02_25::base_internal::LowLevelAlloc::Arena *' data-ref="6arena" data-ref-filename="6arena">arena</dfn>);</td></tr>
+<tr><th id="114">114</th><td></td></tr>
+<tr><th id="115">115</th><td>  <i>// The default arena that always exists.</i></td></tr>
+<tr><th id="116">116</th><td>  <em>static</em> <a class="type" href="low_level_alloc.cc.html#absl::lts_2020_02_25::base_internal::LowLevelAlloc::Arena" title='absl::lts_2020_02_25::base_internal::LowLevelAlloc::Arena' data-ref="absl::lts_2020_02_25::base_internal::LowLevelAlloc::Arena" data-ref-filename="absl..lts_2020_02_25..base_internal..LowLevelAlloc..Arena">Arena</a> *<a class="decl fn" href="low_level_alloc.cc.html#_ZN4absl14lts_2020_02_2513base_internal13LowLevelAlloc12DefaultArenaEv" title='absl::lts_2020_02_25::base_internal::LowLevelAlloc::DefaultArena' data-ref="_ZN4absl14lts_2020_02_2513base_internal13LowLevelAlloc12DefaultArenaEv" data-ref-filename="_ZN4absl14lts_2020_02_2513base_internal13LowLevelAlloc12DefaultArenaEv" id="_ZN4absl14lts_2020_02_2513base_internal13LowLevelAlloc12DefaultArenaEv">DefaultArena</a>();</td></tr>
+<tr><th id="117">117</th><td></td></tr>
+<tr><th id="118">118</th><td> <b>private</b>:</td></tr>
+<tr><th id="119">119</th><td>  <dfn class="decl fn" id="_ZN4absl14lts_2020_02_2513base_internal13LowLevelAllocC1Ev" title='absl::lts_2020_02_25::base_internal::LowLevelAlloc::LowLevelAlloc' data-ref="_ZN4absl14lts_2020_02_2513base_internal13LowLevelAllocC1Ev" data-ref-filename="_ZN4absl14lts_2020_02_2513base_internal13LowLevelAllocC1Ev">LowLevelAlloc</dfn>();      <i>// no instances</i></td></tr>
+<tr><th id="120">120</th><td>};</td></tr>
+<tr><th id="121">121</th><td></td></tr>
+<tr><th id="122">122</th><td>}  <i>// namespace base_internal</i></td></tr>
+<tr><th id="123">123</th><td><a class="macro" href="../config.h.html#127" title="}" data-ref="_M/ABSL_NAMESPACE_END">ABSL_NAMESPACE_END</a></td></tr>
+<tr><th id="124">124</th><td>}  <i>// namespace absl</i></td></tr>
+<tr><th id="125">125</th><td></td></tr>
+<tr><th id="126">126</th><td><u>#<span data-ppcond="16">endif</span>  // ABSL_BASE_INTERNAL_LOW_LEVEL_ALLOC_H_</u></td></tr>
+<tr><th id="127">127</th><td></td></tr>
+</table><hr/><p id='footer'>
+Generated while processing <a href='low_level_alloc.cc.html'>halide/build-apps/abseil-cpp/absl/base/internal/low_level_alloc.cc</a><br/>Generated on <em>2021-Aug-05</em> from project halide revision <em>v12.0.1</em>

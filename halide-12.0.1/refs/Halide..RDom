@@ -1,3 +1,193 @@
+<def f='halide/halide-install/include/Halide.h' l='15531' ll='15677'/>
+<use f='halide/halide-install/include/Halide.h' l='15572' c='_ZN6Halide4RDomC1ERKNS_6BufferIT_EE'/>
+<use f='halide/halide-install/include/Halide.h' l='15590' c='_ZNK6Halide4RDom7same_asERKS0_'/>
+<use f='halide/halide-install/include/Halide.h' l='15683' c='_ZN6HalidelsERSoRKNS_4RDomE'/>
+<use f='halide/halide-install/include/Halide.h' l='15920' c='_ZN6Halide9VarOrRVarC1ERKNS_4RDomE'/>
+<use f='halide/halide-install/include/Halide.h' l='21128' c='_ZN6Halide8Internal5equalERKNS_4RDomES3_'/>
+<use f='halide/halide-install/include/Halide.h' l='21128' c='_ZN6Halide8Internal5equalERKNS_4RDomES3_'/>
+<use f='halide/halide-install/include/Halide.h' l='25901'/>
+<use f='halide/halide-install/include/Halide.h' l='27045' c='_ZN6Halide3sumERKNS_4RDomENS_4ExprERKNSt7__cxx1112basic_stringIcSt11char_traitsIcESaIcEEE'/>
+<use f='halide/halide-install/include/Halide.h' l='27046' c='_ZN6Halide14saturating_sumERKNS_4RDomENS_4ExprERKNSt7__cxx1112basic_stringIcSt11char_traitsIcESaIcEEE'/>
+<use f='halide/halide-install/include/Halide.h' l='27047' c='_ZN6Halide7productERKNS_4RDomENS_4ExprERKNSt7__cxx1112basic_stringIcSt11char_traitsIcESaIcEEE'/>
+<use f='halide/halide-install/include/Halide.h' l='27048' c='_ZN6Halide7maximumERKNS_4RDomENS_4ExprERKNSt7__cxx1112basic_stringIcSt11char_traitsIcESaIcEEE'/>
+<use f='halide/halide-install/include/Halide.h' l='27049' c='_ZN6Halide7minimumERKNS_4RDomENS_4ExprERKNSt7__cxx1112basic_stringIcSt11char_traitsIcESaIcEEE'/>
+<use f='halide/halide-install/include/Halide.h' l='27059' c='_ZN6Halide6argmaxERKNS_4RDomENS_4ExprERKNSt7__cxx1112basic_stringIcSt11char_traitsIcESaIcEEE'/>
+<use f='halide/halide-install/include/Halide.h' l='27060' c='_ZN6Halide6argminERKNS_4RDomENS_4ExprERKNSt7__cxx1112basic_stringIcSt11char_traitsIcESaIcEEE'/>
+<use f='halide/halide-install/include/Halide.h' l='27074' c='_ZN6Halide3sumERKNS_4RDomENS_4ExprERKNS_4FuncE'/>
+<use f='halide/halide-install/include/Halide.h' l='27075' c='_ZN6Halide14saturating_sumERKNS_4RDomENS_4ExprERKNS_4FuncE'/>
+<use f='halide/halide-install/include/Halide.h' l='27076' c='_ZN6Halide7productERKNS_4RDomENS_4ExprERKNS_4FuncE'/>
+<use f='halide/halide-install/include/Halide.h' l='27077' c='_ZN6Halide7maximumERKNS_4RDomENS_4ExprERKNS_4FuncE'/>
+<use f='halide/halide-install/include/Halide.h' l='27078' c='_ZN6Halide7minimumERKNS_4RDomENS_4ExprERKNS_4FuncE'/>
+<use f='halide/halide-install/include/Halide.h' l='27081' c='_ZN6Halide6argmaxERKNS_4RDomENS_4ExprERKNS_4FuncE'/>
+<use f='halide/halide-install/include/Halide.h' l='27082' c='_ZN6Halide6argminERKNS_4RDomENS_4ExprERKNS_4FuncE'/>
+<size>200</size>
+<doc f='halide/halide-install/include/Halide.h' l='15414'>/** A multi-dimensional domain over which to iterate. Used when
+ * defining functions with update definitions.
+ *
+ * An reduction is a function with a two-part definition. It has an
+ * initial value, which looks much like a pure function, and an update
+ * definition, which may refer to some RDom. Evaluating such a
+ * function first initializes it over the required domain (which is
+ * inferred based on usage), and then runs update rule for all points
+ * in the RDom. For example:
+ *
+ \code
+ Func f;
+ Var x;
+ RDom r(0, 10);
+ f(x) = x; // the initial value
+ f(r) = f(r) * 2;
+ Buffer&lt;int&gt; result = f.realize({10});
+ \endcode
+ *
+ * This function creates a single-dimensional buffer of size 10, in
+ * which element x contains the value x*2. Internally, first the
+ * initialization rule fills in x at every site, and then the update
+ * definition doubles every site.
+ *
+ * One use of reductions is to build a function recursively (pure
+ * functions in halide cannot be recursive). For example, this
+ * function fills in an array with the first 20 fibonacci numbers:
+ *
+ \code
+ Func f;
+ Var x;
+ RDom r(2, 18);
+ f(x) = 1;
+ f(r) = f(r-1) + f(r-2);
+ \endcode
+ *
+ * Another use of reductions is to perform scattering operations, as
+ * unlike a pure function declaration, the left-hand-side of an update
+ * definition may contain general expressions:
+ *
+ \code
+ ImageParam input(UInt(8), 2);
+ Func histogram;
+ Var x;
+ RDom r(input); // Iterate over all pixels in the input
+ histogram(x) = 0;
+ histogram(input(r.x, r.y)) = histogram(input(r.x, r.y)) + 1;
+ \endcode
+ *
+ * An update definition may also be multi-dimensional. This example
+ * computes a summed-area table by first summing horizontally and then
+ * vertically:
+ *
+ \code
+ ImageParam input(Float(32), 2);
+ Func sum_x, sum_y;
+ Var x, y;
+ RDom r(input);
+ sum_x(x, y)     = input(x, y);
+ sum_x(r.x, r.y) = sum_x(r.x, r.y) + sum_x(r.x-1, r.y);
+ sum_y(x, y)     = sum_x(x, y);
+ sum_y(r.x, r.y) = sum_y(r.x, r.y) + sum_y(r.x, r.y-1);
+ \endcode
+ *
+ * You can also mix pure dimensions with reduction variables. In the
+ * previous example, note that there&apos;s no need for the y coordinate in
+ * sum_x to be traversed serially. The sum within each row is entirely
+ * independent. The rows could be computed in parallel, or in a
+ * different order, without changing the meaning. Therefore, we can
+ * instead write this definition as follows:
+ *
+ \code
+ ImageParam input(Float(32), 2);
+ Func sum_x, sum_y;
+ Var x, y;
+ RDom r(input);
+ sum_x(x, y)   = input(x, y);
+ sum_x(r.x, y) = sum_x(r.x, y) + sum_x(r.x-1, y);
+ sum_y(x, y)   = sum_x(x, y);
+ sum_y(x, r.y) = sum_y(x, r.y) + sum_y(x, r.y-1);
+ \endcode
+ *
+ * This lets us schedule it more flexibly. You can now parallelize the
+ * update step of sum_x over y by calling:
+ \code
+ sum_x.update().parallel(y).
+ \endcode
+ *
+ * Note that calling sum_x.parallel(y) only parallelizes the
+ * initialization step, and not the update step! Scheduling the update
+ * step of a reduction must be done using the handle returned by
+ * \ref Func::update(). This code parallelizes both the initialization
+ * step and the update step:
+ *
+ \code
+ sum_x.parallel(y);
+ sum_x.update().parallel(y);
+ \endcode
+ *
+ * When you mix reduction variables and pure dimensions, the reduction
+ * domain is traversed outermost. That is, for each point in the
+ * reduction domain, the inferred pure domain is traversed in its
+ * entirety. For the above example, this means that sum_x walks down
+ * the columns, and sum_y walks along the rows. This may not be
+ * cache-coherent. You may try reordering these dimensions using the
+ * schedule, but Halide will return an error if it decides that this
+ * risks changing the meaning of your function. The solution lies in
+ * clever scheduling. If we say:
+ *
+ \code
+ sum_x.compute_at(sum_y, y);
+ \endcode
+ *
+ * Then the sum in x is computed only as necessary for each scanline
+ * of the sum in y. This not only results in sum_x walking along the
+ * rows, it also improves the locality of the entire pipeline.
+ */</doc>
+<mbr r='Halide::RDom::dom' o='0' t='Internal::ReductionDomain'/>
+<fun r='_ZN6Halide4RDom9init_varsERKNSt7__cxx1112basic_stringIcSt11char_traitsIcESaIcEEE'/>
+<fun r='_ZN6Halide4RDom22initialize_from_regionERKSt6vectorINS_5RangeESaIS2_EENSt7__cxx1112basic_stringIcSt11char_traitsIcESaIcEEE'/>
+<fun r='_ZN6Halide4RDom22initialize_from_regionERSt6vectorINS_5RangeESaIS2_EERKNS_4ExprES8_DpOT_'/>
+<fun r='_ZN6Halide4RDomC1Ev'/>
+<fun r='_ZN6Halide4RDomC1ERKSt6vectorINS_5RangeESaIS2_EENSt7__cxx1112basic_stringIcSt11char_traitsIcESaIcEEE'/>
+<fun r='_ZN6Halide4RDomC1ENS_4ExprES1_DpOT_'/>
+<fun r='_ZN6Halide4RDomC1ERKNS_6BufferIvEE'/>
+<fun r='_ZN6Halide4RDomC1ERKNS_16OutputImageParamE'/>
+<fun r='_ZN6Halide4RDomC1ERKNS_6BufferIT_EE'/>
+<fun r='_ZN6Halide4RDomC1ERKNS_8Internal15ReductionDomainE'/>
+<fun r='_ZNK6Halide4RDom6domainEv'/>
+<fun r='_ZNK6Halide4RDom7definedEv'/>
+<fun r='_ZNK6Halide4RDom7same_asERKS0_'/>
+<fun r='_ZNK6Halide4RDom10dimensionsEv'/>
+<fun r='_ZNK6Halide4RDomixEi'/>
+<fun r='_ZNK6Halide4RDomcvNS_4RVarEEv'/>
+<fun r='_ZNK6Halide4RDomcvNS_4ExprEEv'/>
+<fun r='_ZN6Halide4RDom5whereENS_4ExprE'/>
+<mbr r='Halide::RDom::x' o='64' t='Halide::RVar'/>
+<mbr r='Halide::RDom::y' o='448' t='Halide::RVar'/>
+<mbr r='Halide::RDom::z' o='832' t='Halide::RVar'/>
+<mbr r='Halide::RDom::w' o='1216' t='Halide::RVar'/>
+<use f='halide/apps/fft/fft.cpp' l='247' c='_ZN12_GLOBAL__N_14dftNE5FuncTI11ComplexExprEiiRKNSt7__cxx1112basic_stringIcSt11char_traitsIcESaIcEEE'/>
+<use f='halide/apps/fft/fft.cpp' l='311' c='_ZN12_GLOBAL__N_18fft_dim1E5FuncTI11ComplexExprERKSt6vectorIiSaIiEEiiN6Halide4ExprEbRKNSt7__cxx1112basic_stringIcSt11char_traitsIcESaIcEEERKNS8_6Targe14237183'/>
+<use f='halide/apps/fft/fft.cpp' l='360' c='_ZN12_GLOBAL__N_18fft_dim1E5FuncTI11ComplexExprERKSt6vectorIiSaIiEEiiN6Halide4ExprEbRKNSt7__cxx1112basic_stringIcSt11char_traitsIcESaIcEEERKNS8_6Targe14237183'/>
+<use f='halide/apps/fft/fft.cpp' l='812' c='_Z9fft2d_r2cN6Halide4FuncERKSt6vectorIiSaIiEES5_RKNS_6TargetERK9Fft2dDesc'/>
+<use f='halide/apps/fft/fft.cpp' l='813' c='_Z9fft2d_r2cN6Halide4FuncERKSt6vectorIiSaIiEES5_RKNS_6TargetERK9Fft2dDesc'/>
+<size>200</size>
+<use f='halide/apps/iir_blur/iir_blur_generator.cpp' l='23' c='_Z19blur_cols_transposeN6Halide4FuncENS_4ExprES1_bNS_6TargetE'/>
+<size>200</size>
+<use f='halide/apps/linear_algebra/src/blas_l1_generators.cpp' l='53' c='_ZN12_GLOBAL__N_113AXPYGenerator8generateEv'/>
+<use f='halide/apps/linear_algebra/src/blas_l1_generators.cpp' l='54' c='_ZN12_GLOBAL__N_113AXPYGenerator8generateEv'/>
+<use f='halide/apps/linear_algebra/src/blas_l1_generators.cpp' l='106' c='_ZN12_GLOBAL__N_112DotGenerator8generateEv'/>
+<use f='halide/apps/linear_algebra/src/blas_l1_generators.cpp' l='109' c='_ZN12_GLOBAL__N_112DotGenerator8generateEv'/>
+<use f='halide/apps/linear_algebra/src/blas_l1_generators.cpp' l='110' c='_ZN12_GLOBAL__N_112DotGenerator8generateEv'/>
+<use f='halide/apps/linear_algebra/src/blas_l1_generators.cpp' l='117' c='_ZN12_GLOBAL__N_112DotGenerator8generateEv'/>
+<use f='halide/apps/linear_algebra/src/blas_l1_generators.cpp' l='159' c='_ZN12_GLOBAL__N_115AbsSumGenerator8generateEv'/>
+<use f='halide/apps/linear_algebra/src/blas_l1_generators.cpp' l='162' c='_ZN12_GLOBAL__N_115AbsSumGenerator8generateEv'/>
+<use f='halide/apps/linear_algebra/src/blas_l1_generators.cpp' l='163' c='_ZN12_GLOBAL__N_115AbsSumGenerator8generateEv'/>
+<use f='halide/apps/linear_algebra/src/blas_l1_generators.cpp' l='170' c='_ZN12_GLOBAL__N_115AbsSumGenerator8generateEv'/>
+<size>200</size>
+<use f='halide/apps/linear_algebra/src/blas_l2_generators.cpp' l='52' c='_ZN12_GLOBAL__N_113GEMVGenerator8generateEv'/>
+<use f='halide/apps/linear_algebra/src/blas_l2_generators.cpp' l='59' c='_ZN12_GLOBAL__N_113GEMVGenerator8generateEv'/>
+<use f='halide/apps/linear_algebra/src/blas_l2_generators.cpp' l='63' c='_ZN12_GLOBAL__N_113GEMVGenerator8generateEv'/>
+<use f='halide/apps/linear_algebra/src/blas_l2_generators.cpp' l='130' c='_ZN12_GLOBAL__N_113GEMVGenerator8generateEv'/>
+<use f='halide/apps/linear_algebra/src/blas_l2_generators.cpp' l='131' c='_ZN12_GLOBAL__N_113GEMVGenerator8generateEv'/>
+<size>200</size>
+<use f='halide/apps/linear_algebra/src/blas_l3_generators.cpp' l='84' c='_ZN12_GLOBAL__N_113GEMMGenerator8generateEv'/>
+<size>200</size>
 <def f='halide/build/include/Halide.h' l='15531' ll='15677'/>
 <use f='halide/build/include/Halide.h' l='15572' c='_ZN6Halide4RDomC1ERKNS_6BufferIT_EE'/>
 <use f='halide/build/include/Halide.h' l='15590' c='_ZNK6Halide4RDom7same_asERKS0_'/>
